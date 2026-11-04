@@ -9,7 +9,10 @@ import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { horaVistaPrevia, lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
 import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/conversacion-acciones"
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
+import { GearIcon } from "@/components/ui/icons"
 import { AgregarCompanero } from "@/features/comunicaciones/chat/components/agregar-companero"
 import { CrearChatDialog } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
@@ -115,10 +118,16 @@ export function ChatSidebar({
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
   const { puedeGestionar, reglaDirectoCon } = useChatAccess()
+  // PROVISIONAL: Supervisor de sede = coordinador, Administrador del establecimiento = rector.
+  const roles = useAuth().user?.roles ?? []
+  const esAdministrador = roles.includes("CEVAL-RECTOR")
+  const puedeModerar = esAdministrador || roles.includes("CEVAL-COORDINADOR")
+  const [moderacion, setModeracion] = useState(false)
   const { notify } = useNotify()
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. El texto del buscador vive también en estado local para no perder el cursor.
   const filtrosUrl = chatRoute.useSearch()
+  const reporteEnlazado = filtrosUrl.moderacion
   const navigate = chatRoute.useNavigate()
   const [texto, setTextoLocal] = useState(filtrosUrl.q ?? "")
   const setTexto = (v: string) => {
@@ -180,10 +189,14 @@ export function ChatSidebar({
     return k ? (presencia[k.usuarioId] ?? k.estado) : undefined
   }
 
+  // Comunicados vencidos, y los anulados o cancelados de quien los publicó: fuera de la bandeja principal.
+  const esAnterior = (c: Conversacion) =>
+    c.comunicadoEstado === "VENCIDO" || c.comunicadoEstado === "ANULADO" || c.comunicadoEstado === "CANCELADO"
+  const anteriores = visibles.filter((c) => esAnterior(c) && !c.archivada)
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
   // En el chat los CANAL se llaman "Foros".
-  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada)
+  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada && !esAnterior(c))
   const archivadas = visibles.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
@@ -203,6 +216,30 @@ export function ChatSidebar({
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
       <div className="relative flex h-16 shrink-0 items-center gap-2 border-b px-3">
+        {puedeModerar && (
+          <button
+            type="button"
+            aria-label="Moderación de la mensajería"
+            title="Moderación de la mensajería"
+            onClick={() => setModeracion(true)}
+            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          >
+            <GearIcon className="size-5" />
+          </button>
+        )}
+        {puedeModerar && (moderacion || reporteEnlazado != null) && (
+          <ModeracionDialog
+            open
+            esAdministrador={esAdministrador}
+            reporteResaltado={reporteEnlazado}
+            onClose={() => {
+              setModeracion(false)
+              if (reporteEnlazado != null) {
+                void navigate({ search: (prev) => ({ ...prev, moderacion: undefined }), replace: true })
+              }
+            }}
+          />
+        )}
         <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           <span className="sr-only">Buscar conversaciones</span>
@@ -289,6 +326,16 @@ export function ChatSidebar({
                   desarchivar
                 />
               ))}
+            </Seccion>
+          )}
+          {anteriores.length > 0 && (
+            <Seccion
+              titulo="Comunicados anteriores"
+              icono={ArchiveIcon}
+              contador={anteriores.length}
+              inicialAbierta={false}
+            >
+              {anteriores.map(item)}
             </Seccion>
           )}
           <ul className="border-b px-2 pb-2">

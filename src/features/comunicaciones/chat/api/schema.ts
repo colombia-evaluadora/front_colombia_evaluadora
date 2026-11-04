@@ -23,6 +23,8 @@ export const chatSearchSchema = z.object({
   // Deep link de la campana a Colevabot (solicitudes de aprobación): el id de su conversación es
   // por usuario y el backend no lo conoce al encolar, así que se resuelve al abrir el chat.
   colevabot: z.literal("1").optional().catch(undefined),
+  // Deep link de la campana (CHAT_REPORTE): abre la moderación con ese reporte resaltado.
+  moderacion: z.coerce.number().int().positive().optional().catch(undefined),
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. Palabras clave, persona, rol, grupo académico, tipo, fechas y estado.
   q: z.string().max(200).optional().catch(undefined),

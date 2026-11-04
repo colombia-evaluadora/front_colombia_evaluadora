@@ -11,6 +11,7 @@ import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib
 import { useState, type ReactNode } from "react"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
+import { ReportarDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useCerrarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 
 import {
@@ -76,13 +77,14 @@ import {
   BellRingingIcon,
   LightningIcon,
   XSquareIcon,
+  WarningIcon,
 } from "@/components/ui/icons"
 
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
 
-type Dialogo = "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
+type Dialogo = "reportar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
 interface ConversacionAccionesProps {
   conversacion: Conversacion
@@ -194,6 +196,10 @@ export function ConversacionAcciones({
           <DotsThreeVerticalIcon className={variante === "fila" ? "size-4.5" : "size-5"} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align={variante === "fila" ? "start" : "end"} className="w-60">
+          <DropdownMenuItem className={ITEM} onClick={() => setDialogo("reportar")}>
+            <WarningIcon />
+            <span className="flex-1">Reportar conversación</span>
+          </DropdownMenuItem>
           {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
@@ -406,6 +412,16 @@ export function ConversacionAcciones({
       </Confirmacion>
 
       <EditarActividad conversacion={c} open={dialogo === "editarActividad"} onClose={cerrar} />
+      <ReportarDialog
+        conversacionId={c.id}
+        nombre={c.nombre}
+        open={dialogo === "reportar"}
+        onClose={cerrar}
+        onReportada={() => {
+          cerrar()
+          notify("Conversación reportada.")
+        }}
+      />
 
       {/* Grupo: nombre, descripción, imagen y quién escribe; foro: solo el nombre. */}
       {c.tipo === "GRUPO" && (

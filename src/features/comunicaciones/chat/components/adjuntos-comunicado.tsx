@@ -39,19 +39,19 @@ import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
   descargarAdjunto,
-  MAX_ADJUNTO_MB,
   pesoLegible,
   validarAdjunto,
 } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 
-// Mismo tope que comms-service (`ComunicadoService.MAX_ADJUNTOS`).
-export const MAX_ADJUNTOS_COMUNICADO = 10
+// Mismos topes que comms-service (`ComunicadoService.MAX_ADJUNTOS` y `MAX_BYTES_ADJUNTO`).
+export const MAX_ADJUNTOS_COMUNICADO = 5
+const MAX_ADJUNTO_COMUNICADO_MB = 10
 
 const claveArchivo = (f: File) => `${f.name}:${f.size}:${f.lastModified}`
 
 /**
  * Archivos del comunicado al crearlo o editarlo: PDF, imágenes, documentos, video y ZIP/RAR de hasta
- * 20 MB (mismas reglas que un adjunto del chat: `validarAdjunto`; .exe/.bat nunca pasan). Los ya
+ * 10 MB (mismas reglas que un adjunto del chat: `validarAdjunto`; .exe/.bat nunca pasan). Los ya
  * guardados (edición) se pueden quitar o recuperar antes de guardar.
  */
 export function AdjuntosComunicadoCampo({
@@ -120,7 +120,7 @@ export function AdjuntosComunicadoCampo({
         onFileReject={(f, mensaje) => setRechazo(`${f.name}: ${mensaje}`)}
         accept={`${ACEPTA_DOCUMENTOS},${ACEPTA_MULTIMEDIA}`}
         maxFiles={cupo}
-        maxSize={MAX_ADJUNTO_MB * 1024 * 1024}
+        maxSize={MAX_ADJUNTO_COMUNICADO_MB * 1024 * 1024}
         multiple
         disabled={deshabilitado || cupo === 0}
         label="Archivos adjuntos"
@@ -131,7 +131,7 @@ export function AdjuntosComunicadoCampo({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Arrastra archivos aquí</p>
             <p className="text-xs text-muted-foreground">
-              PDF, Word, Excel, PowerPoint, imágenes, video, ZIP o RAR; hasta {MAX_ADJUNTO_MB} MB cada uno y{" "}
+              PDF, Word, Excel, PowerPoint, imágenes, video, ZIP o RAR; hasta {MAX_ADJUNTO_COMUNICADO_MB} MB cada uno y{" "}
               {MAX_ADJUNTOS_COMUNICADO} por comunicado.
             </p>
           </div>

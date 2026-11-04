@@ -56,6 +56,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
+import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
@@ -447,14 +448,14 @@ const ESTABLECIMIENTO_CRUMB = {
   label: "Establecimiento educativo",
   to: paths.app.establishments.general.getHref(),
 }
-const GESTION_ESTUDIANTIL_CRUMB = {
-  label: "Gestión Estudiantil",
-  to: paths.app.convivencia.getHref(),
-}
 const CONVIVENCIA_CRUMB = { label: "Convivencia", to: paths.app.convivencia.getHref() }
 const PERIODOS_CRUMB = {
   label: "Periodos académicos",
   to: paths.app.periodosAcademicos.getHref(),
+}
+const GESTION_ESTUDIANTIL_CRUMB = {
+  label: "Gestión Estudiantil",
+  to: paths.app.observador.getHref(),
 }
 const GESTION_ACADEMICA_CRUMB = {
   label: "Gestión académica",
@@ -1103,6 +1104,55 @@ export const convivenciaCasoRoute = createRoute({
   },
 })
 
+const ObservadorPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observador/pages/observador-page"),
+  "ObservadorPage",
+)
+
+export const observadorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observador.path,
+  validateSearch: observadorSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Observador" }] },
+  component: ObservadorPage,
+})
+
+const NuevaAnotacionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observador/pages/anotacion-form-page"),
+  "NuevaAnotacionPage",
+)
+
+export const observadorNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observadorNueva.path,
+  staticData: {
+    breadcrumb: [
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Observador", to: paths.app.observador.getHref() },
+      { label: "Nueva anotación" },
+    ],
+  },
+  component: NuevaAnotacionPage,
+})
+
+const EditarAnotacionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observador/pages/anotacion-form-page"),
+  "EditarAnotacionPage",
+)
+
+export const observadorEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observadorEditar.path,
+  staticData: {
+    breadcrumb: [
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Observador", to: paths.app.observador.getHref() },
+      { label: "Modificar anotación" },
+    ],
+  },
+  component: EditarAnotacionPage,
+})
+
 const AsistenciaManualPage = lazyRouteComponent(
   () => import("@/features/academic-management/asistencia/pages/asistencia-manual-page"),
   "AsistenciaManualPage",
@@ -1272,6 +1322,9 @@ const routeTree = rootRoute.addChildren([
     planeadorRecursoPreviewRoute,
     planeadorPlanillaRoute,
     asistenciaRoute,
+    observadorRoute,
+    observadorNuevaRoute,
+    observadorEditarRoute,
     asistenciaManualRoute,
     convivenciaRoute,
     convivenciaNuevoRoute,

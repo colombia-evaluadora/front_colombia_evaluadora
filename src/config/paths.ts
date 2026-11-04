@@ -284,6 +284,18 @@ export const paths = {
       path: "gestion-estudiantil/convivencia/caso/$casoId/editar",
       getHref: (casoId: number | string) => `/app/gestion-estudiantil/convivencia/caso/${casoId}/editar`,
     },
+    observador: {
+      path: "gestion-estudiantil/observador",
+      getHref: () => "/app/gestion-estudiantil/observador",
+    },
+    observadorNueva: {
+      path: "gestion-estudiantil/observador/nueva",
+      getHref: () => "/app/gestion-estudiantil/observador/nueva",
+    },
+    observadorEditar: {
+      path: "gestion-estudiantil/observador/editar/$anotacionId",
+      getHref: (anotacionId: number | string) => `/app/gestion-estudiantil/observador/editar/${anotacionId}`,
+    },
     comunicacionesChat: {
       path: "comunicaciones/chat",
       getHref: () => "/app/comunicaciones/chat",
