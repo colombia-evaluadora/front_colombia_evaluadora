@@ -33,6 +33,7 @@ import {
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { isoALocal, validarInicioNoPasado, validarRangoFechas } from "@/features/comunicaciones/chat/lib/fechas-canal"
+import { toNombreInput } from "@/features/establishment/shared/person-field-rules"
 import { caracteresPermitidos } from "@/features/comunicaciones/chat/lib/texto-actividad"
 import type { Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorVotantes } from "@/features/comunicaciones/chat/components/selector-votantes"
@@ -508,7 +509,7 @@ function PasoCandidatos({
           />
           <div className="space-y-3">
             <form.AppField name="nombre">
-              {(f) => <f.TextField label="Nombre" maxLength={80} showCounter />}
+              {(f) => <f.TextField label="Nombre" maxLength={80} showCounter transform={toNombreInput} />}
             </form.AppField>
             <form.AppField
               name="numero"
