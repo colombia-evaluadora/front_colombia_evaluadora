@@ -166,7 +166,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="flex max-w-4xl flex-col gap-5">
+        <div className="flex flex-col gap-5">
           {!editar && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <ComboOpciones
