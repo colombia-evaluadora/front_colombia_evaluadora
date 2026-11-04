@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 
-import { MAX_ADJUNTO_MB } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
+import { MAX_ADJUNTO_MENSAJE_MB } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import {
   MAX_NOTA_SEGUNDOS,
   elegirMimeGrabacion,
@@ -12,7 +12,7 @@ import {
 
 export type EstadoGrabador = "inactivo" | "pidiendo" | "grabando"
 
-const MAX_BYTES = MAX_ADJUNTO_MB * 1024 * 1024
+const MAX_BYTES = MAX_ADJUNTO_MENSAJE_MB * 1024 * 1024
 
 /**
  * Graba una nota de voz con `MediaRecorder`. `iniciar` pide el micrófono (el navegador

@@ -62,3 +62,18 @@ export function getCalendarSummary(
   }
   return { workingDays, teachingWeeks: weeks.size }
 }
+
+/** Entradas que pasan los filtros del buscador; la búsqueda es por Motivo, sin tildes. */
+export function filterCalendarEntries(
+  entries: CalendarEntry[],
+  filters: { search: string; origin: string; type: string },
+) {
+  const fold = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
+  const search = fold(filters.search.trim())
+  return entries.filter(
+    (e) =>
+      (!filters.origin || e.origin === filters.origin) &&
+      (!filters.type || e.type === filters.type) &&
+      (!search || fold(e.reason).includes(search)),
+  )
+}

@@ -1,4 +1,10 @@
-export type EstadoSesion = "REGISTRADA" | "RETRASADA" | "PENDIENTE"
+/** Estado de la clase que devuelve el backend (fn_asistencia_estado_clase). */
+export type EstadoClaseBackend = "REGISTRADA" | "PENDIENTE" | "SIN_ESTADO"
+
+/** Estado con el que se pinta la clase: VENCIDA es una PENDIENTE que pasó el
+ *  Plazo del aviso de asistencia sin registrar del período (Regla 109.3, flag
+ *  `vencida` del calendario); SIN_ESTADO es una clase futura. */
+export type EstadoSesion = "REGISTRADA" | "PENDIENTE" | "VENCIDA" | "SIN_ESTADO"
 
 
 export type TipoAsistencia = 1 | 2 | 3 | 5 | 6
@@ -45,8 +51,9 @@ export interface ResumenHoras {
   horas_anio: number
   horas_efectivas_mes: number
   registradas_mes: number
-  retrasadas_mes: number
+  /** Clases de hoy o antes sin registrar, incluidas las vencidas. */
   pendientes_mes: number
+  vencidas_mes: number
 }
 
 export interface AsistenciaResumenHorasParams {
@@ -63,6 +70,16 @@ export interface AsistenciaRegistroManual {
   tipoAsistencia: TipoAsistencia
   observacion?: string
   fkArchivo?: number | File
+  /** Regla 109: justificación sin archivo que viaja con el registro; `null` la quita. */
+  justificacion?: string | null
+  fkFuenteJustificacion?: number | null
+}
+
+/** Justificación sin archivo hecha en la planilla antes de guardar. */
+export interface JustificacionLocal {
+  justificacion: string | null
+  fuente: number | null
+  fuenteNombre: string | null
 }
 
 /** Padrón de una sesión: `ASIGNATURA` (+ `BLOQUE` opcional) para un grupo normal, o `ACTIVIDAD` para uno formativo -- nunca ambos. */
@@ -95,6 +112,10 @@ export interface RosterEstudiante {
   cambio_tipo_asistencia_valor?: TipoAsistencia | null
   /** Versión del registro (`fn_asistencia_version`, sso V137) para el CAS de la escritura offline. */
   version_registro?: string | null
+  /** Regla 109: justificación sin archivo (sso V542.5). */
+  justificacion?: string | null
+  fk_tlv_fuente_justificacion?: number | null
+  fuente_justificacion?: string | null
   total_estudiantes: number
   registrados: number
 }
@@ -160,6 +181,8 @@ export interface AsistenciaRegistrarRequest {
   BLOQUE?: number | null
   REGISTROS?: AsistenciaRegistroManual[]
   MARCAR_TODOS?: TipoAsistencia
+  /** Regla 77: obligatorio si el período ya no es calificable (va a aprobación). */
+  MOTIVO?: string
 }
 
 export interface AsistenciaEditarRequest {
@@ -168,6 +191,8 @@ export interface AsistenciaEditarRequest {
   SOPORTE_ARCHIVO?: number
   LIMPIAR_ARCHIVO?: boolean
   LIMPIAR_OBSERVACION?: boolean
+  /** Regla 77: obligatorio si la corrección va a aprobación. */
+  MOTIVO?: string
 }
 
 export interface AsistenciaQueryFilters {
@@ -231,6 +256,11 @@ export interface AsistenciaQueryRow {
   ausentes: number
   tarde: number
   total_count: number
+  /** Sesiones del set filtrado (sso V438): con un estudiante buscado, sus totales del rango. */
+  fallas?: number
+  justificadas?: number
+  retrasos?: number
+  porcentaje_asistencia?: number | null
   /** Formativo (preescolar): la fila es de una actividad, no de `asignatura` (que llega `""`/dueña, no la sesión). */
   es_formativa: boolean
   fk_tactividad: number | null

@@ -20,10 +20,12 @@ interface AsistenciaRegistroMensualCardProps {
 const numberFormatter = new Intl.NumberFormat("es-CO")
 const percentFormatter = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 })
 
+// Pendientes en plazo = pendientes - vencidas: el backend cuenta las vencidas
+// dentro de pendientes_mes (las dos son clases dictadas sin registrar).
 const DESGLOSE = [
-  { key: "registradas_mes" as const, label: "Completadas", color: "var(--green)" },
-  { key: "retrasadas_mes" as const, label: "Vencidas (sin registrar)", color: "var(--red)" },
-  { key: "pendientes_mes" as const, label: "Futuras/Pendientes", color: "var(--blue)" },
+  { label: "Completadas", color: "var(--green)", valor: (r: ResumenHoras) => r.registradas_mes },
+  { label: "Pendientes en plazo", color: "var(--yellow)", valor: (r: ResumenHoras) => r.pendientes_mes - r.vencidas_mes },
+  { label: "Fuera de plazo", color: "var(--red)", valor: (r: ResumenHoras) => r.vencidas_mes },
 ]
 
 
@@ -37,11 +39,11 @@ function franjaSemanaActual(): number {
 /** "Registro mensual: al día" — % de clases registradas del mes, desglose por estado y avance de la semana. */
 export function AsistenciaRegistroMensualCard({ resumen }: AsistenciaRegistroMensualCardProps) {
   const total = resumen
-    ? resumen.registradas_mes + resumen.retrasadas_mes + resumen.pendientes_mes
+    ? resumen.registradas_mes + resumen.pendientes_mes
     : 0
   const pct = total > 0 ? (resumen!.registradas_mes / total) * 100 : 0
   const maxDesglose = resumen
-    ? Math.max(resumen.registradas_mes, resumen.retrasadas_mes, resumen.pendientes_mes, 1)
+    ? Math.max(...DESGLOSE.map((d) => d.valor(resumen)), 1)
     : 1
 
   return (
@@ -80,20 +82,20 @@ export function AsistenciaRegistroMensualCard({ resumen }: AsistenciaRegistroMen
       ) : (
         <div className="flex items-stretch gap-3">
           <div className="flex shrink-0 items-end gap-1.5">
-            {DESGLOSE.map(({ key, color }) => (
+            {DESGLOSE.map(({ label, color, valor }) => (
               <div
-                key={key}
+                key={label}
                 className="w-3 rounded-sm"
                 style={{
-                  height: `${Math.max(8, (resumen[key] / maxDesglose) * 100)}%`,
+                  height: `${Math.max(8, (valor(resumen) / maxDesglose) * 100)}%`,
                   backgroundColor: color,
                 }}
               />
             ))}
           </div>
           <ul className="flex min-w-0 flex-1 flex-col gap-2">
-            {DESGLOSE.map(({ key, label, color }) => (
-              <li key={key} className="flex items-stretch gap-2">
+            {DESGLOSE.map(({ label, color, valor }) => (
+              <li key={label} className="flex items-stretch gap-2">
                 <span
                   className="w-1 shrink-0 rounded-full"
                   style={{ backgroundColor: color }}
@@ -101,7 +103,7 @@ export function AsistenciaRegistroMensualCard({ resumen }: AsistenciaRegistroMen
                 />
                 <span className="min-w-0">
                   <span className="block text-xs font-bold tabular-nums text-foreground">
-                    {numberFormatter.format(resumen[key])} clases
+                    {numberFormatter.format(valor(resumen))} clases
                   </span>
                   <span className="block text-[11px] leading-tight text-muted-foreground">
                     {label}

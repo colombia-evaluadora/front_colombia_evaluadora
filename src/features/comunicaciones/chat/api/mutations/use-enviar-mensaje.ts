@@ -10,7 +10,7 @@ import { upsertMensaje } from "@/features/comunicaciones/chat/api/use-chat-tiemp
 export interface EnviarMensajeInput {
   conversacionId: number
   texto: string
-  // Hasta 10 (`MAX_ADJUNTOS`), en el orden en que se muestran.
+  // Hasta 3 (`MAX_ADJUNTOS`), en el orden en que se muestran.
   archivos?: File[]
   // Mensaje al que responde (respuesta citada).
   respuestaA?: number | null

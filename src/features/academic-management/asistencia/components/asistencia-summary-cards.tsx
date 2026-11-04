@@ -10,8 +10,8 @@ interface AsistenciaSummaryCardsProps {
 
 const CARDS: { estado: EstadoSesion; key: keyof ResumenHoras; ring: string }[] = [
   { estado: "REGISTRADA", key: "registradas_mes", ring: "bg-green" },
-  { estado: "RETRASADA", key: "retrasadas_mes", ring: "bg-red" },
-  { estado: "PENDIENTE", key: "pendientes_mes", ring: "bg-blue" },
+  { estado: "PENDIENTE", key: "pendientes_mes", ring: "bg-yellow" },
+  { estado: "VENCIDA", key: "vencidas_mes", ring: "bg-red" },
 ]
 
 const numberFormatter = new Intl.NumberFormat("es-CO")

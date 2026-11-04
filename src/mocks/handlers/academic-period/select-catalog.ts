@@ -227,6 +227,14 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
   // catalog.ts`) — sin esto, el catálogo real resuelve `[]` (categoría
   // desconocida, no 404: ver el fallback del handler) y bloqueaba CUALQUIER
   // URL con mocks activos, no solo las que de verdad hay que rechazar.
+  // Regla 109: fuente de la justificación sin archivo (sso V542.3).
+  FUENTE_JUSTIFICACION: () =>
+    ["Llamada del acudiente", "Mensaje del acudiente", "Aviso del establecimiento", "Otra"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
   DOMINIO_MATERIAL_URL: () =>
     ["classroom.google.com", "youtube.com", "wikipedia.org", "moodle.org", "khanacademy.org"].map(
       (dominio, i) => ({ pk_lista_valor: i + 1, nombre: dominio, valor: dominio, accion: null }),
