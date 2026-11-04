@@ -65,95 +65,21 @@ export function useGradosCatalogQuery() {
   return useQuery({ ...selectCategoryQueryOptions("GRADOS"), select: toGradosCatalog })
 }
 
-// ---- Símbolos de valoración (GRAFICA_CARITA + GRAFICA_SIMBOLO) ----
+// ---- Íconos de valoración: la Iconografía (lista ICONOGRAFIA) ----
+// VALOR es la clave S3 del archivo; el back la entrega en el ORDEN que se fijó
+// arrastrando en Administración, así que no se reordena aquí.
 
-function isImageValue(value: string): boolean {
-  return (
-    /^data:image\//i.test(value) ||
-    /^(https?:)?\/\//.test(value) ||
-    value.startsWith("/") ||
-    /\.(png|jpe?g|svg|webp|gif|avif)$/i.test(value)
-  )
-}
-
-function toSymbols(rows: SelectCategoryRow[], categoria: RatingSymbol["categoria"]): RatingSymbol[] {
-  return rows.map((row) => ({
+const toSymbols = (rows: SelectCategoryRow[]): RatingSymbol[] =>
+  rows.map((row) => ({
     id: String(row.pk_lista_valor),
-    categoria,
-    kind: isImageValue(row.valor) ? "imagen" : "emoji",
+    categoria: "iconografia",
+    kind: "imagen",
     valor: row.valor,
     label: row.nombre,
-    color: row.accion ?? undefined,
   }))
-}
-
-const NIVEL_ORDER = ["SUPERIOR", "ALTO", "BASICO", "BAJO"]
-const COLOR_ORDER = ["AMARILLO", "VERDE", "CELESTE", "NARANJA", "ROJO"]
-
-interface ParsedAccion {
-  color?: string
-  nivel?: string
-  n?: number
-}
-
-function parseAccion(accion: string | undefined): ParsedAccion {
-  if (!accion) return {}
-  const parts = accion.split("_")
-  const last = parts[parts.length - 1]
-  const hasSuffix = parts.length > 1 && /^\d+$/.test(last)
-  const n = hasSuffix ? Number(last) : undefined
-  const nivelParts = hasSuffix ? parts.slice(1, -1) : parts.slice(1)
-  return {
-    color: parts[0],
-    nivel: nivelParts.length > 0 ? nivelParts.join("_") : undefined,
-    n,
-  }
-}
-
-function rank(order: string[], value: string | undefined): number {
-  if (!value) return order.length
-  const index = order.indexOf(value)
-  return index === -1 ? order.length : index
-}
-
-function caritaRank(symbol: RatingSymbol): [number, number, number] {
-  const { color, nivel, n } = parseAccion(symbol.color)
-  return [rank(COLOR_ORDER, color), rank(NIVEL_ORDER, nivel), n ?? Number.POSITIVE_INFINITY]
-}
-
-function compareCaritaRank(a: RatingSymbol, b: RatingSymbol): number {
-  const ra = caritaRank(a)
-  const rb = caritaRank(b)
-  return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2]
-}
-
-const SIMBOLO_ACCION_ORDER = [
-  "CELESTE_ALTO",
-  "MORADO_ACEPTABLE",
-  "ROSADO_INSUFICIENTE",
-  "AMARILLO_SUPERIOR",
-  "NARANJA_SOBRESALIENTE",
-  "ROJO_DEFICIENTE",
-  "VERDE_EXCELENTE",
-  "ROSADO_BASICO",
-  "ROJO_BAJO",
-]
-
-const simboloRank = (symbol: RatingSymbol) => rank(SIMBOLO_ACCION_ORDER, symbol.color)
-
-function combineSymbols([caritas, simbolos]: UseQueryResult<SelectCategoryRow[]>[]) {
-  const isPending = caritas.isPending || simbolos.isPending
-  if (isPending) return { isPending, data: undefined }
-  const caritaSymbols = toSymbols(caritas.data ?? [], "carita").sort(compareCaritaRank)
-  const simboloSymbols = toSymbols(simbolos.data ?? [], "valoracion").sort((a, b) => simboloRank(a) - simboloRank(b))
-  return { isPending, data: [...caritaSymbols, ...simboloSymbols] }
-}
 
 export function useRatingSymbolsQuery() {
-  return useQueries({
-    queries: [selectCategoryQueryOptions("GRAFICA_CARITA"), selectCategoryQueryOptions("GRAFICA_SIMBOLO")],
-    combine: combineSymbols,
-  })
+  return useQuery({ ...selectCategoryQueryOptions("ICONOGRAFIA"), select: toSymbols })
 }
 
 // ---- Opciones de criterios de evaluación ----

@@ -11,7 +11,8 @@ export interface RatingScaleTypeOption {
   label: string
 }
 
-export type RatingSymbolCategory = "carita" | "valoracion"
+// "iconografia" = lista ICONOGRAFIA (Administración §2.3), la única que se ofrece al elegir.
+export type RatingSymbolCategory = "iconografia" | "carita" | "valoracion"
 
 // "emoji" o "imagen": si es imagen, `valor` es la URL en vez del carácter.
 export type RatingSymbolKind = "emoji" | "imagen"
@@ -56,6 +57,8 @@ export interface RatingScale {
   // valor `tipo`.
   tipoName?: string
   iconografia: string
+  /** HEX con que se pinta el ícono SVG (TVALORACION.COLOR); null = el color del archivo. */
+  color?: string | null
   notaMaxima: number
   notaMinima: number
   notaEquivalente: number
