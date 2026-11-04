@@ -30,3 +30,18 @@ describe("registrosPorBloque con justificación sin archivo", () => {
     expect(porBloque.get(null)?.[0]).toMatchObject({ justificacion: null, fkFuenteJustificacion: null })
   })
 })
+
+describe("registrosPorBloque: soporte y justificación son excluyentes", () => {
+  it("con justificación no manda el soporte guardado", () => {
+    const roster = new Map([[null, [{ fk_tmatricula: 10, fk_soporte_archivo: 55 } as never]]])
+    const porBloque = registrosPorBloque([null], { 10: 2 }, {}, {}, {}, roster, { 10: JUSTIFICACION })
+    expect(porBloque.get(null)?.[0]).not.toHaveProperty("fkArchivo")
+    expect(porBloque.get(null)?.[0]).toMatchObject({ justificacion: "Cita médica" })
+  })
+
+  it("sin justificación sigue mandando el soporte", () => {
+    const roster = new Map([[null, [{ fk_tmatricula: 10, fk_soporte_archivo: 55 } as never]]])
+    const porBloque = registrosPorBloque([null], { 10: 2 }, {}, {}, {}, roster)
+    expect(porBloque.get(null)?.[0]).toMatchObject({ fkArchivo: 55 })
+  })
+})

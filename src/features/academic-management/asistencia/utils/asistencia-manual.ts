@@ -98,7 +98,7 @@ export function registrosPorBloque(
           bloque < bloqueLlegada ? NO_ASISTIO : bloque === bloqueLlegada ? LLEGO_TARDE : ASISTIO
         // El soporte va solo en el bloque "Llegó tarde", no en los que genera la cascada.
         const archivo =
-          tipoBloque === LLEGO_TARDE
+          tipoBloque === LLEGO_TARDE && !justificaciones[fkMatricula]?.justificacion
             ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
             : undefined
         porBloque.get(bloque)!.push({
@@ -112,7 +112,9 @@ export function registrosPorBloque(
     }
 
     // Un soporte que quedó de una selección anterior no se re-envía si `tipo` pasó a Asistió.
-    const admiteSoporte = tipo === NO_ASISTIO || tipo === LLEGO_TARDE
+    // Con justificación sin archivo no viaja soporte: son excluyentes (Sección 7).
+    const admiteSoporte =
+      (tipo === NO_ASISTIO || tipo === LLEGO_TARDE) && !justificaciones[fkMatricula]?.justificacion
     for (const bloque of bloques) {
       const archivo = admiteSoporte
         ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)

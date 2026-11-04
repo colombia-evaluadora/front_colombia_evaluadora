@@ -234,6 +234,12 @@ export function AsistenciaSesionTabContent({
               const { [fkMatricula]: _omitido, ...resto } = prev
               return resto
             })
+            // Soporte y justificación sin archivo son excluyentes: el archivo la reemplaza.
+            setJustificacionLocal((prev) => {
+              if (!prev[fkMatricula]) return prev
+              const { [fkMatricula]: _omitido, ...resto } = prev
+              return resto
+            })
           }
         },
         soporteEliminado,
@@ -673,7 +679,9 @@ export function AsistenciaSesionTabContent({
               .map((x) => x.pk_tasistencia!)
             // Sin registro guardado, o con el estado cambiado en pantalla, se justifica
             // aquí y viaja al guardar la sesión (también dentro de la solicitud de aprobación).
-            const local = pks.length === 0 || seleccion[fk] !== baseline.current[fk]
+            // Con el soporte guardado quitado en pantalla también: el back no justifica sobre un soporte.
+            const local =
+              pks.length === 0 || seleccion[fk] !== baseline.current[fk] || Boolean(soporteEliminado[fk])
             const enPantalla = justificacionLocal[fk]
             return (
               <DialogJustificarAusencia
@@ -686,7 +694,19 @@ export function AsistenciaSesionTabContent({
                 onJustificada={(mensaje) => notify(mensaje, { variant: "success" })}
                 onLocal={
                   local
-                    ? (valor) => setJustificacionLocal((prev) => ({ ...prev, [fk]: valor }))
+                    ? (valor) => {
+                        setJustificacionLocal((prev) => ({ ...prev, [fk]: valor }))
+                        // Justificar reemplaza el soporte: el elegido se descarta y el guardado se quita.
+                        if (valor.justificacion) {
+                          setSoporte((prev) => {
+                            const { [fk]: _omitido, ...resto } = prev
+                            return resto
+                          })
+                          if (justificando.soporte_nombre) {
+                            setSoporteEliminado((prev) => ({ ...prev, [fk]: true }))
+                          }
+                        }
+                      }
                     : undefined
                 }
               />
