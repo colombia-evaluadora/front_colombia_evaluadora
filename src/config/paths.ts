@@ -122,6 +122,25 @@ export const paths = {
       path: "administracion/superadministradores",
       getHref: () => "/app/administracion/superadministradores",
     },
+    supervisoresTerritoriales: {
+      path: "administracion/supervisores-territoriales",
+      getHref: () => "/app/administracion/supervisores-territoriales",
+    },
+    // Bajo `detalle/` y `modificar/`: un `$id` suelto chocaría con `nuevo`.
+    supervisorTerritorialNuevo: {
+      path: "administracion/supervisores-territoriales/nuevo",
+      getHref: () => "/app/administracion/supervisores-territoriales/nuevo",
+    },
+    supervisorTerritorialDetalle: {
+      path: "administracion/supervisores-territoriales/detalle/$supervisorId",
+      getHref: (supervisorId: number | string) =>
+        `/app/administracion/supervisores-territoriales/detalle/${supervisorId}`,
+    },
+    supervisorTerritorialModificar: {
+      path: "administracion/supervisores-territoriales/modificar/$supervisorId",
+      getHref: (supervisorId: number | string) =>
+        `/app/administracion/supervisores-territoriales/modificar/${supervisorId}`,
+    },
     criteriosPrioridad: {
       path: "administracion/criterios-prioridad",
       getHref: () => "/app/administracion/criterios-prioridad",

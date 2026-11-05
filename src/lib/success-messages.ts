@@ -218,6 +218,14 @@ export const SUCCESS_MESSAGES = {
     activated: "Superadministrador activado.",
     deactivated: "Superadministrador inactivado. Perdió el acceso y se cerraron sus sesiones.",
   },
+  // Un Supervisor territorial no se elimina (Sección 7.2): `deleted` no se usa.
+  supervisorTerritorial: {
+    created: "Supervisor territorial creado.",
+    updated: "Supervisor territorial guardado.",
+    deleted: "Supervisor territorial eliminado.",
+    activated: "Supervisor territorial activado.",
+    deactivated: "Supervisor territorial inactivado. Perdió el acceso y se cerraron sus sesiones.",
+  },
   actividad: {
     created: "La actividad se creó correctamente.",
     updated: "La actividad se actualizó correctamente.",
@@ -256,6 +264,24 @@ export function campusMovedMessage(campus: string, establishment: string): strin
 /** Convertir una sede en establecimiento: texto del informe de diseño (3.1, Regla 92). */
 export function campusConvertedMessage(campus: string, establishment: string): string {
   return `Sede convertida en establecimiento. ${campus} es ahora la sede principal de ${establishment}.`
+}
+
+// Guardar un Supervisor territorial: "Supervisor territorial creado. Se envió el enlace a [correo]." (Sección 7.2).
+export function supervisorSaveNotice(
+  result: { enlaceEnviadoA: string | null; cuentaExistente: boolean; enlaceFallido: string | null },
+  creado: boolean,
+): { message: string; variant: "success" | "warning" } {
+  const base = creado ? SUCCESS_MESSAGES.supervisorTerritorial.created : SUCCESS_MESSAGES.supervisorTerritorial.updated
+  if (result.enlaceFallido != null) {
+    return { message: `${base} No se pudo enviar el enlace: ${result.enlaceFallido}`, variant: "warning" }
+  }
+  if (result.enlaceEnviadoA) {
+    return { message: `${base} Se envió el enlace a ${result.enlaceEnviadoA}.`, variant: "success" }
+  }
+  if (creado && result.cuentaExistente) {
+    return { message: `${base} Ya tenía una cuenta activa: entra con su contraseña actual.`, variant: "success" }
+  }
+  return { message: base, variant: "success" }
 }
 
 export function superadministradorSaveNotice(

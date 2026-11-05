@@ -64,6 +64,7 @@ import { conservacionSearchSchema } from "@/features/administration/conservacion
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
+import { supervisoresSearchSchema } from "@/features/administration/supervisores-territoriales/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
@@ -186,6 +187,22 @@ const BitacoraPage = lazyRouteComponent(
 const SuperadministradoresPage = lazyRouteComponent(
   () => import("@/features/administration/superadministradores/pages/superadministradores-page"),
   "SuperadministradoresPage"
+)
+const SupervisoresTerritorialesPage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisores-territoriales-page"),
+  "SupervisoresTerritorialesPage"
+)
+const SupervisorNuevoPage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisor-form-page"),
+  "SupervisorNuevoPage"
+)
+const SupervisorModificarPage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisor-form-page"),
+  "SupervisorModificarPage"
+)
+const SupervisorDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisor-form-page"),
+  "SupervisorDetallePage"
 )
 const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
@@ -716,6 +733,48 @@ export const superadministradoresRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Superadministradores" }],
   },
   component: SuperadministradoresPage,
+})
+
+const SUPERVISORES_CRUMB = {
+  label: "Supervisores territoriales",
+  to: paths.app.supervisoresTerritoriales.getHref(),
+}
+
+export const supervisoresTerritorialesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisoresTerritoriales.path,
+  validateSearch: supervisoresSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Supervisores territoriales" }],
+  },
+  component: SupervisoresTerritorialesPage,
+})
+
+export const supervisorTerritorialNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisorTerritorialNuevo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Nuevo Supervisor territorial" }],
+  },
+  component: SupervisorNuevoPage,
+})
+
+export const supervisorTerritorialDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisorTerritorialDetalle.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Ver detalle" }],
+  },
+  component: SupervisorDetallePage,
+})
+
+export const supervisorTerritorialModificarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisorTerritorialModificar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Modificar" }],
+  },
+  component: SupervisorModificarPage,
 })
 
 export const criteriosPrioridadRoute = createRoute({
@@ -1513,6 +1572,10 @@ const routeTree = rootRoute.addChildren([
     areasOficialesRoute,
     criteriosPrioridadRoute,
     superadministradoresRoute,
+    supervisoresTerritorialesRoute,
+    supervisorTerritorialNuevoRoute,
+    supervisorTerritorialDetalleRoute,
+    supervisorTerritorialModificarRoute,
     parametrosEdadRoute,
     festivosRoute,
     conservacionDatosRoute,
