@@ -10,7 +10,6 @@ import { INCOMPLETE_FORM } from "@/lib/forms/messages"
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import type { NotifyOptions } from "@/components/notice/pending-notice"
 import { getErrorMessage } from "@/lib/api-client"
-import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CheckIcon, InfoIcon } from "@/components/ui/icons"
@@ -483,22 +482,6 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
               </div>
             </FormSection>
 
-            <div className="flex justify-end">
-              <form.Subscribe selector={(state) => state.isDirty}>
-                {(isDirty) =>
-                  isDirty && !readOnly ? (
-                    <Button
-                      size="sm"
-                      type="submit"
-                      color="primary"
-                      disabled={saveCriteria.isPending}
-                    >
-                      {saveCriteria.isPending ? "Guardando..." : "Guardar"}
-                    </Button>
-                  ) : null
-                }
-              </form.Subscribe>
-            </div>
           </FormDisabledProvider>
         </form>
 

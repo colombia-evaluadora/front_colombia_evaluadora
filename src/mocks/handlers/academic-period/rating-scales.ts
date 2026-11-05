@@ -42,7 +42,6 @@ function toRawRow(row: RatingScaleRow) {
     tipo: tipo.valor,
     tipo_name: tipo.nombre,
     iconografia: iconoValor(row.iconoId, row.iconoCategoria),
-    color: row.color ?? null,
     teaching_level_id: row.teachingLevelId,
     nota_minima: row.notaMinima,
     nota_maxima: row.notaMaxima,
@@ -56,7 +55,6 @@ interface ScaleWriteItem {
   tipoId: number | null
   iconoId: number | null
   iconoCategoria: RatingScaleRow["iconoCategoria"]
-  color?: string | null
   notaMinima: number
   notaMaxima: number
   notaEquivalente: number
@@ -156,7 +154,6 @@ export const ratingScalesHandlers = [
           tipoId: scale.tipoId,
           iconoId: scale.iconoId,
           iconoCategoria: scale.iconoCategoria,
-          color: scale.color ?? null,
           teachingLevelId: levelId,
           notaMinima: scale.notaMinima,
           notaMaxima: scale.notaMaxima,

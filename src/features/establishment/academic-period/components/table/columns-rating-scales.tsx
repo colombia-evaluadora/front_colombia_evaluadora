@@ -14,21 +14,46 @@ import { RATING_SCALE_TYPE_BADGE } from "@/features/establishment/academic-perio
 import { RatingSymbolView } from "@/features/establishment/academic-period/components/fields/rating-symbol"
 import { formatGrade } from "@/features/establishment/academic-period/utils/rating-scale-coverage"
 
-// Mapa de calor de la escala, de rojo (nota más baja) a verde (más alta). La misma tinta pinta la barra de cobertura y la abreviación.
-export function heatColor(position: number): string {
+// Mapa de calor de la escala, de rojo (nota más baja) a azul (más alta), con
+// paradas en naranja, amarillo, verde y cian. La misma tinta pinta la barra de
+// cobertura, la abreviación y el ícono SVG de la valoración.
+const HEAT_STOPS: [number, number, number][] = [
+  [228, 26, 28], // rojo
+  [255, 127, 0], // naranja
+  [255, 255, 33], // amarillo
+  [77, 175, 74], // verde
+  [65, 182, 196], // cian
+  [34, 87, 139], // azul
+]
+
+function heatRgb(position: number): [number, number, number] {
   const t = Math.min(1, Math.max(0, position))
-  // Tono 4 (rojo) → 40 (ámbar) → 145 (verde); un poco más oscuro en el medio
-  // para que el texto blanco se siga leyendo sobre amarillo.
-  const hue = 4 + t * 141
-  const light = 46 - Math.sin(t * Math.PI) * 8
-  return `hsl(${hue.toFixed(0)} 68% ${light.toFixed(0)}%)`
+  const n = HEAT_STOPS.length - 1
+  const i = Math.min(Math.floor(t * n), n - 1)
+  const f = t * n - i
+  const [a, b] = [HEAT_STOPS[i], HEAT_STOPS[i + 1]]
+  return [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * f)) as [number, number, number]
+}
+
+const rgb = ([r, g, b]: [number, number, number]) => `rgb(${r}, ${g}, ${b})`
+const mix = (c: [number, number, number], with_: number, amount: number) =>
+  c.map((v) => Math.round(v + (with_ - v) * amount)) as [number, number, number]
+
+export function heatColor(position: number): string {
+  return rgb(heatRgb(position))
+}
+
+// Texto que se lee sobre heatColor: el amarillo y el cian necesitan texto oscuro.
+export function heatInk(position: number): string {
+  const [r, g, b] = heatRgb(position)
+  return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "rgb(33, 33, 33)" : "#fff"
 }
 
 // Versión pastel del mismo tono para la barra de cobertura: fondo claro y
 // texto oscuro del mismo color, para que se lea sin texto blanco.
 export function heatPastel(position: number): { background: string; color: string } {
-  const hue = (4 + Math.min(1, Math.max(0, position)) * 141).toFixed(0)
-  return { background: `hsl(${hue} 75% 88%)`, color: `hsl(${hue} 60% 28%)` }
+  const c = heatRgb(position)
+  return { background: rgb(mix(c, 255, 0.75)), color: rgb(mix(c, 0, 0.6)) }
 }
 
 // Lo que cabe en el círculo: la primera letra y la primera consonante que le
@@ -47,14 +72,27 @@ export function isFailingScale(scale: RatingScale): boolean {
 // Color de cada valoración según su lugar en la escala: la más baja en rojo,
 // la más alta en verde y las del medio repartidas parejo entre ambos. Por
 // posición numérica un tramo largo como "Bajo" (0 a 5,9) quedaba ocre.
-export function getScaleColors(scales: RatingScale[]): Map<number, string> {
+export function getScalePositions(scales: RatingScale[]): Map<number, number> {
   const sorted = [...scales].sort((x, y) => x.notaMinima - y.notaMinima)
   const last = Math.max(1, sorted.length - 1)
-  return new Map(sorted.map((s, i) => [s.codigo, heatColor(sorted.length === 1 ? 1 : i / last)]))
+  return new Map(sorted.map((s, i) => [s.codigo, sorted.length === 1 ? 0 : i / last]))
+}
+
+export function getScaleColors(scales: RatingScale[]): Map<number, string> {
+  return new Map([...getScalePositions(scales)].map(([codigo, p]) => [codigo, heatColor(p)]))
+}
+
+// Color que tendría una valoración nueva (o editada) de Nota mínima `notaMinima`
+// entre las demás del nivel: mismo reparto que getScaleColors.
+export function heatColorFor(others: RatingScale[], notaMinima: number): string {
+  const posicion = others.filter((s) => s.notaMinima < notaMinima).length
+  return heatColor(others.length === 0 ? 0 : posicion / others.length)
 }
 
 interface CreateRatingScaleColumnsOptions {
   colors: Map<number, string>
+  /** Texto legible sobre cada color (amarillo y cian van con texto oscuro). */
+  inks: Map<number, string>
   onEdit: (scale: RatingScale) => void
   onDelete: (scale: RatingScale) => Promise<boolean>
 }
@@ -65,6 +103,7 @@ const gradeCell = (value: number) => (
 
 export function createRatingScaleColumns({
   colors,
+  inks,
   onEdit,
   onDelete,
 }: CreateRatingScaleColumnsOptions): ColumnDef<RatingScale>[] {
@@ -84,8 +123,11 @@ export function createRatingScaleColumns({
       cell: ({ row }) => {
         return (
           <span
-            className="inline-flex size-8 items-center justify-center rounded-full text-sm font-medium text-white"
-            style={{ backgroundColor: colors.get(row.original.codigo) }}
+            className="inline-flex size-8 items-center justify-center rounded-full text-sm font-medium"
+            style={{
+              backgroundColor: colors.get(row.original.codigo),
+              color: inks.get(row.original.codigo),
+            }}
             title={row.original.abreviacion}
           >
             {shortAbbreviation(row.original.abreviacion)}
@@ -117,7 +159,7 @@ export function createRatingScaleColumns({
         <RatingSymbolView
           value={row.original.iconografia}
           label={row.original.nombre}
-          color={row.original.color}
+          color={colors.get(row.original.codigo)}
           className="text-xl"
         />
       ),

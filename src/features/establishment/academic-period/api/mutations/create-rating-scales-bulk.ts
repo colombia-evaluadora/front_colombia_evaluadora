@@ -22,7 +22,6 @@ async function createRatingScalesBulk(
         tipoId: refs[i].tipoId,
         iconoId: refs[i].iconoId,
         iconoCategoria: refs[i].iconoCategoria,
-        color: scale.color || null,
         notaMaxima: scale.notaMaxima,
         notaMinima: scale.notaMinima,
         notaEquivalente: scale.notaEquivalente,
