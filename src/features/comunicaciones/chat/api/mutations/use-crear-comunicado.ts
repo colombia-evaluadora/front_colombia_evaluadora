@@ -10,6 +10,7 @@ import type {
   Comunicado,
   Conversacion,
   DestinosComunicado,
+  PrevisualizacionComunicado,
 } from "@/features/comunicaciones/chat/api/types"
 
 export interface CrearComunicadoInput {
@@ -38,23 +39,25 @@ export interface CrearComunicadoInput {
 // Las etiquetas viajan para mostrar "Dirigido a" sin volver a resolver cada id.
 const opciones = (l: { valor: string; etiqueta: string }[]) => l.map((o) => ({ VALOR: o.valor, ETIQUETA: o.etiqueta }))
 
+const cuerpoDestinos = (d: DestinosComunicado) => ({
+  GRADOS: opciones(d.grados),
+  GRUPOS: opciones(d.grupos),
+  ROLES: opciones(d.roles),
+  USUARIOS: opciones(d.usuarios),
+  GRUPOS_CHAT: opciones(d.gruposChat),
+  PARA: d.para,
+  // Acotan dentro del alcance de quien publica (comms-service los valida: uno ajeno es 403).
+  ESTABLECIMIENTO: d.establecimiento ? opciones([d.establecimiento])[0] : null,
+  SEDES: opciones(d.sedes ?? []),
+  JORNADAS: opciones(d.jornadas ?? []),
+  POBLACION: d.poblacion ?? "MATRICULADOS",
+})
+
 const cuerpoComunicado = (v: CrearComunicadoInput) => ({
   TITULO: v.titulo,
   DESCRIPCION: v.descripcion,
   AUDIENCIA: v.audiencia,
-  DESTINOS: {
-    GRADOS: opciones(v.destinos.grados),
-    GRUPOS: opciones(v.destinos.grupos),
-    ROLES: opciones(v.destinos.roles),
-    USUARIOS: opciones(v.destinos.usuarios),
-    GRUPOS_CHAT: opciones(v.destinos.gruposChat),
-    PARA: v.destinos.para,
-    // Acotan dentro del alcance de quien publica (comms-service los valida: uno ajeno es 403).
-    ESTABLECIMIENTO: v.destinos.establecimiento ? opciones([v.destinos.establecimiento])[0] : null,
-    SEDES: opciones(v.destinos.sedes ?? []),
-    JORNADAS: opciones(v.destinos.jornadas ?? []),
-    POBLACION: v.destinos.poblacion ?? "MATRICULADOS",
-  },
+  DESTINOS: cuerpoDestinos(v.destinos),
   PUBLICAR_EN: v.publicarEn,
   CONTENIDO_HTML: v.contenidoHtml,
   IMPORTANTE: v.importante ? "S" : "N",
@@ -80,6 +83,22 @@ async function subirAdjuntos(conversacionId: number, archivos: File[]) {
     }
   }
   return fallidos
+}
+
+/**
+ * Previsualización de destinatarios: comms-service resuelve los mismos destinatarios que al publicar
+ * (mismas reglas de alcance) y los cuenta por tipo. No crea nada, por eso no invalida ninguna query.
+ */
+export function usePrevisualizarComunicado() {
+  return useMutation({
+    mutationFn: (v: Pick<CrearComunicadoInput, "audiencia" | "destinos" | "modalidad" | "ciclo">) =>
+      evalCol.postRow<PrevisualizacionComunicado>("/comunicaciones/comunicados/destinos/previsualizar", {
+        AUDIENCIA: v.audiencia,
+        DESTINOS: cuerpoDestinos(v.destinos),
+        MODALIDAD: v.modalidad,
+        CICLO: v.ciclo,
+      }),
+  })
 }
 
 export interface ResultadoComunicado<T> {
