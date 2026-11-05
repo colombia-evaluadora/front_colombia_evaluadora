@@ -161,12 +161,18 @@ export function UserDetailsForm({
     // Valores previos al autocompletado, para restaurarlos si cambia el documento.
     const preMatchValuesRef = useRef<Partial<Person> | null>(null)
     useEffect(() => {
-        if (!documentTypeId || !identification.trim()) return
         if (person.accountExists && !isUserEditingDocument.current) return
 
+        // Al perder la coincidencia se limpia todo lo cargado (incluido lo del
+        // funcionario existente), salvo el documento y lo que el usuario traía.
         if (person.accountExists) {
-            emitChange({
+            onChange({
+                ...createEmptyPerson(),
+                middleName: "",
+                secondLastName: "",
                 ...preMatchValuesRef.current,
+                documentType: person.documentType,
+                identification: person.identification,
                 accountExists: false,
                 id: undefined,
                 photoArchivoId: null,
@@ -175,6 +181,8 @@ export function UserDetailsForm({
             onMatched?.(null)
             setAccountNotice(null)
         }
+
+        if (!documentTypeId || !identification.trim()) return
 
         let cancelled = false
         const timer = setTimeout(() => {
