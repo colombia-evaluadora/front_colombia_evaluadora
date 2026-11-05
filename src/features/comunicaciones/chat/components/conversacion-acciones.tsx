@@ -13,6 +13,7 @@ import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { ReportarDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useCerrarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
+import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/components/eliminar-de-bandeja-dialog"
 
 import {
   AlertDialog,
@@ -56,6 +57,7 @@ import {
   useArchivarConversacion,
   useDuplicarConversacion,
   useEliminarConversacion,
+  useOcultarConversacion,
   useMarcarLeido,
   useMarcarNoLeido,
   useRenombrarConversacion,
@@ -78,13 +80,14 @@ import {
   LightningIcon,
   XSquareIcon,
   WarningIcon,
+  EyeSlashIcon,
 } from "@/components/ui/icons"
 
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
 
-type Dialogo = "reportar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
+type Dialogo = "reportar" | "ocultar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
 interface ConversacionAccionesProps {
   conversacion: Conversacion
@@ -117,6 +120,7 @@ export function ConversacionAcciones({
   const renombrar = useRenombrarConversacion()
   const eliminar = useEliminarConversacion()
   const salir = useSalirConversacion()
+  const ocultar = useOcultarConversacion()
   const cerrarEleccion = useCerrarEleccion()
 
   const { puedeGestionar, perfil } = useChatAccess()
@@ -200,6 +204,13 @@ export function ConversacionAcciones({
             <WarningIcon />
             <span className="flex-1">Reportar conversación</span>
           </DropdownMenuItem>
+          {/* Solo mensajería (M.2.RET.2): comunicados, elecciones, encuestas y evaluaciones tienen su ciclo. */}
+          {c.categoria === "GENERAL" && !c.esBot && (
+            <DropdownMenuItem className={ITEM} onClick={() => setDialogo("ocultar")}>
+              <EyeSlashIcon />
+              <span className="flex-1">Eliminar de mi bandeja</span>
+            </DropdownMenuItem>
+          )}
           {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
@@ -410,6 +421,26 @@ export function ConversacionAcciones({
         Al cerrar la votación, los participantes ya no podrán votar y los resultados quedarán
         disponibles según la configuración definida.
       </Confirmacion>
+
+      <EliminarDeBandejaDialog
+        open={dialogo === "ocultar"}
+        conversacion={c.nombre}
+        pendiente={ocultar.isPending}
+        error={ocultar.isError ? ocultar.error : null}
+        onClose={() => {
+          ocultar.reset()
+          cerrar()
+        }}
+        onConfirmar={() =>
+          ocultar.mutate(c.id, {
+            onSuccess: () => {
+              notify(`${c.nombre} se eliminó de tu bandeja.`)
+              cerrar()
+              onSalida()
+            },
+          })
+        }
+      />
 
       <EditarActividad conversacion={c} open={dialogo === "editarActividad"} onClose={cerrar} />
       <ReportarDialog

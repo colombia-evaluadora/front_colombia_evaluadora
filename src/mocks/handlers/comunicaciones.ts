@@ -600,6 +600,21 @@ export const comunicacionesHandlers = [
     return HttpResponse.json({ rows: [copia] })
   }),
 
+  // "Eliminar de mi bandeja": el mock tiene un solo usuario, así que ocultar es quitarla de su lista.
+  http.patch(URL("conversaciones/:id/ocultar"), async ({ params }) => {
+    await delay(200)
+    const idx = conversaciones.findIndex((c) => c.id === Number(params.id))
+    if (idx === -1) return noEncontrada()
+    if (conversaciones[idx].categoria !== "GENERAL" || conversaciones[idx].esBot) {
+      return HttpResponse.json(
+        { message: "Solo puedes eliminar de tu bandeja las conversaciones de mensajería." },
+        { status: 400 },
+      )
+    }
+    const [conv] = conversaciones.splice(idx, 1)
+    return HttpResponse.json({ rows: [conv] })
+  }),
+
   http.patch(URL("conversaciones/:id/eliminar"), async ({ params }) => {
     await delay(200)
     const idx = conversaciones.findIndex((c) => c.id === Number(params.id))
@@ -948,6 +963,15 @@ export const comunicacionesMensajesHandlers = [
       a.descargado = true
       publicarMensajeActualizado(m)
     }
+    return HttpResponse.json({ rows: [m] })
+  }),
+
+  // "Eliminar de mi bandeja" de un mensaje, propio o ajeno y sin plazo: deja de verlo solo este usuario.
+  http.patch(URL("mensajes/:id/ocultar"), async ({ params }) => {
+    await delay(150)
+    const idx = mensajes.findIndex((x) => x.id === Number(params.id) && !x.eliminado)
+    if (idx === -1) return mensajeNoEncontrado()
+    const [m] = mensajes.splice(idx, 1)
     return HttpResponse.json({ rows: [m] })
   }),
 
