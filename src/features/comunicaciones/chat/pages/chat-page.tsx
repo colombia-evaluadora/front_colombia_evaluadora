@@ -187,6 +187,8 @@ function ChatContent() {
   // Si lo quitan (o se borra) la conversación abierta, se vuelve a la lista con un aviso.
   useChatTiempoRealUsuario((e) => {
     if (e.id === canal) navigate({ search: (prev) => ({ ...prev, canal: undefined, mensaje: undefined }) })
+    // "Eliminar de mi bandeja" desde otra sesión del propio usuario: no es una novedad que avisar.
+    if (e.motivo === "OCULTA") return
     const nombre = e.nombre ?? "una conversación"
     notify(e.motivo === "QUITADO" ? `Te quitaron de ${nombre}.` : `${nombre} ya no está disponible.`, {
       variant: "warning",

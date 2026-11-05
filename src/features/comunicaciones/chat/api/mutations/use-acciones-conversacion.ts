@@ -150,6 +150,25 @@ export function useEliminarConversacion() {
   })
 }
 
+/**
+ * "Eliminar de mi bandeja" (Comunicaciones §4.3): la conversación deja de verse solo para quien lo
+ * pide, que sigue siendo participante. Si llega un mensaje nuevo, comms-service la devuelve a la
+ * bandeja con lo posterior (`conversacion.actualizada`).
+ */
+export function useOcultarConversacion() {
+  const queryClient = useQueryClient()
+  const invalidar = useInvalidarConversaciones()
+  return useMutation({
+    mutationFn: (id: number) => evalCol.patchRow<Conversacion>(`${base(id)}/ocultar`),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) => prev?.filter((x) => x.id !== id))
+      // Lo ya cargado no debe reaparecer si vuelve: se pide de nuevo, sin lo oculto.
+      queryClient.removeQueries({ queryKey: chatKeys.mensajes(id) })
+      return invalidar()
+    },
+  })
+}
+
 /** Clave de la mutación de salir: el tiempo real la consulta para no pedir miembros de un canal que se deja. */
 export const SALIR_MUTATION_KEY = ["comunicaciones-chat", "salir"] as const
 

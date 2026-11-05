@@ -15,7 +15,11 @@ import {
   TrashIcon,
 } from "@/components/ui/icons"
 
-import { BARRA_ACCIONES, MensajeAcciones } from "@/features/comunicaciones/chat/components/mensaje-acciones"
+import {
+  BARRA_ACCIONES,
+  BotonEliminarDeBandeja,
+  MensajeAcciones,
+} from "@/features/comunicaciones/chat/components/mensaje-acciones"
 import { cn } from "@/lib/utils"
 import type { AutorMensaje, Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
 import { estadoLectura, marcaEdicion } from "@/features/comunicaciones/chat/lib/estado-mensaje"
@@ -454,17 +458,16 @@ function MensajeItem({
           {...tactil.props}
           className="group/mensaje relative rounded-xl bg-muted/40 px-4 py-3"
         >
-          {/* Los mensajes ajenos solo se pueden reaccionar y responder. */}
-          {(CHAT_FUNCIONES.reacciones || onResponder) && (
-            <div className={BARRA_ACCIONES}>
-              {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
-              <BotonResponder mensaje={m} onResponder={onResponder} />
-            </div>
-          )}
+          {/* Los mensajes ajenos se pueden reaccionar, responder y eliminar de la bandeja propia. */}
+          <div className={BARRA_ACCIONES}>
+            {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
+            <BotonResponder mensaje={m} onResponder={onResponder} />
+            <BotonEliminarDeBandeja mensaje={m} />
+          </div>
           <header className="mb-1 flex items-baseline gap-2 text-xs">
             <span className="font-medium">{m.autor.nombre}</span>
             <span className="flex flex-1 items-baseline gap-2 text-muted-foreground">{meta}</span>
-            {onResponder && <BotonAccionesTactil abiertas={tactil.abiertas} onClick={tactil.alternar} />}
+            <BotonAccionesTactil abiertas={tactil.abiertas} onClick={tactil.alternar} />
           </header>
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
