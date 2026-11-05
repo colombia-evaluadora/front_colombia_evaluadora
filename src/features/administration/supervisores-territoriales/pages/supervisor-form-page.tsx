@@ -38,6 +38,7 @@ import { useSaveSupervisor } from "@/features/administration/supervisores-territ
 import {
   useCatalogosSupervisorQuery,
   useSupervisorQuery,
+  useSupervisoresQuery,
 } from "@/features/administration/supervisores-territoriales/api/query/use-supervisores-query"
 import {
   supervisorFormSchema,
@@ -166,8 +167,14 @@ function SupervisorForm({
     const t = setTimeout(() => setNumeroBuscado(numeroDoc), 400)
     return () => clearTimeout(t)
   }, [numeroDoc])
-  const consulta = usePersonaPorDocumentoQuery(tipo, numeroBuscado, modo === "nuevo")
-  const persona = consulta.data && numeroBuscado === numeroDoc ? consulta.data : null
+  // Si el documento ya es de alguien de la lista no se busca: el alta daría 409.
+  const { data: existentes = [] } = useSupervisoresQuery()
+  const yaEs =
+    modo === "nuevo" && numeroDoc
+      ? existentes.find((x) => x.tipoDocumento?.pk === tipo && x.numeroDocumento?.toUpperCase() === numeroDoc)
+      : undefined
+  const consulta = usePersonaPorDocumentoQuery(tipo, numeroBuscado, modo === "nuevo" && !yaEs)
+  const persona = consulta.data && numeroBuscado === numeroDoc && !yaEs ? consulta.data : null
   const [aplicada, setAplicada] = useState<number | null>(null)
   useEffect(() => {
     const poner = (v: { primerNombre: string; segundoNombre: string; primerApellido: string; segundoApellido: string; correo: string }) => {
@@ -252,6 +259,12 @@ function SupervisorForm({
               Se enviará un enlace de un solo uso, válido por 48 horas, para que establezca su contraseña.
             </p>
           )}
+          {yaEs && (
+            <p className="flex items-start gap-2 rounded-md bg-yellow-22 px-3 py-2 text-sm text-yellow">
+              <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+              {yaEs.nombre} ya es Supervisor territorial{yaEs.activo ? "" : " (inactivo): actívelo desde el listado"}.
+            </p>
+          )}
           {persona && (
             <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -302,8 +315,8 @@ function SupervisorForm({
               </form.AppField>
             </div>
 
-            {/* Persona existente: nombres y correo son los suyos, no se editan aquí. */}
-            <FormDisabledProvider disabled={persona != null}>
+            {/* Persona existente: su correo de ingreso no se cambia aquí; sin correo, se pide uno. */}
+            <FormDisabledProvider disabled={Boolean(persona?.correo)}>
               <div className="md:col-span-6">
                 <form.AppField name="correo">
                   {(f) => (
@@ -324,6 +337,9 @@ function SupervisorForm({
                   )}
                 </form.AppField>
               </div>
+            </FormDisabledProvider>
+            {/* Persona existente: sus nombres no se editan aquí. */}
+            <FormDisabledProvider disabled={persona != null}>
               {(
                 [
                   ["primerNombre", "Primer nombre", true],
