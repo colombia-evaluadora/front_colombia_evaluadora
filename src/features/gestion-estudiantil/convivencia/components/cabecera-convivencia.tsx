@@ -61,15 +61,15 @@ export function CabeceraConvivencia({ pestana, onPestana, access, periodo, onExp
         Convivencia
       </TableScreenTitle>
       <Tabs value={pestana} onValueChange={(v) => onPestana(v as PestanaConvivencia)} className="px-(--screen-spacing)">
-        <TabsList variant="line" className="w-full justify-start border-b border-border">
-          <TabsTrigger value="casos" className="flex-none px-3">
+        <TabsList>
+          <TabsTrigger value="casos">
             Casos
           </TabsTrigger>
-          <TabsTrigger value="comite" className="flex-none px-3" disabled={!access.puedeVerComite}>
+          <TabsTrigger value="comite" disabled={!access.puedeVerComite}>
             Comité
           </TabsTrigger>
           {/* Sección 3.5: sin backend todavía. */}
-          <TabsTrigger value="procesos" className="flex-none px-3" disabled>
+          <TabsTrigger value="procesos" disabled>
             Procesos disciplinarios
           </TabsTrigger>
         </TabsList>

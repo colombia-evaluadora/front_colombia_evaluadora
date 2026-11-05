@@ -47,7 +47,7 @@ export function RolesMenusPage() {
 }
 
 const PANEL_CLASS =
-  "rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "rounded-lg border bg-background p-4"
 
 function RolesMenusPageContent() {
   const { notify } = useNotify()
@@ -170,7 +170,7 @@ function RolesMenusPageContent() {
             <Skeleton className="h-96" />
           ) : (
             <Tabs defaultValue="vistas-base">
-              <TabsList variant="folder">
+              <TabsList>
                 <TabsTrigger value="modulos" disabled={viewsDirty}>
                   Módulos y submódulos
                 </TabsTrigger>

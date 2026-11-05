@@ -54,7 +54,7 @@ export function ScrollTabsList({ children }: { children: ReactNode }) {
         ref={ref}
         className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <TabsList variant="line" className="h-11 w-max justify-start gap-4 p-0">
+        <TabsList className="h-11 w-max justify-start gap-4 border-b-0 p-0">
           {children}
         </TabsList>
       </div>

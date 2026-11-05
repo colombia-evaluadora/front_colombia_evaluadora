@@ -80,6 +80,24 @@ export function useEliminarMensaje() {
 }
 
 /**
+ * "Eliminar de mi bandeja" de un mensaje (Comunicaciones §4.3): solo deja de verlo quien lo pide,
+ * también pasados los 15 minutos del retiro. Sale de la conversación cargada y la lista se refresca
+ * por si era el último (vista previa de la bandeja).
+ */
+export function useOcultarMensaje() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => evalCol.patchRow<Mensaje>(`${base(id)}/ocultar`),
+    onSuccess: (m) => {
+      queryClient.setQueryData<Mensaje[]>(chatKeys.mensajes(m.conversacionId), (prev) =>
+        prev?.filter((x) => x.id !== m.id),
+      )
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+    },
+  })
+}
+
+/**
  * Registra que el usuario descargó un archivo de un mensaje ajeno. Con la primera descarga
  * de otra persona el autor ya no puede quitarlo (llega por `mensaje.actualizado`). Sin
  * `adjuntoId` (adjuntos anteriores a `tmensaje_adjunto`) no hay qué registrar.

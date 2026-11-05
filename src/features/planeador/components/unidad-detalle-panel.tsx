@@ -93,7 +93,7 @@ function resolverInstrumentoUnico(actividades: UnidadActividad[]): string | unde
 
 /** Caja de cada pestaña; `min-w-0` evita que la tabla de rúbricas desborde el panel. */
 const PANEL =
-  "min-w-0 rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "min-w-0 rounded-lg border bg-background p-4"
 
 interface UnidadDetallePanelProps {
   unidadId: string
@@ -540,7 +540,7 @@ function UnidadTabs({
 
   return (
     <Tabs value={tab} onValueChange={(value) => onTabChange(value as PanelTab)} className="w-full min-w-0">
-      <TabsList variant="folder">
+      <TabsList>
         {visibleTabs.map(({ value, label, Icon }) => (
           <TabsTrigger key={value} value={value}>
             <span className="inline-flex items-center gap-1.5">

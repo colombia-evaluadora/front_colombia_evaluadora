@@ -35,7 +35,7 @@ import { TabStatements } from "@/features/academic-management/curricular-referen
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 const PANEL_CLASS =
-  "rounded-b-lg rounded-tr-lg border bg-background p-3 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "rounded-lg border bg-background p-3"
 
 function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -228,15 +228,15 @@ function CurricularReferenceDetailPageContent() {
             </div>
 
             <Tabs defaultValue="general">
-              <TabsList variant="folder">
-                <TabsTrigger value="general" className="[&[data-active]_svg]:text-primary">
+              <TabsList>
+                <TabsTrigger value="general">
                   <span className="inline-flex items-center gap-1.5">
                     <InfoIcon />
                     Información general
                   </span>
                 </TabsTrigger>
                 {reference.level1 ? (
-                  <TabsTrigger value="level1" className="[&[data-active]_svg]:text-primary">
+                  <TabsTrigger value="level1">
                     <span className="inline-flex max-w-48 items-center gap-1.5">
                       <FileTextIcon className="shrink-0" />
                       <span className="truncate" title={toSentenceCase(reference.level1)}>

@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { PencilSimpleIcon, PushPinFillIcon, PushPinIcon, TrashIcon } from "@/components/ui/icons"
+import { EyeSlashIcon, PencilSimpleIcon, PushPinFillIcon, PushPinIcon, TrashIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
@@ -20,6 +20,7 @@ import {
   useEditarMensaje,
   useEliminarMensaje,
   useFijarMensaje,
+  useOcultarMensaje,
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-mensaje"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
 import { BotonReaccionar } from "@/features/comunicaciones/chat/components/reacciones-mensaje"
@@ -29,6 +30,41 @@ import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-m
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { adjuntosVigentes } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { restanteRetiro } from "@/features/comunicaciones/chat/lib/limites-mensaje"
+import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/components/eliminar-de-bandeja-dialog"
+
+/**
+ * "Eliminar de mi bandeja" de un mensaje, propio o ajeno (M.2.RET.2): botón de la barra de acciones
+ * y su diálogo. Sigue disponible pasados los 15 minutos del retiro.
+ */
+export function BotonEliminarDeBandeja({ mensaje: m }: { mensaje: Mensaje }) {
+  const { notify } = useNotify()
+  const [abierto, setAbierto] = useState(false)
+  const ocultar = useOcultarMensaje()
+  return (
+    <>
+      <Accion etiqueta="Eliminar de mi bandeja" onClick={() => setAbierto(true)}>
+        <EyeSlashIcon className="size-4.5" />
+      </Accion>
+      <EliminarDeBandejaDialog
+        open={abierto}
+        pendiente={ocultar.isPending}
+        error={ocultar.isError ? ocultar.error : null}
+        onClose={() => {
+          ocultar.reset()
+          setAbierto(false)
+        }}
+        onConfirmar={() =>
+          ocultar.mutate(m.id, {
+            onSuccess: () => {
+              notify("El mensaje se eliminó de tu bandeja.")
+              setAbierto(false)
+            },
+          })
+        }
+      />
+    </>
+  )
+}
 
 /**
  * Barra flotante de acciones de un mensaje: con mouse sale al pasar por encima (`hover:` de
@@ -86,6 +122,7 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
             <TrashIcon className="size-4.5" />
           </Accion>
         )}
+        <BotonEliminarDeBandeja mensaje={m} />
       </div>
 
       <Dialog open={editando} onOpenChange={(open) => !editar.isPending && setEditando(open)}>

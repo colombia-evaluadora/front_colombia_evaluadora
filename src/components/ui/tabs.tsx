@@ -1,94 +1,30 @@
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
-import { cva, type VariantProps } from "class-variance-authority"
-import { createContext, useContext, useEffect, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 
-// La lista avisa al root cuando las pestañas llegan a ocupar todo el ancho. El
-// root lo publica como `data-tabs-filled` para que el panel pueda quitar el
-// radio de su esquina superior derecha y fundirse con la última pestaña.
-const TabsFilledContext = createContext<((filled: boolean) => void) | null>(null)
+// Un solo diseño de pestañas para toda la app (el de asistencia): rótulos en
+// mayúscula sobre una línea inferior, con la activa subrayada. Período
+// académico conserva el suyo propio (ver scroll-tabs-list.tsx).
 
 function Tabs({ className, orientation = "horizontal", ...props }: TabsPrimitive.Root.Props) {
-  const [filled, setFilled] = useState(false)
-
   return (
-    <TabsFilledContext.Provider value={setFilled}>
-      <TabsPrimitive.Root
-        data-slot="tabs"
-        data-orientation={orientation}
-        data-tabs-filled={filled ? "true" : undefined}
-        className={cn("group/tabs flex gap-2 data-horizontal:flex-col", className)}
-        {...props}
-      />
-    </TabsFilledContext.Provider>
+    <TabsPrimitive.Root
+      data-slot="tabs"
+      data-orientation={orientation}
+      className={cn("group/tabs flex gap-2 data-horizontal:flex-col", className)}
+      {...props}
+    />
   )
 }
 
-const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center p-1 text-muted-foreground group-data-horizontal/tabs:h-10 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col",
-  {
-    variants: {
-      variant: {
-        default: "bg-muted",
-        line: "gap-1 bg-transparent",
-        // Pestañas tipo carpeta. La lista es dueña del marco exterior (borde
-        // superior + laterales) y del redondeo, que recorta a las hijas para que
-        // la primera y la última salgan curvas. El borde inferior lo dibuja cada
-        // pestaña, para que la activa pueda borrarlo y fundirse con el panel.
-        // El margen negativo cancela el gap-2 del root y monta 1px más, para que
-        // la lista se apoye justo encima del borde superior del panel: donde hay
-        // pestaña inactiva las dos líneas coinciden, y la activa lo tapa con su
-        // fondo (z-10). Así el panel puede llevar su borde completo y no queda
-        // hueco blanco a la derecha de la última pestaña.
-        // La lista mide lo que miden sus pestañas (w-fit) y solo se limita al
-        // ancho del contenedor (max-w-full) para que, si no caben, entren en
-        // juego el truncado y el flex-none de la activa.
-        folder:
-          "relative z-10 mb-[calc(-0.5rem-1px)] w-fit max-w-full flex-nowrap items-stretch justify-start gap-0 overflow-hidden rounded-t-lg border border-b-0 border-border bg-transparent p-0 group-data-horizontal/tabs:h-auto",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  },
-)
-
-function TabsList({
-  className,
-  variant = "default",
-  ...props
-}: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
-  const setFilled = useContext(TabsFilledContext)
-  const listRef = useRef<HTMLDivElement>(null)
-
-  // Solo la variante folder necesita saberlo: es la única que dibuja marco.
-  useEffect(() => {
-    if (variant !== "folder" || !setFilled) return
-
-    const list = listRef.current
-    const root = list?.parentElement
-    if (!list || !root) return
-
-    // 1px de tolerancia por los anchos fraccionarios del zoom del navegador.
-    const update = () => setFilled(list.offsetWidth >= root.clientWidth - 1)
-    update()
-
-    const observer = new ResizeObserver(update)
-    observer.observe(list)
-    observer.observe(root)
-    return () => {
-      observer.disconnect()
-      setFilled(false)
-    }
-  }, [variant, setFilled])
-
+function TabsList({ className, ...props }: TabsPrimitive.List.Props) {
   return (
     <TabsPrimitive.List
-      ref={listRef}
       data-slot="tabs-list"
-      data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(
+        "group/tabs-list inline-flex w-full items-center justify-start gap-1 border-b border-border bg-transparent p-1 text-muted-foreground group-data-horizontal/tabs:h-10 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col",
+        className,
+      )}
       {...props}
     />
   )
@@ -98,38 +34,11 @@ function TabsTrigger({ className, title, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
       data-slot="tabs-trigger"
-      // Cualquier pestaña puede quedar recortada (la variante folder trunca,
-      // y el ancho disponible no lo decide el llamador), así que el rótulo
-      // completo tiene que seguir disponible al pasar el mouse — en toda la
-      // app, no solo donde alguien se acordó de ponerlo.
-      // Solo se deriva cuando la etiqueta es texto plano: con hijos
-      // compuestos (ícono + span) no hay un string que mostrar, y para esos
-      // casos el llamador puede pasar `title` a mano, que siempre gana.
+      // Si el rótulo es texto plano, queda completo al pasar el mouse.
       title={title ?? (typeof props.children === "string" ? props.children : undefined)}
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-2 border border-transparent px-4 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-foreground/60 uppercase transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start group-data-vertical/tabs:px-4 group-data-vertical/tabs:py-2 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        // Cada pestaña dibuja solo dos líneas: el separador izquierdo (salvo la
-        // primera) y el borde inferior contra el panel. El marco exterior es de la
-        // lista, así ninguna línea se duplica ni queda un lado sin cerrar.
-        "group-data-[variant=folder]/tabs-list:h-auto group-data-[variant=folder]/tabs-list:rounded-none group-data-[variant=folder]/tabs-list:border-0 group-data-[variant=folder]/tabs-list:border-b group-data-[variant=folder]/tabs-list:border-l group-data-[variant=folder]/tabs-list:first:border-l-0 group-data-[variant=folder]/tabs-list:border-border group-data-[variant=folder]/tabs-list:bg-sidebar group-data-[variant=folder]/tabs-list:px-4 group-data-[variant=folder]/tabs-list:py-2.5 group-data-[variant=folder]/tabs-list:text-[12px] group-data-[variant=folder]/tabs-list:tracking-normal group-data-[variant=folder]/tabs-list:normal-case group-data-[variant=folder]/tabs-list:[&_svg:not([class*='size-'])]:size-[18px]",
-        // Las inactivas miden lo que mide su etiqueta (flex-initial: no crecen,
-        // sí encogen) y recortan con "…" si falta espacio; la activa pasa a
-        // flex-none para reservar su ancho completo y mostrar siempre la
-        // etiqueta entera, pero acotada por max-w (abajo): sin ese tope una
-        // etiqueta larga de verdad —el instrumento del referente curricular
-        // admite 400 caracteres— reclamaba miles de px y desbordaba la franja.
-        // El tope va en rem y NO en %: al medir el fit-content de la lista, un
-        // porcentaje todavía no se puede resolver y se ignora, así que la lista
-        // se dimensionaba con la etiqueta entera, topaba contra max-w-full y
-        // dejaba un tramo de franja vacío a la derecha en vez del efecto folder.
-        // El display block es lo que habilita el text-ellipsis (en un flex no aplica).
-        "group-data-[variant=folder]/tabs-list:block group-data-[variant=folder]/tabs-list:min-w-16 group-data-[variant=folder]/tabs-list:flex-initial group-data-[variant=folder]/tabs-list:truncate group-data-[variant=folder]/tabs-list:text-center",
-        // La activa borra su borde inferior para fundirse con el panel (que va sin
-        // borde superior) y queda en blanco.
-        "group-data-[variant=folder]/tabs-list:data-active:flex-none group-data-[variant=folder]/tabs-list:data-active:max-w-md group-data-[variant=folder]/tabs-list:data-active:border-b-transparent group-data-[variant=folder]/tabs-list:data-active:bg-background dark:group-data-[variant=folder]/tabs-list:data-active:border-b-transparent dark:group-data-[variant=folder]/tabs-list:data-active:bg-background",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
+        "relative inline-flex h-[calc(100%-1px)] flex-none items-center justify-center gap-2 border border-transparent px-3 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-foreground/60 uppercase transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start group-data-vertical/tabs:px-4 group-data-vertical/tabs:py-2 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:text-foreground dark:text-muted-foreground dark:hover:text-foreground dark:data-active:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 data-active:after:opacity-100",
         className,
       )}
       {...props}
@@ -147,4 +56,4 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export { Tabs, TabsList, TabsTrigger, TabsContent }

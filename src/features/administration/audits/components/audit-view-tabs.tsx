@@ -1,6 +1,7 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useLocation } from "@tanstack/react-router"
 
 import { TableScreenTabs } from "@/components/layout/table-screen"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
 
 const viewLinks = [
@@ -9,22 +10,23 @@ const viewLinks = [
   { label: "Bitácora", to: paths.app.bitacora.getHref() },
 ]
 
-/** Pestañas de Registro de actividad. */
+/** Pestañas de Registro de actividad: cada una es un enlace a su vista. */
 export function AuditViewTabs() {
+  const pathname = useLocation({ select: (l) => l.pathname })
+  const active = viewLinks.find((view) => pathname.startsWith(view.to))?.to ?? null
+
   return (
     <TableScreenTabs>
-      <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
-        {viewLinks.map((view) => (
-          <Link
-            key={view.to}
-            to={view.to}
-            activeProps={{ "data-active": "true" }}
-            className="-mb-px rounded-t-lg border border-border border-b-border bg-muted/60 px-4 py-1.5 text-sm font-medium text-muted-foreground data-active:border-b-card data-active:bg-card data-active:text-foreground"
-          >
-            {view.label}
-          </Link>
-        ))}
-      </nav>
+      <Tabs value={active} aria-label="Vistas de auditoría">
+        {/* El borde inferior ya lo pone TableScreenTabs. */}
+        <TabsList className="border-b-0">
+          {viewLinks.map((view) => (
+            <TabsTrigger key={view.to} value={view.to} nativeButton={false} render={<Link to={view.to} />}>
+              {view.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
     </TableScreenTabs>
   )
 }

@@ -138,7 +138,7 @@ export function CampanaNotificaciones() {
 
         {tieneChat && (
           <Tabs value={pestana} onValueChange={(v) => setPestana(v === "mensajes" ? "mensajes" : "notificaciones")}>
-            <TabsList className="w-full rounded-none border-b px-2">
+            <TabsList>
               <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
               <TabsTrigger value="mensajes">
                 Mensajes
