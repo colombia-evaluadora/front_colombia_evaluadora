@@ -271,7 +271,16 @@ const ETIQUETA_LECTURA = { ENVIADO: "Enviado", ENTREGADO: "Entregado", LEIDO: "L
 
 // ✓ enviado / ✓✓ gris entregado / ✓✓ azul leído por todos, abajo a la derecha de la burbuja
 // (diseño 3731:41577). Con confirmación de lectura (HU 7) el título detalla quién lo leyó.
-function ConfirmacionLectura({ mensaje: m, estado }: { mensaje: Mensaje; estado: ReturnType<typeof estadoLectura> }) {
+// En una conversación grupal el texto visible es "Visto por N" (informe de Comunicaciones §4).
+function ConfirmacionLectura({
+  mensaje: m,
+  estado,
+  grupal,
+}: {
+  mensaje: Mensaje
+  estado: ReturnType<typeof estadoLectura>
+  grupal: boolean
+}) {
   if (!estado) return null
   const leido = estado === "LEIDO"
   const Icono = estado === "ENVIADO" ? CheckIcon : ChecksIcon
@@ -292,7 +301,11 @@ function ConfirmacionLectura({ mensaje: m, estado }: { mensaje: Mensaje; estado:
       data-lectura={estado}
       className={cn("-mr-1 -mb-1 flex items-center justify-end gap-1", leido ? "text-primary" : "text-muted-foreground")}
     >
-      {c && <span className="text-[11px]">{ETIQUETA_LECTURA[estado]}</span>}
+      {c && (
+        <span className="text-[11px]">
+          {grupal && c.leidos > 0 ? `Visto por ${c.leidos}` : ETIQUETA_LECTURA[estado]}
+        </span>
+      )}
       <Icono aria-hidden className="size-4" />
       <span className="sr-only">{c ? detalle : ETIQUETA_LECTURA[estado]}</span>
     </span>
@@ -416,7 +429,11 @@ function MensajeItem({
           <Cita mensaje={m} onIrAMensaje={onIrAMensaje} />
           {m.texto && <TextoFormateado texto={m.texto} menciones={m.menciones} />}
           <AdjuntosMensaje mensaje={m} propio />
-          <ConfirmacionLectura mensaje={m} estado={estadoLectura(m, conversacion)} />
+          <ConfirmacionLectura
+            mensaje={m}
+            estado={estadoLectura(m, conversacion)}
+            grupal={!!conversacion && conversacion.tipo !== "DIRECTO"}
+          />
         </article>
         {CHAT_FUNCIONES.reacciones && <ReaccionesMensaje mensaje={m} />}
       </div>

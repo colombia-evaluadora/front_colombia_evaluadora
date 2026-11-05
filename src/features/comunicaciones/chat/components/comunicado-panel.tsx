@@ -175,6 +175,15 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
               <dd className="inline">{dirigidoA}</dd>
             </div>
           )}
+          {/* Acudiente destinatario (M.1): por cuál de los estudiantes a su cargo lo recibe. */}
+          {(c.paraEstudiantes?.length ?? 0) > 0 && (
+            <div>
+              <dt className="inline">
+                {c.paraEstudiantes?.length === 1 ? "Para el estudiante: " : "Para los estudiantes: "}
+              </dt>
+              <dd className="inline">{c.paraEstudiantes?.join(", ")}</dd>
+            </div>
+          )}
           {c.leidos != null && c.totalDestinatarios != null && (
             // Confirmación de lectura: solo la recibe quien lo publicó; abre el registro por persona.
             <div>

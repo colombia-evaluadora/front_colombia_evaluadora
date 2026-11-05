@@ -291,6 +291,21 @@ export const comunicacionesComunicadosHandlers = [
     })
   }),
 
+  // Previsualización de destinatarios: conteo fijo, coherente con los 409 destinatarios del mock.
+  http.post(URL("comunicados/destinos/previsualizar"), async ({ request }) => {
+    await delay(200)
+    const body = (await request.json()) as CrearComunicadoBody
+    const u = usuarioDe(request)
+    if (u && !puedeCrearComunicadosMock(u.roles)) return SIN_PERMISO()
+    if (u && fueraDeAlcance(u.roles, u.email, body)) return FUERA()
+    if ((body.AUDIENCIA ?? []).length === 0 && vacios(destinosDe(body))) {
+      return HttpResponse.json({ message: "Elige al menos un destinatario." }, { status: 400 })
+    }
+    return HttpResponse.json({
+      rows: [{ unicos: 409, estudiantes: 250, acudientes: 130, funcionarios: 29, otros: 0, sinCuenta: 3 }],
+    })
+  }),
+
   http.get(URL("comunicados/destinos/personas"), async ({ request }) => {
     await delay(150)
     const u = usuarioDe(request)

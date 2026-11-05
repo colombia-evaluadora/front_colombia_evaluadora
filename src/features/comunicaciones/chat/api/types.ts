@@ -498,6 +498,20 @@ export interface EntregaEvaluacion {
 export type Audiencia = "ESTUDIANTES" | "DOCENTES" | "PADRES" | "DIRECTIVOS" | "ADMINISTRATIVOS"
 
 // Comunicado oficial: canal con un único contenido (y respuestas solo si quien lo publica las permite).
+/**
+ * Previsualización de destinatarios antes de publicar (comms-service
+ * `POST /comunicados/destinos/previsualizar`): personas únicas y cuántas por tipo (una persona con
+ * dos roles cuenta en ambos). `sinCuenta`: elegidos por grado, grupo o cargo sin cuenta activa.
+ */
+export interface PrevisualizacionComunicado {
+  unicos: number
+  estudiantes: number
+  acudientes: number
+  funcionarios: number
+  otros: number
+  sinCuenta: number
+}
+
 export interface Comunicado {
   conversacionId: number
   titulo: string
@@ -531,6 +545,8 @@ export interface Comunicado {
   visibleHasta?: string | null
   // Solo para quien lo gestiona.
   motivoAnulacion?: string | null
+  // Para el acudiente destinatario: estudiantes a su cargo por los que lo recibe ("Para el estudiante").
+  paraEstudiantes?: string[]
   modalidad?: string | null
   ciclo?: number | null
 }
