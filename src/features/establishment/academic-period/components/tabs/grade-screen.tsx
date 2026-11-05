@@ -427,7 +427,6 @@ export function GradeScreen({
         {isEditing && gradeId != null && (
           <Tabs defaultValue="grupos" className="w-full min-w-0">
             <TabsList
-              variant="line"
               className="h-11 w-full justify-start gap-4 border-b border-border p-0"
             >
               <TabsTrigger value="grupos" className={PERIOD_TAB_TRIGGER}>

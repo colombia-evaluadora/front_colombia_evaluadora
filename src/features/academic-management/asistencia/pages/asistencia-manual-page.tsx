@@ -29,7 +29,7 @@ import {
 } from "@/features/academic-management/asistencia/utils/asistencia-manual"
 
 const PANEL_CLASS =
-  "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "rounded-lg border border-border bg-background p-4"
 
 
 /** Clases del día como planillas: bloques seguidos de la misma [Área] son una sola. */
@@ -246,7 +246,7 @@ function AsistenciaManualContent({
         {/* Sin clase elegida (enlace viejo o URL a mano): se elige entre las del día. */}
         {!isPending && !esFechaFutura(fecha) && !sesionElegida && sesionesDelDia.length > 0 && (
           <Tabs value={currentTab} onValueChange={(value) => handleTabChange(String(value))}>
-            <TabsList variant="folder">
+            <TabsList>
               {sesionesDelDia.map((sesion) => (
                 <TabsTrigger key={sesion.id} value={sesion.id}>
                   {sesion.grado}{sesion.grupo} · {nombreSesion(sesion)}

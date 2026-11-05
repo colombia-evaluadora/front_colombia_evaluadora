@@ -106,7 +106,7 @@ export function PlaneadorTabs() {
         aria-label="Vistas del planeador"
       >
         {/* `mb-px` propio y `bg-card`: debajo no hay panel hermano sino el borde de la franja. */}
-        <TabsList variant="folder" className="-mb-px">
+        <TabsList className="border-b-0">
           {views.map((view) => (
             <TabsTrigger
               key={view.key}
@@ -115,7 +115,7 @@ export function PlaneadorTabs() {
               render={
                 <Link to={view.to} search={searchDe(view)} />
               }
-              className="data-active:bg-card dark:data-active:bg-card"
+             
             >
               {view.label}
             </TabsTrigger>

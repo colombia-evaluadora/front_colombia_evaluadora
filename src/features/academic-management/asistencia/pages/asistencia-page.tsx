@@ -258,11 +258,11 @@ function AsistenciaPageContent() {
       </TableScreenHeader>
       <TableScreenBody>
         <Tabs value={vista} onValueChange={(v) => setVista(v as "calendario" | "grupo")}>
-          <TabsList variant="line" className="mb-4 w-full justify-start border-b border-border">
-            <TabsTrigger value="calendario" className="flex-none px-3">
+          <TabsList>
+            <TabsTrigger value="calendario">
               Calendario
             </TabsTrigger>
-            <TabsTrigger value="grupo" className="flex-none px-3">
+            <TabsTrigger value="grupo">
               Asistencia por grupo
             </TabsTrigger>
           </TabsList>
