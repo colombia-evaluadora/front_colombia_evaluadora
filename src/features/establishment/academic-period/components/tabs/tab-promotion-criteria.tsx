@@ -101,16 +101,30 @@ interface TabPromotionCriteriaProps {
   readOnly?: boolean
   // Título del período ("IE Central · 2027 · …") para el diálogo de restablecer.
   periodTitle?: string
+  /** Avisa si hay cambios sin guardar: los guarda el Guardar del encabezado. */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
+// Lo usa el Guardar del encabezado (período o grado); `discard` deshace al cambiar de pestaña.
 export interface PromotionCriteriaHandle {
-  save: (gradeId: number) => Promise<void>
+  /** Sin `gradeId` guarda el registro del período. */
+  save: (gradeId?: number) => Promise<void>
   isDirty: () => boolean
+  discard: () => void
 }
 
 export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromotionCriteriaProps>(
   function TabPromotionCriteria(
-    { hideSubmit = false, academicPeriodId, gradeId, isPreescolar, gradeName, readOnly: formativoReadOnly = false, periodTitle },
+    {
+      hideSubmit = false,
+      academicPeriodId,
+      gradeId,
+      isPreescolar,
+      gradeName,
+      readOnly: formativoReadOnly = false,
+      periodTitle,
+      onDirtyChange,
+    },
     ref,
   ) {
     // Formativo (prop) o período Cerrado / "Ver" (Regla 16).
@@ -179,6 +193,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
         areaOptions={areaOptions}
         curriculumNodes={curriculumNodes}
         subjectLabel={subjectLabel}
+        onDirtyChange={onDirtyChange}
       />
     )
     if (!isGradeScope) return form
@@ -285,6 +300,7 @@ interface PromotionCriteriaFormProps {
   areaOptions: AreaOption[]
   curriculumNodes: CurriculumNodeOption[]
   subjectLabel: string
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCriteriaFormProps>(
@@ -299,6 +315,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       areaOptions,
       curriculumNodes,
       subjectLabel,
+      onDirtyChange,
     },
     ref,
   ) {
@@ -326,7 +343,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       },
     })
 
-    const isSaving = updatePromotionCriteria.isPending
 
     const form = useAppForm({
       defaultValues: initialValues,
@@ -350,7 +366,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
     useImperativeHandle(
       ref,
       () => ({
-        save: async (id: number) => {
+        save: async (id?: number) => {
           if (!form.state.isDirty || academicPeriodId == null) return
           await form.validateAllFields("submit")
           if (!form.state.isFieldsValid) {
@@ -361,9 +377,17 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
           form.reset(values)
         },
         isDirty: () => form.state.isDirty,
+        discard: () => form.reset(),
       }),
       [updatePromotionCriteria, form, academicPeriodId],
     )
+
+    const isDirty = useSelector(form.store, (s) => s.isDirty)
+    useEffect(() => {
+      onDirtyChange?.(isDirty)
+    }, [isDirty, onDirtyChange])
+    // Al desmontar (otro grado u otro período) ya no hay nada pendiente.
+    useEffect(() => () => onDirtyChange?.(false), [onDirtyChange])
 
     const applyAverageApproval = useSelector(
       form.store,
@@ -573,19 +597,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
             </FormSection>
           )}
 
-          {!hideSubmit && (
-            <div className="flex justify-end">
-              <form.Subscribe selector={(state) => state.isDirty}>
-                {(isDirty) =>
-                  isDirty ? (
-                    <Button type="submit" color="primary" size="sm" disabled={isSaving}>
-                      {isSaving ? "Guardando..." : "Guardar"}
-                    </Button>
-                  ) : null
-                }
-              </form.Subscribe>
-            </div>
-          )}
 
           <AlertDialog
             open={pendingNode != null}

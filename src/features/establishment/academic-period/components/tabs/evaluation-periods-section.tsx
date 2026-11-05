@@ -11,6 +11,7 @@ import { SpinnerIcon } from "@/components/ui/icons"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import type { EvaluationCriteriaHandle } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
+import type { PromotionCriteriaHandle } from "@/features/establishment/academic-period/components/tabs/tab-promotion-criteria"
 import type { PlazoAvisoAsistenciaHandle } from "@/features/establishment/academic-period/components/fields/plazo-aviso-asistencia-field"
 import { plegarTexto } from "@/features/assistant/lib/campos-ui"
 import { usePestanasAsistente } from "@/features/assistant/lib/registro-ui"
@@ -85,6 +86,9 @@ interface EvaluationPeriodsSectionProps {
   /** Plazo del aviso de asistencia (pestaña Calendario): igual que Criterios. */
   plazoRef?: RefObject<PlazoAvisoAsistenciaHandle | null>
   onPlazoDirtyChange?: (dirty: boolean) => void
+  /** Criterios de promoción del período: igual que Criterios. */
+  promotionRef?: RefObject<PromotionCriteriaHandle | null>
+  onPromotionDirtyChange?: (dirty: boolean) => void
 }
 
 export function EvaluationPeriodsSection({
@@ -95,6 +99,8 @@ export function EvaluationPeriodsSection({
   onCriteriaDirtyChange,
   plazoRef,
   onPlazoDirtyChange,
+  promotionRef,
+  onPromotionDirtyChange,
 }: EvaluationPeriodsSectionProps) {
   const panel = PANEL_BASE
   // Controlada (antes `defaultValue`) para que el asistente pueda abrir una
@@ -109,7 +115,8 @@ export function EvaluationPeriodsSection({
   const cambiarTab = (value: string) => {
     const sucia =
       (tabActiva === "criterios" && criteriaRef?.current?.isDirty()) ||
-      (tabActiva === "calendario" && plazoRef?.current?.isDirty())
+      (tabActiva === "calendario" && plazoRef?.current?.isDirty()) ||
+      (tabActiva === "promocion" && promotionRef?.current?.isDirty())
     if (value !== tabActiva && sucia) {
       setTabPendiente(value)
       return
@@ -165,10 +172,14 @@ export function EvaluationPeriodsSection({
             </Suspense>
           </NoticeProvider>
         </TabsContent>
-        <TabsContent value="promocion" className={panel}>
+        <TabsContent value="promocion" className={panel} keepMounted>
           <NoticeProvider>
             <Suspense fallback={<TabFallback />}>
-              <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+              <TabPromotionCriteria
+                ref={promotionRef}
+                academicPeriodId={academicPeriodId}
+                onDirtyChange={onPromotionDirtyChange}
+              />
             </Suspense>
           </NoticeProvider>
         </TabsContent>
@@ -210,11 +221,18 @@ export function EvaluationPeriodsSection({
         open={tabPendiente != null}
         onOpenChange={(open) => !open && setTabPendiente(null)}
         title="¿Cambiar de pestaña sin guardar?"
-        description={`Los cambios de ${tabActiva === "calendario" ? "Calendario académico" : "Criterios de evaluación"} que no guardaste se descartarán.`}
+        description={`Los cambios de ${
+          tabActiva === "calendario"
+            ? "Calendario académico"
+            : tabActiva === "promocion"
+              ? "Criterios de promoción"
+              : "Criterios de evaluación"
+        } que no guardaste se descartarán.`}
         confirmLabel="Sí, descartar"
         onConfirm={() => {
           criteriaRef?.current?.discard()
           plazoRef?.current?.discard()
+          promotionRef?.current?.discard()
           setTabActiva(tabPendiente ?? tabActiva)
           setTabPendiente(null)
         }}

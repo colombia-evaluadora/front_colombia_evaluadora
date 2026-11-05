@@ -26,7 +26,6 @@ interface RatingScaleRow {
   tipo: string
   tipo_name: string
   iconografia: string
-  color: string | null
   teaching_level_id: number
   nota_minima: number
   nota_maxima: number
@@ -69,7 +68,6 @@ function groupRatingScales(
       tipo: row.tipo as RatingScaleType,
       tipoName: row.tipo_name,
       iconografia: row.iconografia,
-      color: row.color ?? null,
       notaMaxima: row.nota_maxima,
       notaMinima: row.nota_minima,
       notaEquivalente: row.nota_equivalente,

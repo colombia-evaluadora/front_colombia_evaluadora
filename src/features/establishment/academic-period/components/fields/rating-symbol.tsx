@@ -46,7 +46,7 @@ export function RatingSymbolView({
 }: {
   value: string
   label?: string
-  /** HEX de la valoración: un SVG se pinta de ese color; un PNG conserva el suyo. */
+  /** Color de la valoración (mapa de calor): un SVG se pinta de ese color; un PNG conserva el suyo. */
   color?: string | null
   className?: string
 }) {

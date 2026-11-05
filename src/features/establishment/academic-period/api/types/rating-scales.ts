@@ -57,8 +57,6 @@ export interface RatingScale {
   // valor `tipo`.
   tipoName?: string
   iconografia: string
-  /** HEX con que se pinta el ícono SVG (TVALORACION.COLOR); null = el color del archivo. */
-  color?: string | null
   notaMaxima: number
   notaMinima: number
   notaEquivalente: number
