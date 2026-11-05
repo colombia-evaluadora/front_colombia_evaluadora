@@ -37,6 +37,8 @@ import { RatingScaleDialog } from "@/features/establishment/academic-period/comp
 import {
   createRatingScaleColumns,
   getScaleColors,
+  getScalePositions,
+  heatInk,
   heatColor,
   heatPastel,
 } from "@/features/establishment/academic-period/components/table/columns-rating-scales"
@@ -116,9 +118,10 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   }
 
   const colors = getScaleColors(visible)
+  const inks = new Map([...getScalePositions(visible)].map(([codigo, p]) => [codigo, heatInk(p)]))
   const { readOnly } = usePeriodReadOnly()
   const columns = withoutRowActions(
-    createRatingScaleColumns({ colors, onEdit: openDialog, onDelete: deleteScale }),
+    createRatingScaleColumns({ colors, inks, onEdit: openDialog, onDelete: deleteScale }),
     readOnly,
   )
   const page = useLocalPagination(rows)
@@ -265,7 +268,7 @@ function ScaleCoverage({
               style={{
                 left: `${left}%`,
                 width: `${Math.max(0, right - left)}%`,
-                ...heatPastel(sorted.length === 1 ? 1 : i / Math.max(1, sorted.length - 1)),
+                ...heatPastel(sorted.length === 1 ? 0 : i / Math.max(1, sorted.length - 1)),
               }}
             >
               {s.nombre}

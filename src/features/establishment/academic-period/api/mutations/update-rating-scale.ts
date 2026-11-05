@@ -34,7 +34,6 @@ async function updateRatingScale({
         tipoId: refs.tipoId,
         iconoId: refs.iconoId,
         iconoCategoria: refs.iconoCategoria,
-        color: values.color || null,
         notaMaxima: values.notaMaxima,
         notaMinima: values.notaMinima,
         notaEquivalente: values.notaEquivalente,

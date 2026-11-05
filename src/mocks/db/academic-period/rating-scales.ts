@@ -34,8 +34,6 @@ export interface RatingScaleRow {
   tipoId: number | null
   iconoId: number | null
   iconoCategoria: "ICONOGRAFIA" | "GRAFICA_CARITA" | "GRAFICA_SIMBOLO" | null
-  /** HEX con que se pinta el ícono SVG (TVALORACION.COLOR). */
-  color?: string | null
   teachingLevelId: number
   notaMinima: number
   notaMaxima: number
