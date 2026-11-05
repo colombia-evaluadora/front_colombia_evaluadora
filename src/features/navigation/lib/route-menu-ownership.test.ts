@@ -19,6 +19,7 @@ const MENU = {
   superadministradores: "/app/administracion/superadministradores",
   parametrosEdad: "/app/administracion/parametros-edad",
   festivos: "/app/administracion/festivos",
+  conservacionDatos: "/app/administracion/conservacion-datos",
   establecimiento: "/app/establecimiento-educativo/general",
   sedes: "/app/establecimiento-educativo/sedes",
   funcionarios: "/app/establecimiento-educativo/funcionarios",
@@ -77,6 +78,9 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/administracion/superadministradores": MENU.superadministradores,
   "/app/administracion/parametros-edad": MENU.parametrosEdad,
   "/app/administracion/festivos": MENU.festivos,
+  "/app/administracion/conservacion-datos": MENU.conservacionDatos,
+  "/app/administracion/conservacion-datos/politicas/nueva": MENU.conservacionDatos,
+  "/app/administracion/conservacion-datos/politicas/editar/$politicaId": MENU.conservacionDatos,
   "/app/registro-de-actividad/bitacora": MENU.registroActividad,
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,

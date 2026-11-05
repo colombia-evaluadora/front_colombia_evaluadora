@@ -32,6 +32,24 @@ export const SUCCESS_MESSAGES = {
   },
   // Textos del requerimiento: guardar (crear o modificar) dice lo mismo.
   // "Festivo guardado." es el texto del requerimiento (Administración, 6.2).
+  politicaConservacion: {
+    created: "Política guardada.",
+    updated: "Política guardada.",
+    deleted: "Política eliminada.",
+    activated: "Política activada.",
+    deactivated: "Política inactivada.",
+  },
+  // Ampliación: solo se guarda. Disponer: "Lote dispuesto." (Sección 6.4).
+  ampliacion: {
+    created: "Plazo del establecimiento guardado.",
+    updated: "Plazo del establecimiento guardado.",
+    deleted: "Plazo del establecimiento guardado.",
+  },
+  loteVencido: {
+    created: "Lote dispuesto.",
+    updated: "Lote dispuesto.",
+    deleted: "Lote dispuesto.",
+  },
   festivo: {
     created: "Festivo guardado.",
     updated: "Festivo guardado.",
