@@ -13,17 +13,23 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
+import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, InfoIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
-import { FormDisabledProvider, isFieldInvalid, useAppForm } from "@/lib/forms"
+import { FormDisabledProvider, isFieldInvalid, toFieldErrors, useAppForm } from "@/lib/forms"
 import { supervisorSaveNotice } from "@/lib/success-messages"
 import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
-import { cn } from "@/lib/utils"
-import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import { limpiarNombre } from "@/features/establishment/shared/person-field-rules"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { usePersonaPorDocumentoQuery } from "@/features/administration/superadministradores/api/query/use-persona-por-documento"
@@ -239,7 +245,7 @@ function SupervisorForm({
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>
-        <div className="flex max-w-6xl flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {modo === "nuevo" && (
             <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -262,10 +268,11 @@ function SupervisorForm({
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid max-w-6xl gap-x-6 gap-y-5 py-4 md:grid-cols-4"
+          className="grid gap-x-4 gap-y-5 py-4 md:grid-cols-12"
         >
           <FormDisabledProvider disabled={soloLectura}>
-            <div className="md:col-span-2">
+            {/* Identidad: documento y correo en una fila, nombres en la siguiente. */}
+            <div className="md:col-span-3">
               <form.AppField
                 name="tipoDocumento"
                 listeners={{
@@ -279,7 +286,7 @@ function SupervisorForm({
                 {(f) => <f.SelectField label="Tipo de documento" required options={tipoOptions} emptyValue={0} />}
               </form.AppField>
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-3">
               <form.AppField name="numeroDocumento">
                 {(f) => (
                   <f.TextField
@@ -287,14 +294,9 @@ function SupervisorForm({
                     required
                     maxLength={20}
                     inputMode={numerico ? "numeric" : "text"}
+                    placeholder={numerico ? "Solo dígitos" : "Letras y dígitos"}
                     transform={(v) => (numerico ? toDigitsOnly(v, 20) : v.replace(/[^A-Za-z0-9]/g, "").toUpperCase())}
-                    description={
-                      consulta.isFetching
-                        ? "Buscando a la persona en la plataforma…"
-                        : numerico
-                          ? "Solo dígitos, sin puntos ni espacios."
-                          : "Letras y dígitos, sin puntos ni espacios."
-                    }
+                    description={consulta.isFetching ? "Buscando a la persona en la plataforma…" : undefined}
                   />
                 )}
               </form.AppField>
@@ -302,26 +304,7 @@ function SupervisorForm({
 
             {/* Persona existente: nombres y correo son los suyos, no se editan aquí. */}
             <FormDisabledProvider disabled={persona != null}>
-              {(
-                [
-                  ["primerNombre", "Primer nombre", true],
-                  ["segundoNombre", "Segundo nombre", false],
-                  ["primerApellido", "Primer apellido", true],
-                  ["segundoApellido", "Segundo apellido", false],
-                ] as const
-              ).map(([name, label, required]) => (
-                <form.AppField key={name} name={name}>
-                  {(f) => (
-                    <f.TextField
-                      label={label}
-                      required={required}
-                      maxLength={40}
-                      transform={(v) => limpiarNombre(v).slice(0, 40)}
-                    />
-                  )}
-                </form.AppField>
-              ))}
-              <div className="md:col-span-2">
+              <div className="md:col-span-6">
                 <form.AppField name="correo">
                   {(f) => (
                     <f.TextField
@@ -330,18 +313,52 @@ function SupervisorForm({
                       type="email"
                       maxLength={120}
                       autoComplete="off"
+                      placeholder="Con este correo inicia sesión"
                       transform={toEmailInput}
                       description={
                         modo === "modificar"
                           ? "Si lo cambia, la cuenta vuelve a pendiente y se envía el enlace al correo nuevo."
-                          : "Con este correo inicia sesión."
+                          : undefined
                       }
                     />
                   )}
                 </form.AppField>
               </div>
+              {(
+                [
+                  ["primerNombre", "Primer nombre", true],
+                  ["segundoNombre", "Segundo nombre", false],
+                  ["primerApellido", "Primer apellido", true],
+                  ["segundoApellido", "Segundo apellido", false],
+                ] as const
+              ).map(([name, label, required]) => (
+                <div key={name} className="md:col-span-3">
+                  <form.AppField name={name}>
+                    {(f) => (
+                      <f.TextField
+                        label={label}
+                        required={required}
+                        maxLength={40}
+                        transform={(v) => limpiarNombre(v).slice(0, 40)}
+                      />
+                    )}
+                  </form.AppField>
+                </div>
+              ))}
             </FormDisabledProvider>
 
+            {/* Cargo y estado en una sola fila. */}
+            <div className="md:col-span-6">
+              <form.AppField name="dependencia">
+                {(f) => (
+                  <f.TextField
+                    label="Dependencia"
+                    maxLength={150}
+                    placeholder="Ej. Secretaría de Educación — Núcleo 3 (informativo)"
+                  />
+                )}
+              </form.AppField>
+            </div>
             <form.Field name="activo">
               {(field) => (
                 <Interruptor
@@ -350,30 +367,12 @@ function SupervisorForm({
                   checked={field.state.value}
                   onChange={(v) => field.handleChange(v)}
                   disabled={soloLectura}
-                  texto={field.state.value ? "Activo" : "Inactivo"}
-                  ayuda={
-                    field.state.value
-                      ? "Si lo inactiva, pierde el acceso y se cierran sus sesiones."
-                      : "No puede ingresar a la plataforma."
-                  }
-                  className="md:col-span-2"
+                  texto={field.state.value ? "Activo" : "Inactivo: sin acceso"}
+                  ayuda="Inactivo pierde el acceso y se cierran sus sesiones."
+                  className="md:col-span-3"
                 />
               )}
             </form.Field>
-
-            <div className="md:col-span-4">
-              <form.AppField name="dependencia">
-                {(f) => (
-                  <f.TextField
-                    label="Dependencia"
-                    maxLength={150}
-                    placeholder="Ej. Secretaría de Educación — Núcleo 3"
-                    description="Dato informativo: no concede permisos."
-                  />
-                )}
-              </form.AppField>
-            </div>
-
             <form.Field name="todosEstablecimientos">
               {(field) => (
                 <Interruptor
@@ -382,9 +381,9 @@ function SupervisorForm({
                   checked={field.state.value}
                   onChange={(v) => field.handleChange(v)}
                   disabled={soloLectura}
-                  texto={field.state.value ? "Sí" : "No"}
+                  texto={field.state.value ? "Sí, también los futuros" : "No"}
                   ayuda="Encendido da acceso también a los establecimientos que se creen después."
-                  className="md:col-span-4"
+                  className="md:col-span-3"
                 />
               )}
             </form.Field>
@@ -397,39 +396,44 @@ function SupervisorForm({
                       const invalido = isFieldInvalid(field, form.state.submissionAttempts)
                       const seleccion = opciones.filter((o) => field.state.value.includes(o.pk))
                       return (
-                        <div className="flex flex-col gap-1.5 md:col-span-4">
-                          <span className="text-sm">
-                            Establecimientos a cargo<span className="text-red"> *</span>
-                          </span>
-                          {soloLectura ? (
-                            <p className="text-sm">{seleccion.map((e) => e.nombre).join(", ") || "—"}</p>
-                          ) : (
-                            <SelectorChips
-                              items={opciones}
-                              value={seleccion}
-                              onChange={(v) => field.handleChange(v.map((e) => e.pk))}
-                              getId={(e) => e.pk}
-                              getLabel={(e) => e.nombre}
-                              filtrar={(e, q) =>
-                                e.nombre.toLowerCase().includes(q) || (e.codigoDane ?? "").includes(q)
-                              }
-                              visibles={6}
-                              placeholder="Buscar por nombre o código DANE"
-                              ariaLabel="Establecimientos a cargo"
-                              invalido={invalido}
-                              conFlecha
-                            />
-                          )}
+                        <Field variant="outlined" data-invalid={invalido} className="md:col-span-12">
+                          <FieldLabel htmlFor="supervisor-establecimientos">Establecimientos a cargo*</FieldLabel>
+                          <ComboboxField<number, true>
+                            multiple
+                            value={field.state.value}
+                            onValueChange={(v) => field.handleChange(v ?? [])}
+                            disabled={soloLectura}
+                          >
+                            <ComboboxFieldTrigger
+                              id="supervisor-establecimientos"
+                              aria-invalid={invalido}
+                              onBlur={field.handleBlur}
+                            >
+                              <ComboboxFieldValue placeholder="Buscar por nombre o código DANE">
+                                {(pks: number[]) =>
+                                  pks.length === 0
+                                    ? "Buscar por nombre o código DANE"
+                                    : `${pks.length} · ${seleccion.map((e) => e.nombre).join(", ")}`
+                                }
+                              </ComboboxFieldValue>
+                            </ComboboxFieldTrigger>
+                            <ComboboxFieldContent>
+                              {opciones.map((e) => (
+                                <ComboboxFieldItem key={e.pk} value={e.pk} title={e.nombre}>
+                                  {e.nombre}
+                                  {e.codigoDane && <span className="ml-2 text-xs text-muted-foreground">{e.codigoDane}</span>}
+                                </ComboboxFieldItem>
+                              ))}
+                            </ComboboxFieldContent>
+                          </ComboboxField>
                           {invalido ? (
-                            <span className="text-xs text-red">{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0])}</span>
+                            <FieldError errors={toFieldErrors(field.state.meta.errors)} />
                           ) : (
                             !soloLectura && (
-                              <span className="text-xs text-muted-foreground">
-                                Solo establecimientos activos. Al quitar uno, pierde el acceso a él de inmediato.
-                              </span>
+                              <FieldDescription>Al quitar uno, pierde el acceso a él de inmediato.</FieldDescription>
                             )
                           )}
-                        </div>
+                        </Field>
                       )
                     }}
                   </form.Field>
@@ -456,6 +460,10 @@ export const SupervisorNuevoPage = () => <SupervisorFormPage modo="nuevo" />
 export const SupervisorModificarPage = () => <SupervisorFormPage modo="modificar" />
 export const SupervisorDetallePage = () => <SupervisorFormPage modo="ver" />
 
+/**
+ * Interruptor con la misma caja y etiqueta flotante que los demás campos, para
+ * que quepa en la fila; la explicación larga va en el `title` del control.
+ */
 function Interruptor({
   id,
   label,
@@ -476,16 +484,12 @@ function Interruptor({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col gap-2 text-sm", className)}>
-      <label htmlFor={id}>
-        {label}
-        <span className="text-red"> *</span>
-      </label>
-      <span className="flex items-center gap-2">
+    <Field variant="outlined" data-disabled={disabled || undefined} className={className}>
+      <FieldLabel htmlFor={id}>{label}*</FieldLabel>
+      <span className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm" title={ayuda}>
         <Switch id={id} size="sm" round checked={checked} disabled={disabled} onCheckedChange={onChange} />
-        <span className="text-muted-foreground">{texto}</span>
+        <span className="truncate text-muted-foreground">{texto}</span>
       </span>
-      <span className="text-xs text-muted-foreground">{ayuda}</span>
-    </div>
+    </Field>
   )
 }

@@ -5,13 +5,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { CheckCircleIcon, DotsThreeVerticalIcon, EyeIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, EyeIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import {
   documentoTexto,
@@ -115,37 +110,57 @@ export function createSupervisoresColumns({
     {
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
-      enableSorting: false,
-      enableHiding: false,
-      size: 48,
       cell: ({ row }) => {
         const s = row.original
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="ghost" color="neutral" size="icon-sm" aria-label={`Acciones de ${s.nombre}`} />
-              }
-            >
-              <DotsThreeVerticalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 *:whitespace-nowrap">
-              <DropdownMenuItem onClick={() => onVer(s)}>
-                <EyeIcon />
-                Ver detalle
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!puedeEditar} onClick={() => onModificar(s)}>
+          <div className="flex items-center justify-end gap-1">
+            <AccionIcono label="Ver detalle" onClick={() => onVer(s)}>
+              <EyeIcon />
+            </AccionIcono>
+            {puedeEditar && (
+              <AccionIcono label="Modificar" onClick={() => onModificar(s)}>
                 <PencilIcon />
-                Modificar
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!puedeEditar || pendiente === s.pkSupervisor} onClick={() => onEstado(s)}>
+              </AccionIcono>
+            )}
+            {puedeEditar && (
+              <AccionIcono
+                label={s.activo ? "Inactivar" : "Activar"}
+                disabled={pendiente === s.pkSupervisor}
+                onClick={() => onEstado(s)}
+              >
                 {s.activo ? <ProhibitIcon /> : <CheckCircleIcon />}
-                {s.activo ? "Inactivar" : "Activar"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </AccionIcono>
+            )}
+          </div>
         )
       },
+      enableSorting: false,
+      enableHiding: false,
+      size: 144,
     },
   ]
+}
+
+function AccionIcono({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string
+  disabled?: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button variant="ghost" color="neutral" size="icon-sm" disabled={disabled} onClick={onClick} />}
+      >
+        <span className="sr-only">{label}</span>
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
 }
