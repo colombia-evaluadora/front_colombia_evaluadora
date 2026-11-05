@@ -136,6 +136,20 @@ function estadoDe(c: Comunicado): EstadoComunicado {
 
 const conEstado = (c: Comunicado): Comunicado => ({ ...c, estado: estadoDe(c) })
 
+const filaTerritorial = (c: Comunicado) => ({
+  id: c.conversacionId,
+  titulo: c.titulo,
+  publicarEn: c.publicarEn,
+  establecimientoId: 1,
+  establecimiento: "IE Central",
+  publicadoPor: c.publicadoPor,
+  audiencia: c.audiencia,
+  destinos: c.destinos ?? null,
+  destinatarios: c.totalDestinatarios ?? 0,
+  estado: estadoDe(c),
+  importante: !!c.importante,
+})
+
 const sinComunicado = () => HttpResponse.json({ message: "Esta conversación no tiene un comunicado." }, { status: 404 })
 
 export const comunicacionesComunicadosHandlers = [
@@ -303,6 +317,26 @@ export const comunicacionesComunicadosHandlers = [
     }
     return HttpResponse.json({
       rows: [{ unicos: 409, estudiantes: 250, acudientes: 130, funcionarios: 29, otros: 0, sinCuenta: 3 }],
+    })
+  }),
+
+  // Consulta territorial (M.1.TER.1): solo lectura; un establecimiento fijo basta para el mock.
+  http.get(URL("comunicados/territorial/establecimientos"), async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [{ valor: "1", etiqueta: "IE Central", detalle: null, total: 0 }] })
+  }),
+
+  http.get(URL("comunicados/territorial"), async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: comunicados.map(filaTerritorial) })
+  }),
+
+  http.get(URL("comunicados/territorial/:id"), async ({ params }) => {
+    await delay(100)
+    const c = comunicados.find((x) => x.conversacionId === Number(params.id))
+    if (!c) return sinComunicado()
+    return HttpResponse.json({
+      rows: [{ comunicado: filaTerritorial(c), contenidoHtml: c.contenidoHtml, visibleHasta: c.visibleHasta ?? null, adjuntos: [] }],
     })
   }),
 

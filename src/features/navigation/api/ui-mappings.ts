@@ -19,6 +19,7 @@ const FONT_AWESOME_ALIASES: Record<string, string> = {
   desktop: "ChalkboardTeacherIcon",
   comments: "ChatCircleTextIcon",
   "vote-yea": "BallotIcon",
+  bullhorn: "MegaphoneIcon",
   "chart-pie": "ChartBarIcon",
   "chart-line": "ChartLineUpIcon",
   "chart-bar": "ChartBarIcon",
