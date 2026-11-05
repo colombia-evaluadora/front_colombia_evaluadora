@@ -13,6 +13,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, InfoIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,7 +23,6 @@ import { getErrorMessage } from "@/lib/api-client"
 import { FormDisabledProvider, useAppForm } from "@/lib/forms"
 import { administradorSaveNotice } from "@/lib/success-messages"
 import { toDigitsOnly, toEmailInput } from "@/lib/text-input"
-import { cn } from "@/lib/utils"
 import { limpiarNombre } from "@/features/establishment/shared/person-field-rules"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { usePersonaPorDocumentoQuery } from "@/features/administration/superadministradores/api/query/use-persona-por-documento"
@@ -225,7 +225,7 @@ function AdministradorForm({
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>
-        <div className="flex max-w-6xl flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {modo === "nuevo" && (
             <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -248,10 +248,11 @@ function AdministradorForm({
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid max-w-6xl gap-x-6 gap-y-5 py-4 md:grid-cols-4"
+          className="grid gap-x-4 gap-y-5 py-4 md:grid-cols-12"
         >
           <FormDisabledProvider disabled={soloLectura}>
-            <div className="md:col-span-2">
+            {/* Identidad: documento y correo en una fila, nombres en la siguiente. */}
+            <div className="md:col-span-3">
               <form.AppField
                 name="tipoDocumento"
                 listeners={{
@@ -265,7 +266,7 @@ function AdministradorForm({
                 {(f) => <f.SelectField label="Tipo de documento" required options={tipoOptions} emptyValue={0} />}
               </form.AppField>
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-3">
               <form.AppField name="numeroDocumento">
                 {(f) => (
                   <f.TextField
@@ -273,14 +274,9 @@ function AdministradorForm({
                     required
                     maxLength={20}
                     inputMode={numerico ? "numeric" : "text"}
+                    placeholder={numerico ? "Solo dígitos" : "Letras y dígitos"}
                     transform={(v) => (numerico ? toDigitsOnly(v, 20) : v.replace(/[^A-Za-z0-9]/g, "").toUpperCase())}
-                    description={
-                      consulta.isFetching
-                        ? "Buscando a la persona en la plataforma…"
-                        : numerico
-                          ? "Solo dígitos, sin puntos ni espacios."
-                          : "Letras y dígitos, sin puntos ni espacios."
-                    }
+                    description={consulta.isFetching ? "Buscando a la persona en la plataforma…" : undefined}
                   />
                 )}
               </form.AppField>
@@ -288,26 +284,7 @@ function AdministradorForm({
 
             {/* Persona existente: nombres y correo son los suyos, no se editan aquí. */}
             <FormDisabledProvider disabled={persona != null}>
-              {(
-                [
-                  ["primerNombre", "Primer nombre", true],
-                  ["segundoNombre", "Segundo nombre", false],
-                  ["primerApellido", "Primer apellido", true],
-                  ["segundoApellido", "Segundo apellido", false],
-                ] as const
-              ).map(([name, label, required]) => (
-                <form.AppField key={name} name={name}>
-                  {(f) => (
-                    <f.TextField
-                      label={label}
-                      required={required}
-                      maxLength={40}
-                      transform={(v) => limpiarNombre(v).slice(0, 40)}
-                    />
-                  )}
-                </form.AppField>
-              ))}
-              <div className="md:col-span-2">
+              <div className="md:col-span-6">
                 <form.AppField name="correo">
                   {(f) => (
                     <f.TextField
@@ -316,18 +293,52 @@ function AdministradorForm({
                       type="email"
                       maxLength={120}
                       autoComplete="off"
+                      placeholder="Con este correo inicia sesión"
                       transform={toEmailInput}
                       description={
                         modo === "modificar"
                           ? "Si lo cambia, la cuenta vuelve a pendiente y se envía el enlace al correo nuevo."
-                          : "Con este correo inicia sesión."
+                          : undefined
                       }
                     />
                   )}
                 </form.AppField>
               </div>
+              {(
+                [
+                  ["primerNombre", "Primer nombre", true],
+                  ["segundoNombre", "Segundo nombre", false],
+                  ["primerApellido", "Primer apellido", true],
+                  ["segundoApellido", "Segundo apellido", false],
+                ] as const
+              ).map(([name, label, required]) => (
+                <div key={name} className="md:col-span-3">
+                  <form.AppField name={name}>
+                    {(f) => (
+                      <f.TextField
+                        label={label}
+                        required={required}
+                        maxLength={40}
+                        transform={(v) => limpiarNombre(v).slice(0, 40)}
+                      />
+                    )}
+                  </form.AppField>
+                </div>
+              ))}
             </FormDisabledProvider>
 
+            {/* Sin establecimientos a cargo: su alcance es toda la instalación (Sección 7.3). */}
+            <div className="md:col-span-9">
+              <form.AppField name="dependencia">
+                {(f) => (
+                  <f.TextField
+                    label="Dependencia"
+                    maxLength={150}
+                    placeholder="Ej. Secretaría de Educación — Cobertura (informativo)"
+                  />
+                )}
+              </form.AppField>
+            </div>
             <form.Field name="activo">
               {(field) => (
                 <Interruptor
@@ -336,30 +347,12 @@ function AdministradorForm({
                   checked={field.state.value}
                   onChange={(v) => field.handleChange(v)}
                   disabled={soloLectura}
-                  texto={field.state.value ? "Activo" : "Inactivo"}
-                  ayuda={
-                    field.state.value
-                      ? "Si lo inactiva, pierde el acceso y se cierran sus sesiones."
-                      : "No puede ingresar a la plataforma."
-                  }
-                  className="md:col-span-2"
+                  texto={field.state.value ? "Activo" : "Inactivo: sin acceso"}
+                  ayuda="Inactivo pierde el acceso y se cierran sus sesiones."
+                  className="md:col-span-3"
                 />
               )}
             </form.Field>
-
-            <div className="md:col-span-4">
-              <form.AppField name="dependencia">
-                {(f) => (
-                  <f.TextField
-                    label="Dependencia"
-                    maxLength={150}
-                    placeholder="Ej. Secretaría de Educación — Núcleo 3"
-                    description="Dato informativo: no concede permisos."
-                  />
-                )}
-              </form.AppField>
-            </div>
-
           </FormDisabledProvider>
         </form>
       </TableScreenBody>
@@ -380,6 +373,10 @@ export const AdministradorNuevoPage = () => <AdministradorFormPage modo="nuevo" 
 export const AdministradorModificarPage = () => <AdministradorFormPage modo="modificar" />
 export const AdministradorDetallePage = () => <AdministradorFormPage modo="ver" />
 
+/**
+ * Interruptor con la misma caja y etiqueta flotante que los demás campos, para
+ * que quepa en la fila; la explicación larga va en el `title` del control.
+ */
 function Interruptor({
   id,
   label,
@@ -400,16 +397,12 @@ function Interruptor({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col gap-2 text-sm", className)}>
-      <label htmlFor={id}>
-        {label}
-        <span className="text-red"> *</span>
-      </label>
-      <span className="flex items-center gap-2">
+    <Field variant="outlined" data-disabled={disabled || undefined} className={className}>
+      <FieldLabel htmlFor={id}>{label}*</FieldLabel>
+      <span className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm" title={ayuda}>
         <Switch id={id} size="sm" round checked={checked} disabled={disabled} onCheckedChange={onChange} />
-        <span className="text-muted-foreground">{texto}</span>
+        <span className="truncate text-muted-foreground">{texto}</span>
       </span>
-      <span className="text-xs text-muted-foreground">{ayuda}</span>
-    </div>
+    </Field>
   )
 }
