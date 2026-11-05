@@ -23,7 +23,9 @@ import {
   textoFallidos,
   useCrearComunicado,
   useEditarComunicado,
+  usePrevisualizarComunicado,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
+import { PrevisualizacionDestinatarios } from "@/features/comunicaciones/chat/components/previsualizacion-destinatarios"
 import { EditorTexto } from "@/features/comunicaciones/chat/components/editor-texto"
 import { DestinatariosComunicado } from "@/features/comunicaciones/chat/components/destinatarios-comunicado"
 import { AdjuntosComunicadoCampo } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
@@ -94,7 +96,8 @@ export function CrearComunicadoDialog({
   borrador?: { id: number; datos: Record<string, unknown> | null }
 }) {
   const { notify } = useNotify()
-  const [paso, setPaso] = useState<1 | 2>(1)
+  // 1 datos y destinatarios · 2 contenido y adjuntos · 3 previsualización (M.1: antes de publicar).
+  const [paso, setPaso] = useState<1 | 2 | 3>(1)
   const [html, setHtml] = useState(
     typeof borrador?.datos?.html === "string" ? borrador.datos.html : (editar?.contenidoHtml ?? ""),
   )
@@ -125,6 +128,7 @@ export function CrearComunicadoDialog({
   const crearNuevo = useCrearComunicado()
   const editarComunicado = useEditarComunicado(editar?.conversacionId ?? 0)
   const crear = editar ? editarComunicado : crearNuevo
+  const previsualizar = usePrevisualizarComunicado()
   const contenidoVacio = htmlVacio(html)
   // Ya publicado: los destinatarios y la fecha no cambian.
   const publicado = !!editar && new Date(editar.publicarEn) <= new Date()
@@ -209,7 +213,25 @@ export function CrearComunicadoDialog({
     setSinCiclo(false)
     setPaso(1)
     crear.reset()
+    previsualizar.reset()
     onClose()
+  }
+
+  // Previsualizar (M.1): cuenta los destinatarios con las mismas reglas de alcance que al publicar.
+  // Ya publicado los destinatarios no cambian: se guarda sin este paso.
+  const irAPrevisualizar = () => {
+    setIntentado(true)
+    if (contenidoVacio) return
+    const v = datos.state.values
+    previsualizar.mutate(
+      {
+        audiencia: v.audiencia as Audiencia[],
+        destinos: aDestinos(destinos),
+        modalidad: destinos.filtros?.modalidad?.valor ?? null,
+        ciclo: destinos.filtros?.ciclo ? Number(destinos.filtros.ciclo.valor) : null,
+      },
+      { onSuccess: () => setPaso(3) },
+    )
   }
 
   const intentarCerrar = async () => {
@@ -295,7 +317,15 @@ export function CrearComunicadoDialog({
             <DialogTitle>{editar ? "Editar Comunicado" : "Crear un Comunicado"}</DialogTitle>
           </DialogHeader>
           <ErrorNoticeBanner
-            error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
+            error={
+              crear.isError
+                ? crear.error
+                : previsualizar.isError
+                  ? previsualizar.error
+                  : autoguardado.estado === "error"
+                    ? true
+                    : null
+            }
             fallback="No se pudo guardar el borrador."
           />
 
@@ -395,6 +425,13 @@ export function CrearComunicadoDialog({
                 </div>
               </fieldset>
             </form>
+          ) : paso === 3 && previsualizar.data ? (
+            <PrevisualizacionDestinatarios
+              datos={previsualizar.data}
+              titulo={valores.titulo.trim()}
+              dirigidoA={resumenDestinatarios(valores.audiencia as Audiencia[], aDestinos(destinos))}
+              publicarEn={valores.publicarEn}
+            />
           ) : (
             <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1 py-1">
               <div className="flex min-h-64 flex-col gap-1.5">
@@ -438,24 +475,41 @@ export function CrearComunicadoDialog({
               </Button>
             ) : (
               <>
-                <Button type="button" onClick={() => setPaso(1)} disabled={crear.isPending}>
+                <Button
+                  type="button"
+                  onClick={() => setPaso(paso === 3 ? 2 : 1)}
+                  disabled={crear.isPending || previsualizar.isPending}
+                >
                   <ArrowLeftIcon data-icon="inline-start" />
                   Atrás
                 </Button>
                 <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={() => void crearComunicado()}
-                    disabled={crear.isPending}
-                    aria-busy={crear.isPending}
-                  >
-                    {crear.isPending && archivos.length > 0
-                      ? "Subiendo archivos…"
-                      : editar
-                        ? "Guardar"
-                        : "Crear"}
-                    <ArrowRightIcon data-icon="inline-end" />
-                  </Button>
+                  {paso === 2 && !publicado ? (
+                    <Button
+                      type="button"
+                      onClick={irAPrevisualizar}
+                      disabled={previsualizar.isPending}
+                      aria-busy={previsualizar.isPending}
+                    >
+                      Previsualizar
+                      <ArrowRightIcon data-icon="inline-end" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => void crearComunicado()}
+                      // Sin nadie a quien enviarlo no se publica (comms-service lo rechaza igual).
+                      disabled={crear.isPending || (paso === 3 && previsualizar.data?.unicos === 0)}
+                      aria-busy={crear.isPending}
+                    >
+                      {crear.isPending && archivos.length > 0
+                        ? "Subiendo archivos…"
+                        : editar
+                          ? "Guardar"
+                          : "Crear"}
+                      <ArrowRightIcon data-icon="inline-end" />
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     color="neutral"

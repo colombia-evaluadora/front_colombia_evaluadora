@@ -1,5 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef } from "react"
+import { toast } from "sonner"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { topicoUsuario } from "@/lib/auth-mapper"
@@ -7,6 +9,8 @@ import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime
 import { useAjustesChatQuery } from "@/features/comunicaciones/chat/api/query/use-ajustes-chat-query"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
+import { useMarcarLeida } from "@/features/notificaciones/api/mutations/marcar-leida"
+import { AVISO_EMERGENTE_MS, avisoEmergente } from "@/features/notificaciones/lib/aviso-emergente"
 import { debeSonar, reproducirSonidoAviso } from "@/features/notificaciones/lib/sonido-aviso"
 
 /**
@@ -36,6 +40,8 @@ export const REFRESCO_MS = 400
 
 export function useNotificacionesTiempoReal() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const marcarLeida = useMarcarLeida()
   const { user } = useAuth()
   // Apagado global del sonido (ajustes del chat). Mientras carga, el defecto: suena.
   const ajustes = useAjustesChatQuery({ enabled: !!user && !user.offline })
@@ -69,6 +75,29 @@ export function useNotificacionesTiempoReal() {
         const lista = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)
         const archivadas = new Set((lista ?? []).filter((c) => c.archivada).map((c) => c.id))
         if (debeSonar(e.data, sonidoActivo, archivadas)) reproducirSonidoAviso()
+        // Aviso emergente (informe de Comunicaciones §7.1): arriba a la derecha, 5 segundos y con
+        // "Abrir". Con la pestaña oculta no se muestra: al volver, el aviso ya está en la campana.
+        const aviso =
+          document.visibilityState === "visible"
+            ? avisoEmergente(e.data, window.location.pathname + window.location.search)
+            : null
+        const canal = aviso ? /[?&]canal=(d+)/.exec(aviso.href)?.[1] : undefined
+        if (aviso && !(canal && archivadas.has(Number(canal)))) {
+          toast(aviso.titulo, {
+            // El id evita duplicar el aviso si el evento llega dos veces (reconexión del socket).
+            id: `notificacion-${aviso.id}`,
+            description: aviso.cuerpo,
+            duration: AVISO_EMERGENTE_MS,
+            position: "top-right",
+            action: {
+              label: "Abrir",
+              onClick: () => {
+                marcarLeida.mutate({ id: aviso.id, leida: true })
+                void navigate({ href: aviso.href })
+              },
+            },
+          })
+        }
       }
       if (EVENTOS.has(e.event) || e.event === "conversacion.actualizada") refrescar()
     },
