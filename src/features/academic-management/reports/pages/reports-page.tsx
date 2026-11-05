@@ -104,7 +104,7 @@ const ROLES_SOLO_SUS_GRUPOS = ["CEVAL-DOCENTE", "CEVAL-DIRECTOR_GRUPO"]
 const MAX_GRUPOS_ABIERTOS = 8
 
 const PANEL_CLASS =
-  "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "rounded-lg border border-border bg-background p-4"
 
 interface GruposAbiertosState {
   grupos: number[]
@@ -821,7 +821,7 @@ function ReportsPageContent() {
 
         {gruposAbiertos.length > 0 && (
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(Number(value))}>
-            <TabsList variant="folder">
+            <TabsList>
               {gruposAbiertos.map((grupo) => (
                 <TabsTrigger key={grupo.grupoId} value={String(grupo.grupoId)}>
                   <span className="truncate">{grupo.grupoEtiqueta}</span>

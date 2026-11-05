@@ -310,7 +310,7 @@ function ListasValorPageContent() {
       </TableScreenHeader>
       <TableScreenTabs className="bg-card">
         <Tabs value={pestana} onValueChange={(v) => cambiarPestana(String(v))}>
-          <TabsList variant="line">
+          <TabsList className="border-b-0">
             <TabsTrigger value="listas">Listas</TabsTrigger>
             <TabsTrigger value="iconografia">Iconografía</TabsTrigger>
           </TabsList>

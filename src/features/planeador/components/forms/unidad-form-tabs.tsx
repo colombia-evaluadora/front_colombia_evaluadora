@@ -15,7 +15,7 @@ type UnidadFormTab = "general" | "rubricas" | "actividades"
 // arriba (lo dibuja la lista de pestañas) y esquina superior izquierda a
 // escuadra, que es donde se apoya la primera solapa.
 const PANEL =
-  "min-w-0 rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "min-w-0 rounded-lg border bg-background p-4"
 
 /**
  * Pestañas "Información general / Rúbricas / Actividades" de las páginas de
@@ -91,7 +91,7 @@ export function UnidadFormTabs({
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as UnidadFormTab)} className="w-full min-w-0">
-      <TabsList variant="folder">
+      <TabsList>
         {/* La variante "folder" pone `display: block` en el trigger (lo
             necesita el `truncate` de la etiqueta activa) — eso rompe el
             `inline-flex` que junta ícono y texto en la misma línea. El
