@@ -60,6 +60,7 @@ import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/g
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
+import { conservacionSearchSchema } from "@/features/administration/conservacion-datos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
@@ -197,6 +198,16 @@ const ParametrosEdadPage = lazyRouteComponent(
 const FestivosPage = lazyRouteComponent(
   () => import("@/features/administration/festivos/pages/festivos-page"),
   "FestivosPage"
+)
+
+const ConservacionDatosPage = lazyRouteComponent(
+  () => import("@/features/administration/conservacion-datos/pages/conservacion-datos-page"),
+  "ConservacionDatosPage"
+)
+
+const PoliticaFormPage = lazyRouteComponent(
+  () => import("@/features/administration/conservacion-datos/pages/politica-form-page"),
+  "PoliticaFormPage"
 )
 
 const EstablishmentDetailPage = lazyRouteComponent(
@@ -734,6 +745,36 @@ export const festivosRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Festivos" }],
   },
   component: FestivosPage,
+})
+
+const CONSERVACION_CRUMB = { label: "Conservación de datos", to: paths.app.conservacionDatos.getHref() }
+
+export const conservacionDatosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionDatos.path,
+  validateSearch: conservacionSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Conservación de datos" }],
+  },
+  component: ConservacionDatosPage,
+})
+
+export const conservacionPoliticaNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionPoliticaNueva.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Nueva política" }],
+  },
+  component: PoliticaFormPage,
+})
+
+export const conservacionPoliticaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionPoliticaEditar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Modificar política" }],
+  },
+  component: PoliticaFormPage,
 })
 
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
@@ -1457,6 +1498,9 @@ const routeTree = rootRoute.addChildren([
     superadministradoresRoute,
     parametrosEdadRoute,
     festivosRoute,
+    conservacionDatosRoute,
+    conservacionPoliticaNuevaRoute,
+    conservacionPoliticaEditarRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

@@ -134,6 +134,19 @@ export const paths = {
       path: "administracion/festivos",
       getHref: () => "/app/administracion/festivos",
     },
+    conservacionDatos: {
+      path: "administracion/conservacion-datos",
+      getHref: () => "/app/administracion/conservacion-datos",
+    },
+    conservacionPoliticaNueva: {
+      path: "administracion/conservacion-datos/politicas/nueva",
+      getHref: () => "/app/administracion/conservacion-datos/politicas/nueva",
+    },
+    conservacionPoliticaEditar: {
+      path: "administracion/conservacion-datos/politicas/editar/$politicaId",
+      getHref: (politicaId: number | string) =>
+        `/app/administracion/conservacion-datos/politicas/editar/${politicaId}`,
+    },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
       getHref: () => "/app/establecimiento-educativo/periodos",

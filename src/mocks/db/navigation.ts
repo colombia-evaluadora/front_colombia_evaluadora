@@ -139,6 +139,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V596: Superadministrador (y Administrador y Gestor del establecimiento en el back).
+  {
+    id: 50,
+    name: "Conservación de datos",
+    icon: "",
+    path: "/app/administracion/conservacion-datos",
+    menuOrder: 10,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
   {
     id: 46,

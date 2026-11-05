@@ -25,6 +25,7 @@ import { superadministradoresHandlers } from "@/mocks/handlers/superadministrado
 import { parametrosEdadHandlers } from "@/mocks/handlers/parametros-edad"
 import { listasValorHandlers } from "@/mocks/handlers/listas-valor"
 import { festivosHandlers } from "@/mocks/handlers/festivos"
+import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
@@ -99,6 +100,8 @@ export const handlers = [
   ...parametrosEdadHandlers,
   ...listasValorHandlers,
   ...festivosHandlers,
+  // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
+  ...conservacionDatosHandlers,
   ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,
   ...horarioHandlers,
