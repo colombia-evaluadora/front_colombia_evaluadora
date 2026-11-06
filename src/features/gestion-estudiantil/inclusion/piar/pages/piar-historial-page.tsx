@@ -143,8 +143,8 @@ export function PiarHistorialPage() {
               },
               { id: "fecha", header: "Fecha", cell: ({ row }) => formatFecha(row.original.fecha) },
               { id: "autor", header: "Autor", cell: ({ row }) => row.original.autor ?? "—" },
-              { id: "motivo", header: "Motivo", cell: ({ row }) => <span className="block min-w-72 whitespace-normal">{row.original.motivo ?? "—"}</span> },
-              { id: "cambio", header: "Cambio (anterior → nuevo)", cell: ({ row }) => <span className="block min-w-80 whitespace-normal">{row.original.cambio}</span> },
+              { id: "motivo", header: "Motivo", cell: ({ row }) => <span className="block min-w-48 whitespace-normal">{row.original.motivo ?? "—"}</span> },
+              { id: "cambio", header: "Cambio (anterior → nuevo)", cell: ({ row }) => <span className="block min-w-56 whitespace-normal">{row.original.cambio}</span> },
               {
                 id: "archivo",
                 header: "Archivo",
