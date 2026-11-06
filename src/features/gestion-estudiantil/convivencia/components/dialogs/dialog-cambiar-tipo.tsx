@@ -2,9 +2,7 @@ import { useState } from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowsDownUpIcon, InfoIcon } from "@/components/ui/icons"
-import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
 import { useCambiarTipo } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
@@ -64,7 +62,7 @@ function DialogCambiarTipoForm({ caso, detalle, onClose }: Props & { detalle: Ca
   const [motivo, setMotivo] = useState("")
   const [siuce, setSiuce] = useState<DatosSiuce>(() => siuceDe(detalle))
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
 
   const nuevoCodigo = codigoDe(tipos, tipo)
   const grave = esGrave(nuevoCodigo)
@@ -74,7 +72,7 @@ function DialogCambiarTipoForm({ caso, detalle, onClose }: Props & { detalle: Ca
     setTipo("")
     setMotivo("")
     setIntento(false)
-    setNotice(null)
+    setError(null)
     onClose()
   }
 
@@ -84,7 +82,7 @@ function DialogCambiarTipoForm({ caso, detalle, onClose }: Props & { detalle: Ca
         notify("Tipo del caso cambiado.", { variant: "success" })
         cerrar()
       },
-      onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+      onError: (error) => setError(error),
     },
   })
 
@@ -102,8 +100,7 @@ function DialogCambiarTipoForm({ caso, detalle, onClose }: Props & { detalle: Ca
       titulo="Cambiar tipo"
       className="sm:max-w-2xl"
       onClose={cerrar}
-      notice={notice}
-      onNoticeClose={() => setNotice(null)}
+      error={error}
       pending={mut.isPending}
       confirmar={{
         label: "Cambiar tipo",

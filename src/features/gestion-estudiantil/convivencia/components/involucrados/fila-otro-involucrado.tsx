@@ -130,7 +130,7 @@ export function FilaOtroInvolucrado({ fila: v, todas, mostrarErrores, roles, tip
         variant="ghost"
         color="neutral"
         size="icon-sm"
-        className="mt-4.5"
+        className="mt-5"
         aria-label="Quitar involucrado"
         onClick={onQuitar}
       >

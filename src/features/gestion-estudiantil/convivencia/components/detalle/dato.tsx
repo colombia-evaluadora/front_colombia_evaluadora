@@ -12,7 +12,7 @@ export function Dato({ label, children }: { label: string; children: ReactNode }
 export function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-base font-medium">{titulo}</h2>
+      <h2 className="text-lg font-semibold">{titulo}</h2>
       {children}
     </section>
   )

@@ -1,6 +1,9 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useSelector } from "@tanstack/react-form"
 import { Button } from "@/components/ui/button"
+import { evalCol } from "@/lib/eval-col-client"
+import { SugerenciasPiar, type SugerenciaPiar } from "@/features/planeador/components/forms/form-editar-actividad/sugerencias-piar"
 import { Card } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { CharacterCounter } from "@/components/ui/character-counter"
@@ -77,6 +80,23 @@ export function AdaptacionesSection({
   const estudiantesActividad = matriculas.filter((m) =>
     esEstudianteDeLaActividad({ asignarTodoElGrupo, matriculasIds }, m.id),
   )
+  // Al editar, recupera qué adaptaciones siguen ligadas al PIAR para reenviarlo al guardar.
+  const { data: vinculos } = useQuery({
+    queryKey: ["planeador", "piar-vinculos", actividadId],
+    queryFn: () => evalCol.getRows<{ indice: number; fk_tpiar_ajuste: number }>(`/planeador/actividades/${actividadId}/piar-vinculos`),
+    enabled: actividadId > 0,
+  })
+  useEffect(() => {
+    if (!vinculos?.length) return
+    const actuales = form.getFieldValue("adaptaciones") as Adaptacion[]
+    form.setFieldValue(
+      "adaptaciones",
+      actuales.map((a, i) => ({ ...a, piarAjusteId: vinculos.find((v) => v.indice === i)?.fk_tpiar_ajuste ?? a.piarAjusteId })),
+      { dontUpdateMeta: true },
+    )
+    // Solo cuando llegan los vínculos.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vinculos])
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Adaptaciones curriculares</h3>
@@ -99,9 +119,34 @@ export function AdaptacionesSection({
                 archivos: [],
               },
             ])
+          const agregarSugerencias = (sugerencias: SugerenciaPiar[]) =>
+            field.handleChange([
+              ...adaptaciones,
+              ...sugerencias.map((s) => ({
+                piarAjusteId: s.fk_tpiar_ajuste,
+                tipo: s.tipo_adaptacion as Adaptacion["tipo"],
+                especificacionTipo: s.especificacion ?? "",
+                descripcion: s.descripcion,
+                versionModificada: "no" as const,
+                versionModificadaRef: "",
+                nombrePlantilla: "",
+                aplicaA: "Estudiantes específicos" as Adaptacion["aplicaA"],
+                estudiantesIds: [s.fk_tmatricula],
+                archivos: [],
+              })),
+            ])
           // El "+" vive siempre en el header, haya o no adaptaciones.
           return (
             <>
+              <SoloEdicion>
+                <SugerenciasPiar
+                  actividadId={actividadId}
+                  yaAgregadas={adaptaciones.flatMap((a) => (a.piarAjusteId ? [a.piarAjusteId] : []))}
+                  matriculasActividad={estudiantesActividad.map((m) => m.id)}
+                  disabled={disabled}
+                  onAgregar={agregarSugerencias}
+                />
+              </SoloEdicion>
               <div className="flex items-center justify-between rounded-md border bg-card p-3">
                 <p className="text-sm font-semibold">
                   {adaptaciones.length === 0

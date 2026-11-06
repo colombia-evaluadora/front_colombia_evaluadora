@@ -1,8 +1,6 @@
 import { useState } from "react"
 
-import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
 import type { IntegranteComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { useReemplazarIntegranteMutation } from "@/features/gestion-estudiantil/convivencia/api/mutations/comite"
@@ -19,7 +17,7 @@ export function useComiteReemplazar(integrante: IntegranteComite | null, onClose
   const [persona, setPersona] = useState<PersonaValor>({ ...PERSONA_VACIA })
   const [fecha, setFecha] = useState(HOY())
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const mut = useReemplazarIntegranteMutation()
 
   const dato = integrante ? datoDeIntegrante(integrante) : null
@@ -43,13 +41,13 @@ export function useComiteReemplazar(integrante: IntegranteComite | null, onClose
     setPersona({ ...PERSONA_VACIA })
     setFecha(HOY())
     setIntento(false)
-    setNotice(null)
+    setError(null)
     onClose()
   }
 
   async function reemplazar() {
     setIntento(true)
-    setNotice(null)
+    setError(null)
     if (!integrante || !dato) return
     const falta =
       (dato === "FUNCIONARIO" && persona.fk_funcionario == null) ||
@@ -69,7 +67,7 @@ export function useComiteReemplazar(integrante: IntegranteComite | null, onClose
       notify(`Integrante reemplazado en ${integrante.cargo_nombre}.`, { variant: "success" })
       cerrar()
     } catch (error) {
-      setNotice({ id: Date.now(), message: getErrorMessage(error) })
+      setError(error)
     }
   }
 
@@ -80,8 +78,7 @@ export function useComiteReemplazar(integrante: IntegranteComite | null, onClose
     fecha,
     setFecha,
     errores,
-    notice,
-    cerrarNotice: () => setNotice(null),
+    error,
     pending: mut.isPending,
     reemplazar,
     cerrar,

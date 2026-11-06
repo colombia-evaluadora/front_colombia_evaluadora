@@ -33,6 +33,8 @@ export const NAV_PATH_ALIASES: ReadonlyArray<readonly [from: string, to: string]
   ["/app/establecimiento-educativo/agregar", "/app/establecimiento-educativo/general"],
   ["/app/establecimiento-educativo/detalle", "/app/establecimiento-educativo/general"],
   ["/app/establecimiento-educativo/editar", "/app/establecimiento-educativo/general"],
+  // El PIAR cuelga de Inclusión y orientación; sus avisos enlazan a /inclusion/piar/:id (V601).
+  ["/app/gestion-estudiantil/inclusion", "/app/gestion-estudiantil/inclusion-orientacion"],
   // Un solo ítem de menú para sesiones y tablas.
   ["/app/registro-de-actividad", "/app/registro-de-actividad/sesiones"],
   // Un solo ítem de menú (actividades) para todas las vistas del Planeador.

@@ -21,7 +21,6 @@ import {
 
 const ACCIONES_PROXIMAS = [
   { label: "Reportar salud mental", Icono: BrainIcon },
-  { label: "Remitir a orientación", Icono: PersonIcon },
   { label: "Abrir proceso disciplinario", Icono: GavelIcon },
 ]
 
@@ -34,6 +33,8 @@ interface ColumnasOpciones {
   onAnular: (row: AnotacionRow) => void
   puedeEditar: boolean
   puedeAnular: boolean
+  puedeRemitir: boolean
+  onRemitir: (row: AnotacionRow) => void
 }
 
 export function buildColumnsAnotaciones({
@@ -42,6 +43,8 @@ export function buildColumnsAnotaciones({
   onAnular,
   puedeEditar,
   puedeAnular,
+  puedeRemitir,
+  onRemitir,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
@@ -159,7 +162,11 @@ export function buildColumnsAnotaciones({
                 <ProhibitIcon />
                 Anular
               </DropdownMenuItem>
-              {/* Secciones 9.6, 5.2 y convivencia: aún sin backend. */}
+              <DropdownMenuItem disabled={!puedeRemitir} onClick={() => onRemitir(a)}>
+                <PersonIcon />
+                Remitir a orientación
+              </DropdownMenuItem>
+              {/* Sección 9.6 y convivencia: aún sin backend. */}
               {ACCIONES_PROXIMAS.map(({ label, Icono }) => (
                 <DropdownMenuItem key={label} disabled>
                   <Icono />

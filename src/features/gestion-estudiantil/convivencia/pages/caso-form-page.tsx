@@ -1,11 +1,12 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { ConstructoresInvolucrados } from "@/features/gestion-estudiantil/convivencia/components/constructores-involucrados"
@@ -26,15 +27,11 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={volver} disabled={guardando}>
+              <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
                 Cancelar
               </Button>
               <Button size="sm" onClick={guardar} disabled={guardando}>
-                {guardando ? (
-                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                ) : (
-                  <FloppyDiskIcon data-icon="inline-start" />
-                )}
+                <IconoCarga cargando={guardando}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                 Guardar
               </Button>
             </div>

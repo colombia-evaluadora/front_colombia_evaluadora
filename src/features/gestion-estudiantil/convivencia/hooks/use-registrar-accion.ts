@@ -1,8 +1,6 @@
 import { useState } from "react"
 
-import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
 import { useRegistrarAccion as useRegistrarAccionMutation } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useCasoQuery, usePasosCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
@@ -39,7 +37,7 @@ export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void
   const [codigos, setCodigos] = useState<CodigoSiuce[]>([])
   const [soportes, setSoportes] = useState<File[]>([])
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
 
   const codigo = codigoDe(acciones, accion)
   const conEntidad = codigo != null && (COD.conEntidad as readonly string[]).includes(codigo)
@@ -66,7 +64,7 @@ export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void
     setCodigos([])
     setSoportes([])
     setIntento(false)
-    setNotice(null)
+    setError(null)
     onClose()
   }
 
@@ -76,7 +74,7 @@ export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void
         notify("Acción registrada.", { variant: "success" })
         cerrar()
       },
-      onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+      onError: (error) => setError(error),
     },
   })
 
@@ -137,8 +135,7 @@ export function useRegistrarAccion(caso: CasoResumen | null, onClose: () => void
     /** Sin fecha de los hechos no se puede contrastar la acción con la ocurrencia. */
     fechaHechosDesconocida: Boolean(d && !d.fecha_hechos_conocida),
     ver,
-    notice,
-    cerrarNotice: () => setNotice(null),
+    error,
     pending: mut.isPending,
     cerrar,
     registrar,

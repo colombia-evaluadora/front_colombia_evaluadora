@@ -1,7 +1,8 @@
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { dia } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, FileDownloadOutlinedIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -29,11 +30,7 @@ function Contenido({ sesion, periodo, etiqueta }: { sesion: SesionDetalle; perio
           action={
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={d.descargar} disabled={d.descargando}>
-                {d.descargando ? (
-                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                ) : (
-                  <FileDownloadOutlinedIcon data-icon="inline-start" />
-                )}
+                <IconoCarga cargando={d.descargando}><FileDownloadOutlinedIcon data-icon="inline-start" /></IconoCarga>
                 Descargar acta
               </Button>
               <Button size="sm" variant="outline" color="neutral" onClick={d.volver}>

@@ -371,6 +371,30 @@ export const paths = {
       path: "gestion-estudiantil/convivencia/comite/sesion/$sesionId/editar",
       getHref: (sesionId: number | string) => `/app/gestion-estudiantil/convivencia/comite/sesion/${sesionId}/editar`,
     },
+    inclusionOrientacion: {
+      path: "gestion-estudiantil/inclusion-orientacion",
+      getHref: () => "/app/gestion-estudiantil/inclusion-orientacion",
+    },
+    atencionNueva: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+      getHref: () => "/app/gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+    },
+    atencionFicha: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/$atencionId",
+      getHref: (atencionId: number | string) => `/app/gestion-estudiantil/inclusion/orientacion/atencion/${atencionId}`,
+    },
+    piarNuevo: {
+      path: "gestion-estudiantil/inclusion/piar/nuevo",
+      getHref: () => "/app/gestion-estudiantil/inclusion/piar/nuevo",
+    },
+    piarFicha: {
+      path: "gestion-estudiantil/inclusion/piar/$piarId",
+      getHref: (piarId: number | string) => `/app/gestion-estudiantil/inclusion/piar/${piarId}`,
+    },
+    piarHistorial: {
+      path: "gestion-estudiantil/inclusion/piar/$piarId/historial",
+      getHref: (piarId: number | string) => `/app/gestion-estudiantil/inclusion/piar/${piarId}/historial`,
+    },
     observador: {
       path: "gestion-estudiantil/observador",
       getHref: () => "/app/gestion-estudiantil/observador",

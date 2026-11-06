@@ -14,12 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { InfoIcon, ProhibitIcon, SpinnerIcon } from "@/components/ui/icons"
+import { InfoIcon, ProhibitIcon } from "@/components/ui/icons"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { useAnularAnotacion } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
 import { colorDeTipo, formatFecha, MENSAJES } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
@@ -36,7 +36,7 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
   const { notify } = useNotify()
   const [motivo, setMotivo] = useState("")
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
 
   const anular = useAnularAnotacion({
     mutationConfig: {
@@ -44,14 +44,14 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
         notify(MENSAJES.anulada, { variant: "success" })
         cerrar()
       },
-      onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+      onError: (error) => setError(error),
     },
   })
 
   function cerrar() {
     setMotivo("")
     setIntento(false)
-    setNotice(null)
+    setError(null)
     onClose()
   }
 
@@ -81,7 +81,7 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
             </DialogDescription>
           )}
         </DialogHeader>
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
+        <ErrorNoticeBanner error={error} />
 
         <Field orientation="vertical" variant="outlined" className="gap-2">
           <FieldLabel htmlFor="anular-motivo">
@@ -113,15 +113,11 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" color="destructive" disabled={anular.isPending} onClick={handleAnular}>
-            {anular.isPending ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <ProhibitIcon data-icon="inline-start" />
-            )}
+            <IconoCarga cargando={anular.isPending}><ProhibitIcon data-icon="inline-start" /></IconoCarga>
             Anular
           </Button>
         </DialogFooter>

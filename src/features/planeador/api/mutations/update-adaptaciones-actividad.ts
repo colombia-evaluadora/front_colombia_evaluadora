@@ -101,6 +101,11 @@ export async function updateAdaptacionesActividad(
   await api.put(`/eval-col/planeador/actividades/${actividadId}/adaptaciones`, {
     ADAPTACIONES: JSON.stringify(cuerpo),
   }, writeConfig(req))
+  // El PUT reemplaza las filas: el vínculo al ajuste del PIAR se registra otra vez, por posición (sso V607).
+  const vinculos = adaptaciones.flatMap((a, indice) => (a.piarAjusteId ? [{ indice, ajuste: a.piarAjusteId }] : []))
+  if (vinculos.length) {
+    await api.post(`/eval-col/planeador/actividades/${actividadId}/piar-vinculos`, { VINCULOS: JSON.stringify(vinculos) }, writeConfig(req))
+  }
 }
 
 interface UseUpdateAdaptacionesActividadOptions {
