@@ -15,6 +15,7 @@ import { descargarActualizacion } from "@/features/gestion-estudiantil/inclusion
 import { usePiarHistorialQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
+import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { textoElemento } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
@@ -57,11 +58,12 @@ function aFilas(versiones: VersionHistorial[]): Fila[] {
     {
       clave: `v${v.id}`,
       version: v.numero,
-      tipo: v.conclusion ? "Revisión concluida" : v.acordada_en ? "Versión acordada" : "Versión de trabajo",
+      // Una versión de trabajo posterior solo queda vinculada a la conclusión: no es esa revisión.
+      tipo: v.estado.codigo === "VERSION_TRABAJO" ? "Versión de trabajo" : v.conclusion ? "Revisión concluida" : v.acordada_en ? "Versión acordada" : "Versión de trabajo",
       estado: v.estado,
       fecha: v.fecha_acuerdo ?? v.creada_en,
-      autor: v.conclusion?.responsable ?? v.autor,
-      motivo: v.conclusion?.sintesis ?? null,
+      autor: (v.estado.codigo !== "VERSION_TRABAJO" && v.conclusion?.responsable) || v.autor,
+      motivo: v.estado.codigo === "VERSION_TRABAJO" ? (v.conclusion ? "Nueva versión tras la revisión concluida." : null) : (v.conclusion?.sintesis ?? null),
       cambio: "—",
       archivo: v.fk_tarchivo_acta,
       archivoNombre: v.acta_nombre,
@@ -87,7 +89,7 @@ export function PiarHistorialPage() {
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            <Button size="sm" variant="outline" color="muted" render={<Link to={paths.app.piarFicha.getHref(piarId)} />} nativeButton={false}>
+            <Button size="sm" variant="outline" color="neutral" render={<Link to={paths.app.piarFicha.getHref(piarId)} />} nativeButton={false}>
               Volver
             </Button>
           }
@@ -102,7 +104,7 @@ export function PiarHistorialPage() {
           <AvisoPiar>
             <span className="flex flex-wrap items-center gap-3">
               La versión {pendiente.numero} sigue pendiente de acuerdo hasta que se cargue el documento de actualización firmado.
-              {puedeGestionar && <Button size="xs" variant="outline" color="muted" onClick={() => setSoporte(true)}>Cargar documento firmado</Button>}
+              {puedeGestionar && <Button size="xs" variant="outline" color="neutral" onClick={() => setSoporte(true)}>Cargar documento firmado</Button>}
             </span>
           </AvisoPiar>
         )}
@@ -128,38 +130,35 @@ export function PiarHistorialPage() {
           </ul>
         )}
         {data?.versiones && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/60 text-left">
-                <tr>
-                  {["Versión", "Tipo", "Estado de la versión", "Fecha", "Autor", "Motivo", "Cambio (anterior → nuevo)", "Archivo"].map((h) => (
-                    <th key={h} className="px-2 py-2 font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map((f) => (
-                  <tr key={f.clave} className="border-b border-border align-top">
-                    <td className="px-2 py-3 font-medium">{f.version}</td>
-                    <td className="px-2 py-3">{f.tipo}</td>
-                    <td className="px-2 py-3">
-                      {f.estado && <Badge variant="soft" color={COLOR_VERSION[f.estado.codigo] ?? "muted"}><span>{f.estado.nombre}</span></Badge>}
-                    </td>
-                    <td className="px-2 py-3 whitespace-nowrap">{formatFecha(f.fecha)}</td>
-                    <td className="px-2 py-3">{f.autor ?? "—"}</td>
-                    <td className="px-2 py-3">{f.motivo ?? "—"}</td>
-                    <td className="px-2 py-3">{f.cambio}</td>
-                    <td className="px-2 py-3 whitespace-nowrap">
-                      <span className="flex flex-col items-start gap-1">
-                        {f.archivo ? <button type="button" className="text-primary hover:underline" onClick={() => abrir(f.archivo as number)}>{f.archivoNombre ?? "Ver archivo"}</button> : "—"}
-                        {f.actualizacion && <button type="button" className="text-primary hover:underline" onClick={() => descargarActualizacion(f.actualizacion as number)}>Documento</button>}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TablaDatos
+            id="piar-historial"
+            rows={filas}
+            rowId={(f) => f.clave}
+                        emptyMessage="Aún no hay versiones."
+            columns={[
+              { id: "version", header: "Versión", cell: ({ row }) => <span className="font-medium">{row.original.version}</span> },
+              { id: "tipo", header: "Tipo", cell: ({ row }) => row.original.tipo },
+              {
+                id: "estado",
+                header: "Estado de la versión",
+                cell: ({ row }) => row.original.estado && <Badge variant="soft" color={COLOR_VERSION[row.original.estado.codigo] ?? "muted"}><span>{row.original.estado.nombre}</span></Badge>,
+              },
+              { id: "fecha", header: "Fecha", cell: ({ row }) => formatFecha(row.original.fecha) },
+              { id: "autor", header: "Autor", cell: ({ row }) => <span className="block max-w-24 whitespace-normal">{row.original.autor ?? "—"}</span> },
+              { id: "motivo", header: "Motivo", cell: ({ row }) => <span className="block min-w-48 whitespace-normal">{row.original.motivo ?? "—"}</span> },
+              { id: "cambio", header: "Cambio (anterior → nuevo)", cell: ({ row }) => <span className="block max-w-64 whitespace-normal">{row.original.cambio}</span> },
+              {
+                id: "archivo",
+                header: "Archivo",
+                cell: ({ row }) => (
+                  <span className="flex flex-col items-start gap-1">
+                    {row.original.archivo ? <button type="button" className="text-primary hover:underline" onClick={() => abrir(row.original.archivo as number)}>{row.original.archivoNombre ?? "Ver archivo"}</button> : "—"}
+                    {row.original.actualizacion && <button type="button" className="text-primary hover:underline" onClick={() => descargarActualizacion(row.original.actualizacion as number)}>Documento</button>}
+                  </span>
+                ),
+              },
+            ]}
+          />
         )}
       </TableScreenBody>
     </TableScreen>

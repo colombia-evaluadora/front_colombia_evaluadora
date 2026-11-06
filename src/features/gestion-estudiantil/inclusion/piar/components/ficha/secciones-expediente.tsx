@@ -5,6 +5,7 @@ import { DotsThreeVerticalIcon, FileUploadOutlinedIcon, ListChecksIcon } from "@
 
 import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { TituloSensible } from "@/features/gestion-estudiantil/inclusion/piar/components/campos-datos-piar"
 import { TarjetaAjuste } from "@/features/gestion-estudiantil/inclusion/piar/components/ficha/tarjeta-ajuste"
 import { BotonQuitar, BotonSeccion, EnlaceArchivo, ListaDatos, Par, Vacio } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
@@ -108,41 +109,40 @@ export function SeccionAntecedentes({ ficha: { piar, gestiona, setDialogo } }: {
 export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { ficha: FichaPiar }) {
   return (
     <SeccionPlegable titulo={<Titulo>Cobertura por asignatura</Titulo>} contentClassName="overflow-x-auto p-4">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/60 text-left">
-          <tr>
-            <th className="px-2 py-2 font-medium">Asignatura</th>
-            <th className="px-2 py-2 font-medium">Cobertura</th>
-            <th className="px-2 py-2 text-right font-medium">Ajustes</th>
-            <th className="px-2 py-2 font-medium">Justificación</th>
-            <th className="px-2 py-2 font-medium">Revisado por y fecha</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {piar.cobertura?.map((c) => (
-            <tr key={c.fk_tasignatura} className="border-b border-border">
-              <td className="px-2 py-3 font-medium">{c.asignatura_nombre}</td>
-              <td className="px-2 py-3"><Badge variant="soft" color={COLOR_COBERTURA[c.cobertura]}><span>{c.cobertura_nombre}</span></Badge></td>
-              <td className="px-2 py-3 text-right tabular-nums">{piar.ajustes.filter((a) => a.fk_tasignatura === c.fk_tasignatura).length}</td>
-              <td className="px-2 py-3">{c.justificacion ?? "—"}</td>
-              <td className="px-2 py-3 whitespace-nowrap">{c.revisado_en ? `${c.revisado_por ? `${c.revisado_por} · ` : ""}${formatFecha(c.revisado_en)}` : "—"}</td>
-              <td className="px-2 py-3 text-right">
-                {gestiona && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" color="muted" aria-label={`Acciones de ${c.asignatura_nombre}`} />}>
-                      <DotsThreeVerticalIcon />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setDialogo({ tipo: "cobertura", fila: c })}><ListChecksIcon />Revisar cobertura</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <TablaDatos
+        id="piar-cobertura"
+        rows={piar.cobertura ?? []}
+        rowId={(c) => String(c.fk_tasignatura)}
+        growColumnId="justificacion"
+        emptyMessage="El plan de estudio no tiene asignaturas."
+        columns={[
+          { id: "asignatura", header: "Asignatura", cell: ({ row }) => <span className="font-medium">{row.original.asignatura_nombre}</span> },
+          { id: "cobertura", header: "Cobertura", cell: ({ row }) => <Badge variant="soft" color={COLOR_COBERTURA[row.original.cobertura]}><span>{row.original.cobertura_nombre}</span></Badge> },
+          { id: "ajustes", header: "Ajustes", cell: ({ row }) => <span className="block text-right tabular-nums">{piar.ajustes.filter((a) => a.fk_tasignatura === row.original.fk_tasignatura).length}</span> },
+          { id: "justificacion", header: "Justificación", cell: ({ row }) => row.original.justificacion ?? "—" },
+          {
+            id: "revisado",
+            header: "Revisado por y fecha",
+            cell: ({ row }) => (row.original.revisado_en ? `${row.original.revisado_por ? `${row.original.revisado_por} · ` : ""}${formatFecha(row.original.revisado_en)}` : "—"),
+          },
+          {
+            id: "actions",
+            enableHiding: false,
+            header: () => null,
+            cell: ({ row }) =>
+              gestiona && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" color="neutral" aria-label={`Acciones de ${row.original.asignatura_nombre}`} />}>
+                    <DotsThreeVerticalIcon />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setDialogo({ tipo: "cobertura", fila: row.original })}><ListChecksIcon />Revisar cobertura</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ),
+          },
+        ]}
+      />
     </SeccionPlegable>
   )
 }
@@ -176,7 +176,7 @@ export function SeccionActividades({ ficha: { piar, estado, gestiona, setDialogo
             <strong>{a.actividad}</strong>
             {gestiona && (
               <span className="ml-auto flex items-center gap-1">
-                <Button size="xs" variant="ghost" color="muted" type="button" onClick={() => setDialogo({ tipo: "actividad", actividad: a })}>Modificar</Button>
+                <Button size="xs" variant="ghost" color="neutral" type="button" onClick={() => setDialogo({ tipo: "actividad", actividad: a })}>Modificar</Button>
                 <BotonSeccion onClick={() => setDialogo({ tipo: "resultado", actividad: a })}>Registrar resultado</BotonSeccion>
               </span>
             )}

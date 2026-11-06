@@ -5,41 +5,37 @@ import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/comp
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { descargarActa } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import type { Participante, VersionActual } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
+import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { BotonQuitar, BotonSeccion, EnlaceArchivo } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 
 function TablaParticipantes({ version, quitable, onQuitar, onEditar }: { version: VersionActual; quitable: boolean; onQuitar: (id: number) => void; onEditar: (p: Participante) => void }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-muted/60 text-left">
-          <tr>
-            <th className="px-2 py-2 font-medium">Persona</th>
-            <th className="px-2 py-2 font-medium">Calidad en que participa</th>
-            <th className="px-2 py-2 font-medium">Debe firmar</th>
-            <th className="px-2 py-2 font-medium">Estado de firma</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {version.participantes.map((p) => (
-            <tr key={p.id} className="border-b border-border">
-              <td className="px-2 py-2">{p.nombre}</td>
-              <td className="px-2 py-2">{p.otra_calidad ?? p.calidad.nombre}</td>
-              <td className="px-2 py-2">{p.debe_firmar ? "Sí" : "No"}</td>
-              <td className="px-2 py-2">{p.estado_firma === "FIRMO" ? "Firmó" : p.debe_firmar ? "Pendiente" : "—"}</td>
-              <td className="px-2 py-2 text-right">{quitable && (
-                  <span className="inline-flex items-center gap-1">
-                    <Button size="xs" variant="ghost" color="muted" type="button" onClick={() => onEditar(p)}>Modificar</Button>
-                    <BotonQuitar onClick={() => onQuitar(p.id)} />
-                  </span>
-                )}</td>
-            </tr>
-          ))}
-          {!version.participantes.length && <tr><td colSpan={5} className="px-2 py-3 text-muted-foreground">Sin participantes.</td></tr>}
-        </tbody>
-      </table>
-    </div>
+    <TablaDatos
+      id="piar-participantes"
+      rows={version.participantes}
+      rowId={(p) => String(p.id)}
+      growColumnId="persona"
+      emptyMessage="Sin participantes."
+      columns={[
+        { id: "persona", header: "Persona", cell: ({ row }) => row.original.nombre },
+        { id: "calidad", header: "Calidad en que participa", cell: ({ row }) => row.original.otra_calidad ?? row.original.calidad.nombre },
+        { id: "firmar", header: "Debe firmar", cell: ({ row }) => (row.original.debe_firmar ? "Sí" : "No") },
+        { id: "firma", header: "Estado de firma", cell: ({ row }) => (row.original.estado_firma === "FIRMO" ? "Firmó" : row.original.debe_firmar ? "Pendiente" : "—") },
+        {
+          id: "actions",
+          enableHiding: false,
+          header: () => null,
+          cell: ({ row }) =>
+            quitable && (
+              <span className="inline-flex items-center gap-1">
+                <Button size="xs" variant="outline" color="neutral" type="button" onClick={() => onEditar(row.original)}>Modificar</Button>
+                <BotonQuitar onClick={() => onQuitar(row.original.id)} />
+              </span>
+            ),
+        },
+      ]}
+    />
   )
 }
 
@@ -84,10 +80,10 @@ export function SeccionActa({ ficha }: { ficha: FichaPiar }) {
       {version.acta && <p>Acta firmada: <EnlaceArchivo archivo={version.acta} /></p>}
       {version.copia && <p className="text-muted-foreground">Copia entregada a la familia el {formatFecha(version.copia.fecha)} ({version.copia.medio}).</p>}
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" variant="outline" color="muted" type="button" onClick={() => documento(descargarActa(piar.id, version.id))}>Generar borrador del acta</Button>
+        <Button size="sm" variant="outline" color="neutral" type="button" onClick={() => documento(descargarActa(piar.id, version.id))}>Generar borrador del acta</Button>
         {gestiona && borrador && (
           <>
-            <Button size="sm" variant="outline" color="muted" type="button" onClick={abrirActivacion}>
+            <Button size="sm" variant="outline" color="neutral" type="button" onClick={abrirActivacion}>
               <FileUploadOutlinedIcon data-icon="inline-start" />
               Cargar acta
             </Button>

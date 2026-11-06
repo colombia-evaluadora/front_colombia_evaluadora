@@ -11,7 +11,7 @@ import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 import { COLOR_ESTADO, esEditable, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
-const SECUNDARIO = { size: "sm", variant: "outline", color: "muted" } as const
+const SECUNDARIO = { size: "sm", variant: "outline", color: "neutral" } as const
 
 export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
   const navigate = useNavigate()
@@ -48,7 +48,7 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
             )}
             {piar.ve_sensible && (
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button size="icon-sm" variant="outline" color="muted" aria-label="Más acciones del PIAR" />}>
+                <DropdownMenuTrigger render={<Button size="icon-sm" variant="outline" color="neutral" aria-label="Más acciones del PIAR" />}>
                   <DotsThreeVerticalIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

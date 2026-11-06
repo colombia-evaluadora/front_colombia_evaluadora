@@ -52,7 +52,7 @@ export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar
         {editaAjuste && (
           <span className="ml-auto flex items-center gap-1">
             {ajuste.por_mapear && sensible && <BotonSeccion onClick={() => onDialogo({ tipo: "asignar", ajuste, indice })}>Asignar asignatura</BotonSeccion>}
-            <Button size="icon-xs" variant="ghost" color="muted" aria-label="Modificar ajuste" onClick={() => onDialogo({ tipo: "ajuste", ajuste })}>
+            <Button size="icon-xs" variant="ghost" color="neutral" aria-label="Modificar ajuste" onClick={() => onDialogo({ tipo: "ajuste", ajuste })}>
               <PencilIcon />
             </Button>
             {sensible && <BotonQuitar onClick={() => onDialogo({ tipo: "quitarAjuste", ajuste })} />}

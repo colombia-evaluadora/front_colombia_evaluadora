@@ -10,6 +10,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useAniosInformeQuery, useSedesInformeQuery } from "@/features/academic-management/reports/api/query/use-cascada-query"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { useInformeQuery, type InformeInclusion } from "@/features/gestion-estudiantil/inclusion/informe/api/use-informe-query"
 import { porAsignatura } from "@/features/gestion-estudiantil/inclusion/informe/utils/informe"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
@@ -41,21 +42,20 @@ function Cifra({ titulo, valor, de }: { titulo: string; valor: number; de?: numb
 
 function TablaCifras({ titulo, columnas, filas }: { titulo: string; columnas: string[]; filas: (string | number)[][] }) {
   return (
-    <section className="grid gap-2 text-sm">
+    <section className="grid content-start gap-2 text-sm">
       <h2 className="text-base font-medium">{titulo}</h2>
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full">
-          <thead className="bg-muted/60">
-            <tr>{columnas.map((c, i) => <th key={c} className={`px-3 py-2 font-medium ${i ? "text-right" : "text-left"}`}>{c}</th>)}</tr>
-          </thead>
-          <tbody>
-            {filas.map((f) => (
-              <tr key={String(f[0])} className="border-t border-border">{f.map((v, i) => <td key={i} className={`px-3 py-2 ${i ? "text-right tabular-nums" : ""}`}>{v}</td>)}</tr>
-            ))}
-            {!filas.length && <tr><td colSpan={columnas.length} className="px-3 py-3 text-muted-foreground">Sin datos.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <TablaDatos
+        id={`informe-${columnas[0]}`}
+        rows={filas}
+        rowId={(f) => String(f[0])}
+        emptyMessage="Sin datos."
+        growColumnId="c0"
+        columns={columnas.map((c, i) => ({
+          id: `c${i}`,
+          header: c,
+          cell: ({ row }: { row: { original: (string | number)[] } }) => <span className={i ? "block text-right tabular-nums" : ""}>{row.original[i]}</span>,
+        }))}
+      />
     </section>
   )
 }
