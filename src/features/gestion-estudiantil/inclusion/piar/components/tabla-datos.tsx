@@ -2,8 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { useDataTable } from "@/hooks/use-data-table"
+import { columnasGestionables } from "@/features/gestion-estudiantil/inclusion/utils/columnas-gestionables"
 
 interface Props<T> {
   /** Clave para recordar las columnas visibles. */
@@ -13,12 +14,14 @@ interface Props<T> {
   rowId: (fila: T) => string
   emptyMessage: string
   growColumnId?: string
+  /** Tablas anchas: deja elegir las columnas visibles. */
+  gestorColumnas?: boolean
 }
 
 /** `DataTable` del proyecto para listas cortas embebidas en una sección, sin paginar. */
-export function TablaDatos<T>({ id, columns, rows, rowId, emptyMessage, growColumnId }: Props<T>) {
+export function TablaDatos<T>({ id, columns, rows, rowId, emptyMessage, growColumnId, gestorColumnas }: Props<T>) {
   const { table } = useDataTable({
-    columns: columns.map((c) => ({ enableSorting: false, ...c })),
+    columns: columnasGestionables(columns.map((c) => ({ enableSorting: false, ...c }))),
     data: rows,
     pageCount: 1,
     getRowId: rowId,
@@ -30,5 +33,10 @@ export function TablaDatos<T>({ id, columns, rows, rowId, emptyMessage, growColu
     setSorting: () => {},
     columnVisibilityStorageKey: `${id}-column-visibility`,
   })
-  return <DataTable table={table} isPending={false} isError={false} onRetry={() => {}} emptyMessage={emptyMessage} growColumnId={growColumnId} />
+  return (
+    <div className="flex flex-col gap-3">
+      <DataTable table={table} isPending={false} isError={false} onRetry={() => {}} emptyMessage={emptyMessage} growColumnId={growColumnId} />
+      {gestorColumnas && <div className="flex justify-end"><DataTableViewOptions table={table} /></div>}
+    </div>
+  )
 }
