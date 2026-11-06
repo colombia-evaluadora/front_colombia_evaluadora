@@ -1,7 +1,7 @@
 "use no memo"
 
-import { useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { lazy, Suspense, useState } from "react"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle, TableScreenToolbar } from "@/components/layout/table-screen"
@@ -10,20 +10,30 @@ import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import { PlusIcon } from "@/components/ui/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
-import { usePiarListaQuery, usePrefetchPiar, useSinPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { usePiarListaQuery, usePrefetchPiar, useSinPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { FILTROS_VACIOS, type PiarFiltros, type PiarRow } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { BusquedaPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/busqueda-piar"
 import { buildColumnasPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/columnas-piar"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 
-function AvisoSinPiar() {
-  const { data } = useSinPiarQuery()
+type Pestana = "piar" | "orientacion" | "informe"
+
+const TabOrientacion = lazy(() =>
+  import("@/features/gestion-estudiantil/inclusion/orientacion/components/tab-orientacion").then((m) => ({ default: m.TabOrientacion })),
+)
+const TabInforme = lazy(() =>
+  import("@/features/gestion-estudiantil/inclusion/informe/components/tab-informe").then((m) => ({ default: m.TabInforme })),
+)
+
+function AvisoSinPiar({ enabled }: { enabled: boolean }) {
+  const { data } = useSinPiarQuery("", "", enabled)
   const filas = data ?? []
   if (!filas.length) return null
   return (
@@ -48,6 +58,8 @@ function PiarListaContent() {
   const access = usePiarAccess()
   const prefetch = usePrefetchPiar()
 
+  const { tab } = useSearch({ strict: false }) as { tab?: Pestana }
+  const [pestana, setPestana] = useState<Pestana>(tab ?? "piar")
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<PiarFiltros>(FILTROS_VACIOS)
 
@@ -86,30 +98,46 @@ function PiarListaContent() {
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            access.puedeGestionar && (
-              <Button size="sm" render={<Link to={paths.app.piarNuevo.getHref()} />} nativeButton={false}>
+            pestana === "piar" ? (
+              access.puedeGestionar && (
+                <Button size="sm" render={<Link to={paths.app.piarNuevo.getHref()} />} nativeButton={false}>
+                  <PlusIcon data-icon="inline-start" />
+                  Nuevo PIAR
+                </Button>
+              )
+            ) : pestana === "orientacion" && access.registraAtencion ? (
+              <Button size="sm" render={<Link to={paths.app.atencionNueva.getHref()} />} nativeButton={false}>
                 <PlusIcon data-icon="inline-start" />
-                Nuevo PIAR
+                Nueva atención
               </Button>
-            )
+            ) : null
           }
         >
           Inclusión y orientación
         </TableScreenTitle>
-        <Tabs value="piar">
+        <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>
           <TabsList>
             <TabsTrigger value="piar">PIAR</TabsTrigger>
-            <TabsTrigger value="orientacion" disabled>Orientación</TabsTrigger>
-            <TabsTrigger value="informe" disabled>Gestión de inclusión</TabsTrigger>
+            {access.veOrientacion && <TabsTrigger value="orientacion">Orientación</TabsTrigger>}
+            {access.veInforme && <TabsTrigger value="informe">Gestión de inclusión</TabsTrigger>}
           </TabsList>
         </Tabs>
-        <div className="px-(--screen-spacing) pt-4 empty:hidden">
-          <AvisoSinPiar />
-        </div>
-        <TableScreenToolbar>
+        {pestana === "piar" && (
+          <div className="px-(--screen-spacing) pt-4 empty:hidden">
+            <AvisoSinPiar enabled={access.veAvisoSinPiar} />
+          </div>
+        )}
+        {pestana === "piar" && <TableScreenToolbar>
           <BusquedaPiar search={search} filtros={filtros} onSearch={setSearch} onFiltros={aplicar} />
-        </TableScreenToolbar>
+        </TableScreenToolbar>}
       </TableScreenHeader>
+      {pestana !== "piar" ? (
+        <TableScreenBody>
+          <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+            {pestana === "orientacion" ? <TabOrientacion puedeRegistrar={access.registraAtencion} /> : <TabInforme />}
+          </Suspense>
+        </TableScreenBody>
+      ) : (
       <TableScreenBody>
         <DataTable
           table={table}
@@ -132,30 +160,19 @@ function PiarListaContent() {
           viewOptions={<DataTableViewOptions table={table} />}
         />
       </TableScreenBody>
+      )}
     </>
   )
 }
 
-/** G.4.PIA.LIS.1-3: listado de PIAR con el aviso de la Regla 28. El docente abre cada PIAR desde su enlace (V603). */
+/** G.4.PIA.LIS.1-3 y pestañas de G.4.ORI: orientación e informe cargan solo al abrirlas. */
 export function PiarListaPage() {
-  const { puedeListar } = usePiarAccess()
   return (
     <NoticeProvider>
       <TableScreen>
-        {puedeListar ? (
-          <TablePaginationProvider>
-            <PiarListaContent />
-          </TablePaginationProvider>
-        ) : (
-          <>
-            <TableScreenHeader>
-              <TableScreenTitle>Inclusión y orientación</TableScreenTitle>
-            </TableScreenHeader>
-            <TableScreenBody>
-              <AvisoPiar tipo="info">El listado de PIAR es para orientación, trabajo social, coordinación y rectoría. Los ajustes de sus asignaturas se abren desde el aviso que recibe de cada PIAR.</AvisoPiar>
-            </TableScreenBody>
-          </>
-        )}
+        <TablePaginationProvider>
+          <PiarListaContent />
+        </TablePaginationProvider>
       </TableScreen>
     </NoticeProvider>
   )

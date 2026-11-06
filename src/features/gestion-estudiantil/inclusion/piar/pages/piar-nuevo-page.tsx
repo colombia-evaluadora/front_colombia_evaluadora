@@ -13,7 +13,9 @@ import { evalCol } from "@/lib/eval-col-client"
 import { useAppForm } from "@/lib/forms"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
-import { BASE, piarKeys, useSinPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { BASE, piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
+import { useMatriculasDisponiblesQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { CamposDatosPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/campos-datos-piar"
 import { CAMPOS_VACIOS, datosAlBackend, esquemaDatos } from "@/features/gestion-estudiantil/inclusion/piar/utils/datos-piar"
 
@@ -25,9 +27,10 @@ export function PiarNuevoPage() {
   const [matricula, setMatricula] = useState(inicial ? String(inicial) : "")
   const [notice, setNotice] = useState<{ id: number; message: string } | null>(null)
 
-  const { data } = useSinPiarQuery()
-  // Un estudiante con borrador ya tiene PIAR: el índice único respondería 409.
-  const candidatos = (data ?? []).filter((c) => !c.tiene_borrador)
+  const [busqueda, setBusqueda] = useState("")
+  const [justificacion, setJustificacion] = useState("")
+  const { data } = useMatriculasDisponiblesQuery(busqueda)
+  const candidatos = data ?? []
   const elegido = candidatos.find((c) => String(c.fk_tmatricula) === matricula)
 
   const crear = useMutation({
@@ -47,7 +50,7 @@ export function PiarNuevoPage() {
         setNotice({ id: Date.now(), message: "Elija el estudiante." })
         return
       }
-      crear.mutate({ FK_MATRICULA: Number(matricula), JUSTIFICACION_CONDICION: null, ...datosAlBackend(value) })
+      crear.mutate({ FK_MATRICULA: Number(matricula), JUSTIFICACION_CONDICION: justificacion.trim() || null, ...datosAlBackend(value) })
     },
   })
 
@@ -85,10 +88,15 @@ export function PiarNuevoPage() {
             value={matricula}
             options={candidatos.map((c) => ({ value: String(c.fk_tmatricula), label: `${c.estudiante_nombre} · ${c.grado_grupo}` }))}
             onChange={setMatricula}
+            // La etiqueta elegida no es una búsqueda: filtraría a cero y perdería la selección.
+            onInputChange={(texto) => !candidatos.some((c) => `${c.estudiante_nombre} · ${c.grado_grupo}` === texto) && setBusqueda(texto)}
           />
           <form.AppField name="fecha">{(f) => <f.DateField label="Fecha de elaboración" required />}</form.AppField>
         </div>
-        {elegido && <p className="text-sm text-muted-foreground">Condición: {elegido.condicion ?? "—"} (de la matrícula, solo lectura)</p>}
+        {elegido?.tiene_condicion && <p className="text-sm text-muted-foreground">Condición: {elegido.condicion} (de la matrícula, solo lectura)</p>}
+        {elegido && !elegido.tiene_condicion && (
+          <TextoLargo id="piar-justificacion" label="Justificación del PIAR sin condición registrada" required max={1000} value={justificacion} onChange={setJustificacion} />
+        )}
         <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
           <CamposDatosPiar form={form} />
         </div>

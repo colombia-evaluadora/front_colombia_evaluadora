@@ -5,8 +5,10 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
+import { FormDisabledProvider } from "@/lib/forms"
+
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
-import { usePiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { usePiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { CamposDatosPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/campos-datos-piar"
 import { DialogosPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos-piar"
@@ -67,8 +69,21 @@ function Expediente({ ficha }: { ficha: FichaPiar }) {
   const concluida = estado === "REVISION_CONCLUIDA"
   return (
     <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+      {concluida && piar.conclusion && (
+        <div className="p-4 text-sm">
+          <ListaDatos>
+            <Par label="Concluida por">{piar.conclusion.responsable ?? "—"} · {formatFecha(piar.conclusion.fecha_conclusion)}</Par>
+            <Par label="Próxima revisión">{formatFecha(piar.conclusion.fecha_proxima_revision)}</Par>
+            <Par label="Síntesis de orientación">{piar.conclusion.sintesis}</Par>
+            <Par label="Recomendaciones">{piar.conclusion.recomendaciones}</Par>
+          </ListaDatos>
+        </div>
+      )}
       <SeccionDatosExistentes ficha={ficha} />
-      <CamposDatosPiar form={form} abiertas={false} />
+      {/* Los datos solo se editan en Borrador (fn_piar_validar_datos). */}
+      <FormDisabledProvider disabled={estado !== "BORRADOR" || !ficha.gestiona}>
+        <CamposDatosPiar form={form} abiertas={false} />
+      </FormDisabledProvider>
       <SeccionRedes ficha={ficha} />
       <SeccionInformes ficha={ficha} />
       <SeccionAntecedentes ficha={ficha} />
@@ -98,8 +113,10 @@ function FichaContenido({ piar }: { piar: PiarDetalle }) {
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant={notice?.variant ?? "error"} />
         <AvisosFicha piar={piar} />
         <p className="text-sm text-muted-foreground">
+          {piar.condicion && <>Condición: <span className="text-foreground">{piar.condicion}</span> (de la matrícula) · </>}
           Elaboración: <span className="text-foreground">{formatFecha(piar.fecha_elaboracion)}</span>
           {piar.elabora?.nombre && <> · Elabora: <span className="text-foreground">{piar.elabora.nombre}</span></>}
+          {piar.periodo_academico && <> · Período Académico: <span className="text-foreground">{piar.periodo_academico}</span></>}
           {version && <> · Versión: <span className="text-foreground">{version.numero}</span></>}
         </p>
         {piar.ve_sensible ? <Expediente ficha={ficha} /> : <VistaDocente ficha={ficha} />}

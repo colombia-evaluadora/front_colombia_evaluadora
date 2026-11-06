@@ -13,8 +13,12 @@ export const COLOR_COBERTURA = { PENDIENTE_REVISION: "warning", CON_AJUSTES: "su
 export interface AccesoPiar {
   puedeGestionar: boolean
   puedeAnular: boolean
-  /** `role_query` del listado (V603): el docente no lo tiene, solo la ficha. */
-  puedeListar: boolean
+  /** Regla 28: el docente lista sus PIAR, pero no el aviso de estudiantes sin PIAR (V603). */
+  veAvisoSinPiar: boolean
+  veOrientacion: boolean
+  registraAtencion: boolean
+  /** Rector, coordinador y, por menú, territoriales (fn_piar_gate_informe); orientación no. */
+  veInforme: boolean
   /** Ajustes y seguimiento: orientación o el docente al que se le concedió edición en el menú (D3). */
   puedeEditarAjustes: boolean
 }
@@ -22,7 +26,10 @@ export interface AccesoPiar {
 export function accesoPiar(roles: string[], permiso: { puedeCrear: boolean; puedeEditar: boolean }): AccesoPiar {
   const orientacion = roles.includes("CEVAL-PSICO_ORIENTADOR")
   return {
-    puedeListar: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
+    veAvisoSinPiar: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
+    veOrientacion: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
+    registraAtencion: permiso.puedeEditar && (orientacion || roles.includes("CEVAL-RECTOR")),
+    veInforme: ["CEVAL-RECTOR", "CEVAL-COORDINADOR"].some((r) => roles.includes(r)),
     puedeGestionar: orientacion && permiso.puedeEditar,
     puedeAnular: permiso.puedeEditar && (roles.includes("CEVAL-COORDINADOR") || roles.includes("CEVAL-RECTOR")),
     puedeEditarAjustes: permiso.puedeEditar && (orientacion || roles.includes("CEVAL-DOCENTE")),

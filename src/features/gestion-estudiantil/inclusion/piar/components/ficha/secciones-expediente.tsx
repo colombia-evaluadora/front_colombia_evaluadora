@@ -14,12 +14,21 @@ import { COLOR_COBERTURA } from "@/features/gestion-estudiantil/inclusion/piar/u
 const ICONO_SUBIR = <FileUploadOutlinedIcon data-icon="inline-start" />
 const Titulo = ({ children }: { children: React.ReactNode }) => <span className="font-normal">{children}</span>
 
+const siNo = (v: string | boolean | null | undefined) => v === true || v === "S" || v === "SI"
+
 export function SeccionDatosExistentes({ ficha: { piar } }: { ficha: FichaPiar }) {
+  const d = piar.datos_existentes
   return (
     <SeccionPlegable defaultAbierta={false} titulo={<TituloSensible>Datos existentes del estudiante</TituloSensible>} contentClassName="p-4 text-sm">
       <ListaDatos>
-        <Par label="Matrícula">{piar.estudiante.grado_grupo}</Par>
+        <Par label="Identificación">{d?.identificacion ?? "—"}</Par>
+        <Par label="Matrícula">{[piar.estudiante.grado_grupo, d?.jornada, d?.sede, piar.periodo_academico].filter(Boolean).join(" · ")}</Par>
         <Par label="Acudiente">{piar.acudiente?.nombre ?? "—"}</Par>
+        <Par label="Hogar">{d?.convive_acudiente == null ? "Sin registrar" : siNo(d.convive_acudiente) ? "Convive con el acudiente" : "No convive con el acudiente"}</Par>
+        <Par label="Trayectoria">
+          {d?.fecha_ingreso ? `En el establecimiento desde ${formatFecha(d.fecha_ingreso)}` : "Sin fecha de ingreso"}
+          {siNo(d?.repitente) ? "; repite el grado" : ""}
+        </Par>
       </ListaDatos>
     </SeccionPlegable>
   )
@@ -106,7 +115,7 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
             <th className="px-2 py-2 font-medium">Cobertura</th>
             <th className="px-2 py-2 text-right font-medium">Ajustes</th>
             <th className="px-2 py-2 font-medium">Justificación</th>
-            <th className="px-2 py-2 font-medium">Revisado el</th>
+            <th className="px-2 py-2 font-medium">Revisado por y fecha</th>
             <th />
           </tr>
         </thead>
@@ -117,7 +126,7 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
               <td className="px-2 py-3"><Badge variant="soft" color={COLOR_COBERTURA[c.cobertura]}><span>{c.cobertura_nombre}</span></Badge></td>
               <td className="px-2 py-3 text-right tabular-nums">{piar.ajustes.filter((a) => a.fk_tasignatura === c.fk_tasignatura).length}</td>
               <td className="px-2 py-3">{c.justificacion ?? "—"}</td>
-              <td className="px-2 py-3 whitespace-nowrap">{c.revisado_en ? formatFecha(c.revisado_en) : "—"}</td>
+              <td className="px-2 py-3 whitespace-nowrap">{c.revisado_en ? `${c.revisado_por ? `${c.revisado_por} · ` : ""}${formatFecha(c.revisado_en)}` : "—"}</td>
               <td className="px-2 py-3 text-right">
                 {gestiona && (
                   <DropdownMenu>

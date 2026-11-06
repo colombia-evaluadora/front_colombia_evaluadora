@@ -9,7 +9,8 @@ import { paths } from "@/config/paths"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
-import { descargarActualizacion, usePiarHistorialQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { descargarActualizacion } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
+import { usePiarHistorialQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import type { VersionHistorial } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 
 const COLOR_VERSION: Record<string, "success" | "warning" | "muted"> = { ACORDADA: "success", PENDIENTE_ACUERDO: "warning" }
@@ -24,6 +25,7 @@ interface Fila {
   motivo: string | null
   cambio: string
   archivo: number | null
+  archivoNombre: string | null
   actualizacion?: number
 }
 
@@ -42,6 +44,7 @@ function aFilas(versiones: VersionHistorial[]): Fila[] {
         .map((k) => `${k}: ${u.valores_anteriores?.[k] ?? "—"} → ${u.valores_nuevos[k]}`)
         .join(" · "),
       archivo: u.fk_tarchivo_soporte,
+      archivoNombre: u.soporte_nombre,
       actualizacion: u.id,
     })),
     {
@@ -50,10 +53,11 @@ function aFilas(versiones: VersionHistorial[]): Fila[] {
       tipo: v.conclusion ? "Revisión concluida" : v.acordada_en ? "Versión acordada" : "Versión de trabajo",
       estado: v.estado,
       fecha: v.fecha_acuerdo ?? v.creada_en,
-      autor: v.conclusion?.responsable ?? null,
+      autor: v.conclusion?.responsable ?? v.autor,
       motivo: v.conclusion?.sintesis ?? null,
       cambio: "—",
       archivo: v.fk_tarchivo_acta,
+      archivoNombre: v.acta_nombre,
     },
   ])
 }
@@ -112,7 +116,7 @@ export function PiarHistorialPage() {
                     <td className="px-2 py-3">{f.cambio}</td>
                     <td className="px-2 py-3 whitespace-nowrap">
                       <span className="flex flex-col items-start gap-1">
-                        {f.archivo ? <button type="button" className="text-primary hover:underline" onClick={() => abrir(f.archivo as number)}>Ver archivo</button> : "—"}
+                        {f.archivo ? <button type="button" className="text-primary hover:underline" onClick={() => abrir(f.archivo as number)}>{f.archivoNombre ?? "Ver archivo"}</button> : "—"}
                         {f.actualizacion && <button type="button" className="text-primary hover:underline" onClick={() => descargarActualizacion(f.actualizacion as number)}>Documento</button>}
                       </span>
                     </td>
