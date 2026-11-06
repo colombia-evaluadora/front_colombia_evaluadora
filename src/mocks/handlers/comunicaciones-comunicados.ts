@@ -287,6 +287,50 @@ export const comunicacionesComunicadosHandlers = [
   }),
 
   // Selector de destinatarios: solo lo que está en el alcance de quien publica.
+  // Cascada del formulario del informe (Guía M.1.AGR.1). La jornada Tarde (3) no tiene períodos
+  // Abiertos, para poder ver el bloqueo de M.1.AGR.5.
+  http.get(URL("comunicados/destinos/cascada"), async ({ request }) => {
+    await delay(120)
+    const q = new globalThis.URL(request.url).searchParams
+    const op = (valor: string, etiqueta: string, detalle: string | null = null) => ({ valor, etiqueta, detalle, total: 0 })
+    const sede = q.get("sede")
+    const jornada = q.get("jornada")
+    const abierto = !!sede && !!jornada && jornada !== "3"
+    const periodo =
+      abierto && q.get("anio") === "2027" && q.get("modalidad") && q.get("ciclo")
+        ? {
+            id: 300,
+            anio: 2027,
+            modalidad: q.get("modalidad"),
+            nombreModalidad: q.get("modalidad") === "ANUAL" ? "Anual" : "Semestral",
+            ciclo: Number(q.get("ciclo")),
+            fechaInicio: "2027-01-25",
+            nombre: null,
+          }
+        : null
+    return HttpResponse.json({
+      rows: [
+        {
+          establecimientos: [op("1", "IE Central")],
+          sedes: q.get("establecimiento") ? [op("1", "Principal"), op("2", "Norte")] : [],
+          jornadas: sede ? [op("1", "Mañana"), op("3", "Tarde")] : [],
+          anios: abierto ? [op("2027", "2027")] : [],
+          modalidades: abierto && q.get("anio") ? [op("ANUAL", "Anual"), op("SEMESTRAL", "Semestral")] : [],
+          ciclos: abierto && q.get("modalidad") ? (q.get("modalidad") === "ANUAL" ? [op("1", "1")] : [op("1", "1"), op("2", "2")]) : [],
+          periodo,
+          grados: periodo ? [op("6", "Sexto"), op("7", "Séptimo")] : [],
+          grupos: periodo && q.get("grado") ? [op("61", "A"), op("62", "B")] : [],
+          estudiantes: periodo && q.get("grupo") ? [op("901", "Moreno Silva Andrés"), op("902", "Rincón Gil Laura")] : [],
+          // Sin jornada = Todas las jornadas (conjunto solo de funcionarios).
+          roles: sede ? [op("Responsable de enseñanza", "Responsable de enseñanza"), op("Supervisor de sede", "Supervisor de sede")] : [],
+          funcionarios: sede
+            ? [op("11", "López Marta", "Supervisor de sede"), op("12", "Rojas Andrés", "Responsable de enseñanza")]
+            : [],
+        },
+      ],
+    })
+  }),
+
   http.get(URL("comunicados/destinos/opciones"), async ({ request }) => {
     await delay(150)
     const u = usuarioDe(request)
@@ -312,6 +356,25 @@ export const comunicacionesComunicadosHandlers = [
     const u = usuarioDe(request)
     if (u && !puedeCrearComunicadosMock(u.roles)) return SIN_PERMISO()
     if (u && fueraDeAlcance(u.roles, u.email, body)) return FUERA()
+    if (Array.isArray((body as { CONJUNTOS?: unknown[] }).CONJUNTOS)) {
+      return HttpResponse.json({
+        rows: [
+          {
+            unicos: 214,
+            estudiantes: 102,
+            acudientes: 112,
+            funcionarios: 0,
+            otros: 0,
+            sinCuenta: 7,
+            conAviso: 205,
+            soloCorreo: 2,
+            sinCanal: [{ nombre: "Rincón Rosa", tipo: "Acudiente", motivo: "Sin cuenta ni correo", grupo: "Sexto A" }],
+            avisos: [],
+            estudiantesReferencia: 102,
+          },
+        ],
+      })
+    }
     if ((body.AUDIENCIA ?? []).length === 0 && vacios(destinosDe(body))) {
       return HttpResponse.json({ message: "Elige al menos un destinatario." }, { status: 400 })
     }
@@ -360,6 +423,13 @@ export const comunicacionesComunicadosHandlers = [
     const u = usuarioDe(request)
     if (u && !puedeCrearComunicadosMock(u.roles)) return SIN_PERMISO()
     if (u && fueraDeAlcance(u.roles, u.email, body)) return FUERA()
+    // Formulario del informe: llega MENSAJE y CONJUNTOS en lugar de audiencia y HTML.
+    const documento = body as { CONJUNTOS?: unknown[]; MENSAJE?: string; PUBLICACION?: string }
+    if (Array.isArray(documento.CONJUNTOS)) {
+      body.CONTENIDO_HTML = `<p>${(documento.MENSAJE ?? "").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>`
+      body.AUDIENCIA = ["ESTUDIANTES", "PADRES"]
+      if (documento.PUBLICACION !== "PROGRAMADA") body.PUBLICAR_EN = new Date().toISOString()
+    }
     if (incompleto(body)) return HttpResponse.json(INCOMPLETO, { status: 400 })
     const titulo = (body.TITULO as string).trim()
     if (conversaciones.some((c) => c.nombre.toLowerCase() === titulo.toLowerCase())) {

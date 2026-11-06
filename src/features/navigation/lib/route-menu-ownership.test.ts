@@ -148,6 +148,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
 
   "/app/comunicaciones/chat": MENU.chat,
   "/app/comunicaciones/comunicados-territorial": MENU.comunicadosTerritorial,
+  "/app/comunicaciones/comunicados/nuevo": MENU.chat,
   "/app/comunicaciones/procesos": MENU.procesos,
   "/app/comunicaciones/procesos/detalle/$id": MENU.procesos,
   "/app/comunicaciones/espacios": MENU.chat,

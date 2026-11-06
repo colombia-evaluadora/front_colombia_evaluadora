@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 
 import {
   DropdownMenu,
@@ -9,11 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { PlusIcon } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
 import type { CategoriaCanal } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA, TIPOS_CANAL } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { CrearChatDialog } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
-import { CrearComunicadoDialog } from "@/features/comunicaciones/chat/components/crear-comunicado-dialog"
 import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/crear-eleccion-dialog"
 import { CrearEncuestaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-dialog"
 import { CrearEvaluacionDialog } from "@/features/comunicaciones/chat/components/crear-evaluacion-dialog"
@@ -39,6 +40,7 @@ export function AgregarCanal({
 }) {
   const [abierto, setAbierto] = useState<CategoriaCanal | null>(null)
   const cerrar = () => setAbierto(null)
+  const navigate = useNavigate()
   // Crear comunicados es un permiso por rol (menú COMUNICADOS, Administración › Roles y menús):
   // sin él la opción no se ofrece; comms-service igual lo exige (403).
   const comunicados = useMenuPermission("COMUNICADOS").puedeCrear
@@ -67,7 +69,12 @@ export function AgregarCanal({
                   key={t.categoria}
                   className={ITEM}
                   disabled={!disponible}
-                  onClick={() => setAbierto(t.categoria)}
+                  onClick={() =>
+                    // El comunicado es una página propia, con la estructura del informe (Guía M.1.AGR.1).
+                    t.categoria === "ANUNCIO"
+                      ? void navigate({ to: paths.app.comunicacionesComunicadoNuevo.getHref() })
+                      : setAbierto(t.categoria)
+                  }
                 >
                   <Icono className="text-muted-foreground" />
                   <span className="flex-1">{t.etiqueta}</span>
@@ -83,7 +90,6 @@ export function AgregarCanal({
       <CrearEleccionDialog open={abierto === "VOTACION"} onClose={cerrar} onCreada={onCreado} />
       <CrearEncuestaDialog open={abierto === "ENCUESTA"} onClose={cerrar} onCreada={onCreado} />
       <CrearEvaluacionDialog open={abierto === "EXAMEN"} onClose={cerrar} onCreada={onCreado} />
-      <CrearComunicadoDialog open={abierto === "ANUNCIO"} onClose={cerrar} onCreado={onCreado} />
     </>
   )
 }

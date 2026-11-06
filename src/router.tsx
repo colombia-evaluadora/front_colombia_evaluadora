@@ -1571,6 +1571,21 @@ export const comunicadosTerritorialRoute = createRoute({
   ),
 })
 
+export const comunicadoNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesComunicadoNuevo.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Nuevo comunicado", to: paths.app.comunicacionesComunicadoNuevo.getHref() },
+    ],
+  },
+  component: lazyRouteComponent(
+    () => import("@/features/comunicaciones/comunicados/pages/nuevo-comunicado-page"),
+    "NuevoComunicadoPage",
+  ),
+})
+
 const ProcesosPage = lazyRouteComponent(() => import("@/features/comunicaciones/procesos/pages/procesos-page"), "ProcesosPage")
 
 export const procesosRoute = createRoute({
@@ -1766,6 +1781,7 @@ const routeTree = rootRoute.addChildren([
     convivenciaSesionRoute,
     convivenciaSesionEditarRoute,
     chatRoute,
+    comunicadoNuevoRoute,
     comunicadosTerritorialRoute,
     procesosRoute,
     procesoDetalleRoute,
