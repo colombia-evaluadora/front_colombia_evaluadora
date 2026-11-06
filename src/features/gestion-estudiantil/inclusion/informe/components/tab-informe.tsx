@@ -42,7 +42,7 @@ function Cifra({ titulo, valor, de }: { titulo: string; valor: number; de?: numb
 
 function TablaCifras({ titulo, columnas, filas }: { titulo: string; columnas: string[]; filas: (string | number)[][] }) {
   return (
-    <section className="grid content-start gap-2 text-sm">
+    <section className="min-w-0 grid content-start gap-2 text-sm">
       <h2 className="text-lg font-semibold">{titulo}</h2>
       <TablaDatos
         id={`informe-${columnas[0]}`}
