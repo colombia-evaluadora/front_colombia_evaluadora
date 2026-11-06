@@ -27,6 +27,7 @@ import { supervisoresTerritorialesHandlers } from "@/mocks/handlers/supervisores
 import { parametrosEdadHandlers } from "@/mocks/handlers/parametros-edad"
 import { listasValorHandlers } from "@/mocks/handlers/listas-valor"
 import { festivosHandlers } from "@/mocks/handlers/festivos"
+import { relacionesAlumnoGrupoHandlers } from "@/mocks/handlers/relaciones-alumno-grupo"
 import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
@@ -104,6 +105,7 @@ export const handlers = [
   ...parametrosEdadHandlers,
   ...listasValorHandlers,
   ...festivosHandlers,
+  ...relacionesAlumnoGrupoHandlers,
   // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
   ...conservacionDatosHandlers,
   ...academicAssignmentListHandlers,
