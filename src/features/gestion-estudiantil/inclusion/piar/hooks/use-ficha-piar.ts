@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useStore } from "@tanstack/react-form"
 import { useSearch } from "@tanstack/react-router"
 
 import { useAppForm } from "@/lib/forms"
@@ -31,13 +32,13 @@ export function useFichaPiar(piar: PiarDetalle) {
   const gestiona = access.puedeGestionar && esEditable(estado) && !piar.anulacion && !piar.solo_consulta
   const avisar = (message: string, variant: Aviso["variant"] = "error") => setNotice({ id: Date.now(), message, variant })
 
-  const acta = useAppForm({
-    defaultValues: {
-      fecha_acuerdo: version?.fecha_acuerdo?.slice(0, 10) ?? "",
-      compromisos_establecimiento: version?.compromisos_establecimiento ?? "",
-      compromisos_familia: version?.compromisos_familia ?? "",
-    },
-  })
+  const actaDelServidor = {
+    fecha_acuerdo: version?.fecha_acuerdo?.slice(0, 10) ?? "",
+    compromisos_establecimiento: version?.compromisos_establecimiento ?? "",
+    compromisos_familia: version?.compromisos_familia ?? "",
+  }
+  const acta = useAppForm({ defaultValues: actaDelServidor })
+  const [guardado, setGuardado] = useState<string | null>(null)
 
   const form = useAppForm({
     defaultValues: datosDesdePiar(piar),
@@ -58,12 +59,19 @@ export function useFichaPiar(piar: PiarDetalle) {
             },
           })
         }
+        setGuardado(JSON.stringify([value, acta.state.values]))
         avisar("PIAR guardado.", "success")
       } catch (error) {
         avisar(mensajePiar(error))
       }
     },
   })
+
+  const valores = useStore(form.store, (s) => s.values)
+  const valoresActa = useStore(acta.store, (s) => s.values)
+  const actual = JSON.stringify([valores, valoresActa])
+  // El servidor puede normalizar lo guardado (recortar textos): vale como sin cambios igualar cualquiera de las dos versiones.
+  const hayCambios = actual !== guardado && actual !== JSON.stringify([datosDesdePiar(piar), actaDelServidor])
 
   /** Con requisitos pendientes distintos del acta se explica qué falta (CIC.7) en vez de pedir el archivo. */
   const abrirActivacion = () =>
@@ -83,7 +91,7 @@ export function useFichaPiar(piar: PiarDetalle) {
   }
   const quitar = (url: string) => guardar.mutateAsync({ method: "patch", url }).catch((error) => avisar(mensajePiar(error)))
 
-  return { piar, access, estado, version, gestiona, form, acta, guardando: guardar.isPending, dialogo, setDialogo, notice, setNotice, abrirActivacion, documento, quitar }
+  return { piar, access, estado, version, gestiona, form, acta, guardando: guardar.isPending, hayCambios, dialogo, setDialogo, notice, setNotice, abrirActivacion, documento, quitar }
 }
 
 export type FichaPiar = ReturnType<typeof useFichaPiar>

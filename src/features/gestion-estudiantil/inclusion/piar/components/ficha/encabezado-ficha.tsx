@@ -16,7 +16,7 @@ const SECUNDARIO = { size: "sm", variant: "outline", color: "neutral" } as const
 
 export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
   const navigate = useNavigate()
-  const { piar, estado, gestiona, access, setDialogo, form, guardando, documento, abrirActivacion } = ficha
+  const { piar, estado, gestiona, access, setDialogo, form, guardando, hayCambios, documento, abrirActivacion } = ficha
   const trasladado = piar.fk_tpiar_origen != null
   const borrador = estado === "BORRADOR"
   return (
@@ -42,7 +42,7 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
             {esEditable(estado) && <Button {...SECUNDARIO} onClick={() => navigate({ to: paths.app.inclusionOrientacion.getHref() })}>{gestiona ? "Cancelar" : "Volver"}</Button>}
             {gestiona && borrador && sinAjustesTodas(piar) && <Button {...SECUNDARIO} onClick={() => setDialogo({ tipo: "concluir" })}>Concluir revisión sin ajustes</Button>}
             {gestiona && borrador && piar.ve_sensible && (
-              <Button size="sm" disabled={guardando} onClick={() => form.handleSubmit()}>
+              <Button size="sm" disabled={guardando || !hayCambios} onClick={() => form.handleSubmit()}>
                 <IconoCarga cargando={guardando}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                 Guardar
               </Button>
