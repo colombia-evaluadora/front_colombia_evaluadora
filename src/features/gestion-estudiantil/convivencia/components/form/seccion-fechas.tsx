@@ -7,7 +7,7 @@ import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/component
 import type { CasoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 /** Fecha y hora de los hechos, fecha de conocimiento y, si se corrigen al modificar, el motivo. */
-export function SeccionFechas({ form }: { form: CasoFormState }) {
+export function SeccionFechas({ form }: { form: Pick<CasoFormState, "v" | "set" | "errores" | "fechasCambiaron"> }) {
   const { v, set, errores, fechasCambiaron } = form
   return (
     <>
