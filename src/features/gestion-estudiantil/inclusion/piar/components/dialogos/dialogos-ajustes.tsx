@@ -47,6 +47,8 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
     }
     case "ajuste": {
       const a = dialogo.ajuste
+      const infraestructura = tiposAjuste.find((x) => x.codigo === "INFRAESTRUCTURA")?.value
+      const adaptacionOtro = adaptaciones.find((x) => /^otr/i.test(x.codigo) || /^otr/i.test(x.label))?.value
       return (
         <FormDialogPiar
           {...comunes}
@@ -64,35 +66,33 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
             ajuste: a?.ajuste,
             recursos: a?.recursos,
             apoyos: a?.apoyos_requeridos,
-            productos: a?.productos_apoyo,
           }}
           campos={[
-            { name: "asignatura", label: "Asignatura", kind: "select", options: asignaturas },
+            { name: "asignatura", label: "Asignatura", kind: "select", options: asignaturas, required: true, visible: (v) => v.tipo !== infraestructura },
             { name: "tipo", label: "Tipo de ajuste", kind: "select", required: true, options: tiposAjuste },
             { name: "barrera", label: "Tipo de barrera", kind: "select", options: barreras },
             { name: "adaptacion", label: "Tipo de adaptación", kind: "select", required: true, options: adaptaciones },
-            { name: "especificacion", label: "Especificación de la adaptación", kind: "texto", max: 200, ancho: true },
-            texto("barrera_concreta", "Barrera concreta", 2000, { required: true }),
-            texto("meta", "Meta de aprendizaje", 1000, { required: true }),
-            texto("ajuste", "Ajuste", 500, { required: true }),
+            { name: "especificacion", label: "Especificación", kind: "texto", required: true, min: 3, max: 100, ancho: true, visible: (v) => v.adaptacion === adaptacionOtro },
+            texto("barrera_concreta", "Barrera concreta", 2000, { required: true, min: 10 }),
+            texto("meta", "Meta de aprendizaje", 1000, { required: true, min: 10 }),
+            texto("ajuste", "Ajuste", 500, { required: true, min: 10 }),
             texto("recursos", "Recursos", 1000),
             texto("apoyos", "Apoyos requeridos", 1000),
-            texto("productos", "Productos de apoyo", 1000),
           ]}
           onSubmit={(v) =>
             ejecutar("post", `/${piar.id}/ajustes`, {
               AJUSTE: a?.id ?? null,
-              FK_ASIGNATURA: nulo(v.asignatura),
+              FK_ASIGNATURA: v.tipo === infraestructura ? null : nulo(v.asignatura),
               FK_IPO_AJUSTE: Number(v.tipo),
               FK_IPO_BARRERA: nulo(v.barrera),
               FK_IPO_ADAPTACION: Number(v.adaptacion),
-              ESPECIFICACION: nulo(v.especificacion),
+              ESPECIFICACION: v.adaptacion === adaptacionOtro ? v.especificacion : null,
               BARRERA_CONCRETA: v.barrera_concreta,
               META: v.meta,
               TEXTO_AJUSTE: v.ajuste,
               RECURSOS: nulo(v.recursos),
               APOYOS_REQUERIDOS: nulo(v.apoyos),
-              PRODUCTOS_APOYO: nulo(v.productos),
+              PRODUCTOS_APOYO: a?.productos_apoyo ?? null,
             })
           }
         />
@@ -130,7 +130,7 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
           confirmar="Registrar"
           campos={[
             { name: "periodo", label: "Período de Evaluación", kind: "select", required: true, options: periodos, ancho: true },
-            texto("avance", "Avance", 2000, { required: true }),
+            texto("avance", "Avance", 2000, { required: true, min: 10 }),
           ]}
           onSubmit={(v) => ejecutar("post", `/ajustes/${dialogo.ajuste.id}/seguimientos`, { FK_PERIODO_EVALUACION: Number(v.periodo), AVANCE: v.avance })}
         />
@@ -149,7 +149,7 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
               ? []
               : [{ name: "ajuste", label: "Ajuste", kind: "select", required: true, ancho: true, options: piar.ajustes.map((a) => ({ value: String(a.id), label: `${a.asignatura_nombre ?? "Transversal"} · ${a.ajuste}` })) } as CampoPiar]),
             { name: "fecha", label: "Fecha", kind: "fecha", required: true },
-            texto("descripcion", "Descripción", 1000, { required: true }),
+            texto("descripcion", "Descripción", 1000, { required: true, min: 10 }),
           ]}
           onSubmit={(v, archivos) =>
             ejecutar("post", `/ajustes/${fijo?.id ?? v.ajuste}/evidencias`, { FECHA: v.fecha, DESCRIPCION: v.descripcion, ARCHIVOS: archivos })

@@ -41,17 +41,32 @@ export function accesoPiar(roles: string[], permiso: { puedeCrear: boolean; pued
 
 export const esEditable = (estado: EstadoPiar) => estado === "BORRADOR" || estado === "VIGENTE"
 
-/** Los seis bloques del aviso de FIC.3. */
+/**
+ * Completitud (5.1): datos existentes, voz, caracterización y valoración, cobertura y ajustes, actividades/acuerdo
+ * y documento firmado. La voz es opcional: sin datos cuenta como No aplica. Completo no equivale a Vigente.
+ */
 export function progresoBloques(p: PiarDetalle) {
   const cobertura = p.cobertura ?? []
   const pendientes = cobertura.filter((c) => c.cobertura === "PENDIENTE_REVISION").length
   const v = p.version_actual
+  const firmas = v?.firmantes_faltantes?.length ?? 0
+  const acuerdo = [
+    !v?.fecha_acuerdo && "la fecha del acuerdo",
+    !v?.compromisos_establecimiento && "los compromisos del establecimiento",
+    firmas > 0 && "las firmas requeridas",
+  ].filter(Boolean)
   const bloques = [
-    { ok: Boolean(p.caracterizacion?.fortalezas && p.caracterizacion?.barreras), falta: "la caracterización pedagógica" },
-    { ok: Boolean(p.valoracion_pedagogica), falta: "la valoración pedagógica" },
-    { ok: cobertura.length > 0 && pendientes === 0, falta: `la cobertura de ${pendientes} asignatura${pendientes === 1 ? "" : "s"}` },
-    { ok: p.ajustes.length > 0 || (cobertura.length > 0 && cobertura.every((c) => c.cobertura === "SIN_AJUSTES")), falta: "los ajustes razonables" },
-    { ok: Boolean(v?.participantes.length), falta: "los participantes del acta" },
+    { ok: true, falta: "" },
+    { ok: true, falta: "" },
+    {
+      ok: Boolean(p.caracterizacion?.fortalezas && p.caracterizacion?.barreras && p.valoracion_pedagogica),
+      falta: "la caracterización y la valoración pedagógica",
+    },
+    {
+      ok: cobertura.length > 0 && pendientes === 0,
+      falta: pendientes ? `la cobertura de ${pendientes} asignatura${pendientes === 1 ? "" : "s"}` : "la cobertura",
+    },
+    { ok: acuerdo.length === 0, falta: acuerdo.join(", ") },
     { ok: Boolean(v?.acta), falta: "el acta de acuerdo firmada" },
   ]
   return { completos: bloques.filter((b) => b.ok).length, total: bloques.length, faltan: bloques.filter((b) => !b.ok).map((b) => b.falta) }
@@ -70,7 +85,7 @@ const TEXTO_FALTANTE: Record<string, string> = {
   SIN_AJUSTE_APLICABLE: "Registrar al menos un ajuste con su asignatura.",
   AJUSTES_POR_MAPEAR: "Asignar una asignatura a los ajustes Por mapear.",
   SIN_ACTA_FIRMADA: "Cargar el acta de acuerdo firmada.",
-  FIRMAS_PENDIENTES: "Registrar la firma, con su documento, de orientación, un docente de una asignatura con ajustes, rector y acudiente.",
+  FIRMAS_PENDIENTES: "Marcar como Firmó, con su fecha, a orientación, un docente de una asignatura con ajustes, rector y acudiente.",
 }
 
 export const textosFaltantes = (codigos: string[] | null | undefined) => (codigos ?? []).map((c) => TEXTO_FALTANTE[c] ?? "Completar los datos del PIAR.")

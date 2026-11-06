@@ -29,7 +29,7 @@ describe("accesoPiar", () => {
 describe("progresoBloques", () => {
   it("cuenta los bloques y nombra lo que falta en singular", () => {
     const r = progresoBloques(base)
-    expect(r.completos).toBe(2)
+    expect(r.completos).toBe(3)
     expect(r.faltan).toContain("la cobertura de 1 asignatura")
     expect(r.faltan).toContain("el acta de acuerdo firmada")
   })

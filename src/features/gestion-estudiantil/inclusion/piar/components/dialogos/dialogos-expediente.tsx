@@ -24,11 +24,11 @@ export function DialogosExpediente({ piar, dialogo, onClose }: DialogoProps) {
           confirmar={a ? "Guardar" : "Agregar"}
           inicial={a as unknown as Record<string, string>}
           campos={[
-            { name: "actividad", label: "Actividad", kind: "texto", required: true, max: 200 },
-            { name: "frecuencia", label: "Frecuencia acordada", kind: "texto", required: true, max: 100 },
-            { name: "responsable", label: "Responsable acordado", kind: "texto", required: true, max: 200 },
+            { name: "actividad", label: "Actividad", kind: "texto", required: true, min: 3, max: 150 },
+            { name: "frecuencia", label: "Frecuencia acordada", kind: "texto", required: true, min: 3, max: 150 },
+            { name: "responsable", label: "Responsable acordado", kind: "texto", required: true, min: 3, max: 150 },
             { name: "fecha_revision", label: "Fecha de revisión", kind: "fecha", required: true },
-            texto("descripcion", "Descripción", 1000, { required: true }),
+            texto("descripcion", "Descripción", 1000, { required: true, min: 10 }),
           ]}
           onSubmit={(v) =>
             ejecutar("post", `/${piar.id}/actividades-familiares`, {
@@ -67,9 +67,9 @@ export function DialogosExpediente({ piar, dialogo, onClose }: DialogoProps) {
           confirmar="Agregar"
           campos={[
             { name: "tipo", label: "Tipo de integrante", kind: "select", required: true, options: integrantes },
-            { name: "persona", label: "Persona o institución", kind: "texto", required: true, max: 200 },
-            { name: "relacion", label: "Relación", kind: "texto", required: true, max: 200, ancho: true },
-            texto("apoyo", "Apoyo que brinda", 1000, { required: true }),
+            { name: "persona", label: "Persona o institución", kind: "texto", required: true, min: 3, max: 150 },
+            { name: "relacion", label: "Relación con el estudiante", kind: "texto", required: true, min: 3, max: 200, ancho: true },
+            texto("apoyo", "Apoyo que proporciona", 1000, { required: true, min: 10 }),
           ]}
           onSubmit={(v) =>
             ejecutar("post", `/${piar.id}/red-apoyo`, { RED: null, FK_IPO_INTEGRANTE: Number(v.tipo), FK_PADRE: null, PERSONA_INSTITUCION: v.persona, RELACION: v.relacion, APOYO: v.apoyo })

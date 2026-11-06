@@ -14,7 +14,8 @@ export interface CampoPiar {
   name: string
   label: string
   kind: "texto" | "area" | "fecha" | "select"
-  required?: boolean
+  /** Con función, obligatorio según lo elegido en otros campos. */
+  required?: boolean | ((valores: Record<string, string>) => boolean)
   min?: number
   max?: number
   /** Con función, dependen de lo elegido en otros campos. */
@@ -45,7 +46,8 @@ function esquema(campos: CampoPiar[]) {
       for (const c of campos) {
         if (c.visible && !c.visible(v as Record<string, string>)) continue
         const t = (v[c.name] as string).trim()
-        if (c.required && !t) ctx.addIssue({ code: "custom", path: [c.name], message: `${c.label} es obligatorio.` })
+        const obligatorio = typeof c.required === "function" ? c.required(v as Record<string, string>) : c.required
+        if (obligatorio && !t) ctx.addIssue({ code: "custom", path: [c.name], message: `${c.label} es obligatorio.` })
         else if (t && c.min && t.length < c.min)
           ctx.addIssue({ code: "custom", path: [c.name], message: `${c.label} debe tener al menos ${c.min} caracteres.` })
       }
@@ -158,6 +160,7 @@ export function FormDialogPiar({
             {(valores) =>
               campos
                 .filter((c) => !c.visible || c.visible(valores))
+                .map((campo) => ({ ...campo, required: typeof campo.required === "function" ? campo.required(valores) : campo.required }))
                 .map((c) => (
                   <div key={c.name} className={c.ancho || c.kind === "area" ? "sm:col-span-2" : undefined}>
                     <form.AppField name={c.name}>

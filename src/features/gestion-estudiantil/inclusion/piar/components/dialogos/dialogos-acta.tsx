@@ -46,19 +46,14 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
             externo_id: fila?.externo_identificacion,
             persona: "",
           }}
-          archivos={{
-            label: "Documento firmado",
-            max: 1,
-            ayuda: fila?.fk_tarchivo_firma ? "Ya tiene un documento; cárguelo solo para reemplazarlo." : "Requerido con Firmó · PDF o imagen, máximo 10 MB",
-            exigir: (v) => (v.firmar === "SI" && v.firma === firmo && !fila?.fk_tarchivo_firma ? "Para marcar Firmó, adjunte el documento firmado." : null),
-          }}
+          archivos={{ label: "Soporte individual", max: 1, ayuda: fila?.fk_tarchivo_firma ? "Ya tiene un soporte; cárguelo solo para reemplazarlo." : "Opcional: el acta firmada acredita la firma. PDF o imagen, máximo 10 MB" }}
           campos={[
             { name: "tipo", label: "Tipo de persona", kind: "select", required: true, options: tiposPersona },
             { name: "persona", label: "Persona registrada", kind: "select", required: !fila, visible: (v) => !fila && Boolean(v.tipo) && v.tipo !== externo, options: (v) => personas.flatMap((p, i) => (p.tipo_persona === codigoTipo(v.tipo) ? [{ value: String(i), label: p.detalle ? `${p.nombre} · ${p.detalle}` : p.nombre }] : [])) },
-            { name: "externo_nombre", label: "Nombre", kind: "texto", required: true, max: 200, visible: (v) => v.tipo === externo },
+            { name: "externo_nombre", label: "Persona externa", kind: "texto", required: true, max: 150, visible: (v) => v.tipo === externo },
             { name: "externo_id", label: "Identificación", kind: "texto", max: 50, visible: (v) => v.tipo === externo },
             { name: "calidad", label: "Calidad en que participa", kind: "select", required: true, options: calidades },
-            { name: "otra", label: "¿Cuál?", kind: "texto", required: true, max: 200, visible: (v) => v.calidad === otra },
+            { name: "otra", label: "Otra calidad y justificación", kind: "texto", required: true, min: 3, max: 300, visible: (v) => v.calidad === otra },
             texto("compromisos", "Compromisos asumidos", 2000),
             { name: "firmar", label: "Debe firmar", kind: "select", required: true, options: [{ value: "SI", label: "Sí" }, { value: "NO", label: "No" }] },
             { name: "firma", label: "Estado de firma", kind: "select", options: firmas, visible: (v) => v.firmar === "SI" },
@@ -93,18 +88,21 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
         <FormDialogPiar
           {...comunes}
           titulo={`Activar PIAR — ${estudiante}`}
-          descripcion="Al cargar el acta de acuerdo firmada, el PIAR pasa de Borrador a Vigente."
+          descripcion="Al cargar el acta de acuerdo firmada, el PIAR pasa de Borrador a Vigente. Si la copia aún no se entregó, deje la entrega vacía: el sistema la recordará a los 5 días hábiles."
           confirmar="Activar PIAR"
           archivos={{ label: "Acta de acuerdo firmada", max: 1, required: true, ayuda: "PDF o imagen, máximo 10 MB." }}
-          campos={[]}
-          onSubmit={async (_, archivos) => {
+          campos={[
+            { name: "copia_fecha", label: "Copia a la familia: fecha de entrega", kind: "fecha", required: (v) => Boolean(v.copia_medio) },
+            { name: "copia_medio", label: "Medio de entrega", kind: "select", options: medios, required: (v) => Boolean(v.copia_fecha) },
+          ]}
+          onSubmit={async (v, archivos) => {
             await ejecutar("put", `/versiones/${version?.id}/acta`, {
               FECHA_ACUERDO: version?.fecha_acuerdo,
               COMPROMISOS_ESTABLECIMIENTO: version?.compromisos_establecimiento,
               COMPROMISOS_FAMILIA: version?.compromisos_familia,
               FK_ARCHIVO_ACTA: archivos[0],
             })
-            return ejecutar("post", `/${piar.id}/activar`, { COPIA_FECHA: null, FK_MEDIO_COPIA: null })
+            return ejecutar("post", `/${piar.id}/activar`, { COPIA_FECHA: v.copia_fecha || null, FK_MEDIO_COPIA: v.copia_medio ? Number(v.copia_medio) : null })
           }}
         />
       )

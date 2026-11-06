@@ -18,6 +18,7 @@ export const CAMPOS_VACIOS = {
 export type CamposDatos = typeof CAMPOS_VACIOS
 
 const obligatorio = (nombre: string) => z.string().trim().min(1, `${nombre} es obligatorio.`)
+const minimo10 = (nombre: string) => z.string().trim().min(10, `${nombre} debe tener al menos 10 caracteres.`)
 
 export const esquemaDatos = z.object({
   fecha: obligatorio("La fecha de elaboración"),
@@ -26,11 +27,11 @@ export const esquemaDatos = z.object({
   fuente_estudiante: z.string(),
   expectativas_familia: z.string(),
   fuente_familia: z.string(),
-  fortalezas: obligatorio("Fortalezas y habilidades"),
-  barreras: obligatorio("Barreras para aprender y participar"),
+  fortalezas: minimo10("Fortalezas y habilidades"),
+  barreras: minimo10("Barreras para aprender y participar"),
   apoyos: z.string(),
   productos: z.string(),
-  valoracion: obligatorio("La valoración pedagógica"),
+  valoracion: minimo10("La valoración pedagógica"),
 })
 
 const nulo = (v: string) => v.trim() || null

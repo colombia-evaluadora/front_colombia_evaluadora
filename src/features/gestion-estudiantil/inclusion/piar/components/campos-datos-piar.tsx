@@ -27,15 +27,15 @@ export function CamposDatosPiar({ form, abiertas = true }: { form: FormDatos; ab
       <SeccionPlegable defaultAbierta={abiertas} titulo={<TituloSensible>Voz del estudiante y la familia</TituloSensible>} contentClassName="grid gap-5 p-4 sm:grid-cols-2">
         <div className="sm:col-span-2">{area("gustos", "Gustos e intereses del estudiante", 1000)}</div>
         <div>{area("expectativas_estudiante", "Expectativas del estudiante", 1000)}</div>
-        <div>{area("fuente_estudiante", "Fuente de las expectativas del estudiante", 200)}</div>
+        <div><form.AppField name="fuente_estudiante">{(f: FormDatos) => <f.TextField label="Fuente de las expectativas del estudiante" maxLength={200} showCounter />}</form.AppField></div>
         <div>{area("expectativas_familia", "Expectativas de la familia", 1000)}</div>
-        <div>{area("fuente_familia", "Fuente de las expectativas de la familia", 200)}</div>
+        <div><form.AppField name="fuente_familia">{(f: FormDatos) => <f.TextField label="Fuente de las expectativas de la familia" maxLength={200} showCounter />}</form.AppField></div>
       </SeccionPlegable>
       <SeccionPlegable defaultAbierta={abiertas} titulo={<TituloSensible requerido>Caracterización pedagógica</TituloSensible>} contentClassName="grid gap-5 p-4">
         {area("fortalezas", "Fortalezas y habilidades", 2000, true)}
         {area("barreras", "Barreras para aprender y participar", 2000, true)}
         {area("apoyos", "Apoyos que le resultan útiles", 2000)}
-        {area("productos", "Productos de apoyo", 2000)}
+        {area("productos", "Productos de apoyo", 1000)}
       </SeccionPlegable>
       <SeccionPlegable defaultAbierta={abiertas} titulo={<TituloSensible requerido>Valoración pedagógica</TituloSensible>} contentClassName="grid gap-5 p-4">
         {area("valoracion", "Valoración pedagógica", 3000, true)}
