@@ -34,7 +34,8 @@ import {
   useProcesoQuery,
   useReclamacionesQuery,
 } from "@/features/comunicaciones/procesos/api/procesos"
-import type { EleccionProceso, Funcion, Postulacion, Proceso } from "@/features/comunicaciones/procesos/api/procesos"
+import type { EleccionProceso, EstadoPostulacion, Funcion, Postulacion, Proceso } from "@/features/comunicaciones/procesos/api/procesos"
+import { usePaginaLocal } from "@/features/comunicaciones/procesos/components/paginar"
 
 export function ProcesoDetallePage() {
   return (
@@ -192,18 +193,28 @@ function Postulaciones({ e, revisor }: { e: EleccionProceso; revisor: boolean })
   const q = usePostulacionesQuery(e.id, true)
   const [revisar, setRevisar] = useState<Postulacion | null>(null)
   const { notify } = useNotify()
+  const [estado, setEstado] = useState("")
+  const filtradas = (q.data ?? []).filter((p) => !estado || p.estado === estado)
+  const { filas, paginacion, reiniciar } = usePaginaLocal(filtradas)
   if (q.isPending) return <Spinner />
   if (q.isError) return <p className="text-sm text-red">{getErrorMessage(q.error)}</p>
   return (
-    <>
+    <div className="flex flex-col gap-3 py-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <NativeSelect aria-label="Estado" value={estado} onChange={(x) => { setEstado(x.target.value); reiniciar() }}>
+          <NativeSelectOption value="">Estado: Todos</NativeSelectOption>
+          {(Object.keys(ESTADO_POSTULACION_LABEL) as EstadoPostulacion[]).map((k) => <NativeSelectOption key={k} value={k}>{ESTADO_POSTULACION_LABEL[k]}</NativeSelectOption>)}
+        </NativeSelect>
+        {estado && <Button size="sm" variant="ghost" color="neutral" onClick={() => { setEstado(""); reiniciar() }}>Limpiar filtros</Button>}
+      </div>
       <Table>
         <TableHeader><TableRow><TableHead>Candidato</TableHead><TableHead>Tipo</TableHead><TableHead>Estado</TableHead><TableHead>Presentada</TableHead><TableHead /></TableRow></TableHeader>
         <TableBody>
-          {q.data.length === 0 && <TableRow><TableCell colSpan={5}>Aún no hay postulaciones.</TableCell></TableRow>}
-          {q.data.map((p) => (
+          {filas.length === 0 && <TableRow><TableCell colSpan={5}>{estado ? "Ninguna postulación en ese estado." : "Aún no hay postulaciones."}</TableCell></TableRow>}
+          {filas.map((p) => (
             <TableRow key={p.id}>
               <TableCell>{p.nombre}</TableCell>
-              <TableCell>{p.propuestoPor ? `Por tercero (${p.propuestoPor})` : "Autopostulación"}</TableCell>
+              <TableCell>{p.propuestoPor ? "Por tercero" : "Autopostulación"}</TableCell>
               <TableCell>{ESTADO_POSTULACION_LABEL[p.estado]}{p.subsanarHasta ? ` · límite ${fechaCorta(p.subsanarHasta)}` : ""}</TableCell>
               <TableCell>{fechaCorta(p.presentadaEn)}</TableCell>
               <TableCell>{revisor && p.estado === "PRESENTADA" && e.etapa === "POSTULACIONES" && <Button size="sm" variant="outline" color="neutral" onClick={() => setRevisar(p)}>Revisar</Button>}</TableCell>
@@ -211,8 +222,9 @@ function Postulaciones({ e, revisor }: { e: EleccionProceso; revisor: boolean })
           ))}
         </TableBody>
       </Table>
+      {paginacion}
       {revisar && <DialogoRevisar e={e} p={revisar} onCerrar={() => setRevisar(null)} onHecho={(m) => { setRevisar(null); notify(m) }} />}
-    </>
+    </div>
   )
 }
 
@@ -282,6 +294,14 @@ function PadronPanel({ e, admin }: { e: EleccionProceso; admin: boolean }) {
   const editable = admin && !padron?.aprobadoEn && ["POSTULACIONES", "DECISION"].includes(e.etapa)
   const ejecutar = (ruta: string, mensaje: string) =>
     m.mutate({ ruta }, { onSuccess: () => notify(mensaje), onError: (x) => notify(getErrorMessage(x), { variant: "error" }) })
+  const [condicion, setCondicion] = useState("")
+  const [texto, setTexto] = useState("")
+  const termino = texto.trim().toLowerCase()
+  const personas = (padron?.personas ?? []).filter(
+    (x) => (!condicion || (condicion === "HABILITADA" ? x.condicion === "HABILITADA" : x.condicion !== "HABILITADA")) && (!termino || x.nombre.toLowerCase().includes(termino)),
+  )
+  const { filas, paginacion, reiniciar } = usePaginaLocal(personas)
+  const filtrar = (f: () => void) => { f(); reiniciar() }
   if (q.isPending) return <Spinner />
   return (
     <div className="flex flex-col gap-3 py-2">
@@ -290,19 +310,32 @@ function PadronPanel({ e, admin }: { e: EleccionProceso; admin: boolean }) {
         {editable && (
           <div className="flex gap-2">
             <Button size="sm" variant="outline" color="neutral" onClick={() => ejecutar(`/elecciones/${e.id}/padron/generar`, "Padrón generado.")}>Generar</Button>
-            {padron && <Button size="sm" variant="outline" color="neutral" onClick={() => setExcepcion(true)}>Incluir o excluir</Button>}
+            {padron && <Button size="sm" variant="outline" color="neutral" onClick={() => setExcepcion(true)}>Incluir</Button>}
             {padron && <Button size="sm" onClick={() => ejecutar(`/elecciones/${e.id}/padron/aprobar`, "Padrón aprobado: ya no se recalcula.")}>Aprobar padrón</Button>}
           </div>
         )}
       </div>
       {padron && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input className="w-64" placeholder="Buscar persona" value={texto} onChange={(x) => filtrar(() => setTexto(x.target.value))} />
+          <NativeSelect aria-label="Condición" value={condicion} onChange={(x) => filtrar(() => setCondicion(x.target.value))}>
+            <NativeSelectOption value="">Condición: Todas</NativeSelectOption>
+            <NativeSelectOption value="HABILITADA">Habilitada</NativeSelectOption>
+            <NativeSelectOption value="EXCLUIDA">Excluida</NativeSelectOption>
+          </NativeSelect>
+          {(texto || condicion) && <Button size="sm" variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setCondicion("") })}>Limpiar filtros</Button>}
+        </div>
+      )}
+      {padron && (
         <Table>
           <TableHeader><TableRow><TableHead>Persona</TableHead><TableHead>Vínculo</TableHead><TableHead>Condición</TableHead><TableHead>Motivo</TableHead></TableRow></TableHeader>
           <TableBody>
-            {padron.personas.map((x) => <TableRow key={x.usuario}><TableCell>{x.nombre}</TableCell><TableCell>{x.vinculo}</TableCell><TableCell>{x.condicion === "HABILITADA" ? "Habilitada" : "Excluida"}</TableCell><TableCell>{x.motivo ?? "—"}</TableCell></TableRow>)}
+            {filas.length === 0 && <TableRow><TableCell colSpan={4}>Ninguna persona coincide con los filtros.</TableCell></TableRow>}
+            {filas.map((x) => <TableRow key={x.usuario}><TableCell>{x.nombre}</TableCell><TableCell>{x.vinculo}</TableCell><TableCell>{x.condicion === "HABILITADA" ? "Habilitada" : "Excluida"}</TableCell><TableCell>{x.motivo ?? "—"}</TableCell></TableRow>)}
           </TableBody>
         </Table>
       )}
+      {padron && paginacion}
       {excepcion && <DialogoExcepcion e={e} onCerrar={() => setExcepcion(false)} onHecho={(t) => { setExcepcion(false); notify(t) }} />}
     </div>
   )
@@ -356,8 +389,25 @@ function Resultados({ e }: { e: EleccionProceso }) {
   const c = ultima.contenido
   return (
     <div className="flex flex-col gap-3 py-2 text-sm">
-      {c.votos != null && <p>Habilitados {c.habilitados} · Votos aceptados {c.votos} · Participación {c.participacionPct} % · Abstención {c.abstencion} · En blanco {c.blancos}</p>}
-      {c.candidaturas?.map((k) => <p key={k.nombre}>{k.nombre}: {k.votos}</p>)}
+      <p><Badge variant="soft" color={ultima.tipo === "DEFINITIVA" ? "success" : "warning"}>{ultima.tipo === "DEFINITIVA" ? "Definitivos" : "Provisionales"}</Badge></p>
+      {c.votos != null && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Tarjeta valor={c.habilitados} etiqueta="Habilitados" />
+          <Tarjeta valor={c.votos} etiqueta="Votos aceptados" />
+          <Tarjeta valor={c.participacionPct != null ? `${pct(c.participacionPct)} %` : "—"} etiqueta="Participación" />
+          <Tarjeta valor={c.abstencion} etiqueta="Abstención" />
+        </div>
+      )}
+      {c.votos != null && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {/* M.4.ESC.1: el porcentaje es sobre votos aceptados (blancos incluidos), como en el acta. */}
+          {[...(c.candidaturas ?? []), ...(c.blancos != null ? [{ nombre: "Voto en blanco", votos: c.blancos }] : [])].map((k) => (
+            <Tarjeta key={k.nombre} etiqueta={k.nombre} valor={`${k.votos}${c.votos ? ` (${pct((k.votos * 100) / c.votos)} %)` : ""}`} />
+          ))}
+        </div>
+      )}
+      {c.votos == null && c.candidaturas?.map((k) => <p key={k.nombre}>{k.nombre}: {k.votos}</p>)}
+      {e.reclamacionHasta && ultima.tipo !== "DEFINITIVA" && <p className="text-muted-foreground">Plazo de reclamaciones hasta {fechaCorta(e.reclamacionHasta)}</p>}
       {c.motivacion && <p className="whitespace-pre-wrap">Motivación: {c.motivacion}</p>}
       <p>Elegidos: {c.elegidos?.length ? c.elegidos.map((x) => `${x.nombre} (${x.condicion === "SUPLENTE" ? "suplente" : "titular"})`).join(", ") : "—"}</p>
       {c.incidencias?.map((i) => <NoticeBanner key={i} onClose={() => {}} variant="warning" notice={{ id: 0, message: `Incidencia: ${i} Mecanismo publicado: ${e.mecanismoEmpate === "DECISION" ? "decisión documentada" : e.mecanismoEmpate === "SEGUNDA_VUELTA" ? "segunda vuelta" : "nueva votación"}.` }} />)}
@@ -372,6 +422,17 @@ function Resultados({ e }: { e: EleccionProceso }) {
           ))}
         </ul>
       </div>
+    </div>
+  )
+}
+
+const pct = (n: number) => n.toLocaleString("es-CO", { maximumFractionDigits: 1 })
+
+function Tarjeta({ valor, etiqueta }: { valor: number | string | undefined; etiqueta: string }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <p className="text-lg font-semibold">{valor ?? "—"}</p>
+      <p className="text-xs text-muted-foreground">{etiqueta}</p>
     </div>
   )
 }
