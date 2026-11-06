@@ -62,7 +62,7 @@ export function SeccionSesiones({ tab, puedeGestionar, onVer, onModificar }: Pro
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-3">
-          <h2 className="text-base font-medium">Sesiones</h2>
+          <h2 className="text-lg font-semibold">Sesiones</h2>
           <FiltroTipo tipos={tab.tipos} value={tab.tipo} onChange={tab.setTipo} />
         </div>
       </div>

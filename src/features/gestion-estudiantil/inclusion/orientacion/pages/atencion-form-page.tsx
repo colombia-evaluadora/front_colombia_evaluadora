@@ -107,7 +107,7 @@ export function AtencionFormPage() {
               </form.Subscribe>
               <form.AppField name="motivo">{(f) => <f.SelectField label="Motivo" required options={a.motivos} placeholder="Seleccione" />}</form.AppField>
             </div>
-            <h2 className="text-sm font-medium">Secciones de la atención</h2>
+            <h2 className="text-lg font-semibold">Secciones de la atención</h2>
             <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
               {SECCIONES.map((c) => (
                 <form.Subscribe key={c.name} selector={(st) => Boolean(st.values[c.name].trim())}>
@@ -135,7 +135,7 @@ export function AtencionFormPage() {
             {a.id && (
               <section className="grid gap-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-medium">Remisión externa</h2>
+                  <h2 className="text-lg font-semibold">Remisión externa</h2>
                   {!a.soloLectura && (
                     <Button size="xs" variant="outline" color="neutral" type="button" onClick={() => setExterna(true)}>
                       <PlusIcon data-icon="inline-start" />

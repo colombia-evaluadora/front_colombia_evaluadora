@@ -29,7 +29,7 @@ function DatosExistentesMatricula({ m }: { m: MatriculaDisponible }) {
   const si = (v: string | null) => v === "S" || v === "SI"
   return (
     <section className="rounded-lg border border-border p-4 text-sm">
-      <h2 className="mb-2 flex items-center gap-2 font-medium">Datos existentes del estudiante <LockIcon className="size-4 text-muted-foreground" aria-label="Información sensible" /></h2>
+      <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">Datos existentes del estudiante <LockIcon className="size-4 text-muted-foreground" aria-label="Información sensible" /></h2>
       <ListaDatos>
         <Par label="Identificación">{m.documento ?? "—"}</Par>
         <Par label="Matrícula">{[m.grado_grupo, m.jornada, m.sede].filter(Boolean).join(" · ")}</Par>

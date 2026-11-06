@@ -41,7 +41,7 @@ export function TablaOrientacion<T>(p: Props<T>) {
   })
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-base font-medium">{p.titulo}</h2>
+      <h2 className="text-lg font-semibold">{p.titulo}</h2>
       <DataTable table={table} isPending={p.isPending} isError={p.isError} onRetry={p.onRetry} errorMessage={p.errorMessage} emptyMessage={p.emptyMessage} growColumnId="estudiante" />
       {p.totalCount > p.pageSize && (
         <Pagination
