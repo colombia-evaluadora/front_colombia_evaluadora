@@ -128,6 +128,8 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/gestion-estudiantil/convivencia/comite/sesion/$sesionId/editar": MENU.convivencia,
   "/app/gestion-estudiantil/inclusion-orientacion": MENU.inclusion,
   "/app/gestion-estudiantil/inclusion/piar/nuevo": MENU.inclusion,
+  "/app/gestion-estudiantil/inclusion/orientacion/atencion/nueva": MENU.inclusion,
+  "/app/gestion-estudiantil/inclusion/orientacion/atencion/$atencionId": MENU.inclusion,
   "/app/gestion-estudiantil/inclusion/piar/$piarId": MENU.inclusion,
   "/app/gestion-estudiantil/inclusion/piar/$piarId/historial": MENU.inclusion,
   "/app/gestion-estudiantil/observador": MENU.observador,

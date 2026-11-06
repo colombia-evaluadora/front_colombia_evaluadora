@@ -337,6 +337,14 @@ export const paths = {
       path: "gestion-estudiantil/inclusion-orientacion",
       getHref: () => "/app/gestion-estudiantil/inclusion-orientacion",
     },
+    atencionNueva: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+      getHref: () => "/app/gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+    },
+    atencionFicha: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/$atencionId",
+      getHref: (atencionId: number | string) => `/app/gestion-estudiantil/inclusion/orientacion/atencion/${atencionId}`,
+    },
     piarNuevo: {
       path: "gestion-estudiantil/inclusion/piar/nuevo",
       getHref: () => "/app/gestion-estudiantil/inclusion/piar/nuevo",

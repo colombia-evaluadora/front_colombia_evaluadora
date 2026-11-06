@@ -1268,8 +1268,35 @@ const PiarHistorialPage = lazyRouteComponent(
 export const inclusionOrientacionRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.inclusionOrientacion.path,
+  validateSearch: (s: Record<string, unknown>): { tab?: "orientacion" | "informe" } =>
+    s.tab === "orientacion" || s.tab === "informe" ? { tab: s.tab } : {},
   staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Inclusión y orientación" }] },
   component: PiarListaPage,
+})
+const AtencionFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/orientacion/pages/atencion-form-page"),
+  "AtencionFormPage",
+)
+const validarBusquedaAtencion = (s: Record<string, unknown>) => ({
+  ...(s.matricula ? { matricula: Number(s.matricula) } : {}),
+  ...(s.remision ? { remision: Number(s.remision) } : {}),
+  ...(s.motivo ? { motivo: Number(s.motivo) } : {}),
+  ...(s.estudiante ? { estudiante: String(s.estudiante) } : {}),
+  ...(s.ver ? { ver: true } : {}),
+})
+export const atencionNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.atencionNueva.path,
+  validateSearch: validarBusquedaAtencion,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Nueva atención" }] },
+  component: AtencionFormPage,
+})
+export const atencionFichaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.atencionFicha.path,
+  validateSearch: validarBusquedaAtencion,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Atención" }] },
+  component: AtencionFormPage,
 })
 export const piarNuevoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
@@ -1595,6 +1622,8 @@ const routeTree = rootRoute.addChildren([
     asistenciaRoute,
     catalogoAnotacionesRoute,
     inclusionOrientacionRoute,
+    atencionNuevaRoute,
+    atencionFichaRoute,
     piarNuevoRoute,
     piarFichaRoute,
     piarHistorialRoute,
