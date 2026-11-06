@@ -4,6 +4,7 @@ import {
   DEFAULT_EVALUATION_CRITERIA,
   evaluationCriteriaDb,
   evaluationCriteriaName,
+  evaluationCriteriaValue,
 } from "@/mocks/db/academic-period/evaluation-criteria"
 import { parseGradingRange } from "@/features/establishment/academic-period/utils/grading-range"
 import type { EvaluationCriteria } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
@@ -22,6 +23,7 @@ function toRow(academicPeriodId: number, criteria: EvaluationCriteria) {
     period_calculation_elements: fk(criteria.periodCalculationElements),
     subject_grade_criteria: fk(criteria.subjectGradeCriteria),
     final_grade_criteria: fk(criteria.finalGradeCriteria),
+    final_grade_criteria_value: evaluationCriteriaValue(criteria.finalGradeCriteria),
     area_grade_criteria: fk(criteria.areaGradeCriteria),
     student_without_grades_performance: fk(criteria.studentWithoutGradesPerformance),
     rounding_mode: fk(criteria.roundingMode),

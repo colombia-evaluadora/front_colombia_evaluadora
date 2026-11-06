@@ -27,7 +27,7 @@ import { useAcademicPeriodQuery } from "@/features/establishment/academic-period
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { parseDateValue } from "@/lib/date-value"
 import {
-  evaluationPeriodFormSchema,
+  makeEvaluationPeriodFormSchema,
   type EvaluationPeriodFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { DecimalField } from "@/features/establishment/academic-period/components/fields/decimal-field"
@@ -49,6 +49,8 @@ const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().t
 interface CreateEvaluationPeriodDialogProps {
   academicPeriodId?: number
   period?: EvaluationPeriod
+  /** Peso porcentual visible y obligatorio solo con el criterio por porcentaje (Regla 35). */
+  usaPesos?: boolean
 }
 
 // Agregar y Modificar período de evaluación (Sección 5.1; Reglas 30, 34, 35 y 36).
@@ -57,6 +59,7 @@ interface CreateEvaluationPeriodDialogProps {
 export function CreateEvaluationPeriodDialog({
   academicPeriodId,
   period,
+  usaPesos = false,
 }: CreateEvaluationPeriodDialogProps) {
   const isEditing = period != null
   const [open, setOpen] = useState(false)
@@ -149,14 +152,21 @@ export function CreateEvaluationPeriodDialog({
 
   const isSaving = createEvaluation.isPending || updateEvaluation.isPending
 
+  const schema = makeEvaluationPeriodFormSchema(usaPesos)
   const form = useAppForm({
     defaultValues,
     validators: {
-      onChange: evaluationPeriodFormSchema,
-      onSubmit: evaluationPeriodFormSchema,
+      onChange: schema,
+      onSubmit: schema,
     },
     onSubmit: ({ value }) => {
-      const values = { ...value, nombre: value.nombre.trim(), abreviacion: value.abreviacion.trim() }
+      // Sin pesos no se manda el peso: el back conserva el que hubiera.
+      const values = {
+        ...value,
+        nombre: value.nombre.trim(),
+        abreviacion: value.abreviacion.trim(),
+        peso: usaPesos ? value.peso : Number.NaN,
+      }
       if (isEditing) {
         updateEvaluation.mutate({ academicPeriodId, id: period.id, values })
       } else {
@@ -328,6 +338,7 @@ export function CreateEvaluationPeriodDialog({
             )}
           </form.AppField>
 
+          {usaPesos && (
           <form.Field
             name="peso"
             validators={{
@@ -349,6 +360,7 @@ export function CreateEvaluationPeriodDialog({
               </div>
             )}
           </form.Field>
+          )}
         </form>
 
         <DialogFooter>
