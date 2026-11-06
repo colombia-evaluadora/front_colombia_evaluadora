@@ -1630,7 +1630,7 @@ export const comunicadoNuevoRoute = createRoute({
   path: paths.app.comunicacionesComunicadoNuevo.path,
   staticData: {
     breadcrumb: [
-      { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Comunicados institucionales", to: paths.app.comunicacionesChat.getHref() },
       { label: "Nuevo comunicado", to: paths.app.comunicacionesComunicadoNuevo.getHref() },
     ],
   },

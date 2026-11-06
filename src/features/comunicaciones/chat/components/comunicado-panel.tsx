@@ -139,7 +139,7 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
       {programado && (
         <p className="mb-3 flex w-fit items-center gap-1.5 rounded-full bg-orange-22 px-3 py-1 text-xs text-orange">
           <ClockIcon aria-hidden className="size-4" />
-          Programado para el {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' hh:mm a")}
+          Programado para el {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' H:mm")}
         </p>
       )}
       <header className="border-b pb-3">
@@ -255,8 +255,8 @@ function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onCl
         </DialogHeader>
         <ErrorNoticeBanner error={anular.isError ? anular.error : null} />
         <p className="text-sm text-muted-foreground">
-          Se anulará {c.titulo}. Dejará de mostrarse a los destinatarios y no se puede revertir; los correos ya
-          enviados no se retiran.
+          Se anulará {c.titulo}. Los destinatarios dejarán de verlo y su aviso dirá que el contenido ya no está
+          disponible.
         </p>
         <div className="space-y-1.5">
           <label htmlFor="motivo-anulacion" className="text-sm font-medium">
@@ -269,6 +269,9 @@ function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onCl
             aria-invalid={intentado && vacio}
             onChange={(e) => setMotivo(e.target.value)}
           />
+          <p className="text-right text-xs text-muted-foreground">
+            {motivo.length} / {MAX_MOTIVO}
+          </p>
           {intentado && vacio && (
             <p role="alert" className="text-xs text-red">
               Escribe el motivo de la anulación.
@@ -277,7 +280,7 @@ function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onCl
         </div>
         <DialogFooter>
           <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
-            Volver
+            Cancelar
           </Button>
           <Button
             type="button"
@@ -320,7 +323,7 @@ function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunicado; on
         <ErrorNoticeBanner error={cancelar.isError ? cancelar.error : null} />
         <p className="text-sm text-muted-foreground">
           Se cancelará {c.titulo}, programado para el{" "}
-          {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' hh:mm a")}. Pasará a Cancelado (estado final) y no se
+          {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' H:mm")}. Pasará a Cancelado (estado final) y no se
           publicará.
         </p>
         <DialogFooter>
@@ -382,11 +385,11 @@ function RecepcionDialog({ conversacionId, onClose }: { conversacionId: number; 
                     <span className="block truncate font-medium">{f.nombre}</span>
                     <span className="block text-xs text-muted-foreground">
                       {f.vistoEn
-                        ? `Visto el ${format(new Date(f.vistoEn), "dd/MM/yyyy 'a las' hh:mm a")}`
+                        ? `Visto el ${format(new Date(f.vistoEn), "dd/MM/yyyy 'a las' H:mm")}`
                         : f.estado === "LEIDO"
                           ? "Leído (sin hora registrada)"
                           : f.entregadoEn
-                            ? `Entregado el ${format(new Date(f.entregadoEn), "dd/MM/yyyy 'a las' hh:mm a")}`
+                            ? `Entregado el ${format(new Date(f.entregadoEn), "dd/MM/yyyy 'a las' H:mm")}`
                             : "Aún no se publica"}
                     </span>
                   </span>
