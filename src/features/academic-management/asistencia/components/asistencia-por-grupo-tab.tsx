@@ -566,7 +566,8 @@ function MatrizSesiones({
           <TableRow key={e.fkMatricula} className="group">
             <NombreEstudiante estudiante={e} />
             {sesiones.map((s) => {
-              const l = s.registrada ? letra(e.celdas.get(s.id)) : ""
+              const celda = e.celdas.get(s.id)
+              const l = s.registrada ? letra(celda) : ""
               return (
                 <TableCell
                   key={s.id}
@@ -576,7 +577,12 @@ function MatrizSesiones({
                     !s.registrada && SIN_REGISTRAR,
                     COLOR_LETRA[l],
                   )}
-                  title={NOMBRE_LETRA[l]}
+                  title={
+                    // Bloque de llegada: solo con Llegó tarde sin excusa (lo manda el back).
+                    l === "T" && celda?.bloqueLlegada != null
+                      ? `${NOMBRE_LETRA[l]} · Bloque ${celda.bloqueLlegada + 1}`
+                      : NOMBRE_LETRA[l]
+                  }
                 >
                   {l}
                 </TableCell>

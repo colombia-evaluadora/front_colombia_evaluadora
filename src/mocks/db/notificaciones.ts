@@ -117,6 +117,18 @@ const TIPOS: TipoFixture[] = [
     deepLink: () => "/app/asistencia",
   },
   {
+    tipo: "ASISTENCIA_SIN_REGISTRAR",
+    categoria: "ASISTENCIA",
+    etiqueta: "Asistencia sin registrar",
+    prioridad: "ALTA",
+    silenciable: true,
+    push: true,
+    email: false,
+    titulo: () => "Asistencia sin registrar: 2 clases",
+    cuerpo: () => "Pasó el plazo para registrar la asistencia de: 6A · Matemáticas · 03/11/2026",
+    deepLink: () => "/app/asistencia",
+  },
+  {
     tipo: "INFORMES_BOLETIN",
     categoria: "INFORMES",
     etiqueta: "Boletín generado",

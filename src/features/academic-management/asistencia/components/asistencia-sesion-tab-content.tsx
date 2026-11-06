@@ -45,6 +45,7 @@ import {
   cambiaRegistro,
   conCambioPendiente,
   LLEGO_TARDE,
+  NO_ASISTIO,
   nombreSesion,
   registroAutoritativo,
   registrosPorBloque,
@@ -108,7 +109,6 @@ export function AsistenciaSesionTabContent({
       new Map([...rosterOficial].map(([bloque, rows]) => [bloque, rows.map(conCambioPendiente)])),
     [rosterOficial],
   )
-  // `periodo_calificable` y la solicitud en el padrón todavía no los manda el backend.
   const periodoCerrado = [...rosterOficial.values()].some((rows) =>
     rows.some((r) => r.periodo_calificable === false),
   )
@@ -201,10 +201,13 @@ export function AsistenciaSesionTabContent({
     }
     baseline.current = inicialSeleccion
     bloqueTardeBaseline.current = inicialBloqueTarde
-    setSeleccion(inicialSeleccion)
+    // Regla 36: el suspendido sin marca queda No asistió; se guarda con la sesión.
+    const conSancion = { ...inicialSeleccion }
+    for (const r of roster_) if (r.sancion) conSancion[r.fk_tmatricula] ??= NO_ASISTIO
+    setSeleccion(conSancion)
     setBloqueTarde(inicialBloqueTarde)
     precargado.current = true
-  }, [isPending, autoritativos, firmaServidor, sinEdicionesLocales])
+  }, [isPending, autoritativos, firmaServidor, sinEdicionesLocales, roster_])
   // Con excusa o justificación no se pide el bloque de llegada (Sección 7).
   function tieneExcusa(row: RosterEstudiante): boolean {
     const fk = row.fk_tmatricula
@@ -261,6 +264,7 @@ export function AsistenciaSesionTabContent({
         puedeJustificar,
         onJustificar: setJustificando,
         justificacionLocal,
+        onSoporteRechazado: (mensaje) => notify(mensaje, { variant: "error" }),
       }),
     [
       justificacionLocal,
@@ -317,6 +321,13 @@ export function AsistenciaSesionTabContent({
   }, [seleccion, bloqueTarde, sesion.bloques.length, roster_, soporte, soporteEliminado, justificacionLocal])
   const pendientesPorBloqueTarde =
     Object.keys(seleccion).length - Object.keys(seleccionLista).length
+  // La sesión se guarda completa: todos marcados (el back lo exige igual).
+  const sinMarcar = roster_.filter((r) => seleccion[r.fk_tmatricula] == null).length
+  // Llegó tarde cuenta como asistencia.
+  const asistieron = roster_.filter((r) => {
+    const tipo = seleccion[r.fk_tmatricula]
+    return tipo === ASISTIO || tipo === LLEGO_TARDE
+  }).length
 
   const hayAlgoQueGuardar =
     Object.entries(seleccionLista).some(([fk, tipo]) => tipo !== baseline.current[Number(fk)]) ||
@@ -342,7 +353,7 @@ export function AsistenciaSesionTabContent({
   function handleMarcarTodoAsistio() {
     setSeleccion((prev) => {
       const next = { ...prev }
-      for (const est of roster_) next[est.fk_tmatricula] ??= ASISTIO
+      for (const est of roster_) next[est.fk_tmatricula] ??= est.sancion ? NO_ASISTIO : ASISTIO
       return next
     })
   }
@@ -358,6 +369,15 @@ export function AsistenciaSesionTabContent({
         })
       }
       return !avisarSiNada
+    }
+    if (sinMarcar > 0) {
+      notify(
+        sinMarcar === 1
+          ? "Falta marcar la asistencia de 1 estudiante. La sesión se guarda completa."
+          : `Falta marcar la asistencia de ${sinMarcar} estudiantes. La sesión se guarda completa.`,
+        { variant: "error" },
+      )
+      return false
     }
     const porBloque = registrosPorBloque(
       sesion.bloques,
@@ -635,7 +655,8 @@ export function AsistenciaSesionTabContent({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
-            {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
+            Asistieron {asistieron} de {roster_.length}
+            {sinMarcar > 0 && ` · ${sinMarcar} sin marcar`}
           </span>
           {guardando ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">

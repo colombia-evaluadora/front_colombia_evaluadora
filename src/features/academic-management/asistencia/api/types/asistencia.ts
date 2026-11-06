@@ -105,9 +105,9 @@ export interface RosterEstudiante {
   hora_inicio: string | null
   hora_fin: string | null
   fk_tperiodo_evaluacion: number | null
-  /** Regla 75, pedido al backend (hoy no viene): `false` = período No calificable. */
+  /** Regla 75: `false` = período No calificable (V141). */
   periodo_calificable?: boolean
-  /** Regla 75, pedido al backend: solicitud pendiente sobre este registro. */
+  /** Regla 75: solicitud pendiente sobre este registro (V141). */
   pk_tsolicitud_aprobacion?: number | null
   cambio_tipo_asistencia_valor?: TipoAsistencia | null
   /** Versión del registro (`fn_asistencia_version`, sso V137) para el CAS de la escritura offline. */
@@ -116,6 +116,8 @@ export interface RosterEstudiante {
   justificacion?: string | null
   fk_tlv_fuente_justificacion?: number | null
   fuente_justificacion?: string | null
+  /** Regla 36 (Gestión Estudiantil): sanción de suspensión en firme ese día; queda No asistió (sso V141). */
+  sancion?: string | null
   total_estudiantes: number
   registrados: number
 }
