@@ -5,7 +5,7 @@ import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
 import type { Opcion } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { ESTADOS, FILTROS_VACIOS, type CatalogoFiltros } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
 
 interface Props {
