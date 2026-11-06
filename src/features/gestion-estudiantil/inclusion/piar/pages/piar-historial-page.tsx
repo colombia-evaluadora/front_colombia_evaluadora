@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
-import { fetchArchivoViewUrl } from "@/lib/files"
 
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { descargarActualizacion } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
@@ -17,7 +16,7 @@ import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/a
 import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
-import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
+import { AvisoPiar, EnlaceArchivo } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { textoElemento } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import type { VersionHistorial } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 
@@ -71,7 +70,6 @@ function aFilas(versiones: VersionHistorial[]): Fila[] {
   ])
 }
 
-const abrir = async (id: number) => window.open((await fetchArchivoViewUrl(id)).url, "_blank", "noopener")
 
 /** G.4.PIA.CIC.3: historial de versiones; el docente solo recibe la historia de sus ajustes. */
 export function PiarHistorialPage() {
@@ -152,8 +150,8 @@ export function PiarHistorialPage() {
                 header: "Archivo",
                 cell: ({ row }) => (
                   <span className="flex flex-col items-start gap-1">
-                    {row.original.archivo ? <button type="button" className="text-primary hover:underline" onClick={() => abrir(row.original.archivo as number)}>{row.original.archivoNombre ?? "Ver archivo"}</button> : "—"}
-                    {row.original.actualizacion && <button type="button" className="text-primary hover:underline" onClick={() => descargarActualizacion(row.original.actualizacion as number)}>Documento</button>}
+                    {row.original.archivo ? <EnlaceArchivo archivo={{ id: row.original.archivo, nombre: row.original.archivoNombre ?? "Ver archivo" }} /> : "—"}
+                    {row.original.actualizacion && <Button size="xs" variant="link" type="button" onClick={() => descargarActualizacion(row.original.actualizacion as number)}>Documento</Button>}
                   </span>
                 ),
               },

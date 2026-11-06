@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { InfoIcon, PlusIcon, WarningCircleIcon } from "@/components/ui/icons"
 import { fetchArchivoViewUrl } from "@/lib/files"
@@ -7,19 +8,19 @@ import { fetchArchivoViewUrl } from "@/lib/files"
 import type { ArchivoRef } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 
 const AVISO = {
-  warning: { fondo: "bg-yellow-22", Icono: WarningCircleIcon, color: "text-yellow" },
-  info: { fondo: "bg-primary-22", Icono: InfoIcon, color: "text-primary" },
-  error: { fondo: "bg-red-22", Icono: WarningCircleIcon, color: "text-red" },
-}
+  warning: { variant: "warning", Icono: WarningCircleIcon },
+  info: { variant: "default", Icono: InfoIcon },
+  error: { variant: "destructive", Icono: WarningCircleIcon },
+} as const
 
 /** Aviso fijo de la pantalla (a diferencia de `NoticeBanner`, no se descarta). */
 export function AvisoPiar({ tipo = "warning", children }: { tipo?: keyof typeof AVISO; children: ReactNode }) {
-  const { fondo, Icono, color } = AVISO[tipo]
+  const { variant, Icono } = AVISO[tipo]
   return (
-    <div className={`flex items-start gap-2 rounded-lg px-4 py-3 text-sm ${fondo}`} role="status">
-      <Icono className={`mt-0.5 size-4 shrink-0 ${color}`} />
-      <div>{children}</div>
-    </div>
+    <Alert variant={variant} role="status">
+      <Icono />
+      <AlertDescription>{children}</AlertDescription>
+    </Alert>
   )
 }
 
