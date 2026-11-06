@@ -168,6 +168,10 @@ export const paths = {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
     },
+    relacionesAlumnoGrupo: {
+      path: "administracion/relaciones-alumno-grupo",
+      getHref: () => "/app/administracion/relaciones-alumno-grupo",
+    },
     festivos: {
       path: "administracion/festivos",
       getHref: () => "/app/administracion/festivos",

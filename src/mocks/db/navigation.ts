@@ -117,6 +117,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V338: Superadministrador y Administrador territorial. Código RELACIONES_ALUMNO_GRUPO.
+  {
+    id: 53,
+    name: "Relaciones alumno-grupo",
+    icon: "",
+    path: "/app/administracion/relaciones-alumno-grupo",
+    menuOrder: 7,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   // V337.5: solo el Superadministrador. Código FESTIVOS, derivado del nombre.
   {
     id: 48,
