@@ -115,6 +115,12 @@ export interface CreateAcademicPeriodRequest {
   }[]
 }
 
+// Solo al crear, desde el ciclo anterior (Regla 96).
+export interface CreateAcademicPeriodBody extends CreateAcademicPeriodRequest {
+  GENERAR_GRADOS: "S" | "N"
+  COPIAR_CRITERIOS: "S" | "N"
+}
+
 export type UpdateAcademicPeriodRequest = CreateAcademicPeriodRequest
 
 export interface AcademicPeriodDetail extends AcademicPeriod {
