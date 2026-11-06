@@ -28,6 +28,8 @@ interface UseDataTableOptions<TData> extends DataTableFilters {
   getRowId: (row: TData) => string
   // Si se define, persiste la visibilidad de columnas en localStorage.
   columnVisibilityStorageKey?: string
+  // Columnas ocultas de entrada; lo guardado por el usuario manda.
+  initialColumnVisibility?: VisibilityState
 }
 
 function readStoredVisibility(storageKey: string | undefined): VisibilityState {
@@ -61,9 +63,10 @@ export function useDataTable<TData>({
   sorting,
   setSorting,
   columnVisibilityStorageKey,
+  initialColumnVisibility,
 }: UseDataTableOptions<TData>): UseDataTableResult<TData> {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
-    readStoredVisibility(columnVisibilityStorageKey),
+    ({ ...initialColumnVisibility, ...readStoredVisibility(columnVisibilityStorageKey) }),
   )
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 

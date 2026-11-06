@@ -8,7 +8,12 @@ import type {
   AcademicPeriodsFiltersFormInput,
   AcademicPeriodsFiltersFormValues,
 } from "@/features/establishment/academic-period/api/schema"
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import {
+  useAcademicPeriodStatusesQuery,
+  useJornadasQuery,
+} from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { ENROLLMENT_MODALITIES } from "@/features/establishment/academic-period/api/schema"
 import { FilterAcademicPeriodsForm } from "@/features/establishment/academic-period/components/forms/form-filter-academic-periods"
 
 const FILTER_ACADEMIC_PERIODS_FORM_ID = "filter-academic-periods-form"
@@ -32,12 +37,14 @@ export function SearchAcademicPeriods({
   const [open, setOpen] = useState(false)
 
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+  const { data: jornadas = [] } = useJornadasQuery()
+  const { data: sedes = [] } = useSedeOptionsQuery()
 
   // Los filtros se escriben dentro del input —`año:(2026) estado:(Abierto)`—
   // igual que en el resto de los listados.
   // Ver `@/components/search/query-syntax`.
   const syntax: QuerySyntax<AcademicPeriodsFiltersFormInput> = {
-      empty: { sedeName: "", schoolYearId: "", statusId: "", startFrom: "", startTo: "" },
+      empty: { sedeName: "", sedeId: "", jornadaId: "", schoolYearId: "", enrollmentModality: "", statusId: "" },
       freeText: { key: "sede", field: "sedeName" },
       terms: [
         textTerm("año", "schoolYearId"),
@@ -49,14 +56,27 @@ export function SearchAcademicPeriods({
             label: option.label,
           })),
         ),
-        textTerm("desde", "startFrom"),
-        textTerm("hasta", "startTo"),
+        optionTerm(
+          "jornada",
+          "jornadaId",
+          jornadas.map((j) => ({ value: String(j.id), label: j.name })),
+        ),
+        optionTerm(
+          "modalidad",
+          "enrollmentModality",
+          ENROLLMENT_MODALITIES.map((m) => ({ value: m.value, label: m.label })),
+        ),
+        optionTerm(
+          "sedes",
+          "sedeId",
+          sedes.map((s) => ({ value: String(s.pk_sede), label: s.nombre })),
+        ),
       ],
     }
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 
-  // `filters` viene de la URL. Los filtros avanzados (año, estado, fechas) se
+  // `filters` viene de la URL. Los filtros avanzados (sede, jornada, año, modalidad, estado) se
   // cuentan aparte del buscador de sede para el badge del botón.
   const advancedFilterCount = activeFilterCount - (filters.sedeName ? 1 : 0)
 
@@ -91,7 +111,6 @@ export function SearchAcademicPeriods({
           id={FILTER_ACADEMIC_PERIODS_FORM_ID}
           defaultValues={filters}
           onSubmit={handleApplyAdvanced}
-          hideSede
         />
       </SearchQueryBar>
     </div>

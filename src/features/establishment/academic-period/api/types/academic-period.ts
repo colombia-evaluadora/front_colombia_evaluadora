@@ -73,9 +73,10 @@ export interface AcademicPeriodConfig {
 export interface AcademicPeriodsQueryFilters {
   sedeName?: string
   schoolYearId?: number
+  sedeId?: number
+  jornadaId?: number
+  enrollmentModality?: EnrollmentModality
   statusId?: number[]
-  startFrom?: string
-  startTo?: string
 }
 
 export interface AcademicPeriodsQueryRequest {

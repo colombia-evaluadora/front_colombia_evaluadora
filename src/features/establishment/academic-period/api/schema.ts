@@ -158,10 +158,11 @@ export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
 
 export const academicPeriodsFiltersFormSchema = z.object({
   sedeName: z.string(),
+  sedeId: z.string(),
+  jornadaId: z.string(),
   schoolYearId: z.string(),
+  enrollmentModality: z.string(),
   statusId: z.string(),
-  startFrom: z.string(),
-  startTo: z.string(),
 })
 export type AcademicPeriodsFiltersFormInput = z.input<typeof academicPeriodsFiltersFormSchema>
 export type AcademicPeriodsFiltersFormValues = z.infer<typeof academicPeriodsFiltersFormSchema>
@@ -179,8 +180,9 @@ export const academicPeriodsSearchSchema = z.object({
   sedeName: z.string().optional().catch(undefined),
   schoolYearId: z.coerce.number().optional().catch(undefined),
   statusId: z.coerce.number().optional().catch(undefined),
-  startFrom: z.string().optional().catch(undefined),
-  startTo: z.string().optional().catch(undefined),
+  sedeId: z.coerce.number().optional().catch(undefined),
+  jornadaId: z.coerce.number().optional().catch(undefined),
+  enrollmentModality: z.enum(["ANUAL", "SEMESTRAL", "TRIMESTRAL", "BIMESTRAL"]).optional().catch(undefined),
   // Pestaña abierta de la configuración del período (p. ej. "grados" al volver de un grado).
   tab: z.string().optional().catch(undefined),
 })

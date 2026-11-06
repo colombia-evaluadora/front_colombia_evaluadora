@@ -31,8 +31,8 @@ interface AcademicPeriodsListRequest {
   NOMBRE_SEDE: string | null
   ANO: string | null
   FK_ESTADO: number | null
-  FECHA_DESDE: string | null
-  FECHA_HASTA: string | null
+  FK_JORNADA: number | null
+  MODALIDAD: string | null
   PAGEINDEX: number
   PAGESIZE: number
   SORT_BY: string | null
@@ -66,15 +66,15 @@ function toListRequest(
   const { filters, sorting, pageIndex, pageSize } = params
   const [primary] = sorting
   return {
-    // El front filtra la sede por nombre (no por id) → FK_SEDE va null.
-    FK_SEDE: null,
+    // Sede del panel de filtros (por id) y búsqueda libre (por nombre).
+    FK_SEDE: filters.sedeId ?? null,
     NOMBRE_SEDE: filters.sedeName ?? null,
     // El back filtra el año por NOMBRE ("2026") → se manda como texto.
     ANO: filters.schoolYearId != null ? String(filters.schoolYearId) : null,
     // El back acepta un solo estado; se toma el primero del multi-select.
     FK_ESTADO: filters.statusId?.[0] ?? null,
-    FECHA_DESDE: filters.startFrom ?? null,
-    FECHA_HASTA: filters.startTo ?? null,
+    FK_JORNADA: filters.jornadaId ?? null,
+    MODALIDAD: filters.enrollmentModality ?? null,
     PAGEINDEX: pageIndex,
     PAGESIZE: pageSize,
     // Orden: primera columna del sorting de la tabla.
