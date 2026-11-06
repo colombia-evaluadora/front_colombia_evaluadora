@@ -50,7 +50,7 @@ export function Par({ label, children }: { label: string; children: ReactNode })
 
 export function BotonSeccion({ onClick, icono, children }: { onClick: () => void; icono?: ReactNode; children: ReactNode }) {
   return (
-    <Button size="xs" variant="outline" color="muted" type="button" onClick={onClick}>
+    <Button size="xs" variant="outline" color="neutral" type="button" onClick={onClick}>
       {icono ?? <PlusIcon data-icon="inline-start" />}
       {children}
     </Button>
@@ -59,7 +59,7 @@ export function BotonSeccion({ onClick, icono, children }: { onClick: () => void
 
 export function BotonQuitar({ onClick }: { onClick: () => void }) {
   return (
-    <Button size="xs" variant="ghost" color="muted" type="button" onClick={onClick}>
+    <Button size="xs" variant="ghost" color="neutral" type="button" onClick={onClick}>
       Quitar
     </Button>
   )

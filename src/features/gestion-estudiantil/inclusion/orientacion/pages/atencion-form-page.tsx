@@ -34,7 +34,7 @@ export function AtencionFormPage() {
         <TableScreenTitle
           action={
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={a.volver}>{a.soloLectura ? "Volver" : "Cancelar"}</Button>
+              <Button size="sm" variant="outline" color="neutral" onClick={a.volver}>{a.soloLectura ? "Volver" : "Cancelar"}</Button>
               {!a.soloLectura && (
                 <Button size="sm" disabled={a.guardando} onClick={() => form.handleSubmit()}>
                   {a.guardando ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
@@ -137,7 +137,7 @@ export function AtencionFormPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-medium">Remisión externa</h2>
                   {!a.soloLectura && (
-                    <Button size="xs" variant="outline" color="muted" type="button" onClick={() => setExterna(true)}>
+                    <Button size="xs" variant="outline" color="neutral" type="button" onClick={() => setExterna(true)}>
                       <PlusIcon data-icon="inline-start" />
                       Registrar
                     </Button>

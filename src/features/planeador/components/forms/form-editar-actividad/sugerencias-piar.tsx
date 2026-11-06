@@ -45,7 +45,7 @@ export function SugerenciasPiar({ actividadId, yaAgregadas, matriculasActividad,
           Sugerencias del PIAR
           <Badge variant="soft" color="info">{pendientes.length}</Badge>
         </span>
-        <Button size="xs" variant="outline" color="muted" type="button" disabled={disabled} onClick={() => onAgregar(pendientes)}>
+        <Button size="xs" variant="outline" color="neutral" type="button" disabled={disabled} onClick={() => onAgregar(pendientes)}>
           Agregar todas
         </Button>
       </div>
@@ -54,7 +54,7 @@ export function SugerenciasPiar({ actividadId, yaAgregadas, matriculasActividad,
           <span>
             <strong className="font-medium">{s.estudiante_nombre}</strong> · {s.tipo_adaptacion} — {s.descripcion}
           </span>
-          <Button size="xs" variant="ghost" color="muted" type="button" disabled={disabled} onClick={() => onAgregar([s])}>
+          <Button size="xs" variant="ghost" color="neutral" type="button" disabled={disabled} onClick={() => onAgregar([s])}>
             Agregar
           </Button>
         </div>

@@ -196,7 +196,7 @@ export function FormDialogPiar({
                   size="icon-sm"
                   type="button"
                   variant="ghost"
-                  color="muted"
+                  color="neutral"
                   aria-label={`Quitar ${f.name}`}
                   onClick={() => setFiles((prev) => prev.filter((x) => x !== f))}
                 >
@@ -205,7 +205,7 @@ export function FormDialogPiar({
               </div>
             ))}
             <div className="flex items-center gap-3">
-              <Button size="sm" type="button" variant="outline" color="muted" render={<label />} nativeButton={false} disabled={files.length >= archivos.max && archivos.max > 1}>
+              <Button size="sm" type="button" variant="outline" color="neutral" render={<label />} nativeButton={false} disabled={files.length >= archivos.max && archivos.max > 1}>
                 <FileUploadOutlinedIcon data-icon="inline-start" />
                 {files.length && archivos.max === 1 ? "Cambiar" : "Cargar"}
                 <input
@@ -225,7 +225,7 @@ export function FormDialogPiar({
         )}
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="submit" form="form-piar" color={confirmarColor} disabled={pending}>
             {pending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {confirmar}

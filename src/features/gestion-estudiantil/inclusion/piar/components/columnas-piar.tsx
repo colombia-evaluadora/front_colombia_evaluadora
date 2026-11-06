@@ -70,7 +70,7 @@ export function buildColumnasPiar({ access, prefetch, irFicha }: Opciones): Colu
         const r = row.original
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" color="muted" aria-label={`Acciones de ${r.estudiante_nombre}`} />}>
+            <DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" color="neutral" aria-label={`Acciones de ${r.estudiante_nombre}`} />}>
               <DotsThreeVerticalIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -103,7 +103,7 @@ export function DialogRemitir({ matricula, estudiante, remisionId, onClose, onRe
         <AvisoPiar>Si sospecha autolesión o ideación suicida, use el Reporte de salud mental.</AvisoPiar>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" disabled={crear.isPending || corregir.isPending} onClick={() => form.handleSubmit()}>
             {(crear.isPending || corregir.isPending) && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {remisionId ? "Guardar" : "Remitir"}

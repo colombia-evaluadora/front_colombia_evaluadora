@@ -151,7 +151,7 @@ export function PiarFichaPage() {
       ) : error || !data ? (
         <div className="grid justify-items-start gap-3 p-6">
           <AvisoPiar tipo="error">{mensajePiar(error)}</AvisoPiar>
-          <Button size="sm" variant="outline" color="muted" onClick={() => refetch()}>Reintentar</Button>
+          <Button size="sm" variant="outline" color="neutral" onClick={() => refetch()}>Reintentar</Button>
         </div>
       ) : (
         <FichaContenido key={`${data.id}-${data.estado.codigo}`} piar={data} />
