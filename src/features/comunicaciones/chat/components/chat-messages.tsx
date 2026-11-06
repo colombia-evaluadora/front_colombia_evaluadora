@@ -333,7 +333,7 @@ function MensajeEliminado({ mensaje: m }: { mensaje: Mensaje }) {
         </header>
         <p className="flex items-center gap-1.5 italic">
           <TrashIcon aria-hidden className="size-4 shrink-0 text-orange" />
-          Mensaje retirado por el remitente.
+          Mensaje retirado por el remitente
         </p>
         {original && (
           <p className="flex items-center gap-1.5 italic">
