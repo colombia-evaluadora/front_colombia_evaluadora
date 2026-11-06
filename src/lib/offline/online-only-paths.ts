@@ -12,6 +12,7 @@ export const ONLINE_ONLY_PREFIXES = [
   "/app/administracion/criterios-prioridad",
   "/app/administracion/superadministradores",
   "/app/administracion/administradores-territoriales",
+  "/app/administracion/supervisores-territoriales",
   "/app/establecimiento-educativo",
   // Mis dispositivos: registrar o revocar equipos solo tiene sentido con el servidor.
   "/app/mis-dispositivos",
