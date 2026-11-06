@@ -36,3 +36,20 @@ export function useAnularAtencion() {
     onSuccess: invalidar,
   })
 }
+
+export function useAnularRemision() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) =>
+      api.post(`/eval-col/gestion-estudiantil/orientacion/remisiones/${id}/anular`, { MOTIVO: motivo }),
+    onSuccess: invalidar,
+  })
+}
+
+export function useCrearRemision() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: (body: unknown) => api.post("/eval-col/gestion-estudiantil/orientacion/remisiones", body),
+    onSuccess: invalidar,
+  })
+}

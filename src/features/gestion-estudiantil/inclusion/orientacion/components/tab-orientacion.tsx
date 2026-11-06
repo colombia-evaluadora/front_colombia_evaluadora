@@ -8,6 +8,7 @@ import type { ExportResult } from "@/features/establishment/institution/api/type
 
 import { useAtencionesQuery, useRemisionesQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { FILTROS_VACIOS, type OrientacionFiltros } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
+import { DialogAnularOrientacion, type AnulacionOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-anular-orientacion"
 import { SearchOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/search/search-orientacion"
 import { buildColumnsAtenciones } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-atenciones"
 import { buildColumnsRemisiones } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-remisiones"
@@ -17,10 +18,11 @@ import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/compone
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
 /** G.4.ORI.LIS.1-3: remisiones y atenciones. Registran orientación y rectoría (V602). */
-export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) {
+export function TabOrientacion({ puedeRegistrar, puedeAnular }: { puedeRegistrar: boolean; puedeAnular: boolean }) {
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [aviso, setAviso] = useState<string | null>(null)
+  const [anular, setAnular] = useState<AnulacionOrientacion | null>(null)
   const [filtros, setFiltros] = useState<OrientacionFiltros>(FILTROS_VACIOS)
   const [pagR, setPagR] = useState({ i: 0, s: 10 })
   const [pagA, setPagA] = useState({ i: 0, s: 10 })
@@ -56,6 +58,8 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
         titulo="Remisiones"
         columns={buildColumnsRemisiones({
           puedeRegistrar,
+          puedeAnular,
+          onAnular: (r) => setAnular({ tipo: "remision", id: r.id, estudiante: r.estudiante_nombre }),
           onDescargar: (r) => descargar(descargarRemision(r.id)),
           onRegistrar: (r) =>
             navigate({ to: paths.app.atencionNueva.getHref(), search: { matricula: r.fk_tmatricula, remision: r.id, motivo: r.fk_tlv_motivo, estudiante: r.estudiante_nombre } }),
@@ -78,6 +82,8 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
         titulo="Atenciones"
         columns={buildColumnsAtenciones({
           puedeRegistrar,
+          puedeAnular,
+          onAnular: (a) => setAnular({ tipo: "atencion", id: a.id, estudiante: a.estudiante_nombre }),
           onDescargar: (a) => descargar(descargarFicha(a.id)),
           onVer: (a) => navigate({ to: paths.app.atencionFicha.getHref(a.id), search: { ver: true } }),
           onModificar: (a) => navigate({ to: paths.app.atencionFicha.getHref(a.id) }),
@@ -96,6 +102,7 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
         errorMessage={atenciones.error ? mensajePiar(atenciones.error) : undefined}
         emptyMessage={hayFiltros ? "No hay atenciones para los filtros aplicados." : "Aún no hay atenciones."}
       />
+      {anular && <DialogAnularOrientacion objetivo={anular} onClose={() => setAnular(null)} />}
     </div>
   )
 }

@@ -11,9 +11,11 @@ interface Opciones {
   puedeRegistrar: boolean
   onRegistrar: (r: RemisionRow) => void
   onDescargar: (r: RemisionRow) => void
+  puedeAnular: boolean
+  onAnular: (r: RemisionRow) => void
 }
 
-export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescargar }: Opciones): ColumnDef<RemisionRow>[] {
+export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescargar, puedeAnular, onAnular }: Opciones): ColumnDef<RemisionRow>[] {
   return [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
     { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
@@ -39,6 +41,7 @@ export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescarga
             Registrar atención
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onDescargar(row.original)}>Descargar remisión</DropdownMenuItem>
+          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}>Anular</DropdownMenuItem>}
         </MenuFila>
       ),
     },

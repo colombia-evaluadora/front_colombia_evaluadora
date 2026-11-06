@@ -3,9 +3,10 @@ export interface OrientacionFiltros {
   jornada: string
   motivo: string
   estado: string
+  modalidad: string
   origen: string
 }
-export const FILTROS_VACIOS: OrientacionFiltros = { sede: "", jornada: "", motivo: "", estado: "", origen: "" }
+export const FILTROS_VACIOS: OrientacionFiltros = { sede: "", jornada: "", motivo: "", estado: "", modalidad: "", origen: "" }
 
 export interface RemisionRow {
   id: number
@@ -19,6 +20,17 @@ export interface RemisionRow {
   estado_codigo: string
   estado_nombre: string
   fk_torientacion_atencion: number | null
+  total_count: number
+}
+
+export interface MiRemisionRow {
+  id: number
+  fecha: string
+  estudiante_nombre: string
+  grado_grupo: string
+  tipo: string
+  estado_codigo: string
+  estado_nombre: string
   total_count: number
 }
 

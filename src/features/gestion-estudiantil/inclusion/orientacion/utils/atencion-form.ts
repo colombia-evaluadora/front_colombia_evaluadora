@@ -4,14 +4,14 @@ import type { AtencionDetalle } from "@/features/gestion-estudiantil/inclusion/o
 
 /** Las secciones de ATE.1, en su orden; `trabajo` es la única obligatoria. */
 export const SECCIONES = [
-  { name: "comportamiento", label: "Comportamiento del estudiante en casa" },
-  { name: "relacion", label: "Relación con padres, hermanos u otros familiares" },
-  { name: "estrategias", label: "Estrategias disciplinarias de los padres" },
-  { name: "trabajo", label: "Trabajo realizado", requerida: true },
-  { name: "pruebas", label: "Pruebas aplicadas" },
-  { name: "compromisos", label: "Compromisos del estudiante o de los padres" },
-  { name: "rec_familia", label: "Recomendaciones al estudiante o a los padres" },
-  { name: "rec_docente", label: "Recomendaciones al Responsable de enseñanza" },
+  { name: "comportamiento", label: "Comportamiento del estudiante en casa", max: 2000 },
+  { name: "relacion", label: "Relación con padres, hermanos u otros familiares", max: 2000 },
+  { name: "estrategias", label: "Estrategias disciplinarias de los padres", max: 2000 },
+  { name: "trabajo", label: "Trabajo realizado", max: 3000, requerida: true },
+  { name: "pruebas", label: "Pruebas aplicadas", max: 1000 },
+  { name: "compromisos", label: "Compromisos del estudiante o de los padres", max: 2000 },
+  { name: "rec_familia", label: "Recomendaciones al estudiante o a los padres", max: 2000 },
+  { name: "rec_docente", label: "Recomendaciones al Responsable de enseñanza", max: 2000 },
 ] as const
 
 const req = (nombre: string) => z.string().trim().min(1, `${nombre} es obligatorio.`)
@@ -24,7 +24,7 @@ export const esquemaAtencion = z.object({
   comportamiento: z.string(),
   relacion: z.string(),
   estrategias: z.string(),
-  trabajo: req("El trabajo realizado"),
+  trabajo: z.string().trim().min(10, "El trabajo realizado debe tener al menos 10 caracteres."),
   pruebas: z.string(),
   compromisos: z.string(),
   rec_familia: z.string(),

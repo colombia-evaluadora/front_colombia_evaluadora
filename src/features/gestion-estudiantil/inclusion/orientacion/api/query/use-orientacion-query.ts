@@ -4,7 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
 import { orientacionKeys } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query-keys"
-import type { AtencionDetalle, AtencionRow, OrientacionFiltros, RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
+import type { AtencionDetalle, AtencionRow, MiRemisionRow, OrientacionFiltros, RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 
 const BASE = "/gestion-estudiantil/orientacion"
 const id = (v: string) => (v ? Number(v) : null)
@@ -35,7 +35,7 @@ export function useRemisionesQuery(p: Params) {
 export function useAtencionesQuery(p: Params) {
   return useQuery({
     queryKey: orientacionKeys.lista("atenciones", p),
-    queryFn: () => listar<AtencionRow>("atenciones", { ...comunes(p), FK_MODALIDAD: null, FK_ORIGEN: id(p.filtros.origen) }, p.pageIndex, p.pageSize),
+    queryFn: () => listar<AtencionRow>("atenciones", { ...comunes(p), FK_MODALIDAD: id(p.filtros.modalidad), FK_ORIGEN: id(p.filtros.origen) }, p.pageIndex, p.pageSize),
     placeholderData: keepPreviousData,
   })
 }
@@ -46,6 +46,21 @@ export function useRemisionesDeQuery(matricula: string) {
     queryKey: orientacionKeys.remisionesDe(matricula),
     queryFn: () => listar<RemisionRow>("remisiones", { SEARCH: null, FK_SEDE: null, FK_JORNADA: null, FK_MOTIVO: null, FK_ESTADO: null, FK_MATRICULA: Number(matricula) }, 0, 50).then((r) => r.rows),
     enabled: Boolean(matricula),
+  })
+}
+
+/** G.1.REP.3: solo las propias y su estado (Regla 1). */
+export function useMisRemisionesQuery(p: { estado: string; pageIndex: number; pageSize: number }) {
+  return useQuery({
+    queryKey: orientacionKeys.lista("mis-remisiones", p),
+    queryFn: async () => {
+      const q = new URLSearchParams({ PAGEINDEX: String(p.pageIndex), PAGESIZE: String(p.pageSize) })
+      if (p.estado) q.set("FK_ESTADO", p.estado)
+      const rows = await evalCol.getRows<MiRemisionRow>(`/gestion-estudiantil/observador/mis-remisiones?${q}`)
+      const totalCount = rows[0]?.total_count ?? 0
+      return { rows, totalCount, pageCount: toPageCount(totalCount, p.pageSize) }
+    },
+    placeholderData: keepPreviousData,
   })
 }
 

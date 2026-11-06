@@ -11,9 +11,11 @@ interface Opciones {
   onVer: (a: AtencionRow) => void
   onModificar: (a: AtencionRow) => void
   onDescargar: (a: AtencionRow) => void
+  puedeAnular: boolean
+  onAnular: (a: AtencionRow) => void
 }
 
-export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar, onDescargar }: Opciones): ColumnDef<AtencionRow>[] {
+export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar, onDescargar, puedeAnular, onAnular }: Opciones): ColumnDef<AtencionRow>[] {
   return [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
     { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
@@ -30,6 +32,7 @@ export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar, onD
           <DropdownMenuItem onClick={() => onVer(row.original)}>Ver detalle</DropdownMenuItem>
           <DropdownMenuItem disabled={!puedeRegistrar} onClick={() => onModificar(row.original)}>Modificar</DropdownMenuItem>
           <DropdownMenuItem onClick={() => onDescargar(row.original)}>Descargar ficha</DropdownMenuItem>
+          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}>Anular</DropdownMenuItem>}
         </MenuFila>
       ),
     },

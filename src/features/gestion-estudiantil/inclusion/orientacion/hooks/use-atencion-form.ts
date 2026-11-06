@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router"
 
+import { queueNotice } from "@/components/notice/notice-context"
 import { paths } from "@/config/paths"
 import { useAppForm } from "@/lib/forms"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { useAnularAtencion, useGuardarAtencion } from "@/features/gestion-estudiantil/inclusion/orientacion/api/mutations/atenciones"
+import { useGuardarAtencion } from "@/features/gestion-estudiantil/inclusion/orientacion/api/mutations/atenciones"
 import { useAtencionQuery, useEstudiantesAtencionQuery, useRemisionesDeQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { atencionAlBackend, esquemaAtencion, valoresDesde } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/atencion-form"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
@@ -40,7 +41,6 @@ export function useAtencionForm() {
   const remisiones = useRemisionesDeQuery(detalle ? String(detalle.estudiante.fk_tmatricula) : matricula).data ?? []
 
   const guardar = useGuardarAtencion()
-  const anular = useAnularAtencion()
   const volver = () => navigate({ to: paths.app.inclusionOrientacion.getHref(), search: { tab: "orientacion" } })
   const avisar = (e: unknown) => setNotice({ id: Date.now(), message: mensajePiar(e) })
 
@@ -54,6 +54,7 @@ export function useAtencionForm() {
       const body = atencionAlBackend(value, esRemision ? Number(remision) : null)
       try {
         await guardar.mutateAsync({ id, body: id ? body : { ...body, FK_MATRICULA: Number(matricula) } })
+        queueNotice(id ? "Atención actualizada." : "Atención registrada.")
         volver()
       } catch (e) {
         avisar(e)
@@ -85,6 +86,5 @@ export function useAtencionForm() {
     modalidades, origenes, motivos, entidades,
     matricula, setMatricula, setBusqueda, estudiantes, estudianteFijo, remision, setRemision, remisiones,
     notice, setNotice, form, guardando: guardar.isPending, volver,
-    anular: (motivo: string) => anular.mutateAsync({ id: id as number, motivo }).then(volver),
   }
 }

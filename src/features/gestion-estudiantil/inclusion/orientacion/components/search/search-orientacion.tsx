@@ -24,6 +24,7 @@ export function SearchOrientacion({ search, filtros, onSearch, onFiltros }: Prop
   const motivos = useCatalogo("MOTIVO_ORIENTACION")
   const estados = useCatalogo("ESTADO_REMISION_ORIENTACION")
   const origenes = useCatalogo("ORIGEN_ATENCION_ORIENTACION")
+  const modalidades = useCatalogo("MODALIDAD_ATENCION_ORIENTACION")
 
   useEffect(() => {
     if (open) setDraft(filtros)
@@ -37,6 +38,7 @@ export function SearchOrientacion({ search, filtros, onSearch, onFiltros }: Prop
       optionTerm("jornada", "jornada", opciones.jornadaOpciones),
       optionTerm("motivo", "motivo", motivos),
       optionTerm("estado", "estado", estados),
+      optionTerm("modalidad", "modalidad", modalidades),
       optionTerm("origen", "origen", origenes),
     ],
   }
@@ -83,6 +85,7 @@ export function SearchOrientacion({ search, filtros, onSearch, onFiltros }: Prop
         <Combo id="ori-jornada" label="Jornada" value={draft.jornada} options={opciones.jornadaOpciones} disabled={!draft.sede} placeholder={draft.sede ? "Todos" : "Elegí Sede primero"} onChange={(jornada) => setDraft({ ...draft, jornada })} />
         <Combo id="ori-motivo" label="Motivo" value={draft.motivo} options={motivos} onChange={(motivo) => setDraft({ ...draft, motivo })} />
         <Combo id="ori-estado" label="Estado (remisiones)" value={draft.estado} options={estados} onChange={(estado) => setDraft({ ...draft, estado })} />
+        <Combo id="ori-modalidad" label="Modalidad (atenciones)" value={draft.modalidad} options={modalidades} onChange={(modalidad) => setDraft({ ...draft, modalidad })} />
         <Combo id="ori-origen" label="Origen (atenciones)" value={draft.origen} options={origenes} onChange={(origen) => setDraft({ ...draft, origen })} />
       </div>
     </SearchQueryBar>

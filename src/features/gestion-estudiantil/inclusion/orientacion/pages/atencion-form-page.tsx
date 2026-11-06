@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeBanner } from "@/components/notice/notice-banner"
+import { NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -27,6 +28,7 @@ export function AtencionFormPage() {
   const titulo = a.soloLectura ? "Detalle de la atención" : a.id ? "Modificar atención" : "Nueva atención"
 
   return (
+    <NoticeProvider>
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
@@ -97,7 +99,7 @@ export function AtencionFormPage() {
                       placeholder="Seleccione"
                       disabled={a.soloLectura}
                       value={a.remision}
-                      options={a.remisiones.map((r) => ({ value: String(r.id), label: `${formatFecha(r.fecha)} · ${r.remite_nombre ?? "—"} · ${r.motivo_nombre}` }))}
+                      options={a.remisiones.filter((r) => r.estado_codigo === "RECIBIDA" || String(r.id) === a.remision).map((r) => ({ value: String(r.id), label: `${formatFecha(r.fecha)} · ${r.remite_nombre ?? "—"} · ${r.motivo_nombre}` }))}
                       onChange={a.setRemision}
                     />
                   ) : <span className="hidden sm:block" />
@@ -121,7 +123,7 @@ export function AtencionFormPage() {
                       }
                       contentClassName="p-4"
                     >
-                      <form.AppField name={c.name}>{(f) => <f.TextareaField label={c.label} maxLength={3000} />}</form.AppField>
+                      <form.AppField name={c.name}>{(f) => <f.TextareaField label={c.label} maxLength={c.max} />}</form.AppField>
                     </SeccionPlegable>
                   )}
                 </form.Subscribe>
@@ -153,5 +155,6 @@ export function AtencionFormPage() {
       </TableScreenBody>
       {externa && a.id && <DialogRemisionExterna atencionId={a.id} entidades={a.entidades} onClose={() => setExterna(false)} />}
     </TableScreen>
+    </NoticeProvider>
   )
 }
