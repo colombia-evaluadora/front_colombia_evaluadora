@@ -102,6 +102,8 @@ interface BuildColumnsParams {
   onJustificar: (row: RosterEstudiante) => void
   /** Justificación hecha en pantalla antes de guardar (manda sobre la guardada). */
   justificacionLocal: Record<number, JustificacionLocal>
+  /** Soporte rechazado (tamaño o tipo): la pantalla avisa por qué. */
+  onSoporteRechazado: (mensaje: string) => void
 }
 
 /** Planilla de la sesión (Sección 7): una fila por estudiante, el estado como
@@ -123,6 +125,7 @@ export function buildColumnsAsistenciaManual({
   puedeJustificar,
   onJustificar,
   justificacionLocal,
+  onSoporteRechazado,
 }: BuildColumnsParams): ColumnDef<RosterEstudiante>[] {
   const bloqueItems = Object.fromEntries(
     bloques.map((b) => {
@@ -143,6 +146,14 @@ export function buildColumnsAsistenciaManual({
       cell: ({ row }) => (
         <span className="flex items-center gap-2">
           <span className="font-semibold">{row.original.estudiante}</span>
+          {row.original.sancion && (
+            <Tooltip>
+              <TooltipTrigger render={<Badge variant="soft" color="destructive" />}>Sanción</TooltipTrigger>
+              <TooltipContent className="max-w-64">
+                Suspensión en firme ({row.original.sancion}): queda como No asistió.
+              </TooltipContent>
+            </Tooltip>
+          )}
           {conPendiente.has(row.original.fk_tmatricula) && (
             <Badge variant="soft" color="warning">
               Pendiente de aprobación
@@ -166,7 +177,8 @@ export function buildColumnsAsistenciaManual({
               name={`asistencia-${fk}`}
               aria-label={`${label}: ${row.original.estudiante}`}
               checked={seleccion[fk] === tipo}
-              disabled={soloLectura}
+              // Regla 36: con suspensión en firme la marca es fija.
+              disabled={soloLectura || Boolean(row.original.sancion)}
               onChange={() => onChange(fk, tipo)}
               className="size-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
             />
@@ -230,7 +242,9 @@ export function buildColumnsAsistenciaManual({
         const r = row.original
         const fk = r.fk_tmatricula
         const tipo = seleccion[fk]
-        if (tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE) return <span className="text-muted-foreground">—</span>
+        if ((tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE) || r.sancion) {
+          return <span className="text-muted-foreground">—</span>
+        }
 
         const eliminado = soporteEliminado[fk] ?? false
         const archivo = soporte[fk] ?? null
@@ -293,6 +307,13 @@ export function buildColumnsAsistenciaManual({
                 onValueChange={(files) => onSoporteChange(fk, files[0] ?? null)}
                 accept=".pdf,.jpg,.jpeg,.png"
                 maxSize={10 * 1024 * 1024}
+                onFileReject={(file, mensaje) =>
+                  onSoporteRechazado(
+                    mensaje === "El archivo supera el tamaño máximo permitido"
+                      ? `${file.name} supera el tamaño máximo de 10 MB.`
+                      : `${file.name}: ${mensaje}. Use PDF, JPG o PNG.`,
+                  )
+                }
                 className="w-fit"
               >
                 <FileUploadTrigger render={<Button type="button" variant="outline" color="neutral" size="xs" />}>
