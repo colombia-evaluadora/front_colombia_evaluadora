@@ -218,6 +218,14 @@ export const SUCCESS_MESSAGES = {
     activated: "Superadministrador activado.",
     deactivated: "Superadministrador inactivado. Perdió el acceso y se cerraron sus sesiones.",
   },
+  // Un Administrador territorial no se elimina (Sección 7.3): `deleted` no se usa.
+  administradorTerritorial: {
+    created: "Administrador territorial creado.",
+    updated: "Administrador territorial guardado.",
+    deleted: "Administrador territorial eliminado.",
+    activated: "Administrador territorial activado.",
+    deactivated: "Administrador territorial inactivado. Perdió el acceso y se cerraron sus sesiones.",
+  },
   // Un Supervisor territorial no se elimina (Sección 7.2): `deleted` no se usa.
   supervisorTerritorial: {
     created: "Supervisor territorial creado.",
@@ -272,6 +280,24 @@ export function supervisorSaveNotice(
   creado: boolean,
 ): { message: string; variant: "success" | "warning" } {
   const base = creado ? SUCCESS_MESSAGES.supervisorTerritorial.created : SUCCESS_MESSAGES.supervisorTerritorial.updated
+  if (result.enlaceFallido != null) {
+    return { message: `${base} No se pudo enviar el enlace: ${result.enlaceFallido}`, variant: "warning" }
+  }
+  if (result.enlaceEnviadoA) {
+    return { message: `${base} Se envió el enlace a ${result.enlaceEnviadoA}.`, variant: "success" }
+  }
+  if (creado && result.cuentaExistente) {
+    return { message: `${base} Ya tenía una cuenta activa: entra con su contraseña actual.`, variant: "success" }
+  }
+  return { message: base, variant: "success" }
+}
+
+// Guardar un Administrador territorial: "Administrador territorial creado. Se envió el enlace a [correo]." (Sección 7.3).
+export function administradorSaveNotice(
+  result: { enlaceEnviadoA: string | null; cuentaExistente: boolean; enlaceFallido: string | null },
+  creado: boolean,
+): { message: string; variant: "success" | "warning" } {
+  const base = creado ? SUCCESS_MESSAGES.administradorTerritorial.created : SUCCESS_MESSAGES.administradorTerritorial.updated
   if (result.enlaceFallido != null) {
     return { message: `${base} No se pudo enviar el enlace: ${result.enlaceFallido}`, variant: "warning" }
   }

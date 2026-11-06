@@ -172,6 +172,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V353: solo el Superadministrador. Código ADMINISTRADORES_TERRITORIALES, derivado del nombre.
+  {
+    id: 52,
+    name: "Administradores territoriales",
+    icon: "",
+    path: "/app/administracion/administradores-territoriales",
+    menuOrder: 7,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   {
     id: 5,
     name: "Usuarios",

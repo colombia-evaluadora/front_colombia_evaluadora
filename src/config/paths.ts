@@ -141,6 +141,25 @@ export const paths = {
       getHref: (supervisorId: number | string) =>
         `/app/administracion/supervisores-territoriales/modificar/${supervisorId}`,
     },
+    administradoresTerritoriales: {
+      path: "administracion/administradores-territoriales",
+      getHref: () => "/app/administracion/administradores-territoriales",
+    },
+    // Bajo `detalle/` y `modificar/`: un `$id` suelto chocaría con `nuevo`.
+    administradorTerritorialNuevo: {
+      path: "administracion/administradores-territoriales/nuevo",
+      getHref: () => "/app/administracion/administradores-territoriales/nuevo",
+    },
+    administradorTerritorialDetalle: {
+      path: "administracion/administradores-territoriales/detalle/$administradorId",
+      getHref: (administradorId: number | string) =>
+        `/app/administracion/administradores-territoriales/detalle/${administradorId}`,
+    },
+    administradorTerritorialModificar: {
+      path: "administracion/administradores-territoriales/modificar/$administradorId",
+      getHref: (administradorId: number | string) =>
+        `/app/administracion/administradores-territoriales/modificar/${administradorId}`,
+    },
     criteriosPrioridad: {
       path: "administracion/criterios-prioridad",
       getHref: () => "/app/administracion/criterios-prioridad",
