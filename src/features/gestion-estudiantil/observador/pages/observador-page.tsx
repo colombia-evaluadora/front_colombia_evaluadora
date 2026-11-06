@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -14,7 +14,9 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
@@ -31,6 +33,13 @@ import { DialogAnularAnotacion } from "@/features/gestion-estudiantil/observador
 import { DialogDetalleAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-detalle-anotacion"
 import { DialogImprimirObservador } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-imprimir-observador"
 import { DialogExportarAnotaciones } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-exportar-anotaciones"
+
+const DialogRemitir = lazy(() =>
+  import("@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-remitir").then((m) => ({ default: m.DialogRemitir })),
+)
+const TabMisRemisiones = lazy(() =>
+  import("@/features/gestion-estudiantil/inclusion/orientacion/components/tab-mis-remisiones").then((m) => ({ default: m.TabMisRemisiones })),
+)
 
 /** Opciones únicas por valor, en el orden en que aparecen. */
 function unicas(pares: Array<[number | null, string | null]>): Opcion[] {
@@ -50,6 +59,9 @@ function ObservadorContent() {
   const [borrador, setBorrador] = useState<ObservadorFiltros>(FILTROS_VACIOS)
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
   const [anular, setAnular] = useState<AnotacionRow | null>(null)
+  const [remitir, setRemitir] = useState<AnotacionRow | null>(null)
+  const [pestana, setPestana] = useState("anotaciones")
+  const { notify } = useNotify()
 
   const opciones = useOpcionesObservador(borrador.sede, borrador.jornada)
   const codigos = useCodigosAnotacionQuery(opciones.establecimientoId)
@@ -92,6 +104,8 @@ function ObservadorContent() {
     onModificar: (a) => navigate({ to: paths.app.observadorEditar.getHref(a.id) }),
     puedeEditar: access.puedeEditar,
     puedeAnular: access.puedeAnular,
+    puedeRemitir: access.puedeRemitir,
+    onRemitir: setRemitir,
   })
 
   const { table } = useDataTable({
@@ -115,7 +129,7 @@ function ObservadorContent() {
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            <div className="flex flex-wrap items-center gap-2">
+            pestana === "anotaciones" && <div className="flex flex-wrap items-center gap-2">
               {access.puedeImprimir && <DialogImprimirObservador filtros={filtros} />}
               <DialogExportarAnotaciones filters={queryFilters} />
               {access.puedeCrear && (
@@ -129,7 +143,16 @@ function ObservadorContent() {
         >
           Observador
         </TableScreenTitle>
-        <TableScreenToolbar>
+        <NoticeOutlet className="px-(--screen-spacing) pt-3" />
+        {access.veMisRemisiones && (
+          <Tabs value={pestana} onValueChange={(v) => setPestana(v as string)}>
+            <TabsList>
+              <TabsTrigger value="anotaciones">Anotaciones</TabsTrigger>
+              <TabsTrigger value="mis">Mis reportes y remisiones</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+        {pestana === "anotaciones" && <TableScreenToolbar>
           <SearchAnotaciones
             search={search}
             onSearchChange={(v) => {
@@ -151,9 +174,16 @@ function ObservadorContent() {
             onDraftChange={setBorrador}
             opciones={opcionesFiltros}
           />
-        </TableScreenToolbar>
+        </TableScreenToolbar>}
       </TableScreenHeader>
 
+      {pestana === "mis" ? (
+        <TableScreenBody>
+          <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+            <TabMisRemisiones />
+          </Suspense>
+        </TableScreenBody>
+      ) : (
       <TableScreenBody>
         <DataTable
           table={table}
@@ -181,7 +211,21 @@ function ObservadorContent() {
           viewOptions={<DataTableViewOptions table={table} />}
         />
       </TableScreenBody>
+      )}
 
+      {remitir && (
+        <Suspense fallback={null}>
+          <DialogRemitir
+            matricula={remitir.fk_tmatricula}
+            estudiante={remitir.estudiante_nombre}
+            onClose={() => setRemitir(null)}
+            onRemitida={() => {
+              setRemitir(null)
+              notify("Remisión registrada. Se avisó a orientación.", { variant: "success" })
+            }}
+          />
+        </Suspense>
+      )}
       <DialogDetalleAnotacion anotacion={verDetalle} onClose={() => setVerDetalle(null)} />
       <DialogAnularAnotacion anotacion={anular} onClose={() => setAnular(null)} />
     </>

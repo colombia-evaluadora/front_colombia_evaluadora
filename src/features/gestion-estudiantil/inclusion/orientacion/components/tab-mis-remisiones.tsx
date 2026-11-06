@@ -1,0 +1,87 @@
+"use no memo"
+
+import { useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
+
+import { Badge } from "@/components/ui/badge"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+
+import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { descargarRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/descargas"
+import { useMisRemisionesQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
+import type { MiRemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
+import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
+import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/tabla-orientacion"
+import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
+import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
+
+/** G.1.REP.3: las remisiones propias, solo con su estado (Regla 1). Los reportes de salud mental llegan con la Sección 9.6. */
+export function TabMisRemisiones() {
+  const [estado, setEstado] = useState("")
+  const [pag, setPag] = useState({ i: 0, s: 10 })
+  const [aviso, setAviso] = useState<string | null>(null)
+  const estados = useCatalogo("ESTADO_REMISION_ORIENTACION")
+  const { data, isPending, isError, error, refetch } = useMisRemisionesQuery({ estado, pageIndex: pag.i, pageSize: pag.s })
+
+  const columns: ColumnDef<MiRemisionRow>[] = [
+    { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
+    { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
+    { id: "grado", accessorKey: "grado_grupo", header: "Grado/Grupo", enableSorting: false },
+    { id: "tipo", accessorKey: "tipo", header: "Tipo", enableSorting: false },
+    {
+      id: "estado",
+      header: "Estado",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge variant="soft" color={row.original.estado_codigo === "ATENDIDA" ? "success" : "warning"}>
+          <span>{row.original.estado_nombre}</span>
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      header: () => null,
+      cell: ({ row }) => (
+        <MenuFila etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}>
+          <DropdownMenuItem
+            onClick={async () => {
+              const r = await descargarRemision(row.original.id)
+              setAviso(r.status === "error" ? "No pudimos generar el documento. Inténtelo de nuevo en unos minutos." : null)
+            }}
+          >
+            Descargar remisión
+          </DropdownMenuItem>
+        </MenuFila>
+      ),
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4">
+      {aviso && <AvisoPiar tipo="error">{aviso}</AvisoPiar>}
+      <div className="grid max-w-md">
+        <Combo id="mis-estado" label="Estado" value={estado} options={estados} onChange={(v) => { setEstado(v); setPag((p) => ({ ...p, i: 0 })) }} />
+      </div>
+      <TablaOrientacion
+        titulo="Mis remisiones"
+        columns={columns}
+        rows={data?.rows ?? []}
+        rowId={(r) => String(r.id)}
+        pageIndex={pag.i}
+        pageSize={pag.s}
+        pageCount={data?.pageCount ?? 1}
+        totalCount={data?.totalCount ?? 0}
+        goToPage={(i) => setPag((p) => ({ ...p, i }))}
+        setPageSize={(s) => setPag({ i: 0, s })}
+        isPending={isPending}
+        isError={isError}
+        onRetry={() => refetch()}
+        errorMessage={error ? mensajePiar(error) : undefined}
+        emptyMessage="Aún no ha remitido estudiantes a orientación."
+      />
+    </div>
+  )
+}
