@@ -1,3 +1,4 @@
+import { format } from "date-fns"
 import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -97,7 +98,7 @@ function FilaTema({
           className="min-w-0 text-left font-medium hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           onClick={() => setAbierto(!abierto)}
         >
-          {abierto ? "▾" : "▸"} {tema.titulo}
+          {abierto ? "▾" : "▸"} Tema: {tema.titulo}
           <span className="ml-2 text-sm font-normal text-muted-foreground">
             ({tema.respuestas} {tema.respuestas === 1 ? "respuesta" : "respuestas"})
           </span>
@@ -156,12 +157,27 @@ export function ForoEspacio({
   if (isPending) return <Skeleton className="h-40 w-full" />
   if (isError) return <p className="text-sm text-red">No se pudo cargar el foro.</p>
 
+  // Franja "Fijado" del foro (M.3.CHA.3): planteamientos de tema fijados por el docente.
+  const fijados = temas.map((t) => t.apertura).filter((a) => a.fijada && !a.oculta && !a.retirada)
+
   return (
     <div className="space-y-3">
+      {fijados.length > 0 && (
+        <section aria-label="Mensajes fijados" className="space-y-1 rounded-md bg-blue-22 p-2 text-sm">
+          {fijados.map((m) => (
+            <a key={m.id} href={`#participacion-${m.id}`} className="block underline-offset-2 hover:underline">
+              <span className="font-medium">Fijado:</span> {m.texto || "Adjunto"}{" "}
+              <span className="text-muted-foreground">
+                — {m.autor} · {format(new Date(m.fecha), "dd/MM")}
+              </span>
+            </a>
+          ))}
+        </section>
+      )}
       {puedeAbrir && !nuevo && (
         <div className="flex justify-end">
           <Button size="sm" onClick={() => setNuevo(true)}>
-            + Nuevo tema
+            Nuevo tema
           </Button>
         </div>
       )}
