@@ -58,7 +58,7 @@ export function AsistenciaPage() {
 }
 
 function AsistenciaPageContent() {
-  const { isDocente, isDirectorGrupo, puedeAprobar } = useAsistenciaAccess()
+  const { isDocente, isDirectorGrupo, esAdminEstablecimiento, puedeRegistrar, puedeAprobar } = useAsistenciaAccess()
   const { data: sedes } = useSedesOpcionesQuery()
   const navigate = asistenciaRoute.useNavigate()
   const search = asistenciaRoute.useSearch()
@@ -132,6 +132,7 @@ function AsistenciaPageContent() {
   })()
 
   function puedeEditarSesion(s: { fkGrupo: number; fkAsignatura: number; fkActividad: number | null; esFormativa: boolean }): boolean {
+    if (esAdminEstablecimiento) return true
     if (!isDocente) return false
     const clave = s.esFormativa ? `${s.fkGrupo}-act-${s.fkActividad}` : `${s.fkGrupo}-asig-${s.fkAsignatura}`
     return clavesPropias?.has(clave) ?? false
@@ -232,9 +233,10 @@ function AsistenciaPageContent() {
                   </DropdownMenu>
                 </>
               )}
-              {isDocente && sedeId != null && (
+              {puedeRegistrar && sedeId != null && (
                 <DialogRegistrarSesion
                   sede={sedeId}
+                  soloPropias={!esAdminEstablecimiento}
                   grupoInicial={vista === "grupo" ? search.grupo : undefined}
                   asignaturaInicial={
                     vista === "grupo" && typeof search.asignatura === "number" ? search.asignatura : undefined
@@ -246,7 +248,7 @@ function AsistenciaPageContent() {
         >
           <span className="flex items-center gap-2">
             Asistencias
-            {!isDocente && (
+            {!puedeRegistrar && (
               <Badge variant="soft" color="neutral">
                 Solo lectura
               </Badge>
@@ -271,8 +273,8 @@ function AsistenciaPageContent() {
               sede={sedeId}
               filtros={{ grupo: search.grupo, asignatura: search.asignatura, periodo: search.periodo }}
               onFiltros={setFiltrosGrupo}
-              soloLasQueDicta={isDocente && !isDirectorGrupo}
-              puedeAbrirPlanilla={isDocente}
+              soloLasQueDicta={isDocente && !isDirectorGrupo && !esAdminEstablecimiento}
+              puedeAbrirPlanilla={puedeRegistrar}
               onReporte={setReporte}
             />
             {reporte && (
@@ -309,7 +311,7 @@ function AsistenciaPageContent() {
             events={events}
             inhabiles={inhabiles}
             manualSede={sedeId ?? 0}
-            restrictedView={!isDocente}
+            restrictedView={!puedeRegistrar}
           />
         </div>
           </TabsContent>

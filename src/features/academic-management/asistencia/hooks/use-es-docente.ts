@@ -1,4 +1,5 @@
 import { useAuth } from "@/features/auth/hooks/use-auth"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const DOCENTE_ROLE = "CEVAL-DOCENTE"
 const DIRECTOR_GRUPO_ROLE = "CEVAL-DIRECTOR_GRUPO"
@@ -12,6 +13,8 @@ export function useEsCoordinador(): boolean {
 
 export interface AsistenciaAccess {
   isDocente: boolean
+  /** Regla 76: puede registrar sin ser docente; registra cualquier clase de su alcance. */
+  esAdminEstablecimiento: boolean
   isDirectorGrupo: boolean
   isCoordinador: boolean
   puedeRegistrar: boolean
@@ -37,12 +40,17 @@ export function useAsistenciaAccess(): AsistenciaAccess {
   const isDocente = roles.includes(DOCENTE_ROLE)
   const isDirectorGrupo = roles.includes(DIRECTOR_GRUPO_ROLE)
   const isCoordinador = roles.includes(COORDINADOR_ROLE)
+  // Regla 76: quién escribe lo decide el menú ASISTENCIAS en Vistas base por rol (mismo permiso que el back).
+  const { puedeCrear } = useMenuPermission("ASISTENCIAS")
+  // Sin rol docente ni de director de grupo (categoría de sede), el back no lo acota a sus clases.
+  const esAdminEstablecimiento = puedeCrear && !isDocente && !isDirectorGrupo
 
   return {
-    isDocente,
+    isDocente: isDocente && puedeCrear,
+    esAdminEstablecimiento,
     isDirectorGrupo,
     isCoordinador,
-    puedeRegistrar: isDocente,
+    puedeRegistrar: puedeCrear,
     puedeAprobar:
       !roles.includes(SUPER_ADMIN_ROLE) && APROBADOR_ROLES.some((rol) => roles.includes(rol)),
   }

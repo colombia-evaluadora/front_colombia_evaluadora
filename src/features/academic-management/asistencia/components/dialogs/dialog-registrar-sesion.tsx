@@ -16,6 +16,8 @@ interface DialogRegistrarSesionProps {
   /** Filtros de Asistencia por grupo: precargan la cascada (Sección 7). */
   grupoInicial?: number
   asignaturaInicial?: number
+  /** Docente: solo las clases que dicta (MIAS). El administrador del establecimiento ve todas. */
+  soloPropias?: boolean
 }
 
 /** Meses que mira el selector: el actual y los dos anteriores, de modo que
@@ -42,7 +44,12 @@ const fechaLarga = (iso: string) =>
  * mismas que el calendario: días con clase de esa [Área] en el horario del
  * grupo, hábiles y hasta hoy (el back ya no proyecta los inhábiles, V457).
  */
-export function DialogRegistrarSesion({ sede, grupoInicial, asignaturaInicial }: DialogRegistrarSesionProps) {
+export function DialogRegistrarSesion({
+  sede,
+  grupoInicial,
+  asignaturaInicial,
+  soloPropias = true,
+}: DialogRegistrarSesionProps) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [grupo, setGrupo] = useState("")
@@ -50,7 +57,7 @@ export function DialogRegistrarSesion({ sede, grupoInicial, asignaturaInicial }:
   const [fecha, setFecha] = useState("")
   const hoy = hoyDateOnly()
 
-  const sesiones = useAsistenciaCalendarioMesesQuery({ SEDE: sede, MIAS: true }, open ? mesesHastaHoy() : [])
+  const sesiones = useAsistenciaCalendarioMesesQuery({ SEDE: sede, MIAS: soloPropias || undefined }, open ? mesesHastaHoy() : [])
   const dictadas = sesiones.filter((s) => !s.es_formativa && s.fecha <= hoy)
 
   const grupos = new Map<string, string>()
