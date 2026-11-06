@@ -20,11 +20,32 @@ import type {
   AcademicPeriod,
   AcademicPeriodConfig,
   AcademicPeriodsQueryRequest,
+  CreateAcademicPeriodBody,
   CreateAcademicPeriodRequest,
   ExportFormat,
   ExportResult,
   UpdateAcademicPeriodRequest,
 } from "@/features/establishment/academic-period/api/types/academic-period"
+
+type PreviousCycleRequest = Pick<
+  CreateAcademicPeriodRequest,
+  "FK_SEDE" | "FK_JORNADA" | "FECHA_INICIO" | "MODALIDAD_MATRICULA" | "CICLO"
+>
+
+// Ciclo − 1 de la misma Sede + Año (de la fecha de inicio) + Jornada + Modalidad.
+function findPreviousCycle(body: PreviousCycleRequest): AcademicPeriod | undefined {
+  const year = String(body.FECHA_INICIO ?? "").slice(0, 4)
+  return academicPeriodsDb.find((p) => {
+    const config = academicPeriodConfigsDb.find((c) => c.academicPeriodId === p.id)
+    return (
+      String(p.sedeId) === String(body.FK_SEDE) &&
+      p.startDate.slice(0, 4) === year &&
+      config?.jornadaId === Number(body.FK_JORNADA) &&
+      config?.enrollmentModality === body.MODALIDAD_MATRICULA &&
+      config?.cycle === Number(body.CICLO) - 1
+    )
+  })
+}
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
@@ -300,9 +321,15 @@ export const academicPeriodsHandlers = [
 
   http.post("/api/eval-col/periodos-academicos", async ({ request }) => {
     await delay(400)
-    const body = (await request.json()) as CreateAcademicPeriodRequest
+    const body = (await request.json()) as CreateAcademicPeriodBody
     const error = validatePeriod(body, null)
     if (error) return validationError(error)
+    // Mismo rechazo que `fn_periodo_validar_inicializar_ciclo`.
+    if ((body.GENERAR_GRADOS === "S" || body.COPIAR_CRITERIOS === "S") && !findPreviousCycle(body)) {
+      return validationError(
+        "El período no tiene un ciclo anterior en la misma Sede, Año, Jornada y Modalidad.",
+      )
+    }
     const { period: periodData, config } = fromCreateRequest(body)
     // `sedeId` viaja como string en el dominio de periodo académico
     // (`fromCreateRequest` hace `String(body.FK_SEDE)`) y las sedes tienen id
@@ -359,6 +386,14 @@ export const academicPeriodsHandlers = [
       )
       .map((p) => ({ id: p.id, name: p.name }))
     return HttpResponse.json({ rows })
+  }),
+
+  // Período del ciclo anterior — `fn_periodo_ciclo_anterior_buscar` (Regla 96).
+  http.post("/api/eval-col/periodos-academicos/ciclo-anterior", async ({ request }) => {
+    await delay(200)
+    const body = (await request.json()) as PreviousCycleRequest
+    const previous = findPreviousCycle(body)
+    return HttpResponse.json({ rows: previous ? [{ id: previous.id, name: previous.name }] : [] })
   }),
 
   // Años lectivos con al menos un periodo académico activo —
