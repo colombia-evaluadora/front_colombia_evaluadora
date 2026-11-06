@@ -135,7 +135,7 @@ export function datoDelCargo(cargosConocidos: Map<string, DatoCargo>, fkCargo: s
   return cargosConocidos.get(fkCargo) ?? null
 }
 
-export function validarFilaIntegrante(f: FilaIntegrante, inicioPeriodo: string): ErrorFilaIntegrante {
+export function validarFilaIntegrante(f: FilaIntegrante, inicioPeriodo: string, finPeriodo = ""): ErrorFilaIntegrante {
   const e: ErrorFilaIntegrante = {}
   if (!f.fk_tlv_cargo) e.cargo = "Elija el cargo."
   if (f.dato === "FUNCIONARIO" && f.fk_funcionario == null) e.persona = "Elija el funcionario."
@@ -144,6 +144,7 @@ export function validarFilaIntegrante(f: FilaIntegrante, inicioPeriodo: string):
   else if (!f.dato && f.fk_tlv_cargo) e.persona = "Elija la persona."
   if (!f.desde) e.desde = "Indique desde cuándo."
   else if (inicioPeriodo && f.desde < inicioPeriodo) e.desde = "No puede ser anterior al inicio del período."
+  else if (finPeriodo && f.desde > finPeriodo) e.desde = "No puede ser posterior al fin del período."
   if (f.hasta && f.desde && f.hasta <= f.desde) e.hasta = "Debe ser posterior a Desde."
   return e
 }

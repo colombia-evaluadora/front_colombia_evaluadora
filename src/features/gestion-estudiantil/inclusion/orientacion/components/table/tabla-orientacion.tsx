@@ -2,9 +2,10 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import { columnasGestionables } from "@/features/gestion-estudiantil/inclusion/utils/columnas-gestionables"
 
 interface Props<T> {
   titulo: string
@@ -29,7 +30,7 @@ interface Props<T> {
 /** Una de las dos tablas de la pestaña (ORI.LIS.1); cada una pagina por su cuenta. */
 export function TablaOrientacion<T>(p: Props<T>) {
   const { table } = useDataTable({
-    columns: p.columns,
+    columns: columnasGestionables(p.columns),
     data: p.rows,
     pageCount: p.pageCount,
     getRowId: p.rowId,
@@ -45,18 +46,17 @@ export function TablaOrientacion<T>(p: Props<T>) {
     <section className="flex flex-col gap-3">
       {!p.sinTitulo && <h2 className="text-lg font-semibold">{p.titulo}</h2>}
       <DataTable table={table} isPending={p.isPending} isError={p.isError} onRetry={p.onRetry} errorMessage={p.errorMessage} emptyMessage={p.emptyMessage} growColumnId="estudiante" />
-      {p.totalCount > p.pageSize && (
-        <Pagination
-          pageIndex={p.pageIndex}
-          pageCount={p.pageCount}
-          canPrev={p.pageIndex > 0}
-          canNext={p.pageIndex < p.pageCount - 1}
-          onPageChange={p.goToPage}
-          totalCount={p.totalCount}
-          pageSize={p.pageSize}
-          onPageSizeChange={p.setPageSize}
-        />
-      )}
+      <Pagination
+        viewOptions={<DataTableViewOptions table={table} />}
+        pageIndex={p.pageIndex}
+        pageCount={p.pageCount}
+        canPrev={p.pageIndex > 0}
+        canNext={p.pageIndex < p.pageCount - 1}
+        onPageChange={p.goToPage}
+        totalCount={p.totalCount}
+        pageSize={p.pageSize}
+        onPageSizeChange={p.setPageSize}
+      />
     </section>
   )
 }

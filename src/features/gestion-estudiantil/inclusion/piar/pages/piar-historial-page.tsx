@@ -129,6 +129,7 @@ export function PiarHistorialPage() {
         )}
         {data?.versiones && (
           <TablaDatos
+            gestorColumnas
             id="piar-historial"
             rows={filas}
             rowId={(f) => f.clave}
