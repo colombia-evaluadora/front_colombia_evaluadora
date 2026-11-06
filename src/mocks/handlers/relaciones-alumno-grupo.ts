@@ -49,7 +49,7 @@ export const relacionesAlumnoGrupoHandlers = [
     return guardar(pk, (await request.json()) as Body)
   }),
 
-  http.delete("/api/eval-col/relaciones-alumno-grupo/:id", async ({ params }) => {
+  http.put("/api/eval-col/relaciones-alumno-grupo/:id/eliminar", async ({ params }) => {
     await delay(200)
     const i = relacionesDb.findIndex((r) => r.pkRelacion === Number(params.id))
     if (i < 0) return error(404, "No existe la relación alumno-grupo")
