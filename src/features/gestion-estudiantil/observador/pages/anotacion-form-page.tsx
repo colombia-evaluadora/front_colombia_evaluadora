@@ -268,7 +268,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
                     <span className="flex items-center gap-1.5">
                       Tipo de situación:
                       <Badge variant="soft" color="info">
-                        {codigo.situacion_nombre}
+                        <span>{codigo.situacion_nombre}</span>
                       </Badge>
                     </span>
                   )}
