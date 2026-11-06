@@ -3,8 +3,9 @@ import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FileUploadOutlinedIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { FileUploadOutlinedIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 import { useAppForm } from "@/lib/forms"
 
@@ -141,7 +142,7 @@ export function FormDialogPiar({
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && !pending && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           {descripcion && <DialogDescription render={<div />}>{descripcion}</DialogDescription>}
@@ -227,7 +228,7 @@ export function FormDialogPiar({
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="submit" form="form-piar" color={confirmarColor} disabled={pending}>
-            {pending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+            <IconoCarga cargando={pending} />
             {confirmar}
           </Button>
         </DialogFooter>

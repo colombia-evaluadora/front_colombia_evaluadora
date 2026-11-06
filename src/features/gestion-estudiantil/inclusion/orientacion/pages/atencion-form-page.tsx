@@ -4,11 +4,12 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, PlusIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, PlusIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FormDisabledProvider } from "@/lib/forms"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
@@ -37,7 +38,7 @@ export function AtencionFormPage() {
               <Button size="sm" variant="outline" color="neutral" onClick={a.volver}>{a.soloLectura ? "Volver" : "Cancelar"}</Button>
               {!a.soloLectura && (
                 <Button size="sm" disabled={a.guardando} onClick={() => form.handleSubmit()}>
-                  {a.guardando ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
+                  <IconoCarga cargando={a.guardando}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                   Guardar
                 </Button>
               )}

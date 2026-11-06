@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { TrashIcon } from "@/components/ui/icons"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
 import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
 import type { PanelSoporte } from "@/features/gestion-estudiantil/convivencia/hooks/use-soportes-accion"
@@ -53,7 +54,7 @@ export function PanelMotivoSoporte({
           Cancelar
         </Button>
         <Button type="button" size="sm" color={sustituir ? undefined : "destructive"} disabled={pending} onClick={onConfirmar}>
-          {pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : !sustituir && <TrashIcon data-icon="inline-start" />}
+          <IconoCarga cargando={pending}>{!sustituir && <TrashIcon data-icon="inline-start" />}</IconoCarga>
           {sustituir ? "Sustituir soporte" : "Retirar soporte"}
         </Button>
       </div>

@@ -1,9 +1,10 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FileDownloadOutlinedIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, InfoIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { CamposRangoSiuce } from "@/features/gestion-estudiantil/convivencia/components/siuce/campos-rango-siuce"
 import { SelectorColumnasSiuce } from "@/features/gestion-estudiantil/convivencia/components/siuce/selector-columnas-siuce"
 import { VistaPreviaSiuce } from "@/features/gestion-estudiantil/convivencia/components/siuce/vista-previa-siuce"
@@ -62,7 +63,7 @@ export function DialogExportarSiuce({ open, onOpenChange }: Props) {
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.exportar}>
-            {f.pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FileDownloadOutlinedIcon data-icon="inline-start" />}
+            <IconoCarga cargando={f.pending}><FileDownloadOutlinedIcon data-icon="inline-start" /></IconoCarga>
             Exportar
           </Button>
         </DialogFooter>

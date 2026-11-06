@@ -12,16 +12,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { FilePdfIcon, PrinterIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FilePdfIcon, PrinterIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { useImprimirObservador } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
 import { useOpcionesObservador } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
 import type { ObservadorFiltros, TipoImpresion } from "@/features/gestion-estudiantil/observador/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 
 const TODO_EL_ANIO = "todo"
 
@@ -173,11 +174,7 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" disabled={imprimir.isPending} onClick={generar}>
-            {imprimir.isPending ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <FilePdfIcon data-icon="inline-start" />
-            )}
+            <IconoCarga cargando={imprimir.isPending}><FilePdfIcon data-icon="inline-start" /></IconoCarga>
             Generar
           </Button>
         </DialogFooter>

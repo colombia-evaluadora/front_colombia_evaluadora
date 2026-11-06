@@ -4,9 +4,10 @@ import { TableScreenHeader, TableScreenTitle } from "@/components/layout/table-s
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ClipboardTextIcon, ClockCounterClockwiseIcon, DotsThreeVerticalIcon, FilePdfIcon, FileTextIcon, FileUploadOutlinedIcon, FloppyDiskIcon, LockIcon, PaperclipIcon, ProhibitIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ClipboardTextIcon, ClockCounterClockwiseIcon, DotsThreeVerticalIcon, FilePdfIcon, FileTextIcon, FileUploadOutlinedIcon, FloppyDiskIcon, LockIcon, PaperclipIcon, ProhibitIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 import { COLOR_ESTADO, esEditable, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
@@ -42,7 +43,7 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
             {gestiona && borrador && sinAjustesTodas(piar) && <Button {...SECUNDARIO} onClick={() => setDialogo({ tipo: "concluir" })}>Concluir revisión sin ajustes</Button>}
             {gestiona && borrador && piar.ve_sensible && (
               <Button size="sm" disabled={guardando} onClick={() => form.handleSubmit()}>
-                {guardando ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
+                <IconoCarga cargando={guardando}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                 Guardar
               </Button>
             )}

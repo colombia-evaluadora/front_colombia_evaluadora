@@ -7,8 +7,9 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, LockIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, LockIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 import { evalCol } from "@/lib/eval-col-client"
 import { useAppForm } from "@/lib/forms"
@@ -103,7 +104,7 @@ export function PiarNuevoPage() {
                 Cancelar
               </Button>
               <Button size="sm" disabled={crear.isPending} onClick={() => form.handleSubmit()}>
-                {crear.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
+                <IconoCarga cargando={crear.isPending}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                 Guardar
               </Button>
             </div>

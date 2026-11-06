@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { LinkIcon, PaperclipIcon, SpinnerIcon } from "@/components/ui/icons"
+import { LinkIcon, PaperclipIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
 import { FilaSoporte } from "@/features/gestion-estudiantil/convivencia/components/soportes/fila-soporte"
 import { PanelMotivoSoporte } from "@/features/gestion-estudiantil/convivencia/components/soportes/panel-motivo-soporte"
@@ -44,7 +45,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
         <NoticeBanner notice={f.notice} onClose={f.cerrarNotice} variant="error" />
         <div className="flex items-center gap-2">
           <Button type="button" size="sm" variant="outline" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={f.vincularCaso}>
-            {f.agregando ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <LinkIcon data-icon="inline-start" />}
+            <IconoCarga cargando={f.agregando}><LinkIcon data-icon="inline-start" /></IconoCarga>
             Vincular soporte del caso
           </Button>
           <BotonArchivo onFile={f.cargarArchivo} disabled={!f.puedeAgregar || ocupado}>
@@ -52,7 +53,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
             Cargar archivo
           </BotonArchivo>
         </div>
-        <div className="flex max-h-[50vh] flex-col gap-4 overflow-y-auto pr-1">
+        <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
           {f.consulta.isPending ? (
             <Skeleton className="h-20" />
           ) : f.vigentes.length === 0 ? (

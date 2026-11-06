@@ -2,14 +2,14 @@ import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { SpinnerIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useAppForm } from "@/lib/forms"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
-import { ComboOpciones } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
 import { useRemisionQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { useCorregirRemision, useCrearRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/mutations/atenciones"
@@ -64,7 +64,7 @@ export function DialogRemitir({ matricula, estudiante, remisionId, onClose, onRe
 
   return (
     <Dialog open onOpenChange={(o) => !o && !crear.isPending && !corregir.isPending && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{remisionId ? "Corregir remisión" : "Remitir a orientación"}{(estudiante ?? detalle?.estudiante?.nombre) ? ` — ${estudiante ?? detalle?.estudiante?.nombre}` : ""}</DialogTitle>
         </DialogHeader>
@@ -105,7 +105,7 @@ export function DialogRemitir({ matricula, estudiante, remisionId, onClose, onRe
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" disabled={crear.isPending || corregir.isPending} onClick={() => form.handleSubmit()}>
-            {(crear.isPending || corregir.isPending) && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+            <IconoCarga cargando={crear.isPending || corregir.isPending} />
             {remisionId ? "Guardar" : "Remitir"}
           </Button>
         </DialogFooter>
