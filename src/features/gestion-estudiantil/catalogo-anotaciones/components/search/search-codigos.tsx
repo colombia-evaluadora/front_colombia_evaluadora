@@ -78,7 +78,7 @@ export function SearchCodigos({ search, onSearchChange, filters, applyFilters, o
       size="lg"
       className="sm:w-full max-w-xl"
     >
-      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
         <Combo id="catalogo-tipo" label="Tipo" value={draft.tipo} options={tipos} onChange={(tipo) => setDraft({ ...draft, tipo })} />
         <Combo id="catalogo-situacion" label="Tipo de situación" value={draft.situacion} options={situaciones} onChange={(situacion) => setDraft({ ...draft, situacion })} />
         <Combo id="catalogo-estado" label="Estado" value={draft.estado} options={ESTADOS} onChange={(estado) => setDraft({ ...draft, estado })} />
