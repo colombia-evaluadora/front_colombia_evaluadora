@@ -19,14 +19,24 @@ import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orien
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
+const COLOR_ESTADO: Record<string, "warning" | "success"> = {
+  RECIBIDA: "warning",
+  ATENDIDA: "success",
+}
+
 /** G.1.REP.3: las remisiones propias, solo con su estado (Regla 1). Los reportes de salud mental llegan con la Sección 9.6. */
 export function TabMisRemisiones() {
+  const [tipo, setTipo] = useState("")
   const [estado, setEstado] = useState("")
   const [pag, setPag] = useState({ i: 0, s: 10 })
   const [aviso, setAviso] = useState<string | null>(null)
   const [corregir, setCorregir] = useState<number | null>(null)
   const estados = useCatalogo("ESTADO_REMISION_ORIENTACION")
   const { data, isPending, isError, error, refetch } = useMisRemisionesQuery({ estado, pageIndex: pag.i, pageSize: pag.s })
+
+  // Hoy solo hay remisiones; los reportes de 9.6 traerán su filtro de servidor.
+  const filas = data?.rows ?? []
+  const tipos = [...new Set(filas.map((f) => f.tipo))].map((t) => ({ value: t, label: t }))
 
   const columns: ColumnDef<MiRemisionRow>[] = [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
@@ -38,7 +48,7 @@ export function TabMisRemisiones() {
       header: "Estado",
       enableSorting: false,
       cell: ({ row }) => (
-        <Badge variant="soft" color={row.original.estado_codigo === "ATENDIDA" ? "success" : "warning"}>
+        <Badge variant="soft" color={COLOR_ESTADO[row.original.estado_codigo] ?? "muted"}>
           <span>{row.original.estado_nombre}</span>
         </Badge>
       ),
@@ -70,13 +80,15 @@ export function TabMisRemisiones() {
   return (
     <div className="flex flex-col gap-4">
       {aviso && <AvisoPiar tipo="error">{aviso}</AvisoPiar>}
-      <div className="grid max-w-xl gap-3 sm:grid-cols-2">
-        <Combo id="mis-estado" label="Estado" value={estado} options={estados} onChange={(v) => { setEstado(v); setPag((p) => ({ ...p, i: 0 })) }} />
+      <div className="flex flex-wrap items-center gap-4">
+        <Combo inline className="w-64" id="mis-tipo" label="Tipo" value={tipo} options={tipos} onChange={setTipo} />
+        <Combo inline className="w-64" id="mis-estado" label="Estado" value={estado} options={estados} onChange={(v) => { setEstado(v); setPag((p) => ({ ...p, i: 0 })) }} />
       </div>
       <TablaOrientacion
         titulo="Mis remisiones"
+        sinTitulo
         columns={columns}
-        rows={data?.rows ?? []}
+        rows={tipo ? filas.filter((f) => f.tipo === tipo) : filas}
         rowId={(r) => String(r.id)}
         pageIndex={pag.i}
         pageSize={pag.s}
@@ -88,7 +100,7 @@ export function TabMisRemisiones() {
         isError={isError}
         onRetry={() => refetch()}
         errorMessage={error ? mensajePiar(error) : undefined}
-        emptyMessage="Aún no ha remitido estudiantes a orientación."
+        emptyMessage="No ha registrado remisiones a orientación ni reportes de salud mental o de consumo."
       />
       {corregir && <DialogRemitir remisionId={corregir} onClose={() => setCorregir(null)} onRemitida={() => setCorregir(null)} />}
     </div>

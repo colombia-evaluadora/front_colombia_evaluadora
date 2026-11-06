@@ -8,6 +8,8 @@ import { useDataTable } from "@/hooks/use-data-table"
 
 interface Props<T> {
   titulo: string
+  /** El título solo identifica la tabla: la pestaña ya la nombra. */
+  sinTitulo?: boolean
   columns: ColumnDef<T>[]
   rows: T[]
   rowId: (r: T) => string
@@ -41,7 +43,7 @@ export function TablaOrientacion<T>(p: Props<T>) {
   })
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">{p.titulo}</h2>
+      {!p.sinTitulo && <h2 className="text-lg font-semibold">{p.titulo}</h2>}
       <DataTable table={table} isPending={p.isPending} isError={p.isError} onRetry={p.onRetry} errorMessage={p.errorMessage} emptyMessage={p.emptyMessage} growColumnId="estudiante" />
       {p.totalCount > p.pageSize && (
         <Pagination
