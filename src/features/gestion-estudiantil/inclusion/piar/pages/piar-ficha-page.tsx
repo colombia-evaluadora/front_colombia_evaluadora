@@ -2,6 +2,7 @@ import { useParams } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody } from "@/components/layout/table-screen"
 import { NoticeBanner } from "@/components/notice/notice-banner"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -110,6 +111,7 @@ function FichaContenido({ piar }: { piar: PiarDetalle }) {
     <>
       <EncabezadoFicha ficha={ficha} />
       <TableScreenBody contentClassName="flex flex-col gap-3">
+        <NoticeOutlet />
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant={notice?.variant ?? "error"} />
         <AvisosFicha piar={piar} />
         <p className="text-sm text-muted-foreground">
@@ -131,6 +133,7 @@ export function PiarFichaPage() {
   const { piarId } = useParams({ strict: false }) as { piarId: string }
   const { data, isPending, error, refetch } = usePiarQuery(Number(piarId))
   return (
+    <NoticeProvider>
     <TableScreen>
       {isPending ? (
         <div className="grid gap-3 p-6"><Skeleton className="h-10 w-1/2" /><Skeleton className="h-96 w-full" /></div>
@@ -143,5 +146,6 @@ export function PiarFichaPage() {
         <FichaContenido key={`${data.id}-${data.estado.codigo}`} piar={data} />
       )}
     </TableScreen>
+    </NoticeProvider>
   )
 }

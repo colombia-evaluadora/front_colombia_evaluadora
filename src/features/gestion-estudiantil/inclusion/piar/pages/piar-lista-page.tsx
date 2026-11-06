@@ -5,7 +5,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle, TableScreenToolbar } from "@/components/layout/table-screen"
-import { NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import { PlusIcon } from "@/components/ui/icons"
@@ -59,12 +59,12 @@ function PiarListaContent() {
   const prefetch = usePrefetchPiar()
 
   const { tab } = useSearch({ strict: false }) as { tab?: Pestana }
-  const [pestana, setPestana] = useState<Pestana>(tab ?? "piar")
+  const [pestana, setPestana] = useState<Pestana>(tab ?? (access.veListado ? "piar" : "informe"))
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<PiarFiltros>(FILTROS_VACIOS)
 
 
-  const { data, isPending, isError, error, refetch } = usePiarListaQuery({ search, filtros, pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = usePiarListaQuery({ search, filtros, pageIndex, pageSize }, access.veListado)
 
   const aplicar = (next: PiarFiltros) => {
     setFiltros(next)
@@ -115,9 +115,10 @@ function PiarListaContent() {
         >
           Inclusión y orientación
         </TableScreenTitle>
+        <NoticeOutlet className="px-(--screen-spacing) pt-3" />
         <Tabs value={pestana} onValueChange={(v) => setPestana(v as Pestana)}>
           <TabsList>
-            <TabsTrigger value="piar">PIAR</TabsTrigger>
+            {access.veListado && <TabsTrigger value="piar">PIAR</TabsTrigger>}
             {access.veOrientacion && <TabsTrigger value="orientacion">Orientación</TabsTrigger>}
             {access.veInforme && <TabsTrigger value="informe">Gestión de inclusión</TabsTrigger>}
           </TabsList>
@@ -134,7 +135,7 @@ function PiarListaContent() {
       {pestana !== "piar" ? (
         <TableScreenBody>
           <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-            {pestana === "orientacion" ? <TabOrientacion puedeRegistrar={access.registraAtencion} /> : <TabInforme />}
+            {pestana === "orientacion" ? <TabOrientacion puedeRegistrar={access.registraAtencion} puedeAnular={access.puedeAnular} /> : <TabInforme />}
           </Suspense>
         </TableScreenBody>
       ) : (

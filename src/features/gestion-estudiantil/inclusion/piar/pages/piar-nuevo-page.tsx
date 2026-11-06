@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeBanner } from "@/components/notice/notice-banner"
+import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, SpinnerIcon } from "@/components/ui/icons"
@@ -39,6 +40,7 @@ export function PiarNuevoPage() {
     mutationFn: (body: unknown) => evalCol.postRow<{ id: number }>(`${BASE}/piar`, body),
     onSuccess: async ({ id }) => {
       await queryClient.invalidateQueries({ queryKey: piarKeys.all })
+      queueNotice("PIAR creado en Borrador.")
       navigate({ to: paths.app.piarFicha.getHref(id) })
     },
     onError: (error) => setNotice({ id: Date.now(), message: mensajePiar(error) }),
@@ -57,6 +59,7 @@ export function PiarNuevoPage() {
   })
 
   return (
+    <NoticeProvider>
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
@@ -104,5 +107,6 @@ export function PiarNuevoPage() {
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
       </TableScreenBody>
     </TableScreen>
+    </NoticeProvider>
   )
 }

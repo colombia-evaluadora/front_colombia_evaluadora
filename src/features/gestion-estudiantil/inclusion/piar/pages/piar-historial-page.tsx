@@ -1,7 +1,9 @@
+import { useState } from "react"
 import { Link, useParams } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { NoticeProvider } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,6 +13,10 @@ import { fetchArchivoViewUrl } from "@/lib/files"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { descargarActualizacion } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import { usePiarHistorialQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
+import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
+import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
+import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
+import { textoElemento } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import type { VersionHistorial } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 
 const COLOR_VERSION: Record<string, "success" | "warning" | "muted"> = { ACORDADA: "success", PENDIENTE_ACUERDO: "warning" }
@@ -41,7 +47,7 @@ function aFilas(versiones: VersionHistorial[]): Fila[] {
       autor: u.registra,
       motivo: u.por_que,
       cambio: Object.keys(u.valores_nuevos ?? {})
-        .map((k) => `${k}: ${u.valores_anteriores?.[k] ?? "—"} → ${u.valores_nuevos[k]}`)
+        .map((k) => `${textoElemento(k)}: ${u.valores_anteriores?.[k] ?? "—"} → ${u.valores_nuevos[k]}`)
         .join(" · "),
       archivo: u.fk_tarchivo_soporte,
       archivoNombre: u.soporte_nombre,
@@ -68,10 +74,13 @@ const abrir = async (id: number) => window.open((await fetchArchivoViewUrl(id)).
 export function PiarHistorialPage() {
   const { piarId } = useParams({ strict: false }) as { piarId: string }
   const { data, isPending, error, refetch } = usePiarHistorialQuery(Number(piarId))
+  const ejecutar = useEjecutarPiar()
+  const [soporte, setSoporte] = useState(false)
   const filas = aFilas(data?.versiones ?? [])
   const pendiente = data?.versiones?.find((v) => v.estado.codigo === "PENDIENTE_ACUERDO")
 
   return (
+    <NoticeProvider>
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
@@ -88,9 +97,23 @@ export function PiarHistorialPage() {
         {isPending && <Skeleton className="h-64 w-full" />}
         {error && <ErrorNoticeBanner error={error} action={{ label: "Reintentar", onClick: () => refetch() }} />}
         {pendiente && (
-          <div className="rounded-lg bg-yellow-22 px-4 py-3 text-sm">
-            La versión {pendiente.numero} sigue pendiente de acuerdo hasta que se cargue el documento de actualización firmado.
-          </div>
+          <AvisoPiar>
+            <span className="flex flex-wrap items-center gap-3">
+              La versión {pendiente.numero} sigue pendiente de acuerdo hasta que se cargue el documento de actualización firmado.
+              <Button size="xs" variant="outline" color="muted" onClick={() => setSoporte(true)}>Cargar documento firmado</Button>
+            </span>
+          </AvisoPiar>
+        )}
+        {soporte && pendiente && (
+          <FormDialogPiar
+            abierto
+            onClose={() => setSoporte(false)}
+            titulo={`Cargar documento firmado — Versión ${pendiente.numero}`}
+            confirmar="Cargar"
+            campos={[]}
+            archivos={{ label: "Documento de actualización firmado", max: 1, required: true, ayuda: "PDF o imagen, máximo 10 MB" }}
+            onSubmit={(_, archivos) => ejecutar("post", `/versiones/${pendiente.id}/soporte`, { FK_ARCHIVO: archivos[0] })}
+          />
         )}
         {data && (
           <div className="overflow-x-auto">
@@ -135,5 +158,6 @@ export function PiarHistorialPage() {
         )}
       </TableScreenBody>
     </TableScreen>
+    </NoticeProvider>
   )
 }
