@@ -101,7 +101,7 @@ export function TabInforme() {
   const vigentes = data?.vigentes_total ?? 0
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid max-w-3xl gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <Combo id="inf-sede" label="Sede" todos={deSede ? false : "Todos"} value={sede} options={(sedes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre }))} onChange={(v) => { setSede(v); setAnio("") }} />
         <Combo id="inf-anio" label="Año" value={anio} disabled={!sede} placeholder={sede ? "Todos" : "Elegí Sede primero"} options={(anios.data ?? []).map((a) => ({ value: String(a.anio), label: String(a.anio) }))} onChange={setAnio} />
         <Combo id="inf-grado" label="Grado" value={grado} options={grados} onChange={setGrado} />

@@ -163,7 +163,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="flex max-w-4xl flex-col gap-5">
+        <div className="flex flex-col gap-5">
           {!editar && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <ComboOpciones
@@ -229,7 +229,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
           </Field>
 
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-[12rem_minmax(0,1fr)_auto]">
+            <div className={`grid grid-cols-1 items-start gap-3 ${codigo ? "sm:grid-cols-[12rem_minmax(0,1fr)_auto]" : "sm:grid-cols-[12rem_minmax(0,1fr)]"}`}>
               <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.fecha) || undefined}>
                 <FieldLabel htmlFor="anotacion-fecha">
                   Fecha*
