@@ -73,6 +73,11 @@ export const academicPeriodsDb: AcademicPeriod[] = [
   // Nocturna semestral: dos ciclos en orden de la misma Sede + Año + Jornada.
   seedPeriod(4, 0, 2026, 2, "2026-01-26", "2026-06-19", "2026-02-13"),
   seedPeriod(5, 0, 2026, 1, "2026-07-13", "2026-11-27", "2026-07-31"),
+  // Trimestral ciclo 1 sin ciclo 2: al crear Trimestral ciclo 2 en la misma Sede +
+  // Año + Jornada aparecen "Generar los grados siguientes" y "Copiar escalas y
+  // criterios" (Regla 96); con ciclo 3 no, porque falta el 2. Jornada Mañana:
+  // es la que la sede ofrece en el formulario.
+  seedPeriod(6, 0, 2026, 2, "2026-01-26", "2026-04-17", "2026-02-13"),
 ]
 
 function seedConfig(
@@ -108,4 +113,5 @@ export const academicPeriodConfigsDb: AcademicPeriodConfig[] = [
   seedConfig(3, 1, "06:30", "12:30", false),
   seedConfig(4, 3, "18:00", "22:00", true, "SEMESTRAL", 1),
   seedConfig(5, 3, "18:00", "22:00", true, "SEMESTRAL", 2),
+  seedConfig(6, 1, "06:30", "12:30", false, "TRIMESTRAL", 1),
 ]

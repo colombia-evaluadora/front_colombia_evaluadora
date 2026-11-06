@@ -27,6 +27,7 @@ import {
   useAcademicPeriodStatusesQuery,
   useJornadasQuery,
 } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { usePreviousCycleQuery } from "@/features/establishment/academic-period/api/query/use-previous-cycle-query"
 import { usePredeterminadoQuery } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import {
   academicPeriodFormSchema,
@@ -65,6 +66,8 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   enrollmentModality: "ANUAL",
   cycle: 1,
   reservationEnabled: false,
+  generateNextGrades: false,
+  copyScalesAndCriteria: false,
   defaultBlocksCount: null,
   scheduleStartTime: "",
   scheduleEndTime: "",
@@ -72,6 +75,33 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
 }
 
 const MODALITY_OPTIONS = ENROLLMENT_MODALITIES.map((m) => ({ value: m.value, label: m.label }))
+
+interface SwitchRowProps {
+  id: string
+  label: string
+  description: string
+  checked: boolean
+  disabled: boolean
+  onChange: (checked: boolean) => void
+}
+
+function SwitchRow({ id, label, description, checked, disabled, onChange }: SwitchRowProps) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="flex w-fit cursor-pointer items-center gap-3">
+        <Switch
+          id={id}
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onChange}
+          className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+        />
+        <span className="text-sm">{label}</span>
+      </label>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+  )
+}
 
 /** Bloque plegable del formulario. `keepMounted`: los campos cerrados siguen validando. */
 export function AcademicPeriodForm({
@@ -109,6 +139,28 @@ export function AcademicPeriodForm({
   // Regla 100: solo sedes Activas (la guardada se conserva al editar). Regla 84: solo
   // las jornadas de la sede elegida (y la guardada, aunque la sede ya no la ofrezca).
   const sedeId = useSelector(form.store, (state) => state.values.sedeId)
+  const cycle = useSelector(form.store, (state) => state.values.cycle)
+  const generateNextGrades = useSelector(form.store, (state) => state.values.generateNextGrades)
+  const jornadaId = useSelector(form.store, (state) => state.values.jornadaId)
+  const startDate = useSelector(form.store, (state) => state.values.startDate)
+  const modality = useSelector(form.store, (state) => state.values.enrollmentModality)
+
+  // Regla 96: copiar y generar solo se ofrecen si el ciclo anterior existe.
+  const { data: previousCycle } = usePreviousCycleQuery(
+    { sedeId, jornadaId, startDate, modality, cycle },
+    isCreating,
+  )
+  const hasPreviousCycle = isCreating && cycle > 1 && previousCycle != null
+
+  // Sin ciclo anterior los switches se ocultan: no deben viajar en Sí.
+  useEffect(() => {
+    if (hasPreviousCycle) return
+    if (form.state.values.generateNextGrades) {
+      form.setFieldValue("generateNextGrades", false)
+      if (isCreating) form.setFieldValue("reservationEnabled", false)
+    }
+    if (form.state.values.copyScalesAndCriteria) form.setFieldValue("copyScalesAndCriteria", false)
+  }, [hasPreviousCycle, isCreating, form])
   const sedes = sedesParaRegistroNuevo(todasLasSedes, initialValues.sedeId)
   const jornadasDeLaSede = (id: string | number | null | undefined) =>
     todasLasSedes.find((s) => String(s.pk_sede) === String(id))?.jornadas?.map((j) => j.id) ?? null
@@ -406,27 +458,53 @@ export function AcademicPeriodForm({
           />
         </FormSection>
 
+        {/* Regla 96: solo al crear un período que tiene ciclo anterior. */}
+        {hasPreviousCycle && (
+          <FormSection title="Inicialización desde el ciclo anterior">
+            <div className="flex flex-col gap-4">
+              <form.Field name="generateNextGrades">
+                {(field) => (
+                  <SwitchRow
+                    id={field.name}
+                    label="Generar los grados siguientes del ciclo anterior"
+                    description="Crea los grados siguientes con sus grupos y cupos."
+                    checked={field.state.value ?? false}
+                    disabled={readOnly}
+                    onChange={(checked) => {
+                      field.handleChange(checked)
+                      if (!checked) form.setFieldValue("reservationEnabled", false)
+                    }}
+                  />
+                )}
+              </form.Field>
+              <form.Field name="copyScalesAndCriteria">
+                {(field) => (
+                  <SwitchRow
+                    id={field.name}
+                    label="Copiar escalas y criterios del ciclo anterior"
+                    description="Copia también el catálogo de asignaturas y áreas."
+                    checked={field.state.value ?? false}
+                    disabled={readOnly}
+                    onChange={(checked) => field.handleChange(checked)}
+                  />
+                )}
+              </form.Field>
+            </div>
+          </FormSection>
+        )}
+
         <FormSection title="Reserva de cupos">
           <form.Field name="reservationEnabled">
             {(field) => (
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor={field.name}
-                  className="flex w-fit cursor-pointer items-center gap-3"
-                >
-                  <Switch
-                    id={field.name}
-                    checked={field.state.value}
-                    disabled={readOnly}
-                    onCheckedChange={(checked) => field.handleChange(checked)}
-                    className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
-                  />
-                  <span className="text-sm">Habilitar reserva de cupos</span>
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Se puede activar cuando el período tenga al menos un grado con grupos y cupos.
-                </p>
-              </div>
+              // Regla 31: al crear no hay grados, salvo que se generen del ciclo anterior.
+              <SwitchRow
+                id={field.name}
+                label="Habilitar reserva de cupos"
+                description="Se puede activar cuando el período tenga al menos un grado con grupos y cupos."
+                checked={field.state.value}
+                disabled={readOnly || (isCreating && !(hasPreviousCycle && generateNextGrades))}
+                onChange={(checked) => field.handleChange(checked)}
+              />
             )}
           </form.Field>
         </FormSection>

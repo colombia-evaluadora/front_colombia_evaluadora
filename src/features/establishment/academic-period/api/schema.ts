@@ -112,6 +112,9 @@ export const academicPeriodFormSchema = z
     enrollmentModality: z.enum(["ANUAL", "SEMESTRAL", "TRIMESTRAL", "BIMESTRAL"]),
     cycle: z.number().int().positive("El ciclo es obligatorio"),
     reservationEnabled: z.boolean(),
+    // Regla 96: solo al crear un ciclo > 1; por defecto No.
+    generateNextGrades: z.boolean().default(false),
+    copyScalesAndCriteria: z.boolean().default(false),
     defaultBlocksCount: z
       .number()
       .int()
