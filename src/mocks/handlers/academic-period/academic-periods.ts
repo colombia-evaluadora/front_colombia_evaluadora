@@ -22,6 +22,7 @@ import type {
   AcademicPeriodsQueryRequest,
   CreateAcademicPeriodBody,
   CreateAcademicPeriodRequest,
+  EnrollmentModality,
   ExportFormat,
   ExportResult,
   UpdateAcademicPeriodRequest,
@@ -110,11 +111,18 @@ function applyFilters(
     ) {
       return false
     }
-    // Rango sobre startDate (yyyy-MM-dd ordena cronológicamente como string).
-    if (filters.startFrom && row.startDate < filters.startFrom) {
+    if (filters.sedeId && Number(row.sedeId) !== filters.sedeId) {
       return false
     }
-    if (filters.startTo && row.startDate > filters.startTo) {
+    // Jornada y modalidad viven en la config, igual que en el back (TPERIODO_ACADEMICO).
+    const config = academicPeriodConfigsDb.find((c) => c.academicPeriodId === row.id)
+    if (filters.jornadaId && config?.jornadaId !== filters.jornadaId) {
+      return false
+    }
+    if (
+      filters.enrollmentModality &&
+      (config?.enrollmentModality ?? "ANUAL") !== filters.enrollmentModality
+    ) {
       return false
     }
     return true
@@ -235,8 +243,8 @@ export const academicPeriodsHandlers = [
       NOMBRE_SEDE: string | null
       ANO: string | null
       FK_ESTADO: number | null
-      FECHA_DESDE: string | null
-      FECHA_HASTA: string | null
+      FK_JORNADA: number | null
+      MODALIDAD: EnrollmentModality | null
       PAGEINDEX: number
       PAGESIZE: number
       SORT_BY: string | null
@@ -246,8 +254,9 @@ export const academicPeriodsHandlers = [
       sedeName: body.NOMBRE_SEDE ?? undefined,
       schoolYearId: body.ANO != null ? Number(body.ANO) : undefined,
       statusId: body.FK_ESTADO != null ? [body.FK_ESTADO] : undefined,
-      startFrom: body.FECHA_DESDE ?? undefined,
-      startTo: body.FECHA_HASTA ?? undefined,
+      sedeId: body.FK_SEDE ?? undefined,
+      jornadaId: body.FK_JORNADA ?? undefined,
+      enrollmentModality: body.MODALIDAD ?? undefined,
     }
     const sorting: AcademicPeriodsQueryRequest["sorting"] = body.SORT_BY
       ? [{ id: body.SORT_BY, desc: body.SORT_DIR === "desc" }]
