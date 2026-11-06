@@ -8,7 +8,7 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle, Tabl
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
@@ -120,13 +120,13 @@ function PiarListaContent() {
             pestana === "piar" ? (
               access.puedeGestionar && (
                 <Button size="sm" render={<Link to={paths.app.piarNuevo.getHref()} />} nativeButton={false}>
-                  <PlusIcon data-icon="inline-start" />
+                  <ControlPointIcon data-icon="inline-start" />
                   Nuevo PIAR
                 </Button>
               )
             ) : pestana === "orientacion" && access.registraAtencion ? (
               <Button size="sm" render={<Link to={paths.app.atencionNueva.getHref()} />} nativeButton={false}>
-                <PlusIcon data-icon="inline-start" />
+                <ControlPointIcon data-icon="inline-start" />
                 Nueva atención
               </Button>
             ) : null

@@ -6,7 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import {
   TableScreen,
   TableScreenBody,
@@ -137,7 +137,7 @@ function ObservadorContent() {
               )}
               {access.puedeCrear && (
                 <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
-                  <PlusIcon data-icon="inline-start" />
+                  <ControlPointIcon data-icon="inline-start" />
                   Nueva anotación
                 </Button>
               )}
