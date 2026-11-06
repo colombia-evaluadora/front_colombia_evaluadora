@@ -49,7 +49,7 @@ export function PanelMotivoSoporte({
       )}
       <TextoLargo id="soporte-motivo" label="Motivo" required max={500} rows={3} value={motivo} onChange={onMotivo} error={errorMotivo} />
       <div className="flex justify-end gap-2">
-        <Button type="button" size="sm" variant="outline" color="muted" disabled={pending} onClick={onCancelar}>
+        <Button type="button" size="sm" variant="outline" color="neutral" disabled={pending} onClick={onCancelar}>
           Cancelar
         </Button>
         <Button type="button" size="sm" color={sustituir ? undefined : "destructive"} disabled={pending} onClick={onConfirmar}>

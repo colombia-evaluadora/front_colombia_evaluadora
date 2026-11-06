@@ -33,7 +33,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={form.volver} disabled={form.guardando}>
+              <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
                 Cancelar
               </Button>
               <Button size="sm" onClick={form.guardar} disabled={form.guardando}>

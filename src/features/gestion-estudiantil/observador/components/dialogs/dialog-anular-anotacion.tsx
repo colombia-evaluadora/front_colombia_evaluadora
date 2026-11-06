@@ -113,7 +113,7 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" color="destructive" disabled={anular.isPending} onClick={handleAnular}>

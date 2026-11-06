@@ -88,7 +88,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
           <VersionesAnteriores soportes={f.anteriores} />
         </div>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

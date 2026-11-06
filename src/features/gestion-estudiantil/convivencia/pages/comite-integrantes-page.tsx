@@ -34,7 +34,7 @@ function Contenido({ periodo, periodos, comite, onPeriodo }: ContenidoProps) {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={form.volver} disabled={form.guardando}>
+              <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
                 {puedeGestionarComite ? "Cancelar" : "Volver"}
               </Button>
               {puedeGestionarComite && (

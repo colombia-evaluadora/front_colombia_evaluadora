@@ -169,7 +169,7 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" disabled={imprimir.isPending} onClick={generar}>

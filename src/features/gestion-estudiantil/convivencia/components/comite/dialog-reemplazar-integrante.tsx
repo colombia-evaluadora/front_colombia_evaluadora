@@ -58,7 +58,7 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
         </p>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={r.pending} onClick={r.reemplazar}>
             {r.pending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

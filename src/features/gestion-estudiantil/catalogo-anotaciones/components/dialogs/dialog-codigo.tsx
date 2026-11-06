@@ -65,7 +65,6 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
                 id="codigo-estado"
                 checked={f.v.estado === "activo"}
                 onCheckedChange={(checked) => f.set({ estado: checked ? "activo" : "inactivo" })}
-                className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
               />
             </div>
           </Field>
@@ -120,7 +119,7 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.guardar}>
             {f.pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
             Guardar

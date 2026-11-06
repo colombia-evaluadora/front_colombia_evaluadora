@@ -146,7 +146,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={volver} disabled={guardando}>
+              <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
                 Cancelar
               </Button>
               <Button size="sm" onClick={guardar} disabled={guardando}>
