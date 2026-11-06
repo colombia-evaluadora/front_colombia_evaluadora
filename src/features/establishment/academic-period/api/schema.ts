@@ -253,7 +253,8 @@ export const studyPlanFormSchema = z
 export type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
 
 // Periodos de evaluación
-export const evaluationPeriodFormSchema = z
+// Con criterio equitativo el peso no se pide ni se valida (Regla 35).
+export const makeEvaluationPeriodFormSchema = (usaPesos: boolean) => z
   .object({
     // Sin campo de código: la abreviación hace de código del período (Sección 5.1).
     nombre: z
@@ -273,18 +274,21 @@ export const evaluationPeriodFormSchema = z
       .max(10, maxLength(10, "La abreviación")),
     startDate: z.string().min(1, required("La fecha de inicio", { femenino: true })),
     endDate: z.string().min(1, required("La fecha de fin", { femenino: true })),
-    peso: z
-      .number({
-        error: "El peso porcentual es obligatorio.",
-      })
-      .min(0, "El peso porcentual no puede ser negativo.")
-      .max(100, "El peso porcentual no puede superar el 100 %."),
+    peso: usaPesos
+      ? z
+          .number({
+            error: "El peso porcentual es obligatorio.",
+          })
+          .min(0, "El peso porcentual no puede ser negativo.")
+          .max(100, "El peso porcentual no puede superar el 100 %.")
+      : z.number().or(z.nan()),
     // El estado no se elige: lo calcula el back con las fechas (Regla 37).
   })
   .refine((data) => !data.startDate || !data.endDate || data.startDate < data.endDate, {
     message: "La Fecha fin debe ser posterior a la Fecha inicio.",
     path: ["endDate"],
   })
+export const evaluationPeriodFormSchema = makeEvaluationPeriodFormSchema(true)
 export type EvaluationPeriodFormValues = z.infer<typeof evaluationPeriodFormSchema>
 
 // Criterios de evaluación
