@@ -2,10 +2,11 @@ import { DatePicker } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ArrowsLeftRightIcon, SpinnerIcon } from "@/components/ui/icons"
-import { NoticeBanner } from "@/components/notice/notice-banner"
+import { ArrowsLeftRightIcon } from "@/components/ui/icons"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import type { IntegranteComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { CampoPersona } from "@/features/gestion-estudiantil/convivencia/components/comite/campo-persona"
@@ -27,7 +28,7 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
         <DialogHeader>
           <DialogTitle>Reemplazar — {integrante?.cargo_nombre}</DialogTitle>
         </DialogHeader>
-        <NoticeBanner notice={r.notice} onClose={r.cerrarNotice} variant="error" />
+        <ErrorNoticeBanner error={r.error} />
         {integrante && (
           <p className="text-sm text-muted-foreground">
             Integrante actual: <span className="font-medium text-foreground">{integrante.nombre}</span>, desde{" "}
@@ -60,11 +61,7 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={r.pending} onClick={r.reemplazar}>
-            {r.pending ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <ArrowsLeftRightIcon data-icon="inline-start" />
-            )}
+            <IconoCarga cargando={r.pending}><ArrowsLeftRightIcon data-icon="inline-start" /></IconoCarga>
             Reemplazar
           </Button>
         </DialogFooter>

@@ -10,18 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
+import { TrashIcon } from "@/components/ui/icons"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { useEliminarCodigo } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/mutations/codigos"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
 
 /** Confirmación destructiva de 2.1. Si el código ya se usó, el backend bloquea con su mensaje. */
 export function DialogEliminarCodigo({ codigo, onClose }: { codigo: CodigoRow; onClose: () => void }) {
   const { notify } = useNotify()
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const eliminar = useEliminarCodigo()
 
   return (
@@ -33,7 +33,7 @@ export function DialogEliminarCodigo({ codigo, onClose }: { codigo: CodigoRow; o
             {codigo.codigo} · {codigo.descripcion}
           </DialogDescription>
         </DialogHeader>
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
+        <ErrorNoticeBanner error={error} />
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button
@@ -47,11 +47,11 @@ export function DialogEliminarCodigo({ codigo, onClose }: { codigo: CodigoRow; o
                   notify("Código eliminado.", { variant: "success" })
                   onClose()
                 },
-                onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+                onError: (error) => setError(error),
               })
             }
           >
-            {eliminar.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <TrashIcon data-icon="inline-start" />}
+            <IconoCarga cargando={eliminar.isPending}><TrashIcon data-icon="inline-start" /></IconoCarga>
             Eliminar
           </Button>
         </DialogFooter>

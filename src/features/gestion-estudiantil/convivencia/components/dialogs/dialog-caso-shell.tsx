@@ -11,9 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { SpinnerIcon } from "@/components/ui/icons"
-import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
 
@@ -44,21 +44,19 @@ interface DialogCasoShellProps {
   caso: CasoResumen | null
   titulo: string
   onClose: () => void
-  notice: Notice | null
-  onNoticeClose: () => void
+  error: unknown
   pending: boolean
   confirmar: { label: string; icon: ReactNode; color?: "destructive"; onClick: () => void; disabled?: boolean }
   children: ReactNode
   className?: string
 }
 
-/** Estructura común: título «X — Caso N», resumen, error del backend en NoticeBanner y pie Cancelar/Confirmar. */
+/** Estructura común: título «X — Caso N», resumen, error del backend en ErrorNoticeBanner y pie Cancelar/Confirmar. */
 export function DialogCasoShell({
   caso,
   titulo,
   onClose,
-  notice,
-  onNoticeClose,
+  error,
   pending,
   confirmar,
   children,
@@ -77,7 +75,7 @@ export function DialogCasoShell({
             </DialogDescription>
           )}
         </DialogHeader>
-        <NoticeBanner notice={notice} onClose={onNoticeClose} variant="error" />
+        <ErrorNoticeBanner error={error} />
         {children}
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
@@ -89,7 +87,7 @@ export function DialogCasoShell({
             disabled={pending || confirmar.disabled}
             onClick={confirmar.onClick}
           >
-            {pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : confirmar.icon}
+            <IconoCarga cargando={pending}>{confirmar.icon}</IconoCarga>
             {confirmar.label}
           </Button>
         </DialogFooter>
