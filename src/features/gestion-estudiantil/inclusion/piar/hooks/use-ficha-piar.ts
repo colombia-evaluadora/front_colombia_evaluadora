@@ -28,7 +28,7 @@ export function useFichaPiar(piar: PiarDetalle) {
 
   const estado = piar.estado.codigo
   const version = piar.version_actual
-  const gestiona = access.puedeGestionar && esEditable(estado) && !piar.anulacion
+  const gestiona = access.puedeGestionar && esEditable(estado) && !piar.anulacion && !piar.solo_consulta
   const avisar = (message: string, variant: Aviso["variant"] = "error") => setNotice({ id: Date.now(), message, variant })
 
   const acta = useAppForm({

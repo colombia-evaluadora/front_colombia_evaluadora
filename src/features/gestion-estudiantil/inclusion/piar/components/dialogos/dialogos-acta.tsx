@@ -9,6 +9,13 @@ import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/co
 import type { DialogoProps } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { nulo, texto } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { claveElemento, textosFaltantes } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+const CAMPOS_AJUSTE = [
+  { value: "META", label: "Meta de aprendizaje" },
+  { value: "AJUSTE", label: "Ajuste" },
+  { value: "BARRERA_CONCRETA", label: "Barrera concreta" },
+  { value: "RECURSOS", label: "Recursos" },
+  { value: "APOYOS_REQUERIDOS", label: "Apoyos requeridos" },
+]
 
 export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
   const ejecutar = useEjecutarPiar()
@@ -142,6 +149,13 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
         />
       )
     case "actualizar": {
+      const sustancial = tiposCambio.find((x) => x.codigo === "CAMBIO_SUSTANCIAL")?.value
+      // AJUSTE_<id>_<CAMPO>: el backend lo aplica al ajuste cuando la versión queda acordada.
+      const clave = (v: Record<string, string>) => (v.ajuste ? `AJUSTE_${v.ajuste}_${v.campo}` : claveElemento(v.elemento))
+      const valorAjuste = (v: Record<string, string>) => {
+        const x = piar.ajustes.find((y) => String(y.id) === v.ajuste)
+        return x && { META: x.meta, AJUSTE: x.ajuste, BARRERA_CONCRETA: x.barrera_concreta, RECURSOS: x.recursos, APOYOS_REQUERIDOS: x.apoyos_requeridos }[v.campo]
+      }
       return (
         <FormDialogPiar
           {...comunes}
@@ -151,8 +165,10 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
           campos={[
             { name: "tipo", label: "Tipo de cambio", kind: "select", required: true, options: tiposCambio },
             { name: "aplica", label: "Aplica desde", kind: "fecha", required: true },
-            { name: "elemento", label: "Elemento que cambia", kind: "texto", required: true, max: 200, ancho: true },
-            texto("antes", "Antes", 1000, { required: true }),
+            { name: "ajuste", label: "Ajuste que cambia", kind: "select", options: piar.ajustes.map((x) => ({ value: String(x.id), label: `${x.asignatura_nombre ?? "Transversal"} · ${x.ajuste}` })), visible: (v) => v.tipo === sustancial },
+            { name: "campo", label: "Campo del ajuste", kind: "select", required: (v) => Boolean(v.ajuste), visible: (v) => Boolean(v.ajuste), options: CAMPOS_AJUSTE },
+            { name: "elemento", label: "Elemento que cambia", kind: "texto", required: true, max: 200, ancho: true, visible: (v) => !v.ajuste },
+            texto("antes", "Antes", 1000, { required: true, visible: (v) => !v.ajuste }),
             texto("ahora", "Ahora", 1000, { required: true }),
             texto("que", "Qué cambió", 1000, { required: true, min: 3 }),
             texto("porque", "Por qué", 1000, { required: true, min: 3 }),
@@ -164,8 +180,8 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
               POR_QUE: v.porque,
               APLICA_DESDE: v.aplica,
               // query-service recibe los JSONB como cadena JSON.
-              VALORES_ANTERIORES: JSON.stringify({ [claveElemento(v.elemento)]: v.antes }),
-              VALORES_NUEVOS: JSON.stringify({ [claveElemento(v.elemento)]: v.ahora }),
+              VALORES_ANTERIORES: JSON.stringify({ [clave(v)]: v.ajuste ? String(valorAjuste(v) ?? "—") : v.antes }),
+              VALORES_NUEVOS: JSON.stringify({ [clave(v)]: v.ahora }),
               FK_ARCHIVO_SOPORTE: archivos[0] ?? null,
             })
           }

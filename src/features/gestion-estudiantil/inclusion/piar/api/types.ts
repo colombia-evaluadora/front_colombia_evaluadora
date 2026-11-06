@@ -83,6 +83,7 @@ export interface Ajuste {
   apoyos_requeridos: string | null
   productos_apoyo: string | null
   seguimientos: Seguimiento[]
+  adaptaciones_planeadas?: { actividad: string; fecha: string | null }[]
   /** Solo con acceso sensible: el docente no las recibe. */
   evidencias?: Evidencia[]
 }
@@ -152,6 +153,9 @@ export interface PiarDetalle {
   cierre: { motivo: string; cerrado_en: string; informe_anual: string | null } | null
   anulacion: { anulada: boolean; anulado_en?: string; motivo?: string; anula?: string } | null
   ve_sensible: boolean
+  solo_consulta?: boolean
+  fk_tpiar_anterior?: number | null
+  origen?: { id: number; establecimiento: string; periodo: string } | null
   condicion: string | null
   periodo_academico: string | null
   ajustes: Ajuste[]
@@ -220,6 +224,13 @@ export interface MatriculaDisponible {
   grado_grupo: string
   condicion: string | null
   tiene_condicion: boolean
+  sede: string | null
+  jornada: string | null
+  acudiente: string | null
+  convive_acudiente: string | null
+  fecha_ingreso: string | null
+  repitente: string | null
+  fk_tpiar_anterior: number | null
 }
 
 export interface AsignaturaOpcion {

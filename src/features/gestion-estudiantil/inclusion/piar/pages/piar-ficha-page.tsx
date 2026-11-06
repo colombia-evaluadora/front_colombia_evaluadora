@@ -1,10 +1,11 @@
-import { useParams } from "@tanstack/react-router"
+import { Link, useParams } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody } from "@/components/layout/table-screen"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { paths } from "@/config/paths"
 
 import { FormDisabledProvider } from "@/lib/forms"
 
@@ -43,6 +44,16 @@ function AvisosFicha({ piar }: { piar: PiarDetalle }) {
       {borrador && piar.fk_tpiar_origen == null && progreso && progreso.faltan.length > 0 && (
         <AvisoPiar tipo="info">{progreso.completos} de {progreso.total} bloques completos. Falta: {progreso.faltan.join(", ")}.</AvisoPiar>
       )}
+      {piar.origen && (
+        <AvisoPiar tipo="info">
+          PIAR de origen:{" "}
+          <Link className="text-primary hover:underline" to={paths.app.piarFicha.getHref(piar.origen.id)}>
+            {piar.origen.establecimiento} · {piar.origen.periodo}
+          </Link>{" "}
+          (en consulta, solo lectura).
+        </AvisoPiar>
+      )}
+      {piar.solo_consulta && <AvisoPiar tipo="info">Este PIAR es de otro establecimiento: solo se consulta (Regla 15).</AvisoPiar>}
       {piar.anulacion && <AvisoPiar tipo="error">PIAR anulado{piar.anulacion.motivo ? `: ${piar.anulacion.motivo}` : ""}.</AvisoPiar>}
     </>
   )

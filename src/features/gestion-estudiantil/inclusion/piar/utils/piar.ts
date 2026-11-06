@@ -98,6 +98,8 @@ export const claveElemento = (texto: string) =>
   texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^(?=\d)/, "E_")
 
 export const textoElemento = (clave: string) => {
+  const campo = /^AJUSTE_\d+_(.+)$/.exec(clave)?.[1]
+  if (campo) return `Ajuste: ${campo.replace(/_/g, " ").toLowerCase()}`
   const t = clave.replace(/_/g, " ").toLowerCase()
   return t.charAt(0).toUpperCase() + t.slice(1)
 }

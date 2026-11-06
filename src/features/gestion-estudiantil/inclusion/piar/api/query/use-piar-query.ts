@@ -84,6 +84,10 @@ export function usePiarQuery(piarId: number) {
   return useQuery(piarQueryOptions(piarId))
 }
 
+export function usePiarQueryOpcional(piarId: number | null) {
+  return useQuery({ ...piarQueryOptions(piarId as number), enabled: piarId != null })
+}
+
 export function usePiarHistorialQuery(piarId: number) {
   return useQuery({
     queryKey: piarKeys.historial(piarId),

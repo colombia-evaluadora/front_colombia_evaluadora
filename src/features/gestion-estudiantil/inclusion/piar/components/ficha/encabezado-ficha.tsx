@@ -24,7 +24,7 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
         className="flex-wrap"
         action={
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            {estado === "REVISION_CONCLUIDA" && access.puedeGestionar && <Button size="sm" onClick={() => setDialogo({ tipo: "nuevaVersion" })}>Iniciar nueva versión</Button>}
+            {estado === "REVISION_CONCLUIDA" && access.puedeGestionar && !piar.solo_consulta && <Button size="sm" onClick={() => setDialogo({ tipo: "nuevaVersion" })}>Iniciar nueva versión</Button>}
             {piar.ve_sensible && (
               <Button {...SECUNDARIO} render={<Link to={paths.app.piarHistorial.getHref(piar.id)} />} nativeButton={false}>
                 <ClockCounterClockwiseIcon data-icon="inline-start" />
@@ -57,7 +57,7 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
                   {gestiona && <DropdownMenuItem disabled={!piar.ajustes.length} onClick={() => setDialogo({ tipo: "evidencia" })}><PaperclipIcon />Registrar evidencia directa</DropdownMenuItem>}
                   {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "antecedente" })}><ClipboardTextIcon />Registrar antecedente</DropdownMenuItem>}
                   {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "externo" })}><FileUploadOutlinedIcon />Incorporar informe externo</DropdownMenuItem>}
-                  {access.puedeAnular && !piar.anulacion && estado !== "CERRADO" && <DropdownMenuItem onClick={() => setDialogo({ tipo: "anular" })}><ProhibitIcon />Anular PIAR</DropdownMenuItem>}
+                  {access.puedeAnular && !piar.solo_consulta && !piar.anulacion && estado !== "CERRADO" && <DropdownMenuItem onClick={() => setDialogo({ tipo: "anular" })}><ProhibitIcon />Anular PIAR</DropdownMenuItem>}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

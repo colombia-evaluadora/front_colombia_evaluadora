@@ -66,6 +66,11 @@ export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar
         <Par label="Ajuste">{ajuste.ajuste}</Par>
         {ajuste.recursos && <Par label="Recursos">{ajuste.recursos}</Par>}
         {ajuste.apoyos_requeridos && <Par label="Apoyos requeridos">{ajuste.apoyos_requeridos}</Par>}
+        {Boolean(ajuste.adaptaciones_planeadas?.length) && (
+          <Par label="Planeado en actividades">
+            {ajuste.adaptaciones_planeadas?.map((a) => `${a.actividad}${a.fecha ? ` (${formatFecha(a.fecha)})` : ""}`).join(" · ")}
+          </Par>
+        )}
         {sensible && (
           <Par label="Evidencia">
             <span className="flex flex-wrap items-center gap-2">
