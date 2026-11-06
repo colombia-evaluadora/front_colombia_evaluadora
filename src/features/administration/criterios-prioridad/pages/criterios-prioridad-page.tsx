@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import {
@@ -19,6 +20,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 import { toPageCount } from "@/lib/pagination"
+import { paths } from "@/config/paths"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
@@ -33,10 +35,6 @@ import {
   createCriteriosPrioridadColumns,
   reglaTexto,
 } from "@/features/administration/criterios-prioridad/components/columns-criterios-prioridad"
-import {
-  DialogCriterioPrioridad,
-  type ModoCriterio,
-} from "@/features/administration/criterios-prioridad/components/dialog-criterio-prioridad"
 
 /** El `NoticeProvider` va afuera: `useNotify` lee el contexto de sus ancestros. */
 export function CriteriosPrioridadPage() {
@@ -79,9 +77,8 @@ function CriteriosPrioridadPageContent() {
     (pageIndex + 1) * paginacion.pageSize,
   )
 
-  const [dialogo, setDialogo] = useState<{ modo: ModoCriterio; criterio: CriterioPrioridad | null } | null>(
-    null,
-  )
+  // Nuevo, Ver y Modificar abren pantalla propia (S.4.EDI.1–2).
+  const navigate = useNavigate()
   const [pendiente, setPendiente] = useState<number | null>(null)
 
   const onError = (err: unknown) => notify(getErrorMessage(err), { variant: "error" })
@@ -104,8 +101,9 @@ function CriteriosPrioridadPageContent() {
     puedeEditar: permisos.puedeEditar,
     puedeEliminar: permisos.puedeEliminar,
     pendiente,
-    onVer: (criterio) => setDialogo({ modo: "ver", criterio }),
-    onModificar: (criterio) => setDialogo({ modo: "modificar", criterio }),
+    onVer: (criterio) => navigate({ to: paths.app.criterioPrioridadDetalle.getHref(criterio.pkCriterio) }),
+    onModificar: (criterio) =>
+      navigate({ to: paths.app.criterioPrioridadModificar.getHref(criterio.pkCriterio) }),
     onEstado: (criterio) => {
       setPendiente(criterio.pkCriterio)
       estado.mutate({ id: criterio.pkCriterio, habilitado: !criterio.habilitado })
@@ -144,7 +142,7 @@ function CriteriosPrioridadPageContent() {
           <span />
           {permisos.puedeCrear && (
             <TableScreenActions>
-              <Button color="primary" size="sm" onClick={() => setDialogo({ modo: "nuevo", criterio: null })}>
+              <Button color="primary" size="sm" onClick={() => navigate({ to: paths.app.criterioPrioridadNuevo.getHref() })}>
                 <ControlPointIcon data-icon="inline-start" />
                 Nuevo criterio
               </Button>
@@ -174,14 +172,6 @@ function CriteriosPrioridadPageContent() {
           onPageSizeChange={paginacion.setPageSize}
         />
       </TableScreenBody>
-
-      <DialogCriterioPrioridad
-        modo={dialogo?.modo ?? null}
-        criterio={dialogo?.criterio ?? null}
-        puedeEditar={permisos.puedeEditar}
-        onClose={() => setDialogo(null)}
-        onModificar={(criterio) => setDialogo({ modo: "modificar", criterio })}
-      />
     </TableScreen>
   )
 }
