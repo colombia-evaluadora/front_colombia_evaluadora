@@ -25,9 +25,10 @@ export function toPiarFilters(search: string, f: PiarFiltros) {
     FK_SEDE: id(f.sede),
     FK_JORNADA: id(f.jornada),
     FK_GRUPO: id(f.grupo),
+    FK_GRADO: id(f.grado),
     FK_ESTADO: id(f.estado),
-    CONDICION: f.condicion || null,
-    CON_PENDIENTES: f.pendientes ? f.pendientes === "SI" : null,
+    CONDICION: null,
+    CON_PENDIENTES: null,
   }
 }
 

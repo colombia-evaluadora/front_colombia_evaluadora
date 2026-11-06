@@ -9,25 +9,16 @@ import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivenc
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { FILTROS_VACIOS, type PiarFiltros } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 
-const CONDICIONES = [
-  { value: "DISCAPACIDAD", label: "Discapacidad" },
-  { value: "TALENTO", label: "Talento excepcional" },
-  { value: "SIN_CONDICION", label: "Sin condición" },
-]
-const PENDIENTES = [
-  { value: "SI", label: "Con seguimientos pendientes" },
-  { value: "NO", label: "Sin seguimientos pendientes" },
-]
-
 interface Props {
   search: string
   filtros: PiarFiltros
   onSearch: (v: string) => void
   onFiltros: (f: PiarFiltros) => void
+  grados: { value: string; label: string }[]
 }
 
 /** G.4.PIA.LIS.2: texto libre y panel de filtros; las opciones se piden para lo que se está eligiendo. */
-export function BusquedaPiar({ search, filtros, onSearch, onFiltros }: Props) {
+export function BusquedaPiar({ search, filtros, onSearch, onFiltros, grados }: Props) {
   const [draft, setDraft] = useState<PiarFiltros>(FILTROS_VACIOS)
   const [open, setOpen] = useState(false)
   const opciones = useOpcionesConvivencia(draft.sede, draft.jornada)
@@ -45,9 +36,8 @@ export function BusquedaPiar({ search, filtros, onSearch, onFiltros }: Props) {
       optionTerm("sede", "sede", opciones.sedeOpciones),
       optionTerm("jornada", "jornada", opciones.jornadaOpciones),
       optionTerm("grupo", "grupo", opciones.grupoOpciones),
+      optionTerm("grado", "grado", grados),
       optionTerm("estado", "estado", estados),
-      optionTerm("condicion", "condicion", CONDICIONES),
-      optionTerm("pendientes", "pendientes", PENDIENTES),
     ],
   }
   const { search: queryText, setSearch: setQueryText } = useQuerySearch({
@@ -99,6 +89,7 @@ export function BusquedaPiar({ search, filtros, onSearch, onFiltros }: Props) {
                 placeholder={draft.sede ? "Todos" : "Elegí Sede primero"}
                 onChange={(jornada) => setDraft({ ...draft, jornada, grupo: "" })}
               />
+              <Combo id="piar-grado" label="Grado" value={draft.grado} options={grados} onChange={(grado) => setDraft({ ...draft, grado })} />
               <Combo
                 id="piar-grupo"
                 label="Grado/Grupo"
@@ -109,8 +100,6 @@ export function BusquedaPiar({ search, filtros, onSearch, onFiltros }: Props) {
                 onChange={(grupo) => setDraft({ ...draft, grupo })}
               />
               <Combo id="piar-estado" label="Estado" value={draft.estado} options={estados} onChange={(estado) => setDraft({ ...draft, estado })} />
-              <Combo id="piar-condicion" label="Condición" value={draft.condicion} options={CONDICIONES} onChange={(condicion) => setDraft({ ...draft, condicion })} />
-              <Combo id="piar-pendientes" label="Seguimientos" value={draft.pendientes} options={PENDIENTES} onChange={(pendientes) => setDraft({ ...draft, pendientes })} />
             </div>
           </SearchQueryBar>
   )

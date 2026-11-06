@@ -4,12 +4,11 @@ export interface PiarFiltros {
   sede: string
   jornada: string
   grupo: string
+  grado: string
   estado: string
-  condicion: string
-  pendientes: string
 }
 
-export const FILTROS_VACIOS: PiarFiltros = { sede: "", jornada: "", grupo: "", estado: "", condicion: "", pendientes: "" }
+export const FILTROS_VACIOS: PiarFiltros = { sede: "", jornada: "", grupo: "", grado: "", estado: "" }
 
 /** Fila de `fn_piar_listar_interno` (V601). */
 export interface PiarRow {
@@ -28,6 +27,8 @@ export interface PiarRow {
   por_mapear: number
   seguimientos_pendientes: number
   trasladado: boolean
+  fk_tgrado: number
+  grado_nombre: string
   total_count: number
 }
 
@@ -40,6 +41,7 @@ export interface SinPiarRow {
   fecha_limite: string | null
   vencido: boolean
   tiene_borrador: boolean
+  fk_tpiar_borrador: number | null
 }
 
 export interface ArchivoRef {

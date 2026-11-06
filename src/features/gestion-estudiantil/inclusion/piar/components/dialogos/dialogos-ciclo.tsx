@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CheckCircleIcon, WarningCircleIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
+import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
 import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
@@ -15,6 +16,7 @@ import { progresoBloques } from "@/features/gestion-estudiantil/inclusion/piar/u
 export function DialogosCiclo({ piar, dialogo, onClose }: DialogoProps) {
   const ejecutar = useEjecutarPiar()
   const estudiante = piar.estudiante.nombre
+  const motivosCierre = useCatalogo("MOTIVO_CIERRE_PIAR")
   const comunes = { onClose, abierto: true }
 
   switch (dialogo.tipo) {
@@ -28,7 +30,7 @@ export function DialogosCiclo({ piar, dialogo, onClose }: DialogoProps) {
           confirmarColor="destructive"
           inicial={{ motivo: "FIN_PERIODO" }}
           campos={[
-            { name: "motivo", label: "Motivo", kind: "select", required: true, ancho: true, options: [{ value: "FIN_PERIODO", label: "Fin del Período Académico" }, { value: "RETIRO", label: "Retiro" }, { value: "TRASLADO", label: "Traslado" }] },
+            { name: "motivo", label: "Motivo", kind: "select", required: true, ancho: true, options: motivosCierre.map((m) => ({ value: m.codigo, label: m.label })) },
             texto("informe", "Informe anual de competencias", 5000, { required: true }),
           ]}
           onSubmit={(v) => ejecutar("post", `/${piar.id}/cerrar`, { MOTIVO: v.motivo, INFORME_ANUAL: v.informe })}
@@ -52,8 +54,8 @@ export function DialogosCiclo({ piar, dialogo, onClose }: DialogoProps) {
           titulo={`Concluir revisión sin ajustes — ${estudiante}`}
           confirmar="Concluir revisión"
           campos={[
-            texto("sintesis", "Síntesis de orientación", 3000, { required: true }),
-            texto("recomendaciones", "Recomendaciones", 2000, { required: true }),
+            texto("sintesis", "Síntesis de orientación", 3000, { required: true, min: 10 }),
+            texto("recomendaciones", "Recomendaciones", 2000, { required: true, min: 10 }),
             { name: "conclusion", label: "Fecha de conclusión", kind: "fecha", required: true },
             { name: "proxima", label: "Fecha de próxima revisión", kind: "fecha", required: true },
           ]}

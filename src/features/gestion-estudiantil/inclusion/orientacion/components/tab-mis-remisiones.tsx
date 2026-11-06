@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { FilePdfIcon } from "@/components/ui/icons"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
@@ -52,6 +53,7 @@ export function TabMisRemisiones() {
               setAviso(r.status === "error" ? "No pudimos generar el documento. Inténtelo de nuevo en unos minutos." : null)
             }}
           >
+            <FilePdfIcon />
             Descargar remisión
           </DropdownMenuItem>
         </MenuFila>
@@ -62,7 +64,7 @@ export function TabMisRemisiones() {
   return (
     <div className="flex flex-col gap-4">
       {aviso && <AvisoPiar tipo="error">{aviso}</AvisoPiar>}
-      <div className="grid max-w-md">
+      <div className="grid max-w-xl gap-3 sm:grid-cols-2">
         <Combo id="mis-estado" label="Estado" value={estado} options={estados} onChange={(v) => { setEstado(v); setPag((p) => ({ ...p, i: 0 })) }} />
       </div>
       <TablaOrientacion
