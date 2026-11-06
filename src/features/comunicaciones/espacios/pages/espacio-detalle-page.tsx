@@ -15,7 +15,7 @@ import { EquiposEspacio } from "@/features/comunicaciones/espacios/components/eq
 import { ForoEspacio } from "@/features/comunicaciones/espacios/components/foro-espacio"
 import { ChatEspacio } from "@/features/comunicaciones/espacios/components/chat-espacio"
 import { MaterialesEspacio } from "@/features/comunicaciones/espacios/components/materiales-espacio"
-import { BadgeEstadoEspacio, fechaDia } from "@/features/comunicaciones/espacios/components/ui-espacio"
+import { BadgeEstadoEspacio, EncabezadoHerramienta, fechaDiaMes } from "@/features/comunicaciones/espacios/components/ui-espacio"
 
 const route = getRouteApi("/app/comunicaciones/espacios/detalle/$id")
 
@@ -33,7 +33,9 @@ function TiraSilenciados({ detalle }: { detalle: EspacioDetalle }) {
   const { reactivar } = useSilenciar(detalle.espacio.id)
   if (detalle.silenciados.length === 0) return null
   return (
-    <ul aria-label="Estudiantes silenciados" className="flex flex-wrap gap-2 rounded-md bg-yellow-22 p-2 text-sm">
+    <div className="flex flex-wrap items-center gap-2 rounded-md bg-yellow-22 p-2 text-sm">
+      <span className="font-medium">Silenciados en este espacio:</span>
+      <ul aria-label="Silenciados en este espacio" className="flex flex-wrap gap-2">
       {detalle.silenciados.map((s) => (
         <li key={s.usuarioId} className="flex items-center gap-2">
           {s.nombre}
@@ -55,7 +57,8 @@ function TiraSilenciados({ detalle }: { detalle: EspacioDetalle }) {
           )}
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   )
 }
 
@@ -94,9 +97,15 @@ function Contenido({ id }: { id: number }) {
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          {[espacio.asignatura, espacio.grupo, espacio.docente].filter(Boolean).join(" · ")} ·{" "}
-          {fechaDia(espacio.fechaInicio)} a {fechaDia(espacio.fechaCierre)}
+          {[espacio.grupo, espacio.asignatura, espacio.docente].filter(Boolean).join(" · ")} ·{" "}
+          {fechaDiaMes(espacio.fechaInicio)} – {fechaDiaMes(espacio.fechaCierre)}
         </p>
+        {supervision && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Consulta en solo lectura: un espacio académico es un aula supervisada. Moderan el Responsable de enseñanza
+            y los estudiantes participan.
+          </p>
+        )}
         {detalle.silenciado && (
           <p className="mt-1 text-sm text-red">El docente lo silenció en este espacio: puede consultar, pero no escribir.</p>
         )}
@@ -114,12 +123,14 @@ function Contenido({ id }: { id: number }) {
           <TabsTrigger value="MATERIALES">Materiales</TabsTrigger>
         </TabsList>
         {visibles.includes("CHAT") && (
-          <TabsContent value="CHAT" className="pt-3">
+          <TabsContent value="CHAT" className="space-y-3 pt-3">
+            <EncabezadoHerramienta herramienta="Chat" detalle={detalle} />
             <ChatEspacio detalle={detalle} puedeEscribir={detalle.puedeEscribir && herramientas.includes("CHAT")} />
           </TabsContent>
         )}
         {visibles.includes("FORO") && (
-          <TabsContent value="FORO" className="pt-3">
+          <TabsContent value="FORO" className="space-y-3 pt-3">
+            <EncabezadoHerramienta herramienta="Foro" detalle={detalle} />
             <ForoEspacio detalle={detalle} puedeEscribir={detalle.puedeEscribir && herramientas.includes("FORO")} />
           </TabsContent>
         )}
