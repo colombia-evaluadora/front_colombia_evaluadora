@@ -9,6 +9,7 @@ export function DialogExportarAnotaciones({ filters }: { filters: ObservadorQuer
   return (
     <ExportDialog
       label="Exportar anotaciones"
+      texto="Exportar"
       description="Elige un formato para descargar las anotaciones con los filtros aplicados. Las de situaciones Tipo II y III salen sin observación para quien no tiene acceso a ella."
       onExport={(format) => exportar.mutateAsync({ filters, format })}
     />
