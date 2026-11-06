@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react"
+import { useNavigate } from "@tanstack/react-router"
+
+import { paths } from "@/config/paths"
 
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import type { AccionesAtajo } from "@/features/comunicaciones/chat/components/chat-composer"
-import { CrearComunicadoDialog } from "@/features/comunicaciones/chat/components/crear-comunicado-dialog"
 import { CrearEleccionDialog } from "@/features/comunicaciones/chat/components/crear-eleccion-dialog"
 import { CrearEncuestaDialog } from "@/features/comunicaciones/chat/components/crear-encuesta-dialog"
 import { VotacionRapidaDialog } from "@/features/comunicaciones/chat/components/votacion-rapida-dialog"
@@ -28,6 +30,7 @@ export function useDialogosAtajos({
   // El comunicado sale del permiso COMUNICADOS del rol (Roles y menús), no del perfil.
   const creaComunicados = useMenuPermission("COMUNICADOS").puedeCrear
   const [abierto, setAbierto] = useState<Dialogo | null>(null)
+  const navigate = useNavigate()
   const cerrar = () => setAbierto(null)
   const gestionaCanal = !!c && (c.tipo === "CANAL" || c.tipo === "GRUPO") && (c.esAdmin ?? puedeGestionar)
 
@@ -35,13 +38,15 @@ export function useDialogosAtajos({
   if (puedeGestionar && CHAT_FUNCIONES.encuestas) acciones.encuesta = () => setAbierto("encuesta")
   if (gestionaCanal && CHAT_FUNCIONES.votacionRapida) acciones.votacion = () => setAbierto("votacion")
   if (puedeGestionar && CHAT_FUNCIONES.elecciones) acciones.eleccion = () => setAbierto("eleccion")
-  if (creaComunicados && CHAT_FUNCIONES.comunicados) acciones.comunicado = () => setAbierto("comunicado")
+  if (creaComunicados && CHAT_FUNCIONES.comunicados) {
+    // Página propia, con la estructura del informe (Guía M.1.AGR.1).
+    acciones.comunicado = () => void navigate({ to: paths.app.comunicacionesComunicadoNuevo.getHref() })
+  }
 
   const dialogos = (
     <>
       {abierto === "encuesta" && <CrearEncuestaDialog open onClose={cerrar} onCreada={onCreado} />}
       {abierto === "eleccion" && <CrearEleccionDialog open onClose={cerrar} onCreada={onCreado} />}
-      {abierto === "comunicado" && <CrearComunicadoDialog open onClose={cerrar} onCreado={onCreado} />}
       {abierto === "votacion" && c && <VotacionRapidaDialog conversacionId={c.id} open onClose={cerrar} />}
     </>
   )

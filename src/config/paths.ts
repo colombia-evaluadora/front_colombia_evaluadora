@@ -419,6 +419,10 @@ export const paths = {
       path: "comunicaciones/comunicados-territorial",
       getHref: () => "/app/comunicaciones/comunicados-territorial",
     },
+    comunicacionesComunicadoNuevo: {
+      path: "comunicaciones/comunicados/nuevo",
+      getHref: () => "/app/comunicaciones/comunicados/nuevo",
+    },
     comunicacionesProcesos: {
       path: "comunicaciones/procesos",
       getHref: () => "/app/comunicaciones/procesos",
