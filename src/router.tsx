@@ -229,6 +229,10 @@ const ParametrosEdadPage = lazyRouteComponent(
   () => import("@/features/administration/parametros-edad/pages/parametros-edad-page"),
   "ParametrosEdadPage"
 )
+const RelacionesAlumnoGrupoPage = lazyRouteComponent(
+  () => import("@/features/administration/relaciones-alumno-grupo/pages/relaciones-alumno-grupo-page"),
+  "RelacionesAlumnoGrupoPage"
+)
 const FestivosPage = lazyRouteComponent(
   () => import("@/features/administration/festivos/pages/festivos-page"),
   "FestivosPage"
@@ -853,6 +857,15 @@ export const parametrosEdadRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Parámetros de edad" }],
   },
   component: ParametrosEdadPage,
+})
+
+export const relacionesAlumnoGrupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.relacionesAlumnoGrupo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Relaciones alumno-grupo" }],
+  },
+  component: RelacionesAlumnoGrupoPage,
 })
 
 export const festivosRoute = createRoute({
@@ -1640,6 +1653,7 @@ const routeTree = rootRoute.addChildren([
     administradorTerritorialDetalleRoute,
     administradorTerritorialModificarRoute,
     parametrosEdadRoute,
+    relacionesAlumnoGrupoRoute,
     festivosRoute,
     conservacionDatosRoute,
     conservacionPoliticaNuevaRoute,
