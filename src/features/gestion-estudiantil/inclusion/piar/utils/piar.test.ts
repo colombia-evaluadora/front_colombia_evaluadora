@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
-import { accesoPiar, esOpcionElegida, progresoBloques, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { accesoPiar, claveElemento, esOpcionElegida, textoElemento, progresoBloques, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 const base = {
   ajustes: [],
@@ -48,5 +48,13 @@ describe("esOpcionElegida", () => {
     expect(esOpcionElegida("9", o)).toBe(true)
     expect(esOpcionElegida("Ana · 6A", o)).toBe(true)
     expect(esOpcionElegida("An", o)).toBe(false)
+  })
+})
+
+describe("claveElemento", () => {
+  it("translitera a una clave válida y se lee de vuelta", () => {
+    expect(claveElemento("Ajuste de Matemáticas")).toBe("AJUSTE_DE_MATEMATICAS")
+    expect(claveElemento("1.º período")).toMatch(/^[A-Z][A-Z0-9_]*$/)
+    expect(textoElemento("APOYO_INSTITUCIONAL")).toBe("Apoyo institucional")
   })
 })

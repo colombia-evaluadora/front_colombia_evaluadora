@@ -1,4 +1,4 @@
-import type { ActividadFamiliar, Ajuste, Cobertura, PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
+import type { ActividadFamiliar, Ajuste, Cobertura, Participante, PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import type { CampoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 
 export type Dialogo =
@@ -10,7 +10,7 @@ export type Dialogo =
   | { tipo: "evidencia"; ajuste?: Ajuste }
   | { tipo: "actividad"; actividad?: ActividadFamiliar }
   | { tipo: "resultado"; actividad: ActividadFamiliar }
-  | { tipo: "participante" }
+  | { tipo: "participante"; fila?: Participante }
   | { tipo: "red" }
   | { tipo: "informes" }
   | { tipo: "antecedente" }

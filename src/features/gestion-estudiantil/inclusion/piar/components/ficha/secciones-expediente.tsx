@@ -173,7 +173,12 @@ export function SeccionActividades({ ficha: { piar, estado, gestiona, setDialogo
         <article key={a.id} className="grid gap-2 rounded-lg border border-border p-4">
           <header className="flex flex-wrap items-center gap-2">
             <strong>{a.actividad}</strong>
-            {gestiona && <span className="ml-auto"><BotonSeccion onClick={() => setDialogo({ tipo: "resultado", actividad: a })}>Registrar resultado</BotonSeccion></span>}
+            {gestiona && (
+              <span className="ml-auto flex items-center gap-1">
+                <Button size="xs" variant="ghost" color="muted" type="button" onClick={() => setDialogo({ tipo: "actividad", actividad: a })}>Modificar</Button>
+                <BotonSeccion onClick={() => setDialogo({ tipo: "resultado", actividad: a })}>Registrar resultado</BotonSeccion>
+              </span>
+            )}
           </header>
           <ListaDatos>
             <Par label="Descripción">{a.descripcion}</Par>

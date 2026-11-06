@@ -4,7 +4,7 @@ import { TableScreenHeader, TableScreenTitle } from "@/components/layout/table-s
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ClockCounterClockwiseIcon, DotsThreeVerticalIcon, FloppyDiskIcon, LockIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ClipboardTextIcon, ClockCounterClockwiseIcon, DotsThreeVerticalIcon, FilePdfIcon, FileTextIcon, FileUploadOutlinedIcon, FloppyDiskIcon, LockIcon, PaperclipIcon, ProhibitIcon, SpinnerIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
 import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
@@ -52,12 +52,12 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
                   <DotsThreeVerticalIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => documento(descargarPlan(piar.id))}>Generar borrador del PIAR</DropdownMenuItem>
-                  {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "emitir" })}>Emitir versión del PIAR</DropdownMenuItem>}
-                  {gestiona && <DropdownMenuItem disabled={!piar.ajustes.length} onClick={() => setDialogo({ tipo: "evidencia" })}>Registrar evidencia directa</DropdownMenuItem>}
-                  {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "antecedente" })}>Registrar antecedente</DropdownMenuItem>}
-                  {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "externo" })}>Incorporar informe externo</DropdownMenuItem>}
-                  {access.puedeAnular && !piar.anulacion && estado !== "CERRADO" && <DropdownMenuItem onClick={() => setDialogo({ tipo: "anular" })}>Anular PIAR</DropdownMenuItem>}
+                  <DropdownMenuItem onClick={() => documento(descargarPlan(piar.id))}><FileTextIcon />Generar borrador del PIAR</DropdownMenuItem>
+                  {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "emitir" })}><FilePdfIcon />Emitir versión del PIAR</DropdownMenuItem>}
+                  {gestiona && <DropdownMenuItem disabled={!piar.ajustes.length} onClick={() => setDialogo({ tipo: "evidencia" })}><PaperclipIcon />Registrar evidencia directa</DropdownMenuItem>}
+                  {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "antecedente" })}><ClipboardTextIcon />Registrar antecedente</DropdownMenuItem>}
+                  {gestiona && <DropdownMenuItem onClick={() => setDialogo({ tipo: "externo" })}><FileUploadOutlinedIcon />Incorporar informe externo</DropdownMenuItem>}
+                  {access.puedeAnular && !piar.anulacion && estado !== "CERRADO" && <DropdownMenuItem onClick={() => setDialogo({ tipo: "anular" })}><ProhibitIcon />Anular PIAR</DropdownMenuItem>}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

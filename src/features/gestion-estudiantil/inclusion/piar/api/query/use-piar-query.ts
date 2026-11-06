@@ -31,8 +31,9 @@ export function toPiarFilters(search: string, f: PiarFiltros) {
   }
 }
 
-export function usePiarListaQuery(params: { search: string; filtros: PiarFiltros; pageIndex: number; pageSize: number }) {
+export function usePiarListaQuery(params: { search: string; filtros: PiarFiltros; pageIndex: number; pageSize: number }, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: piarKeys.lista(params),
     queryFn: async () => {
       const rows = await evalCol.postRows<PiarRow>(`${PIAR}/query`, {

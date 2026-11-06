@@ -4,11 +4,11 @@ import { FileUploadOutlinedIcon, PencilIcon } from "@/components/ui/icons"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { descargarActa } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
-import type { VersionActual } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
+import type { Participante, VersionActual } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { BotonQuitar, BotonSeccion, EnlaceArchivo } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 
-function TablaParticipantes({ version, quitable, onQuitar }: { version: VersionActual; quitable: boolean; onQuitar: (id: number) => void }) {
+function TablaParticipantes({ version, quitable, onQuitar, onEditar }: { version: VersionActual; quitable: boolean; onQuitar: (id: number) => void; onEditar: (p: Participante) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -28,7 +28,12 @@ function TablaParticipantes({ version, quitable, onQuitar }: { version: VersionA
               <td className="px-2 py-2">{p.otra_calidad ?? p.calidad.nombre}</td>
               <td className="px-2 py-2">{p.debe_firmar ? "Sí" : "No"}</td>
               <td className="px-2 py-2">{p.estado_firma === "FIRMO" ? "Firmó" : p.debe_firmar ? "Pendiente" : "—"}</td>
-              <td className="px-2 py-2 text-right">{quitable && <BotonQuitar onClick={() => onQuitar(p.id)} />}</td>
+              <td className="px-2 py-2 text-right">{quitable && (
+                  <span className="inline-flex items-center gap-1">
+                    <Button size="xs" variant="ghost" color="muted" type="button" onClick={() => onEditar(p)}>Modificar</Button>
+                    <BotonQuitar onClick={() => onQuitar(p.id)} />
+                  </span>
+                )}</td>
             </tr>
           ))}
           {!version.participantes.length && <tr><td colSpan={5} className="px-2 py-3 text-muted-foreground">Sin participantes.</td></tr>}
@@ -43,6 +48,8 @@ export function SeccionActa({ ficha }: { ficha: FichaPiar }) {
   if (!version) return null
   const borrador = estado === "BORRADOR"
   const bloqueado = !borrador || !gestiona
+  // Un cambio sustancial abre una versión Pendiente de acuerdo que también recoge sus firmas (fn_piar_validar_version_preparable).
+  const preparable = gestiona && ["VERSION_TRABAJO", "PENDIENTE_ACUERDO"].includes(version.estado.codigo)
   return (
     <SeccionPlegable
       defaultAbierta={borrador}
@@ -70,9 +77,9 @@ export function SeccionActa({ ficha }: { ficha: FichaPiar }) {
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <strong className="font-medium">Participantes y firmantes</strong>
-          {gestiona && borrador && <BotonSeccion onClick={() => setDialogo({ tipo: "participante" })}>Agregar participante</BotonSeccion>}
+          {preparable && <BotonSeccion onClick={() => setDialogo({ tipo: "participante" })}>Agregar participante</BotonSeccion>}
         </div>
-        <TablaParticipantes version={version} quitable={gestiona && borrador} onQuitar={(id) => quitar(`/participantes/${id}/eliminar`)} />
+        <TablaParticipantes version={version} quitable={preparable} onQuitar={(id) => quitar(`/participantes/${id}/eliminar`)} onEditar={(fila) => setDialogo({ tipo: "participante", fila })} />
       </div>
       {version.acta && <p>Acta firmada: <EnlaceArchivo archivo={version.acta} /></p>}
       {version.copia && <p className="text-muted-foreground">Copia entregada a la familia el {formatFecha(version.copia.fecha)} ({version.copia.medio}).</p>}

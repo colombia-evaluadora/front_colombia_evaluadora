@@ -8,6 +8,7 @@ import { useParticipantesOpcionQuery } from "@/features/gestion-estudiantil/incl
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import type { DialogoProps } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { nulo, texto } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
+import { claveElemento, textosFaltantes } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
   const ejecutar = useEjecutarPiar()
@@ -27,16 +28,33 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
       const firmo = firmas.find((f) => f.codigo === "FIRMO")?.value
       const otra = calidades.find((c) => c.codigo === "OTRA")?.value
       const codigoTipo = (value: string) => tiposPersona.find((t) => t.value === value)?.codigo
+      const fila = dialogo.fila
       return (
         <FormDialogPiar
           {...comunes}
-          titulo="Agregar participante — Acta de acuerdo"
-          confirmar="Agregar"
-          inicial={{ firmar: "SI", firma: firmas.find((f) => f.codigo === "PENDIENTE")?.value }}
-          archivos={{ label: "Firma cargada", max: 1, ayuda: "Opcional · PDF, JPG o PNG, máximo 10 MB" }}
+          titulo={fila ? `Modificar participante — ${fila.nombre}` : "Agregar participante — Acta de acuerdo"}
+          confirmar={fila ? "Guardar" : "Agregar"}
+          inicial={{
+            tipo: tiposPersona.find((t) => t.codigo === fila?.tipo_persona)?.value,
+            calidad: fila?.calidad.id.toString(),
+            otra: fila?.otra_calidad,
+            compromisos: fila?.compromisos,
+            firmar: fila && !fila.debe_firmar ? "NO" : "SI",
+            firma: firmas.find((f) => f.codigo === (fila?.estado_firma ?? "PENDIENTE"))?.value,
+            fecha_firma: fila?.fecha_firma,
+            externo_nombre: fila?.tipo_persona === "PERSONA_EXTERNA" ? fila.nombre : "",
+            externo_id: fila?.externo_identificacion,
+            persona: "",
+          }}
+          archivos={{
+            label: "Documento firmado",
+            max: 1,
+            ayuda: fila?.fk_tarchivo_firma ? "Ya tiene un documento; cárguelo solo para reemplazarlo." : "Requerido con Firmó · PDF o imagen, máximo 10 MB",
+            exigir: (v) => (v.firmar === "SI" && v.firma === firmo && !fila?.fk_tarchivo_firma ? "Para marcar Firmó, adjunte el documento firmado." : null),
+          }}
           campos={[
             { name: "tipo", label: "Tipo de persona", kind: "select", required: true, options: tiposPersona },
-            { name: "persona", label: "Persona registrada", kind: "select", required: true, visible: (v) => Boolean(v.tipo) && v.tipo !== externo, options: personas.map((p, i) => ({ value: String(i), label: p.detalle ? `${p.nombre} · ${p.detalle}` : p.nombre })) },
+            { name: "persona", label: "Persona registrada", kind: "select", required: !fila, visible: (v) => !fila && Boolean(v.tipo) && v.tipo !== externo, options: (v) => personas.flatMap((p, i) => (p.tipo_persona === codigoTipo(v.tipo) ? [{ value: String(i), label: p.detalle ? `${p.nombre} · ${p.detalle}` : p.nombre }] : [])) },
             { name: "externo_nombre", label: "Nombre", kind: "texto", required: true, max: 200, visible: (v) => v.tipo === externo },
             { name: "externo_id", label: "Identificación", kind: "texto", max: 50, visible: (v) => v.tipo === externo },
             { name: "calidad", label: "Calidad en que participa", kind: "select", required: true, options: calidades },
@@ -48,10 +66,10 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
           ]}
           onSubmit={(v, archivos) => {
             const esExterno = v.tipo === externo
-            const persona = esExterno ? null : personas[Number(v.persona)]
-            if (persona && persona.tipo_persona !== codigoTipo(v.tipo)) throw new Error("La persona elegida no corresponde al tipo de persona.")
+            const persona = esExterno ? null : fila ?? personas[Number(v.persona)]
+            if (!fila && persona && persona.tipo_persona !== codigoTipo(v.tipo)) throw new Error("La persona elegida no corresponde al tipo de persona.")
             return ejecutar("post", `/versiones/${version?.id}/participantes`, {
-              PARTICIPANTE: null,
+              PARTICIPANTE: fila?.id ?? null,
               FK_IPO_PERSONA: Number(v.tipo),
               FK_FUNCIONARIO: persona?.fk_tfuncionario ?? null,
               FK_ESTUDIANTE: persona?.fk_testudiante ?? null,
@@ -64,7 +82,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
               DEBE_FIRMAR: v.firmar === "SI",
               FK_ESTADO_FIRMA: v.firmar === "SI" ? nulo(v.firma) : null,
               FECHA_FIRMA: v.firma === firmo ? v.fecha_firma : null,
-              FK_ARCHIVO_FIRMA: archivos[0] ?? null,
+              FK_ARCHIVO_FIRMA: v.firmar === "SI" && v.firma === firmo ? (archivos[0] ?? fila?.fk_tarchivo_firma ?? null) : null,
             })
           }}
         />
@@ -99,7 +117,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
             </DialogHeader>
             <p className="text-sm">Para activarlo falta:</p>
             <ul className="grid gap-2 text-sm">
-              {(piar.activacion_faltantes ?? []).map((f) => (
+              {textosFaltantes(piar.activacion_faltantes).map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <WarningCircleIcon className="mt-0.5 size-4 shrink-0 text-yellow" />
                   {f}
@@ -147,8 +165,9 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
               QUE_CAMBIO: v.que,
               POR_QUE: v.porque,
               APLICA_DESDE: v.aplica,
-              VALORES_ANTERIORES: { [v.elemento]: v.antes },
-              VALORES_NUEVOS: { [v.elemento]: v.ahora },
+              // query-service recibe los JSONB como cadena JSON.
+              VALORES_ANTERIORES: JSON.stringify({ [claveElemento(v.elemento)]: v.antes }),
+              VALORES_NUEVOS: JSON.stringify({ [claveElemento(v.elemento)]: v.ahora }),
               FK_ARCHIVO_SOPORTE: archivos[0] ?? null,
             })
           }

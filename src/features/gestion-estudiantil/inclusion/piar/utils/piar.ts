@@ -19,6 +19,7 @@ export interface AccesoPiar {
   registraAtencion: boolean
   /** Rector, coordinador y, por menú, territoriales (fn_piar_gate_informe); orientación no. */
   veInforme: boolean
+  veListado: boolean
   /** Ajustes y seguimiento: orientación o el docente al que se le concedió edición en el menú (D3). */
   puedeEditarAjustes: boolean
 }
@@ -29,7 +30,9 @@ export function accesoPiar(roles: string[], permiso: { puedeCrear: boolean; pued
     veAvisoSinPiar: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
     veOrientacion: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
     registraAtencion: permiso.puedeEditar && (orientacion || roles.includes("CEVAL-RECTOR")),
-    veInforme: ["CEVAL-RECTOR", "CEVAL-COORDINADOR"].some((r) => roles.includes(r)),
+    veListado: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR", "CEVAL-DOCENTE"].some((r) => roles.includes(r)),
+    // El territorial entra al menú solo por el informe (V603): quien no es de establecimiento lo ve.
+    veInforme: !["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-DOCENTE"].some((r) => roles.includes(r)) || ["CEVAL-RECTOR", "CEVAL-COORDINADOR"].some((r) => roles.includes(r)),
     puedeGestionar: orientacion && permiso.puedeEditar,
     puedeAnular: permiso.puedeEditar && (roles.includes("CEVAL-COORDINADOR") || roles.includes("CEVAL-RECTOR")),
     puedeEditarAjustes: permiso.puedeEditar && (orientacion || roles.includes("CEVAL-DOCENTE")),
@@ -60,3 +63,26 @@ export const sinAjustesTodas = (p: PiarDetalle) =>
 /** Al elegir, el combo reporta el valor o la etiqueta como texto: eso no es una búsqueda, filtraría a cero y perdería la selección. */
 export const esOpcionElegida = (texto: string, opciones: { value: string; label: string }[]) =>
   opciones.some((o) => o.value === texto || o.label === texto)
+
+/** CIC.7: fn_piar_activacion_faltantes devuelve códigos; el usuario lee qué hacer. */
+const TEXTO_FALTANTE: Record<string, string> = {
+  COBERTURA_INCOMPLETA: "Revisar la cobertura de las asignaturas pendientes.",
+  SIN_AJUSTE_APLICABLE: "Registrar al menos un ajuste con su asignatura.",
+  AJUSTES_POR_MAPEAR: "Asignar una asignatura a los ajustes Por mapear.",
+  SIN_ACTA_FIRMADA: "Cargar el acta de acuerdo firmada.",
+  FIRMAS_PENDIENTES: "Registrar la firma, con su documento, de orientación, un docente de una asignatura con ajustes, rector y acudiente.",
+}
+
+export const textosFaltantes = (codigos: string[] | null | undefined) => (codigos ?? []).map((c) => TEXTO_FALTANTE[c] ?? "Completar los datos del PIAR.")
+
+/** El acta se carga cuando es lo único que falta; lo demás se explica antes de pedir el archivo. */
+export const soloFaltaActa = (codigos: string[] | null | undefined) => (codigos ?? []).every((c) => c === "SIN_ACTA_FIRMADA")
+
+/** query-service solo admite claves A-Z, 0-9 y _ en un JSON: «Ajuste de Matemáticas» viaja como AJUSTE_DE_MATEMATICAS. */
+export const claveElemento = (texto: string) =>
+  texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/^(?=\d)/, "E_")
+
+export const textoElemento = (clave: string) => {
+  const t = clave.replace(/_/g, " ").toLowerCase()
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}

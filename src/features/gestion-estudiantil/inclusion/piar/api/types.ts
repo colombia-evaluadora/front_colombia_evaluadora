@@ -98,6 +98,12 @@ export interface Cobertura {
 export interface Participante {
   id: number
   tipo_persona: string
+  fk_tfuncionario: number | null
+  fk_testudiante: number | null
+  fk_tpadre: number | null
+  externo_identificacion: string | null
+  fecha_firma: string | null
+  fk_tarchivo_firma: number | null
   nombre: string | null
   calidad: { id: number; codigo: string; nombre: string }
   otra_calidad: string | null

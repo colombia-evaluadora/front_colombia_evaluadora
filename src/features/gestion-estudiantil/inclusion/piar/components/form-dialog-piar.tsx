@@ -17,7 +17,8 @@ export interface CampoPiar {
   required?: boolean
   min?: number
   max?: number
-  options?: { value: string; label: string }[]
+  /** Con función, dependen de lo elegido en otros campos. */
+  options?: { value: string; label: string }[] | ((valores: Record<string, string>) => { value: string; label: string }[])
   placeholder?: string
   /** Ocupa las dos columnas del formulario. */
   ancho?: boolean
@@ -29,6 +30,8 @@ export interface ArchivosPiar {
   label: string
   max: number
   required?: boolean
+  /** Obligatorio según lo elegido en el formulario, con el mensaje a mostrar. */
+  exigir?: (valores: Record<string, string>) => string | null
   ayuda: string
 }
 
@@ -96,6 +99,11 @@ export function FormDialogPiar({
         setNotice({ id: Date.now(), message: `${archivos.label} es obligatorio.` })
         return
       }
+      const exigido = files.length === 0 ? archivos?.exigir?.(value) : null
+      if (exigido) {
+        setNotice({ id: Date.now(), message: exigido })
+        return
+      }
       setPending(true)
       try {
         const pks = await Promise.all(files.map(subirSoportePiar))
@@ -159,7 +167,7 @@ export function FormDialogPiar({
                         ) : c.kind === "fecha" ? (
                           <field.DateField label={c.label} required={c.required} />
                         ) : c.kind === "select" ? (
-                          <field.SelectField label={c.label} required={c.required} options={c.options ?? []} placeholder="Seleccione" />
+                          <field.SelectField label={c.label} required={c.required} options={typeof c.options === "function" ? c.options(valores) : (c.options ?? [])} placeholder="Seleccione" />
                         ) : (
                           <field.TextField label={c.label} required={c.required} maxLength={c.max} showCounter={Boolean(c.max)} placeholder={c.placeholder} />
                         )

@@ -10,7 +10,7 @@ import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api
 import type { Dialogo } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { datosAlBackend, datosDesdePiar, esquemaDatos } from "@/features/gestion-estudiantil/inclusion/piar/utils/datos-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
-import { esEditable } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { esEditable, soloFaltaActa } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 interface Aviso {
   id: number
@@ -67,7 +67,7 @@ export function useFichaPiar(piar: PiarDetalle) {
 
   /** Con requisitos pendientes distintos del acta se explica qué falta (CIC.7) en vez de pedir el archivo. */
   const abrirActivacion = () =>
-    setDialogo((piar.activacion_faltantes ?? []).some((f) => !/acta/i.test(f)) ? { tipo: "bloqueos" } : { tipo: "acta" })
+    setDialogo(soloFaltaActa(piar.activacion_faltantes) ? { tipo: "acta" } : { tipo: "bloqueos" })
 
   // Viene del menú ⁞ del listado (LIS.3).
   useEffect(() => {
