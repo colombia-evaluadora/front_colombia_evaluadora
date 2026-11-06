@@ -1,23 +1,34 @@
+import type { ReactNode } from "react"
 import { useStore } from "@tanstack/react-form"
 
 import { SelectItemsDialog } from "@/components/select-items-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Field, FieldDescription, FieldError } from "@/components/ui/field"
+import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+  ComboboxLabel,
+} from "@/components/ui/combobox"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { InfoIcon, LockIcon } from "@/components/ui/icons"
+import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { isFieldInvalid, toFieldErrors, useFieldContext, useFormDisabled } from "@/lib/forms"
 import { cn } from "@/lib/utils"
 
-import type {
-  CampoOpcion,
-  ReglaOpcion,
+import {
+  bloqueTexto,
+  type BloqueOpcion,
+  type CampoOpcion,
+  type ReglaOpcion,
 } from "@/features/administration/criterios-prioridad/api/types/criterio-prioridad"
 
 /*
  * Campos propios del formulario de criterio, montados con `useFieldContext`
- * dentro de `<form.AppField>`: el campo y la regla son radios a la vista (hay
- * que poder leer por qué una regla no aplica) y los valores, el selector
- * múltiple de la app.
+ * dentro de `<form.AppField>`.
  */
 
 function useCampoState<T>() {
@@ -33,69 +44,111 @@ function useCampoState<T>() {
   }
 }
 
-function Encabezado({ id, children }: { id: string; children: React.ReactNode }) {
+/** Etiqueta con su ayuda en un ícono (i). */
+export function LabelAyuda({ children, ayuda }: { children: ReactNode; ayuda: string }) {
   return (
-    <span id={id} className="text-sm font-medium">
+    <span className="inline-flex items-center gap-1.5">
       {children}
+      <Tooltip>
+        <TooltipTrigger
+          render={<span tabIndex={0} aria-label={ayuda} className="inline-flex text-muted-foreground" />}
+        >
+          <InfoIcon className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">{ayuda}</TooltipContent>
+      </Tooltip>
     </span>
   )
 }
 
-const tipoTexto = (campo: CampoOpcion) =>
-  campo.tipo === "SI_NO"
-    ? "Sí/No"
-    : campo.categoria
-      ? `Selector${campo.esOrdinal ? " · lista ordinal" : ""}`
-      : "Selector"
+const GRUPOS = ["Estudiante", "Acudiente", "Inscripción"] as const
 
-/** Campo del bloque elegido. Sin bloque, una ayuda en su lugar. */
-export function CampoRadios({ campos, sinBloque }: { campos: CampoOpcion[]; sinBloque: boolean }) {
-  const { field, value, invalid, errors, disabled } = useCampoState<number>()
+/** 2.2–2.9 son del estudiante; 2.10–2.13, del acudiente. */
+function grupoDe(bloque: BloqueOpcion): (typeof GRUPOS)[number] {
+  if (bloque.codigo === "INSCRIPCION") return "Inscripción"
+  return Number(bloque.codigo.split(".")[1]) >= 10 ? "Acudiente" : "Estudiante"
+}
+
+/** Bloque con búsqueda, agrupado por Estudiante, Acudiente e Inscripción. */
+export function BloqueSelect({ bloques }: { bloques: BloqueOpcion[] }) {
+  const { field, value, invalid, errors, disabled } = useCampoState<string>()
+  const items = Object.fromEntries(bloques.map((b) => [b.codigo, bloqueTexto(b)]))
   return (
-    <Field data-invalid={invalid} className="gap-2" aria-labelledby="criterio-campo-label">
-      <Encabezado id="criterio-campo-label">Campo*</Encabezado>
-      {sinBloque ? (
-        <FieldDescription>Elija primero el bloque.</FieldDescription>
-      ) : (
-        <RadioGroup
-          value={value || null}
-          onValueChange={(next) => {
-            field.handleChange(Number(next))
-            field.handleBlur()
-          }}
-          disabled={disabled}
-          className="grid gap-2 sm:grid-cols-2"
-        >
-          {campos.map((campo) => (
-            <label
-              key={campo.pkCampo}
-              className={cn(
-                "flex cursor-pointer items-start gap-2.5 rounded-md border border-border px-3 py-2.5 text-sm",
-                value === campo.pkCampo && "border-primary/40 bg-primary/5",
-                disabled && "cursor-not-allowed opacity-70",
-              )}
-            >
-              <RadioGroupItem value={campo.pkCampo} aria-invalid={invalid} className="mt-0.5" />
-              <span className="flex flex-col gap-0.5">
-                <span>{campo.nombre}</span>
-                <span className="text-xs text-muted-foreground">{tipoTexto(campo)}</span>
-              </span>
-            </label>
-          ))}
-        </RadioGroup>
-      )}
+    <Field variant="outlined" data-invalid={invalid} data-disabled={disabled || undefined}>
+      <FieldLabel htmlFor="criterio-bloque">
+        <LabelAyuda ayuda="Sección de la matrícula (2.2 a 2.13) o la Inscripción donde está el campo.">
+          Bloque*
+        </LabelAyuda>
+      </FieldLabel>
+      <ComboboxField
+        items={items}
+        value={value || null}
+        disabled={disabled}
+        onValueChange={(next) => {
+          if (next == null) return
+          field.handleChange(next)
+          field.handleBlur()
+        }}
+      >
+        <ComboboxFieldTrigger id="criterio-bloque" variant="outlined" aria-invalid={invalid} className="w-full">
+          <ComboboxFieldValue placeholder="Seleccione" />
+        </ComboboxFieldTrigger>
+        <ComboboxFieldContent>
+          {GRUPOS.map((grupo) => {
+            const delGrupo = bloques.filter((b) => grupoDe(b) === grupo)
+            if (delGrupo.length === 0) return null
+            return (
+              <ComboboxGroup key={grupo}>
+                <ComboboxLabel>{grupo}</ComboboxLabel>
+                {delGrupo.map((b) => (
+                  <ComboboxFieldItem key={b.codigo} value={b.codigo}>
+                    {bloqueTexto(b)}
+                  </ComboboxFieldItem>
+                ))}
+              </ComboboxGroup>
+            )
+          })}
+        </ComboboxFieldContent>
+      </ComboboxField>
       {invalid && <FieldError errors={errors} />}
     </Field>
   )
 }
 
-/** Reglas de la lista Regla de prioridad; las que el campo no admite, deshabilitadas con su motivo. */
-export function ReglaRadios({ reglas, sinCampo }: { reglas: ReglaOpcion[]; sinCampo: boolean }) {
+const NOMBRE_ORDEN = "los órdenes"
+
+/** "Talento del estudiante es un selector: Es Sí y los órdenes no aplican." */
+export function reglaResumen(campo: CampoOpcion) {
+  const noAplican = campo.reglas.filter((r) => r.motivo != null)
+  if (noAplican.length === 0) return null
+  const ordenes = noAplican.filter((r) => r.codigo === "MENOR_A_MAYOR" || r.codigo === "MAYOR_A_MENOR")
+  const nombres = noAplican.filter((r) => !ordenes.includes(r)).map((r) => r.nombre)
+  if (ordenes.length === 2) nombres.push(NOMBRE_ORDEN)
+  else nombres.push(...ordenes.map((r) => r.nombre))
+  const lista = nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}` : nombres[0]
+  const plural = nombres.length > 1 || nombres[0] === NOMBRE_ORDEN
+  const sujeto =
+    campo.tipo === "SI_NO"
+      ? "El campo es Sí/No"
+      : campo.categoria == null
+        ? `${campo.nombre} no usa una lista de valores`
+        : `${campo.nombre} es un selector${campo.esOrdinal ? " de lista ordinal" : ""}`
+  return `${sujeto}: ${lista} ${plural ? "no aplican" : "no aplica"}.`
+}
+
+/** Reglas en línea; las que el campo no admite van deshabilitadas con su motivo. */
+export function ReglaRadios({ campo }: { campo: CampoOpcion | undefined }) {
   const { field, value, invalid, errors, disabled } = useCampoState<number>()
+  const reglas: ReglaOpcion[] = campo?.reglas ?? []
+  const resumen = campo ? reglaResumen(campo) : null
   return (
     <Field data-invalid={invalid} className="gap-2" aria-labelledby="criterio-regla-label">
-      <Encabezado id="criterio-regla-label">Regla*</Encabezado>
-      {sinCampo ? (
+      <span id="criterio-regla-label" className="text-sm font-medium">
+        <LabelAyuda ayuda="Cómo se evalúa el campo. Depende de su tipo: las reglas de orden solo aplican a listas ordinales.">
+          Regla*
+        </LabelAyuda>
+      </span>
+      {!campo ? (
         <FieldDescription>Elija primero el campo: la regla depende de su tipo.</FieldDescription>
       ) : (
         <RadioGroup
@@ -105,85 +158,59 @@ export function ReglaRadios({ reglas, sinCampo }: { reglas: ReglaOpcion[]; sinCa
             field.handleBlur()
           }}
           disabled={disabled}
-          className="gap-1.5"
+          className="flex flex-wrap gap-x-5 gap-y-2"
         >
           {reglas.map((regla) => {
             const noAplica = regla.motivo != null
             return (
               <label
                 key={regla.pkRegla}
+                title={regla.motivo ?? undefined}
                 className={cn(
-                  "flex items-start gap-2.5 rounded-md px-1 py-1 text-sm",
-                  noAplica || disabled ? "cursor-not-allowed" : "cursor-pointer",
+                  "flex items-center gap-2 text-sm",
+                  noAplica ? "cursor-not-allowed text-muted-foreground opacity-70" : "cursor-pointer",
                 )}
               >
-                <RadioGroupItem
-                  value={regla.pkRegla}
-                  disabled={noAplica}
-                  aria-invalid={invalid}
-                  className="mt-0.5"
-                />
-                <span className="flex flex-col gap-0.5">
-                  <span className={noAplica ? "text-muted-foreground" : undefined}>
-                    {regla.nombre}
-                  </span>
-                  {noAplica && (
-                    <span className="text-xs text-muted-foreground">{regla.motivo}</span>
-                  )}
-                </span>
+                <RadioGroupItem value={regla.pkRegla} disabled={noAplica} aria-invalid={invalid} />
+                {regla.nombre}
               </label>
             )
           })}
         </RadioGroup>
       )}
-      {invalid && <FieldError errors={errors} />}
+      {invalid ? (
+        <FieldError errors={errors} />
+      ) : (
+        resumen && <FieldDescription>{resumen}</FieldDescription>
+      )}
     </Field>
   )
 }
 
 /** Valores de la lista del campo, solo con Es uno de. */
-export function ValoresSelect({
-  opciones,
-}: {
-  opciones: { pkListaValor: number; nombre: string }[]
-}) {
-  const { field, value, invalid, errors, disabled } = useCampoState<number[]>()
+export function ValoresSelect({ opciones }: { opciones: { pkListaValor: number; nombre: string }[] }) {
+  const { field, value, invalid, errors } = useCampoState<number[]>()
   const seleccion = value ?? []
   return (
     <Field data-invalid={invalid} className="gap-2" aria-labelledby="criterio-valores-label">
-      <Encabezado id="criterio-valores-label">Valores*</Encabezado>
-      {disabled ? (
-        // El selector no tiene modo de solo lectura: se muestran los elegidos.
-        <ul className="flex flex-wrap gap-1.5">
-          {opciones
-            .filter((o) => seleccion.includes(o.pkListaValor))
-            .map((o) => (
-              <li key={o.pkListaValor}>
-                <Badge variant="soft" color="neutral">
-                  {o.nombre}
-                </Badge>
-              </li>
-            ))}
-        </ul>
-      ) : (
-        <SelectItemsDialog
-          id="criterio-valores"
-          items={opciones.map((o) => ({ id: o.pkListaValor, label: o.nombre }))}
-          value={seleccion}
-          onChange={(ids) => {
-            field.handleChange(ids)
-            field.handleBlur()
-          }}
-          invalid={invalid}
-          placeholder="Seleccione"
-          dialogTitle="Seleccionar valores"
-          searchPlaceholder="Buscar valor..."
-          emptyMessage="No se encontraron valores."
-          selectedCountLabel={(n) =>
-            n === 1 ? "1 valor seleccionado" : `${n} valores seleccionados`
-          }
-        />
-      )}
+      <span id="criterio-valores-label" className="text-sm font-medium">
+        Valores*
+      </span>
+      <SelectItemsDialog
+        id="criterio-valores"
+        items={opciones.map((o) => ({ id: o.pkListaValor, label: o.nombre }))}
+        value={seleccion}
+        onChange={(ids) => {
+          field.handleChange(ids)
+          field.handleBlur()
+        }}
+        invalid={invalid}
+        placeholder="Seleccione"
+        dialogTitle="Seleccionar valores"
+        searchPlaceholder="Buscar valor..."
+        emptyMessage="No se encontraron valores."
+        selectedCountLabel={(n) => `${n} de ${opciones.length} seleccionados`}
+      />
       {invalid ? (
         <FieldError errors={errors} />
       ) : (
@@ -193,38 +220,62 @@ export function ValoresSelect({
   )
 }
 
-/** Activo / Inactivo, con el efecto de desactivar (Regla 16). Va fuera del bloque protegido. */
+/** Activo / Inactivo (Regla 16). Va fuera del bloque protegido: en uso, es lo único editable. */
 export function EstadoCriterio({ disabled }: { disabled?: boolean }) {
   const { field, value } = useCampoState<boolean>()
-  const checked = Boolean(value)
   return (
-    <label
-      htmlFor="criterio-estado"
-      className={cn(
-        "flex items-start gap-3 rounded-md border px-3 py-2.5",
-        checked ? "border-border" : "border-dashed border-border bg-muted/40",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
-      )}
-    >
-      <Switch
-        id="criterio-estado"
-        size="sm"
-        round
-        className="mt-0.5"
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(next) => !disabled && field.handleChange(next)}
-      />
-      <span className="flex flex-col gap-0.5 text-sm">
-        <span className={cn("font-medium", !checked && "text-muted-foreground")}>
-          {checked ? "Activo" : "Inactivo"}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {checked
-            ? "El Rector puede elegirlo en la Configuración de la admisión. Si lo desactiva, deja de ofrecerse; los períodos que ya lo usan no cambian."
-            : "No se ofrece en la Configuración de la admisión. Los períodos que ya lo usan no cambian."}
-        </span>
+    <Field className="gap-2" aria-labelledby="criterio-estado-label">
+      <span id="criterio-estado-label" className="text-sm font-medium">
+        Estado*
       </span>
-    </label>
+      <RadioGroup
+        value={value ? "A" : "I"}
+        onValueChange={(next) => field.handleChange(next === "A")}
+        disabled={disabled}
+        className="flex flex-wrap gap-x-5 gap-y-2"
+      >
+        {(
+          [
+            ["A", "Activo"],
+            ["I", "Inactivo"],
+          ] as const
+        ).map(([v, texto]) => (
+          <label
+            key={v}
+            className={cn("flex items-center gap-2 text-sm", disabled ? "cursor-not-allowed" : "cursor-pointer")}
+          >
+            <RadioGroupItem value={v} />
+            {texto}
+          </label>
+        ))}
+      </RadioGroup>
+      {!value && (
+        <FieldDescription>
+          Desactivado, deja de ofrecerse para configuraciones de admisión nuevas. Los períodos que ya lo usan
+          no cambian.
+        </FieldDescription>
+      )}
+    </Field>
+  )
+}
+
+/** Dato protegido (en uso o ver detalle): se muestra con candado. */
+export function CampoBloqueado({
+  label,
+  valor,
+  className,
+}: {
+  label: ReactNode
+  valor: string
+  className?: string
+}) {
+  return (
+    <Field variant="outlined" data-disabled className={className}>
+      <FieldLabel>{label}</FieldLabel>
+      <div className="relative">
+        <Input value={valor} disabled readOnly title={valor} className="pr-9" />
+        <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
+    </Field>
   )
 }

@@ -225,6 +225,18 @@ const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
   "CriteriosPrioridadPage"
 )
+const CriterioNuevoPage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterio-form-page"),
+  "CriterioNuevoPage"
+)
+const CriterioModificarPage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterio-form-page"),
+  "CriterioModificarPage"
+)
+const CriterioDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterio-form-page"),
+  "CriterioDetallePage"
+)
 const ParametrosEdadPage = lazyRouteComponent(
   () => import("@/features/administration/parametros-edad/pages/parametros-edad-page"),
   "ParametrosEdadPage"
@@ -848,6 +860,35 @@ export const criteriosPrioridadRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Criterios de prioridad" }],
   },
   component: CriteriosPrioridadPage,
+})
+
+const CRITERIOS_CRUMB = { label: "Criterios de prioridad", to: paths.app.criteriosPrioridad.getHref() }
+
+export const criterioPrioridadNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criterioPrioridadNuevo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CRITERIOS_CRUMB, { label: "Nuevo criterio" }],
+  },
+  component: CriterioNuevoPage,
+})
+
+export const criterioPrioridadDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criterioPrioridadDetalle.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CRITERIOS_CRUMB, { label: "Ver detalle" }],
+  },
+  component: CriterioDetallePage,
+})
+
+export const criterioPrioridadModificarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criterioPrioridadModificar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CRITERIOS_CRUMB, { label: "Modificar" }],
+  },
+  component: CriterioModificarPage,
 })
 
 export const parametrosEdadRoute = createRoute({
@@ -1730,6 +1771,9 @@ const routeTree = rootRoute.addChildren([
     listasValorRoute,
     areasOficialesRoute,
     criteriosPrioridadRoute,
+    criterioPrioridadNuevoRoute,
+    criterioPrioridadDetalleRoute,
+    criterioPrioridadModificarRoute,
     superadministradoresRoute,
     supervisoresTerritorialesRoute,
     supervisorTerritorialNuevoRoute,

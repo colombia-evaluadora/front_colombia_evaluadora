@@ -164,6 +164,18 @@ export const paths = {
       path: "administracion/criterios-prioridad",
       getHref: () => "/app/administracion/criterios-prioridad",
     },
+    criterioPrioridadNuevo: {
+      path: "administracion/criterios-prioridad/nuevo",
+      getHref: () => "/app/administracion/criterios-prioridad/nuevo",
+    },
+    criterioPrioridadDetalle: {
+      path: "administracion/criterios-prioridad/detalle/$criterioId",
+      getHref: (criterioId: number | string) => `/app/administracion/criterios-prioridad/detalle/${criterioId}`,
+    },
+    criterioPrioridadModificar: {
+      path: "administracion/criterios-prioridad/modificar/$criterioId",
+      getHref: (criterioId: number | string) => `/app/administracion/criterios-prioridad/modificar/${criterioId}`,
+    },
     parametrosEdad: {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
