@@ -24,6 +24,8 @@ const COLOR_ESTADO: Record<string, "warning" | "success"> = {
   ATENDIDA: "success",
 }
 
+const ETIQUETA_TIPO: Record<string, string> = { REMISION_ORIENTACION: "Remisión a orientación" }
+
 /** G.1.REP.3: las remisiones propias, solo con su estado (Regla 1). Los reportes de salud mental llegan con la Sección 9.6. */
 export function TabMisRemisiones() {
   const [tipo, setTipo] = useState("")
@@ -36,13 +38,13 @@ export function TabMisRemisiones() {
 
   // Hoy solo hay remisiones; los reportes de 9.6 traerán su filtro de servidor.
   const filas = data?.rows ?? []
-  const tipos = [...new Set(filas.map((f) => f.tipo))].map((t) => ({ value: t, label: t }))
+  const tipos = [...new Set(filas.map((f) => f.tipo))].map((t) => ({ value: t, label: ETIQUETA_TIPO[t] ?? t }))
 
   const columns: ColumnDef<MiRemisionRow>[] = [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
     { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
     { id: "grado", accessorKey: "grado_grupo", header: "Grado/Grupo", enableSorting: false },
-    { id: "tipo", accessorKey: "tipo", header: "Tipo", enableSorting: false },
+    { id: "tipo", header: "Tipo", enableSorting: false, cell: ({ row }) => ETIQUETA_TIPO[row.original.tipo] ?? row.original.tipo },
     {
       id: "estado",
       header: "Estado",
