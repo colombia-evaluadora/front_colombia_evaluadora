@@ -18,6 +18,7 @@ export const CATEGORIA_LABELS: Record<CategoriaNotificacion, string> = {
   ASISTENCIA: "Asistencia",
   INFORMES: "Informes",
   ESTABLECIMIENTO: "Establecimiento",
+  GESTION_ESTUDIANTIL: "Gestión estudiantil",
   SISTEMA: "Sistema",
 }
 
@@ -28,6 +29,7 @@ export const CATEGORIA_ICONS: Record<CategoriaNotificacion, typeof BellIcon> = {
   ASISTENCIA: ClipboardCheckIcon,
   INFORMES: FileTextIcon,
   ESTABLECIMIENTO: BuildingsIcon,
+  GESTION_ESTUDIANTIL: BellIcon,
   SISTEMA: GearIcon,
 }
 
