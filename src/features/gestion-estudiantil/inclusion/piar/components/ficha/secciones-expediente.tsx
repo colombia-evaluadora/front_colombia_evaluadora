@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { DotsThreeVerticalIcon, FileUploadOutlinedIcon } from "@/components/ui/icons"
+import { DotsThreeVerticalIcon, FileUploadOutlinedIcon, ListChecksIcon } from "@/components/ui/icons"
 
 import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
@@ -134,7 +134,7 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
                       <DotsThreeVerticalIcon />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setDialogo({ tipo: "cobertura", fila: c })}>Revisar cobertura</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDialogo({ tipo: "cobertura", fila: c })}><ListChecksIcon />Revisar cobertura</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -147,14 +147,15 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
   )
 }
 
-export function SeccionAjustes({ ficha: { piar, gestiona, setDialogo } }: { ficha: FichaPiar }) {
+export function SeccionAjustes({ ficha: { piar, gestiona, estado, setDialogo } }: { ficha: FichaPiar }) {
+  const borrador = gestiona && estado === "BORRADOR"
   return (
     <SeccionPlegable
       titulo={<Titulo>Ajustes razonables ({piar.ajustes.length})</Titulo>}
-      accion={gestiona && piar.fk_tpiar_origen == null && <BotonSeccion onClick={() => setDialogo({ tipo: "ajuste" })}>Agregar ajuste</BotonSeccion>}
+      accion={borrador && piar.fk_tpiar_origen == null && <BotonSeccion onClick={() => setDialogo({ tipo: "ajuste" })}>Agregar ajuste</BotonSeccion>}
       contentClassName="grid gap-3 p-4"
     >
-      {piar.ajustes.map((a, i) => <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} sensible puedeEditar={gestiona} onDialogo={setDialogo} />)}
+      {piar.ajustes.map((a, i) => <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} piarId={piar.id} editaAjuste={borrador} sensible puedeEditar={gestiona} onDialogo={setDialogo} />)}
       {!piar.ajustes.length && <Vacio>Sin ajustes.</Vacio>}
     </SeccionPlegable>
   )

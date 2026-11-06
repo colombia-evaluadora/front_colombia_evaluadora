@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { EyeIcon, FilePdfIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
 
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { AtencionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
@@ -29,10 +30,10 @@ export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar, onD
       header: () => null,
       cell: ({ row }) => (
         <MenuFila etiqueta={`Acciones de la atención de ${row.original.estudiante_nombre}`}>
-          <DropdownMenuItem onClick={() => onVer(row.original)}>Ver detalle</DropdownMenuItem>
-          <DropdownMenuItem disabled={!puedeRegistrar} onClick={() => onModificar(row.original)}>Modificar</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDescargar(row.original)}>Descargar ficha</DropdownMenuItem>
-          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}>Anular</DropdownMenuItem>}
+          <DropdownMenuItem onClick={() => onVer(row.original)}><EyeIcon />Ver detalle</DropdownMenuItem>
+          <DropdownMenuItem disabled={!puedeRegistrar} onClick={() => onModificar(row.original)}><PencilIcon />Modificar</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onDescargar(row.original)}><FilePdfIcon />Descargar ficha</DropdownMenuItem>
+          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}><ProhibitIcon />Anular</DropdownMenuItem>}
         </MenuFila>
       ),
     },

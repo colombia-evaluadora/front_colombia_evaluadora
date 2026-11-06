@@ -57,7 +57,7 @@ function VistaDocente({ ficha }: { ficha: FichaPiar }) {
       <p className="text-sm">Usted ve los ajustes de sus asignaturas en este PIAR: {asignaturas || "ninguna"}.</p>
       <div className="grid gap-3">
         {piar.ajustes.map((a, i) => (
-          <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} sensible={false} puedeEditar={access.puedeEditarAjustes && esEditable(estado)} onDialogo={setDialogo} />
+          <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} piarId={piar.id} editaAjuste={false} sensible={false} puedeEditar={access.puedeEditarAjustes && esEditable(estado)} onDialogo={setDialogo} />
         ))}
         {!piar.ajustes.length && <Vacio>No tiene ajustes en sus asignaturas.</Vacio>}
       </div>

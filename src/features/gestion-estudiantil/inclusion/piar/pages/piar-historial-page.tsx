@@ -14,6 +14,7 @@ import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-ma
 import { descargarActualizacion } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import { usePiarHistorialQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
+import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { textoElemento } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
@@ -75,6 +76,7 @@ export function PiarHistorialPage() {
   const { piarId } = useParams({ strict: false }) as { piarId: string }
   const { data, isPending, error, refetch } = usePiarHistorialQuery(Number(piarId))
   const ejecutar = useEjecutarPiar()
+  const { puedeGestionar } = usePiarAccess()
   const [soporte, setSoporte] = useState(false)
   const filas = aFilas(data?.versiones ?? [])
   const pendiente = data?.versiones?.find((v) => v.estado.codigo === "PENDIENTE_ACUERDO")
@@ -100,7 +102,7 @@ export function PiarHistorialPage() {
           <AvisoPiar>
             <span className="flex flex-wrap items-center gap-3">
               La versión {pendiente.numero} sigue pendiente de acuerdo hasta que se cargue el documento de actualización firmado.
-              <Button size="xs" variant="outline" color="muted" onClick={() => setSoporte(true)}>Cargar documento firmado</Button>
+              {puedeGestionar && <Button size="xs" variant="outline" color="muted" onClick={() => setSoporte(true)}>Cargar documento firmado</Button>}
             </span>
           </AvisoPiar>
         )}
@@ -115,7 +117,17 @@ export function PiarHistorialPage() {
             onSubmit={(_, archivos) => ejecutar("post", `/versiones/${pendiente.id}/soporte`, { FK_ARCHIVO: archivos[0] })}
           />
         )}
-        {data && (
+        {data?.ajustes && (
+          <ul className="grid gap-2 text-sm">
+            {data.ajustes.map((a) => (
+              <li key={a.id} className="rounded-lg border border-border p-3">
+                <strong>{a.asignatura_nombre}</strong> · {a.ajuste}
+                <p className="text-muted-foreground">Seguimiento: {a.seguimientos.map((s) => s.periodo_nombre).join(", ") || "sin registrar"}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {data?.versiones && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/60 text-left">
@@ -142,13 +154,6 @@ export function PiarHistorialPage() {
                         {f.archivo ? <button type="button" className="text-primary hover:underline" onClick={() => abrir(f.archivo as number)}>{f.archivoNombre ?? "Ver archivo"}</button> : "—"}
                         {f.actualizacion && <button type="button" className="text-primary hover:underline" onClick={() => descargarActualizacion(f.actualizacion as number)}>Documento</button>}
                       </span>
-                    </td>
-                  </tr>
-                ))}
-                {data.ajustes?.map((a) => (
-                  <tr key={a.id} className="border-b border-border align-top">
-                    <td className="px-2 py-3" colSpan={8}>
-                      <strong>{a.asignatura_nombre}</strong> · {a.ajuste} ({a.seguimientos.map((s) => s.periodo_nombre).join(", ") || "sin seguimiento"})
                     </td>
                   </tr>
                 ))}

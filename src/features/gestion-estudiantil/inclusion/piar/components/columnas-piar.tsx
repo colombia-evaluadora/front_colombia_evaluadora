@@ -4,20 +4,20 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { DotsThreeVerticalIcon } from "@/components/ui/icons"
+import { DotsThreeVerticalIcon, EyeIcon, FileUploadOutlinedIcon, LockIcon, PencilIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
 import type { PiarRow } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { COLOR_ESTADO, esEditable } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 interface Opciones {
-  access: { puedeGestionar: boolean }
+  access: { puedeGestionar: boolean; veAvisoSinPiar: boolean }
   prefetch: (id: number) => void
   irFicha: (row: PiarRow, accion?: "acta" | "cerrar") => void
 }
 
 export function buildColumnasPiar({ access, prefetch, irFicha }: Opciones): ColumnDef<PiarRow>[] {
-  return [
+  const columnas: ColumnDef<PiarRow>[] = [
     {
       id: "estudiante",
       accessorKey: "estudiante_nombre",
@@ -74,14 +74,16 @@ export function buildColumnasPiar({ access, prefetch, irFicha }: Opciones): Colu
               <DotsThreeVerticalIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => irFicha(r)}>Ver detalle</DropdownMenuItem>
-              {access.puedeGestionar && esEditable(r.estado_codigo) && <DropdownMenuItem onClick={() => irFicha(r)}>Modificar</DropdownMenuItem>}
-              {access.puedeGestionar && r.estado_codigo === "BORRADOR" && <DropdownMenuItem onClick={() => irFicha(r, "acta")}>Cargar acta</DropdownMenuItem>}
-              {access.puedeGestionar && esEditable(r.estado_codigo) && <DropdownMenuItem onClick={() => irFicha(r, "cerrar")}>Cerrar</DropdownMenuItem>}
+              <DropdownMenuItem onClick={() => irFicha(r)}><EyeIcon />Ver detalle</DropdownMenuItem>
+              {access.puedeGestionar && esEditable(r.estado_codigo) && <DropdownMenuItem onClick={() => irFicha(r)}><PencilIcon />Modificar</DropdownMenuItem>}
+              {access.puedeGestionar && r.estado_codigo === "BORRADOR" && <DropdownMenuItem onClick={() => irFicha(r, "acta")}><FileUploadOutlinedIcon />Cargar acta</DropdownMenuItem>}
+              {access.puedeGestionar && esEditable(r.estado_codigo) && <DropdownMenuItem onClick={() => irFicha(r, "cerrar")}><LockIcon />Cerrar</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         )
       },
     },
   ]
+  // Las cifras cuentan todo el PIAR y el docente solo ve lo de sus asignaturas (Regla 1).
+  return access.veAvisoSinPiar ? columnas : columnas.filter((c) => c.id !== "ajustes" && c.id !== "pendientes")
 }

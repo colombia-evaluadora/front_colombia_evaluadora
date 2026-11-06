@@ -1,6 +1,6 @@
 "use no memo"
 
-import { lazy, Suspense, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -42,9 +42,16 @@ function AvisoSinPiar({ enabled }: { enabled: boolean }) {
       {filas.map((f, i) => (
         <span key={f.fk_tmatricula}>
           {i > 0 && " · "}
-          <Link className="text-primary hover:underline" to={paths.app.piarNuevo.getHref()} search={{ matricula: f.fk_tmatricula }}>
-            {f.estudiante_nombre} ({f.grado_grupo})
-          </Link>
+          {/* Con Borrador se continúa ese PIAR: no cabe un segundo por estudiante y Período. */}
+          {f.fk_tpiar_borrador ? (
+            <Link className="text-primary hover:underline" to={paths.app.piarFicha.getHref(f.fk_tpiar_borrador)}>
+              {f.estudiante_nombre} ({f.grado_grupo})
+            </Link>
+          ) : (
+            <Link className="text-primary hover:underline" to={paths.app.piarNuevo.getHref()} search={{ matricula: f.fk_tmatricula }}>
+              {f.estudiante_nombre} ({f.grado_grupo})
+            </Link>
+          )}
         </span>
       ))}
       .
@@ -70,6 +77,18 @@ function PiarListaContent() {
     setFiltros(next)
     goToPage(0)
   }
+
+  // Grados: los que van apareciendo en el listado, como los responsables del Observador.
+  const [grados, setGrados] = useState<{ value: string; label: string }[]>([])
+  useEffect(() => {
+    const nuevas = data?.rows ?? []
+    if (!nuevas.length) return
+    setGrados((prev) => {
+      const m = new Map(prev.map((o) => [o.value, o.label]))
+      for (const r of nuevas) if (r.fk_tgrado) m.set(String(r.fk_tgrado), r.grado_nombre)
+      return [...m].map(([value, label]) => ({ value, label }))
+    })
+  }, [data])
 
   const irFicha = (row: PiarRow, accion?: "acta" | "cerrar") =>
     navigate({ to: paths.app.piarFicha.getHref(row.id), search: accion ? { accion } : {} })
@@ -129,7 +148,7 @@ function PiarListaContent() {
           </div>
         )}
         {pestana === "piar" && <TableScreenToolbar>
-          <BusquedaPiar search={search} filtros={filtros} onSearch={setSearch} onFiltros={aplicar} />
+          <BusquedaPiar search={search} filtros={filtros} onSearch={setSearch} onFiltros={aplicar} grados={grados} />
         </TableScreenToolbar>}
       </TableScreenHeader>
       {pestana !== "piar" ? (
@@ -146,7 +165,7 @@ function PiarListaContent() {
           isError={isError}
           onRetry={refetch}
           growColumnId="estudiante"
-          emptyMessage={hayFiltros ? "No hay PIAR para los filtros aplicados." : "Aún no hay PIAR registrados."}
+          emptyMessage={hayFiltros ? "No hay PIAR para los filtros aplicados." : "Aún no hay PIAR en este período."}
           errorMessage={error ? mensajePiar(error) : undefined}
         />
         <Pagination

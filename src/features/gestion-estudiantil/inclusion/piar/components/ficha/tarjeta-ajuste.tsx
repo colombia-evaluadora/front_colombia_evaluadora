@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircleIcon, PencilIcon } from "@/components/ui/icons"
 
+import { usePeriodosPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { Ajuste } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import type { Dialogo } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
@@ -10,6 +11,9 @@ import { BotonQuitar, BotonSeccion, EnlaceArchivo, ListaDatos, Par } from "@/fea
 interface Props {
   ajuste: Ajuste
   indice: number
+  piarId: number
+  /** Agregar, modificar y quitar: solo en Borrador (fn_piar_validar_ajuste). */
+  editaAjuste: boolean
   puedeEditar: boolean
   sensible: boolean
   onDialogo: (d: Dialogo) => void
@@ -27,14 +31,25 @@ function Evidencias({ ajuste }: { ajuste: Ajuste }) {
   )
 }
 
-export function TarjetaAjuste({ ajuste, indice, puedeEditar, sensible, onDialogo }: Props) {
+/** Todos los Períodos de Evaluación, registrados o pendientes (FIC.1). */
+function PeriodosSeguimiento({ ajuste, piarId }: { ajuste: Ajuste; piarId: number }) {
+  const { data } = usePeriodosPiarQuery(piarId, ajuste.id)
+  return (data ?? []).map((p) => (
+    <span key={p.fk_tperiodo_evaluacion} className="inline-flex items-center gap-1" title={ajuste.seguimientos.find((s) => s.fk_tperiodo_evaluacion === p.fk_tperiodo_evaluacion)?.avance}>
+      {p.nombre}
+      {p.tiene_seguimiento ? <CheckCircleIcon className="size-4 text-green" aria-label="registrado" /> : <span className="text-xs text-muted-foreground">pendiente</span>}
+    </span>
+  ))
+}
+
+export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar, sensible, onDialogo }: Props) {
   return (
     <article className="grid gap-3 rounded-lg border border-border p-4 text-sm">
       <header className="flex flex-wrap items-center gap-2">
         <strong>{ajuste.por_mapear ? `Ajuste ${indice}` : (ajuste.asignatura_nombre ?? "Transversal")}</strong>
         {ajuste.por_mapear ? <Badge variant="soft" color="warning">Por mapear</Badge> : <Badge variant="soft" color="info"><span>{ajuste.tipo_ajuste.nombre}</span></Badge>}
         <span className="text-muted-foreground">· {ajuste.tipo_adaptacion.nombre}</span>
-        {puedeEditar && (
+        {editaAjuste && (
           <span className="ml-auto flex items-center gap-1">
             {ajuste.por_mapear && sensible && <BotonSeccion onClick={() => onDialogo({ tipo: "asignar", ajuste, indice })}>Asignar asignatura</BotonSeccion>}
             <Button size="icon-xs" variant="ghost" color="muted" aria-label="Modificar ajuste" onClick={() => onDialogo({ tipo: "ajuste", ajuste })}>
@@ -55,6 +70,7 @@ export function TarjetaAjuste({ ajuste, indice, puedeEditar, sensible, onDialogo
           <Par label="Evidencia">
             <span className="flex flex-wrap items-center gap-2">
               <Evidencias ajuste={ajuste} />
+              {!ajuste.evidencias?.length && !puedeEditar && <span className="text-muted-foreground">Sin evidencia directa</span>}
               {puedeEditar && !ajuste.por_mapear && <BotonSeccion onClick={() => onDialogo({ tipo: "evidencia", ajuste })}>Registrar evidencia</BotonSeccion>}
             </span>
           </Par>
@@ -62,13 +78,7 @@ export function TarjetaAjuste({ ajuste, indice, puedeEditar, sensible, onDialogo
         {!ajuste.por_mapear && (
           <Par label="Seguimiento">
             <span className="flex flex-wrap items-center gap-2">
-              {ajuste.seguimientos.map((s) => (
-                <span key={s.id} className="inline-flex items-center gap-1" title={s.avance}>
-                  {s.periodo_nombre}
-                  <CheckCircleIcon className="size-4 text-green" aria-label="registrado" />
-                </span>
-              ))}
-              {!puedeEditar && !ajuste.seguimientos.length && <span className="text-muted-foreground">Sin registrar</span>}
+              <PeriodosSeguimiento ajuste={ajuste} piarId={piarId} />
               {puedeEditar && <BotonSeccion onClick={() => onDialogo({ tipo: "seguimiento", ajuste })}>Registrar</BotonSeccion>}
             </span>
           </Par>

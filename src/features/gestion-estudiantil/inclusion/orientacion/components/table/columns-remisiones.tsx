@@ -2,6 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { ClipboardAddIcon, FilePdfIcon, ProhibitIcon } from "@/components/ui/icons"
 
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
@@ -38,10 +39,11 @@ export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescarga
       cell: ({ row }) => (
         <MenuFila etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}>
           <DropdownMenuItem disabled={!puedeRegistrar || row.original.estado_codigo === "ATENDIDA"} onClick={() => onRegistrar(row.original)}>
+            <ClipboardAddIcon />
             Registrar atención
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDescargar(row.original)}>Descargar remisión</DropdownMenuItem>
-          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}>Anular</DropdownMenuItem>}
+          <DropdownMenuItem onClick={() => onDescargar(row.original)}><FilePdfIcon />Descargar remisión</DropdownMenuItem>
+          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}><ProhibitIcon />Anular</DropdownMenuItem>}
         </MenuFila>
       ),
     },
