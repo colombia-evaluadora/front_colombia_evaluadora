@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useMemo, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -15,63 +15,57 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { CATALOGS } from "@/lib/catalogs"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
+import { employeesRoute } from "@/router"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
-import { EMPLOYEE_STATUS_OPTIONS } from "@/features/establishment/employees/api/ui-mappings"
-import { useEmployeesFilters } from "@/features/establishment/employees/hooks/use-filters"
+import { useFuncionariosQuery } from "@/features/establishment/employees/api/query/use-funcionarios"
+import { ESTADO_FUNCIONARIO_OPTIONS } from "@/features/establishment/employees/api/ui-mappings"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
-import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
-import {
-  useBulkDelete,
-  summarizeEmployeeBulkDelete,
-} from "@/features/establishment/employees/api/mutations/use-bulk-delete"
+import type { FuncionarioListItem } from "@/features/establishment/employees/api/types/funcionario"
+import { useEmployeesFilters } from "@/features/establishment/employees/hooks/use-filters"
+import { useEstablecimientoFuncionarios } from "@/features/establishment/employees/hooks/use-establecimiento-funcionarios"
 import { createColumns } from "@/features/establishment/employees/components/table/columns-employees"
-import { DialogBulkDelete } from "@/features/establishment/employees/components/dialogs/dialog-bulk-delete"
-import { ClearSelectionDialog } from "@/features/establishment/employees/components/dialogs/dialog-clear-selection"
 import { ExportEmployeesDialog } from "@/features/establishment/employees/components/dialogs/dialog-export"
-import { ExportSelectedEmployeesDialog } from "@/features/establishment/employees/components/dialogs/dialog-export-selected"
+import { RolesPermisosDialog } from "@/features/establishment/employees/components/dialogs/dialog-roles-permisos"
+import { EstablishmentSelect } from "@/features/establishment/employees/components/establishment-select"
 import { SearchEmployees } from "@/features/establishment/employees/components/search/search-employees"
-import { useAccountStatusQuery } from "@/features/establishment/employees/api/query/use-account-status"
-import { EmployeeAccountContext } from "@/features/establishment/employees/components/table/account-context"
-import { useNotify } from "@/components/notice/notice-context"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
 
 interface EmployeesDataTableProps {
-  onEditEmployee: (employeeId: number) => void
   title: ReactNode
-  // Acción principal, en la barra de herramientas.
-  action?: ReactNode
+  /** Acción principal; recibe el establecimiento elegido para llevarlo a la página del funcionario. */
+  action?: (establishmentId: number | null) => ReactNode
 }
 
-export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesDataTableProps) {
-  const { notify } = useNotify()
-  const { puedeEliminar, puedeEditar } = useMenuPermission("FUNCIONARIOS")
+export function EmployeesDataTable({ title, action }: EmployeesDataTableProps) {
+  const search = employeesRoute.useSearch()
+  const navigate = employeesRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-
-  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
-    useEmployeesFilters()
+  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } = useEmployeesFilters()
+  const establecimiento = useEstablecimientoFuncionarios(search.establecimiento)
+  const [rolesDe, setRolesDe] = useState<FuncionarioListItem | null>(null)
 
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
+  const { data: campuses = [] } = useCampusesOptionsQuery()
+  const campusesDelEE = campuses.filter(
+    (campus) => campus.establishmentId == null || campus.establishmentId === establecimiento.id,
+  )
 
-  const { data, isPending, isError, error, refetch } = useEmployeesQuery({
-    filters: queryFilters,
-    sorting,
-    pageIndex,
-    pageSize,
-  })
+  const { data, isPending, isError, error, refetch } = useFuncionariosQuery(
+    establecimiento.id == null
+      ? null
+      : { establishmentId: establecimiento.id, filters: queryFilters, sorting, pageIndex, pageSize },
+  )
 
-  const columns = useMemo(() => createColumns({ onEdit: onEditEmployee }), [onEditEmployee])
+  const columns = createColumns({ establishmentId: establecimiento.id, onRoles: setRolesDe })
 
-  const { table, selectedIds, selectedRows: selectedItems, hasSelection, resetSelection } = useDataTable({
+  const { table } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    // `getRowId` devuelve string; el id real es number.
     getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
@@ -82,120 +76,58 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     columnVisibilityStorageKey: "table-employees-column-visibility",
   })
 
-  const rows = data?.rows ?? []
-
-  // Estado de cuenta SSO para restablecer/reenviar; si falla solo se deshabilitan.
-  const emailById = new Map(
-    rows.map((row) => [row.id, row.email ? row.email.trim().toLowerCase() : undefined]),
-  )
-  const correos = puedeEditar
-    ? [...new Set([...emailById.values()].filter((email): email is string => Boolean(email)))].sort()
-    : []
-  const accountStatus = useAccountStatusQuery(correos)
-  const statusByEmail = new Map(
-    (accountStatus.data ?? []).map((row) => [row.correo.trim().toLowerCase(), row.estado]),
-  )
-  const getAccountInfo = (id: number) => {
-    const email = emailById.get(id)
-    return {
-      email,
-      isEmailLoading: false,
-      status: email ? statusByEmail.get(email) : undefined,
-      isStatusLoading: accountStatus.isPending,
-      isStatusError: accountStatus.isError,
-    }
+  function elegirEstablecimiento(id: number) {
+    // Las sedes son de cada establecimiento: el filtro de sede no se arrastra.
+    navigate({ search: (prev) => ({ ...prev, establecimiento: id, sede: undefined, page: 0 }), replace: true })
   }
-  const namesById = useMemo(
-    () => new Map(selectedItems.map((row) => [String(row.id), row.name])),
-    [selectedItems],
-  )
-
-  const bulkDelete = useBulkDelete({
-    mutationConfig: {
-      onSuccess: (result) => {
-        const summary = summarizeEmployeeBulkDelete(result)
-        if (summary.failed.length === 0) {
-          notify(SUCCESS_MESSAGES.employee.deletedMany(summary.succeededCount))
-          resetSelection()
-          return
-        }
-        const failedNames = summary.failed
-          .map(({ id, reason }) => `${namesById.get(id) ?? id} (${reason})`)
-          .join(", ")
-        notify(
-          summary.succeededCount > 0
-            ? `Se eliminaron ${summary.succeededCount} funcionario(s). No se pudo con: ${failedNames}.`
-            : `No se pudo eliminar: ${failedNames}.`,
-          { variant: "error" },
-        )
-        resetSelection()
-      },
-      onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-      },
-    },
-  })
 
   return (
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle>{title}</TableScreenTitle>
         <TableScreenToolbar>
-          <SearchEmployees
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-            activeFilterCount={activeFilterCount}
-            roles={roles}
-            workSchedules={workSchedules}
-            statuses={EMPLOYEE_STATUS_OPTIONS}
-          />
+          <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-end">
+            {establecimiento.varios ? (
+              <EstablishmentSelect
+                establishments={establecimiento.establecimientos}
+                value={establecimiento.id}
+                onChange={elegirEstablecimiento}
+              />
+            ) : null}
+            <SearchEmployees
+              filters={filters}
+              applyFilters={applyFilters}
+              clearAllFilters={clearAllFilters}
+              activeFilterCount={activeFilterCount}
+              roles={roles}
+              workSchedules={workSchedules}
+              campuses={campusesDelEE}
+              statuses={ESTADO_FUNCIONARIO_OPTIONS}
+            />
+          </div>
 
           <TableScreenActions>
-            {action}
-            {hasSelection ? (
-              <>
-                <ClearSelectionDialog resetSelection={resetSelection} />
-                {puedeEliminar ? (
-                  <DialogBulkDelete<EmployeeListItem, number>
-                    items={selectedItems}
-                    getItemId={(item) => item.id}
-                    getItemLabel={(item) => item.name}
-                    title="Eliminar"
-                    buildDescription={(count, sample) => {
-                      const list = sample.join(", ")
-                      const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                      return `Se eliminarán los funcionarios ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
-                    }}
-                    onConfirm={async (ids) => {
-                      await bulkDelete.mutateAsync(ids)
-                    }}
-                    triggerLabel={`Eliminar (${selectedIds.length})`}
-                  />
-                ) : null}
-                <ExportSelectedEmployeesDialog
-                  selectedIds={selectedItems.map((item) => item.id)}
-                  resetSelection={resetSelection}
-                />
-              </>
-            ) : (
-              <ExportEmployeesDialog filters={queryFilters} />
-            )}
+            {establecimiento.id != null ? (
+              <ExportEmployeesDialog establishmentId={establecimiento.id} filters={queryFilters} />
+            ) : null}
+            {action?.(establecimiento.id)}
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
-        <EmployeeAccountContext.Provider value={getAccountInfo}>
-          <DataTable
-            table={table}
-            isPending={isPending}
-            isError={isError}
-            onRetry={refetch}
-            emptyMessage="Sin resultados."
-            errorMessage={error ? getErrorMessage(error) : undefined}
-          />
-        </EmployeeAccountContext.Provider>
+        <DataTable
+          table={table}
+          isPending={isPending || establecimiento.cargando}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage={
+            !establecimiento.cargando && establecimiento.id == null
+              ? "No tiene establecimientos asignados."
+              : "No hay funcionarios que coincidan con la búsqueda y los filtros aplicados."
+          }
+          errorMessage={error ? getErrorMessage(error) : undefined}
+        />
 
         {data && (
           <Pagination
@@ -211,6 +143,14 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
           />
         )}
       </TableScreenBody>
+
+      {establecimiento.id != null ? (
+        <RolesPermisosDialog
+          employee={rolesDe}
+          establishmentId={establecimiento.id}
+          onOpenChange={(open) => !open && setRolesDe(null)}
+        />
+      ) : null}
     </TableScreen>
   )
 }

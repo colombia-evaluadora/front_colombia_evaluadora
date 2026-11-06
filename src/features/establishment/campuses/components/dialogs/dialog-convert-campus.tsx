@@ -33,7 +33,7 @@ import { findPredeterminado, useCatalogQuery } from "@/features/establishment/em
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
-import { createEmptyPerson } from "@/features/establishment/employees/components/dialogs/dialog-manage/helpers"
+import { createEmptyPerson } from "@/features/establishment/employees/api/types/person"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"

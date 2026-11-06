@@ -347,8 +347,8 @@ function SuperadministradorForm({
                   <f.TextField
                     label="Primer nombre"
                     required
-                    maxLength={40}
-                    transform={(v) => limpiarNombre(v).slice(0, 40)}
+                    maxLength={50}
+                    transform={(v) => limpiarNombre(v).slice(0, 50)}
                   />
                 )}
               </form.AppField>
@@ -356,8 +356,8 @@ function SuperadministradorForm({
                 {(f) => (
                   <f.TextField
                     label="Segundo nombre"
-                    maxLength={40}
-                    transform={(v) => limpiarNombre(v).slice(0, 40)}
+                    maxLength={50}
+                    transform={(v) => limpiarNombre(v).slice(0, 50)}
                   />
                 )}
               </form.AppField>
@@ -366,8 +366,8 @@ function SuperadministradorForm({
                   <f.TextField
                     label="Primer apellido"
                     required
-                    maxLength={40}
-                    transform={(v) => limpiarNombre(v).slice(0, 40)}
+                    maxLength={50}
+                    transform={(v) => limpiarNombre(v).slice(0, 50)}
                   />
                 )}
               </form.AppField>
@@ -375,8 +375,8 @@ function SuperadministradorForm({
                 {(f) => (
                   <f.TextField
                     label="Segundo apellido"
-                    maxLength={40}
-                    transform={(v) => limpiarNombre(v).slice(0, 40)}
+                    maxLength={50}
+                    transform={(v) => limpiarNombre(v).slice(0, 50)}
                   />
                 )}
               </form.AppField>
@@ -389,7 +389,7 @@ function SuperadministradorForm({
                     label="Correo electrónico"
                     required
                     type="email"
-                    maxLength={120}
+                    maxLength={200}
                     autoComplete="off"
                     transform={toEmailInput}
                     className="sm:col-span-2"

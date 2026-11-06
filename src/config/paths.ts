@@ -229,6 +229,21 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/funcionarios",
       },
 
+      officialAdd: {
+          path: "establecimiento-educativo/funcionarios/agregar",
+          getHref: () => "/app/establecimiento-educativo/funcionarios/agregar",
+      },
+
+      officialDetail: {
+          path: "establecimiento-educativo/funcionarios/detalle/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/detalle/${employeeId}`,
+      },
+
+      officialEdit: {
+          path: "establecimiento-educativo/funcionarios/editar/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/editar/${employeeId}`,
+      },
+
       academicPeriods: {
           path: "establecimiento-educativo/periodos",
           getHref: () => "/app/establecimiento-educativo/periodos",

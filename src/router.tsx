@@ -44,7 +44,7 @@ import {
 } from "@/features/planeador/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
-import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
+import { employeeFormSearchSchema, employeesSearchSchema } from "@/features/establishment/employees/api/schema"
 import { curricularReferencesSearchSchema } from "@/features/academic-management/curricular-references/api/schema"
 import {
   informesSearchSchema,
@@ -164,6 +164,10 @@ const CampusFormPage = lazyRouteComponent(
 const EmployeesPage = lazyRouteComponent(
   () => import("@/features/establishment/employees/pages/employees-page"),
   "EmployeesPage"
+)
+const EmployeeFormPage = lazyRouteComponent(
+  () => import("@/features/establishment/employees/pages/employee-form-page"),
+  "EmployeeFormPage"
 )
 
 const RolesMenusPage = lazyRouteComponent(
@@ -834,6 +838,32 @@ export const employeesRoute = createRoute({
   validateSearch: employeesSearchSchema,
   staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Funcionarios" }] },
   component: EmployeesPage,
+})
+
+const FUNCIONARIOS_CRUMB = { label: "Funcionarios", to: paths.app.establishments.officials.getHref() }
+
+export const employeeAddRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialAdd.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Nuevo funcionario" }] },
+  component: EmployeeFormPage,
+})
+
+export const employeeDetailRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialDetail.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Detalle" }] },
+  component: EmployeeFormPage,
+})
+
+export const employeeEditRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialEdit.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Modificar" }] },
+  component: EmployeeFormPage,
 })
 
 export const addEstablishmentRoute = createRoute({
@@ -1535,6 +1565,9 @@ const routeTree = rootRoute.addChildren([
       campusDetailRoute,
       campusEditRoute,
       employeesRoute,
+      employeeAddRoute,
+      employeeDetailRoute,
+      employeeEditRoute,
       addEstablishmentRoute,
       establishmentDetailRoute,
       editEstablishmentRoute,

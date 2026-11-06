@@ -49,12 +49,12 @@ import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } fro
 import {
   permissionDraftSchema,
   type PermissionDraft,
-} from "@/features/establishment/employees/components/dialogs/dialog-manage/schema"
+} from "@/features/establishment/employees/components/dialogs/roles-permisos/schema"
 import {
   DIRECTOR_GRUPO_ROLE_CODE,
   permissionSortValue,
   type PermissionSortKey,
-} from "@/features/establishment/employees/components/dialogs/dialog-manage/helpers"
+} from "@/features/establishment/employees/components/dialogs/roles-permisos/helpers"
 
 /**
  * Badge por estado del permiso, con el mismo criterio que los estados de

@@ -89,3 +89,19 @@ export function personDataChangedSinceMatch(
         (original.gender?.id ?? null) !== (current.gender?.id ?? null)
     )
 }
+
+/** Persona vacía de los formularios de rector, secretaria y Convertir sede. */
+export function createEmptyPerson(): Person {
+    return {
+        documentType: null,
+        identification: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        secondLastName: "",
+        birthDate: "",
+        gender: null,
+        email: "",
+        phone: "",
+    }
+}

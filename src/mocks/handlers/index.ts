@@ -35,6 +35,7 @@ import { especialidadesHandlers } from "@/mocks/handlers/academic-period/especia
 import { establishmentHandlers } from "@/mocks/handlers/establishments"
 import { campusHandlers } from "@/mocks/handlers/campuses"
 import { employeeHandlers } from "@/mocks/handlers/employees"
+import { funcionariosHandlers } from "@/mocks/handlers/funcionarios"
 import { selectCatalogHandlers } from "./academic-period/select-catalog"
 import { catalogHandlers } from "@/mocks/handlers/catalog"
 import { reservationsHandlers } from "@/mocks/handlers/reservations"
@@ -112,6 +113,7 @@ export const handlers = [
   ...reservationsHandlers,
   ...establishmentHandlers,
   ...campusHandlers,
+  ...funcionariosHandlers,
   ...employeeHandlers,
   ...catalogHandlers,
   ...rolesHandlers,

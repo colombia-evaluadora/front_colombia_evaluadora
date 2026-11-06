@@ -1,39 +1,19 @@
-import { EMPLOYEE_STATUSES } from "@/features/establishment/employees/api/types/employee"
-import type { PermissionStatus } from "@/features/establishment/institution/api/types/permission"
+import type { ComponentProps } from "react"
 
-type BadgeColor = "success" | "destructive"
+import type { Badge } from "@/components/ui/badge"
+import type { EstadoFuncionario } from "@/features/establishment/employees/api/types/funcionario"
 
-interface BadgeProps {
-  variant: "soft"
-  color: BadgeColor
+/** Estado del funcionario en el establecimiento (Regla 101): no se edita, sale de sus roles. */
+export const ESTADO_FUNCIONARIO_LABELS: Record<EstadoFuncionario, string> = {
+  A: "Activo",
+  I: "Inactivo",
 }
 
-export const EMPLOYEE_STATUS_LABELS: Record<PermissionStatus, string> = {
-  ACTIVE: "Activo",
-  SUSPENDED: "Suspendido",
-}
+export const ESTADO_FUNCIONARIO_OPTIONS = (Object.keys(ESTADO_FUNCIONARIO_LABELS) as EstadoFuncionario[]).map(
+  (code) => ({ code, name: ESTADO_FUNCIONARIO_LABELS[code] }),
+)
 
-/**
- * `TUSUARIO.ESTADO` ('A'/'I', mapeado acá a "ACTIVE"/"SUSPENDED") es un
- * dominio fijo de la tabla, no un catálogo real — no tiene fila en
- * `TLISTA_VALOR`, así que el filtro de estado en la tabla de funcionarios
- * no debe salir de una consulta a catálogo (antes reusaba
- * `CATALOGS.ENTITY_STATUSES`, que en realidad apunta a
- * `ESTADO_ESTABLECIMIENTO` — otro dominio, coincidencia de mock). Son estas
- * dos opciones fijas, siempre.
- */
-export const EMPLOYEE_STATUS_OPTIONS = EMPLOYEE_STATUSES.map((status) => ({
-  code: status,
-  name: EMPLOYEE_STATUS_LABELS[status],
-}))
-
-export const EMPLOYEE_STATUS_BADGE: Record<PermissionStatus, BadgeProps> = {
-  ACTIVE: {
-    variant: "soft",
-    color: "success",
-  },
-  SUSPENDED: {
-    variant: "soft",
-    color: "destructive",
-  },
+export const ESTADO_FUNCIONARIO_BADGE: Record<EstadoFuncionario, Pick<ComponentProps<typeof Badge>, "variant" | "color">> = {
+  A: { variant: "soft", color: "success" },
+  I: { variant: "soft", color: "muted" },
 }

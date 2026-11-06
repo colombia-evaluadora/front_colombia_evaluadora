@@ -43,6 +43,7 @@ function toCampus(row: RealCampusOptionRow): Campus {
     phone: row.telefono,
     status: row.estado,
     workSchedules: (row.jornadas ?? []).map((j) => ({ id: Number(j.id), name: j.nombre })),
+    establishmentId: row.fk_establecimiento,
   }
 }
 
