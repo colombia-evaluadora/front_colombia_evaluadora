@@ -41,6 +41,8 @@ export type ReportKey =
   | "auditoria-sesion-operaciones"
   | "bitacora"
   | "observador"
+  | "orientacion-remision"
+  | "orientacion-ficha"
   | "piar-plan"
   | "piar-acta"
   | "piar-actualizacion"

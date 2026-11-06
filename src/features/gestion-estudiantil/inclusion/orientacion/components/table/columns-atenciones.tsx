@@ -10,9 +10,10 @@ interface Opciones {
   puedeRegistrar: boolean
   onVer: (a: AtencionRow) => void
   onModificar: (a: AtencionRow) => void
+  onDescargar: (a: AtencionRow) => void
 }
 
-export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar }: Opciones): ColumnDef<AtencionRow>[] {
+export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar, onDescargar }: Opciones): ColumnDef<AtencionRow>[] {
   return [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
     { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
@@ -28,7 +29,7 @@ export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar }: O
         <MenuFila etiqueta={`Acciones de la atención de ${row.original.estudiante_nombre}`}>
           <DropdownMenuItem onClick={() => onVer(row.original)}>Ver detalle</DropdownMenuItem>
           <DropdownMenuItem disabled={!puedeRegistrar} onClick={() => onModificar(row.original)}>Modificar</DropdownMenuItem>
-          <DropdownMenuItem disabled>Descargar ficha (próximamente)</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onDescargar(row.original)}>Descargar ficha</DropdownMenuItem>
         </MenuFila>
       ),
     },

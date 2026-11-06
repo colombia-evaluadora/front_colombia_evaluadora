@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
+import type { ExportResult } from "@/features/establishment/institution/api/types/export"
 
 import { useAtencionesQuery, useRemisionesQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { FILTROS_VACIOS, type OrientacionFiltros } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
@@ -11,12 +12,15 @@ import { SearchOrientacion } from "@/features/gestion-estudiantil/inclusion/orie
 import { buildColumnsAtenciones } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-atenciones"
 import { buildColumnsRemisiones } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-remisiones"
 import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/tabla-orientacion"
+import { descargarFicha, descargarRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/descargas"
+import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
 /** G.4.ORI.LIS.1-3: remisiones y atenciones. Registran orientación y rectoría (V602). */
 export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) {
   const navigate = useNavigate()
   const [search, setSearch] = useState("")
+  const [aviso, setAviso] = useState<string | null>(null)
   const [filtros, setFiltros] = useState<OrientacionFiltros>(FILTROS_VACIOS)
   const [pagR, setPagR] = useState({ i: 0, s: 10 })
   const [pagA, setPagA] = useState({ i: 0, s: 10 })
@@ -24,6 +28,10 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
   const remisiones = useRemisionesQuery({ search, filtros, pageIndex: pagR.i, pageSize: pagR.s })
   const atenciones = useAtencionesQuery({ search, filtros, pageIndex: pagA.i, pageSize: pagA.s })
   const hayFiltros = Boolean(search) || Object.values(filtros).some(Boolean)
+  const descargar = async (p: Promise<ExportResult>) => {
+    const r = await p
+    setAviso(r.status === "error" ? "No pudimos generar el documento. Inténtelo de nuevo en unos minutos." : null)
+  }
   const reiniciar = () => {
     setPagR((p) => ({ ...p, i: 0 }))
     setPagA((p) => ({ ...p, i: 0 }))
@@ -31,6 +39,7 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
 
   return (
     <div className="flex flex-col gap-5">
+      {aviso && <AvisoPiar tipo="error">{aviso}</AvisoPiar>}
       <SearchOrientacion
         search={search}
         filtros={filtros}
@@ -47,6 +56,7 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
         titulo="Remisiones"
         columns={buildColumnsRemisiones({
           puedeRegistrar,
+          onDescargar: (r) => descargar(descargarRemision(r.id)),
           onRegistrar: (r) =>
             navigate({ to: paths.app.atencionNueva.getHref(), search: { matricula: r.fk_tmatricula, remision: r.id, motivo: r.fk_tlv_motivo, estudiante: r.estudiante_nombre } }),
         })}
@@ -68,6 +78,7 @@ export function TabOrientacion({ puedeRegistrar }: { puedeRegistrar: boolean }) 
         titulo="Atenciones"
         columns={buildColumnsAtenciones({
           puedeRegistrar,
+          onDescargar: (a) => descargar(descargarFicha(a.id)),
           onVer: (a) => navigate({ to: paths.app.atencionFicha.getHref(a.id), search: { ver: true } }),
           onModificar: (a) => navigate({ to: paths.app.atencionFicha.getHref(a.id) }),
         })}

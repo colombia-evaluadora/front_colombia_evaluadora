@@ -10,9 +10,10 @@ import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/c
 interface Opciones {
   puedeRegistrar: boolean
   onRegistrar: (r: RemisionRow) => void
+  onDescargar: (r: RemisionRow) => void
 }
 
-export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar }: Opciones): ColumnDef<RemisionRow>[] {
+export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescargar }: Opciones): ColumnDef<RemisionRow>[] {
   return [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
     { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
@@ -37,7 +38,7 @@ export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar }: Opciones
           <DropdownMenuItem disabled={!puedeRegistrar || row.original.estado_codigo === "ATENDIDA"} onClick={() => onRegistrar(row.original)}>
             Registrar atención
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>Descargar remisión (próximamente)</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onDescargar(row.original)}>Descargar remisión</DropdownMenuItem>
         </MenuFila>
       ),
     },
