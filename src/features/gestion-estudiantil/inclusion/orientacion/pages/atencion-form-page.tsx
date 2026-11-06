@@ -15,6 +15,7 @@ import { DialogRemisionExterna } from "@/features/gestion-estudiantil/inclusion/
 import { useAtencionForm } from "@/features/gestion-estudiantil/inclusion/orientacion/hooks/use-atencion-form"
 import { SECCIONES } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/atencion-form"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
+import { esOpcionElegida } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
 /** G.4.ORI.ATE.1: nueva atención, modificar y ver detalle. */
@@ -22,6 +23,7 @@ export function AtencionFormPage() {
   const a = useAtencionForm()
   const { form } = a
   const [externa, setExterna] = useState(false)
+  const opcionesEstudiante = a.estudiantes.map((m) => ({ value: String(m.fk_tmatricula), label: `${m.estudiante_nombre} · ${m.grado_grupo}` }))
   const titulo = a.soloLectura ? "Detalle de la atención" : a.id ? "Modificar atención" : "Nueva atención"
 
   return (
@@ -62,9 +64,9 @@ export function AtencionFormPage() {
                   todos={false}
                   placeholder="Seleccione"
                   value={a.matricula}
-                  options={a.estudiantes.map((m) => ({ value: String(m.fk_tmatricula), label: `${m.estudiante_nombre} · ${m.grado_grupo}` }))}
+                  options={opcionesEstudiante}
                   onChange={a.setMatricula}
-                  onInputChange={(texto) => !a.estudiantes.some((m) => `${m.estudiante_nombre} · ${m.grado_grupo}` === texto) && a.setBusqueda(texto)}
+                  onInputChange={(texto) => !esOpcionElegida(texto, opcionesEstudiante) && a.setBusqueda(texto)}
                 />
               )}
               <form.AppField name="fecha">{(f) => <f.DateField label="Fecha" required />}</form.AppField>
@@ -131,7 +133,7 @@ export function AtencionFormPage() {
             {a.id && (
               <section className="grid gap-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-medium">Remisión externa</h2>
+                  <h2 className="text-base font-medium">Remisión externa</h2>
                   {!a.soloLectura && (
                     <Button size="xs" variant="outline" color="muted" type="button" onClick={() => setExterna(true)}>
                       <PlusIcon data-icon="inline-start" />

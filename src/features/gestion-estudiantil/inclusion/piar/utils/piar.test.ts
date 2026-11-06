@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
-import { accesoPiar, progresoBloques, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { accesoPiar, esOpcionElegida, progresoBloques, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 const base = {
   ajustes: [],
@@ -39,5 +39,14 @@ describe("sinAjustesTodas", () => {
   it("exige toda la cobertura sin ajustes", () => {
     expect(sinAjustesTodas(base)).toBe(false)
     expect(sinAjustesTodas({ ...base, cobertura: [{ cobertura: "SIN_AJUSTES" }] } as unknown as PiarDetalle)).toBe(true)
+  })
+})
+
+describe("esOpcionElegida", () => {
+  it("distingue una selección de una búsqueda", () => {
+    const o = [{ value: "9", label: "Ana · 6A" }]
+    expect(esOpcionElegida("9", o)).toBe(true)
+    expect(esOpcionElegida("Ana · 6A", o)).toBe(true)
+    expect(esOpcionElegida("An", o)).toBe(false)
   })
 })

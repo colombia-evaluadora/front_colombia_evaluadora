@@ -16,6 +16,7 @@ import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/compon
 import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
 import { BASE, piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
 import { useMatriculasDisponiblesQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
+import { esOpcionElegida } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import { CamposDatosPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/campos-datos-piar"
 import { CAMPOS_VACIOS, datosAlBackend, esquemaDatos } from "@/features/gestion-estudiantil/inclusion/piar/utils/datos-piar"
 
@@ -31,6 +32,7 @@ export function PiarNuevoPage() {
   const [justificacion, setJustificacion] = useState("")
   const { data } = useMatriculasDisponiblesQuery(busqueda)
   const candidatos = data ?? []
+  const opciones = candidatos.map((c) => ({ value: String(c.fk_tmatricula), label: `${c.estudiante_nombre} · ${c.grado_grupo}` }))
   const elegido = candidatos.find((c) => String(c.fk_tmatricula) === matricula)
 
   const crear = useMutation({
@@ -86,10 +88,9 @@ export function PiarNuevoPage() {
             todos={false}
             placeholder="Seleccione"
             value={matricula}
-            options={candidatos.map((c) => ({ value: String(c.fk_tmatricula), label: `${c.estudiante_nombre} · ${c.grado_grupo}` }))}
+            options={opciones}
             onChange={setMatricula}
-            // La etiqueta elegida no es una búsqueda: filtraría a cero y perdería la selección.
-            onInputChange={(texto) => !candidatos.some((c) => `${c.estudiante_nombre} · ${c.grado_grupo}` === texto) && setBusqueda(texto)}
+            onInputChange={(texto) => !esOpcionElegida(texto, opciones) && setBusqueda(texto)}
           />
           <form.AppField name="fecha">{(f) => <f.DateField label="Fecha de elaboración" required />}</form.AppField>
         </div>

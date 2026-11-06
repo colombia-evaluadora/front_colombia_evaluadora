@@ -56,3 +56,7 @@ export function progresoBloques(p: PiarDetalle) {
 
 export const sinAjustesTodas = (p: PiarDetalle) =>
   (p.cobertura?.length ?? 0) > 0 && (p.cobertura ?? []).every((c) => c.cobertura === "SIN_AJUSTES") && p.ajustes.length === 0
+
+/** Al elegir, el combo reporta el valor o la etiqueta como texto: eso no es una búsqueda, filtraría a cero y perdería la selección. */
+export const esOpcionElegida = (texto: string, opciones: { value: string; label: string }[]) =>
+  opciones.some((o) => o.value === texto || o.label === texto)
