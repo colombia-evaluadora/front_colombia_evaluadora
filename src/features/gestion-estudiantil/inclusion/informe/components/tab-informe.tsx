@@ -42,7 +42,7 @@ function Cifra({ titulo, valor, de }: { titulo: string; valor: number; de?: numb
 
 function TablaCifras({ titulo, columnas, filas }: { titulo: string; columnas: string[]; filas: (string | number)[][] }) {
   return (
-    <section className="grid content-start gap-2 text-sm">
+    <section className="grid min-w-0 content-start gap-2 overflow-x-auto text-sm">
       <h2 className="text-lg font-semibold">{titulo}</h2>
       <TablaDatos
         id={`informe-${columnas[0]}`}
@@ -116,7 +116,7 @@ export function TabInforme() {
             <Cifra titulo="Pendiente de revisión" valor={pendientes} />
           </div>
           <DataTable table={table} isPending={false} isError={false} onRetry={() => {}} growColumnId="asignatura" emptyMessage="Aún no hay cobertura registrada." />
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 2xl:grid-cols-2">
             <TablaCifras titulo="Ajustes y seguimiento global" columnas={["Asignatura", "Con seguimiento", "Sin seguimiento"]} filas={data.seguimiento.map((s) => [s.asignatura_nombre, s.con_seguimiento, s.sin_seguimiento])} />
             <TablaCifras titulo="PIAR por grado" columnas={["Grado", "Vigentes", "Borradores", "Concluidos", "Cerrados"]} filas={data.por_grado.map((g) => [g.grado_nombre, g.vigentes, g.borradores, g.revision_concluida, g.cerrados])} />
           </div>
