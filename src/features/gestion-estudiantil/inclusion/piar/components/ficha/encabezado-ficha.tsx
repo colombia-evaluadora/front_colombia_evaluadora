@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ClockCounterClockwiseIcon, DotsThreeVerticalIcon, FloppyDiskIcon, LockIcon, SpinnerIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
-import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 import { COLOR_ESTADO, esEditable, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
@@ -40,7 +40,7 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
             )}
             {esEditable(estado) && <Button {...SECUNDARIO} onClick={() => navigate({ to: paths.app.inclusionOrientacion.getHref() })}>{gestiona ? "Cancelar" : "Volver"}</Button>}
             {gestiona && borrador && sinAjustesTodas(piar) && <Button {...SECUNDARIO} onClick={() => setDialogo({ tipo: "concluir" })}>Concluir revisión sin ajustes</Button>}
-            {gestiona && piar.ve_sensible && (
+            {gestiona && borrador && piar.ve_sensible && (
               <Button size="sm" disabled={guardando} onClick={() => form.handleSubmit()}>
                 {guardando ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
                 Guardar

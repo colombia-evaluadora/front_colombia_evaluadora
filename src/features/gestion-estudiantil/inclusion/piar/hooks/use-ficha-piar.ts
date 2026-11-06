@@ -4,7 +4,7 @@ import { useSearch } from "@tanstack/react-router"
 import { useAppForm } from "@/lib/forms"
 import type { ExportResult } from "@/features/establishment/institution/api/types/export"
 
-import { usePiarMutation } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { usePiarMutation } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import type { Dialogo } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"

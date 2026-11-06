@@ -3,7 +3,7 @@ import { FileUploadOutlinedIcon, PencilIcon } from "@/components/ui/icons"
 
 import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
 import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
-import { descargarActa } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { descargarActa } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import type { VersionActual } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { BotonQuitar, BotonSeccion, EnlaceArchivo } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"

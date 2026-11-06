@@ -92,6 +92,7 @@ export interface Cobertura {
   cobertura_nombre: string
   justificacion: string | null
   revisado_en: string | null
+  revisado_por: string | null
 }
 
 export interface Participante {
@@ -143,7 +144,11 @@ export interface PiarDetalle {
   cierre: { motivo: string; cerrado_en: string; informe_anual: string | null } | null
   anulacion: { anulada: boolean; anulado_en?: string; motivo?: string; anula?: string } | null
   ve_sensible: boolean
+  condicion: string | null
+  periodo_academico: string | null
   ajustes: Ajuste[]
+  datos_existentes?: { identificacion: string | null; sede: string | null; jornada: string | null; convive_acudiente: string | boolean | null; fecha_ingreso: string | null; repitente: string | boolean | null; nuevo: string | boolean | null }
+  conclusion?: { sintesis: string; recomendaciones: string; fecha_conclusion: string; fecha_proxima_revision: string; responsable: string | null } | null
   justificacion_condicion?: string | null
   voz?: {
     gustos_intereses: string | null
@@ -175,6 +180,7 @@ export interface Actualizacion {
   valores_anteriores: Record<string, unknown>
   valores_nuevos: Record<string, unknown>
   fk_tarchivo_soporte: number | null
+  soporte_nombre: string | null
   registrado_en: string
   registra: string | null
 }
@@ -187,6 +193,8 @@ export interface VersionHistorial {
   acordada_en: string | null
   fk_tarchivo_acta: number | null
   creada_en: string
+  acta_nombre: string | null
+  autor: string | null
   conclusion: { sintesis: string; recomendaciones: string; fecha_conclusion: string; fecha_proxima_revision: string; responsable: string | null } | null
   actualizaciones: Actualizacion[]
 }
@@ -195,6 +203,15 @@ export interface VersionHistorial {
 export interface PiarHistorial {
   versiones?: VersionHistorial[]
   ajustes?: { id: number; asignatura_nombre: string; ajuste: string; creado_en: string; quitado_en: string | null; seguimientos: { periodo_nombre: string; avance: string; fecha: string }[] }[]
+}
+
+export interface MatriculaDisponible {
+  fk_tmatricula: number
+  estudiante_nombre: string
+  documento: string | null
+  grado_grupo: string
+  condicion: string | null
+  tiene_condicion: boolean
 }
 
 export interface AsignaturaOpcion {

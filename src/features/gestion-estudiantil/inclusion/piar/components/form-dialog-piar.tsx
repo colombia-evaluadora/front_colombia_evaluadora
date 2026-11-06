@@ -8,7 +8,7 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 import { useAppForm } from "@/lib/forms"
 
-import { subirSoportePiar } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { subirSoportePiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 
 export interface CampoPiar {
   name: string

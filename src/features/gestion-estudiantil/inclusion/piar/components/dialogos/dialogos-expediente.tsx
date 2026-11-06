@@ -1,5 +1,6 @@
 import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { useEjecutarPiar, useParticipantesOpcionQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/piar-api"
+import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
+import { useParticipantesOpcionQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import type { DialogoProps } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
