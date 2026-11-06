@@ -10,14 +10,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { NoticeBanner } from "@/components/notice/notice-banner"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import type { Opcion } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
-import { ComboOpciones } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
 import { useCodigoForm } from "@/features/gestion-estudiantil/catalogo-anotaciones/hooks/use-codigo-form"
 import { LIM } from "@/features/gestion-estudiantil/catalogo-anotaciones/utils/codigo-form"
@@ -43,7 +44,7 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
           <DialogTitle>{codigo ? `Modificar ${codigo.codigo}` : "Nuevo código"}</DialogTitle>
           <DialogDescription>Códigos del Manual de Convivencia del establecimiento.</DialogDescription>
         </DialogHeader>
-        <NoticeBanner notice={f.notice} onClose={f.cerrarNotice} variant="error" />
+        <ErrorNoticeBanner error={f.error} />
 
         <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
           <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(f.errores.codigo) || undefined}>
@@ -57,17 +58,15 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
             />
             {f.errores.codigo && <FieldError>{f.errores.codigo}</FieldError>}
           </Field>
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="codigo-estado">Estado</FieldLabel>
-            <div className="border-input flex min-h-14 items-center gap-3 rounded-md border px-3 py-3">
-              <span className="text-muted-foreground text-sm">Inactivo / Activo</span>
-              <Switch
-                id="codigo-estado"
-                checked={f.v.estado === "activo"}
-                onCheckedChange={(checked) => f.set({ estado: checked ? "activo" : "inactivo" })}
-              />
-            </div>
-          </Field>
+          <label htmlFor="codigo-estado" className="flex w-fit cursor-pointer items-center gap-2 self-center text-sm">
+            <Switch
+              round
+              id="codigo-estado"
+              checked={f.v.estado === "activo"}
+              onCheckedChange={(checked) => f.set({ estado: checked ? "activo" : "inactivo" })}
+            />
+            {f.v.estado === "activo" ? "Activo" : "Inactivo"}
+          </label>
         </div>
 
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(f.errores.descripcion) || undefined}>
@@ -121,7 +120,7 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.guardar}>
-            {f.pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FloppyDiskIcon data-icon="inline-start" />}
+            <IconoCarga cargando={f.pending}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
             Guardar
           </Button>
         </DialogFooter>
