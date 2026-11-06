@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { RemisionDetalle } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/remision-form"
 import { orientacionKeys } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query-keys"
 import type { AtencionDetalle, AtencionRow, MiRemisionRow, OrientacionFiltros, RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 
@@ -61,6 +62,14 @@ export function useMisRemisionesQuery(p: { estado: string; pageIndex: number; pa
       return { rows, totalCount, pageCount: toPageCount(totalCount, p.pageSize) }
     },
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useRemisionQuery(remisionId: number | undefined) {
+  return useQuery({
+    queryKey: ["orientacion", "remision", remisionId],
+    queryFn: () => evalCol.getRow<{ resultado: RemisionDetalle }>(`${BASE}/remisiones/${remisionId}`).then((r) => r.resultado),
+    enabled: remisionId != null,
   })
 }
 

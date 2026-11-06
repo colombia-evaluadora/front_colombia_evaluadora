@@ -5,7 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { FilePdfIcon } from "@/components/ui/icons"
+import { FilePdfIcon, PencilIcon } from "@/components/ui/icons"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
@@ -13,6 +13,7 @@ import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-ma
 import { descargarRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/descargas"
 import { useMisRemisionesQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import type { MiRemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
+import { DialogRemitir } from "@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-remitir"
 import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
 import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/tabla-orientacion"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
@@ -23,6 +24,7 @@ export function TabMisRemisiones() {
   const [estado, setEstado] = useState("")
   const [pag, setPag] = useState({ i: 0, s: 10 })
   const [aviso, setAviso] = useState<string | null>(null)
+  const [corregir, setCorregir] = useState<number | null>(null)
   const estados = useCatalogo("ESTADO_REMISION_ORIENTACION")
   const { data, isPending, isError, error, refetch } = useMisRemisionesQuery({ estado, pageIndex: pag.i, pageSize: pag.s })
 
@@ -47,6 +49,10 @@ export function TabMisRemisiones() {
       header: () => null,
       cell: ({ row }) => (
         <MenuFila etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}>
+          <DropdownMenuItem disabled={row.original.estado_codigo !== "RECIBIDA"} onClick={() => setCorregir(row.original.id)}>
+            <PencilIcon />
+            Corregir
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={async () => {
               const r = await descargarRemision(row.original.id)
@@ -84,6 +90,7 @@ export function TabMisRemisiones() {
         errorMessage={error ? mensajePiar(error) : undefined}
         emptyMessage="Aún no ha remitido estudiantes a orientación."
       />
+      {corregir && <DialogRemitir remisionId={corregir} onClose={() => setCorregir(null)} onRemitida={() => setCorregir(null)} />}
     </div>
   )
 }

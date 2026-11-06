@@ -53,3 +53,11 @@ export function useCrearRemision() {
     onSuccess: invalidar,
   })
 }
+
+export function useCorregirRemision() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: unknown }) => api.put(`/eval-col/gestion-estudiantil/orientacion/remisiones/${id}`, body),
+    onSuccess: invalidar,
+  })
+}

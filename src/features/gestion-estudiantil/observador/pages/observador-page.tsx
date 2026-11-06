@@ -59,7 +59,7 @@ function ObservadorContent() {
   const [borrador, setBorrador] = useState<ObservadorFiltros>(FILTROS_VACIOS)
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
   const [anular, setAnular] = useState<AnotacionRow | null>(null)
-  const [remitir, setRemitir] = useState<AnotacionRow | null>(null)
+  const [remitir, setRemitir] = useState<AnotacionRow | "nuevo" | null>(null)
   const [pestana, setPestana] = useState("anotaciones")
   const { notify } = useNotify()
 
@@ -132,6 +132,9 @@ function ObservadorContent() {
             pestana === "anotaciones" && <div className="flex flex-wrap items-center gap-2">
               {access.puedeImprimir && <DialogImprimirObservador filtros={filtros} />}
               <DialogExportarAnotaciones filters={queryFilters} />
+              {access.puedeRemitir && (
+                <Button size="sm" variant="outline" color="muted" onClick={() => setRemitir("nuevo")}>Remitir a orientación</Button>
+              )}
               {access.puedeCrear && (
                 <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
                   <PlusIcon data-icon="inline-start" />
@@ -216,8 +219,8 @@ function ObservadorContent() {
       {remitir && (
         <Suspense fallback={null}>
           <DialogRemitir
-            matricula={remitir.fk_tmatricula}
-            estudiante={remitir.estudiante_nombre}
+            matricula={remitir === "nuevo" ? undefined : remitir.fk_tmatricula}
+            estudiante={remitir === "nuevo" ? undefined : remitir.estudiante_nombre}
             onClose={() => setRemitir(null)}
             onRemitida={() => {
               setRemitir(null)

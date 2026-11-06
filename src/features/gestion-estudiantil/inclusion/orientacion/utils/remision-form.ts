@@ -30,3 +30,35 @@ export function remisionAlBackend(v: ValoresRemision, matricula: number) {
   const secciones = Object.fromEntries(SECCIONES_REMISION.map((s) => [s.backend, v[s.name].trim() || null]))
   return { FK_MATRICULA: matricula, FK_MOTIVO: Number(v.motivo), DESCRIPCION: v.descripcion.trim(), ...secciones }
 }
+
+export interface RemisionDetalle {
+  id: number
+  estudiante?: { nombre: string }
+  motivo: { id: number }
+  descripcion: string
+  desarrollo_fisico: string | null
+  desarrollo_socioafectivo: string | null
+  relaciones_interpersonales: string | null
+  aspecto_familiar: string | null
+  expresion_ideas: string | null
+  aspecto_volitivo: string | null
+  desarrollo_cognoscitivo: string | null
+  caracteristicas_notables: string | null
+  seguimiento: string | null
+  observaciones: string | null
+}
+
+export const remisionDesdeDetalle = (d: RemisionDetalle): ValoresRemision => ({
+  motivo: String(d.motivo.id),
+  descripcion: d.descripcion ?? "",
+  fisico: d.desarrollo_fisico ?? "",
+  socioafectivo: d.desarrollo_socioafectivo ?? "",
+  relaciones: d.relaciones_interpersonales ?? "",
+  familiar: d.aspecto_familiar ?? "",
+  ideas: d.expresion_ideas ?? "",
+  volitivo: d.aspecto_volitivo ?? "",
+  cognoscitivo: d.desarrollo_cognoscitivo ?? "",
+  notables: d.caracteristicas_notables ?? "",
+  seguimiento: d.seguimiento ?? "",
+  observaciones: d.observaciones ?? "",
+})
