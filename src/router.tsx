@@ -1248,6 +1248,51 @@ const ObservadorPage = lazyRouteComponent(
   "ObservadorPage",
 )
 
+const INCLUSION_CRUMB = { label: "Inclusión y orientación", to: paths.app.inclusionOrientacion.getHref() }
+const PiarListaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-lista-page"),
+  "PiarListaPage",
+)
+const PiarNuevoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-nuevo-page"),
+  "PiarNuevoPage",
+)
+const PiarFichaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-ficha-page"),
+  "PiarFichaPage",
+)
+const PiarHistorialPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-historial-page"),
+  "PiarHistorialPage",
+)
+export const inclusionOrientacionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.inclusionOrientacion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Inclusión y orientación" }] },
+  component: PiarListaPage,
+})
+export const piarNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.piarNuevo.path,
+  validateSearch: (s: Record<string, unknown>): { matricula?: number } => (s.matricula ? { matricula: Number(s.matricula) } : {}),
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Nuevo PIAR" }] },
+  component: PiarNuevoPage,
+})
+export const piarFichaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.piarFicha.path,
+  validateSearch: (s: Record<string, unknown>): { accion?: "acta" | "cerrar" } =>
+    s.accion === "acta" || s.accion === "cerrar" ? { accion: s.accion } : {},
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "PIAR" }] },
+  component: PiarFichaPage,
+})
+export const piarHistorialRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.piarHistorial.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Historial" }] },
+  component: PiarHistorialPage,
+})
+
 export const observadorRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.observador.path,
@@ -1549,6 +1594,10 @@ const routeTree = rootRoute.addChildren([
     planeadorPlanillaRoute,
     asistenciaRoute,
     catalogoAnotacionesRoute,
+    inclusionOrientacionRoute,
+    piarNuevoRoute,
+    piarFichaRoute,
+    piarHistorialRoute,
     observadorRoute,
     observadorNuevaRoute,
     observadorEditarRoute,
