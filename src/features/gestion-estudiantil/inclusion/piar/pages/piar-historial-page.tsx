@@ -144,9 +144,9 @@ export function PiarHistorialPage() {
                 cell: ({ row }) => row.original.estado && <Badge variant="soft" color={COLOR_VERSION[row.original.estado.codigo] ?? "muted"}><span>{row.original.estado.nombre}</span></Badge>,
               },
               { id: "fecha", header: "Fecha", cell: ({ row }) => formatFecha(row.original.fecha) },
-              { id: "autor", header: "Autor", cell: ({ row }) => <span className="block max-w-24 whitespace-normal">{row.original.autor ?? "—"}</span> },
-              { id: "motivo", header: "Motivo", cell: ({ row }) => <span className="block min-w-48 whitespace-normal">{row.original.motivo ?? "—"}</span> },
-              { id: "cambio", header: "Cambio (anterior → nuevo)", cell: ({ row }) => <span className="block max-w-64 whitespace-normal">{row.original.cambio}</span> },
+              { id: "autor", header: "Autor", cell: ({ row }) => row.original.autor ?? "—" },
+              { id: "motivo", header: "Motivo", cell: ({ row }) => <span className="block min-w-72 whitespace-normal">{row.original.motivo ?? "—"}</span> },
+              { id: "cambio", header: "Cambio (anterior → nuevo)", cell: ({ row }) => <span className="block min-w-80 whitespace-normal">{row.original.cambio}</span> },
               {
                 id: "archivo",
                 header: "Archivo",
