@@ -17,7 +17,6 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 
 interface EmployeeColumnsOptions {
   establishmentId: number | null
-  onRoles: (employee: FuncionarioListItem) => void
 }
 
 function ActionButton({ label, children, ...rest }: { label: string; children: ReactNode } & ComponentProps<typeof Button>) {
@@ -33,7 +32,7 @@ function ActionButton({ label, children, ...rest }: { label: string; children: R
   )
 }
 
-function ActionsCell({ employee, establishmentId, onRoles }: { employee: FuncionarioListItem } & EmployeeColumnsOptions) {
+function ActionsCell({ employee, establishmentId }: { employee: FuncionarioListItem } & EmployeeColumnsOptions) {
   const { puedeEditar } = useMenuPermission("FUNCIONARIOS")
   const search = { establecimiento: establishmentId ?? undefined }
 
@@ -55,7 +54,11 @@ function ActionsCell({ employee, establishmentId, onRoles }: { employee: Funcion
           >
             <PencilIcon />
           </ActionButton>
-          <ActionButton label="Roles y permisos" type="button" onClick={() => onRoles(employee)}>
+          <ActionButton
+            label="Roles y permisos"
+            render={<Link to={paths.app.establishments.officialRoles.getHref(employee.id)} search={search} />}
+            nativeButton={false}
+          >
             <ShieldIcon />
           </ActionButton>
         </>

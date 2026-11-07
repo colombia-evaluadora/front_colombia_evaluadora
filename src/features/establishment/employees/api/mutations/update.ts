@@ -30,8 +30,7 @@ import type { Employee } from "@/features/establishment/employees/api/types/empl
  * aparte, ver el parámetro `foto` de `update()`), `person.accountExists`
  * (bandera de solo-front que arma el autocompletado por documento —
  * `use-user-by-document.ts`; nunca existió como columna, no tiene nada que hacer en el body), y
- * `permissions` (los permisos van aparte, ver `PUT /funcionario/:ID/permisos`
- * en `update-permissions.ts`).
+ * `permissions` (los roles van aparte, en Roles y permisos: `roles-funcionario.ts`).
  *
  * `person.birthDate` no es obligatorio: si el formulario lo deja vacío
  * (`""`), nunca se manda el string vacío tal cual — `fn_fun_actualizar`

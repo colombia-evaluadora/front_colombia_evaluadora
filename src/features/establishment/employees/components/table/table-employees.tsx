@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState, type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -23,12 +23,10 @@ import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/qu
 import { useFuncionariosQuery } from "@/features/establishment/employees/api/query/use-funcionarios"
 import { ESTADO_FUNCIONARIO_OPTIONS } from "@/features/establishment/employees/api/ui-mappings"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { FuncionarioListItem } from "@/features/establishment/employees/api/types/funcionario"
 import { useEmployeesFilters } from "@/features/establishment/employees/hooks/use-filters"
 import { useEstablecimientoFuncionarios } from "@/features/establishment/employees/hooks/use-establecimiento-funcionarios"
 import { createColumns } from "@/features/establishment/employees/components/table/columns-employees"
 import { ExportEmployeesDialog } from "@/features/establishment/employees/components/dialogs/dialog-export"
-import { RolesPermisosDialog } from "@/features/establishment/employees/components/dialogs/dialog-roles-permisos"
 import { EstablishmentSelect } from "@/features/establishment/employees/components/establishment-select"
 import { SearchEmployees } from "@/features/establishment/employees/components/search/search-employees"
 import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
@@ -45,7 +43,6 @@ export function EmployeesDataTable({ title, action }: EmployeesDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } = useEmployeesFilters()
   const establecimiento = useEstablecimientoFuncionarios(search.establecimiento)
-  const [rolesDe, setRolesDe] = useState<FuncionarioListItem | null>(null)
 
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
@@ -60,7 +57,7 @@ export function EmployeesDataTable({ title, action }: EmployeesDataTableProps) {
       : { establishmentId: establecimiento.id, filters: queryFilters, sorting, pageIndex, pageSize },
   )
 
-  const columns = createColumns({ establishmentId: establecimiento.id, onRoles: setRolesDe })
+  const columns = createColumns({ establishmentId: establecimiento.id })
 
   const { table } = useDataTable({
     columns,
@@ -144,13 +141,6 @@ export function EmployeesDataTable({ title, action }: EmployeesDataTableProps) {
         )}
       </TableScreenBody>
 
-      {establecimiento.id != null ? (
-        <RolesPermisosDialog
-          employee={rolesDe}
-          establishmentId={establecimiento.id}
-          onOpenChange={(open) => !open && setRolesDe(null)}
-        />
-      ) : null}
     </TableScreen>
   )
 }

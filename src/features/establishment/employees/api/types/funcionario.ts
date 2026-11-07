@@ -104,6 +104,11 @@ export interface PersonaPorDocumento {
   genderName: string
   emailProtected: string
   phoneProtected: string
+  /**
+   * Correo de la cuenta cuando la persona tiene cuenta pero no es funcionario: con él se le crea el
+   * perfil (el front muestra solo el enmascarado). `null` si ya es funcionario.
+   */
+  accountEmail: string | null
   photoArchivoId: number | null
   /** Ya pertenece al establecimiento. */
   linked: boolean

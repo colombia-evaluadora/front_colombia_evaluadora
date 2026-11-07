@@ -220,6 +220,25 @@ export const CATALOGO_RUTAS: RutaCatalogo[] = [
     params: { employeeId: "Id del funcionario" },
     search: { establecimiento: "Id del establecimiento" },
   },
+  {
+    codigo: "funcionarios.roles",
+    menu: "FUNCIONARIOS",
+    ruta: "/app/establecimiento-educativo/funcionarios/roles/$employeeId",
+    descripcion:
+      "Roles y permisos de un funcionario: sus roles por sede y jornada con Vigente hasta; asignar, inactivar, activar, prorrogar y eliminar roles.",
+    accion: "editar",
+    params: { employeeId: "Id del funcionario" },
+    search: { establecimiento: "Id del establecimiento" },
+  },
+  {
+    codigo: "funcionarios.roles.permisos",
+    menu: "FUNCIONARIOS",
+    ruta: "/app/establecimiento-educativo/funcionarios/roles/$employeeId/permisos/$asignacionId",
+    descripcion: "Permisos de un rol asignado a un funcionario: restringir Acceso, Guardar y Eliminar por módulo y submódulo.",
+    accion: "editar",
+    params: { employeeId: "Id del funcionario", asignacionId: "Id del rol asignado (sede y jornada)" },
+    search: { establecimiento: "Id del establecimiento" },
+  },
   // ─── Planeador ───────────────────────────────────────────────────────────
   {
     codigo: "planeador.actividades",

@@ -20,6 +20,8 @@ interface PersonaRow {
   genero_nombre: string | null
   correo_protegido: string | null
   telefono_protegido: string | null
+  /** Correo real de una cuenta sin perfil de funcionario (V579.4), para registrarla; `null` si ya es funcionario. */
+  correo_cuenta: string | null
   fk_tarchivo_foto: number | null
   vinculado: boolean
 }
@@ -38,6 +40,7 @@ const toPersona = (row: PersonaRow): PersonaPorDocumento => ({
   genderName: row.genero_nombre ?? "",
   emailProtected: row.correo_protegido ?? "",
   phoneProtected: row.telefono_protegido ?? "",
+  accountEmail: row.correo_cuenta || null,
   photoArchivoId: row.fk_tarchivo_foto,
   linked: row.vinculado === true,
 })

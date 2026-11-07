@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Notificacion } from "@/features/notificaciones/api/types"
-import { CATEGORIA_ICONS } from "@/features/notificaciones/api/ui-mappings"
+import { CATEGORIA_ICONS, ENLACE_POR_TIPO } from "@/features/notificaciones/api/ui-mappings"
 import { horaDelDia, tiempoRelativo } from "@/features/notificaciones/lib/agrupar-por-dia"
 import { TIPO_INVITACION_GRUPO, tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
 import { InvitacionAcciones } from "@/features/notificaciones/components/invitacion-acciones"
@@ -73,6 +73,11 @@ export function NotificacionItem({
             )}
           >
             {n.cuerpo}
+          </span>
+        )}
+        {ENLACE_POR_TIPO[n.tipo] && (
+          <span className="text-sm font-medium text-primary underline-offset-2 hover:underline">
+            {ENLACE_POR_TIPO[n.tipo]}
           </span>
         )}
         {/* La categoría no se muestra por fila: casi todo caía en "Sistema" y no

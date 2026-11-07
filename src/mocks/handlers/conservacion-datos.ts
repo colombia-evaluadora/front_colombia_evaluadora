@@ -1,4 +1,4 @@
-import { delay, http, HttpResponse, passthrough } from "msw"
+import { delay, http, HttpResponse } from "msw"
 
 import type { Disposicion, Politica } from "@/features/administration/conservacion-datos/api/types"
 import {
@@ -298,7 +298,9 @@ export const conservacionDatosHandlers = [
   // Antes que el de planeador: solo responde las actas de este mock.
   http.post("*/api/files/view-token/:archivoId", async ({ params }) => {
     const nombre = actasDb.get(Number(params.archivoId))
-    if (!nombre) return passthrough()
+    // Sin respuesta MSW sigue con el siguiente handler; `passthrough()` mandaba la petición al
+    // backend real (401 sin sesión) y rompía las vistas previas de los demás mocks.
+    if (!nombre) return undefined
     await delay(100)
     const pdf = "%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF"
     return HttpResponse.json({ token: "mock", url: `data:application/pdf;base64,${btoa(pdf)}`, expiresIn: 300 })

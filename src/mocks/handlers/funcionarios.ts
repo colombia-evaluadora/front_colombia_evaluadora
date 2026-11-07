@@ -1,6 +1,7 @@
 import { delay, http, HttpResponse } from "msw"
 
 import { employeesDb } from "@/mocks/db/employees"
+import { registrarArchivoMaterial } from "@/mocks/db/planeador"
 
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 
@@ -136,6 +137,8 @@ export const funcionariosHandlers = [
           genero_nombre: e.person.gender?.name ?? null,
           correo_protegido: enmascarar(e.person.email),
           telefono_protegido: `${e.person.phone.slice(0, 3)}***${e.person.phone.slice(-4)}`,
+          // Ya es funcionario: no se le devuelve el correo de la cuenta (V579.4).
+          correo_cuenta: null,
           fk_tarchivo_foto: null,
           vinculado: true,
         },
@@ -162,6 +165,9 @@ export const funcionariosHandlers = [
         if (String(body.CON_CONTACTO) === "true") {
           e.person.email = String(body.CORREO ?? e.person.email)
           e.person.phone = String(body.TELEFONO ?? "")
+          // La foto nueva se registra donde la sirve `/files/view-token/:id`; LIMPIAR_FOTO la quita.
+          if (body.FOTO instanceof File) e.person.photoArchivoId = registrarArchivoMaterial(body.FOTO)
+          else if (String(body.LIMPIAR_FOTO) === "true") e.person.photoArchivoId = null
         }
         if (String(body.CON_COMPLEMENTARIA) === "true") e.address = String(body.DIRECCION ?? "")
         const cambio = anterior.toLowerCase() !== e.person.email.toLowerCase()

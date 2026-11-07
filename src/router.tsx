@@ -171,6 +171,14 @@ const EmployeeFormPage = lazyRouteComponent(
   () => import("@/features/establishment/employees/pages/employee-form-page"),
   "EmployeeFormPage"
 )
+const EmployeeRolesPage = lazyRouteComponent(
+  () => import("@/features/establishment/employees/pages/employee-roles-page"),
+  "EmployeeRolesPage"
+)
+const EmployeeRolePermissionsPage = lazyRouteComponent(
+  () => import("@/features/establishment/employees/pages/employee-role-permissions-page"),
+  "EmployeeRolePermissionsPage"
+)
 
 const RolesMenusPage = lazyRouteComponent(
   () => import("@/features/administration/roles-menus/pages/roles-menus-page"),
@@ -997,6 +1005,29 @@ export const employeeEditRoute = createRoute({
   component: EmployeeFormPage,
 })
 
+export const employeeRolesRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialRoles.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Roles y permisos" }] },
+  component: EmployeeRolesPage,
+})
+
+export const employeeRolePermissionsRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialRolePermissions.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: {
+    breadcrumb: (params) => [
+      ESTABLECIMIENTO_CRUMB,
+      FUNCIONARIOS_CRUMB,
+      { label: "Roles y permisos", to: paths.app.establishments.officialRoles.getHref(params.employeeId) },
+      { label: "Permisos" },
+    ],
+  },
+  component: EmployeeRolePermissionsPage,
+})
+
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.add.path,
@@ -1795,6 +1826,8 @@ const routeTree = rootRoute.addChildren([
       employeeAddRoute,
       employeeDetailRoute,
       employeeEditRoute,
+      employeeRolesRoute,
+      employeeRolePermissionsRoute,
       addEstablishmentRoute,
       establishmentDetailRoute,
       editEstablishmentRoute,

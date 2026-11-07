@@ -67,7 +67,6 @@ import { ESTADO_FUNCIONARIO_BADGE, ESTADO_FUNCIONARIO_LABELS } from "@/features/
 import { useEstablecimientoFuncionarios } from "@/features/establishment/employees/hooks/use-establecimiento-funcionarios"
 import { AnexosSection, type AnexoPendiente } from "@/features/establishment/employees/components/forms/anexos-section"
 import { DialogCorregirIdentidad } from "@/features/establishment/employees/components/dialogs/dialog-corregir-identidad"
-import { RolesPermisosDialog } from "@/features/establishment/employees/components/dialogs/dialog-roles-permisos"
 import { enmascararCorreo, enmascararTelefono } from "@/features/establishment/employees/utils/enmascarar"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { ReadOnlyValue } from "@/features/establishment/campuses/components/campus-read-only"
@@ -192,7 +191,6 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
   const [pending, setPending] = useState<AnexoPendiente[]>([])
   const [saving, setSaving] = useState(false)
   const [correcting, setCorrecting] = useState(false)
-  const [rolesOpen, setRolesOpen] = useState(false)
 
   const guardar = useGuardarFicha()
   const crear = useCrearAnexo()
@@ -240,9 +238,10 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
   }, [identification, mode])
   const personaQuery = usePersonaPorDocumentoQuery(establishmentId, documentTypeId, documentoBuscado, mode === "create")
   const persona = mode === "create" && documentoBuscado === identification ? (personaQuery.data ?? null) : null
-  // Ya es funcionario en otro establecimiento: sus datos están protegidos. Si solo tiene cuenta
-  // (p. ej. como acudiente) se pide el correo, que es con el que se le crea el perfil de funcionario.
-  const personaProtegida = persona != null && persona.funcionarioId != null
+  // La persona ya existe (funcionario de otro establecimiento, o solo con cuenta, p. ej. como
+  // acudiente): sus datos están protegidos y el contacto se muestra enmascarado (Regla 11). Si solo
+  // tiene cuenta, el perfil de funcionario se le crea con el correo de esa cuenta (`accountEmail`).
+  const personaProtegida = persona != null
 
   locks.current.identityLocked = mode !== "create" || persona != null
   locks.current.contactLocked = mode === "detail" || personaProtegida || (mode === "edit" && ficha?.canEdit !== true)
@@ -309,14 +308,15 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
           secondLastName: value.secondLastName.trim() || undefined,
           birthDate: value.birthDate,
           gender: genders.find((g) => g.id === value.genderId) ?? null,
-          email: toEmailInput(value.email),
-          phone: value.phone.trim(),
+          email: persona?.accountEmail ?? toEmailInput(value.email),
+          // De una cuenta que ya existe no se toca el contacto ni la foto.
+          phone: persona ? "" : value.phone.trim(),
         },
-        photo,
+        persona ? null : photo,
       )
       funcionarioId = result.pkFuncionario
       registrado = true
-      aviso = employeeInvitationNotice({ ...result, email: result.email || value.email })
+      aviso = employeeInvitationNotice({ ...result, email: result.email || persona?.emailProtected || value.email })
     }
     try {
       await guardarFicha({ funcionarioId, establishmentId, complementaria: complementariaDe(value) })
@@ -449,7 +449,13 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
                 </Button>
               ) : null}
               {ficha && puedeEditar ? (
-                <Button type="button" variant="ghost" color="primary" size="sm" onClick={() => setRolesOpen(true)}>
+                <Button
+                  render={<Link to={paths.app.establishments.officialRoles.getHref(ficha.id)} search={search} />}
+                  nativeButton={false}
+                  variant="ghost"
+                  color="primary"
+                  size="sm"
+                >
                   <ShieldIcon data-icon="inline-start" />
                   Roles y permisos
                 </Button>
@@ -784,11 +790,6 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
         />
       ) : null}
 
-      <RolesPermisosDialog
-        employee={rolesOpen && ficha ? { id: ficha.id, name: nombreCompleto } : null}
-        establishmentId={establishmentId}
-        onOpenChange={(open) => !open && setRolesOpen(false)}
-      />
     </TableScreen>
   )
 }
