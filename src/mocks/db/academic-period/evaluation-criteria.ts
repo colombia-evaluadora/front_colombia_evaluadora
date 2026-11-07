@@ -55,3 +55,13 @@ export function evaluationCriteriaName(id: string | number | null | undefined): 
 }
 
 export const evaluationCriteriaDb: Record<number, EvaluationCriteria> = {}
+
+// VALOR de TLISTA_VALOR: la posición dentro de su categoría ("1", "2"…).
+export function evaluationCriteriaValue(id: string | number | null | undefined): string | null {
+  if (id == null || id === "") return null
+  for (const options of Object.values(EVALUATION_CRITERIA_CATALOGS)) {
+    const index = options.findIndex((o) => o.id === Number(id))
+    if (index >= 0) return String(index + 1)
+  }
+  return null
+}

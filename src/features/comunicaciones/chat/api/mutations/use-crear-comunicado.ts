@@ -73,7 +73,7 @@ const base = (conversacionId: number) => `/comunicaciones/conversaciones/${conve
  * Sube los archivos uno por uno (multipart a file-service, que reenvía `ADJUNTO = pk_tarchivo` a
  * comms-service). Devuelve los nombres de los que fallaron para avisar sin perder el comunicado.
  */
-async function subirAdjuntos(conversacionId: number, archivos: File[]) {
+export async function subirAdjuntos(conversacionId: number, archivos: File[]) {
   const fallidos: { nombre: string; error: string }[] = []
   for (const archivo of archivos) {
     try {

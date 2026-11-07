@@ -1,5 +1,3 @@
-import type { ReactNode } from "react"
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,16 +11,8 @@ import {
 } from "@/components/ui/dialog"
 
 import { colorDeTipo, formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
-
-function Dato({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{children || "—"}</dd>
-    </div>
-  )
-}
 
 /** Ver detalle: lo mismo del listado más observación, marcas y, si aplica, la anulación. */
 export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: AnotacionRow | null; onClose: () => void }) {
@@ -66,7 +56,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
           </dl>
         )}
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="muted" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
             Cerrar
           </DialogClose>
         </DialogFooter>

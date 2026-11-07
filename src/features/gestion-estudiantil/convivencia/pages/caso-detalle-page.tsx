@@ -23,7 +23,7 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
       <TableScreenHeader>
         <TableScreenTitle
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3 h-auto font-normal text-sm" onClick={detalle.volver}>
+            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={detalle.volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Convivencia
             </Button>

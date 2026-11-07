@@ -15,6 +15,9 @@ export interface EvaluationCriteria {
   periodCalculationElements: string
   subjectGradeCriteria: string
   finalGradeCriteria: string
+  // VALOR de CRITERIO_FINAL_PERACA ("1" equitativo, "2" por porcentaje):
+  // decide si los períodos de evaluación usan peso (Regla 35).
+  finalGradeCriteriaValue?: string
   areaGradeCriteria: string
   studentWithoutGradesPerformance: string
   // Rango numérico dependiente del formato de calificación seleccionado
@@ -37,7 +40,7 @@ export interface CriteriaOption {
 }
 
 export type EvaluationCriteriaOptions = Record<
-  Exclude<keyof EvaluationCriteria, "gradingScale" | "gradingFormatName" | "recoveryPercentage">,
+  Exclude<keyof EvaluationCriteria, "gradingScale" | "gradingFormatName" | "finalGradeCriteriaValue" | "recoveryPercentage">,
   CriteriaOption[]
 >
 

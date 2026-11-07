@@ -122,6 +122,44 @@ export const paths = {
       path: "administracion/superadministradores",
       getHref: () => "/app/administracion/superadministradores",
     },
+    supervisoresTerritoriales: {
+      path: "administracion/supervisores-territoriales",
+      getHref: () => "/app/administracion/supervisores-territoriales",
+    },
+    // Bajo `detalle/` y `modificar/`: un `$id` suelto chocaría con `nuevo`.
+    supervisorTerritorialNuevo: {
+      path: "administracion/supervisores-territoriales/nuevo",
+      getHref: () => "/app/administracion/supervisores-territoriales/nuevo",
+    },
+    supervisorTerritorialDetalle: {
+      path: "administracion/supervisores-territoriales/detalle/$supervisorId",
+      getHref: (supervisorId: number | string) =>
+        `/app/administracion/supervisores-territoriales/detalle/${supervisorId}`,
+    },
+    supervisorTerritorialModificar: {
+      path: "administracion/supervisores-territoriales/modificar/$supervisorId",
+      getHref: (supervisorId: number | string) =>
+        `/app/administracion/supervisores-territoriales/modificar/${supervisorId}`,
+    },
+    administradoresTerritoriales: {
+      path: "administracion/administradores-territoriales",
+      getHref: () => "/app/administracion/administradores-territoriales",
+    },
+    // Bajo `detalle/` y `modificar/`: un `$id` suelto chocaría con `nuevo`.
+    administradorTerritorialNuevo: {
+      path: "administracion/administradores-territoriales/nuevo",
+      getHref: () => "/app/administracion/administradores-territoriales/nuevo",
+    },
+    administradorTerritorialDetalle: {
+      path: "administracion/administradores-territoriales/detalle/$administradorId",
+      getHref: (administradorId: number | string) =>
+        `/app/administracion/administradores-territoriales/detalle/${administradorId}`,
+    },
+    administradorTerritorialModificar: {
+      path: "administracion/administradores-territoriales/modificar/$administradorId",
+      getHref: (administradorId: number | string) =>
+        `/app/administracion/administradores-territoriales/modificar/${administradorId}`,
+    },
     criteriosPrioridad: {
       path: "administracion/criterios-prioridad",
       getHref: () => "/app/administracion/criterios-prioridad",
@@ -129,6 +167,10 @@ export const paths = {
     parametrosEdad: {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
+    },
+    relacionesAlumnoGrupo: {
+      path: "administracion/relaciones-alumno-grupo",
+      getHref: () => "/app/administracion/relaciones-alumno-grupo",
     },
     festivos: {
       path: "administracion/festivos",
@@ -348,6 +390,30 @@ export const paths = {
       path: "gestion-estudiantil/convivencia/comite/sesion/$sesionId/editar",
       getHref: (sesionId: number | string) => `/app/gestion-estudiantil/convivencia/comite/sesion/${sesionId}/editar`,
     },
+    inclusionOrientacion: {
+      path: "gestion-estudiantil/inclusion-orientacion",
+      getHref: () => "/app/gestion-estudiantil/inclusion-orientacion",
+    },
+    atencionNueva: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+      getHref: () => "/app/gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+    },
+    atencionFicha: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/$atencionId",
+      getHref: (atencionId: number | string) => `/app/gestion-estudiantil/inclusion/orientacion/atencion/${atencionId}`,
+    },
+    piarNuevo: {
+      path: "gestion-estudiantil/inclusion/piar/nuevo",
+      getHref: () => "/app/gestion-estudiantil/inclusion/piar/nuevo",
+    },
+    piarFicha: {
+      path: "gestion-estudiantil/inclusion/piar/$piarId",
+      getHref: (piarId: number | string) => `/app/gestion-estudiantil/inclusion/piar/${piarId}`,
+    },
+    piarHistorial: {
+      path: "gestion-estudiantil/inclusion/piar/$piarId/historial",
+      getHref: (piarId: number | string) => `/app/gestion-estudiantil/inclusion/piar/${piarId}/historial`,
+    },
     observador: {
       path: "gestion-estudiantil/observador",
       getHref: () => "/app/gestion-estudiantil/observador",
@@ -367,6 +433,10 @@ export const paths = {
     comunicacionesComunicadosTerritorial: {
       path: "comunicaciones/comunicados-territorial",
       getHref: () => "/app/comunicaciones/comunicados-territorial",
+    },
+    comunicacionesComunicadoNuevo: {
+      path: "comunicaciones/comunicados/nuevo",
+      getHref: () => "/app/comunicaciones/comunicados/nuevo",
     },
     comunicacionesProcesos: {
       path: "comunicaciones/procesos",

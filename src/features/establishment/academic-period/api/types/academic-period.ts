@@ -73,9 +73,10 @@ export interface AcademicPeriodConfig {
 export interface AcademicPeriodsQueryFilters {
   sedeName?: string
   schoolYearId?: number
+  sedeId?: number
+  jornadaId?: number
+  enrollmentModality?: EnrollmentModality
   statusId?: number[]
-  startFrom?: string
-  startTo?: string
 }
 
 export interface AcademicPeriodsQueryRequest {
@@ -113,6 +114,12 @@ export interface CreateAcademicPeriodRequest {
     afterBlock: number | null
     durationMinutes: number
   }[]
+}
+
+// Solo al crear, desde el ciclo anterior (Regla 96).
+export interface CreateAcademicPeriodBody extends CreateAcademicPeriodRequest {
+  GENERAR_GRADOS: "S" | "N"
+  COPIAR_CRITERIOS: "S" | "N"
 }
 
 export type UpdateAcademicPeriodRequest = CreateAcademicPeriodRequest

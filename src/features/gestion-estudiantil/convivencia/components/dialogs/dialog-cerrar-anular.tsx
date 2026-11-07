@@ -3,7 +3,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CheckCircleIcon, ProhibitIcon } from "@/components/ui/icons"
-import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -21,15 +20,15 @@ interface Props {
 function useEstadoDialogo(onClose: () => void) {
   const [texto, setTexto] = useState("")
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const cerrar = () => {
     setTexto("")
     setIntento(false)
-    setNotice(null)
+    setError(null)
     onClose()
   }
-  const onError = (error: Error) => setNotice({ id: Date.now(), message: getErrorMessage(error) })
-  return { texto, setTexto, intento, setIntento, notice, setNotice, cerrar, onError }
+  const onError = (e: Error) => setError(e)
+  return { texto, setTexto, intento, setIntento, error, cerrar, onError }
 }
 
 /**
@@ -51,7 +50,8 @@ export function DialogCerrarCaso({ caso, onClose }: Props) {
   const error = s.intento ? errorLargo(s.texto, 10, 2000, "El resumen") : undefined
 
   // G.2.CAS.PRT.2: la Regla 12 no se corrige en este modal; se informa el motivo y nada más.
-  const bloqueo = s.notice && String(s.notice.message).startsWith("No se puede cerrar") ? String(s.notice.message) : null
+  const mensaje = s.error ? getErrorMessage(s.error) : ""
+  const bloqueo = mensaje.startsWith("No se puede cerrar") ? mensaje : null
   if (caso && bloqueo) {
     return (
       <Dialog open onOpenChange={(open) => !open && s.cerrar()}>
@@ -75,8 +75,7 @@ export function DialogCerrarCaso({ caso, onClose }: Props) {
       caso={caso}
       titulo="Cerrar el caso"
       onClose={s.cerrar}
-      notice={s.notice}
-      onNoticeClose={() => s.setNotice(null)}
+      error={s.error}
       pending={mut.isPending}
       confirmar={{
         label: "Cerrar caso",
@@ -125,8 +124,7 @@ export function DialogAnularCaso({ caso, onClose }: Props) {
       caso={caso}
       titulo="Anular el caso"
       onClose={s.cerrar}
-      notice={s.notice}
-      onNoticeClose={() => s.setNotice(null)}
+      error={s.error}
       pending={mut.isPending}
       confirmar={{
         label: "Anular",

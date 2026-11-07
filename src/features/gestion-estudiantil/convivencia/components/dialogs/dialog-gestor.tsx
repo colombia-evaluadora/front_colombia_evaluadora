@@ -2,9 +2,7 @@ import { useState } from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon, UserSwitchIcon } from "@/components/ui/icons"
-import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
 import { useAsignarGestor } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useGestoresCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
@@ -22,14 +20,14 @@ export function DialogGestor({ caso, onClose }: Props) {
   const { notify } = useNotify()
   const [gestor, setGestor] = useState("")
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [errorMutacion, setErrorMutacion] = useState<unknown>(null)
   const candidatos = useGestoresCasoQuery(caso?.id)
   const asignar = caso != null && !caso.fk_gestor
 
   function cerrar() {
     setGestor("")
     setIntento(false)
-    setNotice(null)
+    setErrorMutacion(null)
     onClose()
   }
 
@@ -40,7 +38,7 @@ export function DialogGestor({ caso, onClose }: Props) {
         notify(nombre ? `Caso asignado a ${nombre}.` : "Gestor asignado.", { variant: "success" })
         cerrar()
       },
-      onError: (error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+      onError: (error) => setErrorMutacion(error),
     },
   })
 
@@ -54,8 +52,7 @@ export function DialogGestor({ caso, onClose }: Props) {
       caso={caso}
       titulo={asignar ? "Asignar gestor" : "Reasignar"}
       onClose={cerrar}
-      notice={notice}
-      onNoticeClose={() => setNotice(null)}
+      error={errorMutacion}
       pending={mut.isPending}
       confirmar={{
         label: asignar ? "Asignar" : "Reasignar",

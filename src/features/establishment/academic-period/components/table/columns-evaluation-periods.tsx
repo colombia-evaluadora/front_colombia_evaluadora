@@ -30,12 +30,15 @@ export function formatPeso(value: number): string {
 
 interface CreateEvaluationPeriodColumnsOptions {
   academicPeriodId?: number
+  /** Columna Peso solo con el criterio por porcentaje (Regla 35). */
+  usaPesos?: boolean
 }
 
 export function createEvaluationPeriodColumns({
   academicPeriodId,
+  usaPesos = false,
 }: CreateEvaluationPeriodColumnsOptions = {}): ColumnDef<EvaluationPeriod>[] {
-  return [
+  const columns: ColumnDef<EvaluationPeriod>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -116,7 +119,11 @@ export function createEvaluationPeriodColumns({
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
-          <CreateEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
+          <CreateEvaluationPeriodDialog
+            period={row.original}
+            academicPeriodId={academicPeriodId}
+            usaPesos={usaPesos}
+          />
           <DeleteEvaluationPeriodDialog period={row.original} />
         </div>
       ),
@@ -125,6 +132,7 @@ export function createEvaluationPeriodColumns({
       size: 96,
     },
   ]
+  return usaPesos ? columns : columns.filter((column) => column.id !== "peso")
 }
 
 export type EvaluationPeriodTable = Table<EvaluationPeriod>

@@ -68,13 +68,6 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     size: 32,
   },
   {
-    id: "schoolYearId",
-    accessorKey: "schoolYearId",
-    meta: { label: "Año lectivo" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Año lectivo" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.schoolYearId}</span>,
-  },
-  {
     id: "sedeName",
     accessorKey: "sedeName",
     meta: { label: "Sede" },
@@ -84,13 +77,36 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     ),
   },
   {
+    id: "schoolYearId",
+    accessorKey: "schoolYearId",
+    meta: { label: "Año" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Año" />,
+    cell: ({ row }) => <span className="font-medium">{row.original.schoolYearId}</span>,
+  },
+  {
     id: "jornadaName",
     accessorKey: "jornadaName",
     meta: { label: "Jornada" },
-    // El listado del SSO no ordena por jornada.
-    enableSorting: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
     cell: ({ row }) => row.original.jornadaName ?? "",
+  },
+  {
+    id: "enrollmentModality",
+    accessorKey: "enrollmentModality",
+    meta: { label: "Modalidad de matrícula" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Modalidad de matrícula" />,
+    cell: ({ row }) => (
+      <span>
+        {ENROLLMENT_MODALITIES.find((m) => m.value === row.original.enrollmentModality)?.label ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "cycle",
+    accessorKey: "cycle",
+    meta: { label: "Ciclo" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ciclo" />,
+    cell: ({ row }) => <span>{row.original.cycle != null ? `C${row.original.cycle}` : "—"}</span>,
   },
   {
     id: "status",
@@ -155,24 +171,6 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     cell: ({ row }) => <span>{row.original.defaultBlocksCount ?? "—"}</span>,
   },
   {
-    id: "enrollmentModality",
-    accessorKey: "enrollmentModality",
-    meta: { label: "Modalidad de matrícula" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Modalidad de matrícula" />,
-    cell: ({ row }) => (
-      <span>
-        {ENROLLMENT_MODALITIES.find((m) => m.value === row.original.enrollmentModality)?.label ?? "—"}
-      </span>
-    ),
-  },
-  {
-    id: "cycle",
-    accessorKey: "cycle",
-    meta: { label: "Ciclo" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Ciclo" />,
-    cell: ({ row }) => <span>{row.original.cycle != null ? `C${row.original.cycle}` : "—"}</span>,
-  },
-  {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
@@ -201,5 +199,17 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     size: 200,
   },
 ]
+
+// Visibles por defecto: Sede, Año, Jornada, Modalidad, Ciclo y Estado; el resto
+// se agrega desde la configuración de columnas.
+export const defaultColumnVisibility: Record<string, boolean> = {
+  reservationEnabled: false,
+  startDate: false,
+  endDate: false,
+  enrollmentDeadline: false,
+  previousPeriodName: false,
+  schedule: false,
+  defaultBlocksCount: false,
+}
 
 export type AcademicPeriodTable = Table<AcademicPeriod>

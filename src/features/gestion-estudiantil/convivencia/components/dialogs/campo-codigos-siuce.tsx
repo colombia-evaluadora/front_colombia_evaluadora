@@ -57,7 +57,7 @@ export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso,
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            className="mt-4.5"
+            className="mt-5"
             aria-label="Quitar código"
             onClick={() => onChange(codigos.filter((_, j) => j !== i))}
           >

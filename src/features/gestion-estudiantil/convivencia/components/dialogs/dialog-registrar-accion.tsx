@@ -34,8 +34,7 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
       titulo="Registrar acción"
       className="sm:max-w-2xl"
       onClose={f.cerrar}
-      notice={f.notice}
-      onNoticeClose={f.cerrarNotice}
+      error={f.error}
       pending={f.pending}
       confirmar={{ label: "Registrar", icon: <ClipboardAddIcon data-icon="inline-start" />, onClick: f.registrar }}
     >
@@ -51,35 +50,37 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
           error={ver.accion}
           onChange={f.elegirAccion}
         />
-        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
-          <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(ver.fecha) || undefined}>
-            <FieldLabel htmlFor="accion-fecha">Fecha*</FieldLabel>
-            <DatePicker
-              id="accion-fecha"
-              maxDate={new Date()}
-              value={parseDateValue(fechaHora.fecha)}
-              onChange={(date) => setFechaHora({ ...fechaHora, fecha: date ? formatDateValue(date) : "" })}
-            />
-            {ver.fecha && <FieldError>{ver.fecha}</FieldError>}
-          </Field>
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="accion-hora">Hora*</FieldLabel>
-            <DatePicker
-              id="accion-hora"
-              mode="time"
-              value={fechaHora.hora}
-              onChange={(hora) => setFechaHora({ ...fechaHora, hora })}
-            />
-          </Field>
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="accion-responsable">Responsable*</FieldLabel>
-            <Input id="accion-responsable" value={user?.name ?? ""} readOnly disabled />
-          </Field>
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
+            <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(ver.fecha) || undefined}>
+              <FieldLabel htmlFor="accion-fecha">Fecha*</FieldLabel>
+              <DatePicker
+                id="accion-fecha"
+                maxDate={new Date()}
+                value={parseDateValue(fechaHora.fecha)}
+                onChange={(date) => setFechaHora({ ...fechaHora, fecha: date ? formatDateValue(date) : "" })}
+              />
+              {ver.fecha && <FieldError>{ver.fecha}</FieldError>}
+            </Field>
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor="accion-hora">Hora*</FieldLabel>
+              <DatePicker
+                id="accion-hora"
+                mode="time"
+                value={fechaHora.hora}
+                onChange={(hora) => setFechaHora({ ...fechaHora, hora })}
+              />
+            </Field>
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor="accion-responsable">Responsable*</FieldLabel>
+              <Input id="accion-responsable" value={user?.name ?? ""} readOnly disabled />
+            </Field>
+          </div>
+          <FieldDescription>
+            El responsable es quien registra la acción.
+            {f.fechaHechosDesconocida && " La fecha de los hechos es desconocida: no se puede contrastar con la ocurrencia."}
+          </FieldDescription>
         </div>
-        <FieldDescription className="-mt-2">
-          El responsable es quien registra la acción.
-          {f.fechaHechosDesconocida && " La fecha de los hechos es desconocida: no se puede contrastar con la ocurrencia."}
-        </FieldDescription>
 
         {f.conEntidad && (
           <ComboOpciones

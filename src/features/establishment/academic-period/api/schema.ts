@@ -112,6 +112,9 @@ export const academicPeriodFormSchema = z
     enrollmentModality: z.enum(["ANUAL", "SEMESTRAL", "TRIMESTRAL", "BIMESTRAL"]),
     cycle: z.number().int().positive("El ciclo es obligatorio"),
     reservationEnabled: z.boolean(),
+    // Regla 96: solo al crear un ciclo > 1; por defecto No.
+    generateNextGrades: z.boolean().default(false),
+    copyScalesAndCriteria: z.boolean().default(false),
     defaultBlocksCount: z
       .number()
       .int()
@@ -155,10 +158,11 @@ export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
 
 export const academicPeriodsFiltersFormSchema = z.object({
   sedeName: z.string(),
+  sedeId: z.string(),
+  jornadaId: z.string(),
   schoolYearId: z.string(),
+  enrollmentModality: z.string(),
   statusId: z.string(),
-  startFrom: z.string(),
-  startTo: z.string(),
 })
 export type AcademicPeriodsFiltersFormInput = z.input<typeof academicPeriodsFiltersFormSchema>
 export type AcademicPeriodsFiltersFormValues = z.infer<typeof academicPeriodsFiltersFormSchema>
@@ -176,8 +180,9 @@ export const academicPeriodsSearchSchema = z.object({
   sedeName: z.string().optional().catch(undefined),
   schoolYearId: z.coerce.number().optional().catch(undefined),
   statusId: z.coerce.number().optional().catch(undefined),
-  startFrom: z.string().optional().catch(undefined),
-  startTo: z.string().optional().catch(undefined),
+  sedeId: z.coerce.number().optional().catch(undefined),
+  jornadaId: z.coerce.number().optional().catch(undefined),
+  enrollmentModality: z.enum(["ANUAL", "SEMESTRAL", "TRIMESTRAL", "BIMESTRAL"]).optional().catch(undefined),
   // Pestaña abierta de la configuración del período (p. ej. "grados" al volver de un grado).
   tab: z.string().optional().catch(undefined),
 })
@@ -250,7 +255,8 @@ export const studyPlanFormSchema = z
 export type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
 
 // Periodos de evaluación
-export const evaluationPeriodFormSchema = z
+// Con criterio equitativo el peso no se pide ni se valida (Regla 35).
+export const makeEvaluationPeriodFormSchema = (usaPesos: boolean) => z
   .object({
     // Sin campo de código: la abreviación hace de código del período (Sección 5.1).
     nombre: z
@@ -270,18 +276,21 @@ export const evaluationPeriodFormSchema = z
       .max(10, maxLength(10, "La abreviación")),
     startDate: z.string().min(1, required("La fecha de inicio", { femenino: true })),
     endDate: z.string().min(1, required("La fecha de fin", { femenino: true })),
-    peso: z
-      .number({
-        error: "El peso porcentual es obligatorio.",
-      })
-      .min(0, "El peso porcentual no puede ser negativo.")
-      .max(100, "El peso porcentual no puede superar el 100 %."),
+    peso: usaPesos
+      ? z
+          .number({
+            error: "El peso porcentual es obligatorio.",
+          })
+          .min(0, "El peso porcentual no puede ser negativo.")
+          .max(100, "El peso porcentual no puede superar el 100 %.")
+      : z.number().or(z.nan()),
     // El estado no se elige: lo calcula el back con las fechas (Regla 37).
   })
   .refine((data) => !data.startDate || !data.endDate || data.startDate < data.endDate, {
     message: "La Fecha fin debe ser posterior a la Fecha inicio.",
     path: ["endDate"],
   })
+export const evaluationPeriodFormSchema = makeEvaluationPeriodFormSchema(true)
 export type EvaluationPeriodFormValues = z.infer<typeof evaluationPeriodFormSchema>
 
 // Criterios de evaluación

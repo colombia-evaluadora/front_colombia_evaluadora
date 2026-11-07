@@ -18,6 +18,7 @@ export const CATEGORIAS_NOTIFICACION = [
   "ASISTENCIA",
   "INFORMES",
   "ESTABLECIMIENTO",
+  "GESTION_ESTUDIANTIL",
   "SISTEMA",
 ] as const
 export type CategoriaNotificacion = (typeof CATEGORIAS_NOTIFICACION)[number]

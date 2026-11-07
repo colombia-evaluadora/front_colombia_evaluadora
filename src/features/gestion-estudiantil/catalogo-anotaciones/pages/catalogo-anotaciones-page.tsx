@@ -21,7 +21,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 
-import { ComboOpciones } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { useCambiarEstadoCodigo } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/mutations/codigos"
 import { useCodigosQuery } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/query/use-codigos-query"
 import { FILTROS_VACIOS, type CatalogoFiltros, type CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"

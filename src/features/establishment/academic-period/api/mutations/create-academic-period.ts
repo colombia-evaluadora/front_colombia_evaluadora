@@ -4,7 +4,10 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type { AcademicPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
-import type { CreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/types/academic-period"
+import type {
+  CreateAcademicPeriodBody,
+  CreateAcademicPeriodRequest,
+} from "@/features/establishment/academic-period/api/types/academic-period"
 import {
   extractWriteResultId,
   type WriteResultResponse,
@@ -36,13 +39,23 @@ export function toCreateAcademicPeriodRequest(
   }
 }
 
+// Solo el POST lleva la inicialización desde el ciclo anterior (Regla 96).
+function toCreateBody(values: AcademicPeriodFormValues): CreateAcademicPeriodBody {
+  const conCicloAnterior = values.cycle > 1
+  return {
+    ...toCreateAcademicPeriodRequest(values),
+    GENERAR_GRADOS: conCicloAnterior && values.generateNextGrades ? "S" : "N",
+    COPIAR_CRITERIOS: conCicloAnterior && values.copyScalesAndCriteria ? "S" : "N",
+  }
+}
+
 // `fn_periodo_crear` devuelve solo el id, envuelto en `{rows:[...]}`.
 async function createAcademicPeriod(
   values: AcademicPeriodFormValues
 ): Promise<{ id: number }> {
   const raw = await api.post<WriteResultResponse>(
     "/eval-col/periodos-academicos",
-    toCreateAcademicPeriodRequest(values)
+    toCreateBody(values)
   )
   return { id: extractWriteResultId(raw) }
 }

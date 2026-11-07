@@ -22,9 +22,12 @@ import { evaluationCriteriaHandlers } from "@/mocks/handlers/academic-period/eva
 import { generalAreasHandlers } from "@/mocks/handlers/academic-period/general-areas"
 import { criteriosPrioridadHandlers } from "@/mocks/handlers/criterios-prioridad"
 import { superadministradoresHandlers } from "@/mocks/handlers/superadministradores"
+import { administradoresTerritorialesHandlers } from "@/mocks/handlers/administradores-territoriales"
+import { supervisoresTerritorialesHandlers } from "@/mocks/handlers/supervisores-territoriales"
 import { parametrosEdadHandlers } from "@/mocks/handlers/parametros-edad"
 import { listasValorHandlers } from "@/mocks/handlers/listas-valor"
 import { festivosHandlers } from "@/mocks/handlers/festivos"
+import { relacionesAlumnoGrupoHandlers } from "@/mocks/handlers/relaciones-alumno-grupo"
 import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
@@ -98,9 +101,12 @@ export const handlers = [
   ...generalAreasHandlers,
   ...criteriosPrioridadHandlers,
   ...superadministradoresHandlers,
+  ...administradoresTerritorialesHandlers,
+  ...supervisoresTerritorialesHandlers,
   ...parametrosEdadHandlers,
   ...listasValorHandlers,
   ...festivosHandlers,
+  ...relacionesAlumnoGrupoHandlers,
   // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
   ...conservacionDatosHandlers,
   ...academicAssignmentListHandlers,

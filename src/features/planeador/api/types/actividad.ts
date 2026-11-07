@@ -231,6 +231,8 @@ export interface AdaptacionArchivo {
 }
 
 export interface Adaptacion {
+  /** Ajuste del PIAR del que viene (Regla 29); la adaptación propia no lo lleva. */
+  piarAjusteId?: number
   tipo: string
   /**
    * Justificación libre, obligatoria cuando `tipo === "Otro"` (sso V496.1,
