@@ -1,6 +1,6 @@
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
 
-type BadgeColor = "primary" | "info" | "warning" | "orange" | "success" | "muted" | "destructive"
+export type BadgeColor = "primary" | "info" | "warning" | "orange" | "success" | "muted" | "destructive"
 
 /** Color del badge de Estado (G.2.CAS.LIS.1). */
 export const COLOR_ESTADO: Record<EstadoCasoCodigo, BadgeColor> = {
