@@ -450,6 +450,23 @@ export const paths = {
       path: "gestion-estudiantil/observador",
       getHref: () => "/app/gestion-estudiantil/observador",
     },
+    citacionesCompromisos: {
+      path: "gestion-estudiantil/citaciones-compromisos",
+      getHref: () => "/app/gestion-estudiantil/citaciones-compromisos",
+    },
+    citacionNueva: {
+      path: "gestion-estudiantil/citaciones-compromisos/nueva",
+      getHref: () => "/app/gestion-estudiantil/citaciones-compromisos/nueva",
+    },
+    compromisoNuevo: {
+      path: "gestion-estudiantil/citaciones-compromisos/nuevo-compromiso",
+      getHref: () => "/app/gestion-estudiantil/citaciones-compromisos/nuevo-compromiso",
+    },
+    compromisoDetalle: {
+      path: "gestion-estudiantil/citaciones-compromisos/compromiso/$compromisoId",
+      getHref: (compromisoId: number | string) =>
+        `/app/gestion-estudiantil/citaciones-compromisos/compromiso/${compromisoId}`,
+    },
     observadorNueva: {
       path: "gestion-estudiantil/observador/nueva",
       getHref: () => "/app/gestion-estudiantil/observador/nueva",
