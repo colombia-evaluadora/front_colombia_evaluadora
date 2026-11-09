@@ -549,6 +549,8 @@ export interface Comunicado {
   paraEstudiantes?: string[]
   modalidad?: string | null
   ciclo?: number | null
+  // Última modificación (tcanal.modified_at); la muestra "Modificar comunicado" (M.1.EDI.1).
+  actualizadoEn?: string | null
 }
 
 export interface OpcionDestino {

@@ -466,6 +466,18 @@ export const paths = {
       path: "comunicaciones/comunicados-territorial",
       getHref: () => "/app/comunicaciones/comunicados-territorial",
     },
+    comunicacionesComunicados: {
+      path: "comunicaciones/comunicados",
+      getHref: () => "/app/comunicaciones/comunicados",
+    },
+    comunicacionesComunicadoDetalle: {
+      path: "comunicaciones/comunicados/detalle/$id",
+      getHref: (id: number | string) => `/app/comunicaciones/comunicados/detalle/${id}`,
+    },
+    comunicacionesComunicadoEditar: {
+      path: "comunicaciones/comunicados/editar/$id",
+      getHref: (id: number | string) => `/app/comunicaciones/comunicados/editar/${id}`,
+    },
     comunicacionesComunicadoNuevo: {
       path: "comunicaciones/comunicados/nuevo",
       getHref: () => "/app/comunicaciones/comunicados/nuevo",

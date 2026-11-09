@@ -152,7 +152,87 @@ const filaTerritorial = (c: Comunicado) => ({
 
 const sinComunicado = () => HttpResponse.json({ message: "Esta conversación no tiene un comunicado." }, { status: 404 })
 
+// "Comunicados institucionales" (M.1.LIS.1 / M.1.REC.1), como comms-service: Publicados = los que
+// gestiona (en el mock, los que creó); Recibidos = publicados que le llegaron; Anteriores = vencidos.
+const leidosMock = new Set<number>()
+
+const filaGestion = (c: Comunicado, gestion: boolean) => ({
+  id: c.conversacionId,
+  titulo: c.titulo,
+  publicarEn: c.publicarEn,
+  publicadoPor: c.publicadoPor,
+  esAutor: !!c.esCreador,
+  tipos: c.audiencia,
+  destinatarios: gestion ? (c.totalDestinatarios ?? 0) : null,
+  estado: estadoDe(c),
+  importante: !!c.importante,
+  leido: gestion ? null : leidosMock.has(c.conversacionId),
+  actualizadoEn: c.actualizadoEn ?? null,
+})
+
+const MENSAJE_MIN = 10
+
 export const comunicacionesComunicadosHandlers = [
+  http.get(URL("comunicados/gestion"), async ({ request }) => {
+    await delay(250)
+    const p = new globalThis.URL(request.url).searchParams
+    const pestana = p.get("pestana") ?? "PUBLICADOS"
+    const estado = p.get("estado")
+    const desde = p.get("desde")
+    const q = p.get("q")?.trim().toLowerCase()
+    const page = Math.max(0, Number(p.get("page") ?? 0) || 0)
+    const pageSize = Math.min(100, Math.max(1, Number(p.get("pageSize") ?? 10) || 10))
+    const gestion = pestana === "PUBLICADOS"
+    const filas = comunicados
+      .filter((c) =>
+        gestion
+          ? !!c.esCreador
+          : !c.esCreador && estadoDe(c) === (pestana === "RECIBIDOS" ? "PUBLICADO" : "VENCIDO"),
+      )
+      .filter((c) => !estado || estadoDe(c) === estado)
+      .filter((c) => !desde || c.publicarEn.slice(0, 10) >= desde)
+      .filter((c) => !q || c.titulo.toLowerCase().includes(q))
+      .sort((a, b) => b.publicarEn.localeCompare(a.publicarEn))
+    const totalCount = filas.length
+    return HttpResponse.json({
+      rows: [
+        {
+          items: filas.slice(page * pageSize, (page + 1) * pageSize).map((c) => filaGestion(c, gestion)),
+          totalCount,
+          pageCount: Math.ceil(totalCount / pageSize),
+        },
+      ],
+    })
+  }),
+
+  // Modificar (M.1.EDI.1): solo el autor, título y mensaje; los destinatarios no cambian.
+  http.patch(URL("conversaciones/:id/comunicado/corregir"), async ({ params, request }) => {
+    await delay(250)
+    const c = buscarComunicado(params.id)
+    if (!c) return sinComunicado()
+    if (!c.esCreador) {
+      return HttpResponse.json({ message: "Solo quien publicó el comunicado puede modificarlo." }, { status: 403 })
+    }
+    if (!["PUBLICADO", "PROGRAMADO"].includes(estadoDe(c))) {
+      return HttpResponse.json({ message: "Solo se modifica un comunicado publicado o programado." }, { status: 409 })
+    }
+    const { TITULO, MENSAJE } = (await request.json()) as { TITULO?: string; MENSAJE?: string }
+    const titulo = TITULO?.trim() ?? ""
+    const mensaje = MENSAJE?.trim() ?? ""
+    if (!titulo || mensaje.length < MENSAJE_MIN) {
+      return HttpResponse.json({ message: "El mensaje debe tener al menos 10 caracteres." }, { status: 400 })
+    }
+    const escapar = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    Object.assign(c, {
+      titulo,
+      contenidoHtml: `<p>${escapar(mensaje).replace(/\n/g, "<br>")}</p>`,
+      actualizadoEn: new Date().toISOString(),
+    })
+    const conv = conversaciones.find((x) => x.id === c.conversacionId)
+    if (conv) conv.nombre = titulo
+    return HttpResponse.json({ rows: [conEstado(c)] })
+  }),
+
   // "Editar Comunicado": texto, importante y respuestas siempre; destinatarios y fecha mientras siga programado.
   http.patch(URL("conversaciones/:id/comunicado"), async ({ params, request }) => {
     await delay(250)
@@ -246,6 +326,7 @@ export const comunicacionesComunicadosHandlers = [
     await delay(200)
     const c = buscarComunicado(params.id)
     if (!c) return sinComunicado()
+    if (!c.esCreador) leidosMock.add(c.conversacionId)
     return HttpResponse.json({ rows: [conEstado(c)] })
   }),
 
@@ -389,9 +470,29 @@ export const comunicacionesComunicadosHandlers = [
     return HttpResponse.json({ rows: [{ valor: "1", etiqueta: "IE Central", detalle: null, total: 0 }] })
   }),
 
-  http.get(URL("comunicados/territorial"), async () => {
+  // Como comms-service: Programado, Publicado, Vencido y Anulado (no Cancelado), filtros y página
+  // 0-based con `totalCount` al lado de `rows`.
+  http.get(URL("comunicados/territorial"), async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({ rows: comunicados.map(filaTerritorial) })
+    const sp = new globalThis.URL(request.url).searchParams
+    const estado = sp.get("estado")
+    const desde = sp.get("desde")
+    const q = (sp.get("q") ?? "").toLowerCase()
+    const pagina = Number(sp.get("pagina") ?? 0)
+    const tamano = Number(sp.get("tamano") ?? 20)
+    const filas = comunicados
+      .map(filaTerritorial)
+      .filter((c) => c.estado !== "CANCELADO")
+      .filter((c) => !estado || c.estado === estado)
+      .filter((c) => !desde || c.publicarEn.slice(0, 10) >= desde)
+      .filter((c) => !q || c.titulo.toLowerCase().includes(q))
+      .sort((a, b) => b.publicarEn.localeCompare(a.publicarEn))
+    return HttpResponse.json({
+      rows: filas.slice(pagina * tamano, (pagina + 1) * tamano),
+      totalCount: filas.length,
+      pagina,
+      tamano,
+    })
   }),
 
   http.get(URL("comunicados/territorial/:id"), async ({ params }) => {

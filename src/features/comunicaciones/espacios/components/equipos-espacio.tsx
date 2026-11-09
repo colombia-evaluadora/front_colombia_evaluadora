@@ -12,6 +12,7 @@ import { useParticipantesQuery } from "@/features/comunicaciones/espacios/api/qu
 import {
   useEquiposQuery,
   useGuardarEquipo,
+  useMoverAEquipo,
   type Equipo,
 } from "@/features/comunicaciones/espacios/api/query/use-foro-equipos-query"
 import type { EspacioDetalle } from "@/features/comunicaciones/espacios/api/types"
@@ -100,9 +101,8 @@ function DialogoEquipo({
 }
 
 /**
- * Mover a un estudiante entre equipos (M.3.HER.3). No hay endpoint propio de "mover": se reusa el PUT
- * de equipo (reemplazo de MIEMBROS), primero sacándolo del equipo de origen y luego sumándolo al
- * destino, porque cada estudiante está en un equipo como máximo.
+ * Mover a un estudiante entre equipos (M.3.HER.3). Un solo POST a `equipos/mover`: comms-service lo
+ * saca del equipo de origen y lo suma al destino en la misma transacción, sin reenviar las listas.
  */
 function DialogoMover({
   espacioId,
@@ -118,31 +118,17 @@ function DialogoMover({
   onCerrar: () => void
 }) {
   const { notify } = useNotify()
-  const guardar = useGuardarEquipo(espacioId)
+  const guardar = useMoverAEquipo(espacioId)
   const destinos = equipos.filter((q) => q.id !== origen?.id)
   const [destinoId, setDestinoId] = useState<number | null>(destinos.length === 1 ? destinos[0].id : null)
   const destino = destinos.find((q) => q.id === destinoId) ?? null
-  const ids = (q: Equipo) => q.miembros.map((m) => m.usuarioId)
 
-  const confirmar = async () => {
+  const confirmar = () => {
     if (!destino) return
-    try {
-      if (origen) {
-        await guardar.mutateAsync({
-          equipo: origen.id,
-          nombre: origen.nombre,
-          miembros: ids(origen).filter((u) => u !== estudiante.usuarioId),
-        })
-      }
-      await guardar.mutateAsync({
-        equipo: destino.id,
-        nombre: destino.nombre,
-        miembros: [...ids(destino), estudiante.usuarioId],
-      })
-      onCerrar()
-    } catch (error) {
-      notify(getErrorMessage(error), { variant: "error" })
-    }
+    guardar.mutate(
+      { estudiante: estudiante.usuarioId, equipo: destino.id },
+      { onSuccess: onCerrar, onError: (error) => notify(getErrorMessage(error), { variant: "error" }) },
+    )
   }
 
   return (
