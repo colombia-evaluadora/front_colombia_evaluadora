@@ -3,6 +3,7 @@ import { format } from "date-fns"
 import type {
   CrearCitacionInput,
   CrearCompromisoInput,
+  OrigenManual,
 } from "@/features/gestion-estudiantil/citaciones/api/types"
 
 // Formularios de Nueva citación (§4.1) y Nuevo compromiso (§4.2). Las reglas repiten las del backend
@@ -67,7 +68,7 @@ export function validarCitacion(v: ValoresCitacion, ahora = new Date()): Errores
 
 export const hayErroresCitacion = (e: ErroresCitacion) => Object.keys(e).length > 0
 
-export function crearCitacionInput(v: ValoresCitacion): CrearCitacionInput {
+export function crearCitacionInput(v: ValoresCitacion, origen?: OrigenManual): CrearCitacionInput {
   return {
     FK_MATRICULA: Number(v.matricula),
     FK_MOTIVO: Number(v.motivo),
@@ -75,6 +76,8 @@ export function crearCitacionInput(v: ValoresCitacion): CrearCitacionInput {
     FECHA: format(v.fecha as Date, "yyyy-MM-dd'T'HH:mm"),
     LUGAR: v.lugar.trim(),
     FK_ATIENDE: v.atiende ? Number(v.atiende) : null,
+    ORIGEN_TIPO: origen?.tipo ?? null,
+    ORIGEN_ID: origen?.id ?? null,
   }
 }
 
@@ -154,6 +157,7 @@ export function crearCompromisoInput(
   v: ValoresCompromiso,
   archivo: number | null,
   citacion: number | null,
+  origen?: OrigenManual,
 ): CrearCompromisoInput {
   return {
     FK_MATRICULA: Number(v.matricula),
@@ -167,7 +171,7 @@ export function crearCompromisoInput(
     })),
     ACEPTADO: v.aceptado,
     FK_ARCHIVO: v.aceptado ? archivo : null,
-    ORIGEN_TIPO: citacion != null ? "CITACION" : null,
-    ORIGEN_ID: citacion,
+    ORIGEN_TIPO: citacion != null ? "CITACION" : (origen?.tipo ?? null),
+    ORIGEN_ID: citacion ?? origen?.id ?? null,
   }
 }

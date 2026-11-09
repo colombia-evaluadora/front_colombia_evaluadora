@@ -6,6 +6,7 @@ import { toPageCount } from "@/lib/pagination"
 import { desenvolver } from "@/features/gestion-estudiantil/convivencia/api/query/jsonb"
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import type {
+  AcudienteMatricula,
   CitacionDetalle,
   CitacionDocumento,
   CitacionRow,
@@ -74,5 +75,18 @@ export function useCitacionDocumentoQuery(citacionId: number | undefined, enable
         .getRows<Record<string, unknown>>(`${BASE_CITACIONES}/${citacionId}/documento`)
         .then((r) => desenvolver<CitacionDocumento>(r[0], "datos", "No se encontró la citación solicitada.")),
     enabled: citacionId != null && enabled,
+  })
+}
+
+/** `GET /citaciones/acudiente/:MATRICULA`: acudiente de la matrícula; solo se consulta con matrícula elegida. */
+export function useAcudienteQuery(matricula: number | null) {
+  return useQuery({
+    queryKey: [...citacionesKeys.all, "acudiente", matricula] as const,
+    queryFn: () =>
+      evalCol
+        .getRows<Record<string, unknown>>(`${BASE_CITACIONES}/acudiente/${matricula}`)
+        .then((r) => desenvolver<AcudienteMatricula>(r[0], "datos", "No se encontró la matrícula solicitada.")),
+    enabled: matricula != null,
+    staleTime: 30_000,
   })
 }

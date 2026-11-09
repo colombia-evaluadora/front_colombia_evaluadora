@@ -73,6 +73,12 @@ export interface CitacionDetalle extends CitacionRow {
 /** `GET /citaciones/:ID/documento` → columna `datos`. */
 export interface CitacionDocumento {
   establecimiento: string
+  establecimiento_dane: string
+  establecimiento_nit: string
+  municipio: string
+  departamento: string
+  /** `pk_tarchivo` del escudo; null = sin escudo. */
+  escudo_archivo: number | null
   estudiante: string
   estudiante_documento: string
   grado_grupo: string
@@ -82,6 +88,13 @@ export interface CitacionDocumento {
   lugar: string
   atiende: string
   cita: string
+  /** Cargo de quien cita (ej. «Coordinador»). */
+  cita_cargo: string | null
+}
+
+/** `GET /citaciones/acudiente/:MATRICULA` → columna `datos`. */
+export interface AcudienteMatricula {
+  acudiente_nombre: string | null
 }
 
 /** Fila de `POST /compromisos/query` (25 columnas). */
@@ -98,6 +111,7 @@ export interface CompromisoRow {
   sede_nombre: string
   fk_tlv_jornada: number
   jornada_nombre: string
+  acudiente_nombre: string | null
   fk_tlv_tipo: number
   tipo_valor: string
   tipo_nombre: string
@@ -132,6 +146,11 @@ export interface CompromisoDetalle extends CompromisoRow {
 /** `GET /compromisos/:ID/documento` → columna `datos`. */
 export interface CompromisoDocumento {
   establecimiento: string
+  establecimiento_dane: string
+  establecimiento_nit: string
+  municipio: string
+  departamento: string
+  escudo_archivo: number | null
   estudiante: string
   estudiante_documento: string
   acudiente: string | null
@@ -140,6 +159,7 @@ export interface CompromisoDocumento {
   fecha_revision: string
   items: ItemCompromiso[]
   crea: string
+  creador_cargo: string | null
 }
 
 // Filtros de la UI (valores de combo como texto; "" = sin filtro).
@@ -195,6 +215,12 @@ export interface CompromisosQueryFilters {
 }
 
 // Cuerpos de escritura.
+
+/** Registro de origen que llega por la URL desde Observador (anotación) o Convivencia (caso). */
+export interface OrigenManual {
+  tipo: "ANOTACION" | "CASO_CONVIVENCIA"
+  id: number
+}
 
 export interface CrearCitacionInput {
   FK_MATRICULA: number

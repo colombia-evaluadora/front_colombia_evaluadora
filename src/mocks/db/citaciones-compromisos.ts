@@ -249,6 +249,7 @@ export function construirCompromiso(semilla: SemillaCompromiso): CompromisoRow {
     sede_nombre: sede.nombre,
     fk_tlv_jornada: jornada.pk,
     jornada_nombre: jornada.nombre,
+    acudiente_nombre: est.acudiente,
     fk_tlv_tipo: tipo.pk,
     tipo_valor: tipo.valor,
     tipo_nombre: tipo.nombre,

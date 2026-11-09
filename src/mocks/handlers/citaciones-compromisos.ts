@@ -164,6 +164,16 @@ export const citacionesCompromisosHandlers = [
     )
   }),
 
+  // Acudiente de la matrícula para «Nueva citación» y «Nuevo compromiso».
+  http.get(`${BASE}/citaciones/acudiente/:matricula`, async ({ params }) => {
+    await delay(100)
+    const m = Number(params.matricula)
+    if (!Number.isInteger(m) || m <= 0) return error(400, "La matrícula no es válida")
+    const e = ESTUDIANTES_MOCK.find((x) => x.matricula === m)
+    if (!e) return error(404, "No se encontró la matrícula solicitada")
+    return datos({ acudiente_nombre: e.acudiente })
+  }),
+
   // --- Citaciones ---
   http.post(`${BASE}/citaciones/query`, async ({ request }) => {
     await delay(150)
@@ -207,6 +217,11 @@ export const citacionesCompromisosHandlers = [
     if (!c) return noExisteCitacion()
     return datos({
       establecimiento: "IE Central",
+      establecimiento_dane: "168001000123",
+      establecimiento_nit: "890.200.123-4",
+      municipio: "Bucaramanga",
+      departamento: "Santander",
+      escudo_archivo: null,
       estudiante: c.estudiante_nombre,
       estudiante_documento: c.estudiante_documento,
       grado_grupo: c.grado_grupo,
@@ -216,6 +231,7 @@ export const citacionesCompromisosHandlers = [
       lugar: c.lugar,
       atiende: c.atiende_nombre,
       cita: c.cita_nombre,
+      cita_cargo: "Coordinador",
     })
   }),
 
@@ -391,6 +407,11 @@ export const citacionesCompromisosHandlers = [
     const est = ESTUDIANTES_MOCK.find((e) => e.matricula === c.fk_tmatricula)
     return datos({
       establecimiento: "IE Central",
+      establecimiento_dane: "168001000123",
+      establecimiento_nit: "890.200.123-4",
+      municipio: "Bucaramanga",
+      departamento: "Santander",
+      escudo_archivo: null,
       estudiante: c.estudiante_nombre,
       estudiante_documento: c.estudiante_documento,
       acudiente: est?.acudiente ?? null,
@@ -399,6 +420,7 @@ export const citacionesCompromisosHandlers = [
       fecha_revision: c.fecha_revision,
       items: itemsDb[c.id] ?? [],
       crea: c.crea_nombre,
+      creador_cargo: "Coordinador",
     })
   }),
 
