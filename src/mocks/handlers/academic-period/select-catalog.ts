@@ -12,6 +12,14 @@ import { GRADES } from "../../db/reservations"
 import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
 import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mappings"
 import { iconosDb } from "@/mocks/db/listas-valor"
+import {
+  ESTADOS_CITACION_MOCK,
+  ESTADOS_COMPROMISO_MOCK,
+  MOTIVOS_CITACION_MOCK,
+  RESPONSABLES_COMPROMISO_MOCK,
+  TIPOS_COMPROMISO_MOCK,
+  type CatalogoMock,
+} from "@/mocks/db/citaciones-compromisos"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -20,7 +28,16 @@ interface SelectCategoryRow {
   accion: string | null
 }
 
+const deMock = (lista: CatalogoMock[]): SelectCategoryRow[] =>
+  lista.map((c) => ({ pk_lista_valor: c.pk, nombre: c.nombre, valor: c.valor, accion: null }))
+
 const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
+  // Citaciones y compromisos (V609): pk estables para que los filtros por pk funcionen.
+  ESTADO_CITACION: () => deMock(ESTADOS_CITACION_MOCK),
+  MOTIVO_CITACION: () => deMock(MOTIVOS_CITACION_MOCK),
+  TIPO_COMPROMISO: () => deMock(TIPOS_COMPROMISO_MOCK),
+  RESPONSABLE_COMPROMISO: () => deMock(RESPONSABLES_COMPROMISO_MOCK),
+  ESTADO_COMPROMISO: () => deMock(ESTADOS_COMPROMISO_MOCK),
   JORNADA: () =>
     jornadasDb.map((jornada) => ({
       pk_lista_valor: jornada.id,
