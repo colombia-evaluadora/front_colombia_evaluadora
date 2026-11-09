@@ -107,6 +107,9 @@ const ActivatePage = lazyRouteComponent(
   "ActivatePage",
 )
 const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
+const PublicLayout = lazyRouteComponent(() => import("@/components/public/public-layout"), "PublicLayout")
+// Mismo valor que exporta public-layout; aquí sin importar el módulo para no romper el lazy.
+const PUBLIC_SITE_NAME = "Control Escolar"
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
@@ -354,12 +357,47 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   }),
 })
 
-const homeRoute = createRoute({
+// Sitio público (Guía UX §22): cabecera del sitio, sin menú de la app.
+const publicLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "_publico",
+  component: PublicLayout,
+})
+
+const publicHead = (title: string, index = false) => () => ({
+  meta: [
+    { title: `${title} · ${PUBLIC_SITE_NAME}` },
+    ...(index ? [] : [{ name: "robots", content: "noindex, nofollow" }]),
+  ],
+})
+
+// U.1.INI.1: se ve igual con o sin sesión; no muestra datos de personas (Regla 31).
+const homeRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
   path: paths.home.path,
-  beforeLoad: () => {
-    throw redirect({ to: paths.auth.login.path })
-  },
+  head: publicHead("Inicio", true),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/inicio-page"), "InicioPage"),
+})
+
+const verificarRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.verificar.path,
+  head: publicHead("Verificar un documento"),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/verificar-page"), "VerificarPage"),
+})
+
+const inscribirRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.inscribir.path,
+  head: publicHead("Inscribir"),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "InscribirProximamentePage"),
+})
+
+const consultarInscripcionRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.consultarInscripcion.path,
+  head: publicHead("Consultar inscripción"),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "ConsultarProximamentePage"),
 })
 
 // Pública (QR del boletín): sin sesión ni layout de la app.
@@ -1949,7 +1987,7 @@ export const notificacionesPreferenciasRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  homeRoute,
+  publicLayoutRoute.addChildren([homeRoute, verificarRoute, inscribirRoute, consultarInscripcionRoute]),
   verificarBoletinRoute,
   authLayoutRoute.addChildren([
     loginRoute,
