@@ -9,7 +9,7 @@ import { paths } from "@/config/paths"
 import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"
 
-export type PestanaConvivencia = "casos" | "comite"
+export type PestanaConvivencia = "casos" | "comite" | "procesos"
 
 interface Props {
   pestana: PestanaConvivencia
@@ -41,6 +41,13 @@ export function CabeceraConvivencia({ pestana, onPestana, access, periodo, onExp
                   </Button>
                 </>
               )
+            ) : pestana === "procesos" ? (
+              access.puedeSupervisar && (
+                <Button size="sm" render={<Link to={paths.app.convivenciaProcesoNuevo.getHref()} />} nativeButton={false}>
+                  <ControlPointIcon data-icon="inline-start" />
+                  Abrir proceso
+                </Button>
+              )
             ) : (
               <>
                 <Button size="sm" variant="outline" color="neutral" disabled={!access.puedeExportarSiuce} onClick={onExportarSiuce}>
@@ -68,8 +75,7 @@ export function CabeceraConvivencia({ pestana, onPestana, access, periodo, onExp
           <TabsTrigger value="comite" disabled={!access.puedeVerComite}>
             Comité
           </TabsTrigger>
-          {/* Sección 3.5: sin backend todavía. */}
-          <TabsTrigger value="procesos" disabled>
+          <TabsTrigger value="procesos">
             Procesos disciplinarios
           </TabsTrigger>
         </TabsList>

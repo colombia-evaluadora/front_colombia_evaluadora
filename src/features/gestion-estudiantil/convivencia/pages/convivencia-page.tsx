@@ -25,6 +25,13 @@ import {
   CabeceraConvivencia,
   type PestanaConvivencia,
 } from "@/features/gestion-estudiantil/convivencia/components/cabecera-convivencia"
+import { toProcesosFilters, useProcesosQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-procesos-query"
+import { resumenDeProceso, type ProcesoResumen } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
+import { buildColumnsProcesos } from "@/features/gestion-estudiantil/convivencia/components/procesos/columns-procesos"
+import { DialogAnularProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/dialog-anular-proceso"
+import { SearchProcesos } from "@/features/gestion-estudiantil/convivencia/components/procesos/search-procesos"
+import { useDialogosProceso } from "@/features/gestion-estudiantil/convivencia/hooks/use-dialogos-proceso"
+import { useProcesosFiltros } from "@/features/gestion-estudiantil/convivencia/hooks/use-procesos-filtros"
 import { TabComite } from "@/features/gestion-estudiantil/convivencia/components/comite/tab-comite"
 import { DialogExportarSiuce } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-exportar-siuce"
 import { buildColumnsCasos } from "@/features/gestion-estudiantil/convivencia/components/table/columns-casos"
@@ -122,6 +129,91 @@ function PestanaCasos({ cabecera }: PestanaProps) {
   )
 }
 
+function PestanaProcesos({ cabecera }: PestanaProps) {
+  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
+  const navigate = useNavigate()
+  const [anulando, setAnulando] = useState<ProcesoResumen | null>(null)
+  const { abrir: abrirEtapa, dialogos: dialogosEtapa } = useDialogosProceso()
+
+  const f = useProcesosFiltros(goToPage)
+
+  const { data, isPending, isError, error, refetch } = useProcesosQuery({
+    filters: toProcesosFilters(f.search, f.filtros),
+    pageIndex,
+    pageSize,
+  })
+
+  const columns = buildColumnsProcesos({
+    onAccion: (proceso, accion) => {
+      if (accion === "ver") navigate({ to: paths.app.convivenciaProceso.getHref(proceso.id) })
+      else if (accion === "anular") setAnulando(resumenDeProceso(proceso))
+      else abrirEtapa(accion, proceso.id)
+    },
+  })
+
+  const { table } = useDataTable({
+    columns,
+    data: data?.rows ?? [],
+    pageCount: data?.pageCount ?? 1,
+    getRowId: (row) => String(row.id),
+    pageIndex,
+    pageSize,
+    goToPage,
+    setPageSize,
+    sorting,
+    setSorting,
+    columnVisibilityStorageKey: "convivencia-procesos-column-visibility",
+    initialColumnVisibility: COLUMNAS_PROCESOS_OCULTAS,
+  })
+
+  return (
+    <>
+      <TableScreenHeader>
+        {cabecera()}
+        <TableScreenToolbar>
+          <SearchProcesos
+            search={f.search}
+            onSearchChange={f.onSearchChange}
+            filters={f.filtros}
+            applyFilters={f.applyFilters}
+            onClearAll={f.onClearAll}
+            onDraftChange={f.onDraftChange}
+            opciones={f.opciones}
+          />
+        </TableScreenToolbar>
+      </TableScreenHeader>
+
+      <TableScreenBody>
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          isRowMuted={(row) => row.original.estado_codigo === "ANULADO"}
+          emptyMessage={
+            f.hayFiltros ? "No hay procesos para los filtros aplicados." : "Aún no hay procesos disciplinarios."
+          }
+          errorMessage={error ? getErrorMessage(error) : undefined}
+        />
+        <Pagination
+          pageIndex={pageIndex}
+          pageCount={data?.pageCount ?? 1}
+          canPrev={pageIndex > 0}
+          canNext={pageIndex < (data?.pageCount ?? 1) - 1}
+          onPageChange={goToPage}
+          totalCount={data?.totalCount ?? 0}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          viewOptions={<DataTableViewOptions table={table} />}
+        />
+      </TableScreenBody>
+
+      <DialogAnularProceso proceso={anulando} onClose={() => setAnulando(null)} />
+      {dialogosEtapa}
+    </>
+  )
+}
+
 function PestanaComite({ cabecera, periodo, onPeriodoChange }: PestanaProps & { periodo?: number; onPeriodoChange: (p: number) => void }) {
   const periodos = usePeriodosComiteQuery()
   // Los botones del encabezado apuntan al período que se está viendo (el elegido o el abierto).
@@ -148,7 +240,8 @@ function ConvivenciaContent() {
   const [exportarAbierto, setExportarAbierto] = useState(false)
 
   // Sin permiso para ver el Comité, la pestaña queda deshabilitada y se vuelve a Casos.
-  const pestana: PestanaConvivencia = search.tab === "comite" && access.puedeVerComite ? "comite" : "casos"
+  const pestana: PestanaConvivencia =
+    search.tab === "comite" && access.puedeVerComite ? "comite" : search.tab === "procesos" ? "procesos" : "casos"
   const irA = (tab: PestanaConvivencia, periodo?: number) =>
     navigate({ to: paths.app.convivencia.getHref(), search: { tab, ...(periodo != null && { periodo }) } })
 
@@ -166,6 +259,8 @@ function ConvivenciaContent() {
     <>
       {pestana === "comite" ? (
         <PestanaComite cabecera={cabecera} periodo={search.periodo} onPeriodoChange={(p) => irA("comite", p)} />
+      ) : pestana === "procesos" ? (
+        <PestanaProcesos cabecera={cabecera} />
       ) : (
         <PestanaCasos cabecera={cabecera} />
       )}
@@ -175,6 +270,9 @@ function ConvivenciaContent() {
 }
 
 /** Convivencia (Gestión Estudiantil 3.1 y 3.3): casos del alcance del usuario y Comité de Convivencia. */
+/** Sede y Jornada siguen disponibles en «Columnas», pero arrancan ocultas (G.2.PRD.LIS.1). */
+const COLUMNAS_PROCESOS_OCULTAS = { sede: false, jornada: false }
+
 export function ConvivenciaPage() {
   return (
     <NoticeProvider>
