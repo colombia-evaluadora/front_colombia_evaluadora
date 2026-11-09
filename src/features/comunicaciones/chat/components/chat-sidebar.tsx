@@ -168,11 +168,14 @@ export function ChatSidebar({
   // con 2+ letras, también busca personas: elegir una abre (o crea) el mensaje directo.
   // Con filtros del panel la lista es la que devuelve el servidor; con solo palabras, las que
   // coinciden por nombre más las que tienen mensajes con esas palabras.
-  const visibles = conPanel
+  // "Solo no leídas" (M.2.BAN.1): comms-service no lo filtra, así que se aplica sobre lo ya cargado.
+  const [soloNoLeidas, setSoloNoLeidas] = useState(false)
+  const coincidentes = conPanel
     ? conversaciones.filter((c) => delServidor.has(c.id))
     : t
       ? conversaciones.filter((c) => c.nombre.toLowerCase().includes(t) || delServidor.has(c.id))
       : conversaciones
+  const visibles = soloNoLeidas ? coincidentes.filter((c) => c.noLeidos > 0) : coincidentes
   const personasQuery = usePersonasQuery(t.length >= 2, texto)
   const conDirecto = new Set(conversaciones.filter((c) => c.tipo === "DIRECTO").map((c) => c.nombre))
   const personas =
@@ -310,6 +313,12 @@ export function ChatSidebar({
           </button>
         </div>
       )}
+      <div className="flex items-center border-b px-3 py-1.5">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={soloNoLeidas} onChange={(e) => setSoloNoLeidas(e.target.checked)} />
+          Solo no leídas
+        </label>
+      </div>
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
           <InvitacionesSeccion destacada={invitacionDestacada} onAceptada={onSeleccionar} />
           {/* Archivados arriba, con contador y desarchivar por fila (diseño 4742:72681). */}

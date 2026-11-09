@@ -74,7 +74,7 @@ export function MiembrosDialog({
   onClose: () => void
 }) {
   const [seleccion, setSeleccion] = useState<Persona[]>([])
-  // Quitar: uno (botón ✕ de la fila) o varios (casillas + "Quitar seleccionados").
+  // Quitar: uno (botón ✕ de la fila) o varios (casillas + "Retirar seleccionados").
   const [porEliminar, setPorEliminar] = useState<Miembro[]>([])
   const [marcados, setMarcados] = useState<Set<number>>(new Set())
   const [quitando, setQuitando] = useState(false)
@@ -369,8 +369,8 @@ export function MiembrosDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {porEliminar.length === 1
-                ? `¿Eliminar a ${porEliminar[0].nombre} del ${donde}?`
-                : `¿Eliminar a ${porEliminar.length} personas del ${donde}?`}
+                ? `¿Retirar a ${porEliminar[0].nombre} del ${donde}?`
+                : `¿Retirar a ${porEliminar.length} personas del ${donde}?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {porEliminar.length === 1 ? "Dejará" : "Dejarán"} de ver los mensajes de {c.nombre} y
@@ -541,15 +541,15 @@ function FilaMiembro({
         type="button"
         onClick={onEliminar}
         disabled={ocupado}
-        aria-label={`Eliminar a ${m.nombre} del ${donde}`}
-        title={`Eliminar del ${donde}`}
+        aria-label={`Retirar a ${m.nombre} del ${donde}`}
+        title="Retirar"
         className={cn(ACCION, "bg-muted/60 text-muted-foreground hover:bg-red-22 hover:text-red")}
       >
         <XIcon className="size-4" />
       </button>
       </>
       )}
-      <SuspenderPersona persona={{ id: m.id, nombre: m.nombre }} />
+      <SuspenderPersona persona={{ id: m.id, nombre: m.nombre, rol: rolVisible(m) }} />
     </li>
   )
 }

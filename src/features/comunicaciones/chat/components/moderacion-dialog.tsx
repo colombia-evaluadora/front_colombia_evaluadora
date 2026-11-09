@@ -34,7 +34,7 @@ function Motivo({ valor, onCambiar }: { valor: string; onCambiar: (v: string) =>
         className="w-full rounded-lg border bg-card p-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
       />
       <span className="block text-right text-xs text-muted-foreground tabular-nums">
-        {valor.length}/{MAX_MOTIVO}
+        {valor.length} / {MAX_MOTIVO}
       </span>
     </label>
   )
@@ -60,7 +60,7 @@ export function ReportarDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !reportar.isPending && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reportar conversación: {nombre}</DialogTitle>
+          <DialogTitle>Reportar conversación — {nombre}</DialogTitle>
           <DialogDescription>Avisaremos al Supervisor de sede, que podrá leer esta conversación.</DialogDescription>
         </DialogHeader>
         {reportar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(reportar.error)}</p>}
@@ -173,7 +173,7 @@ function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esA
                   <span className="font-medium">{m.autor.nombre}</span>{" "}
                   <span className="text-xs text-muted-foreground">{fechaCorta(m.fecha)}</span>
                   <br />
-                  {m.eliminado ? <em>Mensaje retirado por el remitente.</em> : textoPlano(m.texto, m.menciones)}
+                  {m.eliminado ? <em>Mensaje retirado por el remitente</em> : textoPlano(m.texto, m.menciones)}
                 </p>
               ))}
               {esAdministrador && autores.length > 0 && (
@@ -197,7 +197,7 @@ function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esA
 }
 
 /** Botón de la ficha de la persona en el chat; solo el rector lo ve (el servidor también lo exige). */
-export function SuspenderPersona({ persona }: { persona: { id: number; nombre: string } }) {
+export function SuspenderPersona({ persona }: { persona: { id: number; nombre: string; rol?: string } }) {
   const roles = useAuth().user?.roles ?? []
   const [abierto, setAbierto] = useState(false)
   if (!roles.includes("CEVAL-RECTOR")) return null
@@ -217,7 +217,8 @@ export function SuspenderPersona({ persona }: { persona: { id: number; nombre: s
   )
 }
 
-function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: number; nombre: string }; reporteId: number | null; onClose: () => void }) {
+// M.2.MOD.2: "Pedro Gil (acudiente) no podrá…"; el rol solo cuando se conoce (no viene en los autores del reporte).
+function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: number; nombre: string; rol?: string }; reporteId: number | null; onClose: () => void }) {
   const [motivo, setMotivo] = useState("")
   const [vence, setVence] = useState("")
   const suspender = useSuspender()
@@ -225,8 +226,8 @@ function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: numbe
     <Dialog open onOpenChange={(o) => !o && !suspender.isPending && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Suspender mensajería: {persona.nombre}</DialogTitle>
-          <DialogDescription>{persona.nombre} no podrá enviar mensajes internos hasta que se levante la suspensión.</DialogDescription>
+          <DialogTitle>Suspender mensajería — {persona.nombre}</DialogTitle>
+          <DialogDescription>{persona.nombre}{persona.rol ? ` (${persona.rol.toLowerCase()})` : ""} no podrá enviar mensajes internos hasta que se levante la suspensión.</DialogDescription>
         </DialogHeader>
         {suspender.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(suspender.error)}</p>}
         <Motivo valor={motivo} onCambiar={setMotivo} />
