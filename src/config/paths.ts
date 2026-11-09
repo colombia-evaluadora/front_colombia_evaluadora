@@ -4,6 +4,13 @@ export const paths = {
     getHref: () => "/",
   },
 
+  // Sitio público (Guía UX §22): rutas sin sesión, con la cabecera del sitio.
+  publico: {
+    inscribir: { path: "/inscribir", getHref: () => "/inscribir" },
+    consultarInscripcion: { path: "/consultar-inscripcion", getHref: () => "/consultar-inscripcion" },
+    verificar: { path: "/verificar", getHref: () => "/verificar" },
+  },
+
   verificarBoletin: {
     path: "/verificar/b/$codigo",
     getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
