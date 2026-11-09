@@ -142,6 +142,8 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/gestion-estudiantil/convivencia/caso/$casoId": MENU.convivencia,
   "/app/gestion-estudiantil/convivencia/caso/$casoId/editar": MENU.convivencia,
   "/app/gestion-estudiantil/catalogo-anotaciones": MENU.catalogoAnotaciones,
+  "/app/gestion-estudiantil/convivencia/procesos/nuevo": MENU.convivencia,
+  "/app/gestion-estudiantil/convivencia/procesos/$procesoId": MENU.convivencia,
   "/app/gestion-estudiantil/convivencia/comite/integrantes": MENU.convivencia,
   "/app/gestion-estudiantil/convivencia/comite/sesion/nueva": MENU.convivencia,
   "/app/gestion-estudiantil/convivencia/comite/sesion/$sesionId": MENU.convivencia,
