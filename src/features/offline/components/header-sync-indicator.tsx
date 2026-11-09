@@ -61,11 +61,12 @@ export function HeaderSyncIndicator() {
           <li>Conflictos: {summary.conflict}</li>
           <li>No guardados: {summary.rejected + summary.blocked}</li>
         </ul>
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             variant="outline"
             color="neutral"
             size="sm"
+            className="w-full"
             disabled={offline || summary.syncing || summary.total === 0}
             onClick={() => void syncNow()}
           >
@@ -75,6 +76,7 @@ export function HeaderSyncIndicator() {
             variant="fill"
             color="primary"
             size="sm"
+            className="w-full"
             nativeButton={false}
             render={<Link to={paths.app.pendientes.getHref()} />}
           >
