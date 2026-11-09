@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { useAtiendenQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-atienden-query"
+import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
+import { CampoAcudiente } from "@/features/gestion-estudiantil/citaciones/components/campo-acudiente"
+import { CampoOrigen } from "@/features/gestion-estudiantil/citaciones/components/campo-origen"
 import { CampoEstudiante } from "@/features/gestion-estudiantil/citaciones/components/campo-estudiante"
 import { useCitacionForm } from "@/features/gestion-estudiantil/citaciones/hooks/use-citacion-form"
 import { MOTIVOS_SOLO_SISTEMA } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
@@ -18,8 +21,8 @@ import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-
 import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
 
-function CitacionForm() {
-  const { v, set, nombre, setNombre, errores, guardando, guardar, volver } = useCitacionForm()
+function CitacionForm({ origen, matricula, estudiante }: { origen?: OrigenManual; matricula?: number; estudiante?: string }) {
+  const { v, set, nombre, setNombre, errores, guardando, guardar, volver } = useCitacionForm(origen, matricula, estudiante)
   // El alta manual no ofrece los motivos que solo genera el sistema (V612).
   const motivos = useCatalogo("MOTIVO_CITACION").filter((m) => !MOTIVOS_SOLO_SISTEMA.includes(m.codigo))
   // Candidatos a atender: funcionarios del establecimiento del estudiante, con búsqueda en el servidor.
@@ -55,18 +58,20 @@ function CitacionForm() {
 
       <TableScreenBody>
         <div className="flex flex-col gap-5 pb-6">
-          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
             <CampoEstudiante
               id="citacion-estudiante"
               value={v.matricula}
               nombre={nombre}
               error={errores.matricula}
+              soloLectura={matricula != null && origen?.tipo === "ANOTACION"}
               onChange={(matricula, n) => {
                 setNombre(n)
                 // Los candidatos dependen del establecimiento del estudiante: la elección anterior ya no vale.
                 set({ matricula, atiende: "" })
               }}
             />
+            <CampoAcudiente id="citacion-acudiente" matricula={v.matricula} />
             <ComboOpciones
               id="citacion-motivo"
               label="Motivo"
@@ -79,6 +84,7 @@ function CitacionForm() {
               error={errores.motivo}
               onChange={(motivo) => set({ motivo })}
             />
+            {origen && <CampoOrigen id="citacion-origen" origen={origen} />}
           </div>
 
           <TextoLargo
@@ -146,11 +152,19 @@ function CitacionForm() {
 }
 
 /** Nueva citación (G.3.CIT.4, Gestión Estudiantil 4.1): nace Programada y avisa al acudiente. */
-export function CitacionFormPage() {
+export function CitacionFormPage({
+  origen,
+  matricula,
+  estudiante,
+}: {
+  origen?: OrigenManual
+  matricula?: number
+  estudiante?: string
+}) {
   return (
     <NoticeProvider>
       <TableScreen>
-        <CitacionForm />
+        <CitacionForm key={origen ? `${origen.tipo}-${origen.id}` : "libre"} origen={origen} matricula={matricula} estudiante={estudiante} />
       </TableScreen>
     </NoticeProvider>
   )

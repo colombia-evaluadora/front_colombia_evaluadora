@@ -5,6 +5,8 @@ import { queueNotice, useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { paths } from "@/config/paths"
 
+import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
+import { useAcudienteQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-citaciones-query"
 import { useCrearCitacion } from "@/features/gestion-estudiantil/citaciones/api/mutations/crear-citacion"
 import {
   citacionVacia,
@@ -16,11 +18,11 @@ import {
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 
 /** Estado, validación y envío de «Nueva citación» (G.3.CIT.4). */
-export function useCitacionForm() {
+export function useCitacionForm(origen?: OrigenManual, matricula?: number, estudiante?: string) {
   const navigate = useNavigate()
   const { notify } = useNotify()
-  const [v, setV] = useState<ValoresCitacion>(citacionVacia)
-  const [nombre, setNombre] = useState("")
+  const [v, setV] = useState<ValoresCitacion>(() => ({ ...citacionVacia(), matricula: matricula ? String(matricula) : "" }))
+  const [nombre, setNombre] = useState(estudiante ?? "")
   const [intento, setIntento] = useState(false)
 
   const set = (patch: Partial<ValoresCitacion>) => setV((prev) => ({ ...prev, ...patch }))
@@ -28,10 +30,12 @@ export function useCitacionForm() {
 
   const volver = () => navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab: "citaciones" } } as never)
 
+  const acudiente = useAcudienteQuery(v.matricula ? Number(v.matricula) : null).data?.acudiente_nombre
+
   const crear = useCrearCitacion({
     mutationConfig: {
       onSuccess: () => {
-        queueNotice("Citación programada; se avisó al acudiente.", { variant: "success" })
+        queueNotice(`Citación programada; se avisó a ${acudiente ?? "el acudiente"}.`, { variant: "success" })
         volver()
       },
       // Los 22023 del backend (motivo, fecha, lugar, matrícula) llegan con su texto: se muestran arriba.
@@ -50,7 +54,7 @@ export function useCitacionForm() {
       enfocarPrimerError()
       return
     }
-    crear.mutate(crearCitacionInput(v))
+    crear.mutate(crearCitacionInput(v, origen))
   }
 
   return { v, set, nombre, setNombre, errores, guardando: crear.isPending, guardar, volver }

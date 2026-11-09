@@ -57,7 +57,7 @@ import {
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { catalogoSearchSchema } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/schema"
 import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
-import { citacionesSearchSchema } from "@/features/gestion-estudiantil/citaciones/api/schema"
+import { citacionesSearchSchema, origenDeSearch, origenSearchSchema } from "@/features/gestion-estudiantil/citaciones/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
@@ -1491,7 +1491,11 @@ export const citacionNuevaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.citacionNueva.path,
   staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CITACIONES_CRUMB, { label: "Nueva citación" }] },
-  component: CitacionFormPage,
+  validateSearch: origenSearchSchema,
+  component: function CitacionNuevaRoute() {
+    const search = citacionNuevaRoute.useSearch()
+    return <CitacionFormPage origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+  },
 })
 
 /** Nuevo compromiso: vacío o desde una citación Asistió (`?citacion=`). */
@@ -1499,10 +1503,13 @@ export const compromisoNuevoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.compromisoNuevo.path,
   staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CITACIONES_CRUMB, { label: "Nuevo compromiso" }] },
-  validateSearch: (search: Record<string, unknown>) => ({ citacion: numeroOpcional(search.citacion) }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    citacion: numeroOpcional(search.citacion),
+    ...origenSearchSchema.parse(search),
+  }),
   component: function CompromisoNuevoRoute() {
-    const { citacion } = compromisoNuevoRoute.useSearch()
-    return <CompromisoFormPage citacion={citacion} />
+    const search = compromisoNuevoRoute.useSearch()
+    return <CompromisoFormPage citacion={search.citacion} origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
   },
 })
 

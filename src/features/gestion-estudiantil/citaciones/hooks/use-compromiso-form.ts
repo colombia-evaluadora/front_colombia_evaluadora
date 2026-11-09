@@ -6,6 +6,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { formatDateValue } from "@/lib/date-value"
 import { paths } from "@/config/paths"
 
+import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
 import { useCrearCompromiso } from "@/features/gestion-estudiantil/citaciones/api/mutations/crear-compromiso"
 import { subirSoporteCompromiso } from "@/features/gestion-estudiantil/citaciones/api/mutations/soporte-compromiso"
 import { useCitacionQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-citaciones-query"
@@ -23,12 +24,12 @@ import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/a
  * Estado, validación y envío de «Nuevo compromiso» (G.3.CMP.4). Con `?citacion=` el estudiante y el
  * registro de origen llegan de la citación (que debe estar Asistió: lo valida el backend).
  */
-export function useCompromisoForm(citacion: number | undefined) {
+export function useCompromisoForm(citacion: number | undefined, origenManual?: OrigenManual, matricula?: number, estudiante?: string) {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [hoy] = useState(() => formatDateValue(new Date()))
   const [valores, setValores] = useState<ValoresCompromiso>(() => ({
-    matricula: "",
+    matricula: matricula ? String(matricula) : "",
     tipo: "",
     fecha: hoy,
     revision: "",
@@ -36,7 +37,7 @@ export function useCompromisoForm(citacion: number | undefined) {
     aceptado: false,
     soporte: null,
   }))
-  const [nombreElegido, setNombreElegido] = useState("")
+  const [nombreElegido, setNombreElegido] = useState(estudiante ?? "")
   const [intento, setIntento] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
 
@@ -94,7 +95,7 @@ export function useCompromisoForm(citacion: number | undefined) {
         setSubiendo(false)
       }
     }
-    crear.mutate(crearCompromisoInput(v, archivo, citacion ?? null))
+    crear.mutate(crearCompromisoInput(v, archivo, citacion ?? null, origenManual))
   }
 
   return {
@@ -104,6 +105,7 @@ export function useCompromisoForm(citacion: number | undefined) {
     intento,
     origen,
     citacion,
+    origenManual,
     nombre,
     elegirEstudiante: (matricula: string, n: string) => {
       setNombreElegido(n)

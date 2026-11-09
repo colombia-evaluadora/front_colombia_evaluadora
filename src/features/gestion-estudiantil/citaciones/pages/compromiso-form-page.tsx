@@ -11,6 +11,9 @@ import { Switch } from "@/components/ui/switch"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
+import { CampoAcudiente } from "@/features/gestion-estudiantil/citaciones/components/campo-acudiente"
+import { CampoOrigen } from "@/features/gestion-estudiantil/citaciones/components/campo-origen"
 import { CampoEstudiante } from "@/features/gestion-estudiantil/citaciones/components/campo-estudiante"
 import { FilaCompromiso } from "@/features/gestion-estudiantil/citaciones/components/fila-compromiso"
 import {
@@ -99,8 +102,8 @@ function ConstructorCompromisos({ form }: { form: CompromisoFormState }) {
   )
 }
 
-function CompromisoForm({ citacion }: { citacion: number | undefined }) {
-  const form = useCompromisoForm(citacion)
+function CompromisoForm({ citacion, origenManual, matricula, estudiante }: { citacion: number | undefined; origenManual?: OrigenManual; matricula?: number; estudiante?: string }) {
+  const form = useCompromisoForm(citacion, origenManual, matricula, estudiante)
   const { v, set, errores, origen, nombre, elegirEstudiante, guardando, guardar, volver } = form
   const tipos = useCatalogo("TIPO_COMPROMISO")
 
@@ -135,9 +138,10 @@ function CompromisoForm({ citacion }: { citacion: number | undefined }) {
               value={v.matricula}
               nombre={nombre}
               error={errores.matricula}
-              soloLectura={citacion != null}
+              soloLectura={citacion != null || (matricula != null && origenManual?.tipo === "ANOTACION")}
               onChange={elegirEstudiante}
             />
+            <CampoAcudiente id="compromiso-acudiente" matricula={v.matricula} />
             <Field
               orientation="vertical"
               variant="outlined"
@@ -172,6 +176,7 @@ function CompromisoForm({ citacion }: { citacion: number | undefined }) {
                 />
               </Field>
             )}
+            {citacion == null && origenManual && <CampoOrigen id="compromiso-origen-manual" origen={origenManual} />}
           </div>
 
           <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
@@ -235,11 +240,27 @@ function CompromisoForm({ citacion }: { citacion: number | undefined }) {
 }
 
 /** Nuevo compromiso (G.3.CMP.4, Gestión Estudiantil 4.2): vacío o desde una citación Asistió (`?citacion=`). */
-export function CompromisoFormPage({ citacion }: { citacion?: number }) {
+export function CompromisoFormPage({
+  citacion,
+  origen,
+  matricula,
+  estudiante,
+}: {
+  citacion?: number
+  origen?: OrigenManual
+  matricula?: number
+  estudiante?: string
+}) {
   return (
     <NoticeProvider>
       <TableScreen>
-        <CompromisoForm key={citacion ?? "libre"} citacion={citacion} />
+        <CompromisoForm
+          key={citacion ?? (origen ? `${origen.tipo}-${origen.id}` : "libre")}
+          citacion={citacion}
+          origenManual={origen}
+          matricula={matricula}
+          estudiante={estudiante}
+        />
       </TableScreen>
     </NoticeProvider>
   )
