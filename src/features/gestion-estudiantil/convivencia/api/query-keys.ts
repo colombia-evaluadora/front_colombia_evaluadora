@@ -32,3 +32,16 @@ export const comiteKeys = {
   funcionarios: <P>(comite: number | "none", params: P) => [...comiteAll, "funcionarios", comite, params] as const,
   estudiantes: (comite: number | "none", search: string) => [...comiteAll, "estudiantes", comite, search] as const,
 } as const
+
+const procesosAll = [...all, "procesos"] as const
+
+/** Procesos disciplinarios (3.5) bajo convivenciaKeys.all: una mutacion de Convivencia los refresca. */
+export const procesosKeys = {
+  all: procesosAll,
+  lista: <P>(params: P) => [...procesosAll, "lista", params] as const,
+  responsables: () => [...procesosAll, "responsables-filtro"] as const,
+  detalle: (id: number | "none") => [...procesosAll, "detalle", id] as const,
+  apertura: (recurso: string, ...args: unknown[]) => [...procesosAll, "apertura", recurso, ...args] as const,
+  /** Opciones y cálculos de los modales de etapa (sanciones, límites, plazo de recurrir, opciones de recurso). */
+  etapa: (recurso: string, ...args: unknown[]) => [...procesosAll, "etapa", recurso, ...args] as const,
+} as const

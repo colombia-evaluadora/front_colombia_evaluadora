@@ -398,6 +398,14 @@ export const paths = {
       path: "gestion-estudiantil/catalogo-anotaciones",
       getHref: () => "/app/gestion-estudiantil/catalogo-anotaciones",
     },
+    convivenciaProcesoNuevo: {
+      path: "gestion-estudiantil/convivencia/procesos/nuevo",
+      getHref: () => "/app/gestion-estudiantil/convivencia/procesos/nuevo",
+    },
+    convivenciaProceso: {
+      path: "gestion-estudiantil/convivencia/procesos/$procesoId",
+      getHref: (procesoId: number | string) => `/app/gestion-estudiantil/convivencia/procesos/${procesoId}`,
+    },
     convivenciaComiteIntegrantes: {
       path: "gestion-estudiantil/convivencia/comite/integrantes",
       getHref: () => "/app/gestion-estudiantil/convivencia/comite/integrantes",

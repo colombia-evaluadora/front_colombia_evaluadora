@@ -6,7 +6,7 @@ export const convivenciaSearchSchema = z.object({
   pageSize: z.coerce.number().catch(10).default(10),
   sortBy: z.string().optional().catch(undefined),
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
-  tab: z.enum(["casos", "comite"]).optional().catch(undefined),
+  tab: z.enum(["casos", "comite", "procesos"]).optional().catch(undefined),
   periodo: z.coerce.number().int().positive().optional().catch(undefined),
 })
 

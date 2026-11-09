@@ -1406,6 +1406,44 @@ export const convivenciaCasoRoute = createRoute({
   },
 })
 
+const ProcesoFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/proceso-form-page"),
+  "ProcesoFormPage",
+)
+const ConvivenciaProcesoDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/proceso-detalle-page"),
+  "ProcesoDetallePage",
+)
+
+const numeroOpcional = (v: unknown) => (v == null || v === "" || Number.isNaN(Number(v)) ? undefined : Number(v))
+
+/** Abrir proceso: vacío, desde una anotación (`?matricula=&anotacion=`) o desde un caso (`?caso=`). */
+export const convivenciaProcesoNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaProcesoNuevo.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Abrir proceso" }] },
+  validateSearch: (search: Record<string, unknown>) => ({
+    matricula: numeroOpcional(search.matricula),
+    anotacion: numeroOpcional(search.anotacion),
+    caso: numeroOpcional(search.caso),
+    nombre: typeof search.nombre === "string" && search.nombre ? search.nombre : undefined,
+  }),
+  component: function ProcesoNuevoRoute() {
+    const origen = convivenciaProcesoNuevoRoute.useSearch()
+    return <ProcesoFormPage origen={origen} />
+  },
+})
+
+export const convivenciaProcesoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaProceso.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Detalle del proceso" }] },
+  component: function ProcesoDetalleRoute() {
+    const { procesoId } = convivenciaProcesoRoute.useParams()
+    return <ConvivenciaProcesoDetallePage procesoId={Number(procesoId)} />
+  },
+})
+
 const CatalogoAnotacionesPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/catalogo-anotaciones/pages/catalogo-anotaciones-page"),
   "CatalogoAnotacionesPage",
@@ -1900,6 +1938,8 @@ const routeTree = rootRoute.addChildren([
     convivenciaNuevoRoute,
     convivenciaCasoRoute,
     convivenciaEditarRoute,
+    convivenciaProcesoNuevoRoute,
+    convivenciaProcesoRoute,
     convivenciaComiteIntegrantesRoute,
     convivenciaSesionNuevaRoute,
     convivenciaSesionRoute,
