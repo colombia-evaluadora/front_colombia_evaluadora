@@ -389,9 +389,29 @@ export const comunicacionesComunicadosHandlers = [
     return HttpResponse.json({ rows: [{ valor: "1", etiqueta: "IE Central", detalle: null, total: 0 }] })
   }),
 
-  http.get(URL("comunicados/territorial"), async () => {
+  // Como comms-service: Programado, Publicado, Vencido y Anulado (no Cancelado), filtros y página
+  // 0-based con `totalCount` al lado de `rows`.
+  http.get(URL("comunicados/territorial"), async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({ rows: comunicados.map(filaTerritorial) })
+    const sp = new globalThis.URL(request.url).searchParams
+    const estado = sp.get("estado")
+    const desde = sp.get("desde")
+    const q = (sp.get("q") ?? "").toLowerCase()
+    const pagina = Number(sp.get("pagina") ?? 0)
+    const tamano = Number(sp.get("tamano") ?? 20)
+    const filas = comunicados
+      .map(filaTerritorial)
+      .filter((c) => c.estado !== "CANCELADO")
+      .filter((c) => !estado || c.estado === estado)
+      .filter((c) => !desde || c.publicarEn.slice(0, 10) >= desde)
+      .filter((c) => !q || c.titulo.toLowerCase().includes(q))
+      .sort((a, b) => b.publicarEn.localeCompare(a.publicarEn))
+    return HttpResponse.json({
+      rows: filas.slice(pagina * tamano, (pagina + 1) * tamano),
+      totalCount: filas.length,
+      pagina,
+      tamano,
+    })
   }),
 
   http.get(URL("comunicados/territorial/:id"), async ({ params }) => {
