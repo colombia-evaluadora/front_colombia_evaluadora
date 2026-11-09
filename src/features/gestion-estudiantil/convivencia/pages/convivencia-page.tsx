@@ -63,7 +63,12 @@ function PestanaCasos({ cabecera }: PestanaProps) {
   const columns = buildColumnsCasos({
     access,
     onAccion: (caso, accion) => {
-      if (accion === "ver") navigate({ to: paths.app.convivenciaCaso.getHref(caso.id) })
+      if (accion === "citar" || accion === "compromiso")
+        navigate({
+          to: accion === "citar" ? paths.app.citacionNueva.getHref() : paths.app.compromisoNuevo.getHref(),
+          search: { origen_tipo: "CASO_CONVIVENCIA", origen_id: caso.id },
+        } as never)
+      else if (accion === "ver") navigate({ to: paths.app.convivenciaCaso.getHref(caso.id) })
       else if (accion === "modificar") navigate({ to: paths.app.convivenciaEditar.getHref(caso.id) })
       else abrir(accion, resumenDeFila(caso))
     },

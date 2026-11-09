@@ -106,6 +106,16 @@ function ObservadorContent() {
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
     onRemitir: setRemitir,
+    onCitar: (a) =>
+      navigate({
+        to: paths.app.citacionNueva.getHref(),
+        search: { origen_tipo: "ANOTACION", origen_id: a.id, matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
+      } as never),
+    onCompromiso: (a) =>
+      navigate({
+        to: paths.app.compromisoNuevo.getHref(),
+        search: { origen_tipo: "ANOTACION", origen_id: a.id, matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
+      } as never),
   })
 
   const { table } = useDataTable({

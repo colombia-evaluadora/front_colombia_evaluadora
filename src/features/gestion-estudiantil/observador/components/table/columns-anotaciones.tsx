@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   BrainIcon,
+  CalendarBlankIcon,
+  ClipboardAddIcon,
   DotsThreeVerticalIcon,
   EyeIcon,
   GavelIcon,
@@ -35,6 +37,8 @@ interface ColumnasOpciones {
   puedeAnular: boolean
   puedeRemitir: boolean
   onRemitir: (row: AnotacionRow) => void
+  onCitar: (row: AnotacionRow) => void
+  onCompromiso: (row: AnotacionRow) => void
 }
 
 export function buildColumnsAnotaciones({
@@ -45,6 +49,8 @@ export function buildColumnsAnotaciones({
   puedeAnular,
   puedeRemitir,
   onRemitir,
+  onCitar,
+  onCompromiso,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
@@ -165,6 +171,14 @@ export function buildColumnsAnotaciones({
               <DropdownMenuItem disabled={!puedeRemitir} onClick={() => onRemitir(a)}>
                 <PersonIcon />
                 Remitir a orientación
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!vigente} onClick={() => onCitar(a)}>
+                <CalendarBlankIcon />
+                Citar al acudiente
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!vigente} onClick={() => onCompromiso(a)}>
+                <ClipboardAddIcon />
+                Crear compromiso
               </DropdownMenuItem>
               {/* Sección 9.6 y convivencia: aún sin backend. */}
               {ACCIONES_PROXIMAS.map(({ label, Icono }) => (

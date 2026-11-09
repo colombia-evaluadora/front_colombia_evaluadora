@@ -18,7 +18,7 @@ import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivenc
 import { esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
 
-export type AccionCaso = "ver" | "modificar" | "fechas" | "accion" | "gestor" | "tipo" | "cerrar" | "anular"
+export type AccionCaso = "ver" | "modificar" | "fechas" | "accion" | "gestor" | "tipo" | "cerrar" | "anular" | "citar" | "compromiso"
 
 export interface CasoMenuInfo {
   numero: string | number
@@ -83,6 +83,15 @@ export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, trigge
         <DropdownMenuItem disabled={!(abierto && access.puedeSupervisar)} onClick={() => onAccion("anular")}>
           <ProhibitIcon />
           Anular
+        </DropdownMenuItem>
+        {/* Citaciones y compromisos §4: el Responsable de enseñanza no cita desde un caso; el backend lo rechaza. */}
+        <DropdownMenuItem onClick={() => onAccion("citar")}>
+          <CalendarBlankIcon />
+          Citar al acudiente
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onAccion("compromiso")}>
+          <ClipboardAddIcon />
+          Crear compromiso
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
