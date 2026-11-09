@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
@@ -19,6 +19,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { paths } from "@/config/paths"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import {
   useActividadMatriculasGrupoQuery,
@@ -30,7 +31,7 @@ import { useActualizarAnotacion, useCrearAnotacion } from "@/features/gestion-es
 import { useOpcionesObservador } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
 import { colorDeTipo, MENSAJES } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { AnotacionRow, CodigoAnotacion } from "@/features/gestion-estudiantil/observador/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { observadorEditarRoute } from "@/router"
 
 const OBS_MIN = 10
@@ -146,15 +147,11 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={volver} disabled={guardando}>
+              <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
                 Cancelar
               </Button>
               <Button size="sm" onClick={guardar} disabled={guardando}>
-                {guardando ? (
-                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                ) : (
-                  <FloppyDiskIcon data-icon="inline-start" />
-                )}
+                <IconoCarga cargando={guardando}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                 Guardar
               </Button>
             </div>
@@ -166,7 +163,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="flex max-w-4xl flex-col gap-5">
+        <div className="flex flex-col gap-5">
           {!editar && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <ComboOpciones
@@ -231,55 +228,57 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             )}
           </Field>
 
-          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-[12rem_minmax(0,1fr)_auto]">
-            <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.fecha) || undefined}>
-              <FieldLabel htmlFor="anotacion-fecha">
-                Fecha*
-              </FieldLabel>
-              <DatePicker
-                id="anotacion-fecha"
-                size="sm"
-                maxDate={new Date()}
-                value={parseDateValue(v.fecha)}
-                onChange={(date) => setV({ ...v, fecha: formatDateValue(date) })}
+          <div className="flex flex-col gap-2">
+            <div className={`grid grid-cols-1 items-start gap-3 ${codigo ? "sm:grid-cols-[12rem_minmax(0,1fr)_auto]" : "sm:grid-cols-[12rem_minmax(0,1fr)]"}`}>
+              <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.fecha) || undefined}>
+                <FieldLabel htmlFor="anotacion-fecha">
+                  Fecha*
+                </FieldLabel>
+                <DatePicker
+                  id="anotacion-fecha"
+                  size="sm"
+                  maxDate={new Date()}
+                  value={parseDateValue(v.fecha)}
+                  onChange={(date) => setV({ ...v, fecha: formatDateValue(date) })}
+                />
+                {errores.fecha ? <FieldError>{errores.fecha}</FieldError> : <FieldDescription>En un período Calificable.</FieldDescription>}
+              </Field>
+              <ComboOpciones
+                id="anotacion-codigo"
+                size="default"
+                label="Código"
+                required
+                todos={false}
+                disabled={!opciones.establecimientoId}
+                placeholder={opciones.establecimientoId ? "Buscar código" : "Elegí Sede primero"}
+                value={v.codigo}
+                options={codigoOpciones}
+                error={errores.codigo}
+                onChange={(c) => setV({ ...v, codigo: c, mediacion: false })}
               />
-              {errores.fecha ? <FieldError>{errores.fecha}</FieldError> : <FieldDescription>En un período Calificable.</FieldDescription>}
-            </Field>
-            <ComboOpciones
-              id="anotacion-codigo"
-              size="default"
-              label="Código"
-              required
-              todos={false}
-              disabled={!opciones.establecimientoId}
-              placeholder={opciones.establecimientoId ? "Buscar código" : "Elegí Sede primero"}
-              value={v.codigo}
-              options={codigoOpciones}
-              error={errores.codigo}
-              onChange={(c) => setV({ ...v, codigo: c, mediacion: false })}
-            />
-            {codigo && (
-              <div className="mt-2 flex h-11 items-center gap-3 text-sm">
-                <span className="flex items-center gap-1.5">
-                  Tipo:
-                  <Badge variant="soft" color={colorDeTipo(codigo.tipo_nombre)}>
-                    {codigo.tipo_nombre}
-                  </Badge>
-                </span>
-                {codigo.situacion_nombre && (
+              {codigo && (
+                <div className="mt-2 flex h-11 items-center gap-3 text-sm">
                   <span className="flex items-center gap-1.5">
-                    Tipo de situación:
-                    <Badge variant="soft" color="info">
-                      {codigo.situacion_nombre}
+                    Tipo:
+                    <Badge variant="soft" color={colorDeTipo(codigo.tipo_nombre)}>
+                      {codigo.tipo_nombre}
                     </Badge>
                   </span>
-                )}
-              </div>
-            )}
+                  {codigo.situacion_nombre && (
+                    <span className="flex items-center gap-1.5">
+                      Tipo de situación:
+                      <Badge variant="soft" color="info">
+                        <span>{codigo.situacion_nombre}</span>
+                      </Badge>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tipo, Tipo de situación, Responsable de enseñanza y Período de Evaluación no se digitan.
+            </p>
           </div>
-          <p className="-mt-3 text-xs text-muted-foreground">
-            Tipo, Tipo de situación, Responsable de enseñanza y Período de Evaluación no se digitan.
-          </p>
 
           <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.observacion) || undefined}>
             <FieldLabel htmlFor="anotacion-observacion">

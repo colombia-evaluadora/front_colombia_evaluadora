@@ -24,6 +24,7 @@ interface EvaluationCriteriaRow {
   subject_grade_criteria_name: string | null
   final_grade_criteria: number | null
   final_grade_criteria_name: string | null
+  final_grade_criteria_value: string | null
   area_grade_criteria: number | null
   area_grade_criteria_name: string | null
   student_without_grades_performance: number | null
@@ -61,6 +62,7 @@ function toEvaluationCriteria(row: EvaluationCriteriaRow): EvaluationCriteria {
     periodCalculationElements: pickId(row.period_calculation_elements),
     subjectGradeCriteria: pickId(row.subject_grade_criteria),
     finalGradeCriteria: pickId(row.final_grade_criteria),
+    finalGradeCriteriaValue: row.final_grade_criteria_value ?? undefined,
     areaGradeCriteria: pickId(row.area_grade_criteria),
     studentWithoutGradesPerformance: pickId(
       row.student_without_grades_performance
@@ -97,4 +99,18 @@ export function useEvaluationCriteriaQuery(academicPeriodId: number | undefined)
     queryFn: () => fetchEvaluationCriteria(academicPeriodId as number),
     enabled: academicPeriodId != null,
   })
+}
+
+/** VALOR de "De acuerdo al porcentaje de cada PE" en CRITERIO_FINAL_PERACA. */
+const CRITERIO_FINAL_POR_PORCENTAJE = "2"
+
+// Regla 35: el peso de los períodos solo aplica con "De acuerdo al porcentaje
+// de cada período de evaluación". Sin criterio cargado se asume el equitativo.
+export function usesPeriodWeights(finalGradeCriteriaValue?: string): boolean {
+  return finalGradeCriteriaValue?.trim() === CRITERIO_FINAL_POR_PORCENTAJE
+}
+
+export function usePeriodWeights(academicPeriodId: number | undefined): boolean {
+  const { data } = useEvaluationCriteriaQuery(academicPeriodId)
+  return usesPeriodWeights(data?.finalGradeCriteriaValue)
 }

@@ -9,6 +9,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useLocalPagination } from "@/features/establishment/academic-period/hooks/use-local-pagination"
 
 import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
+import { usePeriodWeights } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { getErrorMessage } from "@/lib/api-client"
 import {
   createEvaluationPeriodColumns,
@@ -81,9 +82,10 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
   const page = useLocalPagination(data?.rows ?? [])
 
   const { readOnly } = usePeriodReadOnly()
+  const usaPesos = usePeriodWeights(academicPeriodId)
   const columns = useMemo(
-    () => withoutRowActions(createEvaluationPeriodColumns({ academicPeriodId }), readOnly),
-    [academicPeriodId, readOnly],
+    () => withoutRowActions(createEvaluationPeriodColumns({ academicPeriodId, usaPesos }), readOnly),
+    [academicPeriodId, usaPesos, readOnly],
   )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
@@ -131,7 +133,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
           </>
         ) : (
           <>
-            <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
+            <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} usaPesos={usaPesos} />
             <ExportEvaluationPeriodsDialog filters={{}} academicPeriodId={academicPeriodId} />
           </>
         )}
@@ -148,7 +150,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
         emptyMessage="Aún no hay períodos de evaluación. Agregue el primero para dividir el año en cortes."
         errorMessage={error ? getErrorMessage(error) : undefined}
       />
-      {allLoaded && rows.length > 0 && <WeightTotal total={weightTotal} />}
+      {usaPesos && allLoaded && rows.length > 0 && <WeightTotal total={weightTotal} />}
       <Pagination viewOptions={<DataTableViewOptions table={table} />} {...page.pagination} />
     </>
   )

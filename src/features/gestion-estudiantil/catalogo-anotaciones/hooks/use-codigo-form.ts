@@ -1,8 +1,6 @@
 import { useState } from "react"
 
-import type { Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
 
 import { useActualizarCodigo, useCambiarEstadoCodigo, useCrearCodigo } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/mutations/codigos"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
@@ -20,7 +18,7 @@ export function useCodigoForm({ establecimiento, codigo, esNegativo, onClose }: 
   const { notify } = useNotify()
   const [v, setV] = useState<ValoresCodigo>(() => (codigo ? valoresDe(codigo) : valoresVacios()))
   const [intento, setIntento] = useState(false)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const crear = useCrearCodigo()
   const actualizar = useActualizarCodigo()
   const cambiarEstado = useCambiarEstadoCodigo()
@@ -48,7 +46,7 @@ export function useCodigoForm({ establecimiento, codigo, esNegativo, onClose }: 
         notify(codigo ? "Código actualizado." : "Código creado.", { variant: "success" as const })
         onClose()
       },
-      onError: (error: Error) => setNotice({ id: Date.now(), message: getErrorMessage(error) }),
+      onError: (error: Error) => setError(error),
     }
     if (codigo) {
       // El estado tiene su propio endpoint: solo se llama si cambió.
@@ -68,8 +66,7 @@ export function useCodigoForm({ establecimiento, codigo, esNegativo, onClose }: 
     cambiarTipo,
     errores,
     negativo,
-    notice,
-    cerrarNotice: () => setNotice(null),
+    error,
     guardar,
     pending: crear.isPending || actualizar.isPending || cambiarEstado.isPending,
   }

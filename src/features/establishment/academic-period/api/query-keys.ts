@@ -38,6 +38,7 @@ export const academicPeriodKeys = {
     schoolYears: () => [...academicPeriodsAll, "school-years"] as const,
     previousBySede: (sedeId: string, excludeId?: number) =>
       [...academicPeriodsAll, "previous", sedeId, excludeId ?? null] as const,
+    previousCycle: <P>(params: P) => [...academicPeriodsAll, "previous-cycle", params] as const,
   },
   academicPeriod: {
     all: academicPeriodAll,

@@ -1,10 +1,12 @@
 import { useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ControlPointIcon } from "@/components/ui/icons"
+import { ControlPointIcon, DotsThreeVerticalIcon } from "@/components/ui/icons"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { usePaginaLocal } from "@/features/comunicaciones/procesos/components/paginar"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -27,11 +29,13 @@ import {
   useAdjuntarDocumento,
   useMisProcesosQuery,
   usePersonasQuery,
+  useProcesoQuery,
   useProcesosQuery,
 } from "@/features/comunicaciones/procesos/api/procesos"
-import type { MiProceso } from "@/features/comunicaciones/procesos/api/procesos"
+import type { Etapa, MiProceso, ProcesoFila } from "@/features/comunicaciones/procesos/api/procesos"
 import { evalCol } from "@/lib/eval-col-client"
 import { useQuery } from "@tanstack/react-query"
+import { useEleccionQuery } from "@/features/comunicaciones/chat/api/query/use-eleccion-query"
 import type { Postulacion } from "@/features/comunicaciones/procesos/api/procesos"
 
 export function ProcesosPage() {
@@ -43,7 +47,6 @@ export function ProcesosPage() {
 }
 
 function ProcesosContent() {
-  const lista = useProcesosQuery()
   const permiso = useMenuPermission("PROCESOS_CREAR")
   const { notify } = useNotify()
   const [nuevo, setNuevo] = useState(false)
@@ -64,36 +67,128 @@ function ProcesosContent() {
           <TabsTrigger value="todos">Procesos</TabsTrigger>
         </TabsList>
         <TabsContent value="mios"><MisProcesos /></TabsContent>
-        <TabsContent value="todos">
-          {lista.isPending ? <Spinner /> : lista.isError ? (
-            <p className="text-sm text-red">{getErrorMessage(lista.error)}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead><TableHead>Elecciones</TableHead><TableHead>Etapa</TableHead><TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lista.data.length === 0 && <TableRow><TableCell colSpan={4}>Aún no hay procesos.</TableCell></TableRow>}
-                {lista.data.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <Link className="text-primary underline-offset-2 hover:underline" to={paths.app.comunicacionesProcesoDetalle.getHref(p.id)}>{p.nombre}</Link>
-                    </TableCell>
-                    <TableCell>{p.elecciones}</TableCell>
-                    <TableCell>{ETAPA_LABEL[p.etapa]}</TableCell>
-                    <TableCell><Badge variant="soft" color={p.estado === "ABIERTO" ? "success" : "neutral"}>{p.estado === "ABIERTO" ? "Abierto" : p.estado === "CERRADO" ? "Cerrado" : "Borrador"}</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </TabsContent>
+        <TabsContent value="todos"><ListaProcesos /></TabsContent>
       </Tabs>
       {nuevo && <DialogoProceso onCerrar={() => setNuevo(false)} onHecho={(m) => { setNuevo(false); notify(m) }} />}
     </div>
   )
+}
+
+const ESTADO_LABEL: Record<ProcesoFila["estado"], string> = { BORRADOR: "Borrador", ABIERTO: "Abierto", CERRADO: "Cerrado" }
+const ETAPAS = Object.keys(ETAPA_LABEL) as Etapa[]
+
+/**
+ * M.4.LIS.1 / LIS.1a. El endpoint no filtra ni pagina: se hace en front. El menú ⁞ deshabilita (no
+ * oculta) lo que no corresponde a la etapa. Suspender y anular son por elección en el backend
+ * (`/elecciones/:id/suspender|anular`), así que desde la fila llevan al detalle, donde se elige cuál.
+ */
+function ListaProcesos() {
+  const lista = useProcesosQuery()
+  const accion = useAccionProceso()
+  const { notify } = useNotify()
+  const navigate = useNavigate()
+  const [texto, setTexto] = useState("")
+  const [estado, setEstado] = useState("")
+  const [etapa, setEtapa] = useState("")
+  const [modificar, setModificar] = useState<number | null>(null)
+  const [eliminar, setEliminar] = useState<ProcesoFila | null>(null)
+  const termino = texto.trim().toLowerCase()
+  const filtradas = (lista.data ?? []).filter(
+    (p) => (!termino || p.nombre.toLowerCase().includes(termino)) && (!estado || p.estado === estado) && (!etapa || p.etapa === etapa),
+  )
+  const { filas, paginacion, reiniciar } = usePaginaLocal(filtradas)
+  const filtrar = (f: () => void) => {
+    f()
+    reiniciar()
+  }
+  const hayFiltros = Boolean(texto || estado || etapa)
+  const detalle = (id: number) => navigate({ to: paths.app.comunicacionesProcesoDetalle.getHref(id) })
+  const publicar = (p: ProcesoFila) =>
+    accion.mutate({ ruta: `/${p.id}/publicar` }, { onSuccess: () => notify("Convocatoria publicada."), onError: (e) => notify(getErrorMessage(e), { variant: "error" }) })
+  if (lista.isPending) return <Spinner />
+  if (lista.isError) return <p className="text-sm text-red">{getErrorMessage(lista.error)}</p>
+  return (
+    <div className="flex flex-col gap-3 pt-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <Input className="w-64" placeholder="Buscar por nombre" value={texto} onChange={(e) => filtrar(() => setTexto(e.target.value))} />
+        <NativeSelect aria-label="Estado" value={estado} onChange={(e) => filtrar(() => setEstado(e.target.value))}>
+          <NativeSelectOption value="">Estado: Todos</NativeSelectOption>
+          {(Object.keys(ESTADO_LABEL) as ProcesoFila["estado"][]).map((k) => <NativeSelectOption key={k} value={k}>{ESTADO_LABEL[k]}</NativeSelectOption>)}
+        </NativeSelect>
+        <NativeSelect aria-label="Etapa" value={etapa} onChange={(e) => filtrar(() => setEtapa(e.target.value))}>
+          <NativeSelectOption value="">Etapa: Todas</NativeSelectOption>
+          {ETAPAS.map((k) => <NativeSelectOption key={k} value={k}>{ETAPA_LABEL[k]}</NativeSelectOption>)}
+        </NativeSelect>
+        {hayFiltros && <Button variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setEstado(""); setEtapa("") })}>Limpiar filtros</Button>}
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead><TableHead>Elecciones</TableHead><TableHead>Etapa</TableHead><TableHead>Estado</TableHead><TableHead className="w-12" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filas.length === 0 && <TableRow><TableCell colSpan={5}>{hayFiltros ? "Ningún proceso coincide con los filtros." : "Aún no hay procesos."}</TableCell></TableRow>}
+          {filas.map((p) => {
+            const preparacion = p.gestiona && !p.publicado
+            const formalizado = p.etapa === "FORMALIZACION" || p.etapa === "CERRADA"
+            const enCurso = p.gestiona && p.publicado && p.estado !== "CERRADO"
+            return (
+              <TableRow key={p.id}>
+                <TableCell>
+                  <Link className="text-primary underline-offset-2 hover:underline" to={paths.app.comunicacionesProcesoDetalle.getHref(p.id)}>{p.nombre}</Link>
+                </TableCell>
+                <TableCell>{p.elecciones}</TableCell>
+                <TableCell>{ETAPA_LABEL[p.etapa]}</TableCell>
+                <TableCell><Badge variant="soft" color={p.estado === "ABIERTO" ? "success" : "neutral"}>{ESTADO_LABEL[p.estado]}</Badge></TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" color="muted" size="icon" aria-label={`Acciones de ${p.nombre}`} />}>
+                      <DotsThreeVerticalIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <MenuItem onClick={() => detalle(p.id)}>Ver detalle</MenuItem>
+                      <MenuItem disabled={!preparacion} nota="Solo en Preparación" onClick={() => setModificar(p.id)}>Modificar</MenuItem>
+                      <MenuItem disabled={!preparacion} nota="Solo en Preparación" onClick={() => setEliminar(p)}>Eliminar</MenuItem>
+                      <MenuItem disabled={!preparacion || accion.isPending} nota={p.publicado ? "Ya publicada" : undefined} onClick={() => publicar(p)}>Publicar convocatoria</MenuItem>
+                      <MenuItem disabled={!enCurso} onClick={() => detalle(p.id)}>Suspender</MenuItem>
+                      <MenuItem disabled={!enCurso} onClick={() => detalle(p.id)}>Anular</MenuItem>
+                      <MenuItem disabled={!formalizado} nota="Hasta formalizar" onClick={() => detalle(p.id)}>Ver acta</MenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+      {paginacion}
+      {modificar && <ModificarProceso id={modificar} onCerrar={() => setModificar(null)} onHecho={(m) => { setModificar(null); notify(m) }} />}
+      {eliminar && (
+        <DialogoTexto titulo="Eliminar proceso" descripcion="Se elimina con sus elecciones en preparación y queda en la Bitácora."
+          accion={`/${eliminar.id}/eliminar`} metodo="patch" onCerrar={() => setEliminar(null)}
+          onHecho={() => { setEliminar(null); notify("Proceso eliminado.") }} />
+      )}
+    </div>
+  )
+}
+
+function MenuItem({ disabled, nota, onClick, children }: { disabled?: boolean; nota?: string; onClick: () => void; children: string }) {
+  return (
+    <DropdownMenuItem disabled={disabled} onClick={onClick}>
+      <span className="flex flex-col">
+        {children}
+        {disabled && nota && <span className="text-xs text-muted-foreground">{nota}</span>}
+      </span>
+    </DropdownMenuItem>
+  )
+}
+
+/** El diálogo de proceso necesita el detalle completo (funciones, reglamento), que la fila no trae. */
+function ModificarProceso({ id, onCerrar, onHecho }: { id: number; onCerrar: () => void; onHecho: (m: string) => void }) {
+  const q = useProcesoQuery(id)
+  if (!q.data) return null
+  return <DialogoProceso proceso={q.data} onCerrar={onCerrar} onHecho={onHecho} />
 }
 
 /** M.4.POS.2: bandeja personal. Solo elecciones en las que la persona puede participar. */
@@ -122,7 +217,8 @@ function MisProcesos() {
           {m.postulacionEstado && (
             <p className="text-sm">Mi postulación: {ESTADO_POSTULACION_LABEL[m.postulacionEstado]}{m.subsanarHasta ? ` · subsanar hasta ${fechaCorta(m.subsanarHasta)}` : ""}{m.propuestoPor ? ` · propuesto por ${m.propuestoPor}` : ""}</p>
           )}
-          {m.canal && m.etapa === "DECISION" && <p className="text-sm">Votación abierta · cierra {fechaCorta(m.votacionCierre)}</p>}
+          {m.canal && m.etapa === "DECISION" && <p className="text-sm">Votación abierta: {m.nombre} · cierra {fechaCorta(m.votacionCierre)}</p>}
+          {m.canal && m.etapa === "DECISION" && m.enPadron && <MiParticipacion canal={m.canal} />}
           <div className="flex flex-wrap gap-2">
             {m.puedePostular && <Button size="sm" onClick={() => setPostular(m)}>Postularme</Button>}
             {m.postulacionEstado === "PENDIENTE" && m.postulacion && (
@@ -165,7 +261,27 @@ function MisProcesos() {
   )
 }
 
-const TIPOS_POBLACION = ["ESTUDIANTES", "ACUDIENTES", "FUNCIONARIOS"] as const
+/**
+ * M.4.VOT.1 "Consultar mi participación": si se pierde la conexión al votar, indica si el voto llegó.
+ * La urna es la elección del chat (`canal`), que ya expone `yaVoto`; nunca revela la opción elegida.
+ */
+function MiParticipacion({ canal }: { canal: number }) {
+  const [consultar, setConsultar] = useState(false)
+  const q = useEleccionQuery(consultar ? canal : undefined)
+  if (!consultar) {
+    return <Button size="sm" variant="link" className="self-start px-0" onClick={() => setConsultar(true)}>Consultar mi participación</Button>
+  }
+  if (q.isPending || q.isFetching) return <Spinner />
+  if (q.isError) return <p className="text-sm text-red">{getErrorMessage(q.error)}</p>
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span>{q.data?.yaVoto ? "Su voto fue recibido. Es secreto y no se puede modificar." : "Aún no hay un voto suyo registrado en esta elección."}</span>
+      <Button size="sm" variant="link" onClick={() => q.refetch()}>Volver a consultar</Button>
+    </div>
+  )
+}
+
+const TIPOS_POBLACION =["ESTUDIANTES", "ACUDIENTES", "FUNCIONARIOS"] as const
 
 function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso; onCerrar: () => void; onCreada: (id: number) => void }) {
   const m = useAccionProceso()

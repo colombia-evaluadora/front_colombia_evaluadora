@@ -117,6 +117,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V338: Superadministrador y Administrador territorial. Código RELACIONES_ALUMNO_GRUPO.
+  {
+    id: 53,
+    name: "Relaciones alumno-grupo",
+    icon: "",
+    path: "/app/administracion/relaciones-alumno-grupo",
+    menuOrder: 7,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   // V337.5: solo el Superadministrador. Código FESTIVOS, derivado del nombre.
   {
     id: 48,
@@ -139,12 +150,45 @@ export const navigationMenu: MockMenu[] = [
     idParent: 9,
     roleIds: [1],
   },
+  // V596: Superadministrador (y Administrador y Gestor del establecimiento en el back).
+  {
+    id: 50,
+    name: "Conservación de datos",
+    icon: "",
+    path: "/app/administracion/conservacion-datos",
+    menuOrder: 10,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
   // V325: solo el Superadministrador. Código SUPERADMINISTRADORES, derivado del nombre.
   {
     id: 46,
     name: "Superadministradores",
     icon: "",
     path: "/app/administracion/superadministradores",
+    menuOrder: 7,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
+  // V329.1: Superadministrador y Administrador territorial. Código SUPERVISORES_TERRITORIALES.
+  {
+    id: 51,
+    name: "Supervisores territoriales",
+    icon: "",
+    path: "/app/administracion/supervisores-territoriales",
+    menuOrder: 8,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
+  },
+  // V353: solo el Superadministrador. Código ADMINISTRADORES_TERRITORIALES, derivado del nombre.
+  {
+    id: 52,
+    name: "Administradores territoriales",
+    icon: "",
+    path: "/app/administracion/administradores-territoriales",
     menuOrder: 7,
     type: "ITEM",
     idParent: 9,

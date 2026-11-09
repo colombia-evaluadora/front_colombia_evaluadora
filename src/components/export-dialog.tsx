@@ -32,6 +32,8 @@ interface ExportDialogProps {
   onExport: (format: ExportFormat) => Promise<ExportResult>
   /** Con `count` el botón muestra la cantidad seleccionada. */
   count?: number
+  /** Muestra este texto junto al icono del botón. */
+  texto?: string
   onExported?: () => void
   errorMessage?: string
   /** Abierto encima de otro Dialog: necesita su propio overlay. */
@@ -46,6 +48,7 @@ export function ExportDialog({
   description,
   onExport,
   count,
+  texto,
   onExported,
   errorMessage,
   nested = false,
@@ -85,7 +88,7 @@ export function ExportDialog({
                 <Button
                   variant="outline"
                   color="muted"
-                  size={seleccion ? "sm" : "icon-sm"}
+                  size={seleccion || texto ? "sm" : "icon-sm"}
                   aria-label={label}
                   disabled={disabled}
                 />
@@ -99,6 +102,11 @@ export function ExportDialog({
               <span aria-hidden="true" className="tabular-nums">
                 ({count})
               </span>
+            </>
+          ) : texto ? (
+            <>
+              <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
+              {texto}
             </>
           ) : (
             <FileDownloadOutlinedIcon />

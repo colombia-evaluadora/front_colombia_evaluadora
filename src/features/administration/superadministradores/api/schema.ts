@@ -31,15 +31,14 @@ export interface SuperadministradorFormValues {
 
 // La misma regla de nombres que establecimiento y funcionarios
 // (`validarNombrePersona`): letras de cualquier alfabeto unidas por espacio,
-// apóstrofo o guion, con al menos 2 letras. Hasta 40 y no 50 como dice la
-// Sección 7: es el largo de las columnas de TUSUARIO (una vista las fija); el
-// back valida lo mismo (V322).
+// apóstrofo o guion, con al menos 2 letras. Hasta 50, el largo de las columnas
+// de TUSUARIO desde V579.1; el back valida lo mismo (V327).
 const nombre = (sujeto: string, obligatorio: boolean) =>
   z
     .string()
     .trim()
     .refine((v) => !obligatorio || v !== "", required(sujeto))
-    .refine((v) => v.length <= 40, maxLength(40, sujeto))
+    .refine((v) => v.length <= 50, maxLength(50, sujeto))
     .superRefine((v, ctx) => {
       const message = validarNombrePersona(v, sujeto)
       if (message) ctx.addIssue({ code: "custom", message })
@@ -64,9 +63,9 @@ export function superadministradorFormSchema(esNumerico: (pkTipo: number) => boo
         .string()
         .trim()
         .min(1, required("El correo electrónico"))
-        // 8 a 120: 120 es TUSUARIO.CORREO_ELECTRONICO (no los 254 de la Sección 7); V327 valida lo mismo.
+        // 8 a 200: el largo de la cuenta (public.users.email), no los 254 de la Sección 7; V327 valida lo mismo.
         .min(8, minLength(8, "El correo electrónico"))
-        .max(120, maxLength(120, "El correo electrónico"))
+        .max(200, maxLength(200, "El correo electrónico"))
         .email(invalidEmail()),
       activo: z.boolean(),
     })

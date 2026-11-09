@@ -13,7 +13,7 @@ import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/
 import { formatoMiembros, iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { BuscadorMensajes } from "@/features/comunicaciones/chat/components/buscador-mensajes"
 import { useMiembrosQuery } from "@/features/comunicaciones/chat/api/query/use-miembros-query"
-import { ETIQUETA_PERFIL } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import { ETIQUETA_PERFIL, rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
 import { MiembrosDialog } from "@/features/comunicaciones/chat/components/miembros-dialog"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { resumenModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
@@ -161,7 +161,7 @@ function EncabezadoDirecto({ conversacion: c }: { conversacion: Conversacion }) 
         </h2>
         {subtitulo && <p className="truncate text-sm text-muted-foreground">{subtitulo}</p>}
       </div>
-      {!c.esBot && otro && <SuspenderPersona persona={{ id: otro.id, nombre: otro.nombre }} />}
+      {!c.esBot && otro && <SuspenderPersona persona={{ id: otro.id, nombre: otro.nombre, rol: rolVisible(otro) }} />}
     </div>
   )
 }

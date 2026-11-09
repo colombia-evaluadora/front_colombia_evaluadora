@@ -37,7 +37,7 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 import { findPredeterminado, useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
-import { createEmptyPerson } from "@/features/establishment/employees/components/dialogs/dialog-manage/helpers"
+import { createEmptyPerson } from "@/features/establishment/employees/api/types/person"
 
 /** Caret a la izquierda del título solo en esta página, sin tocar el Accordion compartido. */
 const accordionTriggerClassName =

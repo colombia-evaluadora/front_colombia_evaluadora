@@ -44,7 +44,7 @@ import {
 } from "@/features/planeador/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
-import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
+import { employeeFormSearchSchema, employeesSearchSchema } from "@/features/establishment/employees/api/schema"
 import { curricularReferencesSearchSchema } from "@/features/academic-management/curricular-references/api/schema"
 import {
   informesSearchSchema,
@@ -60,9 +60,12 @@ import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/g
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
+import { conservacionSearchSchema } from "@/features/administration/conservacion-datos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
+import { administradoresSearchSchema } from "@/features/administration/administradores-territoriales/api/schema"
+import { supervisoresSearchSchema } from "@/features/administration/supervisores-territoriales/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
@@ -164,6 +167,18 @@ const EmployeesPage = lazyRouteComponent(
   () => import("@/features/establishment/employees/pages/employees-page"),
   "EmployeesPage"
 )
+const EmployeeFormPage = lazyRouteComponent(
+  () => import("@/features/establishment/employees/pages/employee-form-page"),
+  "EmployeeFormPage"
+)
+const EmployeeRolesPage = lazyRouteComponent(
+  () => import("@/features/establishment/employees/pages/employee-roles-page"),
+  "EmployeeRolesPage"
+)
+const EmployeeRolePermissionsPage = lazyRouteComponent(
+  () => import("@/features/establishment/employees/pages/employee-role-permissions-page"),
+  "EmployeeRolePermissionsPage"
+)
 
 const RolesMenusPage = lazyRouteComponent(
   () => import("@/features/administration/roles-menus/pages/roles-menus-page"),
@@ -186,17 +201,75 @@ const SuperadministradoresPage = lazyRouteComponent(
   () => import("@/features/administration/superadministradores/pages/superadministradores-page"),
   "SuperadministradoresPage"
 )
+const SupervisoresTerritorialesPage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisores-territoriales-page"),
+  "SupervisoresTerritorialesPage"
+)
+const SupervisorNuevoPage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisor-form-page"),
+  "SupervisorNuevoPage"
+)
+const SupervisorModificarPage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisor-form-page"),
+  "SupervisorModificarPage"
+)
+const SupervisorDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/supervisores-territoriales/pages/supervisor-form-page"),
+  "SupervisorDetallePage"
+)
+const AdministradoresTerritorialesPage = lazyRouteComponent(
+  () => import("@/features/administration/administradores-territoriales/pages/administradores-territoriales-page"),
+  "AdministradoresTerritorialesPage"
+)
+const AdministradorNuevoPage = lazyRouteComponent(
+  () => import("@/features/administration/administradores-territoriales/pages/administrador-form-page"),
+  "AdministradorNuevoPage"
+)
+const AdministradorModificarPage = lazyRouteComponent(
+  () => import("@/features/administration/administradores-territoriales/pages/administrador-form-page"),
+  "AdministradorModificarPage"
+)
+const AdministradorDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/administradores-territoriales/pages/administrador-form-page"),
+  "AdministradorDetallePage"
+)
 const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
   "CriteriosPrioridadPage"
+)
+const CriterioNuevoPage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterio-form-page"),
+  "CriterioNuevoPage"
+)
+const CriterioModificarPage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterio-form-page"),
+  "CriterioModificarPage"
+)
+const CriterioDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/criterios-prioridad/pages/criterio-form-page"),
+  "CriterioDetallePage"
 )
 const ParametrosEdadPage = lazyRouteComponent(
   () => import("@/features/administration/parametros-edad/pages/parametros-edad-page"),
   "ParametrosEdadPage"
 )
+const RelacionesAlumnoGrupoPage = lazyRouteComponent(
+  () => import("@/features/administration/relaciones-alumno-grupo/pages/relaciones-alumno-grupo-page"),
+  "RelacionesAlumnoGrupoPage"
+)
 const FestivosPage = lazyRouteComponent(
   () => import("@/features/administration/festivos/pages/festivos-page"),
   "FestivosPage"
+)
+
+const ConservacionDatosPage = lazyRouteComponent(
+  () => import("@/features/administration/conservacion-datos/pages/conservacion-datos-page"),
+  "ConservacionDatosPage"
+)
+
+const PoliticaFormPage = lazyRouteComponent(
+  () => import("@/features/administration/conservacion-datos/pages/politica-form-page"),
+  "PoliticaFormPage"
 )
 
 const EstablishmentDetailPage = lazyRouteComponent(
@@ -707,6 +780,90 @@ export const superadministradoresRoute = createRoute({
   component: SuperadministradoresPage,
 })
 
+const SUPERVISORES_CRUMB = {
+  label: "Supervisores territoriales",
+  to: paths.app.supervisoresTerritoriales.getHref(),
+}
+
+export const supervisoresTerritorialesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisoresTerritoriales.path,
+  validateSearch: supervisoresSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Supervisores territoriales" }],
+  },
+  component: SupervisoresTerritorialesPage,
+})
+
+export const supervisorTerritorialNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisorTerritorialNuevo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Nuevo Supervisor territorial" }],
+  },
+  component: SupervisorNuevoPage,
+})
+
+export const supervisorTerritorialDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisorTerritorialDetalle.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Ver detalle" }],
+  },
+  component: SupervisorDetallePage,
+})
+
+export const supervisorTerritorialModificarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.supervisorTerritorialModificar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Modificar" }],
+  },
+  component: SupervisorModificarPage,
+})
+
+const ADMINISTRADORES_CRUMB = {
+  label: "Administradores territoriales",
+  to: paths.app.administradoresTerritoriales.getHref(),
+}
+
+export const administradoresTerritorialesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.administradoresTerritoriales.path,
+  validateSearch: administradoresSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Administradores territoriales" }],
+  },
+  component: AdministradoresTerritorialesPage,
+})
+
+export const administradorTerritorialNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.administradorTerritorialNuevo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Nuevo Administrador territorial" }],
+  },
+  component: AdministradorNuevoPage,
+})
+
+export const administradorTerritorialDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.administradorTerritorialDetalle.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Ver detalle" }],
+  },
+  component: AdministradorDetallePage,
+})
+
+export const administradorTerritorialModificarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.administradorTerritorialModificar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Modificar" }],
+  },
+  component: AdministradorModificarPage,
+})
+
 export const criteriosPrioridadRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.criteriosPrioridad.path,
@@ -715,6 +872,35 @@ export const criteriosPrioridadRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Criterios de prioridad" }],
   },
   component: CriteriosPrioridadPage,
+})
+
+const CRITERIOS_CRUMB = { label: "Criterios de prioridad", to: paths.app.criteriosPrioridad.getHref() }
+
+export const criterioPrioridadNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criterioPrioridadNuevo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CRITERIOS_CRUMB, { label: "Nuevo criterio" }],
+  },
+  component: CriterioNuevoPage,
+})
+
+export const criterioPrioridadDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criterioPrioridadDetalle.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CRITERIOS_CRUMB, { label: "Ver detalle" }],
+  },
+  component: CriterioDetallePage,
+})
+
+export const criterioPrioridadModificarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.criterioPrioridadModificar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CRITERIOS_CRUMB, { label: "Modificar" }],
+  },
+  component: CriterioModificarPage,
 })
 
 export const parametrosEdadRoute = createRoute({
@@ -726,6 +912,15 @@ export const parametrosEdadRoute = createRoute({
   component: ParametrosEdadPage,
 })
 
+export const relacionesAlumnoGrupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.relacionesAlumnoGrupo.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Relaciones alumno-grupo" }],
+  },
+  component: RelacionesAlumnoGrupoPage,
+})
+
 export const festivosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.festivos.path,
@@ -734,6 +929,36 @@ export const festivosRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Festivos" }],
   },
   component: FestivosPage,
+})
+
+const CONSERVACION_CRUMB = { label: "Conservación de datos", to: paths.app.conservacionDatos.getHref() }
+
+export const conservacionDatosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionDatos.path,
+  validateSearch: conservacionSearchSchema,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Conservación de datos" }],
+  },
+  component: ConservacionDatosPage,
+})
+
+export const conservacionPoliticaNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionPoliticaNueva.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Nueva política" }],
+  },
+  component: PoliticaFormPage,
+})
+
+export const conservacionPoliticaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionPoliticaEditar.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Modificar política" }],
+  },
+  component: PoliticaFormPage,
 })
 
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
@@ -793,6 +1018,55 @@ export const employeesRoute = createRoute({
   validateSearch: employeesSearchSchema,
   staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Funcionarios" }] },
   component: EmployeesPage,
+})
+
+const FUNCIONARIOS_CRUMB = { label: "Funcionarios", to: paths.app.establishments.officials.getHref() }
+
+export const employeeAddRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialAdd.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Nuevo funcionario" }] },
+  component: EmployeeFormPage,
+})
+
+export const employeeDetailRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialDetail.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Detalle" }] },
+  component: EmployeeFormPage,
+})
+
+export const employeeEditRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialEdit.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Modificar" }] },
+  component: EmployeeFormPage,
+})
+
+export const employeeRolesRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialRoles.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, FUNCIONARIOS_CRUMB, { label: "Roles y permisos" }] },
+  component: EmployeeRolesPage,
+})
+
+export const employeeRolePermissionsRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
+  path: paths.app.establishments.officialRolePermissions.path,
+  validateSearch: employeeFormSearchSchema,
+  staticData: {
+    breadcrumb: (params) => [
+      ESTABLECIMIENTO_CRUMB,
+      FUNCIONARIOS_CRUMB,
+      { label: "Roles y permisos", to: paths.app.establishments.officialRoles.getHref(params.employeeId) },
+      { label: "Permisos" },
+    ],
+  },
+  component: EmployeeRolePermissionsPage,
 })
 
 export const addEstablishmentRoute = createRoute({
@@ -1132,6 +1406,44 @@ export const convivenciaCasoRoute = createRoute({
   },
 })
 
+const ProcesoFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/proceso-form-page"),
+  "ProcesoFormPage",
+)
+const ConvivenciaProcesoDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/convivencia/pages/proceso-detalle-page"),
+  "ProcesoDetallePage",
+)
+
+const numeroOpcional = (v: unknown) => (v == null || v === "" || Number.isNaN(Number(v)) ? undefined : Number(v))
+
+/** Abrir proceso: vacío, desde una anotación (`?matricula=&anotacion=`) o desde un caso (`?caso=`). */
+export const convivenciaProcesoNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaProcesoNuevo.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Abrir proceso" }] },
+  validateSearch: (search: Record<string, unknown>) => ({
+    matricula: numeroOpcional(search.matricula),
+    anotacion: numeroOpcional(search.anotacion),
+    caso: numeroOpcional(search.caso),
+    nombre: typeof search.nombre === "string" && search.nombre ? search.nombre : undefined,
+  }),
+  component: function ProcesoNuevoRoute() {
+    const origen = convivenciaProcesoNuevoRoute.useSearch()
+    return <ProcesoFormPage origen={origen} />
+  },
+})
+
+export const convivenciaProcesoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.convivenciaProceso.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Detalle del proceso" }] },
+  component: function ProcesoDetalleRoute() {
+    const { procesoId } = convivenciaProcesoRoute.useParams()
+    return <ConvivenciaProcesoDetallePage procesoId={Number(procesoId)} />
+  },
+})
+
 const CatalogoAnotacionesPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/catalogo-anotaciones/pages/catalogo-anotaciones-page"),
   "CatalogoAnotacionesPage",
@@ -1206,6 +1518,78 @@ const ObservadorPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/observador/pages/observador-page"),
   "ObservadorPage",
 )
+
+const INCLUSION_CRUMB = { label: "Inclusión y orientación", to: paths.app.inclusionOrientacion.getHref() }
+const PiarListaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-lista-page"),
+  "PiarListaPage",
+)
+const PiarNuevoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-nuevo-page"),
+  "PiarNuevoPage",
+)
+const PiarFichaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-ficha-page"),
+  "PiarFichaPage",
+)
+const PiarHistorialPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/piar/pages/piar-historial-page"),
+  "PiarHistorialPage",
+)
+export const inclusionOrientacionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.inclusionOrientacion.path,
+  validateSearch: (s: Record<string, unknown>): { tab?: "orientacion" | "informe" } =>
+    s.tab === "orientacion" || s.tab === "informe" ? { tab: s.tab } : {},
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Inclusión y orientación" }] },
+  component: PiarListaPage,
+})
+const AtencionFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/inclusion/orientacion/pages/atencion-form-page"),
+  "AtencionFormPage",
+)
+const validarBusquedaAtencion = (s: Record<string, unknown>) => ({
+  ...(s.matricula ? { matricula: Number(s.matricula) } : {}),
+  ...(s.remision ? { remision: Number(s.remision) } : {}),
+  ...(s.motivo ? { motivo: Number(s.motivo) } : {}),
+  ...(s.estudiante ? { estudiante: String(s.estudiante) } : {}),
+  ...(s.ver ? { ver: true } : {}),
+})
+export const atencionNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.atencionNueva.path,
+  validateSearch: validarBusquedaAtencion,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Nueva atención" }] },
+  component: AtencionFormPage,
+})
+export const atencionFichaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.atencionFicha.path,
+  validateSearch: validarBusquedaAtencion,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Atención" }] },
+  component: AtencionFormPage,
+})
+export const piarNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.piarNuevo.path,
+  validateSearch: (s: Record<string, unknown>): { matricula?: number } => (s.matricula ? { matricula: Number(s.matricula) } : {}),
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Nuevo PIAR" }] },
+  component: PiarNuevoPage,
+})
+export const piarFichaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.piarFicha.path,
+  validateSearch: (s: Record<string, unknown>): { accion?: "acta" | "cerrar" } =>
+    s.accion === "acta" || s.accion === "cerrar" ? { accion: s.accion } : {},
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "PIAR" }] },
+  component: PiarFichaPage,
+})
+export const piarHistorialRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.piarHistorial.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, INCLUSION_CRUMB, { label: "Historial" }] },
+  component: PiarHistorialPage,
+})
 
 export const observadorRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
@@ -1340,6 +1724,21 @@ export const comunicadosTerritorialRoute = createRoute({
   ),
 })
 
+export const comunicadoNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesComunicadoNuevo.path,
+  staticData: {
+    breadcrumb: [
+      { label: "Comunicados institucionales", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Nuevo comunicado", to: paths.app.comunicacionesComunicadoNuevo.getHref() },
+    ],
+  },
+  component: lazyRouteComponent(
+    () => import("@/features/comunicaciones/comunicados/pages/nuevo-comunicado-page"),
+    "NuevoComunicadoPage",
+  ),
+})
+
 const ProcesosPage = lazyRouteComponent(() => import("@/features/comunicaciones/procesos/pages/procesos-page"), "ProcesosPage")
 
 export const procesosRoute = createRoute({
@@ -1471,9 +1870,24 @@ const routeTree = rootRoute.addChildren([
     listasValorRoute,
     areasOficialesRoute,
     criteriosPrioridadRoute,
+    criterioPrioridadNuevoRoute,
+    criterioPrioridadDetalleRoute,
+    criterioPrioridadModificarRoute,
     superadministradoresRoute,
+    supervisoresTerritorialesRoute,
+    supervisorTerritorialNuevoRoute,
+    supervisorTerritorialDetalleRoute,
+    supervisorTerritorialModificarRoute,
+    administradoresTerritorialesRoute,
+    administradorTerritorialNuevoRoute,
+    administradorTerritorialDetalleRoute,
+    administradorTerritorialModificarRoute,
     parametrosEdadRoute,
+    relacionesAlumnoGrupoRoute,
     festivosRoute,
+    conservacionDatosRoute,
+    conservacionPoliticaNuevaRoute,
+    conservacionPoliticaEditarRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
@@ -1491,6 +1905,11 @@ const routeTree = rootRoute.addChildren([
       campusDetailRoute,
       campusEditRoute,
       employeesRoute,
+      employeeAddRoute,
+      employeeDetailRoute,
+      employeeEditRoute,
+      employeeRolesRoute,
+      employeeRolePermissionsRoute,
       addEstablishmentRoute,
       establishmentDetailRoute,
       editEstablishmentRoute,
@@ -1505,6 +1924,12 @@ const routeTree = rootRoute.addChildren([
     planeadorPlanillaRoute,
     asistenciaRoute,
     catalogoAnotacionesRoute,
+    inclusionOrientacionRoute,
+    atencionNuevaRoute,
+    atencionFichaRoute,
+    piarNuevoRoute,
+    piarFichaRoute,
+    piarHistorialRoute,
     observadorRoute,
     observadorNuevaRoute,
     observadorEditarRoute,
@@ -1513,11 +1938,14 @@ const routeTree = rootRoute.addChildren([
     convivenciaNuevoRoute,
     convivenciaCasoRoute,
     convivenciaEditarRoute,
+    convivenciaProcesoNuevoRoute,
+    convivenciaProcesoRoute,
     convivenciaComiteIntegrantesRoute,
     convivenciaSesionNuevaRoute,
     convivenciaSesionRoute,
     convivenciaSesionEditarRoute,
     chatRoute,
+    comunicadoNuevoRoute,
     comunicadosTerritorialRoute,
     procesosRoute,
     procesoDetalleRoute,

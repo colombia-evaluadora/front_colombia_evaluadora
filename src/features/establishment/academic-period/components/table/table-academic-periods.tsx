@@ -18,7 +18,10 @@ import {
 import { useAcademicPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-academic-periods"
 import { getErrorMessage } from "@/lib/api-client"
 import { useAcademicPeriodFilters } from "@/features/establishment/academic-period/hooks/use-academic-period-filters"
-import { columns } from "@/features/establishment/academic-period/components/table/columns-academic-periods"
+import {
+  columns,
+  defaultColumnVisibility,
+} from "@/features/establishment/academic-period/components/table/columns-academic-periods"
 import { ExportAcademicPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-academic-periods"
 import { ExportSelectedAcademicPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-academic-periods"
 import { DeleteSelectedAcademicPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-academic-periods"
@@ -56,7 +59,9 @@ export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataT
     setPageSize,
     sorting,
     setSorting,
-    columnVisibilityStorageKey: "table-academic-periods-column-visibility",
+    // v2: cambiaron las columnas por defecto; la preferencia vieja no aplica.
+    columnVisibilityStorageKey: "table-academic-periods-column-visibility-v2",
+    initialColumnVisibility: defaultColumnVisibility,
   })
 
   // Año lectivo + sede en vez del `name`: dos periodos de la misma sede se

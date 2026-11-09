@@ -1,3 +1,4 @@
+import { format } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -33,7 +34,10 @@ export function ChatEspacio({
         <section aria-label="Mensajes fijados" className="rounded-md bg-blue-22 p-2 text-sm">
           {fijados.map((m) => (
             <a key={m.id} href={`#participacion-${m.id}`} className="block truncate underline-offset-2 hover:underline">
-              Fijado: {m.texto || "Adjunto"}
+              <span className="font-medium">Fijado:</span> {m.texto || "Adjunto"}{" "}
+              <span className="text-muted-foreground">
+                — {m.autor} · {format(new Date(m.fecha), "dd/MM")}
+              </span>
             </a>
           ))}
         </section>

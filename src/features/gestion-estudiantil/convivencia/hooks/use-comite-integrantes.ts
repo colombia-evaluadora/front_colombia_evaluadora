@@ -9,6 +9,7 @@ import {
   useCrearComiteMutation,
   useQuitarIntegranteMutation,
 } from "@/features/gestion-estudiantil/convivencia/api/mutations/comite"
+import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"
 import {
@@ -17,6 +18,7 @@ import {
   filaConError,
   filaDeCargoVacio,
   filaDeIntegrante,
+  filaIntegranteVacia,
   integranteInput,
   validarFilaIntegrante,
   type DatoCargo,
@@ -36,6 +38,22 @@ function cargosConocidos(comite: ComiteDetalle): Map<string, DatoCargo> {
   return m
 }
 
+const hoy = () => new Date().toISOString().slice(0, 10)
+
+/** Todos los cargos que se conocen del Comité, para elegirlos al agregar o avisar los que faltan. */
+function cargosDelComite(comite: ComiteDetalle, conocidos: Map<string, DatoCargo>) {
+  const m = new Map<string, { fk_tlv_cargo: number; cargo_codigo: string; cargo_nombre: string; dato: DatoCargo }>()
+  for (const i of comite.integrantes)
+    m.set(String(i.fk_tlv_cargo), {
+      fk_tlv_cargo: i.fk_tlv_cargo,
+      cargo_codigo: i.cargo_codigo,
+      cargo_nombre: i.cargo_nombre,
+      dato: datoDelCargo(conocidos, String(i.fk_tlv_cargo)) as DatoCargo,
+    })
+  for (const c of comite.cargos_vacios) m.set(String(c.fk_tlv_cargo), c)
+  return [...m.values()]
+}
+
 interface Params {
   periodo: PeriodoComite
   comite: ComiteDetalle
@@ -46,13 +64,22 @@ interface Params {
 export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
   const existe = comite.fk_comite != null
   const inicio = dia(periodo.fecha_inicio)
+  const fin = dia(periodo.fecha_fin)
   const { notify } = useNotify()
   const nav = useComiteNavegacion()
   const conocidos = useMemo(() => cargosConocidos(comite), [comite])
 
   const rector = comite.rector_previsto
+  // Orden de la Lista de Valores «Cargo en el Comité de Convivencia»; un cargo sin elegir va al final.
+  const catalogoCargos = useCatalogo("CARGO_COMITE_CONVIVENCIA")
+  const ordenDe = (fkCargo: string | number) => {
+    const i = catalogoCargos.findIndex((c) => c.value === String(fkCargo))
+    return i < 0 ? catalogoCargos.length : i
+  }
+  const cargos = [...cargosDelComite(comite, conocidos)].sort((a, b) => ordenDe(a.fk_tlv_cargo) - ordenDe(b.fk_tlv_cargo))
+  // Un integrante vigente por cargo: los reemplazados son historia de las actas, no se editan aquí.
   const [filas, setFilas] = useState<FilaIntegrante[]>(() => [
-    ...comite.integrantes.map((i) => filaDeIntegrante(i, datoDelCargo(conocidos, String(i.fk_tlv_cargo)))),
+    ...comite.integrantes.filter((i) => !i.hasta || dia(i.hasta) >= hoy()).map((i) => filaDeIntegrante(i, datoDelCargo(conocidos, String(i.fk_tlv_cargo)))),
     ...comite.cargos_vacios.map((c) => {
       const fila = filaDeCargoVacio(c, inicio)
       return c.cargo_codigo === CARGO_RECTOR && rector
@@ -80,14 +107,14 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
     const e: Record<string, ErrorFilaIntegrante> = {}
     if (!intento) return e
     for (const f of aEnviar) {
-      const err = validarFilaIntegrante(f, inicio)
+      const err = validarFilaIntegrante(f, inicio, fin)
       if (filaConError(err)) e[f.key] = err
     }
     return e
-  }, [intento, aEnviar, inicio])
+  }, [intento, aEnviar, inicio, fin])
 
   /** Cargos que el Comité exige y aún no tienen una persona (ni guardada ni en el constructor). */
-  const cargosSinIntegrante = comite.cargos_vacios.filter(
+  const cargosSinIntegrante = cargos.filter(
     (c) => !filas.some((f) => String(c.fk_tlv_cargo) === f.fk_tlv_cargo && (f.id != null || conPersona(f))),
   )
 
@@ -97,6 +124,27 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
   const cambiar = (key: string, patch: Partial<FilaIntegrante>) =>
     setFilas((prev) => prev.map((f) => (f.key === key ? { ...f, ...patch } : f)))
 
+  /** Cargos que una fila puede tomar: los que no ocupa otra fila. */
+  const opcionesCargo = (f: FilaIntegrante) =>
+    cargos
+      .filter((c) => String(c.fk_tlv_cargo) === f.fk_tlv_cargo || !filas.some((x) => x.fk_tlv_cargo === String(c.fk_tlv_cargo)))
+      .map((c) => ({ value: String(c.fk_tlv_cargo), label: c.cargo_nombre }))
+  const puedeAgregar = cargos.some((c) => !filas.some((x) => x.fk_tlv_cargo === String(c.fk_tlv_cargo)))
+  const agregarFila = () => setFilas((prev) => [...prev, filaIntegranteVacia(inicio)])
+  const elegirCargo = (key: string, valor: string) => {
+    const c = cargos.find((x) => String(x.fk_tlv_cargo) === valor)
+    const esRector = c?.cargo_codigo === CARGO_RECTOR && rector != null
+    cambiar(key, {
+      fk_tlv_cargo: valor,
+      dato: c?.dato ?? null,
+      codigo: c?.cargo_codigo ?? "",
+      cargo_nombre: c?.cargo_nombre ?? "",
+      fk_funcionario: esRector ? rector.fk_funcionario : null,
+      fk_matricula: null,
+      nombre: esRector ? rector.nombre : "",
+    })
+  }
+
   const quitarFila = (f: FilaIntegrante) => {
     if (f.id != null) setQuitados((q) => [...q, f.id as number])
     setFilas((prev) => prev.filter((x) => x.key !== f.key))
@@ -104,7 +152,7 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
 
   async function guardar() {
     setIntento(true)
-    const invalidas = aEnviar.some((f) => filaConError(validarFilaIntegrante(f, inicio)))
+    const invalidas = aEnviar.some((f) => filaConError(validarFilaIntegrante(f, inicio, fin)))
     if (invalidas) {
       notify("Revise los campos marcados.", { variant: "error" })
       enfocarPrimerError()
@@ -154,7 +202,8 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
   return {
     existe,
     inicio,
-    filas,
+    fin,
+    filas: [...filas].sort((a, b) => ordenDe(a.fk_tlv_cargo) - ordenDe(b.fk_tlv_cargo)),
     errores,
     intento,
     guardando,
@@ -165,6 +214,10 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
     esRectorBloqueado,
     cambiar,
     quitarFila,
+    opcionesCargo,
+    puedeAgregar,
+    agregarFila,
+    elegirCargo,
     guardar,
     volver: () => nav.aPestana(periodo.fk_periodo),
   }

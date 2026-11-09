@@ -6,7 +6,7 @@ import { useQuerySearch } from "@/components/search/use-query-search"
 
 import { FILTROS_VACIOS, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
 import type { Opcion } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 
 export interface OpcionesFiltros {
   sedes: Opcion[]

@@ -117,6 +117,18 @@ const TIPOS: TipoFixture[] = [
     deepLink: () => "/app/asistencia",
   },
   {
+    tipo: "ASISTENCIA_SIN_REGISTRAR",
+    categoria: "ASISTENCIA",
+    etiqueta: "Asistencia sin registrar",
+    prioridad: "ALTA",
+    silenciable: true,
+    push: true,
+    email: false,
+    titulo: () => "Asistencia sin registrar: 2 clases",
+    cuerpo: () => "Pasó el plazo para registrar la asistencia de: 6A · Matemáticas · 03/11/2026",
+    deepLink: () => "/app/asistencia",
+  },
+  {
     tipo: "INFORMES_BOLETIN",
     categoria: "INFORMES",
     etiqueta: "Boletín generado",
@@ -139,6 +151,33 @@ const TIPOS: TipoFixture[] = [
     titulo: () => "Tienes una nueva asignación académica",
     cuerpo: () => faker.helpers.arrayElement(["Matemáticas 5°A", "Inglés 7°B", "Sociales 9°A"]),
     deepLink: () => "/app/planeador/actividades",
+  },
+  {
+    // Aviso de la tarea diaria de vencimiento de roles (sso V579.11): tres días antes.
+    tipo: "ROL_POR_VENCER",
+    categoria: "ESTABLECIMIENTO",
+    etiqueta: "Roles por vencer",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: true,
+    email: true,
+    titulo: () => "Rol por vencer",
+    cuerpo: () =>
+      "El rol Coordinador de Juan Carlos Ramírez Soto en IE Central · Tarde vence el 30/06/2027. Puede prorrogarlo desde Roles y permisos.",
+    deepLink: () => "/app/establecimiento-educativo/funcionarios/roles/1?establecimiento=1",
+  },
+  {
+    tipo: "ROL_VENCIDO",
+    categoria: "ESTABLECIMIENTO",
+    etiqueta: "Roles vencidos",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: true,
+    email: true,
+    titulo: () => "Rol vencido",
+    cuerpo: () =>
+      "El rol Coordinador de Juan Carlos Ramírez Soto en IE Central · Tarde venció el 15/02/2027 y quedó inactivo. Puede activarlo o prorrogarlo desde Roles y permisos.",
+    deepLink: () => "/app/establecimiento-educativo/funcionarios/roles/1?establecimiento=1",
   },
   {
     // Confirmación de una acción propia (sso V590): la etiqueta de la escritura.

@@ -118,7 +118,11 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
           {m.fijado ? <PushPinFillIcon className="size-4.5" /> : <PushPinIcon className="size-4.5" />}
         </Accion>
         {retirable && (
-          <Accion etiqueta="Retirar para todos" onClick={() => setEliminando(true)}>
+          <Accion
+            etiqueta="Retirar para todos"
+            titulo="Retirar para todos solo en los primeros 15 minutos."
+            onClick={() => setEliminando(true)}
+          >
             <TrashIcon className="size-4.5" />
           </Accion>
         )}
@@ -170,14 +174,19 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Retirar para todos</AlertDialogTitle>
-            <AlertDialogDescription>
-              El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá Mensaje
-              retirado por el remitente. Solo puede retirarlo durante los primeros 15 minutos desde su envío.
-              No deshace lecturas, capturas, archivos descargados ni correos ya entregados. El coordinador
-              miembro de la conversación podrá consultarlo por control y trazabilidad.
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá Mensaje
+                retirado por el remitente.
+              </span>
+              <span className="block">
+                Solo puede retirarlo durante los primeros 15 minutos desde su envío. Después solo podrá
+                eliminarlo de su bandeja.
+              </span>
+              <span className="block">No deshace lecturas, capturas, archivos descargados ni correos ya entregados.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {/* Textos de M.2.RET.1; la última frase conserva lo que hace hoy `puedeVerEliminados`. */}
+          {/* Textos literales de M.2.RET.1. */}
           <AlertDialogFooter>
             <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
               Cancelar
@@ -206,12 +215,15 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
 
 function Accion({
   etiqueta,
+  titulo,
   onClick,
   pulsado,
   disabled,
   children,
 }: {
   etiqueta: string
+  // Ayuda del tooltip cuando no basta la etiqueta (M.2.BAN.3).
+  titulo?: string
   onClick: () => void
   pulsado?: boolean
   disabled?: boolean
@@ -222,7 +234,7 @@ function Accion({
       type="button"
       aria-label={etiqueta}
       aria-pressed={pulsado}
-      title={etiqueta}
+      title={titulo ?? etiqueta}
       onClick={onClick}
       disabled={disabled}
       className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 aria-pressed:text-primary"

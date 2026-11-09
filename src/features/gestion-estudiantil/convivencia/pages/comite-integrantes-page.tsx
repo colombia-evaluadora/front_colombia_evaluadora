@@ -1,12 +1,13 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import type { ComiteDetalle, PeriodoComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { useComiteQuery, usePeriodosComiteQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
@@ -34,16 +35,12 @@ function Contenido({ periodo, periodos, comite, onPeriodo }: ContenidoProps) {
         <TableScreenTitle
           action={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" color="muted" onClick={form.volver} disabled={form.guardando}>
+              <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
                 {puedeGestionarComite ? "Cancelar" : "Volver"}
               </Button>
               {puedeGestionarComite && (
                 <Button size="sm" onClick={form.guardar} disabled={form.guardando}>
-                  {form.guardando ? (
-                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                  ) : (
-                    <FloppyDiskIcon data-icon="inline-start" />
-                  )}
+                  <IconoCarga cargando={form.guardando}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
                   Guardar
                 </Button>
               )}

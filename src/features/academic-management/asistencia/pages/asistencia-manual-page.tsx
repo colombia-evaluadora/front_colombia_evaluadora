@@ -95,7 +95,9 @@ function AsistenciaManualContent({
 }) {
   const [anio, mes] = fecha.split("-").map(Number)
 
-  const { isDocente } = useAsistenciaAccess()
+  const { isDocente: esDocente, esAdminEstablecimiento } = useAsistenciaAccess()
+  // El administrador del establecimiento registra cualquier clase: no se acota a las que dicta.
+  const isDocente = esDocente && !esAdminEstablecimiento
   // Regla 76: todos los de su alcance abren la planilla; solo marcan las clases que dictan
   // (MIAS), aunque además sean directores de grupo (Regla 74).
   const { data: todas, isPending: cargandoTodas } = useAsistenciaCalendarioQuery({ SEDE: sede, ANIO: anio, MES: mes })
@@ -109,7 +111,7 @@ function AsistenciaManualContent({
   const idsPropios = new Set(aSesionesDelDia(propias ?? [], fecha).map((s) => s.id))
   // Sin clase elegida, las pestañas son las propias del docente (o todas, en solo lectura).
   const sesionesDelDia = isDocente ? sesionesVisibles.filter((s) => idsPropios.has(s.id)) : sesionesVisibles
-  const esSoloLectura = (s: SesionTab) => !isDocente || !idsPropios.has(s.id)
+  const esSoloLectura = (s: SesionTab) => !esAdminEstablecimiento && (!isDocente || !idsPropios.has(s.id))
 
   const [activeTab, setActiveTab] = React.useState<string | undefined>(undefined)
   const [accionesSlot, setAccionesSlot] = React.useState<HTMLDivElement | null>(null)

@@ -22,9 +22,13 @@ import { evaluationCriteriaHandlers } from "@/mocks/handlers/academic-period/eva
 import { generalAreasHandlers } from "@/mocks/handlers/academic-period/general-areas"
 import { criteriosPrioridadHandlers } from "@/mocks/handlers/criterios-prioridad"
 import { superadministradoresHandlers } from "@/mocks/handlers/superadministradores"
+import { administradoresTerritorialesHandlers } from "@/mocks/handlers/administradores-territoriales"
+import { supervisoresTerritorialesHandlers } from "@/mocks/handlers/supervisores-territoriales"
 import { parametrosEdadHandlers } from "@/mocks/handlers/parametros-edad"
 import { listasValorHandlers } from "@/mocks/handlers/listas-valor"
 import { festivosHandlers } from "@/mocks/handlers/festivos"
+import { relacionesAlumnoGrupoHandlers } from "@/mocks/handlers/relaciones-alumno-grupo"
+import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
@@ -34,6 +38,8 @@ import { especialidadesHandlers } from "@/mocks/handlers/academic-period/especia
 import { establishmentHandlers } from "@/mocks/handlers/establishments"
 import { campusHandlers } from "@/mocks/handlers/campuses"
 import { employeeHandlers } from "@/mocks/handlers/employees"
+import { funcionariosHandlers } from "@/mocks/handlers/funcionarios"
+import { funcionariosRolesHandlers } from "@/mocks/handlers/funcionarios-roles"
 import { selectCatalogHandlers } from "./academic-period/select-catalog"
 import { catalogHandlers } from "@/mocks/handlers/catalog"
 import { reservationsHandlers } from "@/mocks/handlers/reservations"
@@ -96,9 +102,14 @@ export const handlers = [
   ...generalAreasHandlers,
   ...criteriosPrioridadHandlers,
   ...superadministradoresHandlers,
+  ...administradoresTerritorialesHandlers,
+  ...supervisoresTerritorialesHandlers,
   ...parametrosEdadHandlers,
   ...listasValorHandlers,
   ...festivosHandlers,
+  ...relacionesAlumnoGrupoHandlers,
+  // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
+  ...conservacionDatosHandlers,
   ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,
   ...horarioHandlers,
@@ -109,6 +120,8 @@ export const handlers = [
   ...reservationsHandlers,
   ...establishmentHandlers,
   ...campusHandlers,
+  ...funcionariosHandlers,
+  ...funcionariosRolesHandlers,
   ...employeeHandlers,
   ...catalogHandlers,
   ...rolesHandlers,

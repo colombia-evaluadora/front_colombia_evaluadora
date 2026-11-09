@@ -6,6 +6,8 @@ const ANULAR_ROLES = ["CEVAL-COORDINADOR", "CEVAL-RECTOR", "CEVAL-JEFE_SISTEMA_E
 /** Imprimir observador (Regla 37): además el director de grupo, que entra como DOCENTE. */
 const IMPRIMIR_ROLES = ["CEVAL-DOCENTE", "CEVAL-COORDINADOR", "CEVAL-RECTOR", "CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO"]
 
+const REMITIR_ROLES = ["CEVAL-DOCENTE", "CEVAL-COORDINADOR", "CEVAL-RECTOR", "CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL"]
+
 /** Qué botones ver; el backend vuelve a validar cada acción con su gate y alcance. */
 export function useObservadorAccess() {
   const { user } = useAuth()
@@ -15,6 +17,9 @@ export function useObservadorAccess() {
     puedeCrear: permiso.puedeCrear,
     puedeEditar: permiso.puedeEditar,
     puedeAnular: permiso.puedeEditar && ANULAR_ROLES.some((r) => roles.includes(r)),
+    // Sección 5.2: el docente con su carga y los roles de la Regla 1; el backend recorta el grupo.
+    puedeRemitir: REMITIR_ROLES.some((r) => roles.includes(r)),
+    veMisRemisiones: roles.includes("CEVAL-DOCENTE"),
     puedeImprimir: IMPRIMIR_ROLES.some((r) => roles.includes(r)),
   }
 }

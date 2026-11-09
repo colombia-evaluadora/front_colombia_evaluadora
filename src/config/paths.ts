@@ -122,17 +122,84 @@ export const paths = {
       path: "administracion/superadministradores",
       getHref: () => "/app/administracion/superadministradores",
     },
+    supervisoresTerritoriales: {
+      path: "administracion/supervisores-territoriales",
+      getHref: () => "/app/administracion/supervisores-territoriales",
+    },
+    // Bajo `detalle/` y `modificar/`: un `$id` suelto chocaría con `nuevo`.
+    supervisorTerritorialNuevo: {
+      path: "administracion/supervisores-territoriales/nuevo",
+      getHref: () => "/app/administracion/supervisores-territoriales/nuevo",
+    },
+    supervisorTerritorialDetalle: {
+      path: "administracion/supervisores-territoriales/detalle/$supervisorId",
+      getHref: (supervisorId: number | string) =>
+        `/app/administracion/supervisores-territoriales/detalle/${supervisorId}`,
+    },
+    supervisorTerritorialModificar: {
+      path: "administracion/supervisores-territoriales/modificar/$supervisorId",
+      getHref: (supervisorId: number | string) =>
+        `/app/administracion/supervisores-territoriales/modificar/${supervisorId}`,
+    },
+    administradoresTerritoriales: {
+      path: "administracion/administradores-territoriales",
+      getHref: () => "/app/administracion/administradores-territoriales",
+    },
+    // Bajo `detalle/` y `modificar/`: un `$id` suelto chocaría con `nuevo`.
+    administradorTerritorialNuevo: {
+      path: "administracion/administradores-territoriales/nuevo",
+      getHref: () => "/app/administracion/administradores-territoriales/nuevo",
+    },
+    administradorTerritorialDetalle: {
+      path: "administracion/administradores-territoriales/detalle/$administradorId",
+      getHref: (administradorId: number | string) =>
+        `/app/administracion/administradores-territoriales/detalle/${administradorId}`,
+    },
+    administradorTerritorialModificar: {
+      path: "administracion/administradores-territoriales/modificar/$administradorId",
+      getHref: (administradorId: number | string) =>
+        `/app/administracion/administradores-territoriales/modificar/${administradorId}`,
+    },
     criteriosPrioridad: {
       path: "administracion/criterios-prioridad",
       getHref: () => "/app/administracion/criterios-prioridad",
+    },
+    criterioPrioridadNuevo: {
+      path: "administracion/criterios-prioridad/nuevo",
+      getHref: () => "/app/administracion/criterios-prioridad/nuevo",
+    },
+    criterioPrioridadDetalle: {
+      path: "administracion/criterios-prioridad/detalle/$criterioId",
+      getHref: (criterioId: number | string) => `/app/administracion/criterios-prioridad/detalle/${criterioId}`,
+    },
+    criterioPrioridadModificar: {
+      path: "administracion/criterios-prioridad/modificar/$criterioId",
+      getHref: (criterioId: number | string) => `/app/administracion/criterios-prioridad/modificar/${criterioId}`,
     },
     parametrosEdad: {
       path: "administracion/parametros-edad",
       getHref: () => "/app/administracion/parametros-edad",
     },
+    relacionesAlumnoGrupo: {
+      path: "administracion/relaciones-alumno-grupo",
+      getHref: () => "/app/administracion/relaciones-alumno-grupo",
+    },
     festivos: {
       path: "administracion/festivos",
       getHref: () => "/app/administracion/festivos",
+    },
+    conservacionDatos: {
+      path: "administracion/conservacion-datos",
+      getHref: () => "/app/administracion/conservacion-datos",
+    },
+    conservacionPoliticaNueva: {
+      path: "administracion/conservacion-datos/politicas/nueva",
+      getHref: () => "/app/administracion/conservacion-datos/politicas/nueva",
+    },
+    conservacionPoliticaEditar: {
+      path: "administracion/conservacion-datos/politicas/editar/$politicaId",
+      getHref: (politicaId: number | string) =>
+        `/app/administracion/conservacion-datos/politicas/editar/${politicaId}`,
     },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
@@ -214,6 +281,33 @@ export const paths = {
       officials: {
           path: "establecimiento-educativo/funcionarios",
           getHref: () => "/app/establecimiento-educativo/funcionarios",
+      },
+
+      officialAdd: {
+          path: "establecimiento-educativo/funcionarios/agregar",
+          getHref: () => "/app/establecimiento-educativo/funcionarios/agregar",
+      },
+
+      officialDetail: {
+          path: "establecimiento-educativo/funcionarios/detalle/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/detalle/${employeeId}`,
+      },
+
+      officialEdit: {
+          path: "establecimiento-educativo/funcionarios/editar/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/editar/${employeeId}`,
+      },
+
+      // Roles y permisos del funcionario (Sección 4.2). El aviso de vencimiento (sso V579.11) enlaza aquí.
+      officialRoles: {
+          path: "establecimiento-educativo/funcionarios/roles/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/roles/${employeeId}`,
+      },
+
+      officialRolePermissions: {
+          path: "establecimiento-educativo/funcionarios/roles/$employeeId/permisos/$asignacionId",
+          getHref: (employeeId: string | number, asignacionId: string | number) =>
+              `/app/establecimiento-educativo/funcionarios/roles/${employeeId}/permisos/${asignacionId}`,
       },
 
       academicPeriods: {
@@ -304,6 +398,14 @@ export const paths = {
       path: "gestion-estudiantil/catalogo-anotaciones",
       getHref: () => "/app/gestion-estudiantil/catalogo-anotaciones",
     },
+    convivenciaProcesoNuevo: {
+      path: "gestion-estudiantil/convivencia/procesos/nuevo",
+      getHref: () => "/app/gestion-estudiantil/convivencia/procesos/nuevo",
+    },
+    convivenciaProceso: {
+      path: "gestion-estudiantil/convivencia/procesos/$procesoId",
+      getHref: (procesoId: number | string) => `/app/gestion-estudiantil/convivencia/procesos/${procesoId}`,
+    },
     convivenciaComiteIntegrantes: {
       path: "gestion-estudiantil/convivencia/comite/integrantes",
       getHref: () => "/app/gestion-estudiantil/convivencia/comite/integrantes",
@@ -319,6 +421,30 @@ export const paths = {
     convivenciaSesionEditar: {
       path: "gestion-estudiantil/convivencia/comite/sesion/$sesionId/editar",
       getHref: (sesionId: number | string) => `/app/gestion-estudiantil/convivencia/comite/sesion/${sesionId}/editar`,
+    },
+    inclusionOrientacion: {
+      path: "gestion-estudiantil/inclusion-orientacion",
+      getHref: () => "/app/gestion-estudiantil/inclusion-orientacion",
+    },
+    atencionNueva: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+      getHref: () => "/app/gestion-estudiantil/inclusion/orientacion/atencion/nueva",
+    },
+    atencionFicha: {
+      path: "gestion-estudiantil/inclusion/orientacion/atencion/$atencionId",
+      getHref: (atencionId: number | string) => `/app/gestion-estudiantil/inclusion/orientacion/atencion/${atencionId}`,
+    },
+    piarNuevo: {
+      path: "gestion-estudiantil/inclusion/piar/nuevo",
+      getHref: () => "/app/gestion-estudiantil/inclusion/piar/nuevo",
+    },
+    piarFicha: {
+      path: "gestion-estudiantil/inclusion/piar/$piarId",
+      getHref: (piarId: number | string) => `/app/gestion-estudiantil/inclusion/piar/${piarId}`,
+    },
+    piarHistorial: {
+      path: "gestion-estudiantil/inclusion/piar/$piarId/historial",
+      getHref: (piarId: number | string) => `/app/gestion-estudiantil/inclusion/piar/${piarId}/historial`,
     },
     observador: {
       path: "gestion-estudiantil/observador",
@@ -339,6 +465,10 @@ export const paths = {
     comunicacionesComunicadosTerritorial: {
       path: "comunicaciones/comunicados-territorial",
       getHref: () => "/app/comunicaciones/comunicados-territorial",
+    },
+    comunicacionesComunicadoNuevo: {
+      path: "comunicaciones/comunicados/nuevo",
+      getHref: () => "/app/comunicaciones/comunicados/nuevo",
     },
     comunicacionesProcesos: {
       path: "comunicaciones/procesos",

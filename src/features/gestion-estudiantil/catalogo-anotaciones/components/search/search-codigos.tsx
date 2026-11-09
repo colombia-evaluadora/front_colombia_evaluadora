@@ -5,7 +5,7 @@ import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
 import type { Opcion } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/observador/components/combo-opciones"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
 import { ESTADOS, FILTROS_VACIOS, type CatalogoFiltros } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
 
 interface Props {
@@ -78,7 +78,7 @@ export function SearchCodigos({ search, onSearchChange, filters, applyFilters, o
       size="lg"
       className="sm:w-full max-w-xl"
     >
-      <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
         <Combo id="catalogo-tipo" label="Tipo" value={draft.tipo} options={tipos} onChange={(tipo) => setDraft({ ...draft, tipo })} />
         <Combo id="catalogo-situacion" label="Tipo de situación" value={draft.situacion} options={situaciones} onChange={(situacion) => setDraft({ ...draft, situacion })} />
         <Combo id="catalogo-estado" label="Estado" value={draft.estado} options={ESTADOS} onChange={(estado) => setDraft({ ...draft, estado })} />

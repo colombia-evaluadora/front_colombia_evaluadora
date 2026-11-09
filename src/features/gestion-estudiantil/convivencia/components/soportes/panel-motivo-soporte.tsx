@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { TrashIcon } from "@/components/ui/icons"
 
+import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
 import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
 import type { PanelSoporte } from "@/features/gestion-estudiantil/convivencia/hooks/use-soportes-accion"
@@ -49,11 +50,11 @@ export function PanelMotivoSoporte({
       )}
       <TextoLargo id="soporte-motivo" label="Motivo" required max={500} rows={3} value={motivo} onChange={onMotivo} error={errorMotivo} />
       <div className="flex justify-end gap-2">
-        <Button type="button" size="sm" variant="outline" color="muted" disabled={pending} onClick={onCancelar}>
+        <Button type="button" size="sm" variant="outline" color="neutral" disabled={pending} onClick={onCancelar}>
           Cancelar
         </Button>
         <Button type="button" size="sm" color={sustituir ? undefined : "destructive"} disabled={pending} onClick={onConfirmar}>
-          {pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : !sustituir && <TrashIcon data-icon="inline-start" />}
+          <IconoCarga cargando={pending}>{!sustituir && <TrashIcon data-icon="inline-start" />}</IconoCarga>
           {sustituir ? "Sustituir soporte" : "Retirar soporte"}
         </Button>
       </div>

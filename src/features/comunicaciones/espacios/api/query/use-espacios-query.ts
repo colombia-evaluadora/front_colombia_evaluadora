@@ -53,8 +53,9 @@ export function useConfiguracionEspacioQuery(actividad: number | null) {
   })
 }
 
-export function useParticipantesQuery(id: number, equipo: number | null) {
+export function useParticipantesQuery(id: number, equipo: number | null, activo = true) {
   return useQuery({
+    enabled: activo,
     queryKey: espaciosKeys.participantes(id, equipo),
     queryFn: () => evalCol.getRows<Participante>(`${base(id)}/participantes${equipo ? `?equipo=${equipo}` : ""}`),
   })

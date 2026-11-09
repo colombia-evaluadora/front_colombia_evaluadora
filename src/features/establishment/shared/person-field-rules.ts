@@ -82,10 +82,10 @@ export const CORREO = CORREO_REGEX
 export const NOMBRE = /^\p{L}+(?:[ '’-]\p{L}+)*$/u
 
 /** Letras útiles mínimas de un nombre: los símbolos no cuentan. */
-const MIN_LETRAS_NOMBRE = 3
+const MIN_LETRAS_NOMBRE = 2
 
-/** Largo máximo de un nombre o apellido: el informe pide 50, la columna admite 40. */
-export const NOMBRE_MAX = 40
+/** Largo máximo de un nombre o apellido (informe de diseño, 4.1; la columna admite 50 desde V579.1). */
+export const NOMBRE_MAX = 50
 
 /**
  * Lo que el input de nombres deja escribir; el formato fino lo dice `NOMBRE`.

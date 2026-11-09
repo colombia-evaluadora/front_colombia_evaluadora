@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   ArrowsDownUpIcon,
+  CalendarBlankIcon,
   CheckCircleIcon,
   ClipboardAddIcon,
   DotsThreeVerticalIcon,
@@ -17,7 +18,7 @@ import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivenc
 import { esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
 
-export type AccionCaso = "ver" | "modificar" | "accion" | "gestor" | "tipo" | "cerrar" | "anular"
+export type AccionCaso = "ver" | "modificar" | "fechas" | "accion" | "gestor" | "tipo" | "cerrar" | "anular"
 
 export interface CasoMenuInfo {
   numero: string | number
@@ -57,7 +58,11 @@ export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, trigge
         )}
         <DropdownMenuItem disabled={!(abierto && access.puedeGestionar)} onClick={() => onAccion("modificar")}>
           <PencilIcon />
-          Modificar o corregir fechas
+          Modificar
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!(abierto && access.puedeGestionar)} onClick={() => onAccion("fechas")}>
+          <CalendarBlankIcon />
+          Corregir fechas
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!(abierto && access.puedeGestionar)} onClick={() => onAccion("accion")}>
           <ClipboardAddIcon />

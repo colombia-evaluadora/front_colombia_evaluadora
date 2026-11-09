@@ -19,6 +19,8 @@ interface AsistenciaPorGrupoRow {
   justificada: boolean
   /** `false`: no estaba en el grupo esa fecha (no cuenta en sus totales). */
   en_grupo: boolean
+  /** Llegó tarde sin excusa en un día de varios bloques: el bloque en que llegó (0-based). */
+  bloque_llegada?: number | null
 }
 
 export type MarcaAsistencia = "ASISTIO" | "FALLA" | "RETRASO" | null
@@ -37,6 +39,7 @@ export interface CeldaAsistencia {
   marca: MarcaAsistencia
   justificada: boolean
   enGrupo: boolean
+  bloqueLlegada: number | null
 }
 
 export interface EstudianteGrupo {
@@ -86,6 +89,7 @@ export function toAsistenciaPorGrupo(rows: AsistenciaPorGrupoRow[]): AsistenciaP
       marca: row.tipo_valor ? MARCA[row.tipo_valor] : null,
       justificada: row.justificada,
       enGrupo: row.en_grupo,
+      bloqueLlegada: row.bloque_llegada == null ? null : Number(row.bloque_llegada),
     })
   }
   const ordenadas = [...sesiones.values()].sort(

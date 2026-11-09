@@ -15,14 +15,15 @@ function issuesDe(persona: Parameters<typeof validarFormatoPersona>[0]) {
   return result.success ? {} : Object.fromEntries(result.error.issues.map((i) => [i.path.join("."), i.message]))
 }
 
-// Ejemplos del caso de prueba E04HU02 (Mantis 0000694).
+// Ejemplos del caso de prueba E04HU02 (Mantis 0000694). El mínimo bajó a 2 letras
+// (igual que fn_superadmin_validar_nombre, V327): "Li" y "Wu" pasan a ser válidos.
 describe("validarNombrePersona", () => {
-  it.each(["Ka'el", "D'Angelo", "D’Angelo", "Jean-Pierre", "María José", "Muñoz", "De la Cruz", "Müller", "François", "O'Connor", "Lluvia", "Ana", "李明"])(
+  it.each(["Ka'el", "D'Angelo", "D’Angelo", "Jean-Pierre", "María José", "Muñoz", "De la Cruz", "Müller", "François", "O'Connor", "Lluvia", "Ana", "李明", "Li", "Wu"])(
     "acepta %s",
     (valor) => expect(validarNombrePersona(valor, "El nombre")).toBeNull(),
   )
 
-  it.each(["+++", "'''", "A++", "12345", "Ç'Ç'++<<", "Juan2", "-Ana", "Ana-", "Jean--Pierre", "D''Angelo", "A", "3K3K3K3SKKSÇ++++ÇÇ", "KKKSKKS", "AAA", "Jjjj", "S22K22K", "Li", "Wu"])(
+  it.each(["+++", "'''", "A++", "12345", "Ç'Ç'++<<", "Juan2", "-Ana", "Ana-", "Jean--Pierre", "D''Angelo", "A", "3K3K3K3SKKSÇ++++ÇÇ", "KKKSKKS", "AAA", "Jjjj", "S22K22K"])(
     "rechaza %s",
     (valor) => expect(validarNombrePersona(valor, "El nombre")).not.toBeNull(),
   )
