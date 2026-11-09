@@ -1,266 +1,133 @@
 "use no memo"
 
+import type { ComponentProps, ReactNode } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
+import { Link } from "@tanstack/react-router"
 
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { PencilIcon } from "@/components/ui/icons"
+import { Button } from "@/components/ui/button"
+import { EyeIcon, PencilIcon, ShieldIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { paths } from "@/config/paths"
 
-import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "@/features/establishment/employees/api/ui-mappings"
-import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
-import {
-  ResendActivationDialog,
-  SendPasswordResetDialog,
-} from "@/features/establishment/employees/components/dialogs/dialog-account-email"
-import { DeleteEmployeeDialog } from "@/features/establishment/employees/components/dialogs/dialog-delete"
+import { ESTADO_FUNCIONARIO_BADGE, ESTADO_FUNCIONARIO_LABELS } from "@/features/establishment/employees/api/ui-mappings"
+import type { FuncionarioListItem } from "@/features/establishment/employees/api/types/funcionario"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface EmployeeColumnsOptions {
-  onEdit: (employeeId: number) => void
+  establishmentId: number | null
 }
 
-// Cuántas sedes se listan por nombre antes de resumir el resto en un "+N".
-//
-// Es 1 y no 2 porque el "+N" cuenta lo que NO se renderiza, no lo que no entra:
-// con 2 los nombres de sede rara vez caben en el ancho de la columna y el
-// segundo se lo comía el `truncate`, así que se veía una sede y un "+1" cuando
-// en realidad quedaban dos escondidas.
-const VISIBLE_CAMPUSES = 1
-
-function formatCampusNames(campuses: string[]) {
-  return campuses.join(", ")
-}
-
-/**
- * Une los nombres de un catálogo con comas. Lo usan "Rol" y "Jornada": ambas
- * son texto plano y no badges — el funcionario puede tener varios de cada uno
- * y una hilera de píldoras compite con el badge de estado, que sí necesita el
- * color para distinguir activo de suspendido.
- */
-function formatCatalogNames(items: EmployeeListItem["roles"]) {
-  return items.map((item) => item.name).join(", ")
-}
-
-/**
- * Un badge por estado, no uno solo con los estados concatenados: cuando el
- * funcionario mezcla permisos `ACTIVE` y `SUSPENDED`, un único badge tendría
- * que elegir un color para dos estados opuestos ("Activo, Suspendido" en
- * rojo). Separados, cada uno lleva su color —verde activo, rojo suspendido—
- * y la mezcla se lee sola.
- */
-export function renderStatusCell(statuses: EmployeeListItem["statuses"]) {
-  if (statuses.length === 0) {
-    return "—"
-  }
-
+function ActionButton({ label, children, ...rest }: { label: string; children: ReactNode } & ComponentProps<typeof Button>) {
   return (
-    <div className="flex flex-wrap items-center gap-1">
-      {statuses.map((status) => (
-        <Badge key={status} {...EMPLOYEE_STATUS_BADGE[status]}>
-          {EMPLOYEE_STATUS_LABELS[status]}
-        </Badge>
-      ))}
-    </div>
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button variant="ghost" color="neutral" size="icon-sm" aria-label={label} {...rest} />}
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
-function ActionsCell({ employee, onEdit }: { employee: EmployeeListItem; onEdit: (id: number) => void }) {
+function ActionsCell({ employee, establishmentId }: { employee: FuncionarioListItem } & EmployeeColumnsOptions) {
   const { puedeEditar } = useMenuPermission("FUNCIONARIOS")
+  const search = { establecimiento: establishmentId ?? undefined }
 
   return (
     <div className="flex items-center justify-end gap-1">
-      {puedeEditar ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Editar funcionario"
-                onClick={() => onEdit(employee.id)}
-              />
-            }
-          >
-            <PencilIcon />
-          </TooltipTrigger>
-          <TooltipContent>Editar funcionario</TooltipContent>
-        </Tooltip>
-      ) : null}
+      <ActionButton
+        label="Ver detalle"
+        render={<Link to={paths.app.establishments.officialDetail.getHref(employee.id)} search={search} />}
+        nativeButton={false}
+      >
+        <EyeIcon />
+      </ActionButton>
       {puedeEditar ? (
         <>
-          <SendPasswordResetDialog employee={employee} />
-          <ResendActivationDialog employee={employee} />
+          <ActionButton
+            label="Modificar"
+            render={<Link to={paths.app.establishments.officialEdit.getHref(employee.id)} search={search} />}
+            nativeButton={false}
+          >
+            <PencilIcon />
+          </ActionButton>
+          <ActionButton
+            label="Roles y permisos"
+            render={<Link to={paths.app.establishments.officialRoles.getHref(employee.id)} search={search} />}
+            nativeButton={false}
+          >
+            <ShieldIcon />
+          </ActionButton>
         </>
       ) : null}
-      <DeleteEmployeeDialog employee={employee} />
     </div>
   )
 }
 
-export function createColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<EmployeeListItem>[] {
+/** Columnas de la Sección 4: Documento, Nombre, Roles, Designaciones y Estado. */
+export function createColumns(options: EmployeeColumnsOptions): ColumnDef<FuncionarioListItem>[] {
   return [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Seleccionar página"
-        className="translate-y-0.5"
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label={`Seleccionar ${row.original.name}`}
-        className="translate-y-0.5"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 32,
-  },
-  {
-    accessorKey: "documentNumber",
-    id: "documentNumber",
-    meta: { label: "N° Documento" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="N° Documento" />,
-    cell: ({ row }) => <span className="tabular-nums">{row.original.documentNumber}</span>,
-  },
-  {
-    accessorKey: "name",
-    id: "name",
-    meta: { label: "Nombre" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
-    cell: ({ row }) => <p className="uppercase font-bold">{row.original.name}</p>,
-  },
-  {
-    accessorKey: "role",
-    id: "role",
-    meta: { label: "Rol" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Rol" />,
-    cell: ({ row }) => {
-      if (row.original.roles.length === 0) {
-        return <span className="text-sm text-foreground">—</span>
-      }
-
-      const fullText = formatCatalogNames(row.original.roles)
-
-      return (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              // El ancho es lo que dispara los puntos suspensivos: con el tope
-              // anterior (16rem) casi ningún rol llegaba a recortarse y el
-              // tooltip aparecía sin que nada avisara que había más texto.
-              <span className="block max-w-[12rem] truncate text-sm text-foreground" />
-            }
-          >
-            {fullText}
-          </TooltipTrigger>
-          <TooltipContent>{fullText}</TooltipContent>
-        </Tooltip>
-      )
+    {
+      accessorKey: "documentNumber",
+      id: "document",
+      meta: { label: "Documento" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Documento" />,
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap tabular-nums">
+          {[row.original.documentType, row.original.documentNumber].filter(Boolean).join(" ")}
+        </span>
+      ),
     },
-  },
-  {
-    accessorKey: "campuses",
-    id: "campuses",
-    meta: { label: "Sede educativa" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Sede educativa" />,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const campuses = row.original.campuses
-
-      if (campuses.length === 0) {
-        return <span className="text-sm text-foreground">—</span>
-      }
-
-      const extra = campuses.length - VISIBLE_CAMPUSES
-
-      return (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              // El "+N" va fuera del `truncate` y con `shrink-0`: si compartiera
-              // el bloque que se recorta, se lo comerían los puntos suspensivos
-              // justo cuando hace falta leerlo.
-              <div className="flex max-w-[18rem] items-center gap-1 text-sm text-foreground">
-                <span className="truncate">
-                  {formatCampusNames(campuses.slice(0, VISIBLE_CAMPUSES))}
-                </span>
-                {extra > 0 ? (
-                  <span className="shrink-0 text-muted-foreground">+{extra}</span>
-                ) : null}
-              </div>
-            }
-          />
-          <TooltipContent>{formatCampusNames(campuses)}</TooltipContent>
-        </Tooltip>
-      )
+    {
+      accessorKey: "name",
+      id: "name",
+      meta: { label: "Nombre" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
+      cell: ({ row }) => (
+        <div className="flex min-w-0 flex-col items-start gap-1">
+          <span className="truncate">{row.original.name}</span>
+          {row.original.isSupport ? (
+            <Badge variant="outline" color="neutral">
+              Usuario de soporte
+            </Badge>
+          ) : null}
+        </div>
+      ),
     },
-  },
-  {
-    accessorKey: "workSchedules",
-    id: "workSchedule",
-    meta: { label: "Jornada" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
-    cell: ({ row }) => {
-      const workSchedules = row.original.workSchedules
-
-      if (workSchedules.length === 0) {
-        return <span className="text-sm text-foreground">—</span>
-      }
-
-      // Un funcionario puede tener permisos en varias jornadas: se listan
-      // separadas por comas, tal como las devuelve el back, igual que "Rol".
-      const fullText = formatCatalogNames(workSchedules)
-
-      return (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              // Mismo tope que "Rol": con varias jornadas el texto se recorta
-              // con "…" y el tooltip trae la lista completa.
-              <span className="block max-w-[12rem] truncate text-sm text-foreground" />
-            }
-          >
-            {fullText}
-          </TooltipTrigger>
-          <TooltipContent>{fullText}</TooltipContent>
-        </Tooltip>
-      )
+    {
+      accessorKey: "roles",
+      id: "roles",
+      meta: { label: "Roles" },
+      enableSorting: false,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Roles" />,
+      cell: ({ row }) => <div className="max-w-xs">{row.original.roles.join(", ") || "—"}</div>,
     },
-  },
-  {
-    accessorKey: "status",
-    id: "status",
-    meta: { label: "Estado" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-    cell: ({ row }) => (
-      <span className="text-sm text-foreground">
-        {renderStatusCell(row.original.statuses)}
-      </span>
-    ),
-  },
-  {
-    id: "actions",
-    header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => <ActionsCell employee={row.original} onEdit={onEdit} />,
-    enableSorting: false,
-    enableHiding: false,
-    // 48 por botón: editar, restablecer contraseña, reenviar activación, eliminar.
-    size: 192,
-  },
-]
+    {
+      accessorKey: "designations",
+      id: "designations",
+      meta: { label: "Designaciones" },
+      enableSorting: false,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Designaciones" />,
+      cell: ({ row }) => <div className="max-w-xs">{row.original.designations.join(", ") || "—"}</div>,
+    },
+    {
+      accessorKey: "status",
+      id: "status",
+      meta: { label: "Estado" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
+      cell: ({ row }) => (
+        <Badge {...ESTADO_FUNCIONARIO_BADGE[row.original.status]}>{ESTADO_FUNCIONARIO_LABELS[row.original.status]}</Badge>
+      ),
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      enableSorting: false,
+      size: 144,
+      cell: ({ row }) => <ActionsCell employee={row.original} {...options} />,
+    },
+  ]
 }

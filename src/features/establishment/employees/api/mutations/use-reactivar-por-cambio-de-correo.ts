@@ -1,10 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { toEmailInput } from "@/lib/text-input"
 import type { MutationConfig } from "@/lib/react-query"
-import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
 export interface CambioCorreoInput {
   correoAnterior: string
@@ -20,17 +19,7 @@ export async function reactivarPorCambioDeCorreo(input: CambioCorreoInput): Prom
 export function useReactivarPorCambioDeCorreo({
   mutationConfig,
 }: { mutationConfig?: MutationConfig<typeof reactivarPorCambioDeCorreo> } = {}) {
-  const queryClient = useQueryClient()
-  const { onSuccess, ...rest } = mutationConfig ?? {}
-  return useMutation({
-    mutationFn: reactivarPorCambioDeCorreo,
-    ...rest,
-    // La cuenta queda pendiente de activación: refresca su estado.
-    onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: employeeKeys.estadoCuentaAll })
-      onSuccess?.(...args)
-    },
-  })
+  return useMutation({ mutationFn: reactivarPorCambioDeCorreo, ...mutationConfig })
 }
 
 /** true si el correo cambió de verdad (sin distinguir mayúsculas, espacios ni caracteres invisibles). */

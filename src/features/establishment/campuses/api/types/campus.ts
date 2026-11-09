@@ -18,6 +18,8 @@ export interface Campus {
   status?: CampusStatus
   /** Solo en las opciones: las jornadas que ofrece la sede (Regla 84). */
   workSchedules?: CampusWorkSchedule[]
+  /** Solo en las opciones: el establecimiento de la sede. */
+  establishmentId?: number
 }
 
 /** Activo / Inactivo (`TSEDE.ESTADO`, sso V445.1). Inactivar no borra: la sede deja de recibir registros nuevos. */

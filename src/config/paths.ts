@@ -283,6 +283,33 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/funcionarios",
       },
 
+      officialAdd: {
+          path: "establecimiento-educativo/funcionarios/agregar",
+          getHref: () => "/app/establecimiento-educativo/funcionarios/agregar",
+      },
+
+      officialDetail: {
+          path: "establecimiento-educativo/funcionarios/detalle/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/detalle/${employeeId}`,
+      },
+
+      officialEdit: {
+          path: "establecimiento-educativo/funcionarios/editar/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/editar/${employeeId}`,
+      },
+
+      // Roles y permisos del funcionario (Sección 4.2). El aviso de vencimiento (sso V579.11) enlaza aquí.
+      officialRoles: {
+          path: "establecimiento-educativo/funcionarios/roles/$employeeId",
+          getHref: (employeeId: string | number) => `/app/establecimiento-educativo/funcionarios/roles/${employeeId}`,
+      },
+
+      officialRolePermissions: {
+          path: "establecimiento-educativo/funcionarios/roles/$employeeId/permisos/$asignacionId",
+          getHref: (employeeId: string | number, asignacionId: string | number) =>
+              `/app/establecimiento-educativo/funcionarios/roles/${employeeId}/permisos/${asignacionId}`,
+      },
+
       academicPeriods: {
           path: "establecimiento-educativo/periodos",
           getHref: () => "/app/establecimiento-educativo/periodos",

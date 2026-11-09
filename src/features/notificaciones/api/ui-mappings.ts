@@ -33,6 +33,16 @@ export const CATEGORIA_ICONS: Record<CategoriaNotificacion, typeof BellIcon> = {
   SISTEMA: GearIcon,
 }
 
+/**
+ * Texto del enlace que algunas notificaciones muestran bajo el cuerpo (toda la fila abre
+ * el `deepLink`; esto solo dice a dónde lleva). Los avisos de vencimiento de roles
+ * (sso V579.11) llevan a Roles y permisos del funcionario.
+ */
+export const ENLACE_POR_TIPO: Record<string, string> = {
+  ROL_POR_VENCER: "Abrir Roles y permisos",
+  ROL_VENCIDO: "Abrir Roles y permisos",
+}
+
 export const ESTADO_LECTURA_LABELS: Record<EstadoLectura, string> = {
   "no-leidas": "No leídas",
   leidas: "Leídas",

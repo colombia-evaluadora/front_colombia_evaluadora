@@ -1,17 +1,18 @@
 import { ExportDialog } from "@/components/export-dialog"
 import { exportEmployees } from "@/features/establishment/employees/api/mutations/export"
-import type { EmployeesQueryRequest } from "@/features/establishment/employees/api/types/employee"
+import type { FuncionariosFilters } from "@/features/establishment/employees/api/types/funcionario"
 
 interface ExportEmployeesDialogProps {
-  filters: EmployeesQueryRequest["filters"]
+  establishmentId: number
+  filters: FuncionariosFilters
 }
 
-export function ExportEmployeesDialog({ filters }: ExportEmployeesDialogProps) {
+export function ExportEmployeesDialog({ establishmentId, filters }: ExportEmployeesDialogProps) {
   return (
     <ExportDialog
-      label="Exportar funcionarios filtrados"
-      description="Elige un formato para exportar todos los funcionarios que coincidan con los filtros activos."
-      onExport={(format) => exportEmployees({ filters, format })}
+      label="Exportar funcionarios"
+      description="Elige un formato para exportar los funcionarios que coincidan con la búsqueda y los filtros aplicados."
+      onExport={(format) => exportEmployees({ establishmentId, filters, format })}
     />
   )
 }
