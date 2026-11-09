@@ -543,7 +543,7 @@ function PrevisualizarDialog({
           <Button type="button" variant="outline" color="neutral" disabled={pendiente} onClick={onVolver}>
             Volver
           </Button>
-          <Button type="button" disabled={pendiente || d.conAviso === 0} aria-busy={pendiente} onClick={onPublicar}>
+          <Button type="button" disabled={pendiente || d.conAviso + d.soloCorreo === 0} aria-busy={pendiente} onClick={onPublicar}>
             {pendiente && conArchivos ? "Subiendo archivos…" : programada ? "Programar" : "Publicar"}
           </Button>
         </DialogFooter>

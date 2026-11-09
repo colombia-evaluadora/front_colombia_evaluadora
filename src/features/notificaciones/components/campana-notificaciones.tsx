@@ -179,8 +179,7 @@ export function CampanaNotificaciones() {
                 <EmptyMedia variant="icon">
                   <InboxIcon />
                 </EmptyMedia>
-                <EmptyTitle>No tienes notificaciones</EmptyTitle>
-                <EmptyDescription>Cuando algo requiera tu atención aparecerá aquí.</EmptyDescription>
+                <EmptyTitle>No tiene notificaciones</EmptyTitle>
               </EmptyHeader>
             </Empty>
           ) : (
