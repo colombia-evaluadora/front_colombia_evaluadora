@@ -10,10 +10,12 @@ interface SiNoProps {
   disabled?: boolean
   required?: boolean
   error?: string
+  /** Deshabilita solo la opción «No» (p. ej. «No presentó» antes de vencer el plazo). */
+  noDeshabilitado?: boolean
 }
 
 /** Pregunta Sí/No con dos radios y sin valor por defecto (patrón de dialog-save-festivo). */
-export function SiNo({ id, label, value, onChange, disabled, required, error }: SiNoProps) {
+export function SiNo({ id, label, value, onChange, disabled, required, error, noDeshabilitado }: SiNoProps) {
   return (
     <Field
       orientation="vertical"
@@ -41,7 +43,7 @@ export function SiNo({ id, label, value, onChange, disabled, required, error }: 
           Sí
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <RadioGroupItem value="no" />
+          <RadioGroupItem value="no" disabled={noDeshabilitado} />
           No
         </label>
       </RadioGroup>
