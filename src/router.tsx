@@ -57,6 +57,7 @@ import {
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { catalogoSearchSchema } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/schema"
 import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
+import { citacionesSearchSchema, origenDeSearch, origenSearchSchema } from "@/features/gestion-estudiantil/citaciones/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
@@ -106,6 +107,9 @@ const ActivatePage = lazyRouteComponent(
   "ActivatePage",
 )
 const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
+const PublicLayout = lazyRouteComponent(() => import("@/components/public/public-layout"), "PublicLayout")
+// Mismo valor que exporta public-layout; aquí sin importar el módulo para no romper el lazy.
+const PUBLIC_SITE_NAME = "Control Escolar"
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
@@ -353,12 +357,47 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   }),
 })
 
-const homeRoute = createRoute({
+// Sitio público (Guía UX §22): cabecera del sitio, sin menú de la app.
+const publicLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "_publico",
+  component: PublicLayout,
+})
+
+const publicHead = (title: string, index = false) => () => ({
+  meta: [
+    { title: `${title} · ${PUBLIC_SITE_NAME}` },
+    ...(index ? [] : [{ name: "robots", content: "noindex, nofollow" }]),
+  ],
+})
+
+// U.1.INI.1: se ve igual con o sin sesión; no muestra datos de personas (Regla 31).
+const homeRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
   path: paths.home.path,
-  beforeLoad: () => {
-    throw redirect({ to: paths.auth.login.path })
-  },
+  head: publicHead("Inicio", true),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/inicio-page"), "InicioPage"),
+})
+
+const verificarRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.verificar.path,
+  head: publicHead("Verificar un documento"),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/verificar-page"), "VerificarPage"),
+})
+
+const inscribirRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.inscribir.path,
+  head: publicHead("Inscribir"),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "InscribirProximamentePage"),
+})
+
+const consultarInscripcionRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.consultarInscripcion.path,
+  head: publicHead("Consultar inscripción"),
+  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "ConsultarProximamentePage"),
 })
 
 // Pública (QR del boletín): sin sesión ni layout de la app.
@@ -1458,6 +1497,70 @@ export const catalogoAnotacionesRoute = createRoute({
   component: CatalogoAnotacionesPage,
 })
 
+const CitacionesCompromisosPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/citaciones/pages/citaciones-compromisos-page"),
+  "CitacionesCompromisosPage",
+)
+
+export const citacionesCompromisosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.citacionesCompromisos.path,
+  validateSearch: citacionesSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Citaciones y compromisos" }] },
+  component: CitacionesCompromisosPage,
+})
+
+const CITACIONES_CRUMB = { label: "Citaciones y compromisos", to: paths.app.citacionesCompromisos.getHref() }
+
+const CitacionFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/citaciones/pages/citacion-form-page"),
+  "CitacionFormPage",
+)
+const CompromisoFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/citaciones/pages/compromiso-form-page"),
+  "CompromisoFormPage",
+)
+const CompromisoDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/citaciones/pages/compromiso-detalle-page"),
+  "CompromisoDetallePage",
+)
+
+export const citacionNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.citacionNueva.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CITACIONES_CRUMB, { label: "Nueva citación" }] },
+  validateSearch: origenSearchSchema,
+  component: function CitacionNuevaRoute() {
+    const search = citacionNuevaRoute.useSearch()
+    return <CitacionFormPage origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+  },
+})
+
+/** Nuevo compromiso: vacío o desde una citación Asistió (`?citacion=`). */
+export const compromisoNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.compromisoNuevo.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CITACIONES_CRUMB, { label: "Nuevo compromiso" }] },
+  validateSearch: (search: Record<string, unknown>) => ({
+    citacion: numeroOpcional(search.citacion),
+    ...origenSearchSchema.parse(search),
+  }),
+  component: function CompromisoNuevoRoute() {
+    const search = compromisoNuevoRoute.useSearch()
+    return <CompromisoFormPage citacion={search.citacion} origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+  },
+})
+
+export const compromisoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.compromisoDetalle.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CITACIONES_CRUMB, { label: "Detalle del compromiso" }] },
+  component: function CompromisoDetalleRoute() {
+    const { compromisoId } = compromisoDetalleRoute.useParams()
+    return <CompromisoDetallePage compromisoId={Number(compromisoId)} />
+  },
+})
+
 const ComiteIntegrantesPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/convivencia/pages/comite-integrantes-page"),
   "ComiteIntegrantesPage",
@@ -1884,7 +1987,7 @@ export const notificacionesPreferenciasRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  homeRoute,
+  publicLayoutRoute.addChildren([homeRoute, verificarRoute, inscribirRoute, consultarInscripcionRoute]),
   verificarBoletinRoute,
   authLayoutRoute.addChildren([
     loginRoute,
@@ -1991,6 +2094,10 @@ const routeTree = rootRoute.addChildren([
     convivenciaSesionNuevaRoute,
     convivenciaSesionRoute,
     convivenciaSesionEditarRoute,
+    citacionesCompromisosRoute,
+    citacionNuevaRoute,
+    compromisoNuevoRoute,
+    compromisoDetalleRoute,
     chatRoute,
     comunicadoNuevoRoute,
     comunicadosRoute,

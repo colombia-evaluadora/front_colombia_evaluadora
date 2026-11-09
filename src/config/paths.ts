@@ -4,6 +4,13 @@ export const paths = {
     getHref: () => "/",
   },
 
+  // Sitio público (Guía UX §22): rutas sin sesión, con la cabecera del sitio.
+  publico: {
+    inscribir: { path: "/inscribir", getHref: () => "/inscribir" },
+    consultarInscripcion: { path: "/consultar-inscripcion", getHref: () => "/consultar-inscripcion" },
+    verificar: { path: "/verificar", getHref: () => "/verificar" },
+  },
+
   verificarBoletin: {
     path: "/verificar/b/$codigo",
     getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
@@ -449,6 +456,23 @@ export const paths = {
     observador: {
       path: "gestion-estudiantil/observador",
       getHref: () => "/app/gestion-estudiantil/observador",
+    },
+    citacionesCompromisos: {
+      path: "gestion-estudiantil/citaciones-compromisos",
+      getHref: () => "/app/gestion-estudiantil/citaciones-compromisos",
+    },
+    citacionNueva: {
+      path: "gestion-estudiantil/citaciones-compromisos/nueva",
+      getHref: () => "/app/gestion-estudiantil/citaciones-compromisos/nueva",
+    },
+    compromisoNuevo: {
+      path: "gestion-estudiantil/citaciones-compromisos/nuevo-compromiso",
+      getHref: () => "/app/gestion-estudiantil/citaciones-compromisos/nuevo-compromiso",
+    },
+    compromisoDetalle: {
+      path: "gestion-estudiantil/citaciones-compromisos/compromiso/$compromisoId",
+      getHref: (compromisoId: number | string) =>
+        `/app/gestion-estudiantil/citaciones-compromisos/compromiso/${compromisoId}`,
     },
     observadorNueva: {
       path: "gestion-estudiantil/observador/nueva",

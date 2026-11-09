@@ -56,6 +56,7 @@ const MENU_CODIGO_BY_ID: Record<number, string> = {
   49: "LISTAS_VALOR",
   26: "ASISTENCIAS",
   50: "CONSERVACION_DATOS",
+  61: "CITACIONES_COMPROMISOS",
 }
 
 function menuCodigo(menu: MockMenu): string {
