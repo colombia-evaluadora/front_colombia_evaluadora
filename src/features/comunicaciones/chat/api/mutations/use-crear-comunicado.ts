@@ -174,6 +174,8 @@ function useCambiarEstadoComunicado<V>(conversacionId: number, accion: (v: V) =>
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
         queryClient.invalidateQueries({ queryKey: chatKeys.enviadosTodos }),
+        // Listado "Comunicados institucionales" (comunicados-gestion.ts; literal para no importar en ciclo).
+        queryClient.invalidateQueries({ queryKey: ["comunicados-gestion"] }),
       ])
     },
   })
