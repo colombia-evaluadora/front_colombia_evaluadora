@@ -67,6 +67,7 @@ import { superadministradoresSearchSchema } from "@/features/administration/supe
 import { administradoresSearchSchema } from "@/features/administration/administradores-territoriales/api/schema"
 import { supervisoresSearchSchema } from "@/features/administration/supervisores-territoriales/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
+import { comunicadosSearchSchema } from "@/features/comunicaciones/comunicados/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -1729,13 +1730,59 @@ export const comunicadoNuevoRoute = createRoute({
   path: paths.app.comunicacionesComunicadoNuevo.path,
   staticData: {
     breadcrumb: [
-      { label: "Comunicados institucionales", to: paths.app.comunicacionesChat.getHref() },
+      { label: "Comunicados institucionales", to: paths.app.comunicacionesComunicados.getHref() },
       { label: "Nuevo comunicado", to: paths.app.comunicacionesComunicadoNuevo.getHref() },
     ],
   },
   component: lazyRouteComponent(
     () => import("@/features/comunicaciones/comunicados/pages/nuevo-comunicado-page"),
     "NuevoComunicadoPage",
+  ),
+})
+
+// "Comunicados institucionales" (M.1.LIS.1 / M.1.REC.1): Publicados, Recibidos y Anteriores.
+export const comunicadosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesComunicados.path,
+  validateSearch: comunicadosSearchSchema,
+  staticData: {
+    breadcrumb: [{ label: "Comunicados institucionales", to: paths.app.comunicacionesComunicados.getHref() }],
+  },
+  component: lazyRouteComponent(
+    () => import("@/features/comunicaciones/comunicados/pages/comunicados-page"),
+    "ComunicadosPage",
+  ),
+})
+
+// Detalle y seguimiento (M.1.DET.1).
+export const comunicadoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesComunicadoDetalle.path,
+  staticData: {
+    breadcrumb: (params: Record<string, string>) => [
+      { label: "Comunicados institucionales", to: paths.app.comunicacionesComunicados.getHref() },
+      { label: "Detalle", to: paths.app.comunicacionesComunicadoDetalle.getHref(params.id) },
+    ],
+  },
+  component: lazyRouteComponent(
+    () => import("@/features/comunicaciones/comunicados/pages/comunicado-detalle-page"),
+    "ComunicadoDetallePage",
+  ),
+})
+
+// Modificar comunicado (M.1.EDI.1): solo el autor; título, mensaje y adjuntos.
+export const comunicadoEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.comunicacionesComunicadoEditar.path,
+  staticData: {
+    breadcrumb: (params: Record<string, string>) => [
+      { label: "Comunicados institucionales", to: paths.app.comunicacionesComunicados.getHref() },
+      { label: "Modificar comunicado", to: paths.app.comunicacionesComunicadoEditar.getHref(params.id) },
+    ],
+  },
+  component: lazyRouteComponent(
+    () => import("@/features/comunicaciones/comunicados/pages/editar-comunicado-page"),
+    "EditarComunicadoPage",
   ),
 })
 
@@ -1946,6 +1993,9 @@ const routeTree = rootRoute.addChildren([
     convivenciaSesionEditarRoute,
     chatRoute,
     comunicadoNuevoRoute,
+    comunicadosRoute,
+    comunicadoDetalleRoute,
+    comunicadoEditarRoute,
     comunicadosTerritorialRoute,
     procesosRoute,
     procesoDetalleRoute,

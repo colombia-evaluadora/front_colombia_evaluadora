@@ -236,8 +236,11 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
 
 const MAX_MOTIVO = 500
 
+/** Lo que necesitan Anular y Cancelar; los usa también el listado "Comunicados institucionales". */
+export type ComunicadoAccion = Pick<Comunicado, "conversacionId" | "titulo" | "publicarEn">
+
 /** Anular (M.1.ANU.1): motivo obligatorio; sale de las bandejas y se conserva para auditoría. */
-function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onClose: () => void }) {
+export function AnularDialog({ comunicado: c, onClose }: { comunicado: ComunicadoAccion; onClose: () => void }) {
   const { notify } = useNotify()
   const anular = useAnularComunicado(c.conversacionId)
   const [motivo, setMotivo] = useState("")
@@ -307,7 +310,7 @@ function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onCl
 }
 
 /** Cancelar un programado (M.1.ANU.2): sin motivo, solo Volver y Cancelar comunicado. */
-function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onClose: () => void }) {
+export function CancelarDialog({ comunicado: c, onClose }: { comunicado: ComunicadoAccion; onClose: () => void }) {
   const { notify } = useNotify()
   const cancelar = useCancelarComunicado(c.conversacionId)
   const cerrar = () => {
