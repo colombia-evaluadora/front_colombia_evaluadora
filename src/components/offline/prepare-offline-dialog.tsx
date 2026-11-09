@@ -422,8 +422,8 @@ export function PrepareOfflineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] min-w-0 overflow-x-hidden overflow-y-auto sm:max-w-lg">
-        <DialogHeader className="min-w-0 pr-8">
+      <DialogContent className="flex max-h-[90dvh] min-w-0 flex-col gap-4 overflow-hidden sm:max-w-lg">
+        <DialogHeader className="min-w-0 shrink-0 pr-8">
           <DialogTitle>Preparar para usar sin conexión</DialogTitle>
           <DialogDescription>
             Guarda en este equipo lo necesario para trabajar sin internet. Corre en segundo plano:
@@ -431,7 +431,7 @@ export function PrepareOfflineDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex min-w-0 flex-col gap-3 text-sm">
+        <div className="scrollbar-slim -mx-6 flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-6 text-sm">
           {shared && (
             <Alert>
               <WarningIcon className="text-yellow" />
@@ -578,7 +578,7 @@ export function PrepareOfflineDialog({
           {!shared && <PinSetupCard />}
         </div>
 
-        <DialogFooter className="min-w-0">
+        <DialogFooter className="min-w-0 shrink-0">
           <Button variant="outline" color="neutral" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>
