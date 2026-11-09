@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Pagination } from "@/components/pagination"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -27,7 +28,8 @@ import {
   type EstadoTerritorial,
 } from "@/features/comunicaciones/territorial/api/comunicados-territorial"
 
-const ESTADOS: Record<EstadoTerritorial, { etiqueta: string; color: "success" | "neutral" | "destructive" }> = {
+const ESTADOS: Record<EstadoTerritorial, { etiqueta: string; color: "info" | "success" | "neutral" | "destructive" }> = {
+  PROGRAMADO: { etiqueta: "Programado", color: "info" },
   PUBLICADO: { etiqueta: "Publicado", color: "success" },
   VENCIDO: { etiqueta: "Vencido", color: "neutral" },
   ANULADO: { etiqueta: "Anulado", color: "destructive" },
@@ -56,8 +58,17 @@ export function ComunicadosTerritorialPage() {
   const [desde, setDesde] = useState("")
   const [abierto, setAbierto] = useState<number | null>(null)
   const establecimientos = useEstablecimientosTerritorialQuery()
-  const lista = useComunicadosTerritorialQuery({ q: q.trim(), establecimiento, estado, desde })
-  const filas = lista.data ?? []
+  const [pagina, setPagina] = useState(0)
+  const [tamano, setTamano] = useState(20)
+  const lista = useComunicadosTerritorialQuery({ q: q.trim(), establecimiento, estado, desde }, { pagina, tamano })
+  const filas = lista.data?.rows ?? []
+  const totalCount = lista.data?.totalCount ?? 0
+  const pageCount = lista.data?.pageCount ?? 1
+  // Cambiar un filtro vuelve a la primera página: la actual puede no existir con el nuevo total.
+  const filtrar = <T,>(set: (v: T) => void) => (v: T) => {
+    set(v)
+    setPagina(0)
+  }
   const hayFiltros = !!(q || establecimiento || estado || desde)
 
   return (
@@ -70,11 +81,11 @@ export function ComunicadosTerritorialPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
         <Field>
           <FieldLabel htmlFor="territorial-q">Buscar por título</FieldLabel>
-          <Input id="territorial-q" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input id="territorial-q" value={q} onChange={(e) => filtrar(setQ)(e.target.value)} />
         </Field>
         <Field>
           <FieldLabel htmlFor="territorial-est">Establecimiento</FieldLabel>
-          <NativeSelect id="territorial-est" value={establecimiento} onChange={(e) => setEstablecimiento(e.target.value)}>
+          <NativeSelect id="territorial-est" value={establecimiento} onChange={(e) => filtrar(setEstablecimiento)(e.target.value)}>
             <NativeSelectOption value="">Todos</NativeSelectOption>
             {(establecimientos.data ?? []).map((o) => (
               <NativeSelectOption key={o.valor} value={o.valor}>
@@ -85,7 +96,7 @@ export function ComunicadosTerritorialPage() {
         </Field>
         <Field>
           <FieldLabel htmlFor="territorial-estado">Estado</FieldLabel>
-          <NativeSelect id="territorial-estado" value={estado} onChange={(e) => setEstado(e.target.value)}>
+          <NativeSelect id="territorial-estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
             <NativeSelectOption value="">Todos</NativeSelectOption>
             {(Object.keys(ESTADOS) as EstadoTerritorial[]).map((k) => (
               <NativeSelectOption key={k} value={k}>
@@ -96,7 +107,7 @@ export function ComunicadosTerritorialPage() {
         </Field>
         <Field>
           <FieldLabel htmlFor="territorial-desde">Desde</FieldLabel>
-          <Input id="territorial-desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+          <Input id="territorial-desde" type="date" value={desde} onChange={(e) => filtrar(setDesde)(e.target.value)} />
         </Field>
         <Button
           variant="ghost"
@@ -107,6 +118,7 @@ export function ComunicadosTerritorialPage() {
             setEstablecimiento("")
             setEstado("")
             setDesde("")
+            setPagina(0)
           }}
         >
           Limpiar
@@ -194,6 +206,20 @@ export function ComunicadosTerritorialPage() {
               </TableBody>
             </Table>
           </div>
+          {/* Pie "23 comunicados" + páginas (M.1.TER.1): el total lo da comms-service. */}
+          <Pagination
+            pageIndex={pagina}
+            pageCount={pageCount}
+            canPrev={pagina > 0}
+            canNext={pagina + 1 < pageCount}
+            totalCount={totalCount}
+            pageSize={tamano}
+            onPageChange={setPagina}
+            onPageSizeChange={(t) => {
+              setTamano(t)
+              setPagina(0)
+            }}
+          />
         </>
       )}
 

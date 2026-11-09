@@ -219,6 +219,18 @@ export const comunicacionesEspaciosHandlers = [
     equipos.push({ id: siguienteId++, nombre: body.NOMBRE, miembros: miembrosDe(body.MIEMBROS) })
     return filas(equipos)
   }),
+  // Mover (M.3.HER.3): sale de su equipo y entra al destino en un solo paso, como comms-service.
+  // Registrado antes de `/:id/equipos/:equipo` aunque el método difiera, por si alguien suma un POST ahí.
+  http.post(URL("/:id/equipos/mover"), async ({ request }) => {
+    const body = (await request.json()) as { FK_ESTUDIANTE: number; FK_EQUIPO: number }
+    const destino = equipos.find((x) => x.id === body.FK_EQUIPO)
+    if (!destino) return HttpResponse.json({ message: "El equipo no existe." }, { status: 404 })
+    if (!destino.miembros.some((m) => m.usuarioId === body.FK_ESTUDIANTE)) {
+      equipos.forEach((q) => (q.miembros = q.miembros.filter((m) => m.usuarioId !== body.FK_ESTUDIANTE)))
+      destino.miembros = [...destino.miembros, ...miembrosDe([body.FK_ESTUDIANTE])]
+    }
+    return filas(equipos)
+  }),
   http.put(URL("/:id/equipos/:equipo"), async ({ params, request }) => {
     const body = (await request.json()) as { NOMBRE: string; MIEMBROS: number[] }
     const id = Number(params.equipo)

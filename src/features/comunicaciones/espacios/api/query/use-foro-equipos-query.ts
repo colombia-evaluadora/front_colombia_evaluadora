@@ -127,6 +127,19 @@ export function useAccionesTema(id: number, tema: number) {
   }
 }
 
+/**
+ * Mover a un estudiante a otro equipo (M.3.HER.3). comms-service lo saca de su equipo y lo suma al
+ * destino en una sola transacción: nunca queda sin equipo ni en dos si algo falla a mitad.
+ */
+export function useMoverAEquipo(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ estudiante, equipo }: { estudiante: number; equipo: number }) =>
+      api.post(`/eval-col${base(id)}/equipos/mover`, { FK_ESTUDIANTE: estudiante, FK_EQUIPO: equipo }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: espaciosKeys.espacio(id) }),
+  })
+}
+
 export function useGuardarEquipo(id: number) {
   const queryClient = useQueryClient()
   return useMutation({

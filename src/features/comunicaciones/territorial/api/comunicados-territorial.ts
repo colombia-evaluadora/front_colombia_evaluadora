@@ -1,11 +1,13 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
+import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import type { Audiencia, DestinosComunicado, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 
 const RUTA = "/comunicaciones/comunicados/territorial"
 
-export type EstadoTerritorial = "PUBLICADO" | "VENCIDO" | "ANULADO"
+// Cancelado no sale: se retiró antes de publicarse y nunca llegó a nadie (comms-service).
+export type EstadoTerritorial = "PROGRAMADO" | "PUBLICADO" | "VENCIDO" | "ANULADO"
 
 export interface ComunicadoTerritorial {
   id: number
@@ -45,14 +47,30 @@ export function useEstablecimientosTerritorialQuery() {
   })
 }
 
-export function useComunicadosTerritorialQuery(filtros: FiltrosTerritorial) {
+/** Página 0-based de la consulta; comms-service acepta `tamano` entre 1 y 100. */
+export interface PaginaTerritorial {
+  pagina: number
+  tamano: number
+}
+
+/** Respuesta de la lista: las filas en `rows` y el total que cumple los filtros, sin paginar. */
+interface PaginaTerritorialRespuesta {
+  rows?: ComunicadoTerritorial[]
+  totalCount?: number
+}
+
+export function useComunicadosTerritorialQuery(filtros: FiltrosTerritorial, { pagina, tamano }: PaginaTerritorial) {
   return useQuery({
-    queryKey: ["comunicados-territorial", "lista", filtros],
-    queryFn: () => {
+    queryKey: ["comunicados-territorial", "lista", filtros, pagina, tamano],
+    queryFn: async () => {
       const params = new URLSearchParams()
       for (const [clave, valor] of Object.entries(filtros)) if (valor) params.set(clave, valor)
-      const qs = params.toString()
-      return evalCol.getRows<ComunicadoTerritorial>(`${RUTA}${qs ? `?${qs}` : ""}`)
+      params.set("pagina", String(pagina))
+      params.set("tamano", String(tamano))
+      // Por `api` y no `evalCol.getRows`: ese descarta todo lo que no sea `rows` y aquí hace falta el total.
+      const r = await api.get<PaginaTerritorialRespuesta>(`/eval-col${RUTA}?${params.toString()}`)
+      const totalCount = r?.totalCount ?? 0
+      return { rows: r?.rows ?? [], totalCount, pageCount: Math.max(1, Math.ceil(totalCount / tamano)) }
     },
     placeholderData: keepPreviousData,
   })
