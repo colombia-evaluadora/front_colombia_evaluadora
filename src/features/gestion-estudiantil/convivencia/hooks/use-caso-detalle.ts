@@ -2,6 +2,7 @@ import { useCanGoBack, useNavigate, useRouter } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
 
+import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { resumenDeDetalle, type CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
@@ -14,19 +15,26 @@ export function useCasoDetalle(caso: CasoDetalle) {
   const router = useRouter()
   const canGoBack = useCanGoBack()
   const access = useConvivenciaAccess()
+  const { puedeCrear: puedeCitar } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
   const resumen = resumenDeDetalle(caso)
 
   // Vuelve a donde vino (listado con sus filtros y página); con enlace directo, al listado.
   const volver = () => (canGoBack ? router.history.back() : navigate({ to: paths.app.convivencia.getHref() }))
 
-  const onAccionMenu = (accion: AccionCaso) =>
-    accion === "modificar"
-      ? navigate({ to: paths.app.convivenciaEditar.getHref(caso.id) })
-      : accion !== "ver" && abrir(accion, resumen)
+  const onAccionMenu = (accion: AccionCaso) => {
+    if (accion === "citar" || accion === "compromiso")
+      navigate({
+        to: accion === "citar" ? paths.app.citacionNueva.getHref() : paths.app.compromisoNuevo.getHref(),
+        search: { origen_tipo: "CASO_CONVIVENCIA", origen_id: caso.id },
+      } as never)
+    else if (accion === "modificar") navigate({ to: paths.app.convivenciaEditar.getHref(caso.id) })
+    else if (accion !== "ver") abrir(accion, resumen)
+  }
 
   return {
     access,
+    puedeCitar,
     abierto: !esFinal(caso.estado_codigo),
     abrirTipo: () => abrir("tipo", resumen),
     abrirAccion: () => abrir("accion", resumen),

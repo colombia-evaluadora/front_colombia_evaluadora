@@ -87,7 +87,7 @@ export function DialogGestor({ caso, onClose }: Props) {
         <InfoIcon aria-hidden="true" />
         <AlertDescription>
           Solo aparecen los Supervisores de sede con rol activo en la sede y jornada de un estudiante del caso. Las
-          citaciones pendientes pasarán al nuevo gestor cuando el módulo de citaciones esté disponible.
+          citaciones automáticas pendientes del caso pasan al nuevo gestor.
         </AlertDescription>
       </Alert>
     </DialogCasoShell>

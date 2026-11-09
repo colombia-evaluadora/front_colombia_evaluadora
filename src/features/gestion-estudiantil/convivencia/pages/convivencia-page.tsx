@@ -19,6 +19,7 @@ import { paths } from "@/config/paths"
 
 import { toConvivenciaFilters, useCasosQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import { usePeriodosComiteQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
+import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { resumenDeFila } from "@/features/gestion-estudiantil/convivencia/api/types"
 import {
@@ -48,6 +49,7 @@ function PestanaCasos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useConvivenciaAccess()
+  const { puedeCrear: puedeCitar } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
 
   const f = useCasosFiltros(goToPage)
@@ -62,8 +64,14 @@ function PestanaCasos({ cabecera }: PestanaProps) {
 
   const columns = buildColumnsCasos({
     access,
+    puedeCitar,
     onAccion: (caso, accion) => {
-      if (accion === "ver") navigate({ to: paths.app.convivenciaCaso.getHref(caso.id) })
+      if (accion === "citar" || accion === "compromiso")
+        navigate({
+          to: accion === "citar" ? paths.app.citacionNueva.getHref() : paths.app.compromisoNuevo.getHref(),
+          search: { origen_tipo: "CASO_CONVIVENCIA", origen_id: caso.id },
+        } as never)
+      else if (accion === "ver") navigate({ to: paths.app.convivenciaCaso.getHref(caso.id) })
       else if (accion === "modificar") navigate({ to: paths.app.convivenciaEditar.getHref(caso.id) })
       else abrir(accion, resumenDeFila(caso))
     },

@@ -29,6 +29,7 @@ import { listasValorHandlers } from "@/mocks/handlers/listas-valor"
 import { festivosHandlers } from "@/mocks/handlers/festivos"
 import { relacionesAlumnoGrupoHandlers } from "@/mocks/handlers/relaciones-alumno-grupo"
 import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
+import { citacionesCompromisosHandlers } from "@/mocks/handlers/citaciones-compromisos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
@@ -110,6 +111,7 @@ export const handlers = [
   ...relacionesAlumnoGrupoHandlers,
   // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
   ...conservacionDatosHandlers,
+  ...citacionesCompromisosHandlers,
   ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,
   ...horarioHandlers,

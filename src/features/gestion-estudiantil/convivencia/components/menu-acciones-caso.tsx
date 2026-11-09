@@ -18,7 +18,7 @@ import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivenc
 import { esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
 
-export type AccionCaso = "ver" | "modificar" | "fechas" | "accion" | "gestor" | "tipo" | "cerrar" | "anular"
+export type AccionCaso = "ver" | "modificar" | "fechas" | "accion" | "gestor" | "tipo" | "cerrar" | "anular" | "citar" | "compromiso"
 
 export interface CasoMenuInfo {
   numero: string | number
@@ -32,11 +32,13 @@ interface MenuAccionesCasoProps {
   onAccion: (accion: AccionCaso) => void
   /** En el detalle no se repite "Ver detalle". */
   conVer?: boolean
+  /** Crear en CITACIONES_COMPROMISOS: sin él, «Citar» y «Crear compromiso» quedan deshabilitadas. */
+  puedeCitar?: boolean
   trigger?: ReactElement
 }
 
 /** Menú ⋮ del caso (G.2.CAS.LIS.3): todas las acciones visibles; las que no aplican, deshabilitadas. */
-export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, trigger }: MenuAccionesCasoProps) {
+export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, puedeCitar = false, trigger }: MenuAccionesCasoProps) {
   const abierto = !esFinal(caso.estado_codigo)
   return (
     <DropdownMenu>
@@ -83,6 +85,15 @@ export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, trigge
         <DropdownMenuItem disabled={!(abierto && access.puedeSupervisar)} onClick={() => onAccion("anular")}>
           <ProhibitIcon />
           Anular
+        </DropdownMenuItem>
+        {/* Citaciones y compromisos §4: el Responsable de enseñanza no cita desde un caso; el backend lo rechaza. */}
+        <DropdownMenuItem disabled={!puedeCitar} onClick={() => onAccion("citar")}>
+          <CalendarBlankIcon />
+          Citar al acudiente
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!puedeCitar} onClick={() => onAccion("compromiso")}>
+          <ClipboardAddIcon />
+          Crear compromiso
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
