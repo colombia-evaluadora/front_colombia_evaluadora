@@ -12,7 +12,7 @@ interface Props {
 
 /** Botones de la cabecera del detalle: proceso disciplinario, cambiar tipo, registrar acción y menú ⋮. */
 export function AccionesDetalle({ caso, detalle }: Props) {
-  const { access, abierto, abrirTipo, abrirAccion, onAccionMenu } = detalle
+  const { access, puedeCitar, abierto, abrirTipo, abrirAccion, onAccionMenu } = detalle
   return (
     <div className="flex items-center gap-2">
       {/* G.2.CAS.DIS.1: solo en el detalle, no en el menú de la fila. Sin backend hasta la 3.5. */}
@@ -32,6 +32,7 @@ export function AccionesDetalle({ caso, detalle }: Props) {
         conVer={false}
         caso={{ numero: caso.numero, estado_codigo: caso.estado_codigo, sinGestor: !caso.fk_funcionario_gestor }}
         access={access}
+        puedeCitar={puedeCitar}
         onAccion={onAccionMenu}
       />
     </div>

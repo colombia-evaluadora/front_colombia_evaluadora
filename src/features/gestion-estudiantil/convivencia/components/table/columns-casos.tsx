@@ -11,11 +11,12 @@ import { MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudianti
 
 interface ColumnasOpciones {
   access: ConvivenciaAccess
+  puedeCitar: boolean
   onAccion: (caso: CasoRow, accion: AccionCaso) => void
 }
 
 /** Columnas del listado de casos (G.2.CAS.LIS.1). */
-export function buildColumnsCasos({ access, onAccion }: ColumnasOpciones): ColumnDef<CasoRow>[] {
+export function buildColumnsCasos({ access, puedeCitar, onAccion }: ColumnasOpciones): ColumnDef<CasoRow>[] {
   return [
     {
       id: "fecha_hechos",
@@ -131,6 +132,7 @@ export function buildColumnsCasos({ access, onAccion }: ColumnasOpciones): Colum
           }}
           // Caso Tipo II/III visto por quien solo lo reportó (Regla 1): solo Ver detalle; el backend negaría el resto.
           access={row.original.confidencial && !row.original.acceso_completo ? SIN_ACCESO : access}
+          puedeCitar={puedeCitar}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),

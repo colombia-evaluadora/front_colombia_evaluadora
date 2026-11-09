@@ -37,6 +37,7 @@ interface ColumnasOpciones {
   puedeAnular: boolean
   puedeRemitir: boolean
   onRemitir: (row: AnotacionRow) => void
+  puedeCitar: boolean
   onCitar: (row: AnotacionRow) => void
   onCompromiso: (row: AnotacionRow) => void
 }
@@ -49,6 +50,7 @@ export function buildColumnsAnotaciones({
   puedeAnular,
   puedeRemitir,
   onRemitir,
+  puedeCitar,
   onCitar,
   onCompromiso,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
@@ -172,11 +174,11 @@ export function buildColumnsAnotaciones({
                 <PersonIcon />
                 Remitir a orientación
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={!vigente} onClick={() => onCitar(a)}>
+              <DropdownMenuItem disabled={!vigente || !puedeCitar} onClick={() => onCitar(a)}>
                 <CalendarBlankIcon />
                 Citar al acudiente
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={!vigente} onClick={() => onCompromiso(a)}>
+              <DropdownMenuItem disabled={!vigente || !puedeCitar} onClick={() => onCompromiso(a)}>
                 <ClipboardAddIcon />
                 Crear compromiso
               </DropdownMenuItem>

@@ -25,6 +25,7 @@ import { paths } from "@/config/paths"
 import { toObservadorFilters, useAnotacionesQuery } from "@/features/gestion-estudiantil/observador/api/query/use-anotaciones-query"
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
 import { useOpcionesObservador, type Opcion } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
+import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { useObservadorAccess } from "@/features/gestion-estudiantil/observador/api/use-observador-access"
 import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
 import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
@@ -52,6 +53,7 @@ function ObservadorContent() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useObservadorAccess()
+  const { puedeCrear: puedeCitar } = useCitacionesAccess()
 
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<ObservadorFiltros>(FILTROS_VACIOS)
@@ -106,6 +108,7 @@ function ObservadorContent() {
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
     onRemitir: setRemitir,
+    puedeCitar,
     onCitar: (a) =>
       navigate({
         to: paths.app.citacionNueva.getHref(),
