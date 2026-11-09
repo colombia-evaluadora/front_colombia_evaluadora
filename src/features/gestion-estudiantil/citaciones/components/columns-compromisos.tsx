@@ -84,7 +84,6 @@ export function buildColumnsCompromisos({ permisos, onAccion }: ColumnasOpciones
         <MenuAccionesCompromiso
           estudiante={row.original.estudiante_nombre}
           acciones={accionesCompromiso(row.original, permisos)}
-          puedeVer={permisos.puedeVer}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),

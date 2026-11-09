@@ -15,7 +15,7 @@ export function DialogDocumentoCompromiso({ compromisoId, onClose }: { compromis
     <DialogoDocumento titulo="Acta de compromiso" isPending={isPending} error={error} onClose={onClose}>
       {d && (
         <HojaDocumento
-          establecimiento={d.establecimiento}
+          encabezado={d}
           titulo="Acta de compromiso"
           subtitulo={`Compromiso ${d.tipo.toLowerCase()} del ${formatFecha(d.fecha)}`}
         >
@@ -53,7 +53,7 @@ export function DialogDocumentoCompromiso({ compromisoId, onClose }: { compromis
             <div className="grid grid-cols-1 gap-6 pt-10 sm:grid-cols-3">
               <Firma nombre={d.estudiante} rol="Estudiante" />
               <Firma nombre={d.acudiente ?? "—"} rol="Acudiente" />
-              <Firma nombre={d.crea} rol="Quien crea el compromiso" />
+              <Firma nombre={d.crea} rol={[d.creador_cargo, "Quien crea el compromiso"].filter(Boolean).join(" · ")} />
             </div>
           </SeccionDocumento>
         </HojaDocumento>

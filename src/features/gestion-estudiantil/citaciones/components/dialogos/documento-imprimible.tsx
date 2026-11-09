@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PrinterIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useQuery } from "@tanstack/react-query"
+import { fetchArchivoViewUrl } from "@/lib/files"
 
 import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 
@@ -59,13 +61,33 @@ export function DialogoDocumento({ titulo, isPending, error, onClose, children }
 }
 
 /** Hoja del documento: encabezado con el establecimiento, título, cuerpo y fecha de generación. */
+export interface EncabezadoEstablecimiento {
+  establecimiento: string
+  establecimiento_dane: string
+  establecimiento_nit: string
+  municipio: string
+  departamento: string
+  escudo_archivo: number | null
+}
+
+/** Escudo del establecimiento vía token de vista de file-service; sin escudo no se muestra nada. */
+function Escudo({ archivo }: { archivo: number | null }) {
+  const { data } = useQuery({
+    queryKey: ["citaciones-compromisos", "escudo", archivo],
+    queryFn: () => fetchArchivoViewUrl(archivo as number),
+    enabled: archivo != null,
+    staleTime: 5 * 60_000,
+  })
+  return data?.url ? <img src={data.url} alt="Escudo del establecimiento" className="size-16 object-contain" /> : null
+}
+
 export function HojaDocumento({
-  establecimiento,
+  encabezado: e,
   titulo,
   subtitulo,
   children,
 }: {
-  establecimiento: string
+  encabezado: EncabezadoEstablecimiento
   titulo: string
   subtitulo: string
   children: ReactNode
@@ -73,8 +95,17 @@ export function HojaDocumento({
   return (
     <article id={ID_DOCUMENTO} className="flex flex-col gap-4 rounded-md border border-border bg-background p-6 text-sm">
       <header className="flex items-start justify-between gap-4 border-t-4 border-primary pt-4">
-        <div>
-          <p className="text-lg font-semibold text-primary">{establecimiento}</p>
+        <div className="flex items-center gap-4">
+          <Escudo archivo={e.escudo_archivo} />
+          <div>
+            <p className="text-lg font-semibold text-primary">Institución Educativa {e.establecimiento}</p>
+            <p className="text-xs text-muted-foreground">
+              DANE {e.establecimiento_dane} · NIT {e.establecimiento_nit}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {e.municipio}, {e.departamento}
+            </p>
+          </div>
         </div>
         <p className="text-right text-xs text-muted-foreground">
           Generado el

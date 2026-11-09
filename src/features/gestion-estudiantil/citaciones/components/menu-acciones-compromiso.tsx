@@ -3,24 +3,22 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { CheckCircleIcon, DotsThreeVerticalIcon, EyeIcon, FilePdfIcon, PencilIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, DotsThreeVerticalIcon, EyeIcon, PencilIcon } from "@/components/ui/icons"
 
 import type { AccionesCompromiso } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 
-export type AccionCompromiso = "ver" | "aceptacion" | "resultado" | "documento"
+export type AccionCompromiso = "ver" | "aceptacion" | "resultado"
 
 interface Props {
   estudiante: string
   acciones: AccionesCompromiso
-  puedeVer: boolean
   onAccion: (accion: AccionCompromiso) => void
 }
 
 /** Menú ⋮ del compromiso (G.3.CMP.1): Ver detalle, Registrar aceptación presencial y Registrar resultado. */
-export function MenuAccionesCompromiso({ estudiante, acciones, puedeVer, onAccion }: Props) {
+export function MenuAccionesCompromiso({ estudiante, acciones, onAccion }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -40,11 +38,6 @@ export function MenuAccionesCompromiso({ estudiante, acciones, puedeVer, onAccio
         <DropdownMenuItem disabled={!acciones.registrarResultado} onClick={() => onAccion("resultado")}>
           <CheckCircleIcon />
           Registrar resultado
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={!puedeVer} onClick={() => onAccion("documento")}>
-          <FilePdfIcon />
-          Descargar acta de compromiso
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

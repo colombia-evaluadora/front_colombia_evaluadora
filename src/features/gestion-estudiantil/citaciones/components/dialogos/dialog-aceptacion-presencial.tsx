@@ -62,7 +62,7 @@ export function DialogAceptacionPresencial({ compromiso: c, onClose }: Props) {
   return (
     <DialogoOperacionShell
       titulo={`Aceptación presencial — ${c.estudiante_nombre}`}
-      resumen={<ResumenCompromiso c={c} />}
+      resumen={<ResumenCompromiso c={c} conAcudiente />}
       onClose={onClose}
       error={s.error}
       pending={mut.isPending || subiendo}

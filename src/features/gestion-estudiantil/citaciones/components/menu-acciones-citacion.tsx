@@ -24,7 +24,7 @@ interface Props {
   /** Para el nombre accesible del botón. */
   estudiante: string
   acciones: AccionesCitacion
-  /** «Ver citación PDF» solo exige poder ver. */
+  /** «Descargar citación» solo exige poder ver. */
   puedeVer: boolean
   onAccion: (accion: AccionCitacion) => void
 }
@@ -65,7 +65,7 @@ export function MenuAccionesCitacion({ estudiante, acciones, puedeVer, onAccion 
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={!puedeVer} onClick={() => onAccion("documento")}>
           <FilePdfIcon />
-          Ver citación PDF
+          Descargar citación
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

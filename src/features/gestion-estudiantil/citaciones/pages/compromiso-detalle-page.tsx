@@ -112,6 +112,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
               <Dato label="Grado/Grupo">{c.grado_grupo}</Dato>
               <Dato label="Sede">{c.sede_nombre}</Dato>
               <Dato label="Jornada">{c.jornada_nombre}</Dato>
+              <Dato label="Acudiente">{c.acudiente_nombre ?? "Sin acudiente registrado"}</Dato>
               <Dato label="Tipo">{c.tipo_nombre}</Dato>
               <Dato label="Fecha">{formatFecha(c.fecha)}</Dato>
               <Dato label="Fecha de revisión">{formatFecha(c.fecha_revision)}</Dato>

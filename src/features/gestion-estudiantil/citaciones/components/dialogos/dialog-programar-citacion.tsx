@@ -38,7 +38,7 @@ export function DialogProgramarCitacion({ citacion: c, onClose }: Props) {
   const mut = useProgramarCitacion({
     mutationConfig: {
       onSuccess: () => {
-        notify("Citación programada; se avisó al acudiente.", { variant: "success" })
+        notify(`Citación programada; se avisó a ${c.acudiente_nombre ?? "el acudiente"}.`, { variant: "success" })
         onClose()
       },
       onError: (e: Error) => s.setError(e),
