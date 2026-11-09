@@ -179,10 +179,16 @@ export function ParticipacionItem({
           <DialogHeader>
             <DialogTitle>
               {dialogo === "editar" && "Editar participación"}
-              {dialogo === "ocultar" && "Ocultar participación"}
+              {dialogo === "ocultar" && `Ocultar participación de ${p.autor}`}
               {dialogo === "silenciar" && `Silenciar a ${p.autor} en este espacio`}
             </DialogTitle>
           </DialogHeader>
+          {dialogo === "silenciar" && (
+            <p className="text-sm text-muted-foreground">
+              {p.autor} no podrá escribir en este espacio hasta que usted lo reactive. Sus participaciones
+              anteriores se conservan.
+            </p>
+          )}
           <Field>
             <FieldLabel htmlFor={`valor-${p.id}`}>{dialogo === "editar" ? "Texto" : "Motivo"}</FieldLabel>
             <Textarea
@@ -191,18 +197,18 @@ export function ParticipacionItem({
               maxLength={dialogo === "editar" ? 4000 : 500}
               onChange={(e) => setValor(e.target.value)}
             />
+            {dialogo !== "editar" && (
+              <p className="text-right text-xs text-muted-foreground">{valor.length} / 500</p>
+            )}
           </Field>
-          {dialogo === "silenciar" && (
-            <p className="text-sm text-muted-foreground">
-              No podrá escribir en el chat ni en el foro de este espacio hasta que lo reactive. Puede seguir consultando.
-            </p>
-          )}
           <DialogFooter>
             <Button variant="outline" color="neutral" onClick={() => setDialogo(null)}>
               Cancelar
             </Button>
             <Button disabled={!valor.trim()} onClick={confirmar}>
-              {dialogo === "editar" ? "Guardar" : "Confirmar"}
+              {dialogo === "editar" && "Guardar"}
+              {dialogo === "ocultar" && "Ocultar"}
+              {dialogo === "silenciar" && "Silenciar en este espacio"}
             </Button>
           </DialogFooter>
         </DialogContent>

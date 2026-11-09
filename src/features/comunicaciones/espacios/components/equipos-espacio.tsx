@@ -99,30 +99,151 @@ function DialogoEquipo({
   )
 }
 
+/**
+ * Mover a un estudiante entre equipos (M.3.HER.3). No hay endpoint propio de "mover": se reusa el PUT
+ * de equipo (reemplazo de MIEMBROS), primero sacándolo del equipo de origen y luego sumándolo al
+ * destino, porque cada estudiante está en un equipo como máximo.
+ */
+function DialogoMover({
+  espacioId,
+  estudiante,
+  origen,
+  equipos,
+  onCerrar,
+}: {
+  espacioId: number
+  estudiante: Integrante
+  origen: Equipo | null
+  equipos: Equipo[]
+  onCerrar: () => void
+}) {
+  const { notify } = useNotify()
+  const guardar = useGuardarEquipo(espacioId)
+  const destinos = equipos.filter((q) => q.id !== origen?.id)
+  const [destinoId, setDestinoId] = useState<number | null>(destinos.length === 1 ? destinos[0].id : null)
+  const destino = destinos.find((q) => q.id === destinoId) ?? null
+  const ids = (q: Equipo) => q.miembros.map((m) => m.usuarioId)
+
+  const confirmar = async () => {
+    if (!destino) return
+    try {
+      if (origen) {
+        await guardar.mutateAsync({
+          equipo: origen.id,
+          nombre: origen.nombre,
+          miembros: ids(origen).filter((u) => u !== estudiante.usuarioId),
+        })
+      }
+      await guardar.mutateAsync({
+        equipo: destino.id,
+        nombre: destino.nombre,
+        miembros: [...ids(destino), estudiante.usuarioId],
+      })
+      onCerrar()
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !guardar.isPending && onCerrar()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {destino ? `Mover a ${estudiante.nombre} al ${destino.nombre}` : `Mover a ${estudiante.nombre}`}
+          </DialogTitle>
+        </DialogHeader>
+        {destinos.length > 1 && (
+          <fieldset className="space-y-1">
+            <legend className="mb-1 text-sm font-medium">Equipo de destino</legend>
+            {destinos.map((q) => (
+              <label key={q.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="destino-equipo"
+                  checked={destinoId === q.id}
+                  onChange={() => setDestinoId(q.id)}
+                />
+                {q.nombre}
+              </label>
+            ))}
+          </fieldset>
+        )}
+        {destino && (
+          <p className="text-sm">
+            Verá el historial del {destino.nombre}
+            {origen ? ` y perderá el acceso al contenido exclusivo del ${origen.nombre}` : ""}. Sus aportaciones
+            anteriores se conservan.
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCerrar}>
+            Cancelar
+          </Button>
+          <Button disabled={!destino || guardar.isPending} onClick={confirmar}>
+            Confirmar cambio
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface Integrante {
+  usuarioId: number
+  nombre: string
+}
+
 /** Equipos supervisados (Sección 5.5): solo el docente los crea; cada integrante ve el suyo. */
 export function EquiposEspacio({ detalle }: { detalle: EspacioDetalle }) {
   const id = detalle.espacio.id
   const { data: equipos = [], isPending, isError } = useEquiposQuery(id)
+  const { espacio, herramientas, puedeAdministrar, puedeEscribir } = detalle
+  const gestiona = puedeAdministrar && herramientas.includes("EQUIPOS")
+  // Participantes solo para el docente: "Sin equipo" es información de gestión.
+  const { data: participantes = [] } = useParticipantesQuery(id, null, gestiona)
   const [editando, setEditando] = useState<Equipo | "nuevo" | null>(null)
   const [abierto, setAbierto] = useState<number | null>(null)
-  const { herramientas, puedeAdministrar, puedeEscribir } = detalle
-  const gestiona = puedeAdministrar && herramientas.includes("EQUIPOS")
+  const [moviendo, setMoviendo] = useState<{ estudiante: Integrante; origen: Equipo | null } | null>(null)
+  const conEquipo = new Set(equipos.flatMap((q) => q.miembros.map((m) => m.usuarioId)))
+  const sinEquipo = participantes.filter((p) => p.rol === "ESTUDIANTE" && !conEquipo.has(p.usuarioId))
 
   if (isPending) return <Skeleton className="h-40 w-full" />
   if (isError) return <p className="text-sm text-red">No se pudieron cargar los equipos.</p>
 
+  const integrantes = (lista: Integrante[], origen: Equipo | null) =>
+    lista.map((m, i) => (
+      <span key={m.usuarioId} className="inline-flex items-center">
+        {i > 0 && "· "}
+        {m.nombre}
+        {gestiona && equipos.some((q) => q.id !== origen?.id) && (
+          <Button
+            variant="link"
+            size="sm"
+            aria-label={`Mover a ${m.nombre}`}
+            onClick={() => setMoviendo({ estudiante: m, origen })}
+          >
+            Mover
+          </Button>
+        )}
+      </span>
+    ))
+
   return (
     <div className="space-y-3">
-      {gestiona && (
-        <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-medium">
+          {["Equipos de trabajo", espacio.grupo, espacio.asignatura].filter(Boolean).join(" · ")}
+        </h2>
+        {gestiona && (
           <Button size="sm" onClick={() => setEditando("nuevo")}>
-            + Nuevo equipo
+            Nuevo equipo
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       {equipos.length === 0 && (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          {detalle.espacio.rol === "ESTUDIANTE" ? "No estás en ningún equipo." : "Todavía no hay equipos."}
+          {espacio.rol === "ESTUDIANTE" ? "No estás en ningún equipo." : "Todavía no hay equipos."}
         </p>
       )}
       <ul className="space-y-2">
@@ -130,9 +251,11 @@ export function EquiposEspacio({ detalle }: { detalle: EspacioDetalle }) {
           <li key={q.id} className="space-y-2 rounded-md border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-medium">{q.nombre}</p>
-                <p className="text-sm text-muted-foreground">
-                  {q.miembros.map((m) => m.nombre).join(", ") || "Sin integrantes"}
+                <p className="font-medium">
+                  {q.nombre} ({q.miembros.length})
+                </p>
+                <p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">
+                  {q.miembros.length === 0 ? "Sin integrantes" : integrantes(q.miembros, q)}
                 </p>
               </div>
               <span className="flex gap-2">
@@ -166,6 +289,14 @@ export function EquiposEspacio({ detalle }: { detalle: EspacioDetalle }) {
             )}
           </li>
         ))}
+        {gestiona && sinEquipo.length > 0 && (
+          <li className="flex flex-wrap items-center gap-x-1 rounded-md border border-dashed p-3 text-sm">
+            <span className="font-medium">Sin equipo ({sinEquipo.length}):</span>
+            <span className="flex flex-wrap items-center gap-x-1 text-muted-foreground">
+              {integrantes(sinEquipo, null)}
+            </span>
+          </li>
+        )}
       </ul>
       {editando && (
         <DialogoEquipo
@@ -173,6 +304,15 @@ export function EquiposEspacio({ detalle }: { detalle: EspacioDetalle }) {
           equipo={editando === "nuevo" ? null : editando}
           equipos={equipos}
           onCerrar={() => setEditando(null)}
+        />
+      )}
+      {moviendo && (
+        <DialogoMover
+          espacioId={id}
+          estudiante={moviendo.estudiante}
+          origen={moviendo.origen}
+          equipos={equipos}
+          onCerrar={() => setMoviendo(null)}
         />
       )}
     </div>
