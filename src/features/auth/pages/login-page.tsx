@@ -17,6 +17,7 @@ import { Turnstile } from "@/components/captcha/turnstile"
 import { paths } from "@/config/paths"
 import { useCaptcha } from "@/hooks/use-captcha"
 import { enterOfflineSession, getOfflineContinueInfo, unlockOfflineSession, useLogin } from "@/lib/auth"
+import { guardarDesafio } from "@/features/auth/api/segundo-factor"
 import { toAuthUserFromToken } from "@/lib/auth-mapper"
 import { canUsePersonalDevice, isInstalledPersonalDevice, isPersonalDeviceAllowed } from "@/lib/offline/device-policy"
 import { saveLocalCredential } from "@/lib/offline/local-credential"
@@ -83,10 +84,19 @@ export function LoginPage() {
   })
 
   useEffect(() => {
+    if (loginMutation.isSuccess && loginMutation.data?.segundoFactor && loginMutation.data.desafio) {
+      // U.5.DOS: falta el segundo paso (o configurarlo, si es Superadministrador).
+      const { segundoFactor, desafio, maskedEmail } = loginMutation.data
+      guardarDesafio({ desafio, modo: segundoFactor, maskedEmail, redirectTo: search || undefined })
+      navigate({
+        to: segundoFactor === "CONFIGURAR" ? paths.auth.configurarVerificacion.path : paths.auth.verificacion.path,
+      })
+      return
+    }
     if (loginMutation.isSuccess) {
       navigate({ to: search || paths.app.root.getHref() })
     }
-  }, [loginMutation.isSuccess, navigate, search])
+  }, [loginMutation.isSuccess, loginMutation.data, navigate, search])
 
   async function handleSubmit({ sharedDevice, ...values }: LoginFormValues) {
     // Sin red solo se puede desbloquear lo que ya está en el equipo.
@@ -107,6 +117,8 @@ export function LoginPage() {
     await setDeviceMode(personal ? "personal" : "compartido").catch(() => undefined)
     loginMutation.mutate({ ...values, captchaToken }, {
       onSuccess: async (data) => {
+        // Con segundo paso todavía no hay token (U.5.DOS): se completa en /verificacion.
+        if (!data.token) return
         const user = toAuthUserFromToken(data.token)
         // Revalidación con el token (correo + roles): fuera del piloto (y
         // fuera de la app instalada) el equipo vuelve a "compartido" y se

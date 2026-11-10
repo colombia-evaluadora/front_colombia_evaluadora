@@ -476,6 +476,21 @@ const forgotPasswordRoute = createRoute({
   component: ForgotPasswordPage,
 })
 
+// U.5.DOS: segundo paso del login. Sin sesión: el desafío vive en sessionStorage.
+const verificacionRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.verificacion.path,
+  head: () => ({ meta: [{ title: `Verificación en dos pasos · ${APP_NAME}` }, { name: "robots", content: "noindex, nofollow" }] }),
+  component: lazyRouteComponent(() => import("@/features/auth/pages/segundo-factor-pages"), "VerificacionPage"),
+})
+
+const configurarVerificacionRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.configurarVerificacion.path,
+  head: () => ({ meta: [{ title: `Configurar verificación · ${APP_NAME}` }, { name: "robots", content: "noindex, nofollow" }] }),
+  component: lazyRouteComponent(() => import("@/features/auth/pages/segundo-factor-pages"), "ConfigurarVerificacionPage"),
+})
+
 // U.5.PER.1: una cuenta con varios perfiles elige con cuál entra. Requiere sesión.
 export const elegirPerfilRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -2049,6 +2064,8 @@ const routeTree = rootRoute.addChildren([
   authLayoutRoute.addChildren([
     loginRoute,
     forgotPasswordRoute,
+    verificacionRoute,
+    configurarVerificacionRoute,
     elegirPerfilRoute,
     forgotUsernameRoute,
     checkEmailRoute,

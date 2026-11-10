@@ -25,6 +25,8 @@ export const paths = {
       getHref: (redirectTo?: string | null) =>
         `/login${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`,
     },
+    verificacion: { path: "/verificacion", getHref: () => "/verificacion" },
+    configurarVerificacion: { path: "/configurar-verificacion", getHref: () => "/configurar-verificacion" },
     elegirPerfil: {
       path: "/elegir-perfil",
       getHref: (redirectTo?: string | null) =>

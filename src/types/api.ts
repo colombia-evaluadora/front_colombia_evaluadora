@@ -14,8 +14,16 @@ export interface User {
   roles: string[]
 }
 
+/**
+ * Respuesta de `/auth/login`. Con la verificación en dos pasos (U.5.DOS) la
+ * contraseña correcta no trae tokens: trae `segundoFactor` + `desafio`, y el
+ * segundo `/login` (con el código) devuelve los tokens.
+ */
 export interface AuthResponse {
   token: string
   refreshToken: string
   expiresIn: number
+  segundoFactor?: "VERIFICAR" | "CONFIGURAR"
+  desafio?: string
+  maskedEmail?: string
 }
