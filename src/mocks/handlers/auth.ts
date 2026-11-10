@@ -124,32 +124,24 @@ export const authHandlers = [
     )
   }),
 
-  // Mismo contrato que el backend real (GET /sso-admin/forgotPassword?email=):
-  // un correo desconocido responde 404 y no manda nada. Diferencia con el
-  // real: acá devolvemos el token en el body, porque en un mock no hay correo
-  // que abrir — es lo que le permite a /check-email mostrar el vencimiento
-  // real y llegar a /restore-password. El front trata el body como opcional.
+  // Mismo contrato que el backend real de Colombia Evaluadora
+  // (GET /sso-admin/forgotPassword?email=|documento=): siempre la misma
+  // respuesta, exista o no la cuenta ("[admin] Acceso y sesiones"). El enlace
+  // del mock sale por consola, porque no hay correo que abrir.
   http.get("/api/sso-admin/forgotPassword", async ({ request }) => {
     const rejected = rejectWithoutCaptcha(request)
     if (rejected) return rejected
     await delay(300)
-    const email = new URL(request.url).searchParams.get("email") ?? ""
+    const params = new URL(request.url).searchParams
+    const documento = params.get("documento")?.replace(/[^0-9A-Za-z]/g, "").toUpperCase()
+    const email =
+      params.get("email") ?? authUsers.find((u) => u.document === documento)?.email ?? ""
 
-    // Decirle al usuario que esa dirección no está registrada es una decisión
-    // explícita del equipo, no un descuido: el precio es que el endpoint
-    // sirve para enumerar cuentas. Ver `UserAdminService#forgotPassword`.
-    if (!findUserByEmail(email)) {
-      return HttpResponse.json(
-        { message: "No encontramos una cuenta con ese correo electrónico." },
-        { status: 404 },
-      )
+    if (findUserByEmail(email)) {
+      const { token } = createPasswordResetToken(email)
+      console.info(`[mock] Link de reseteo para ${email}: /restore-password?token=${token}`)
     }
-
-    const { token, expiresIn } = createPasswordResetToken(email)
-
-    console.info(`[mock] Link de reseteo para ${email}: /restore-password?token=${token}`)
-
-    return HttpResponse.json({ token, expiresIn })
+    return HttpResponse.json({ expiresIn: 60 * 60 })
   }),
 
   // Recuperar usuario a partir del documento: el usuario es el correo, así
