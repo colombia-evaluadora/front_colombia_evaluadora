@@ -20,6 +20,7 @@ export const ALWAYS_ALLOWED_PATHS: readonly string[] = [
   "/app/pendientes",
   "/app/sincronizar",
   "/app/mis-dispositivos",
+  "/app/mi-cuenta",
   "/app/notificaciones",
   "/app/notificaciones/preferencias",
 ]

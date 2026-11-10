@@ -77,6 +77,8 @@ import {
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { debeElegirPerfil } from "@/features/navigation/lib/perfil"
+import { tokenSearchSchema } from "@/features/cuenta/api/cambio-correo"
 import { menuPermissionsQueryOptions } from "@/features/navigation/api/query/use-menu-permissions-query"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
@@ -400,6 +402,23 @@ const consultarInscripcionRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "ConsultarProximamentePage"),
 })
 
+// U.6.COR: enlaces de los correos de cambio de correo (sin sesión).
+export const confirmarCorreoRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.confirmarCorreo.path,
+  validateSearch: tokenSearchSchema,
+  head: publicHead("Confirmar correo"),
+  component: lazyRouteComponent(() => import("@/features/cuenta/pages/cambio-correo-pages"), "ConfirmarCorreoPage"),
+})
+
+export const noFuiYoRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.publico.noFuiYo.path,
+  validateSearch: tokenSearchSchema,
+  head: publicHead("No fui yo"),
+  component: lazyRouteComponent(() => import("@/features/cuenta/pages/cambio-correo-pages"), "NoFuiYoPage"),
+})
+
 // Pública (QR del boletín, U.4): sin sesión, dentro del marco del sitio público.
 export const verificarBoletinRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
@@ -455,6 +474,25 @@ const forgotPasswordRoute = createRoute({
     ],
   }),
   component: ForgotPasswordPage,
+})
+
+// U.5.PER.1: una cuenta con varios perfiles elige con cuál entra. Requiere sesión.
+export const elegirPerfilRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.elegirPerfil.path,
+  validateSearch: loginSearchSchema,
+  beforeLoad: async ({ context, location }) => {
+    if (!(await hasSession(context.queryClient))) {
+      throw redirect({ to: paths.auth.login.path, search: { redirectTo: location.href } })
+    }
+  },
+  head: () => ({
+    meta: [
+      { title: `Elegir perfil · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(() => import("@/features/navigation/pages/elegir-perfil-page"), "ElegirPerfilPage"),
 })
 
 const forgotUsernameRoute = createRoute({
@@ -524,6 +562,11 @@ const appLayoutRoute = createRoute({
         to: paths.auth.login.path,
         search: { redirectTo: location.href },
       })
+    }
+
+    // Varios perfiles y ninguno elegido en esta sesión: primero se elige (U.5.PER.1).
+    if (debeElegirPerfil()) {
+      throw redirect({ to: paths.auth.elegirPerfil.path, search: { redirectTo: location.href } })
     }
 
     // Permisos por pantalla en segundo plano (no bloquea la navegación): así
@@ -1947,6 +1990,13 @@ const MisDispositivosPage = lazyRouteComponent(
 
 // "Mis dispositivos" (credencial del equipo). Fuera del menú, como pendientes:
 // se llega desde el menú de la cuenta. Solo en línea.
+export const miCuentaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.miCuenta.path,
+  staticData: { breadcrumb: [{ label: "Mi cuenta", to: paths.app.miCuenta.getHref() }] },
+  component: lazyRouteComponent(() => import("@/features/cuenta/pages/mi-cuenta-page"), "MiCuentaPage"),
+})
+
 export const misDispositivosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.misDispositivos.path,
@@ -1987,10 +2037,19 @@ export const notificacionesPreferenciasRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  publicLayoutRoute.addChildren([homeRoute, verificarRoute, verificarBoletinRoute, inscribirRoute, consultarInscripcionRoute]),
+  publicLayoutRoute.addChildren([
+    homeRoute,
+    verificarRoute,
+    verificarBoletinRoute,
+    inscribirRoute,
+    consultarInscripcionRoute,
+    confirmarCorreoRoute,
+    noFuiYoRoute,
+  ]),
   authLayoutRoute.addChildren([
     loginRoute,
     forgotPasswordRoute,
+    elegirPerfilRoute,
     forgotUsernameRoute,
     checkEmailRoute,
     restorePasswordRoute,
@@ -2110,6 +2169,7 @@ const routeTree = rootRoute.addChildren([
     notificacionesRoute,
     pendientesRoute,
     sincronizarRoute,
+    miCuentaRoute,
     misDispositivosRoute,
     notificacionesPreferenciasRoute,
   ]),

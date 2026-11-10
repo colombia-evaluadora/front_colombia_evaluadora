@@ -9,6 +9,9 @@ export const paths = {
     inscribir: { path: "/inscribir", getHref: () => "/inscribir" },
     consultarInscripcion: { path: "/consultar-inscripcion", getHref: () => "/consultar-inscripcion" },
     verificar: { path: "/verificar", getHref: () => "/verificar" },
+    // U.6.COR: enlaces de los correos de cambio de correo.
+    confirmarCorreo: { path: "/confirmar-correo", getHref: () => "/confirmar-correo" },
+    noFuiYo: { path: "/no-fui-yo", getHref: () => "/no-fui-yo" },
   },
 
   verificarBoletin: {
@@ -21,6 +24,11 @@ export const paths = {
       path: "/login",
       getHref: (redirectTo?: string | null) =>
         `/login${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`,
+    },
+    elegirPerfil: {
+      path: "/elegir-perfil",
+      getHref: (redirectTo?: string | null) =>
+        `/elegir-perfil${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`,
     },
     forgotPassword: {
       path: "/forgot-password",
@@ -541,6 +549,10 @@ export const paths = {
       getHref: () => "/app/sincronizar",
     },
     // "Mis dispositivos" (credencial del equipo, D-3/D-8). Fuera del menú del backend.
+    miCuenta: {
+      path: "mi-cuenta",
+      getHref: () => "/app/mi-cuenta",
+    },
     misDispositivos: {
       path: "mis-dispositivos",
       getHref: () => "/app/mis-dispositivos",
