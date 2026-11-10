@@ -392,4 +392,14 @@ export const navigationMenu: MockMenu[] = [
     idParent: 60,
     roleIds: [1, 2, 3],
   },
+  {
+    id: 62,
+    name: "Reconocimientos",
+    icon: "",
+    path: "/app/gestion-estudiantil/reconocimientos",
+    menuOrder: 1,
+    type: "ITEM",
+    idParent: 60,
+    roleIds: [1, 2, 3],
+  },
 ]
