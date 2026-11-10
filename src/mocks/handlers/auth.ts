@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
 import {
+  authUsers,
   activateUserAccount,
   consumeActivationToken,
   consumePasswordResetToken,
@@ -64,10 +65,11 @@ export const authHandlers = [
     const rejected = rejectWithoutCaptcha(request)
     if (rejected) return rejected
     await delay(300)
-    const { email, password } = (await request.json()) as {
-      email: string
-      password: string
-    }
+    // Correo o documento, como el backend (sso V215).
+    const body = (await request.json()) as { email?: string; documento?: string; password: string }
+    const password = body.password
+    const documento = body.documento?.replace(/[^0-9A-Za-z]/g, "").toUpperCase()
+    const email = body.email ?? authUsers.find((u) => u.document === documento)?.email ?? ""
     const rememberMe = request.headers.get("x-remember-me") === "true"
     const user = findUserByCredentials(email, password)
 
