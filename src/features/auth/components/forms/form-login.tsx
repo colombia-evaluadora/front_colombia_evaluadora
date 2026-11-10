@@ -77,7 +77,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Correo electrónico</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Correo o número de documento</FieldLabel>
                 <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                   <InputGroupAddon align="inline-start" className="ml-2">
                     <EnvelopeIcon className="size-4 text-muted-foreground" />
@@ -85,9 +85,10 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   <InputGroupInput
                     id={field.name}
                     name={field.name}
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     autoComplete="username"
-                    placeholder="usuario@institucion.edu.co"
+                    placeholder="usuario@institucion.edu.co o 1023456789"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(toEmailInput(e.target.value))}
