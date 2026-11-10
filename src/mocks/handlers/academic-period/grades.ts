@@ -5,6 +5,7 @@ import {
   gradesDb,
   gradeValorByPk,
 } from "@/mocks/db/academic-period/grades"
+import { academicPeriodsDb } from "@/mocks/db/academic-period/academic-periods"
 import { gradeGroupsDb } from "@/mocks/db/academic-period/grade-groups"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import { fromRecesosRows, toRecesosBody, type RecesoRow } from "@/features/establishment/academic-period/utils/recesos"
@@ -110,6 +111,8 @@ export const gradesHandlers = [
   // llama `use-grades.ts`. Sin él la request salía al back real y el 401
   // cerraba la sesión.
   http.post("/api/eval-col/grados/query/:academicPeriodId", async ({ params, request }) => {
+    // Períodos ajenos (Inscripciones, matrícula): cede al handler de matrícula.
+    if (!academicPeriodsDb.some((p) => p.id === Number(params.academicPeriodId))) return
     await delay(250)
     const body = (await request.json()) as { FILTRO: string | null; PAGE_INDEX: number; PAGE_SIZE: number }
     const scoped = gradesDb.filter((row) => row.academicPeriodId === Number(params.academicPeriodId))
