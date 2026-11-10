@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { usePasosCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import type { CasoDetalle, PasoCaso } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { COD, esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { Seccion } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
 import { codigosReportados, etiquetaPasoCierre } from "@/features/gestion-estudiantil/convivencia/utils/detalle"
 
 function EstadoPaso({ paso }: { paso: PasoCaso }) {

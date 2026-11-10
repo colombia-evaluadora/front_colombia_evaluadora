@@ -3,9 +3,9 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import type { CargoFila, ErroresCargo } from "@/features/gestion-estudiantil/convivencia/utils/proceso-form"
 
 interface Props {

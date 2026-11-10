@@ -5,7 +5,7 @@ import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { CampoPersona } from "@/features/gestion-estudiantil/convivencia/components/comite/campo-persona"
 import type { ErrorFilaIntegrante, FilaIntegrante } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 

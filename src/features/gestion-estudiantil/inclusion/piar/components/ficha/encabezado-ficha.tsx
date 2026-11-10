@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ClipboardTextIcon, ClockCounterClockwiseIcon, DotsThreeVerticalIcon, FilePdfIcon, FileTextIcon, FileUploadOutlinedIcon, FloppyDiskIcon, LockIcon, PaperclipIcon, ProhibitIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 import { COLOR_ESTADO, esEditable, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"

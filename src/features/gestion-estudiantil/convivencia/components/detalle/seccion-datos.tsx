@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge"
 
-import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { fechaHechosTexto, formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { fechaHechosTexto } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 
 /** «Datos del caso»: fechas, catálogos, reporte, gestor, anotaciones de origen y descripción. */
 export function SeccionDatosCasoDetalle({ caso }: { caso: CasoDetalle }) {

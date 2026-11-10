@@ -4,7 +4,7 @@ import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
 import { FILTROS_VACIOS, type ConvivenciaFiltros } from "@/features/gestion-estudiantil/convivencia/api/types"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import type { SearchCasosProps } from "@/features/gestion-estudiantil/convivencia/components/search/search-casos"
 
 type QueryFilters = ConvivenciaFiltros & { search: string }

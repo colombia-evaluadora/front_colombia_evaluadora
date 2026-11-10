@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { EstadoProcesoCodigo } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
 

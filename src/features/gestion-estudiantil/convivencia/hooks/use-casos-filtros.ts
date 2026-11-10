@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { useOpcionesConvivencia, type Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
+import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { FILTROS_VACIOS, SIN_GESTOR, type CasoRow, type ConvivenciaFiltros } from "@/features/gestion-estudiantil/convivencia/api/types"
 import type { OpcionesFiltros } from "@/features/gestion-estudiantil/convivencia/components/search/search-casos"
 import { acumularGestores } from "@/features/gestion-estudiantil/convivencia/utils/gestores"
+import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 
 /** Búsqueda, filtros aplicados y borrador del panel, y las opciones de cada filtro del listado de casos. */
 export function useCasosFiltros(goToPage: (page: number) => void) {
@@ -14,7 +16,7 @@ export function useCasosFiltros(goToPage: (page: number) => void) {
   const [filtros, setFiltros] = useState<ConvivenciaFiltros>(FILTROS_VACIOS)
   const [borrador, setBorrador] = useState<ConvivenciaFiltros>(FILTROS_VACIOS)
 
-  const opciones = useOpcionesConvivencia(borrador.sede, "")
+  const opciones = useOpcionesGrupos(convivenciaKeys.all, borrador.sede, "")
   const tipos = useCatalogo("TIPO_SITUACION")
   const estados = useCatalogo("ESTADO_CASO_CONVIVENCIA")
 

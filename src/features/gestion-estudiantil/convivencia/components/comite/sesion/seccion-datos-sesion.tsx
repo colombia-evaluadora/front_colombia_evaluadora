@@ -2,8 +2,8 @@ import { DatePicker } from "@/components/date-picker"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import type { SesionFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
 
 /** Período (solo lectura), Tipo y Fecha de la sesión. */

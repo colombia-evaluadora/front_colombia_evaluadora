@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { WarningCircleIcon } from "@/components/ui/icons"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import { useParticipantesOpcionQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 
@@ -9,6 +9,7 @@ import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/co
 import type { DialogoProps } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { nulo, texto } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { claveElemento, textosFaltantes } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+
 const CAMPOS_AJUSTE = [
   { value: "META", label: "Meta de aprendizaje" },
   { value: "AJUSTE", label: "Ajuste" },

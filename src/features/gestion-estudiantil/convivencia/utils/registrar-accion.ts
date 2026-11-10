@@ -1,6 +1,6 @@
 import { formatDateValue } from "@/lib/date-value"
 
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 export interface CodigoSiuce {
   /** `m:<matrícula>` o `f:<funcionario>`: el afectado puede ser estudiante o funcionario del establecimiento. */

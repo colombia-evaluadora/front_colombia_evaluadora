@@ -13,7 +13,7 @@ import type {
   SesionFila,
 } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { comiteKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
-import { desenvolver, queryString } from "@/features/gestion-estudiantil/convivencia/api/query/jsonb"
+import { desenvolver, queryString } from "@/features/gestion-estudiantil/commons/api/jsonb"
 
 const BASE = "/gestion-estudiantil/convivencia/comite"
 const LIMITE = 50

@@ -6,7 +6,7 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { ConstructoresInvolucrados } from "@/features/gestion-estudiantil/convivencia/components/constructores-involucrados"
@@ -14,7 +14,7 @@ import { GestorPrevisto } from "@/features/gestion-estudiantil/convivencia/compo
 import { SeccionDatosCaso } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-datos-caso"
 import { SeccionFechas } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-fechas"
 import { SeccionSiuce } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-siuce"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useCasoForm } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 function CasoForm({ caso }: { caso?: CasoDetalle }) {

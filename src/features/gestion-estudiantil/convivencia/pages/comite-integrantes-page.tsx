@@ -7,11 +7,11 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { ComiteDetalle, PeriodoComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { useComiteQuery, usePeriodosComiteQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { FormularioIntegrantes } from "@/features/gestion-estudiantil/convivencia/components/comite/formulario-integrantes"
 import { useComiteIntegrantes } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-integrantes"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"

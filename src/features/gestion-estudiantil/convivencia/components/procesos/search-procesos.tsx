@@ -4,9 +4,9 @@ import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 import type { ProcesosFiltros } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useSearchProcesos } from "@/features/gestion-estudiantil/convivencia/hooks/use-search-procesos"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 export interface OpcionesFiltrosProcesos {
   sedes: Opcion[]

@@ -4,7 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { paths } from "@/config/paths"
 
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CompromisoRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import {
   accionesCompromiso,

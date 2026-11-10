@@ -10,8 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { colorDeTipo, formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
 /** Ver detalle: lo mismo del listado más observación, marcas y, si aplica, la anulación. */

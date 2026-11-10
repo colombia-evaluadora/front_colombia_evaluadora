@@ -3,7 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 
-import { abreviarPersona, formatFechaHora12 } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"
+import { abreviarPersona, formatFechaHora12 } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CitacionRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import {
   accionesCitacion,

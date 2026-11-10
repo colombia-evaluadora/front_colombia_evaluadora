@@ -5,7 +5,7 @@ import { LinkIcon, PaperclipIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
 import { FilaSoporte } from "@/features/gestion-estudiantil/convivencia/components/soportes/fila-soporte"
 import { PanelMotivoSoporte } from "@/features/gestion-estudiantil/convivencia/components/soportes/panel-motivo-soporte"

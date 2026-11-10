@@ -1,5 +1,5 @@
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import type { CasoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 /** Tipo de situación, manifestación y lugar. */

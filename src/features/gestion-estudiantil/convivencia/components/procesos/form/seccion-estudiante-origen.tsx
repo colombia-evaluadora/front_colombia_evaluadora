@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input"
 
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/fields/subjects-multi-select"
 import { useEstudiantesProcesoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-proceso-apertura-query"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import type { ProcesoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-proceso-form"
 
 const ESPERA_MS = 300

@@ -1,3 +1,4 @@
+import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import { useCompromisoDocumentoQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-compromisos-query"
 import {
   DatosDocumento,
@@ -5,8 +6,8 @@ import {
   Firma,
   HojaDocumento,
   SeccionDocumento,
-} from "@/features/gestion-estudiantil/citaciones/components/dialogos/documento-imprimible"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+} from "@/features/gestion-estudiantil/commons/components/documento-imprimible"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Acta de compromiso imprimible (G.3.CMP.DOC.1, «Descargar acta de compromiso»): datos de `GET /compromisos/:ID/documento`. */
 export function DialogDocumentoCompromiso({ compromisoId, onClose }: { compromisoId: number; onClose: () => void }) {
@@ -15,6 +16,7 @@ export function DialogDocumentoCompromiso({ compromisoId, onClose }: { compromis
     <DialogoDocumento titulo="Acta de compromiso" isPending={isPending} error={error} onClose={onClose}>
       {d && (
         <HojaDocumento
+          claveModulo={citacionesKeys.all}
           encabezado={d}
           titulo="Acta de compromiso"
           subtitulo={`Compromiso ${d.tipo.toLowerCase()} del ${formatFecha(d.fecha)}`}

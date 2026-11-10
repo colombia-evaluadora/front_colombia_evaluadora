@@ -3,11 +3,11 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
-import { codigoDe, type OpcionCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { codigoDe, type OpcionCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { erroresInvolucrado, esTipoFuncionario } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import {
   useFuncionarioInvolucrado,
   type ContextoFuncionarios,

@@ -4,7 +4,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
 import { useEstudiantesProcesoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-proceso-apertura-query"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 const ESPERA_MS = 300
 

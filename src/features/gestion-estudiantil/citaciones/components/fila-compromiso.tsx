@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 
 import type { ErroresItem, ItemFila } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 interface Props {
   fila: ItemFila

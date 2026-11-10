@@ -1,3 +1,4 @@
+import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import { useCitacionDocumentoQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-citaciones-query"
 import {
   DatosDocumento,
@@ -5,8 +6,8 @@ import {
   Firma,
   HojaDocumento,
   SeccionDocumento,
-} from "@/features/gestion-estudiantil/citaciones/components/dialogos/documento-imprimible"
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+} from "@/features/gestion-estudiantil/commons/components/documento-imprimible"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Citación al acudiente imprimible (G.3.CIT.DOC.1, «Descargar citación»): datos de `GET /citaciones/:ID/documento`. */
 export function DialogDocumentoCitacion({ citacionId, onClose }: { citacionId: number; onClose: () => void }) {
@@ -15,6 +16,7 @@ export function DialogDocumentoCitacion({ citacionId, onClose }: { citacionId: n
     <DialogoDocumento titulo="Citación al acudiente" isPending={isPending} error={error} onClose={onClose}>
       {d && (
         <HojaDocumento
+          claveModulo={citacionesKeys.all}
           encabezado={d}
           titulo="Citación al acudiente"
           subtitulo={`Citación para el ${formatFechaHora(d.fecha_programada)}`}

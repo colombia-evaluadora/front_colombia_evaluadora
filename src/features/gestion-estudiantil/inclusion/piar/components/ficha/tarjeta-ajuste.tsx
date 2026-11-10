@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircleIcon, PencilIcon } from "@/components/ui/icons"
 
 import { usePeriodosPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
-import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { Ajuste } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import type { Dialogo } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { BotonQuitar, BotonSeccion, EnlaceArchivo, ListaDatos, Par } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"

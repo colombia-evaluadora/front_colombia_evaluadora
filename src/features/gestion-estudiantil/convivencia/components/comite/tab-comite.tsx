@@ -6,7 +6,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { TablePaginationProvider } from "@/hooks/use-table-pagination"
 
 import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { RecuadroIntegrantes } from "@/features/gestion-estudiantil/convivencia/components/comite/recuadro-integrantes"
 import { SeccionSesiones } from "@/features/gestion-estudiantil/convivencia/components/comite/seccion-sesiones"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"

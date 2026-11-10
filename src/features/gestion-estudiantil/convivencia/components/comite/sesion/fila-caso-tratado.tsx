@@ -6,11 +6,11 @@ import { addDays, parseISO } from "date-fns"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 import { useCasosComiteQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { ComboFuncionarioComite } from "@/features/gestion-estudiantil/convivencia/components/comite/combos-persona"
 import { useBusquedaDiferida } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-busqueda"
 import { soloSeguimiento, type CasoFila } from "@/features/gestion-estudiantil/convivencia/utils/comite"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { LIM } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 interface Props {

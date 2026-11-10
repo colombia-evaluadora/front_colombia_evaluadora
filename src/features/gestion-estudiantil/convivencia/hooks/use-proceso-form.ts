@@ -14,7 +14,7 @@ import {
   usePlazoDescargosQuery,
   useResponsablesProcesoQuery,
 } from "@/features/gestion-estudiantil/convivencia/api/query/use-proceso-apertura-query"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import {
   abrirProcesoInput,
   cargoVacio,

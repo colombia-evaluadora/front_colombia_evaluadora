@@ -10,7 +10,7 @@ import {
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import type { EstudianteFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { useAgregarEstudiante } from "@/features/gestion-estudiantil/convivencia/hooks/use-agregar-estudiante"
 
 /** Diálogo «Agregar estudiante»: cascada Sede → Jornada → Grado/Grupo → Estudiante (padrón /planeador/estudiantes). */

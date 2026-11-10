@@ -4,10 +4,11 @@ import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { FILTROS_VACIOS, type PiarFiltros } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
+import { piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
 
 interface Props {
   search: string
@@ -21,7 +22,7 @@ interface Props {
 export function BusquedaPiar({ search, filtros, onSearch, onFiltros, grados }: Props) {
   const [draft, setDraft] = useState<PiarFiltros>(FILTROS_VACIOS)
   const [open, setOpen] = useState(false)
-  const opciones = useOpcionesConvivencia(draft.sede, draft.jornada)
+  const opciones = useOpcionesGrupos(piarKeys.all, draft.sede, draft.jornada)
   const estados = useCatalogo("ESTADO_PIAR")
 
   useEffect(() => {

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 
 import type { CompromisoRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import { COLOR_ESTADO_COMPROMISO } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Línea bajo el título de los modales de compromiso: tipo, fechas y estado (G.3.CMP.5/6). */
 export function ResumenCompromiso({ c, conEstado = false, conAcudiente = false }: { c: CompromisoRow; conEstado?: boolean; conAcudiente?: boolean }) {

@@ -3,7 +3,7 @@ import { FieldError } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import { FilaCasoTratado } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/fila-caso-tratado"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { SesionFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
 
 /** Constructor de «Casos tratados»: cada caso una sola vez, con su decisión y su seguimiento. */

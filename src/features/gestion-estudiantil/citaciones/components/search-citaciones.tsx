@@ -1,17 +1,17 @@
 import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm, textTerm } from "@/components/search/query-syntax"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { CITACIONES_FILTROS_VACIOS, type CitacionesFiltros } from "@/features/gestion-estudiantil/citaciones/api/types"
 import {
   useSearchFiltros,
   type SearchFiltrosProps,
-} from "@/features/gestion-estudiantil/citaciones/hooks/use-search-filtros"
+} from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
+import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
 
 export interface OpcionesFiltrosCitaciones {
   sedes: Opcion[]
@@ -51,22 +51,7 @@ export function SearchCitaciones(props: Props) {
   const sinSede = !draft.sede
 
   return (
-    <SearchQueryBar
-      id="citaciones-search"
-      label={null}
-      placeholder="Buscar por estudiante o acudiente"
-      value={s.queryText}
-      onValueChange={s.setQueryText}
-      onClearAll={s.handleClearAll}
-      onClearFilters={s.handleClearFilters}
-      activeFilterCount={s.activeFilterCount}
-      badgeCount={s.badgeCount}
-      open={s.open}
-      onOpenChange={s.setOpen}
-      onApply={s.handleApply}
-      size="lg"
-      className="sm:w-full max-w-xl"
-    >
+    <BarraBusquedaFiltros id="citaciones-search" placeholder="Buscar por estudiante o acudiente" estado={s}>
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
         <Combo
           id="citaciones-sede"
@@ -124,6 +109,6 @@ export function SearchCitaciones(props: Props) {
           />
         </Field>
       </div>
-    </SearchQueryBar>
+    </BarraBusquedaFiltros>
   )
 }

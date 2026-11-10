@@ -6,10 +6,11 @@ import { CheckIcon, FileDownloadOutlinedIcon, PaperclipIcon, SpinnerIcon, XIcon 
 import { paths } from "@/config/paths"
 
 import type { SesionDetalle } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { COLOR_ESTADO, formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { Dato, Seccion } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { Dato, Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { dia, textoAsistentes } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 /** Datos de la sesión: período, tipo y fecha. */

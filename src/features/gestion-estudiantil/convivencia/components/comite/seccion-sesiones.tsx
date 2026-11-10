@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDataTable } from "@/hooks/use-data-table"
 import { getErrorMessage } from "@/lib/api-client"
 
-import type { OpcionCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import type { OpcionCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { buildColumnsSesiones } from "@/features/gestion-estudiantil/convivencia/components/comite/columns-sesiones"
 import type { useComiteTab } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-tab"
 

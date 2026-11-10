@@ -1,6 +1,6 @@
 import type { SoporteAccion } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 
 /** «Versiones anteriores (n)»: soportes sustituidos o retirados, con su motivo. */
 export function VersionesAnteriores({ soportes }: { soportes: SoporteAccion[] }) {

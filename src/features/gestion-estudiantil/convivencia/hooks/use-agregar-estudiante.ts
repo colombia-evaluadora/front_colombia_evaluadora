@@ -1,7 +1,9 @@
 import { useState } from "react"
 
-import { useEstudiantesGrupoQuery, useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import { useEstudiantesGrupoQuery } from "@/features/gestion-estudiantil/convivencia/api/use-estudiantes-grupo"
+import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
 import type { EstudianteFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
+import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 
 interface Opciones {
   yaAgregados: number[]
@@ -16,7 +18,7 @@ export function useAgregarEstudiante({ yaAgregados, onAgregar, onOpenChange }: O
   const [grupo, setGrupo] = useState("")
   const [estudiante, setEstudiante] = useState("")
   const [repetido, setRepetido] = useState(false)
-  const opciones = useOpcionesConvivencia(sede, jornada)
+  const opciones = useOpcionesGrupos(convivenciaKeys.all, sede, jornada)
   const roster = useEstudiantesGrupoQuery(grupo)
   const grupoLabel = opciones.grupoOpciones.find((g) => g.value === grupo)?.label ?? ""
 

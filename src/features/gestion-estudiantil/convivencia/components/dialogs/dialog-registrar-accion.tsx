@@ -6,13 +6,13 @@ import { Switch } from "@/components/ui/switch"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { CampoCodigosSiuce } from "@/features/gestion-estudiantil/convivencia/components/dialogs/campo-codigos-siuce"
 import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-caso-shell"
-import { SoportesUpload } from "@/features/gestion-estudiantil/convivencia/components/soportes-upload"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useRegistrarAccion } from "@/features/gestion-estudiantil/convivencia/hooks/use-registrar-accion"
 
 interface Props {

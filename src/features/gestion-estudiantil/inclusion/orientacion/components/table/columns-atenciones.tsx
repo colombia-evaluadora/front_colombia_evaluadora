@@ -3,7 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { EyeIcon, FilePdfIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
 
-import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AtencionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
 

@@ -17,12 +17,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { useImprimirObservador } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
-import { useOpcionesObservador } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
+import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import type { ObservadorFiltros, TipoImpresion } from "@/features/gestion-estudiantil/observador/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 const TODO_EL_ANIO = "todo"
 
@@ -43,7 +43,7 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
   const [intento, setIntento] = useState(false)
   const [sel, setSel] = useState<Seleccion>(() => inicial(filtros))
 
-  const opciones = useOpcionesObservador(sel.sede, sel.jornada)
+  const opciones = useOpcionesCascada(sel.sede, sel.jornada)
   const grupoId = sel.grupo ? Number(sel.grupo) : undefined
   const estudiantes = useActividadMatriculasGrupoQuery(open ? grupoId : undefined)
   const estudianteOpciones = (estudiantes.data ?? []).map((m) => ({ value: String(m.id), label: m.nombre }))

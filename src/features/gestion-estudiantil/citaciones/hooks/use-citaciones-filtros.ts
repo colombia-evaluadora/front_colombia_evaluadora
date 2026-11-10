@@ -2,12 +2,10 @@
 
 import { useState } from "react"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import {
-  useOpcionesConvivencia,
-  type Opcion,
-} from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { abreviarPersona } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
+import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import {
   CITACIONES_FILTROS_VACIOS,
   COMPROMISOS_FILTROS_VACIOS,
@@ -15,6 +13,7 @@ import {
   type CitacionesFiltros,
   type CompromisosFiltros,
 } from "@/features/gestion-estudiantil/citaciones/api/types"
+import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 
 /** Opciones de un catálogo cuyo filtro viaja por código (`ESTADO`), no por pk. */
 function porCodigo(opciones: ReturnType<typeof useCatalogo>): Opcion[] {
@@ -37,7 +36,7 @@ export function useCitacionesFiltros(goToPage: (page: number) => void) {
   const [filtros, setFiltros] = useState<CitacionesFiltros>(CITACIONES_FILTROS_VACIOS)
   const [borrador, setBorrador] = useState<CitacionesFiltros>(CITACIONES_FILTROS_VACIOS)
 
-  const cascada = useOpcionesConvivencia(borrador.sede, "")
+  const cascada = useOpcionesGrupos(citacionesKeys.all, borrador.sede, "")
   const estados = useCatalogo("ESTADO_CITACION")
   const motivos = useCatalogo("MOTIVO_CITACION")
 
@@ -76,7 +75,7 @@ export function useCompromisosFiltros(goToPage: (page: number) => void) {
   const [filtros, setFiltros] = useState<CompromisosFiltros>(COMPROMISOS_FILTROS_VACIOS)
   const [borrador, setBorrador] = useState<CompromisosFiltros>(COMPROMISOS_FILTROS_VACIOS)
 
-  const cascada = useOpcionesConvivencia(borrador.sede, "")
+  const cascada = useOpcionesGrupos(citacionesKeys.all, borrador.sede, "")
   const tipos = useCatalogo("TIPO_COMPROMISO")
   const estados = useCatalogo("ESTADO_COMPROMISO")
 

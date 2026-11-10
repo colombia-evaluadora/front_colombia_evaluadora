@@ -5,8 +5,8 @@ import type {
 } from "@/features/gestion-estudiantil/convivencia/api/procesos-etapas-types"
 import type { NotificacionDTO, ProcesoDetalle, SancionDTO } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import type { EtapaDecision } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { errorPrueba, type PruebaFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-form"
 
 /** Validaciones y armado de cuerpos de los modales de etapa (Proceso disciplinario - DTOs.md §4 y §5). */

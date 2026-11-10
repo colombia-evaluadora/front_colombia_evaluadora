@@ -9,12 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useRegistrarResultado } from "@/features/gestion-estudiantil/citaciones/api/mutations/resultado-compromiso"
 import { useCompromisoQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-compromisos-query"
 import type { CompromisoRow, ResultadoCompromisoInput } from "@/features/gestion-estudiantil/citaciones/api/types"
-import { DialogoOperacionShell } from "@/features/gestion-estudiantil/citaciones/components/dialogos/dialogo-operacion-shell"
-import { useEstadoDialogo } from "@/features/gestion-estudiantil/citaciones/hooks/use-estado-dialogo"
+import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
+import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
 import { ResumenCompromiso } from "@/features/gestion-estudiantil/citaciones/components/dialogos/resumen-compromiso"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 
 interface Props {
   compromiso: CompromisoRow

@@ -1,6 +1,6 @@
 import type { ProcesoDetalle } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { EtapaProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-proceso"
 import { ListaPruebas } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/lista-pruebas"
 import { textoCitacion, textoNotificacion } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"

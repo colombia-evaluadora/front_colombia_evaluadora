@@ -1,7 +1,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "@/components/ui/icons"
 
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 
 /** Avisos de caso anulado o cerrado, con su motivo o resumen. */

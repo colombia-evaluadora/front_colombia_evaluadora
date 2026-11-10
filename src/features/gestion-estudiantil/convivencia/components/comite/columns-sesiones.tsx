@@ -3,7 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { SesionFila } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
 import { MenuAccionesSesion, type AccionSesion } from "@/features/gestion-estudiantil/convivencia/components/comite/menu-acciones-sesion"
 import { textoAsistentes } from "@/features/gestion-estudiantil/convivencia/utils/comite"

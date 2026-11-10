@@ -1,4 +1,4 @@
-import { SoportesUpload } from "@/features/gestion-estudiantil/convivencia/components/soportes-upload"
+import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 
 interface Props {
   label: string
