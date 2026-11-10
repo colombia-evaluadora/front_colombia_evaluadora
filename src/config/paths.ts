@@ -22,6 +22,11 @@ export const paths = {
       getHref: (redirectTo?: string | null) =>
         `/login${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`,
     },
+    elegirPerfil: {
+      path: "/elegir-perfil",
+      getHref: (redirectTo?: string | null) =>
+        `/elegir-perfil${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`,
+    },
     forgotPassword: {
       path: "/forgot-password",
       getHref: () => "/forgot-password",

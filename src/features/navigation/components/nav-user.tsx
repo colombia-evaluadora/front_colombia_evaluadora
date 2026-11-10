@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { CloudOffIcon, CloudSyncIcon, DevicesIcon, SignOutIcon, TrashIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon, CloudOffIcon, CloudSyncIcon, DevicesIcon, SignOutIcon, TrashIcon } from "@/components/ui/icons"
 import { PrepareOfflineDialog } from "@/components/offline/prepare-offline-dialog"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
@@ -25,6 +25,7 @@ import { getDeviceMode } from "@/lib/offline/query-persister"
 import { LogoutDeviceDialog } from "@/features/offline/components/logout-device-dialog"
 import { LogoutPendingDialog } from "@/features/offline/components/logout-pending-dialog"
 import { WipeDeviceDataDialog } from "@/features/offline/components/wipe-device-data-dialog"
+import { PERFIL_LABEL, perfilActivo, perfilesDeRoles } from "@/features/navigation/lib/perfil"
 
 export function NavUser() {
   const navigate = useNavigate()
@@ -111,6 +112,15 @@ export function NavUser() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {perfilesDeRoles(user.roles).length > 1 && (
+            <DropdownMenuItem render={<Link to={paths.auth.elegirPerfil.getHref()} />}>
+              <ArrowsLeftRightIcon data-icon="inline-start" />
+              Cambiar de perfil
+              {perfilActivo() && (
+                <span className="text-muted-foreground ml-auto text-xs">{PERFIL_LABEL[perfilActivo()!]}</span>
+              )}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setPrepareOpen(true)}>
             <CloudOffIcon data-icon="inline-start" />
             Preparar para usar sin conexión
