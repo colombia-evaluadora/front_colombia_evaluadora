@@ -8,6 +8,7 @@ import type { NavItem, NavItemDto } from "@/features/navigation/api/types/nav-it
 
 import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
 import { navigationKeys } from "@/features/navigation/api/query-keys"
+import { perfilActivo } from "@/features/navigation/lib/perfil"
 
 /**
  * El sidebar sale de `GET /eval-col/my-menus` → `fn_list_my_menus`, que cruza
@@ -26,7 +27,9 @@ import { navigationKeys } from "@/features/navigation/api/query-keys"
  * edita la pantalla de roles y menús.
  */
 async function fetchNavItemsDto() {
-  const menus = await evalCol.getRows<MenuNode>("/my-menus")
+  // Cuenta con varios perfiles: solo el menú del perfil elegido (U.5.PER.1).
+  const perfil = perfilActivo()
+  const menus = await evalCol.getRows<MenuNode>(perfil ? `/my-menus?perfil=${perfil}` : "/my-menus")
   return toNavItemDtos(menus)
 }
 

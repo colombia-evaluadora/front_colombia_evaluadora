@@ -77,6 +77,7 @@ import {
   navItemsQueryOptions,
 } from "@/features/navigation/api/query/use-nav-items-query"
 import { connectivityStore } from "@/lib/offline/connectivity"
+import { debeElegirPerfil } from "@/features/navigation/lib/perfil"
 import { menuPermissionsQueryOptions } from "@/features/navigation/api/query/use-menu-permissions-query"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
@@ -457,6 +458,25 @@ const forgotPasswordRoute = createRoute({
   component: ForgotPasswordPage,
 })
 
+// U.5.PER.1: una cuenta con varios perfiles elige con cuál entra. Requiere sesión.
+export const elegirPerfilRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.elegirPerfil.path,
+  validateSearch: loginSearchSchema,
+  beforeLoad: async ({ context, location }) => {
+    if (!(await hasSession(context.queryClient))) {
+      throw redirect({ to: paths.auth.login.path, search: { redirectTo: location.href } })
+    }
+  },
+  head: () => ({
+    meta: [
+      { title: `Elegir perfil · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(() => import("@/features/navigation/pages/elegir-perfil-page"), "ElegirPerfilPage"),
+})
+
 const forgotUsernameRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: paths.auth.forgotUsername.path,
@@ -524,6 +544,11 @@ const appLayoutRoute = createRoute({
         to: paths.auth.login.path,
         search: { redirectTo: location.href },
       })
+    }
+
+    // Varios perfiles y ninguno elegido en esta sesión: primero se elige (U.5.PER.1).
+    if (debeElegirPerfil()) {
+      throw redirect({ to: paths.auth.elegirPerfil.path, search: { redirectTo: location.href } })
     }
 
     // Permisos por pantalla en segundo plano (no bloquea la navegación): así
@@ -1991,6 +2016,7 @@ const routeTree = rootRoute.addChildren([
   authLayoutRoute.addChildren([
     loginRoute,
     forgotPasswordRoute,
+    elegirPerfilRoute,
     forgotUsernameRoute,
     checkEmailRoute,
     restorePasswordRoute,
