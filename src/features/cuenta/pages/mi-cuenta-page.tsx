@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useUser } from "@/lib/auth"
 import { toEmailInput } from "@/lib/text-input"
 import { useSolicitarCambioCorreo } from "@/features/cuenta/api/cambio-correo"
+import { SeguridadSegundoFactor } from "@/features/cuenta/components/seguridad-segundo-factor"
 
 const cambioCorreoSchema = z.object({
   correoNuevo: z.string().transform(toEmailInput).pipe(z.email("Escriba un correo válido")),
@@ -139,6 +140,7 @@ export function MiCuentaPage() {
           Enviar enlace al correo nuevo
         </Button>
       </section>
+      <SeguridadSegundoFactor />
     </div>
   )
 }
