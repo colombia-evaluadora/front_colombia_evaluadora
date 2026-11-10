@@ -137,7 +137,14 @@ const logout = async (_options?: LogoutOptions): Promise<void> => {
 export const loginInputSchema = z.object({
   // Limpia caracteres invisibles (word joiner, zero-width, BOM, NBSP) antes
   // de validar: `.trim()` no los quita y llegan al pegar el correo.
-  email: z.string().transform(toEmailInput).pipe(z.email("Email inválido")),
+  // Se ingresa con el correo o con el número de documento (sso V215): sin "@"
+  // se trata como documento y viaja como `documento` (ver loginBody).
+  email: z
+    .string()
+    .transform(toEmailInput)
+    .refine((v) => (v.includes("@") ? z.email().safeParse(v).success : /^[0-9A-Za-z.\- ]{4,40}$/.test(v)), {
+      message: "Escriba su correo o su número de documento",
+    }),
   password: z.string().min(1, "Requerido"),
 })
 export type LoginInput = z.infer<typeof loginInputSchema>
@@ -161,7 +168,7 @@ const loginWithEmailAndPassword = ({
 }: LoginInputWithRemember): Promise<AuthResponse> => {
   // El flag va como header para que el backend fije el `Max-Age` de la
   // cookie de refresh; sin el header la cookie dura lo que el default.
-  return api.post("/auth/login", data, {
+  return api.post("/auth/login", loginBody(data), {
     headers: {
       ...(data.rememberMe ? { "x-remember-me": "true" } : {}),
       ...captchaHeaders(captchaToken),
@@ -519,4 +526,12 @@ export async function hasSession(queryClient: QueryClient): Promise<boolean> {
       await wait(SESSION_RETRY_DELAYS_MS[attempt])
     }
   }
+}
+
+/**
+ * Body de `/auth/login`: el backend acepta `email` o `documento` (sso V215).
+ * Sin "@" el identificador es un documento; el backend lo normaliza.
+ */
+export function loginBody<T extends { email: string }>({ email, ...rest }: T) {
+  return email.includes("@") ? { email, ...rest } : { documento: email, ...rest }
 }
