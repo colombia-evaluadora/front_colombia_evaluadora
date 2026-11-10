@@ -41,6 +41,11 @@ import { employeeHandlers } from "@/mocks/handlers/employees"
 import { selectCatalogHandlers } from "./academic-period/select-catalog"
 import { catalogHandlers } from "@/mocks/handlers/catalog"
 import { reservationsHandlers } from "@/mocks/handlers/reservations"
+import { reservasCupoHandlers } from "@/mocks/handlers/reservas-cupo"
+import { reservaCupoAccionesHandlers } from "@/mocks/handlers/reservas-cupo-acciones"
+import { inscripcionesConfiguracionHandlers } from "@/mocks/handlers/inscripciones-configuracion"
+import { inscripcionesHandlers } from "@/mocks/handlers/inscripciones"
+import { entidadTerritorialHandlers } from "@/mocks/handlers/entidad-territorial"
 import { rolesHandlers } from "@/mocks/handlers/roles"
 import { plansHandlers } from "@/mocks/handlers/plans"
 import { reportesHandlers } from "@/mocks/handlers/reportes"
@@ -115,6 +120,11 @@ export const handlers = [
   ...curriculumNodesHandlers,
   ...especialidadesHandlers,
   ...selectCatalogHandlers,
+  ...reservasCupoHandlers,
+  ...reservaCupoAccionesHandlers,
+  ...inscripcionesConfiguracionHandlers,
+  ...inscripcionesHandlers,
+  ...entidadTerritorialHandlers,
   ...reservationsHandlers,
   ...establishmentHandlers,
   ...campusHandlers,

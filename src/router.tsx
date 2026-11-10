@@ -22,11 +22,10 @@ import {
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
 import {
-  reservationsSearchSchema,
   preMatriculaSearchSchema,
-  enrollmentsSearchSchema,
   matriculaSearchSchema,
 } from "@/features/coverage/shared/api/schema"
+import { inscripcionReservasSearchSchema } from "@/features/coverage/inscripcion-reservas/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -125,9 +124,9 @@ const TableOperationsPage = lazyRouteComponent(
   () => import("@/features/administration/audits/pages/table-operations-page"),
   "TableOperationsPage",
 )
-const ReservationsPage = lazyRouteComponent(
-  () => import("@/features/coverage/reservations/pages/reservations-page"),
-  "ReservationsPage",
+const InscripcionReservasPage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/inscripcion-reservas-page"),
+  "InscripcionReservasPage",
 )
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/administration/audits/pages/session-operations-page"),
@@ -500,7 +499,7 @@ const appLayoutRoute = createRoute({
 // Agrupadores sin página propia: la miga enlaza a su primer hijo.
 const COBERTURA_CRUMB = {
   label: "Cobertura",
-  to: paths.app.coberturaReservaCupo.getHref(),
+  to: paths.app.coberturaInscritos.getHref(),
 }
 const ADMINISTRACION_CRUMB = {
   label: "Administración",
@@ -554,12 +553,14 @@ export const sinAccesoRoute = createRoute({
   component: SinAccesoPage,
 })
 
+// Las reservas de cupo viven ahora en la pestaña "Reservas de cupo" de
+// Inscripciones; la URL vieja se conserva solo para no romper enlaces.
 export const coberturaReservaCupoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaReservaCupo.path,
-  validateSearch: reservationsSearchSchema,
-  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Reserva de cupo" }] },
-  component: ReservationsPage,
+  beforeLoad: () => {
+    throw redirect({ to: paths.app.coberturaInscritos.getHref(), replace: true })
+  },
 })
 
 const PreMatriculaPage = lazyRouteComponent(
@@ -575,17 +576,139 @@ export const coberturaPreMatriculaRoute = createRoute({
   component: PreMatriculaPage,
 })
 
-const EnrollmentsPage = lazyRouteComponent(
-  () => import("@/features/coverage/enrollments/pages/enrollments-page"),
-  "EnrollmentsPage",
-)
-
+// Ítem de menú "Inscripciones": vista Inscripción y reservas (Cobertura, Sección 3).
 export const coberturaInscritosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaInscritos.path,
-  validateSearch: enrollmentsSearchSchema,
-  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Inscritos" }] },
-  component: EnrollmentsPage,
+  validateSearch: inscripcionReservasSearchSchema,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Inscripción y reservas" }] },
+  component: InscripcionReservasPage,
+})
+
+const ReservaDetallePage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/reserva-detalle-page"),
+  "ReservaDetallePage",
+)
+
+export const coberturaReservaDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaReservaDetalle.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Reservas de cupo", to: paths.app.coberturaInscritos.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: ReservaDetallePage,
+})
+
+const AsignarGrupoPage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/asignar-grupo-page"),
+  "AsignarGrupoPage",
+)
+
+export const coberturaReservaAsignarGrupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaReservaAsignarGrupo.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Reservas de cupo", to: paths.app.coberturaInscritos.getHref() },
+      { label: "Asignar grupo" },
+    ],
+  },
+  component: AsignarGrupoPage,
+})
+
+const InscripcionDetallePage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/inscripcion-detalle-page"),
+  "InscripcionDetallePage",
+)
+
+export const coberturaInscripcionDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInscripcionDetalle.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Inscripciones", to: `${paths.app.coberturaInscritos.getHref()}?tab=inscripciones` },
+      { label: "Detalle" },
+    ],
+  },
+  component: InscripcionDetallePage,
+})
+
+const InscripcionEditarPage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/inscripcion-editar-page"),
+  "InscripcionEditarPage",
+)
+
+export const coberturaInscripcionEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInscripcionEditar.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Inscripción y reservas", to: `${paths.app.coberturaInscritos.getHref()}?tab=inscripciones` },
+      { label: "Editar inscripción" },
+    ],
+  },
+  component: InscripcionEditarPage,
+})
+
+const NuevaInscripcionPage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/inscripcion-editar-page"),
+  "NuevaInscripcionPage",
+)
+
+const ConfigGrupoPage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/config-grupo-page"),
+  "ConfigGrupoPage",
+)
+
+export const coberturaConfigGrupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaConfigGrupo.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Configuración", to: `${paths.app.coberturaInscritos.getHref()}?tab=configuracion` },
+      { label: "Modificar grupo de admisión" },
+    ],
+  },
+  component: ConfigGrupoPage,
+})
+
+const ConfigPeriodoPage = lazyRouteComponent(
+  () => import("@/features/coverage/inscripcion-reservas/pages/config-periodo-page"),
+  "ConfigPeriodoPage",
+)
+
+export const coberturaConfigPeriodoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaConfigPeriodo.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Configuración", to: `${paths.app.coberturaInscritos.getHref()}?tab=configuracion&conf=periodos` },
+      { label: "Modificar período" },
+    ],
+  },
+  component: ConfigPeriodoPage,
+})
+
+export const coberturaInscripcionNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInscripcionNueva.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Inscripción y reservas", to: `${paths.app.coberturaInscritos.getHref()}?tab=inscripciones` },
+      { label: "Nueva inscripción" },
+    ],
+  },
+  component: NuevaInscripcionPage,
 })
 
 const EnrollmentDetailPage = lazyRouteComponent(
@@ -599,7 +722,7 @@ export const coberturaInscritoDetalleRoute = createRoute({
   staticData: {
     breadcrumb: () => [
       COBERTURA_CRUMB,
-      { label: "Inscritos", to: paths.app.coberturaInscritos.getHref() },
+      { label: "Inscripción y reservas", to: paths.app.coberturaInscritos.getHref() },
       { label: "Detalle" },
     ],
   },
@@ -1755,6 +1878,13 @@ const routeTree = rootRoute.addChildren([
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
     coberturaInscritoDetalleRoute,
+    coberturaReservaDetalleRoute,
+    coberturaReservaAsignarGrupoRoute,
+    coberturaInscripcionDetalleRoute,
+    coberturaInscripcionEditarRoute,
+    coberturaInscripcionNuevaRoute,
+    coberturaConfigGrupoRoute,
+    coberturaConfigPeriodoRoute,
     coberturaMatriculaRoute,
     coberturaMatriculaAgregarRoute,
     coberturaMatriculaEditarRoute,
