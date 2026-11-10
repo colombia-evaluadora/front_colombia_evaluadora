@@ -73,7 +73,9 @@ export function registerMatriculaPersona(
     api.post("/auth/register/usuario", {
       email: input.email || undefined,
       fullName,
-      password: `Eval-Col${input.documentNumber}`,
+      // Sin contraseña: la cuenta queda pendiente de activación y la persona
+      // recibe el enlace de 48 h para establecerla (Administración del Sistema
+      // §13.1: nadie asigna contraseñas). Antes iba `Eval-Col<documento>`.
       identificacion: input.documentNumber,
       primerNombre: input.firstName,
       segundoNombre: input.secondName || undefined,

@@ -20,6 +20,7 @@ import { OfflineDataStatus } from "@/features/offline/components/offline-data-st
 import { OnlineOnlyRouteGate } from "@/components/offline/online-only-route-gate"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
 import { ModeToggle } from "@/components/mode-toggle"
+import { AvisoInactividad } from "@/components/layout/aviso-inactividad"
 
 export function ProtectedLayout() {
   return (
@@ -59,6 +60,7 @@ export function ProtectedLayout() {
             <NavUser />
           </div>
         </header>
+        <AvisoInactividad />
         <OfflineBanner />
         <FirstPrepareBanner />
         <AutoPrepareRunner />

@@ -12,6 +12,10 @@ import { useUser } from "@/lib/auth"
 import { toEmailInput } from "@/lib/text-input"
 import { useSolicitarCambioCorreo } from "@/features/cuenta/api/cambio-correo"
 import { SeguridadSegundoFactor } from "@/features/cuenta/components/seguridad-segundo-factor"
+import { CambiarContrasena } from "@/features/cuenta/components/cambiar-contrasena"
+import { SesionesActivas } from "@/features/cuenta/components/sesiones-activas"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PERFIL_LABEL, perfilesDeRoles } from "@/features/navigation/lib/perfil"
 
 const cambioCorreoSchema = z.object({
   correoNuevo: z.string().transform(toEmailInput).pipe(z.email("Escriba un correo válido")),
@@ -20,8 +24,8 @@ const cambioCorreoSchema = z.object({
 
 const FORM_ID = "form-cambio-correo"
 
-/** Mi cuenta: datos de la cuenta y cambio de correo (U.6.COR). */
-export function MiCuentaPage() {
+/** Mis datos: nombre, correo y perfiles; cambio de correo (U.6.COR). */
+function MisDatos() {
   const { data: user } = useUser()
   const solicitar = useSolicitarCambioCorreo()
 
@@ -36,11 +40,7 @@ export function MiCuentaPage() {
   })
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Mi cuenta</h1>
-        <p className="text-muted-foreground text-sm">Los datos con los que ingresa a la plataforma.</p>
-      </div>
+    <div className="flex flex-col gap-6">
 
       <section className="bg-card rounded-xl border p-5">
         <dl className="grid gap-3 sm:grid-cols-2">
@@ -140,7 +140,45 @@ export function MiCuentaPage() {
           Enviar enlace al correo nuevo
         </Button>
       </section>
-      <SeguridadSegundoFactor />
+    </div>
+  )
+}
+
+/**
+ * Mi cuenta (Administración del Sistema §13.5): pestañas Mis datos,
+ * Seguridad (contraseña y, para el funcionario, la verificación en dos pasos)
+ * y Sesiones activas. La tiene todo usuario, sin depender de los permisos.
+ */
+export function MiCuentaPage() {
+  const { data: user } = useUser()
+  const perfiles = perfilesDeRoles(user?.roles)
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-6">
+      <div>
+        <h1 className="text-2xl font-bold">Mi cuenta</h1>
+        <p className="text-muted-foreground text-sm">
+          {perfiles.length > 0
+            ? `Perfiles: ${perfiles.map((p) => PERFIL_LABEL[p]).join(" · ")}`
+            : "Los datos con los que ingresa a la plataforma."}
+        </p>
+      </div>
+      <Tabs defaultValue="datos">
+        <TabsList>
+          <TabsTrigger value="datos">Mis datos</TabsTrigger>
+          <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+          <TabsTrigger value="sesiones">Sesiones activas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="datos" className="pt-4">
+          <MisDatos />
+        </TabsContent>
+        <TabsContent value="seguridad" className="flex flex-col gap-6 pt-4">
+          <CambiarContrasena />
+          <SeguridadSegundoFactor />
+        </TabsContent>
+        <TabsContent value="sesiones" className="pt-4">
+          <SesionesActivas />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
