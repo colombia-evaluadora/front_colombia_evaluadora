@@ -400,9 +400,9 @@ const consultarInscripcionRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "ConsultarProximamentePage"),
 })
 
-// Pública (QR del boletín): sin sesión ni layout de la app.
+// Pública (QR del boletín, U.4): sin sesión, dentro del marco del sitio público.
 export const verificarBoletinRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => publicLayoutRoute,
   path: paths.verificarBoletin.path,
   head: () => ({
     meta: [
@@ -1987,8 +1987,7 @@ export const notificacionesPreferenciasRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  publicLayoutRoute.addChildren([homeRoute, verificarRoute, inscribirRoute, consultarInscripcionRoute]),
-  verificarBoletinRoute,
+  publicLayoutRoute.addChildren([homeRoute, verificarRoute, verificarBoletinRoute, inscribirRoute, consultarInscripcionRoute]),
   authLayoutRoute.addChildren([
     loginRoute,
     forgotPasswordRoute,
