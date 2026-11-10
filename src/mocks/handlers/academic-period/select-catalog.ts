@@ -20,6 +20,7 @@ import {
   TIPOS_COMPROMISO_MOCK,
   type CatalogoMock,
 } from "@/mocks/db/citaciones-compromisos"
+import { TIPOS_RECONOCIMIENTO_MOCK } from "@/mocks/db/reconocimientos"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -38,6 +39,7 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
   TIPO_COMPROMISO: () => deMock(TIPOS_COMPROMISO_MOCK),
   RESPONSABLE_COMPROMISO: () => deMock(RESPONSABLES_COMPROMISO_MOCK),
   ESTADO_COMPROMISO: () => deMock(ESTADOS_COMPROMISO_MOCK),
+  TIPO_RECONOCIMIENTO: () => deMock(TIPOS_RECONOCIMIENTO_MOCK),
   JORNADA: () =>
     jornadasDb.map((jornada) => ({
       pk_lista_valor: jornada.id,
