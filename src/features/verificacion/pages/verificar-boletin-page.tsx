@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
-import logo from "@/assets/logo.svg"
+import { PublicBreadcrumb } from "@/components/public/public-page"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -207,17 +207,11 @@ export function VerificarBoletinPage() {
   const query = useBoletinVerificacion(codigo)
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
-          <img src={logo} alt="Colombia Evaluadora" className="h-9 w-auto" />
-          <div className="min-w-0">
-            <p className="text-sm leading-tight font-semibold">Colombia Evaluadora</p>
-            <p className="text-xs text-muted-foreground">Verificación de boletín</p>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+    // El encabezado y el pie los pone PublicLayout (U.4 dentro del sitio público).
+    <div className="text-foreground">
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+        <PublicBreadcrumb items={["Verificar un documento", "Boletín"]} className="text-muted-foreground" />
+        <h1 className="text-navy dark:text-foreground text-2xl font-bold">Verificación de boletín</h1>
         {query.isPending && (
           <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
             <Spinner /> Verificando boletín…
@@ -246,7 +240,7 @@ export function VerificarBoletinPage() {
             )}
           </>
         )}
-      </main>
+      </div>
     </div>
   )
 }
