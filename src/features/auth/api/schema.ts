@@ -1,7 +1,6 @@
 import * as z from "zod"
 
 import { loginInputSchema } from "@/lib/auth"
-import { toEmailInput } from "@/lib/text-input"
 
 // El schema de la API solo exige que la contraseña venga; el del formulario
 // además avisa del largo mínimo antes de gastar un intento contra el
@@ -33,7 +32,8 @@ export type LoginSearch = z.infer<typeof loginSearchSchema>
 export const forgotPasswordFormSchema = z.object({
   // Limpia caracteres invisibles (word joiner, zero-width, BOM, NBSP) antes
   // de validar: `.trim()` no los quita y llegan al pegar el correo.
-  email: z.string().transform(toEmailInput).pipe(z.email("Email inválido")),
+  // Correo o número de documento, con la misma regla que el login.
+  email: loginInputSchema.shape.email,
 })
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>
 
@@ -72,40 +72,35 @@ export interface PasswordRule {
 }
 
 /**
- * Caracteres que el backend (sso, `PasswordPolicy.SPECIAL_CHARS`) cuenta
- * como "especiales". Debe ser EXACTAMENTE la misma lista: con la regla
- * anterior (`/[^A-Za-z0-9]/`) el front daba por válida una contraseña con
- * ñ, tildes o espacios que el backend después rechazaba.
+ * Política de Colombia Evaluadora ("[admin] Acceso y sesiones"), espejo de
+ * sso `PasswordPolicy.checkPersonal`: 10 a 64 caracteres, al menos una letra
+ * y un número. Lo que el front no puede saber (que no contenga el documento ni
+ * los nombres, y que sea distinta de las últimas 3) lo valida el servidor y
+ * llega en el mensaje de error; `PASSWORD_SERVER_RULES` lo anuncia.
  */
-export const PASSWORD_SPECIAL_CHARS = "!@#$%^&*()-_=+[]{};:,.<>?/|~"
+export const PASSWORD_MIN_LENGTH = 10
+export const PASSWORD_MAX_LENGTH = 64
 
 export const passwordRules: readonly PasswordRule[] = [
   {
-    label: "Al menos 8 caracteres",
-    message: "Debe tener al menos 8 caracteres.",
-    test: (v) => v.length >= 8,
+    label: `Entre ${PASSWORD_MIN_LENGTH} y ${PASSWORD_MAX_LENGTH} caracteres`,
+    message: `Debe tener entre ${PASSWORD_MIN_LENGTH} y ${PASSWORD_MAX_LENGTH} caracteres.`,
+    test: (v) => v.length >= PASSWORD_MIN_LENGTH && v.length <= PASSWORD_MAX_LENGTH,
   },
   {
-    label: "Una minúscula (a–z)",
-    message: "Debe incluir al menos una minúscula.",
-    test: (v) => /[a-z]/.test(v),
+    label: "Al menos una letra",
+    message: "Debe incluir al menos una letra.",
+    test: (v) => /\p{L}/u.test(v),
   },
   {
-    label: "Una mayúscula (A–Z)",
-    message: "Debe incluir al menos una mayúscula.",
-    test: (v) => /[A-Z]/.test(v),
-  },
-  {
-    label: "Un número (0–9)",
+    label: "Al menos un número",
     message: "Debe incluir al menos un número.",
     test: (v) => /\d/.test(v),
   },
-  {
-    label: `Un caracter especial (${PASSWORD_SPECIAL_CHARS})`,
-    message: `Debe incluir al menos uno de estos caracteres especiales: ${PASSWORD_SPECIAL_CHARS}`,
-    test: (v) => [...v].some((c) => PASSWORD_SPECIAL_CHARS.includes(c)),
-  },
 ] as const
+
+export const PASSWORD_SERVER_RULES =
+  "Sin su número de documento ni sus nombres, y distinta de las últimas 3 que usó."
 
 // La pantalla de confirmación se identifica solo con el token: de él salen
 // el email destino, cuándo se envió y cuánto le queda. Nada de eso viaja en

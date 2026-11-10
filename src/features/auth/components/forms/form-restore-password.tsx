@@ -7,7 +7,7 @@ import {
   LockIcon,
 } from "@/components/ui/icons"
 
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -15,7 +15,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 
-import { restorePasswordFormSchema } from "@/features/auth/api/schema"
+import { PASSWORD_SERVER_RULES, passwordRules, restorePasswordFormSchema } from "@/features/auth/api/schema"
 
 interface RestorePasswordFormProps {
   id: string
@@ -80,8 +80,12 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                {isInvalid && (
+                {isInvalid ? (
                   <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />
+                ) : (
+                  <FieldDescription>
+                    {passwordRules.map((r) => r.label).join(", ")}. {PASSWORD_SERVER_RULES}
+                  </FieldDescription>
                 )}
               </Field>
             )
