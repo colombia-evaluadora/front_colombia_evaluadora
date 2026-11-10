@@ -15,12 +15,12 @@ import { ProhibitIcon } from "@/components/ui/icons"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { useAnularProceso } from "@/features/gestion-estudiantil/convivencia/api/mutations/procesos"
 import type { ProcesoResumen } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 
 interface Props {
   proceso: ProcesoResumen | null

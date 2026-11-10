@@ -26,7 +26,8 @@ const ACCIONES_PROXIMAS = [
   { label: "Abrir proceso disciplinario", Icono: GavelIcon },
 ]
 
-import { colorDeTipo, formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
 interface ColumnasOpciones {

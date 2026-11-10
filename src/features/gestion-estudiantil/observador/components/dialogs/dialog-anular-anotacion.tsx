@@ -19,9 +19,10 @@ import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { useAnularAnotacion } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
-import { colorDeTipo, formatFecha, MENSAJES } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { colorDeTipo, MENSAJES } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
 const MAX_MOTIVO = 1000

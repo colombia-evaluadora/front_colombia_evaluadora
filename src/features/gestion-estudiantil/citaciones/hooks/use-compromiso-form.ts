@@ -17,8 +17,8 @@ import {
   validarCompromiso,
   type ValoresCompromiso,
 } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 /**
  * Estado, validación y envío de «Nuevo compromiso» (G.3.CMP.4). Con `?citacion=` el estudiante y el

@@ -3,7 +3,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 import { SiNo } from "@/features/gestion-estudiantil/convivencia/components/si-no"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import type { CasoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 /** Fecha y hora de los hechos, fecha de conocimiento y, si se corrigen al modificar, el motivo. */

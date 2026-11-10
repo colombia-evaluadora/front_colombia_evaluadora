@@ -7,7 +7,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { useAsignarGestor } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useGestoresCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-caso-shell"
 
 interface Props {

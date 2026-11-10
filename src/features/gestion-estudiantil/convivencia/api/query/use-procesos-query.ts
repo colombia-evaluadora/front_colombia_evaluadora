@@ -9,7 +9,7 @@ import type {
   ProcesosFiltros,
   ProcesosQueryFilters,
 } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 const BASE = "/gestion-estudiantil/convivencia/procesos"
 const id = (value: string) => (value ? Number(value) : null)

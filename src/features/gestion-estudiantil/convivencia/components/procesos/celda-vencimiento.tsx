@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import type { ProcesoRow } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { textoVencimiento } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Próximo vencimiento con el ícono (i) que dice de qué plazo es. */
 export function CeldaVencimiento({ proceso }: { proceso: ProcesoRow }) {

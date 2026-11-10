@@ -1,6 +1,6 @@
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { DatosSiuceFields } from "@/features/gestion-estudiantil/convivencia/components/datos-siuce-fields"
-import { SoportesUpload } from "@/features/gestion-estudiantil/convivencia/components/soportes-upload"
+import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 import type { CasoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 /** Bloque plegable «Datos para el SIUCE» con el soporte del caso. */

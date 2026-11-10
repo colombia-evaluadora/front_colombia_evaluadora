@@ -9,7 +9,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { useAtiendenQuery } from "@/features/gestion-estudiantil/citaciones/api/query/use-atienden-query"
 import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
 import { CampoAcudiente } from "@/features/gestion-estudiantil/citaciones/components/campo-acudiente"
@@ -17,9 +17,9 @@ import { CampoOrigen } from "@/features/gestion-estudiantil/citaciones/component
 import { CampoEstudiante } from "@/features/gestion-estudiantil/citaciones/components/campo-estudiante"
 import { useCitacionForm } from "@/features/gestion-estudiantil/citaciones/hooks/use-citacion-form"
 import { MOTIVOS_SOLO_SISTEMA } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 
 function CitacionForm({ origen, matricula, estudiante }: { origen?: OrigenManual; matricula?: number; estudiante?: string }) {
   const { v, set, nombre, setNombre, errores, guardando, guardar, volver } = useCitacionForm(origen, matricula, estudiante)

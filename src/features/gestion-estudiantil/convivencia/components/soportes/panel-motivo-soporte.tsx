@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { TrashIcon } from "@/components/ui/icons"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import type { PanelSoporte } from "@/features/gestion-estudiantil/convivencia/hooks/use-soportes-accion"
 
 interface Props {

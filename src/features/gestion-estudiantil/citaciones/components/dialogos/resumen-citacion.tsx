@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 
 import type { CitacionRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import { COLOR_ESTADO_CITACION, origenEnlace } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Origen del registro: enlace cuando el front ya tiene su detalle; si no, texto. */
 function Origen({ c }: { c: CitacionRow }) {

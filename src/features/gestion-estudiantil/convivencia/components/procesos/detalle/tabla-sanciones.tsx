@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import type { SancionDTO } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import { abreviarPersona } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 const texto = (v: string | null | undefined) => v || "—"
 

@@ -341,6 +341,9 @@ const UNAUTHENTICATED_ENDPOINTS = [
   "/sso-admin/forgotPassword",
   "/sso-admin/forgotUsername",
   "/sso-admin/restorePassword",
+  // El login muestra sus propios errores con los textos de Administración
+  // del Sistema §13.2 (mensajeLogin en login-page): sin toast.
+  "/auth/login",
   "/sso-admin/resetTokenStatus",
   // Activación de cuenta (también públicos y con captcha, como los de arriba).
   "/sso-admin/activateAccount",
@@ -394,6 +397,9 @@ const PUBLIC_ENDPOINTS = [
   "/auth/device/wipe-ack",
   // Verificación pública de boletines (QR): un 401 no es sesión vencida.
   "/reportes/public/",
+  // El login muestra sus propios errores con los textos de Administración
+  // del Sistema §13.2 (mensajeLogin en login-page): sin toast.
+  "/auth/login",
   "/sso-admin/resetTokenStatus",
   "/sso-admin/restorePassword",
   "/sso-admin/forgotPassword",
@@ -425,6 +431,9 @@ const PROBE_ENDPOINTS = [
   "/auth/device/wipe-ack",
   // Estado del equipo (revocado / borrado remoto): lo resuelve device-session.
   "/auth/devices/me",
+  // El login muestra sus propios errores con los textos de Administración
+  // del Sistema §13.2 (mensajeLogin en login-page): sin toast.
+  "/auth/login",
   "/sso-admin/resetTokenStatus",
   "/sso-admin/activationTokenStatus",
   "/coverage/reservations/catalogs",
@@ -434,6 +443,8 @@ const PROBE_ENDPOINTS = [
   "/auth/register/cval/funcionario/estado-cuenta",
   // Heartbeat de conectividad: falla justamente cuando no hay red.
   "/eval-col/health",
+  // Contexto territorial: un 403/404 solo oculta la pestaña Entidad territorial.
+  "/eval-col/cobertura-academica/entidad-territorial/contexto",
   // Avisos de una conversación leída (campana): best-effort, la conversación ya quedó leída.
   "/notificaciones/leer-conversacion/",
   // Suscripciones Web Push: se dan de baja en segundo plano (logout, cambio

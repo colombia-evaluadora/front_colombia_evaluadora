@@ -1,4 +1,4 @@
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import type { AbrirProcesoInput } from "@/features/gestion-estudiantil/convivencia/api/mutations/procesos"
 
 /** Formulario «Abrir proceso» (G.2.PRD.ABR.1; reglas en Gestión Estudiantil.md, Apertura). */

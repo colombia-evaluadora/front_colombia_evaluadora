@@ -11,7 +11,9 @@ import {
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
+import { FormSectionHeading } from "@/components/form-section-heading"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -135,13 +137,16 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
       </TableScreenHeader>
       <TableScreenBody>
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" className="mb-4" />
+        <Card className="rounded-md border border-border py-5">
+          <CardContent className="grid gap-5">
+            <FormSectionHeading>Datos de la política</FormSectionHeading>
         <form
           id={FORM_ID}
           onSubmit={(e) => {
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid max-w-6xl gap-x-6 gap-y-6 py-2 md:grid-cols-3"
+          className="grid max-w-6xl gap-x-6 gap-y-6 md:grid-cols-3"
         >
           <form.AppField name="tipoRegistro">
             {(f) => (
@@ -242,6 +247,8 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
             )}
           </form.Field>
         </form>
+          </CardContent>
+        </Card>
       </TableScreenBody>
       <ConfirmDiscardDialog
         open={confirmDiscard}

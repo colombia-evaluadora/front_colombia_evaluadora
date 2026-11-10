@@ -1,9 +1,9 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "@/components/ui/icons"
 
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 
 /** Lo que ve quien reportó un caso Tipo II/III sin acceso a sus datos: número, tipo, estado y fecha. */
 export function VistaRestringida({ caso }: { caso: CasoDetalle }) {

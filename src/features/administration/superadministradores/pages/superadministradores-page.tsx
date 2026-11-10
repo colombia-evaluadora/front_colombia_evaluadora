@@ -48,6 +48,7 @@ import {
   DialogSuperadministrador,
   type ModoSuperadministrador,
 } from "@/features/administration/superadministradores/components/dialog-superadministrador"
+import { DialogRestablecerSegundoFactor } from "@/features/administration/superadministradores/components/dialog-restablecer-segundo-factor"
 
 /** El `NoticeProvider` va afuera: `useNotify` lee el contexto de sus ancestros. */
 export function SuperadministradoresPage() {
@@ -115,6 +116,7 @@ function SuperadministradoresPageContent() {
   /** Mensaje del bloqueo «último activo» (409), con su botón Entendido. */
   const [bloqueo, setBloqueo] = useState<{ nombre: string; mensaje: string } | null>(null)
   const [pendiente, setPendiente] = useState<number | null>(null)
+  const [aRestablecer, setARestablecer] = useState<Superadministrador | null>(null)
 
   const estado = useEstadoSuperadministrador({
     mutationConfig: {
@@ -151,6 +153,7 @@ function SuperadministradoresPageContent() {
     onModificar: (s) => setDialogo({ modo: "modificar", superadministrador: s }),
     // Activar va directo; inactivar corta el acceso de alguien: se confirma.
     onEstado: (s) => (s.activo ? setAInactivar(s) : cambiarEstado(s, true)),
+    onRestablecer: (s) => setARestablecer(s),
   })
 
   const { table } = useDataTable({
@@ -278,6 +281,14 @@ function SuperadministradoresPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <DialogRestablecerSegundoFactor
+        superadministrador={aRestablecer}
+        onClose={() => setARestablecer(null)}
+        onDone={(s) => {
+          setARestablecer(null)
+          notify(`Se restableció el segundo factor de ${s.nombre}. Se cerraron sus sesiones.`)
+        }}
+      />
     </TableScreen>
   )
 }

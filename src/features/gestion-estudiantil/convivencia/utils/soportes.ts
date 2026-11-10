@@ -1,5 +1,5 @@
 import type { SoporteAccion } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 export const MAX_SOPORTES = 5
 

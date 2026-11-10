@@ -1,5 +1,5 @@
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { dia } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"

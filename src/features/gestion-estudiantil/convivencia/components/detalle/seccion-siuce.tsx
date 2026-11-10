@@ -1,7 +1,7 @@
-import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { siNoTexto as siNo } from "@/features/gestion-estudiantil/convivencia/utils/detalle"
 
 /** «Datos para el SIUCE» en solo lectura. */

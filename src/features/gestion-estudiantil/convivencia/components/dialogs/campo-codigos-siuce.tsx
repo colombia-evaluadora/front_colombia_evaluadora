@@ -5,8 +5,8 @@ import { ControlPointIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
 import type { AfectadoSiuce } from "@/features/gestion-estudiantil/convivencia/api/types"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import type { CodigoSiuce } from "@/features/gestion-estudiantil/convivencia/utils/registrar-accion"
 import { textoReportado } from "@/features/gestion-estudiantil/convivencia/utils/siuce"
 

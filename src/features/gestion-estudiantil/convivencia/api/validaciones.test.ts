@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import type { InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import {
-  campoDeMensaje,
-  errorLargo,
-  erroresInvolucrado,
-  siuceBody,
-  validarSiuce,
-} from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { campoDeMensaje, erroresInvolucrado, siuceBody, validarSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 describe("campoDeMensaje", () => {
   it.each([

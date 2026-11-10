@@ -30,6 +30,7 @@ import {
   MdBrush,
   MdBubbleChart,
   MdCalendarMonth,
+  MdOutlineEditCalendar,
   MdCloudDone,
   MdCloudOff,
   MdCloudQueue,
@@ -105,6 +106,9 @@ import {
   MdPictureAsPdf,
   MdPersonOutline,
   MdOutlinePersonAddAlt,
+  MdOutlineDirectionsWalk,
+  MdOutlineEventSeat,
+  MdShuffle,
   MdOutlinePersonRemove,
   MdPlace,
   MdPsychology,
@@ -117,6 +121,7 @@ import {
   MdSchool,
   MdSearch,
   MdOutlineSend,
+  MdOutlineNearMe,
   MdSettings,
   MdOutlineSmartDisplay,
   MdOutlineNotifications,
@@ -242,6 +247,7 @@ export const BuildingsIcon = makeIcon(MdApartment)
 export const CalendarBlankIcon = makeIcon(MdCalendarToday)
 export const CalendarDotsIcon = makeIcon(MdEvent)
 export const CalendarIcon = makeIcon(MdCalendarMonth)
+export const CalendarPlusIcon = makeIcon(MdOutlineEditCalendar)
 // Conectividad (banner offline). Material no tiene "cloud alert": se usa
 // `MdCloudQueue` para el estado degradado.
 export const CloudAlertIcon = makeIcon(MdCloudQueue)
@@ -326,6 +332,8 @@ export const NotebookIcon = makeIcon(MdMenuBook)
 export const PaletteIcon = makeIcon(MdPalette)
 export const PasswordIcon = makeIcon(MdOutlinePassword)
 export const PaperPlaneTiltIcon = makeIcon(MdOutlineSend)
+// Flecha de navegación: Orientar por traslados pendientes.
+export const NavigationArrowIcon = makeIcon(MdOutlineNearMe)
 export const PaperclipIcon = makeIcon(MdAttachFile)
 // Equivalentes de `BorderColorOutlined`, `DeleteOutlined` y `PermMediaOutlined`
 // de MUI: los tres vienen del mismo set (Material), así que `react-icons/md`
@@ -356,6 +364,9 @@ export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const PersonAddIcon = makeIcon(MdOutlinePersonAddAlt)
 export const PersonRemoveIcon = makeIcon(MdOutlinePersonRemove)
+export const PersonWalkIcon = makeIcon(MdOutlineDirectionsWalk)
+export const ArmchairIcon = makeIcon(MdOutlineEventSeat)
+export const ShuffleIcon = makeIcon(MdShuffle)
 export const UserCircleIcon = makeIcon(MdAccountCircle)
 export const UserGroupAddIcon = makeIcon(MdGroupAdd)
 export const UserIcon = makeIcon(MdPersonOutline)

@@ -1,37 +1,8 @@
 import type {
   CitacionDTO,
   NotificacionDTO,
-  PersonaDTO,
 } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-
-const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y"])
-
-/**
- * «Carolina Medina» → «C. Medina»: inicial del primer nombre + primer apellido. El backend solo
- * da el nombre completo (nombres y luego apellidos): con 2 o 3 palabras el apellido es la 2.ª;
- * con 4 o más, la penúltima. Las partículas («de», «del», «de la», «y») se unen al apellido.
- */
-export function abreviarPersona(p: PersonaDTO | string | null | undefined): string {
-  const nombre = (typeof p === "string" ? p : p?.nombre)?.trim()
-  if (!nombre) return ""
-  const palabras = nombre.split(/\s+/)
-  if (palabras.length === 1) return palabras[0]
-  const apellido = palabras.length <= 3 ? 1 : palabras.length - 2
-  let inicio = apellido
-  while (inicio > 1 && PARTICULAS.has(palabras[inicio - 1].toLowerCase())) inicio--
-  return `${palabras[0][0]}. ${palabras.slice(inicio, apellido + 1).join(" ")}`
-}
-
-/** `2027-05-18T09:00:00` → «18/05/2027 9:00 a. m.» (hora de Colombia tal cual, sin zona). */
-export function formatFechaHora12(valor: string | null | undefined): string {
-  if (!valor) return ""
-  const [fecha, hora] = valor.split("T")
-  if (!hora) return formatFecha(fecha)
-  const [hh, mm] = hora.split(":").map(Number)
-  const h12 = hh % 12 === 0 ? 12 : hh % 12
-  return `${formatFecha(fecha)} ${h12}:${String(mm).padStart(2, "0")} ${hh < 12 ? "a. m." : "p. m."}`
-}
+import { formatFecha, formatFechaHora12 } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** «14/05/2027 · Confirmada · 17/05/2027, en el portal» (§3 NotificacionDTO). */
 export function textoNotificacion(n: NotificacionDTO): string {

@@ -30,6 +30,7 @@ import { festivosHandlers } from "@/mocks/handlers/festivos"
 import { relacionesAlumnoGrupoHandlers } from "@/mocks/handlers/relaciones-alumno-grupo"
 import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
 import { citacionesCompromisosHandlers } from "@/mocks/handlers/citaciones-compromisos"
+import { reconocimientosHandlers } from "@/mocks/handlers/reconocimientos"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
@@ -44,6 +45,11 @@ import { funcionariosRolesHandlers } from "@/mocks/handlers/funcionarios-roles"
 import { selectCatalogHandlers } from "./academic-period/select-catalog"
 import { catalogHandlers } from "@/mocks/handlers/catalog"
 import { reservationsHandlers } from "@/mocks/handlers/reservations"
+import { reservasCupoHandlers } from "@/mocks/handlers/reservas-cupo"
+import { reservaCupoAccionesHandlers } from "@/mocks/handlers/reservas-cupo-acciones"
+import { inscripcionesConfiguracionHandlers } from "@/mocks/handlers/inscripciones-configuracion"
+import { inscripcionesHandlers } from "@/mocks/handlers/inscripciones"
+import { entidadTerritorialHandlers } from "@/mocks/handlers/entidad-territorial"
 import { rolesHandlers } from "@/mocks/handlers/roles"
 import { plansHandlers } from "@/mocks/handlers/plans"
 import { reportesHandlers } from "@/mocks/handlers/reportes"
@@ -112,6 +118,7 @@ export const handlers = [
   // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
   ...conservacionDatosHandlers,
   ...citacionesCompromisosHandlers,
+  ...reconocimientosHandlers,
   ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,
   ...horarioHandlers,
@@ -119,6 +126,11 @@ export const handlers = [
   ...curriculumNodesHandlers,
   ...especialidadesHandlers,
   ...selectCatalogHandlers,
+  ...reservasCupoHandlers,
+  ...reservaCupoAccionesHandlers,
+  ...inscripcionesConfiguracionHandlers,
+  ...inscripcionesHandlers,
+  ...entidadTerritorialHandlers,
   ...reservationsHandlers,
   ...establishmentHandlers,
   ...campusHandlers,

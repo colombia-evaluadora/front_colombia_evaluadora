@@ -5,7 +5,7 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import type { ComiteDetalle, SesionDetalle } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { useActualizarSesionMutation, useCrearSesionMutation } from "@/features/gestion-estudiantil/convivencia/api/mutations/comite"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"
 import {
   asistentesVigentes,

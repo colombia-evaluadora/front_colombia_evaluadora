@@ -3,7 +3,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { SesionFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
 import { LIM } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 

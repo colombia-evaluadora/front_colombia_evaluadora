@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge"
 import { paths } from "@/config/paths"
 
 import type { ProcesoDetalle } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
-import { abreviarPersona } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
+import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Datos generales: estudiante, acudiente, responsable, y vínculos a las anotaciones y al caso de origen. */
 export function DatosProceso({ proceso: p }: { proceso: ProcesoDetalle }) {

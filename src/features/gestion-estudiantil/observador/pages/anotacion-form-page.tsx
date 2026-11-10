@@ -19,7 +19,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { paths } from "@/config/paths"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import {
   useActividadMatriculasGrupoQuery,
@@ -28,10 +28,10 @@ import {
 import { useAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-anotaciones-query"
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
 import { useActualizarAnotacion, useCrearAnotacion } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
-import { useOpcionesObservador } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
+import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import { colorDeTipo, MENSAJES } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { AnotacionRow, CodigoAnotacion } from "@/features/gestion-estudiantil/observador/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { observadorEditarRoute } from "@/router"
 
 const OBS_MIN = 10
@@ -85,7 +85,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
   const [v, setV] = useState<Valores>(() => desdeAnotacion(anotacion))
   const [intento, setIntento] = useState(false)
 
-  const opciones = useOpcionesObservador(v.sede, v.jornada)
+  const opciones = useOpcionesCascada(v.sede, v.jornada)
   const codigos = useCodigosAnotacionQuery(opciones.establecimientoId)
   const roster = useActividadMatriculasGrupoQuery(!editar && v.grupo ? Number(v.grupo) : undefined)
   const codigo = codigos.data?.find((c) => String(c.id) === v.codigo)

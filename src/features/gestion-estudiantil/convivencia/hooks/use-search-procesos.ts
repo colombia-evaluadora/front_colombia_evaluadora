@@ -7,7 +7,7 @@ import {
   PROCESOS_FILTROS_VACIOS,
   type ProcesosFiltros,
 } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { SearchProcesosProps } from "@/features/gestion-estudiantil/convivencia/components/procesos/search-procesos"
 
 type QueryFilters = ProcesosFiltros & { search: string }

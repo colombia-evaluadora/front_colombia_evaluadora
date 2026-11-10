@@ -1,5 +1,5 @@
 import type { CasoRow } from "@/features/gestion-estudiantil/convivencia/api/types"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 /** Suma a las opciones de gestor los que aparecen en una página del listado; un gestor no se repite. */
 export function acumularGestores(prev: Opcion[], filas: Pick<CasoRow, "fk_tfuncionario_gestor" | "gestor_nombre">[]): Opcion[] {

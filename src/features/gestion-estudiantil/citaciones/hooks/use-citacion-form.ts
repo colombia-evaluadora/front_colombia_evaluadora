@@ -15,7 +15,7 @@ import {
   validarCitacion,
   type ValoresCitacion,
 } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 /** Estado, validación y envío de «Nueva citación» (G.3.CIT.4). */
 export function useCitacionForm(origen?: OrigenManual, matricula?: number, estudiante?: string) {

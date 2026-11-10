@@ -3,7 +3,8 @@ import { formatDateValue } from "@/lib/date-value"
 import type { ActualizarCasoInput, CrearCasoInput } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import type { CasoDatosInput, CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import type { DatosSiuce, EstudianteFila, InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import { errorLargo, siuceBody, SIUCE_VACIO, validarSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { siuceBody, SIUCE_VACIO, validarSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 export interface ValoresCaso {
   tipo: string

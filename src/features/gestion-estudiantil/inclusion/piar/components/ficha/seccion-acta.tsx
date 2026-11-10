@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { FileUploadOutlinedIcon, PencilIcon } from "@/components/ui/icons"
 
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
-import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { descargarActa } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import type { Participante, VersionActual } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"

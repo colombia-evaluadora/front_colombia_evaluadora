@@ -13,7 +13,7 @@ import { useProcesoDetalleQuery } from "@/features/gestion-estudiantil/convivenc
 import type { EtapaDecision, EtapaDescargos } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
 import type { EstadoProcesoCodigo, ProcesoDetalle } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { BloqueAnulacion } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/bloque-anulacion"
 import { DatosProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/datos-proceso"
 import { EtapaApertura } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-apertura"

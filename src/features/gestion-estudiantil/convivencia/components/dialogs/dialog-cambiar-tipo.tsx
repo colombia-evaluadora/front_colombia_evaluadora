@@ -6,16 +6,16 @@ import { useNotify } from "@/components/notice/notice-context"
 
 import { useCambiarTipo } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
-import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoDetalle, CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { DatosSiuceFields } from "@/features/gestion-estudiantil/convivencia/components/datos-siuce-fields"
 import type { DatosSiuce } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { siuceBody, SIUCE_VACIO, useSecuelasHabilitadas, validarSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-caso-shell"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 /** Pasos obligatorios de atención de cada tipo (3.2, Decreto 1965 de 2013); el Seguimiento cierra todos. */
 const PASOS_POR_TIPO: Record<string, string> = {

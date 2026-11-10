@@ -9,8 +9,8 @@ import {
   useCrearComiteMutation,
   useQuitarIntegranteMutation,
 } from "@/features/gestion-estudiantil/convivencia/api/mutations/comite"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"
 import {
   datoDelCargo,

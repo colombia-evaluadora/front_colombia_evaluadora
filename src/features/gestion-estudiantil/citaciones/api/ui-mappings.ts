@@ -1,6 +1,5 @@
 import { paths } from "@/config/paths"
-import type { BadgeColor } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-
+import type { BadgeColor } from "@/features/gestion-estudiantil/commons/utils/badge-color"
 import type {
   CitacionRow,
   CompromisoRow,

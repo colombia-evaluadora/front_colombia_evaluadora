@@ -1,5 +1,5 @@
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 
 /** «Estudiantes involucrados» y, si hay, «Otros involucrados». */
 export function SeccionPersonas({ caso }: { caso: CasoDetalle }) {

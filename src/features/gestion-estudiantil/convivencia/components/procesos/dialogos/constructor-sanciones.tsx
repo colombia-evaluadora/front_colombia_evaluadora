@@ -5,7 +5,7 @@ import { ControlPointIcon } from "@/components/ui/icons"
 
 import type { LimitesSancion, OpcionSancion } from "@/features/gestion-estudiantil/convivencia/api/procesos-etapas-types"
 import { FilaSancion } from "@/features/gestion-estudiantil/convivencia/components/procesos/dialogos/fila-sancion"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { sancionVacia, type Errores, type SancionFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-etapas"
 
 interface Props {

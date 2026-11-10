@@ -1,5 +1,5 @@
 import type { PruebaDTO } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { ChipArchivo } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/chip-archivo"
 
 /** Pruebas con su descripción y el archivo como chip; «Ninguna» si no hay. */

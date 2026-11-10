@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input"
 
 import { useReprogramarCitacion } from "@/features/gestion-estudiantil/citaciones/api/mutations/reprogramar-citacion"
 import type { CitacionRow } from "@/features/gestion-estudiantil/citaciones/api/types"
-import { DialogoOperacionShell } from "@/features/gestion-estudiantil/citaciones/components/dialogos/dialogo-operacion-shell"
-import { useEstadoDialogo } from "@/features/gestion-estudiantil/citaciones/hooks/use-estado-dialogo"
+import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
+import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
 import { ResumenCitacion } from "@/features/gestion-estudiantil/citaciones/components/dialogos/resumen-citacion"
 import { errorFechaFutura, errorLugar } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 interface Props {
   citacion: CitacionRow

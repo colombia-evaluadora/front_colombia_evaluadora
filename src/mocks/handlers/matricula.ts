@@ -316,12 +316,9 @@ export const matriculaHandlers = [
     await delay(150)
     const periodoId = Array.isArray(params.periodoId) ? params.periodoId[0] : params.periodoId
 
-    const seed = mixHash(hashString(`grados-${periodoId}`))
-    const count = 1 + (seed % GRADES.length)
-    const offset = seed % GRADES.length
-    const grados = Array.from({ length: count }, (_, i) => GRADES[(offset + i) % GRADES.length]).sort(
-      (a, b) => a - b,
-    )
+    // Todos los grados en cada período: Inscripciones resuelve el grado de cada opción por
+    // nombre en el período de su sede, y un subconjunto al azar hacía fallar el alta.
+    const grados = [...GRADES]
 
     return HttpResponse.json({
       // `codigo` es `TGRADO.CODIGO` (confirmado contra una respuesta real,
@@ -588,5 +585,16 @@ export const matriculaHandlers = [
       status: "ok",
       message: "Estudiante eliminado.",
     })
+  }),
+
+  // Altas de persona que usan matrícula e inscripción cuando el documento no existe.
+  http.post("*/api/auth/register/usuario", async () => {
+    await delay(200)
+    const pkTusuario = 900_000 + Math.floor(Math.random() * 90_000)
+    return HttpResponse.json({ idUser: pkTusuario, pkTusuario, pkFuncionario: null, email: "" })
+  }),
+  http.post("*/api/eval-col/cobertura-academica/usuario-administrado", async () => {
+    await delay(200)
+    return HttpResponse.json({ rows: [{ pk_tusuario: 900_000 + Math.floor(Math.random() * 90_000) }] })
   }),
 ]

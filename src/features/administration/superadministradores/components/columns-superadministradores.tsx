@@ -5,7 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CheckCircleIcon, EyeIcon, InfoIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, EyeIcon, InfoIcon, KeyIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import {
@@ -21,6 +21,8 @@ interface CreateColumnsOptions {
   onVer: (s: Superadministrador) => void
   onModificar: (s: Superadministrador) => void
   onEstado: (s: Superadministrador) => void
+  /** Restablecer segundo factor (§7.1): no aparece en la fila propia. */
+  onRestablecer: (s: Superadministrador) => void
 }
 
 /** Sin Eliminar: un Superadministrador no se elimina (Regla 9). */
@@ -30,6 +32,7 @@ export function createSuperadministradoresColumns({
   onVer,
   onModificar,
   onEstado,
+  onRestablecer,
 }: CreateColumnsOptions): ColumnDef<Superadministrador>[] {
   return [
     {
@@ -102,6 +105,11 @@ export function createSuperadministradoresColumns({
               </AccionIcono>
             )}
             {puedeEditar && !s.esUsted && (
+              <AccionIcono label="Restablecer segundo factor" onClick={() => onRestablecer(s)}>
+                <KeyIcon />
+              </AccionIcono>
+            )}
+            {puedeEditar && !s.esUsted && (
               <AccionIcono
                 label={s.activo ? "Inactivar" : "Activar"}
                 disabled={pendiente === s.pkSuperadministrador}
@@ -133,7 +141,7 @@ export function createSuperadministradoresColumns({
       },
       enableSorting: false,
       enableHiding: false,
-      size: 144,
+      size: 192,
     },
   ]
 }

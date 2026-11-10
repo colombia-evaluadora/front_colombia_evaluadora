@@ -118,7 +118,7 @@ Ruta base: `src/features/gestion-estudiantil/citaciones/`.
 ### Diálogos
 
 - `components/dialogos/use-dialogos-citaciones.tsx`: hooks que abren los diálogos de citación (`useDialogosCitacion`) y de compromiso (`useDialogosCompromiso`).
-- `components/dialogos/dialogo-operacion-shell.tsx`: envoltorio común de los diálogos de operación (título, error y botones).
+- `../commons/components/dialogo-operacion-shell.tsx` (común a Gestión Estudiantil): envoltorio común de los diálogos de operación (título, error y botones).
 - `components/dialogos/dialog-programar-citacion.tsx`: programar citación (fecha futura, lugar y texto para el acudiente).
 - `components/dialogos/dialog-reprogramar-citacion.tsx`: reprogramar citación (nueva fecha y lugar).
 - `components/dialogos/dialog-cancelar-citacion.tsx`: cancelar citación con motivo.
@@ -135,10 +135,10 @@ Ruta base: `src/features/gestion-estudiantil/citaciones/`.
 
 - `hooks/use-citaciones-access.ts`: permisos del menú CITACIONES_COMPROMISOS (`useCitacionesAccess`); no lee banderas `puede_*` del backend.
 - `hooks/use-citaciones-filtros.ts`: estado de filtros de citaciones y compromisos, con la cascada Sede → Jornada y las opciones de quién atiende.
-- `hooks/use-search-filtros.ts`: borrador, aplicar y limpiar del panel de filtros, común a los dos listados.
+- `../commons/hooks/use-search-filtros.ts` (común a Gestión Estudiantil): borrador, aplicar y limpiar del panel de filtros, común a los dos listados.
 - `hooks/use-citacion-form.ts`: estado, validación y envío de Nueva citación (`useCitacionForm`); vuelve al listado al guardar.
 - `hooks/use-compromiso-form.ts`: estado, validación y envío de Nuevo compromiso (`useCompromisoForm`), incluidos el constructor de ítems y la subida del soporte.
-- `hooks/use-estado-dialogo.ts`: error y estado de envío compartidos por los diálogos de operación (`useEstadoDialogo`).
+- `../commons/hooks/use-estado-dialogo.ts` (común a Gestión Estudiantil): error y estado de envío compartidos por los diálogos de operación (`useEstadoDialogo`).
 
 ### Encabezado de los documentos
 

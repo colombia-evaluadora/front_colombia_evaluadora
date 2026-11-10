@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button"
 import { ArrowsLeftRightIcon, PencilIcon } from "@/components/ui/icons"
 
 import type { ComiteDetalle, IntegranteComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { AvisoCargosVacios } from "@/features/gestion-estudiantil/convivencia/components/comite/aviso-cargos-vacios"
 import { DialogReemplazarIntegrante } from "@/features/gestion-estudiantil/convivencia/components/comite/dialog-reemplazar-integrante"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { dia } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 interface Props {
