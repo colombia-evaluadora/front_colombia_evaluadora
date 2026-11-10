@@ -60,6 +60,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/pendientes": ALWAYS,
   "/app/sincronizar": ALWAYS,
   "/app/mis-dispositivos": ALWAYS,
+  "/app/mi-cuenta": ALWAYS,
 
   // Sin ítem de menú: bloqueada para todos.
   "/app/cobertura/reserva-de-cupo": NONE,

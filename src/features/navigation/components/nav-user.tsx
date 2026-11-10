@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ArrowsLeftRightIcon, CloudOffIcon, CloudSyncIcon, DevicesIcon, SignOutIcon, TrashIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon, CloudOffIcon, CloudSyncIcon, DevicesIcon, SignOutIcon, TrashIcon, UserCircleIcon } from "@/components/ui/icons"
 import { PrepareOfflineDialog } from "@/components/offline/prepare-offline-dialog"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
@@ -112,6 +112,10 @@ export function NavUser() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link to={paths.app.miCuenta.getHref()} />}>
+            <UserCircleIcon data-icon="inline-start" />
+            Mi cuenta
+          </DropdownMenuItem>
           {perfilesDeRoles(user.roles).length > 1 && (
             <DropdownMenuItem render={<Link to={paths.auth.elegirPerfil.getHref()} />}>
               <ArrowsLeftRightIcon data-icon="inline-start" />
