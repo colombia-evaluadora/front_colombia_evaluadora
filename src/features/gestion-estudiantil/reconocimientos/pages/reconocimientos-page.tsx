@@ -148,10 +148,11 @@ function ReconocimientosContent() {
           viewOptions={<DataTableViewOptions table={table} />}
         />
       </TableScreenBody>
-      {dialogos.dialogos}
       {reconocimientoId && !Number.isNaN(Number(reconocimientoId)) && (
-        <DialogDetalleReconocimiento reconocimientoId={Number(reconocimientoId)} onClose={cerrarDetalle} />
+        <DialogDetalleReconocimiento reconocimientoId={Number(reconocimientoId)} onClose={cerrarDetalle} onAccion={abrir} />
       )}
+      {/* Después del detalle: Anular y la Mención abiertos desde él quedan encima. */}
+      {dialogos.dialogos}
     </>
   )
 }

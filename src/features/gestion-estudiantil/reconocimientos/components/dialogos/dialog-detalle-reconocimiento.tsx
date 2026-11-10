@@ -11,17 +11,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { PaperclipIcon } from "@/components/ui/icons"
+import { MedalIcon, PaperclipIcon, ProhibitIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useReconocimientoQuery } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-reconocimientos-query"
+import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"
+import { accionesReconocimiento } from "@/features/gestion-estudiantil/reconocimientos/api/ui-mappings"
 
 interface Props {
   reconocimientoId: number
   onClose: () => void
+  /** Abre Anular o la Mención de honor encima del detalle, con las mismas reglas que el menú ⋮. */
+  onAccion?: (accion: "anular" | "mencion", reconocimiento: ReconocimientoRow) => void
 }
 
 function Dato({ etiqueta, children, ancho }: { etiqueta: string; children: ReactNode; ancho?: boolean }) {
@@ -34,8 +38,10 @@ function Dato({ etiqueta, children, ancho }: { etiqueta: string; children: React
 }
 
 /** Ver detalle (§7.1): todos los campos, la actividad, el soporte descargable, el período y la anulación. */
-export function DialogDetalleReconocimiento({ reconocimientoId, onClose }: Props) {
+export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccion }: Props) {
   const { data: r, isPending, isError, error } = useReconocimientoQuery(reconocimientoId)
+  const fila: ReconocimientoRow | null = r ? { ...r, total_count: 0 } : null
+  const acciones = fila ? accionesReconocimiento(fila) : null
   const [errorSoporte, setErrorSoporte] = useState<unknown>(null)
   const [abriendo, setAbriendo] = useState(false)
 
@@ -105,6 +111,32 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose }: Props
           </dl>
         )}
         <DialogFooter>
+          {fila && acciones && onAccion && (
+            <>
+              <Button
+                size="sm"
+                type="button"
+                variant="outline"
+                color="neutral"
+                disabled={!acciones.mencionHonor}
+                onClick={() => onAccion("mencion", fila)}
+              >
+                <MedalIcon data-icon="inline-start" />
+                Generar mención de honor
+              </Button>
+              <Button
+                size="sm"
+                type="button"
+                variant="outline"
+                color="destructive"
+                disabled={!acciones.anular}
+                onClick={() => onAccion("anular", fila)}
+              >
+                <ProhibitIcon data-icon="inline-start" />
+                Anular
+              </Button>
+            </>
+          )}
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
         </DialogFooter>
       </DialogContent>
