@@ -434,6 +434,8 @@ const PROBE_ENDPOINTS = [
   "/auth/register/cval/funcionario/estado-cuenta",
   // Heartbeat de conectividad: falla justamente cuando no hay red.
   "/eval-col/health",
+  // Contexto territorial: un 403/404 solo oculta la pestaña Entidad territorial.
+  "/eval-col/cobertura-academica/entidad-territorial/contexto",
   // Avisos de una conversación leída (campana): best-effort, la conversación ya quedó leída.
   "/notificaciones/leer-conversacion/",
   // Suscripciones Web Push: se dan de baja en segundo plano (logout, cambio
