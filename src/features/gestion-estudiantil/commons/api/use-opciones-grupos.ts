@@ -1,13 +1,8 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, type QueryKey } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
-
-export interface Opcion {
-  value: string
-  label: string
-}
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 interface GrupoOpcion {
   fk_tsede: number
@@ -24,13 +19,14 @@ const unicas = (pares: Array<[number, string]>): Opcion[] =>
   [...new Map(pares).entries()].map(([id, label]) => ({ value: String(id), label }))
 
 /**
- * Sede → Jornada → Grupo del período vigente, del endpoint propio de Convivencia: la cascada de
- * Informes exige el menú INFORMES, que orientación y trabajo social no tienen. Una sola consulta
- * por sesión; las tres listas se derivan de ella.
+ * Sede → Jornada → Grupo del período vigente. La cascada de Informes exige el menú INFORMES, que
+ * orientación y trabajo social no tienen, así que se usa el endpoint de opciones de Convivencia.
+ * Sin estado compartido: cada módulo pasa su propia raíz de query-key (`claveModulo`), de modo que
+ * cada uno tiene su caché y no se mezcla con la de otro.
  */
-export function useOpcionesConvivencia(sede: string, jornada: string) {
+export function useOpcionesGrupos(claveModulo: QueryKey, sede: string, jornada: string) {
   const { data = [] } = useQuery({
-    queryKey: [...convivenciaKeys.all, "opciones-grupos"],
+    queryKey: [...claveModulo, "opciones-grupos"],
     queryFn: () => evalCol.getRows<GrupoOpcion>(`${BASE}/grupos`),
     staleTime: 5 * 60_000,
   })
@@ -41,15 +37,4 @@ export function useOpcionesConvivencia(sede: string, jornada: string) {
     jornadaOpciones: unicas(enSede.map((g) => [g.fk_tlv_jornada, g.jornada_nombre])),
     grupoOpciones: enJornada.map((g) => ({ value: String(g.fk_tgrupo), label: g.grupo_etiqueta })),
   }
-}
-
-/** Matrículas Cursando del grupo, para «Agregar estudiante». */
-export function useEstudiantesGrupoQuery(grupo: string) {
-  return useQuery({
-    queryKey: [...convivenciaKeys.all, "opciones-estudiantes", grupo],
-    queryFn: () =>
-      evalCol.getRows<{ fk_matricula: number; nombre: string }>(`${BASE}/estudiantes?GRUPO=${grupo}`),
-    enabled: Boolean(grupo),
-    staleTime: 60_000,
-  })
 }

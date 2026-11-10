@@ -2,8 +2,8 @@ import {
   useEstudiantesComiteQuery,
   useFuncionariosComiteQuery,
 } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { useBusquedaDiferida } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-busqueda"
 
 interface ComboBaseProps {

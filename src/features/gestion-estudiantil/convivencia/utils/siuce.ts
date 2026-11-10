@@ -1,5 +1,5 @@
 import type { AfectadoSiuce } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Rango válido para el reporte: ambas fechas y desde no posterior a hasta (`AAAA-MM-DD` se compara como texto). */
 export const rangoValido = (desde: string, hasta: string) => Boolean(desde && hasta && desde <= hasta)

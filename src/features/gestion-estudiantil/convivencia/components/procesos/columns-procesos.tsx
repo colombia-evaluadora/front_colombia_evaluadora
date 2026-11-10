@@ -7,9 +7,9 @@ import { paths } from "@/config/paths"
 
 import type { ProcesoRow } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { CeldaVencimiento } from "@/features/gestion-estudiantil/convivencia/components/procesos/celda-vencimiento"
-import { abreviarPersona } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"
+import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import {
   MenuAccionesProceso,
   type AccionProceso,

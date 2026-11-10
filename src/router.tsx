@@ -1568,6 +1568,32 @@ export const citacionesCompromisosRoute = createRoute({
   component: CitacionesCompromisosPage,
 })
 
+const ReconocimientosPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reconocimientos/pages/reconocimientos-page"),
+  "ReconocimientosPage",
+)
+
+export const reconocimientosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reconocimientos.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Reconocimientos" }] },
+  component: ReconocimientosPage,
+})
+
+/** Enlace del aviso `RECONOCIMIENTO_NUEVO`: la misma página; la fase 2 abre el detalle con el id. */
+export const reconocimientoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reconocimientoDetalle.path,
+  staticData: {
+    breadcrumb: [
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Reconocimientos", to: paths.app.reconocimientos.getHref() },
+      { label: "Detalle del reconocimiento" },
+    ],
+  },
+  component: ReconocimientosPage,
+})
+
 const CITACIONES_CRUMB = { label: "Citaciones y compromisos", to: paths.app.citacionesCompromisos.getHref() }
 
 const CitacionFormPage = lazyRouteComponent(
@@ -2173,6 +2199,8 @@ const routeTree = rootRoute.addChildren([
     citacionNuevaRoute,
     compromisoNuevoRoute,
     compromisoDetalleRoute,
+    reconocimientosRoute,
+    reconocimientoDetalleRoute,
     chatRoute,
     comunicadoNuevoRoute,
     comunicadosRoute,

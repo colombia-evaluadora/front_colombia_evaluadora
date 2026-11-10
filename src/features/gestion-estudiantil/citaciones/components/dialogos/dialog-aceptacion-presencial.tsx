@@ -8,12 +8,12 @@ import { InfoIcon, PencilIcon } from "@/components/ui/icons"
 import { useRegistrarAceptacionPresencial } from "@/features/gestion-estudiantil/citaciones/api/mutations/aceptacion-presencial"
 import { subirSoporteCompromiso } from "@/features/gestion-estudiantil/citaciones/api/mutations/soporte-compromiso"
 import type { CompromisoRow } from "@/features/gestion-estudiantil/citaciones/api/types"
-import { DialogoOperacionShell } from "@/features/gestion-estudiantil/citaciones/components/dialogos/dialogo-operacion-shell"
-import { useEstadoDialogo } from "@/features/gestion-estudiantil/citaciones/hooks/use-estado-dialogo"
+import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
+import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
 import { ResumenCompromiso } from "@/features/gestion-estudiantil/citaciones/components/dialogos/resumen-compromiso"
 import { errorSoporte } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { enfocarPrimerError } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
-import { SoportesUpload } from "@/features/gestion-estudiantil/convivencia/components/soportes-upload"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
+import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 
 interface Props {
   compromiso: CompromisoRow

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { abreviarPersona } from "./proceso-detalle"
+import { abreviarPersona } from "./formatos"
 
 describe("abreviarPersona", () => {
   it.each([

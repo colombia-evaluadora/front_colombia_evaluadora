@@ -4,19 +4,15 @@ import {
   useSedesInformeQuery,
 } from "@/features/academic-management/reports/api/query/use-cascada-query"
 import { useGruposPeriodoQuery } from "@/features/academic-management/reports/api/query/use-grupos-periodo-query"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { usePeriodosInformeQuery } from "@/features/academic-management/reports/api/query/use-periodos-informe-query"
-
-export interface Opcion {
-  value: string
-  label: string
-}
 
 /**
  * Opciones de Sede → Jornada → Grado/Grupo y Período del año en curso, desde
  * la cascada de Informes: ya vienen acotadas al alcance de quien pregunta, como
  * el listado del Observador (fn_usuario_sedes_lectura).
  */
-export function useOpcionesObservador(sede: string, jornada: string) {
+export function useOpcionesCascada(sede: string, jornada: string) {
   const sedeId = sede ? Number(sede) : null
   const jornadaId = jornada ? Number(jornada) : null
 

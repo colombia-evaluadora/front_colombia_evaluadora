@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import { FilaPrueba } from "@/features/gestion-estudiantil/convivencia/components/procesos/form/fila-prueba"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { Errores } from "@/features/gestion-estudiantil/convivencia/utils/proceso-etapas"
 import { pruebaVacia, type PruebaFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-form"
 

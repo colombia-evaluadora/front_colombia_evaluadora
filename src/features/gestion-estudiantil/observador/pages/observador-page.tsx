@@ -24,7 +24,8 @@ import { paths } from "@/config/paths"
 
 import { toObservadorFilters, useAnotacionesQuery } from "@/features/gestion-estudiantil/observador/api/query/use-anotaciones-query"
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
-import { useOpcionesObservador, type Opcion } from "@/features/gestion-estudiantil/observador/api/use-opciones-observador"
+import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
+import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { useObservadorAccess } from "@/features/gestion-estudiantil/observador/api/use-observador-access"
 import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
@@ -65,7 +66,7 @@ function ObservadorContent() {
   const [pestana, setPestana] = useState("anotaciones")
   const { notify } = useNotify()
 
-  const opciones = useOpcionesObservador(borrador.sede, borrador.jornada)
+  const opciones = useOpcionesCascada(borrador.sede, borrador.jornada)
   const codigos = useCodigosAnotacionQuery(opciones.establecimientoId)
 
   const queryFilters = toObservadorFilters(search, filtros)

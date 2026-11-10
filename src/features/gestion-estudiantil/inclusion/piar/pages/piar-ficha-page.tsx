@@ -9,7 +9,7 @@ import { paths } from "@/config/paths"
 
 import { FormDisabledProvider } from "@/lib/forms"
 
-import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { usePiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { CamposDatosPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/campos-datos-piar"

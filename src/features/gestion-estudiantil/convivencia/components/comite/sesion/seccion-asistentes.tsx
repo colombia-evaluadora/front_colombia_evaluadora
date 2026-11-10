@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { SesionFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
 
 /** Casillas con los integrantes vigentes en la fecha elegida, contador «N de M» y quórum calculado. */

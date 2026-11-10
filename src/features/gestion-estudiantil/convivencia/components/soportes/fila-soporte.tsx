@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowsLeftRightIcon, EyeIcon, TrashIcon } from "@/components/ui/icons"
 
 import type { SoporteAccion } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { formatPeso } from "@/features/gestion-estudiantil/convivencia/utils/soportes"
 
 interface Props {

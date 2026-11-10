@@ -1,8 +1,8 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { SiNo } from "@/features/gestion-estudiantil/convivencia/components/si-no"
 import type { DatosSiuce } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { useSecuelasHabilitadas, type ErroresSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"

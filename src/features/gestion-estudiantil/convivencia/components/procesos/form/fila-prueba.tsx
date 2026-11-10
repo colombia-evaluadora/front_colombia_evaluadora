@@ -3,7 +3,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
-import { SoportesUpload } from "@/features/gestion-estudiantil/convivencia/components/soportes-upload"
+import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 import type { PruebaFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-form"
 
 interface Props {

@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { XIcon } from "@/components/ui/icons"
 
-import type { OpcionCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import type { OpcionCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import type { EstudianteFila as Fila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 interface Props {
   fila: Fila

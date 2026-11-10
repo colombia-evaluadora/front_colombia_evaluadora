@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import { useClasificacionesFaltaQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-proceso-apertura-query"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { FilaCargo } from "@/features/gestion-estudiantil/convivencia/components/procesos/form/fila-cargo"
 import type { ProcesoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-proceso-form"
 import { cargoVacio, type CargoFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-form"

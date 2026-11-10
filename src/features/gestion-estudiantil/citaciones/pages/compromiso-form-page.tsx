@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
 import { CampoAcudiente } from "@/features/gestion-estudiantil/citaciones/components/campo-acudiente"
 import { CampoOrigen } from "@/features/gestion-estudiantil/citaciones/components/campo-origen"
@@ -21,10 +21,10 @@ import {
   type CompromisoFormState,
 } from "@/features/gestion-estudiantil/citaciones/hooks/use-compromiso-form"
 import { itemVacio, type ItemFila } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
-import { SoportesUpload } from "@/features/gestion-estudiantil/convivencia/components/soportes-upload"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
+import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 
 function CampoFecha({
   id,

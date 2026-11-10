@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 
 import type { ProcesoDetalle, RecursoDTO } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { ChipArchivo } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/chip-archivo"
 import { EtapaProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-proceso"
 import { TablaSanciones } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/tabla-sanciones"

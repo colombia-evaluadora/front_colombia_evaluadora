@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PrinterIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, type QueryKey } from "@tanstack/react-query"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
-import { formatFechaHora } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 const ID_DOCUMENTO = "documento-imprimible"
 
@@ -71,9 +71,10 @@ export interface EncabezadoEstablecimiento {
 }
 
 /** Escudo del establecimiento vía token de vista de file-service; sin escudo no se muestra nada. */
-function Escudo({ archivo }: { archivo: number | null }) {
+/** `claveModulo` es la raíz de query-key del módulo que imprime: cada módulo tiene su propia caché. */
+function Escudo({ archivo, claveModulo }: { archivo: number | null; claveModulo: QueryKey }) {
   const { data } = useQuery({
-    queryKey: ["citaciones-compromisos", "escudo", archivo],
+    queryKey: [...claveModulo, "escudo", archivo],
     queryFn: () => fetchArchivoViewUrl(archivo as number),
     enabled: archivo != null,
     staleTime: 5 * 60_000,
@@ -83,11 +84,14 @@ function Escudo({ archivo }: { archivo: number | null }) {
 
 export function HojaDocumento({
   encabezado: e,
+  claveModulo,
   titulo,
   subtitulo,
   children,
 }: {
   encabezado: EncabezadoEstablecimiento
+  /** Raíz de query-key del módulo (para la caché del escudo). */
+  claveModulo: QueryKey
   titulo: string
   subtitulo: string
   children: ReactNode
@@ -96,7 +100,7 @@ export function HojaDocumento({
     <article id={ID_DOCUMENTO} className="flex flex-col gap-4 rounded-md border border-border bg-background p-6 text-sm">
       <header className="flex items-start justify-between gap-4 border-t-4 border-primary pt-4">
         <div className="flex items-center gap-4">
-          <Escudo archivo={e.escudo_archivo} />
+          <Escudo archivo={e.escudo_archivo} claveModulo={claveModulo} />
           <div>
             <p className="text-lg font-semibold text-primary">Institución Educativa {e.establecimiento}</p>
             <p className="text-xs text-muted-foreground">

@@ -4,7 +4,7 @@ import { useNotify } from "@/components/notice/notice-context"
 
 import { useRegistrarAccion as useRegistrarAccionMutation } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useCasoQuery, usePasosCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
-import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
 import {

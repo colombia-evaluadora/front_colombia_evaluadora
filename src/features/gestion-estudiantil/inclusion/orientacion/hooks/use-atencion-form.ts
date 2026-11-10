@@ -5,7 +5,7 @@ import { queueNotice } from "@/components/notice/notice-context"
 import { paths } from "@/config/paths"
 import { useAppForm } from "@/lib/forms"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useGuardarAtencion } from "@/features/gestion-estudiantil/inclusion/orientacion/api/mutations/atenciones"
 import { useAtencionQuery, useEstudiantesAtencionQuery, useRemisionesDeQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { atencionAlBackend, esquemaAtencion, valoresDesde } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/atencion-form"

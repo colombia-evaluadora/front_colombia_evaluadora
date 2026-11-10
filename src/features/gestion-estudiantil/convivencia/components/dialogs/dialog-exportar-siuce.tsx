@@ -4,7 +4,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { FileDownloadOutlinedIcon, InfoIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { CamposRangoSiuce } from "@/features/gestion-estudiantil/convivencia/components/siuce/campos-rango-siuce"
 import { SelectorColumnasSiuce } from "@/features/gestion-estudiantil/convivencia/components/siuce/selector-columnas-siuce"
 import { VistaPreviaSiuce } from "@/features/gestion-estudiantil/convivencia/components/siuce/vista-previa-siuce"

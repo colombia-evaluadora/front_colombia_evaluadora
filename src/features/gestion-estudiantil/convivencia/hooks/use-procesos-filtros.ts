@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
 import { useResponsablesFiltroQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-procesos-query"
 import {
   PROCESOS_FILTROS_VACIOS,
   type ProcesosFiltros,
 } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
+import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 
 /** Búsqueda, filtros aplicados y borrador del panel, y las opciones de cada filtro del listado de procesos. */
 export function useProcesosFiltros(goToPage: (page: number) => void) {
@@ -17,7 +18,7 @@ export function useProcesosFiltros(goToPage: (page: number) => void) {
   const [borrador, setBorrador] = useState<ProcesosFiltros>(PROCESOS_FILTROS_VACIOS)
 
   // Misma cascada Sede → Jornada de la pestaña Casos.
-  const opciones = useOpcionesConvivencia(borrador.sede, "")
+  const opciones = useOpcionesGrupos(convivenciaKeys.all, borrador.sede, "")
   const estados = useCatalogo("ESTADO_PROCESO_DISCIPLINARIO")
   const instancias = useCatalogo("INSTANCIA_DISCIPLINARIA")
   const responsables = useResponsablesFiltroQuery()

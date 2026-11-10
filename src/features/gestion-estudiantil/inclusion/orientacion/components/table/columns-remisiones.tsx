@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { ClipboardAddIcon, FilePdfIcon, ProhibitIcon } from "@/components/ui/icons"
 
-import { formatFecha } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
 

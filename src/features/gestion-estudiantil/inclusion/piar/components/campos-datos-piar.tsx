@@ -1,6 +1,6 @@
 import { LockIcon } from "@/components/ui/icons"
 
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { CamposDatos } from "@/features/gestion-estudiantil/inclusion/piar/utils/datos-piar"
 
 export function TituloSensible({ children, requerido }: { children: React.ReactNode; requerido?: boolean }) {

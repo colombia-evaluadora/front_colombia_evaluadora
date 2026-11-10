@@ -1,4 +1,4 @@
-import type { BadgeColor } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import type { BadgeColor } from "@/features/gestion-estudiantil/commons/utils/badge-color"
 import type { EstadoProcesoCodigo, ProcesoRow } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 
 /** Color del badge de Estado del proceso (G.2.PRD.LIS.1). */

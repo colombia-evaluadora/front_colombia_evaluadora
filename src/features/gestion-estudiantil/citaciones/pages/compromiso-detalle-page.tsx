@@ -22,10 +22,10 @@ import {
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { useDialogosCompromiso } from "@/features/gestion-estudiantil/citaciones/components/dialogos/use-dialogos-citaciones"
 import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
-import { abreviarPersona } from "@/features/gestion-estudiantil/convivencia/utils/proceso-detalle"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
+import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 function SoporteFirmado({ archivo }: { archivo: number }) {
   const { notify } = useNotify()

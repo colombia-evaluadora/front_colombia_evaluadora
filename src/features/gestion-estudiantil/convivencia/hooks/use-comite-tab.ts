@@ -3,7 +3,7 @@ import { useState } from "react"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
 import { useComiteQuery, usePeriodosComiteQuery, useSesionesQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { periodoPorDefecto } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 /** Período elegido (por defecto, el abierto), su Comité y las sesiones paginadas con filtro por tipo (G.2.COM.SES.1). */

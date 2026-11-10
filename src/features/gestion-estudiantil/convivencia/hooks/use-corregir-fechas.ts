@@ -3,7 +3,7 @@ import { useState } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { useActualizarCaso } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import { useSecuelasHabilitadas } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import {

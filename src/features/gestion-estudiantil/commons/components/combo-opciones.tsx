@@ -9,7 +9,7 @@ import {
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
 
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 interface ComboOpcionesProps {
   id: string

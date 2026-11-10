@@ -4,7 +4,7 @@ import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { ConstructorCargos } from "@/features/gestion-estudiantil/convivencia/components/procesos/form/constructor-cargos"
 import { ConstructorPruebas } from "@/features/gestion-estudiantil/convivencia/components/procesos/form/constructor-pruebas"
 import { SeccionDatosApertura } from "@/features/gestion-estudiantil/convivencia/components/procesos/form/seccion-datos-apertura"

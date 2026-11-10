@@ -9,7 +9,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useAniosInformeQuery, useSedesInformeQuery } from "@/features/academic-management/reports/api/query/use-cascada-query"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { useInformeQuery, type InformeInclusion } from "@/features/gestion-estudiantil/inclusion/informe/api/use-informe-query"
 import { porAsignatura } from "@/features/gestion-estudiantil/inclusion/informe/utils/informe"

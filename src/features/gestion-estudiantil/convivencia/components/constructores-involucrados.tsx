@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
 
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import type { EstudianteFila, InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { involucradoVacio } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { DialogAgregarEstudiante } from "@/features/gestion-estudiantil/convivencia/components/involucrados/dialog-agregar-estudiante"
 import { FilaEstudiante } from "@/features/gestion-estudiantil/convivencia/components/involucrados/fila-estudiante"
 import { FilaOtroInvolucrado } from "@/features/gestion-estudiantil/convivencia/components/involucrados/fila-otro-involucrado"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 
 interface ConstructoresProps {
   estudiantes: EstudianteFila[]

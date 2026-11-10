@@ -484,6 +484,14 @@ export const paths = {
       getHref: (compromisoId: number | string) =>
         `/app/gestion-estudiantil/citaciones-compromisos/compromiso/${compromisoId}`,
     },
+    reconocimientos: {
+      path: "gestion-estudiantil/reconocimientos",
+      getHref: () => "/app/gestion-estudiantil/reconocimientos",
+    },
+    reconocimientoDetalle: {
+      path: "gestion-estudiantil/reconocimientos/$reconocimientoId",
+      getHref: (reconocimientoId: number | string) => `/app/gestion-estudiantil/reconocimientos/${reconocimientoId}`,
+    },
     observadorNueva: {
       path: "gestion-estudiantil/observador/nueva",
       getHref: () => "/app/gestion-estudiantil/observador/nueva",

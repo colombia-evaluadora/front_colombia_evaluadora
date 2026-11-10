@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import type { ComiteDetalle } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { AvisoCargosVacios } from "@/features/gestion-estudiantil/convivencia/components/comite/aviso-cargos-vacios"
 import { FilaIntegranteForm } from "@/features/gestion-estudiantil/convivencia/components/comite/fila-integrante"
 import type { ComiteIntegrantesState } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-integrantes"

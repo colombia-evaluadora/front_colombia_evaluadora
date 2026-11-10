@@ -7,17 +7,12 @@ import { paths } from "@/config/paths"
 
 import { useActualizarCaso, useCrearCaso } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import { useGestorPrevistoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
-import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
+import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import type { InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
-import {
-  campoDeMensaje,
-  enfocarPrimerError,
-  erroresInvolucrado,
-  useSecuelasHabilitadas,
-  type CampoCaso,
-} from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { campoDeMensaje, erroresInvolucrado, useSecuelasHabilitadas, type CampoCaso } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import {
   actualizarCasoInput,
   CAMPOS_SIUCE,

@@ -5,17 +5,18 @@ import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogT
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useAppForm } from "@/lib/forms"
 
-import { IconoCarga } from "@/features/gestion-estudiantil/components/icono-carga"
-import { useCatalogo } from "@/features/gestion-estudiantil/convivencia/api/use-catalogos-convivencia"
-import { SeccionPlegable } from "@/features/gestion-estudiantil/convivencia/components/seccion-plegable"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
-import { useOpcionesConvivencia } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
 import { useRemisionQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { useCorregirRemision, useCrearRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/mutations/atenciones"
 import { REMISION_VACIA, SECCIONES_REMISION, esquemaRemision, remisionAlBackend, remisionDesdeDetalle } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/remision-form"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
+import { orientacionKeys } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query-keys"
 
 interface Props {
   /** Desde una anotación ya se sabe el estudiante; sin él se elige de la carga (5.2). */
@@ -37,7 +38,7 @@ export function DialogRemitir({ matricula, estudiante, remisionId, onClose, onRe
   const [jornada, setJornada] = useState("")
   const [grupo, setGrupo] = useState("")
   const [elegida, setElegida] = useState("")
-  const opciones = useOpcionesConvivencia(sede, jornada)
+  const opciones = useOpcionesGrupos(orientacionKeys.all, sede, jornada)
   const roster = useActividadMatriculasGrupoQuery(grupo ? Number(grupo) : undefined)
   const elige = matricula == null && remisionId == null
   const [notice, setNotice] = useState<{ id: number; message: string } | null>(null)

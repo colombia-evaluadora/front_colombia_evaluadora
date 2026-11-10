@@ -9,8 +9,8 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useAnularCaso, useCerrarCaso } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-caso-shell"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
-import { errorLargo } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 interface Props {
   caso: CasoResumen | null

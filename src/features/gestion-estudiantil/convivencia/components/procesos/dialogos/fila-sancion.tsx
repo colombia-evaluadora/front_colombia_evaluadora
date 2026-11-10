@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { TrashIcon } from "@/components/ui/icons"
 
 import type { LimitesSancion, OpcionSancion } from "@/features/gestion-estudiantil/convivencia/api/procesos-etapas-types"
-import { ComboOpciones } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { CampoFecha } from "@/features/gestion-estudiantil/convivencia/components/procesos/dialogos/campo-fecha"
-import { TextoLargo } from "@/features/gestion-estudiantil/convivencia/components/texto-largo"
+import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import type { Errores, SancionFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-etapas"
 
 interface Props {

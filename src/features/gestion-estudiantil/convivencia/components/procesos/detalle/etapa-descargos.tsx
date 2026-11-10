@@ -1,6 +1,6 @@
 import type { EtapaDescargos } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
-import { formatFecha } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { Dato } from "@/features/gestion-estudiantil/convivencia/components/detalle/dato"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { ChipArchivo } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/chip-archivo"
 import { EtapaProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-proceso"
 import { ListaPruebas } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/lista-pruebas"

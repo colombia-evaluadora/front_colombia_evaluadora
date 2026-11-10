@@ -4,7 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 
 import type { SiuceFiltros, SiuceVistaPrevia } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
-import { desenvolver } from "@/features/gestion-estudiantil/convivencia/api/query/jsonb"
+import { desenvolver } from "@/features/gestion-estudiantil/commons/api/jsonb"
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/
 

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
-import { desenvolver } from "@/features/gestion-estudiantil/convivencia/api/query/jsonb"
+import { desenvolver } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import type {
   AcudienteMatricula,

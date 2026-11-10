@@ -1,8 +1,7 @@
-import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { optionTerm } from "@/components/search/query-syntax"
 
-import type { Opcion } from "@/features/gestion-estudiantil/convivencia/api/use-opciones-convivencia"
-import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/convivencia/components/combo-opciones"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import {
   COMPROMISOS_FILTROS_VACIOS,
   type CompromisosFiltros,
@@ -10,7 +9,8 @@ import {
 import {
   useSearchFiltros,
   type SearchFiltrosProps,
-} from "@/features/gestion-estudiantil/citaciones/hooks/use-search-filtros"
+} from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
+import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
 
 export interface OpcionesFiltrosCompromisos {
   sedes: Opcion[]
@@ -40,22 +40,7 @@ export function SearchCompromisos(props: Props) {
   const sinSede = !draft.sede
 
   return (
-    <SearchQueryBar
-      id="compromisos-search"
-      label={null}
-      placeholder="Buscar por estudiante"
-      value={s.queryText}
-      onValueChange={s.setQueryText}
-      onClearAll={s.handleClearAll}
-      onClearFilters={s.handleClearFilters}
-      activeFilterCount={s.activeFilterCount}
-      badgeCount={s.badgeCount}
-      open={s.open}
-      onOpenChange={s.setOpen}
-      onApply={s.handleApply}
-      size="lg"
-      className="sm:w-full max-w-xl"
-    >
+    <BarraBusquedaFiltros id="compromisos-search" placeholder="Buscar por estudiante" estado={s}>
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
         <Combo
           id="compromisos-sede"
@@ -89,6 +74,6 @@ export function SearchCompromisos(props: Props) {
           onChange={(estado) => setDraft({ ...draft, estado })}
         />
       </div>
-    </SearchQueryBar>
+    </BarraBusquedaFiltros>
   )
 }
