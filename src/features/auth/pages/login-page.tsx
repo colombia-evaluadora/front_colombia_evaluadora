@@ -1,3 +1,4 @@
+import Axios from "axios"
 import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate, useSearch } from "@tanstack/react-router"
@@ -18,6 +19,7 @@ import { paths } from "@/config/paths"
 import { useCaptcha } from "@/hooks/use-captcha"
 import { enterOfflineSession, getOfflineContinueInfo, unlockOfflineSession, useLogin } from "@/lib/auth"
 import { guardarDesafio } from "@/features/auth/api/segundo-factor"
+import { getErrorMessage } from "@/lib/api-client"
 import { toAuthUserFromToken } from "@/lib/auth-mapper"
 import { canUsePersonalDevice, isInstalledPersonalDevice, isPersonalDeviceAllowed } from "@/lib/offline/device-policy"
 import { saveLocalCredential } from "@/lib/offline/local-credential"
@@ -166,6 +168,11 @@ export function LoginPage() {
             {offlineCopy}
           </p>
         )}
+        {loginMutation.isError && (
+          <p role="alert" className="text-red text-center text-sm">
+            {mensajeLogin(loginMutation.error)}
+          </p>
+        )}
         {unlockError && (
           <p role="alert" className="text-red text-center text-sm">
             {unlockError}
@@ -213,4 +220,21 @@ export function LoginPage() {
       </CardFooter>
     </>
   )
+}
+
+/**
+ * Textos de Administración del Sistema §13.2 y Regla 31: el error no dice si
+ * falló el documento o la contraseña, ni si la cuenta existe.
+ */
+function mensajeLogin(error: unknown): string {
+  const r = Axios.isAxiosError(error) ? error.response : undefined
+  const codigo = (r?.data as { error?: string } | undefined)?.error
+  if (r?.status === 429 && codigo === "too_many_attempts") {
+    return "Por seguridad, la cuenta quedó bloqueada 15 minutos. Puede esperar o usar ¿Olvidó su contraseña?"
+  }
+  if (r?.status === 429) return "Hay mucha demanda. Intente de nuevo en unos minutos."
+  if (r?.status === 401 || r?.status === 400) {
+    return "El número de documento o la contraseña no son correctos."
+  }
+  return getErrorMessage(error)
 }

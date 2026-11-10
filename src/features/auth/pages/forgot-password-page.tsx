@@ -1,3 +1,4 @@
+import Axios from "axios"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeftIcon, ArrowRightIcon, EnvelopeIcon, PasswordIcon, ShieldIcon } from "@/components/ui/icons"
 
@@ -10,6 +11,7 @@ import { paths } from "@/config/paths"
 import { useCaptcha } from "@/hooks/use-captcha"
 
 import { useForgotPassword } from "@/features/auth/api/mutations/forgot-password"
+import { HighDemandBanner } from "@/components/public/public-page"
 import { ForgotPasswordForm } from "@/features/auth/components/forms/form-forgot-password"
 import type { ForgotPasswordFormValues } from "@/features/auth/api/schema"
 
@@ -52,13 +54,14 @@ export function ForgotPasswordPage() {
             <EnvelopeIcon aria-hidden="true" />
             <AlertTitle>Revise su correo</AlertTitle>
             <AlertDescription>
-              Si los datos corresponden a una cuenta activa, enviamos un enlace al correo registrado.
-              El enlace vale 1 hora y sirve una sola vez. Si no llega en unos minutos, revise la
-              carpeta de correo no deseado.
+              Si el número corresponde a una cuenta activa, enviamos un enlace al correo registrado.
+              Revise también el correo no deseado.
             </AlertDescription>
           </Alert>
         ) : (
           <>
+            {Axios.isAxiosError(forgotPasswordMutation.error) &&
+              forgotPasswordMutation.error.response?.status === 429 && <HighDemandBanner />}
             <ForgotPasswordForm id={FORGOT_PASSWORD_FORM_ID} onSubmit={handleSubmit} />
             <Turnstile {...captcha.widget} action="forgot-password" />
           </>
