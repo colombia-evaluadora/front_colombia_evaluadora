@@ -61,6 +61,24 @@ function emailFromRefreshCookie(value: string | undefined): string | undefined {
 }
 
 export const authHandlers = [
+  // Verificación en dos pasos (U.5.DOS) en Mi cuenta. El login del mock nunca
+  // pide el segundo paso; esto solo deja usar la sección Seguridad.
+  http.get("/api/auth/segundo-factor", () =>
+    HttpResponse.json({ activo: false, disponible: true, obligatorio: false, codigosRestantes: 0 }),
+  ),
+  http.post("/api/auth/segundo-factor/activar", () =>
+    HttpResponse.json({
+      secreto: "JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP",
+      uri: "otpauth://totp/Control%20Escolar:demo?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=Control%20Escolar",
+    }),
+  ),
+  http.post("/api/auth/segundo-factor/activar/confirmar", () =>
+    HttpResponse.json({
+      codigosRespaldo: ["K4P7-Q2XM9", "T8RW-3NVZ6", "M2HC-7YPQ4", "B6FJ-9KXT2", "W3QD-5MRP8",
+        "Z9LN-2CVH7", "R7XT-4PJW3", "H5MB-8QZK6", "P2VW-6TNX9", "C8YR-3HMF5"],
+    }),
+  ),
+
   http.post("/api/auth/login", async ({ request }) => {
     const rejected = rejectWithoutCaptcha(request)
     if (rejected) return rejected

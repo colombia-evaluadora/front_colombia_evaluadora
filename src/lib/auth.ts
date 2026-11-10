@@ -197,30 +197,37 @@ export function useLogin({
     mutationFn: loginWithEmailAndPassword,
     ...mutationConfig,
     onSuccess: (data, variables, ...rest) => {
-      // Solo memoria. La persistencia de la sesión la resuelve la cookie
-      // `sso_refresh` que el backend emitió en esta misma respuesta: su
-      // `Max-Age` sale del header `x-remember-me` que mandó el login, así que
-      // "Mantener sesión iniciada" ya quedó decidido del lado del servidor.
-      setAuthToken(data.token)
-      queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
-      // Menú y permisos por pantalla (`staleTime: Infinity`) son del usuario
-      // ANTERIOR si quedó algo en caché (logout y sesión vencida ya hacen
-      // `clear()`, esto cubre cualquier otro camino). El guard de `/app` decide
-      // con este menú: tiene que salir del token nuevo, no de la caché.
-      queryClient.removeQueries({ queryKey: ["navigation"] })
-      // Web Push: si este navegador quedó suscrito por OTRO usuario, se
-      // suelta (cambio de usuario en equipo compartido, D-4.4).
-      if (env.VAPID_PUBLIC_KEY) {
-        const sub = toAuthUserFromToken(data.token)?.id
-        if (sub) {
-          void import("@/features/notificaciones/push/lib/push-client").then((m) =>
-            m.releasePushIfOtherUser(sub),
-          )
-        }
-      }
+      // Verificación en dos pasos (U.5.DOS): todavía no hay sesión; la abre
+      // la pantalla de verificación con `abrirSesion` al completar el código.
+      if (data.token) abrirSesion(queryClient, data.token)
       mutationConfig?.onSuccess?.(data, variables, ...rest)
     },
   })
+}
+
+/** Deja la sesión abierta con el access token recibido del login. */
+export function abrirSesion(queryClient: QueryClient, token: string) {
+  // Solo memoria. La persistencia de la sesión la resuelve la cookie
+  // `sso_refresh` que el backend emitió en esta misma respuesta: su
+  // `Max-Age` sale del header `x-remember-me` que mandó el login, así que
+  // "Mantener sesión iniciada" ya quedó decidido del lado del servidor.
+  setAuthToken(token)
+  queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(token))
+  // Menú y permisos por pantalla (`staleTime: Infinity`) son del usuario
+  // ANTERIOR si quedó algo en caché (logout y sesión vencida ya hacen
+  // `clear()`, esto cubre cualquier otro camino). El guard de `/app` decide
+  // con este menú: tiene que salir del token nuevo, no de la caché.
+  queryClient.removeQueries({ queryKey: ["navigation"] })
+  // Web Push: si este navegador quedó suscrito por OTRO usuario, se
+  // suelta (cambio de usuario en equipo compartido, D-4.4).
+  if (env.VAPID_PUBLIC_KEY) {
+    const sub = toAuthUserFromToken(token)?.id
+    if (sub) {
+      void import("@/features/notificaciones/push/lib/push-client").then((m) =>
+        m.releasePushIfOtherUser(sub),
+      )
+    }
+  }
 }
 
 export function useLogout({
