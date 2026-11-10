@@ -183,7 +183,7 @@ function SupportFilesSheetField({
         <span className="flex flex-col">
           <span className="text-sm font-semibold text-foreground">
             {config.label}
-            {required ? "*" : ""}
+            {required ? <span data-required-mark="">*</span> : ""}
           </span>
           {canAttach && (
             <span className="text-xs text-muted-foreground">{formatosTexto(config)}</span>
@@ -480,7 +480,7 @@ export function MatriculaSupportFilesSection({
             <div className="flex items-center justify-between gap-2">
               <span className={invalid ? "font-semibold text-red" : "font-semibold text-foreground"}>
                 {field.label}
-                {required ? "*" : ""}
+                {required ? <span data-required-mark="">*</span> : ""}
               </span>
               {(field.multiple || files.length === 0) && (
                 <Tooltip>

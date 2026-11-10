@@ -14,7 +14,9 @@ import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { FormSectionHeading } from "@/components/form-section-heading"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { FloppyDiskIcon, InfoIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
@@ -255,13 +257,16 @@ function AdministradorForm({
           <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
         </div>
 
+        <Card className="rounded-md border border-border py-5">
+          <CardContent className="grid gap-5">
+            <FormSectionHeading>Datos del administrador</FormSectionHeading>
         <form
           id={FORM_ID}
           onSubmit={(e) => {
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid gap-x-4 gap-y-5 py-4 md:grid-cols-12"
+          className="grid gap-x-4 gap-y-5 md:grid-cols-12"
         >
           <FormDisabledProvider disabled={soloLectura}>
             {/* Identidad: documento y correo en una fila, nombres en la siguiente. */}
@@ -371,6 +376,8 @@ function AdministradorForm({
             </form.Field>
           </FormDisabledProvider>
         </form>
+          </CardContent>
+        </Card>
       </TableScreenBody>
       <ConfirmDiscardDialog
         open={confirmDiscard}

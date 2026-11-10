@@ -41,6 +41,8 @@ declare module "@tanstack/react-table" {
   // `meta.label` guarda ese texto en español una sola vez.
   interface ColumnMeta<TData extends RowData, TValue> {
     label?: string
+    /** Clases extra para el th y los td de la columna (p. ej. fijarla con `sticky`). */
+    className?: string
   }
 }
 
@@ -245,6 +247,7 @@ export function DataTable({
                         cellClassName,
                         isActions && "w-px",
                         growCellClass(header.column.id),
+                        header.column.columnDef.meta?.className,
                       )}
                       style={growCellStyle(header.column.id)}
                     >
@@ -312,6 +315,7 @@ export function DataTable({
                               cellClassName,
                               isActions && actionsCellClass,
                               growCellClass(cell.column.id),
+                              cell.column.columnDef.meta?.className,
                             )}
                             style={growCellStyle(cell.column.id)}
                           >

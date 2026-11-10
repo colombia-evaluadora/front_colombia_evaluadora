@@ -72,7 +72,7 @@ export function MatriculaTextField({
     >
       <FieldLabel htmlFor={id}>
         {label}
-        {required ? "*" : ""}
+        {required ? <span data-required-mark="">*</span> : ""}
       </FieldLabel>
       <Input
         id={id}
@@ -126,7 +126,7 @@ export function MatriculaDateField({
     >
       <FieldLabel htmlFor={id}>
         {label}
-        {required ? "*" : ""}
+        {required ? <span data-required-mark="">*</span> : ""}
       </FieldLabel>
       <DatePicker
         id={id}
@@ -178,7 +178,7 @@ export function MatriculaSelectField({
     >
       <FieldLabel htmlFor={id}>
         {label}
-        {required ? "*" : ""}
+        {required ? <span data-required-mark="">*</span> : ""}
       </FieldLabel>
       <ComboboxField
         items={items}

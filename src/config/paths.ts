@@ -75,6 +75,34 @@ export const paths = {
       path: "cobertura/inscritos",
       getHref: () => "/app/cobertura/inscritos",
     },
+    coberturaReservaDetalle: {
+      path: "cobertura/inscritos/reservas/$reservaId",
+      getHref: (reservaId: string) => `/app/cobertura/inscritos/reservas/${reservaId}`,
+    },
+    coberturaReservaAsignarGrupo: {
+      path: "cobertura/inscritos/reservas/$reservaId/asignar-grupo",
+      getHref: (reservaId: string) => `/app/cobertura/inscritos/reservas/${reservaId}/asignar-grupo`,
+    },
+    coberturaConfigGrupo: {
+      path: "cobertura/inscritos/configuracion/grupos/$grupoId",
+      getHref: (grupoId: string) => `/app/cobertura/inscritos/configuracion/grupos/${grupoId}`,
+    },
+    coberturaConfigPeriodo: {
+      path: "cobertura/inscritos/configuracion/periodos/$periodoId",
+      getHref: (periodoId: string) => `/app/cobertura/inscritos/configuracion/periodos/${periodoId}`,
+    },
+    coberturaInscripcionNueva: {
+      path: "cobertura/inscritos/nueva-inscripcion",
+      getHref: () => "/app/cobertura/inscritos/nueva-inscripcion",
+    },
+    coberturaInscripcionEditar: {
+      path: "cobertura/inscritos/inscripciones/$inscripcionId/editar",
+      getHref: (inscripcionId: string) => `/app/cobertura/inscritos/inscripciones/${inscripcionId}/editar`,
+    },
+    coberturaInscripcionDetalle: {
+      path: "cobertura/inscritos/inscripciones/$inscripcionId",
+      getHref: (inscripcionId: string) => `/app/cobertura/inscritos/inscripciones/${inscripcionId}`,
+    },
     coberturaInscritoDetalle: {
       path: "cobertura/inscritos/$enrollmentId",
       getHref: (enrollmentId: string) =>
