@@ -2,11 +2,11 @@ import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { DotsThreeVerticalIcon, EyeIcon, FileUploadOutlinedIcon, LockIcon, PencilIcon } from "@/components/ui/icons"
+import { EyeIcon, FileUploadOutlinedIcon, LockIcon, PencilIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
+import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { PiarRow } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { COLOR_ESTADO, esEditable } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
@@ -66,20 +66,26 @@ export function buildColumnasPiar({ access, prefetch, irFicha }: Opciones): Colu
       id: "actions",
       enableHiding: false,
       header: () => null,
+      size: anchoAccionesFila(4),
       cell: ({ row }) => {
         const r = row.original
+        const editable = access.puedeGestionar && esEditable(r.estado_codigo)
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button size="icon-xs" variant="ghost" color="neutral" aria-label={`Acciones de ${r.estudiante_nombre}`} />}>
-              <DotsThreeVerticalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => irFicha(r)}><EyeIcon />Ver detalle</DropdownMenuItem>
-              {access.puedeGestionar && esEditable(r.estado_codigo) && <DropdownMenuItem onClick={() => irFicha(r)}><PencilIcon />Modificar</DropdownMenuItem>}
-              {access.puedeGestionar && r.estado_codigo === "BORRADOR" && <DropdownMenuItem onClick={() => irFicha(r, "acta")}><FileUploadOutlinedIcon />Cargar acta</DropdownMenuItem>}
-              {access.puedeGestionar && esEditable(r.estado_codigo) && <DropdownMenuItem onClick={() => irFicha(r, "cerrar")}><LockIcon />Cerrar</DropdownMenuItem>}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <AccionesFila
+            etiqueta={`Acciones de ${r.estudiante_nombre}`}
+            acciones={[
+              { id: "ver", label: "Ver detalle", icon: <EyeIcon />, onSelect: () => irFicha(r) },
+              { id: "modificar", label: "Modificar", icon: <PencilIcon />, disabled: !editable, onSelect: () => irFicha(r) },
+              {
+                id: "acta",
+                label: "Cargar acta",
+                icon: <FileUploadOutlinedIcon />,
+                disabled: !(access.puedeGestionar && r.estado_codigo === "BORRADOR"),
+                onSelect: () => irFicha(r, "acta"),
+              },
+              { id: "cerrar", label: "Cerrar", icon: <LockIcon />, disabled: !editable, onSelect: () => irFicha(r, "cerrar") },
+            ]}
+          />
         )
       },
     },

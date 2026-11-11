@@ -4,17 +4,17 @@ import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { FilePdfIcon, PencilIcon } from "@/components/ui/icons"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { descargarRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/descargas"
 import { useMisRemisionesQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import type { MiRemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { DialogRemitir } from "@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-remitir"
-import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
 import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/tabla-orientacion"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
@@ -59,22 +59,29 @@ export function TabMisRemisiones() {
       id: "actions",
       enableHiding: false,
       header: () => null,
+      size: anchoAccionesFila(2),
       cell: ({ row }) => (
-        <MenuFila etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}>
-          <DropdownMenuItem disabled={row.original.estado_codigo !== "RECIBIDA"} onClick={() => setCorregir(row.original.id)}>
-            <PencilIcon />
-            Corregir
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={async () => {
-              const r = await descargarRemision(row.original.id)
-              setAviso(r.status === "error" ? "No pudimos generar el documento. Inténtelo de nuevo en unos minutos." : null)
-            }}
-          >
-            <FilePdfIcon />
-            Descargar remisión
-          </DropdownMenuItem>
-        </MenuFila>
+        <AccionesFila
+          etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}
+          acciones={[
+            {
+              id: "corregir",
+              label: "Corregir",
+              icon: <PencilIcon />,
+              disabled: row.original.estado_codigo !== "RECIBIDA",
+              onSelect: () => setCorregir(row.original.id),
+            },
+            {
+              id: "descargar",
+              label: "Descargar remisión",
+              icon: <FilePdfIcon />,
+              onSelect: async () => {
+                const r = await descargarRemision(row.original.id)
+                setAviso(r.status === "error" ? "No pudimos generar el documento. Inténtelo de nuevo en unos minutos." : null)
+              },
+            },
+          ]}
+        />
       ),
     },
   ]
