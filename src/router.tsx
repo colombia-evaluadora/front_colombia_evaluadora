@@ -1717,6 +1717,18 @@ export const reconocimientoDetalleRoute = createRoute({
   component: ReconocimientosPage,
 })
 
+const ObservacionesSugerenciasPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/observaciones/pages/observaciones-sugerencias-page"),
+  "ObservacionesSugerenciasPage",
+)
+
+export const observacionesSugerenciasRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.observacionesSugerencias.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Observaciones y sugerencias" }] },
+  component: ObservacionesSugerenciasPage,
+})
+
 const CITACIONES_CRUMB = { label: "Citaciones y compromisos", to: paths.app.citacionesCompromisos.getHref() }
 
 const CitacionFormPage = lazyRouteComponent(
@@ -2331,6 +2343,7 @@ const routeTree = rootRoute.addChildren([
     compromisoDetalleRoute,
     reconocimientosRoute,
     reconocimientoDetalleRoute,
+    observacionesSugerenciasRoute,
     chatRoute,
     comunicadoNuevoRoute,
     comunicadosRoute,

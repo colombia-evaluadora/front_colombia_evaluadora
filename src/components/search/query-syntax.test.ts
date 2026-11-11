@@ -49,6 +49,15 @@ describe("buildQuery", () => {
   })
 })
 
+describe("parseQuery: etiquetas con paréntesis", () => {
+  it("el `)` de la etiqueta no se escapa a la búsqueda libre", () => {
+    const periodos = [{ value: "7", label: "Periodo 3 (vigente)" }]
+    const syntax = sintaxis(periodos)
+    const texto = buildQuery(syntax, { search: "", roles: ["7"] })
+    expect(parseQuery(syntax, texto)).toEqual({ search: "", roles: ["7"] })
+  })
+})
+
 describe("parseQuery: coincidencia parcial", () => {
   it("escribir de menos trae lo que coincide", () => {
     expect(parseQuery(sintaxis(ROLES), "rol:(Auxiliar)")).toEqual({

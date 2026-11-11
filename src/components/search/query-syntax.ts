@@ -58,9 +58,10 @@ export interface QuerySyntax<F> {
 }
 
 // Un término es `clave:(valor)`. La clave no lleva espacios ni paréntesis; el
-// valor es todo hasta el primer `)`, así que no admite paréntesis anidados —
-// suficiente para los valores que manejan estos buscadores.
-const TERM_RE = /([^\s:()]+):\(([^)]*)\)/g
+// valor admite un nivel de paréntesis dentro, porque hay etiquetas de catálogo
+// que los traen (un período «Periodo 3 (vigente)»). Sin eso, el `)` final del
+// término quedaba suelto y caía a la búsqueda libre, vaciando el listado.
+const TERM_RE = /([^\s:()]+):\(((?:[^()]|\([^()]*\))*)\)/g
 
 /** Filtros → el texto que se ve dentro del input. */
 export function buildQuery<F extends object>(syntax: QuerySyntax<F>, filters: F): string {

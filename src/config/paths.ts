@@ -520,6 +520,10 @@ export const paths = {
       path: "gestion-estudiantil/reconocimientos/$reconocimientoId",
       getHref: (reconocimientoId: number | string) => `/app/gestion-estudiantil/reconocimientos/${reconocimientoId}`,
     },
+    observacionesSugerencias: {
+      path: "gestion-estudiantil/observaciones-sugerencias",
+      getHref: () => "/app/gestion-estudiantil/observaciones-sugerencias",
+    },
     observadorNueva: {
       path: "gestion-estudiantil/observador/nueva",
       getHref: () => "/app/gestion-estudiantil/observador/nueva",
