@@ -2,18 +2,10 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   BrainIcon,
   CalendarBlankIcon,
   ClipboardAddIcon,
-  DotsThreeVerticalIcon,
   EyeIcon,
   GavelIcon,
   PencilIcon,
@@ -21,14 +13,14 @@ import {
   ProhibitIcon,
 } from "@/components/ui/icons"
 
-const ACCIONES_PROXIMAS = [
-  { label: "Reportar salud mental", Icono: BrainIcon },
-  { label: "Abrir proceso disciplinario", Icono: GavelIcon },
-]
-
+import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
+
+/** Ver, Modificar, Anular, Remitir, Citar, Crear compromiso y las dos aún sin backend. */
+const ACCIONES_ANOTACION = 8
 
 interface ColumnasOpciones {
   onVer: (row: AnotacionRow) => void
@@ -139,59 +131,44 @@ export function buildColumnsAnotaciones({
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_ANOTACION),
       cell: ({ row }) => {
         const a = row.original
         const vigente = !a.anulada
+        // Las acciones se ven siempre; se deshabilitan si no aplican. Modifica solo quien la registró.
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Acciones de la anotación de ${a.estudiante_nombre}`}
-                />
-              }
-            >
-              <DotsThreeVerticalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72 *:whitespace-nowrap">
-              <DropdownMenuItem onClick={() => onVer(a)}>
-                <EyeIcon />
-                Ver detalle
-              </DropdownMenuItem>
-              {/* Las acciones se ven siempre; se deshabilitan si no aplican. Modifica solo quien la registró. */}
-              <DropdownMenuItem disabled={!(puedeEditar && vigente && a.es_propia)} onClick={() => onModificar(a)}>
-                <PencilIcon />
-                Modificar
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!(puedeAnular && vigente)} onClick={() => onAnular(a)}>
-                <ProhibitIcon />
-                Anular
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!puedeRemitir} onClick={() => onRemitir(a)}>
-                <PersonIcon />
-                Remitir a orientación
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!vigente || !puedeCitar} onClick={() => onCitar(a)}>
-                <CalendarBlankIcon />
-                Citar al acudiente
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!vigente || !puedeCitar} onClick={() => onCompromiso(a)}>
-                <ClipboardAddIcon />
-                Crear compromiso
-              </DropdownMenuItem>
-              {/* Sección 9.6 y convivencia: aún sin backend. */}
-              {ACCIONES_PROXIMAS.map(({ label, Icono }) => (
-                <DropdownMenuItem key={label} disabled>
-                  <Icono />
-                  {label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <AccionesFila
+            etiqueta={`Acciones de la anotación de ${a.estudiante_nombre}`}
+            acciones={[
+              { id: "ver", label: "Ver detalle", icon: <EyeIcon />, onSelect: () => onVer(a) },
+              {
+                id: "modificar",
+                label: "Modificar",
+                icon: <PencilIcon />,
+                disabled: !(puedeEditar && vigente && a.es_propia),
+                onSelect: () => onModificar(a),
+              },
+              { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
+              { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
+              {
+                id: "citar",
+                label: "Citar al acudiente",
+                icon: <CalendarBlankIcon />,
+                disabled: !vigente || !puedeCitar,
+                onSelect: () => onCitar(a),
+              },
+              {
+                id: "compromiso",
+                label: "Crear compromiso",
+                icon: <ClipboardAddIcon />,
+                disabled: !vigente || !puedeCitar,
+                onSelect: () => onCompromiso(a),
+              },
+              // Sección 9.6 y convivencia: aún sin backend.
+              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: true, onSelect: () => {} },
+              { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
+            ]}
+          />
         )
       },
     },
