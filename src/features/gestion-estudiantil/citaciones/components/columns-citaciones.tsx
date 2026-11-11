@@ -11,10 +11,8 @@ import {
   origenEnlace,
   type PermisosCitaciones,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
-import {
-  MenuAccionesCitacion,
-  type AccionCitacion,
-} from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-citacion"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_CITACION, MenuAccionesCitacion, type AccionCitacion } from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-citacion"
 
 interface ColumnasOpciones {
   permisos: PermisosCitaciones & { puedeVer: boolean }
@@ -94,7 +92,7 @@ export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones)
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_CITACION),
       cell: ({ row }) => (
         <MenuAccionesCitacion
           estudiante={row.original.estudiante_nombre}

@@ -1,12 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { ClipboardAddIcon, FilePdfIcon, ProhibitIcon } from "@/components/ui/icons"
 
+import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
-import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
 
 interface Opciones {
   puedeRegistrar: boolean
@@ -36,15 +36,22 @@ export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescarga
       id: "actions",
       enableHiding: false,
       header: () => null,
+      size: anchoAccionesFila(3),
       cell: ({ row }) => (
-        <MenuFila etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}>
-          <DropdownMenuItem disabled={!puedeRegistrar || row.original.estado_codigo === "ATENDIDA"} onClick={() => onRegistrar(row.original)}>
-            <ClipboardAddIcon />
-            Registrar atención
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDescargar(row.original)}><FilePdfIcon />Descargar remisión</DropdownMenuItem>
-          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}><ProhibitIcon />Anular</DropdownMenuItem>}
-        </MenuFila>
+        <AccionesFila
+          etiqueta={`Acciones de la remisión de ${row.original.estudiante_nombre}`}
+          acciones={[
+            {
+              id: "registrar",
+              label: "Registrar atención",
+              icon: <ClipboardAddIcon />,
+              disabled: !puedeRegistrar || row.original.estado_codigo === "ATENDIDA",
+              onSelect: () => onRegistrar(row.original),
+            },
+            { id: "descargar", label: "Descargar remisión", icon: <FilePdfIcon />, onSelect: () => onDescargar(row.original) },
+            { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !puedeAnular, onSelect: () => onAnular(row.original) },
+          ]}
+        />
       ),
     },
   ]

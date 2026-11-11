@@ -1,11 +1,11 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { EyeIcon, FilePdfIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
 
+import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AtencionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
-import { MenuFila } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/menu-fila"
 
 interface Opciones {
   puedeRegistrar: boolean
@@ -28,13 +28,17 @@ export function buildColumnsAtenciones({ puedeRegistrar, onVer, onModificar, onD
       id: "actions",
       enableHiding: false,
       header: () => null,
+      size: anchoAccionesFila(4),
       cell: ({ row }) => (
-        <MenuFila etiqueta={`Acciones de la atención de ${row.original.estudiante_nombre}`}>
-          <DropdownMenuItem onClick={() => onVer(row.original)}><EyeIcon />Ver detalle</DropdownMenuItem>
-          <DropdownMenuItem disabled={!puedeRegistrar} onClick={() => onModificar(row.original)}><PencilIcon />Modificar</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDescargar(row.original)}><FilePdfIcon />Descargar ficha</DropdownMenuItem>
-          {puedeAnular && <DropdownMenuItem onClick={() => onAnular(row.original)}><ProhibitIcon />Anular</DropdownMenuItem>}
-        </MenuFila>
+        <AccionesFila
+          etiqueta={`Acciones de la atención de ${row.original.estudiante_nombre}`}
+          acciones={[
+            { id: "ver", label: "Ver detalle", icon: <EyeIcon />, onSelect: () => onVer(row.original) },
+            { id: "modificar", label: "Modificar", icon: <PencilIcon />, disabled: !puedeRegistrar, onSelect: () => onModificar(row.original) },
+            { id: "descargar", label: "Descargar ficha", icon: <FilePdfIcon />, onSelect: () => onDescargar(row.original) },
+            { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !puedeAnular, onSelect: () => onAnular(row.original) },
+          ]}
+        />
       ),
     },
   ]

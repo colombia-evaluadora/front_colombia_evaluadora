@@ -10,10 +10,8 @@ import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { CeldaVencimiento } from "@/features/gestion-estudiantil/convivencia/components/procesos/celda-vencimiento"
 import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import {
-  MenuAccionesProceso,
-  type AccionProceso,
-} from "@/features/gestion-estudiantil/convivencia/components/procesos/menu-acciones-proceso"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_PROCESO, MenuAccionesProceso, type AccionProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/menu-acciones-proceso"
 
 interface ColumnasOpciones {
   onAccion: (proceso: ProcesoRow, accion: AccionProceso) => void
@@ -110,7 +108,7 @@ export function buildColumnsProcesos({ onAccion }: ColumnasOpciones): ColumnDef<
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_PROCESO),
       cell: ({ row }) => (
         <MenuAccionesProceso
           numero={row.original.numero}

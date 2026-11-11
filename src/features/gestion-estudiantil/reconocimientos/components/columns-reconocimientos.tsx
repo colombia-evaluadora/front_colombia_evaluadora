@@ -6,10 +6,8 @@ import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/format
 import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"
 import { accionesReconocimiento } from "@/features/gestion-estudiantil/reconocimientos/api/ui-mappings"
-import {
-  MenuAccionesReconocimiento,
-  type AccionReconocimiento,
-} from "@/features/gestion-estudiantil/reconocimientos/components/menu-acciones-reconocimiento"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_RECONOCIMIENTO, MenuAccionesReconocimiento, type AccionReconocimiento } from "@/features/gestion-estudiantil/reconocimientos/components/menu-acciones-reconocimiento"
 
 interface ColumnasOpciones {
   onAccion: (reconocimiento: ReconocimientoRow, accion: AccionReconocimiento) => void
@@ -59,7 +57,7 @@ export function buildColumnsReconocimientos({ onAccion }: ColumnasOpciones): Col
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_RECONOCIMIENTO),
       cell: ({ row }) => (
         <MenuAccionesReconocimiento
           estudiante={row.original.estudiante_nombre}
