@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { DotsSixVerticalIcon, FloppyDiskIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import { DotsSixVerticalIcon, FloppyDiskIcon, LockIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -260,10 +260,17 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                 )}
               </form.Field>
 
-              <Aviso tono="info">
-                Después del sorteo o de la primera admisión ya no se pueden cambiar los criterios ni
-                el desempate.
-              </Aviso>
+              {grupo.bloqueado ? (
+                <Aviso tono="warning">
+                  Ya hubo sorteo o admisión en este grupo: los criterios de prioridad y el desempate
+                  quedan fijos.
+                </Aviso>
+              ) : (
+                <Aviso tono="info">
+                  Después del sorteo o de la primera admisión ya no se pueden cambiar los criterios
+                  ni el desempate.
+                </Aviso>
+              )}
               <p className="text-xs text-muted-foreground">
                 Los campos marcados con * son obligatorios
               </p>
@@ -272,6 +279,16 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
         </form>
       </TableScreenBody>
     </TableScreen>
+  )
+}
+
+/** Marca junto al título de un campo que ya no se puede cambiar. */
+function NoEditable() {
+  return (
+    <span className="ml-2 inline-flex items-center gap-1 align-middle text-xs font-normal text-muted-foreground">
+      <LockIcon className="size-3.5" aria-hidden />
+      No editable
+    </span>
   )
 }
 
@@ -292,6 +309,7 @@ export function Opciones({
     <fieldset className="grid gap-3">
       <legend className="mb-3 text-sm font-medium">
         {legend} <span className="text-red">*</span>
+        {disabled && <NoEditable />}
       </legend>
       <RadioGroup
         className="flex flex-wrap gap-6"
@@ -300,7 +318,13 @@ export function Opciones({
         disabled={disabled}
       >
         {opciones.map(([v, label]) => (
-          <label key={v} className="flex cursor-pointer items-center gap-2 text-sm">
+          <label
+            key={v}
+            className={cn(
+              "flex items-center gap-2 text-sm",
+              disabled ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",
+            )}
+          >
             <RadioGroupItem value={v} />
             {label}
           </label>
@@ -338,7 +362,10 @@ function Criterios({
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">Criterios de prioridad</span>
+        <span className="text-sm font-medium">
+          Criterios de prioridad
+          {disabled && <NoEditable />}
+        </span>
         <Popover open={abierto} onOpenChange={setAbierto}>
           <PopoverTrigger
             render={
@@ -384,12 +411,14 @@ function Criterios({
               }}
               onDragEnd={() => setArrastrado(null)}
               className={cn(
-                "flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-sm",
-                !disabled && "cursor-grab",
+                "flex items-center gap-3 rounded-md border border-border px-3 py-2.5 text-sm",
+                disabled ? "bg-muted/40 text-muted-foreground" : "cursor-grab bg-card",
                 arrastrado === i && "opacity-50",
               )}
             >
-              <DotsSixVerticalIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              {!disabled && (
+                <DotsSixVerticalIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              )}
               <span className="flex-1">
                 {i + 1}. {nombre(id)}
               </span>

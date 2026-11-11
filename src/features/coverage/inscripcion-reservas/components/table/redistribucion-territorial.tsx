@@ -1,6 +1,5 @@
 "use no memo"
 
-import { Marca } from "@/features/coverage/inscripcion-reservas/components/table/columns-inscripciones"
 import { SITUACION_EDAD_UI } from "@/features/coverage/inscripcion-reservas/api/ui-mappings-inscripcion"
 import type { SituacionEdad } from "@/features/coverage/inscripcion-reservas/api/types/inscripcion"
 
@@ -52,8 +51,11 @@ import {
  */
 function seleccionColumna<T extends { numero: string; aspirante: string }>(
   compatible?: (a: T, b: T) => boolean,
+  // El primer marcado de TODAS las páginas: getSelectedRowModel solo ve la actual.
+  primerMarcado?: () => T | undefined,
 ): ColumnDef<T> {
-  const ancla = (table: TanstackTable<T>) => table.getSelectedRowModel().rows[0]?.original
+  const ancla = (table: TanstackTable<T>) =>
+    primerMarcado ? primerMarcado() : table.getSelectedRowModel().rows[0]?.original
   const permitida = (table: TanstackTable<T>, fila: T) => {
     const a = ancla(table)
     return !compatible || !a || compatible(a, fila)
@@ -93,8 +95,9 @@ function seleccionColumna<T extends { numero: string; aspirante: string }>(
   }
 }
 
-const seleccionados = <T,>(table: TanstackTable<T>) =>
-  table.getSelectedRowModel().rows.map((r) => r.original)
+/** Ubicar por lote: todos del mismo grado y modalidad. */
+const mismoGrado = (a: EnRedistribucion, b: EnRedistribucion) =>
+  a.grado === b.grado && a.modalidad === b.modalidad
 
 // --- Sección ----------------------------------------------------------------------
 
@@ -158,56 +161,39 @@ function EnRedistribucionLista({ ver }: { ver: (id: number) => void }) {
   const filas = data?.filas ?? []
   const total = data?.total ?? 0
 
+  // `sedeCercana` llega como "Establecimiento · Sede" (o null si ninguna tiene cupo).
+  const cercana = (r: EnRedistribucion) => {
+    const [establecimiento, ...sede] = (r.sedeCercana ?? "").split(" · ")
+    return { establecimiento: establecimiento || "—", sede: sede.join(" · ") || "—" }
+  }
+
   const columns: ColumnDef<EnRedistribucion>[] = [
-    seleccionColumna<EnRedistribucion>(
-      (a, b) => a.grado === b.grado && a.modalidad === b.modalidad,
-    ),
+    seleccionColumna<EnRedistribucion>(mismoGrado, () => marcados[0]),
     {
       id: "aspirante",
       accessorFn: () => null,
       header: "Inscripción y aspirante",
       meta: { label: "Inscripción y aspirante", className: cn(FIJA, "left-10") },
-      cell: ({ row }) => <span className={wrap}>{nombre(row.original)}</span>,
+      cell: ({ row }) => (
+        <div>
+          <div className={cn(wrap, "font-medium")}>{row.original.aspirante}</div>
+          <div className="text-xs text-muted-foreground">Insc. {row.original.numero}</div>
+        </div>
+      ),
     },
     {
       id: "grado",
       accessorFn: () => null,
-      header: "Grado",
-      meta: { label: "Grado" },
-      cell: ({ row }) => row.original.grado,
+      header: "Grado y modalidad",
+      meta: { label: "Grado y modalidad" },
+      cell: ({ row }) => `${row.original.grado} · ${row.original.modalidad}`,
     },
     {
       id: "jornada",
       accessorFn: () => null,
-      header: "Jornada",
-      meta: { label: "Jornada" },
+      header: "Jornada pedida",
+      meta: { label: "Jornada pedida" },
       cell: ({ row }) => row.original.jornada,
-    },
-    {
-      id: "situacionEdad",
-      accessorFn: () => null,
-      header: "Situación de edad",
-      meta: { label: "Situación de edad" },
-      cell: ({ row }) => (
-        <Marca
-          {...(SITUACION_EDAD_UI[row.original.situacionEdad as SituacionEdad] ??
-            SITUACION_EDAD_UI.SIN_CALCULAR)}
-        />
-      ),
-    },
-    {
-      id: "estado",
-      accessorFn: () => null,
-      header: "Estado",
-      meta: { label: "Estado" },
-      cell: () => <Marca label="En redistribución" color="orange" punto />,
-    },
-    {
-      id: "area",
-      accessorFn: () => null,
-      header: () => <span className={wrap}>Dentro del área de influencia</span>,
-      meta: { label: "Dentro del área de influencia" },
-      cell: ({ row }) => siNo(row.original.dentroAreaInfluencia),
     },
     {
       id: "distancia",
@@ -219,9 +205,16 @@ function EnRedistribucionLista({ ver }: { ver: (id: number) => void }) {
     {
       id: "cercana",
       accessorFn: () => null,
-      header: () => <span className={wrap}>Establecimiento y Sede más cercana con cupo</span>,
-      meta: { label: "Establecimiento y Sede más cercana con cupo" },
-      cell: ({ row }) => <span className={wrap}>{row.original.sedeCercana ?? "—"}</span>,
+      header: () => <span className={cn(wrap, "block min-w-40")}>Sede más cercana con cupo</span>,
+      meta: { label: "Sede más cercana con cupo" },
+      cell: ({ row }) => <span className={wrap}>{cercana(row.original).sede}</span>,
+    },
+    {
+      id: "establecimiento",
+      accessorFn: () => null,
+      header: "Establecimiento",
+      meta: { label: "Establecimiento" },
+      cell: ({ row }) => <span className={wrap}>{cercana(row.original).establecimiento}</span>,
     },
     {
       id: "origen",
@@ -260,7 +253,7 @@ function EnRedistribucionLista({ ver }: { ver: (id: number) => void }) {
   ]
 
   const pageCount = Math.max(1, Math.ceil(total / paginado.pagination.pageSize))
-  const { table } = useDataTable({
+  const { table, selectedRows: marcados } = useDataTable({
     ...paginado.pagination,
     columns,
     data: filas,
@@ -268,7 +261,8 @@ function EnRedistribucionLista({ ver }: { ver: (id: number) => void }) {
     getRowId: (r) => String(r.id),
     columnVisibilityStorageKey: "territorial-redistribucion-column-visibility",
   })
-  const elegidos = seleccionados(table)
+  // Los marcados en cualquier página, no solo en la que se ve.
+  const elegidos = marcados
 
   return (
     <>
@@ -342,6 +336,11 @@ function EnRedistribucionLista({ ver }: { ver: (id: number) => void }) {
       </div>
       <DataTable
         table={table}
+        // Con alguien marcado, se atenúa quien no se puede sumar al lote.
+        isRowMuted={(row) => {
+          const ancla = marcados[0]
+          return !!ancla && !row.getIsSelected() && !mismoGrado(ancla, row.original)
+        }}
         isPending={isPending}
         isError={isError}
         onRetry={refetch}

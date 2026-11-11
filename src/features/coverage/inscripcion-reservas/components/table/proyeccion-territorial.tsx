@@ -165,7 +165,7 @@ export function ProyeccionDetalleVista({ id }: { id: number }) {
         <Aviso tono="warning">Devuelta con la observación: {data.observacion}</Aviso>
       )}
 
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -196,7 +196,7 @@ export function ProyeccionDetalleVista({ id }: { id: number }) {
                       <Button
                         variant="ghost"
                         color="muted"
-                        size="icon-sm"
+                        size="icon-xs"
                         aria-expanded={abierto}
                         aria-label={`${abierto ? "Ocultar" : "Mostrar"} las sedes de ${g.grado}`}
                         onClick={() => alternar(g.codigo)}
@@ -245,27 +245,28 @@ export function ProyeccionDetalleVista({ id }: { id: number }) {
 function SedesFila({ grado }: { grado: ProyeccionGrado }) {
   return (
     <TableRow className="hover:bg-transparent">
-      <TableCell colSpan={9} className="bg-muted/20 p-0">
-        <table className="w-full text-sm">
+      <TableCell colSpan={9} className="p-0">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border">
+            {/* Borde en las celdas: el TableBody de afuera borra el del último tr de cada grupo. */}
+            <tr className="[&>th]:border-b [&>th]:border-border">
               <th className="w-10" />
-              <th className="px-3 py-3 text-left font-medium">Sede</th>
-              <th className="px-3 py-3 text-left font-medium">Cupo proyectado</th>
-              <th className="px-3 py-3 text-left font-medium whitespace-normal">
+              <th className="h-13 px-3 py-0 text-left font-medium">Sede</th>
+              <th className="h-13 px-3 py-0 text-left font-medium">Cupo proyectado</th>
+              <th className="h-13 px-3 py-0 text-left font-medium whitespace-normal">
                 Estudiantes de la sede que vienen
               </th>
-              <th className="px-3 py-3 text-left font-medium">Pasan a otra sede</th>
+              <th className="h-13 px-3 py-0 text-left font-medium">Pasan a otra sede</th>
             </tr>
           </thead>
           <tbody>
             {grado.sedes.map((s) => (
               <tr key={s.sede} className="border-b border-border last:border-0">
                 <td />
-                <td className="px-3 py-3">{s.sede}</td>
-                <td className={cn("px-3 py-3", num)}>{s.cupoProyectado}</td>
-                <td className={cn("px-3 py-3", num)}>{cifra(s.vienen)}</td>
-                <td className={cn("px-3 py-3", num)}>{cifra(s.pasanOtraSede)}</td>
+                <td className="h-13 px-3 py-0">{s.sede}</td>
+                <td className={cn("h-13 px-3 py-0", num)}>{s.cupoProyectado}</td>
+                <td className={cn("h-13 px-3 py-0", num)}>{cifra(s.vienen)}</td>
+                <td className={cn("h-13 px-3 py-0", num)}>{cifra(s.pasanOtraSede)}</td>
               </tr>
             ))}
           </tbody>
@@ -326,9 +327,10 @@ export function AprobarProyeccionDialog({
             Cancelar
           </Button>
           <Button
-            disabled={aprobar.isPending}
+            disabled={aprobar.isPending || !proyeccion}
             onClick={() =>
-              aprobar.mutate(proyeccion!.id, {
+              // Sin `!`: el compilador lee `proyeccion.id` al render y al cerrar es null.
+              aprobar.mutate(proyeccion?.id ?? 0, {
                 onSuccess: () => {
                   toast.success(`Se aprobó la proyección de ${nombre}.`)
                   onOpenChange(false)

@@ -492,9 +492,9 @@ function RegistrarRetiroDialog({
           </Button>
           <Button
             color="destructive"
-            disabled={registrar.isPending}
+            disabled={registrar.isPending || !solicitud}
             onClick={() =>
-              registrar.mutate(solicitud!.id, {
+              registrar.mutate(solicitud?.id ?? 0, {
                 onSuccess: () => {
                   toast.success(
                     `Se registró el retiro de ${solicitud!.estudiante} en ${solicitud!.origen}.`,
