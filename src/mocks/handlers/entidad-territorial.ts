@@ -453,7 +453,7 @@ const redistribucionDb: EnRedistribucion[] = (
       "00430",
       "Mariana Paz León",
       "1°",
-      "Mañana",
+      "Tarde",
       "Colegio Los Álamos",
       true,
       0.9,
