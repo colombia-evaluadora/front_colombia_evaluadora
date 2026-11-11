@@ -183,9 +183,10 @@ export function Buscador({
 }
 
 // Selección y aspirante quedan fijas al scrollear en horizontal; fondo opaco
-// con el mismo tono del hover de fila para tapar lo que pasa por debajo.
+// con el mismo tono del hover de fila para tapar lo que pasa por debajo. Lleva el
+// `transition-colors` de TableRow: sin él cambia antes que el resto de la fila.
 export const FIJA =
-  "sticky z-10 bg-card group-hover/row:bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]"
+  "sticky z-10 bg-card transition-colors group-hover/row:bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]"
 
 /**
  * Búsqueda `terrQ` en la URL con debounce. `reiniciarPagina: false` conserva la

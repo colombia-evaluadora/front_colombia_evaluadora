@@ -414,7 +414,7 @@ function TablaAgrupada({ titulo, grupos }: { titulo: string; grupos: Seguimiento
   )
 
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
+    <div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -436,7 +436,7 @@ function TablaAgrupada({ titulo, grupos }: { titulo: string; grupos: Seguimiento
                   <Button
                     variant="ghost"
                     color="muted"
-                    size="icon-sm"
+                    size="icon-xs"
                     aria-expanded={abierto}
                     aria-label={`${abierto ? "Ocultar" : "Mostrar"} el desglose de ${g.nombre}`}
                     onClick={() => alternar(g.nombre)}
