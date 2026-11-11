@@ -6,7 +6,8 @@ import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/com
 import type { ObservacionRow } from "@/features/gestion-estudiantil/observaciones/api/types"
 import { accionesObservacion } from "@/features/gestion-estudiantil/observaciones/api/ui-mappings"
 import type { DialogoObservacion } from "@/features/gestion-estudiantil/observaciones/components/dialogos/use-dialogos-observaciones"
-import { MenuAccionesObservacion } from "@/features/gestion-estudiantil/observaciones/components/menu-acciones-observacion"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_OBSERVACION, MenuAccionesObservacion } from "@/features/gestion-estudiantil/observaciones/components/menu-acciones-observacion"
 
 interface ColumnasOpciones {
   onAccion: (observacion: ObservacionRow, accion: DialogoObservacion) => void
@@ -65,7 +66,7 @@ export function buildColumnsObservaciones({ onAccion }: ColumnasOpciones): Colum
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_OBSERVACION),
       cell: ({ row }) => (
         <MenuAccionesObservacion
           descripcion={`${row.original.titulo ?? "sin título"} de ${row.original.dirigida_a}`}
