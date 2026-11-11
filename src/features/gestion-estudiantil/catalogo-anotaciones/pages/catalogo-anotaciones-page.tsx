@@ -48,9 +48,9 @@ function CatalogoContent() {
   const tipoRows = tiposQ.data ?? []
   const tipos = tipoRows.map((r) => ({ value: String(r.pk_lista_valor), label: r.nombre }))
   const situaciones = (situacionesQ.data ?? []).map((r) => ({ value: String(r.pk_lista_valor), label: r.nombre }))
-  // Por código del catálogo, nunca por pk: difieren entre entornos.
+  // Por NOMBRE, como fn_observador_tipo_es_negativo: el VALOR no es estable entre entornos ("3", "Negativo") ni el pk.
   const esNegativo = (tipo: string) =>
-    tipoRows.find((r) => String(r.pk_lista_valor) === tipo)?.valor?.toLowerCase().startsWith("negativo") ?? false
+    tipoRows.find((r) => String(r.pk_lista_valor) === tipo)?.nombre?.trim().toLowerCase() === "negativo"
 
   const { data, isPending, isError, error, refetch } = useCodigosQuery({
     establecimiento: ee.id,
