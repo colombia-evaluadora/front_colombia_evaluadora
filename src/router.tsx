@@ -15,6 +15,7 @@ import { NetworkSessionError } from "@/lib/network-error"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
+import { PageLoading } from "@/components/layout/page-loading"
 import {
   activateSearchSchema,
   checkEmailSearchSchema,
@@ -2371,6 +2372,10 @@ export const router = createRouter({
   defaultStructuralSharing: true,
   defaultNotFoundComponent: NotFoundPage,
   defaultErrorComponent: ErrorPage,
+  // Mensaje de carga si la navegación tarda más de 400 ms; una vez visible, mínimo 300 ms (sin parpadeo).
+  defaultPendingComponent: PageLoading,
+  defaultPendingMs: 400,
+  defaultPendingMinMs: 300,
 })
 
 declare module "@tanstack/react-router" {
