@@ -7,8 +7,8 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { BellIcon, ChatCircleTextIcon, CloudOffIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { ArrowCounterClockwiseIcon, BellIcon,ChatCircleTextIcon, CloudOffIcon, GearIcon, InboxIcon, InfoIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
@@ -120,7 +120,7 @@ export function CampanaNotificaciones() {
         {/* `px-3`: el botón `link` no tiene padding (`!p-0`), así que el margen
             derecho de Figma (12px) lo pone el contenedor. */}
         <div className="flex min-w-0 items-center gap-2 px-3 pt-3 pb-2">
-          <h2 className="text-sm font-medium">Notificaciones</h2>
+          <h2 className="font-sans text-sm font-medium">Notificaciones</h2>
           {noLeidas > 0 && (
             <Badge
               variant="soft"
@@ -132,6 +132,8 @@ export function CampanaNotificaciones() {
             </Badge>
           )}
           <span className="flex-1" />
+          {/* Con la lista en error no hay nada que marcar (Figma oculta el enlace). */}
+          {!(lista.isError && recientes.length === 0) && (
           <OnlineOnlyTooltip tooltip={onlineOnly.tooltip}>
             <Button
               variant="link"
@@ -143,6 +145,7 @@ export function CampanaNotificaciones() {
               Marcar todas como leídas
             </Button>
           </OnlineOnlyTooltip>
+          )}
         </div>
 
         {status === "offline" && (
@@ -189,15 +192,21 @@ export function CampanaNotificaciones() {
               <Spinner />
             </div>
           ) : lista.isError && recientes.length === 0 ? (
-            <Empty className="py-8">
-              <EmptyHeader>
-                <EmptyTitle>No se pudieron cargar las notificaciones</EmptyTitle>
-                <EmptyDescription>{getErrorMessage(lista.error)}</EmptyDescription>
-              </EmptyHeader>
-              <Button size="sm" variant="link" onClick={() => void lista.refetch()}>
+            // Figma: aviso naranja con ícono, título, causa y "Reintentar" a la derecha.
+            <div
+              role="alert"
+              className="m-3 flex items-center gap-3 rounded-lg border border-orange-stroke bg-orange-22 px-3 py-3"
+            >
+              <InfoIcon aria-hidden className="size-5 shrink-0 self-start text-orange" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm/4 font-bold text-foreground">No se pudieron cargar las notificaciones</p>
+                <p className="text-xs text-foreground">{getErrorMessage(lista.error)}</p>
+              </div>
+              <Button size="sm" className="shrink-0" onClick={() => void lista.refetch()}>
+                <ArrowCounterClockwiseIcon data-icon="inline-start" />
                 Reintentar
               </Button>
-            </Empty>
+            </div>
           ) : recientes.length === 0 ? (
             <Empty className="py-8">
               <EmptyHeader>
