@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type {
+  AgeSituation,
   Matricula,
   MatriculaQueryRequest,
   MatriculaQueryResponse,
@@ -26,6 +27,10 @@ interface MatriculaListRequest {
   SHIFT: string | null
   GRADE: number | null
   GROUP: string | null
+  PERIODO: number | null
+  TIPO: string | null
+  METODOLOGIA: number | null
+  SOLICITUD: "CON_SOLICITUD" | null
   PAGEINDEX: number
   PAGESIZE: number
   SORTBY: string | null
@@ -52,6 +57,10 @@ function toListRequest(params: UseMatriculaQueryParams): MatriculaListRequest {
     SHIFT: filters.shift || null,
     GRADE: filters.grade ?? null,
     GROUP: filters.group || null,
+    PERIODO: filters.periodo ?? null,
+    TIPO: filters.tipo ?? null,
+    METODOLOGIA: filters.metodologia ?? null,
+    SOLICITUD: filters.solicitud ?? null,
     PAGEINDEX: pageIndex,
     PAGESIZE: pageSize,
     SORTBY: primary?.id ?? null,
@@ -74,6 +83,11 @@ interface MatriculaListRow {
   guardian: string | null
   status: MatriculaStatus
   has_grades: boolean
+  age_situation?: AgeSituation | null
+  // Pendiente en el back (pendientes-back.md): solo lo trae el mock.
+  retiro_solicitado?: "S" | "N"
+  anulacion_pendiente?: "S" | "N"
+  snapshot_pendiente?: "S" | "N"
   total_count: number
 }
 
@@ -99,6 +113,10 @@ function toMatricula(row: MatriculaListRow): Matricula {
     guardian: row.guardian ?? "",
     status: row.status,
     hasGrades: row.has_grades,
+    ageSituation: row.age_situation ?? "SIN_CALCULAR",
+    retiroSolicitado: row.retiro_solicitado === "S",
+    anulacionPendiente: row.anulacion_pendiente === "S",
+    snapshotPendiente: row.snapshot_pendiente === "S",
   }
 }
 

@@ -1,3 +1,6 @@
+import { anulacionPendiente, retiroSolicitadoPor } from "@/mocks/db/solicitud-retiro"
+import { metodologiaDe } from "@/mocks/db/metodologia"
+import { tieneSnapshotPendiente } from "@/mocks/db/notas-homologadas"
 import { http, HttpResponse, delay } from "msw"
 
 import {
@@ -90,6 +93,8 @@ interface MatriculaListRequestBody {
   SHIFT: string | null
   GRADE: number | null
   GROUP: string | null
+  METODOLOGIA?: number | null
+  SOLICITUD?: "CON_SOLICITUD" | null
   PAGEINDEX: number
   PAGESIZE: number
   SORTBY: string | null
@@ -115,6 +120,10 @@ function toRawMatriculaRow(row: Matricula, totalCount: number) {
     guardian: row.guardian || null,
     status: row.status,
     has_grades: row.hasGrades,
+    age_situation: row.ageSituation ?? "SIN_CALCULAR",
+    retiro_solicitado: retiroSolicitadoPor(Number(row.id)) ? "S" : "N",
+    anulacion_pendiente: anulacionPendiente(Number(row.id)) ? "S" : "N",
+    snapshot_pendiente: tieneSnapshotPendiente(row.id) ? "S" : "N",
     total_count: totalCount,
   }
 }
@@ -140,6 +149,14 @@ function applyFilters(rows: Matricula[], filters: MatriculaQueryFilters): Matric
     if (filters.shift && row.shift !== filters.shift) return false
     if (filters.grade != null && row.grade !== filters.grade) return false
     if (filters.group && row.group !== filters.group) return false
+    if (filters.metodologia != null && metodologiaDe(Number(row.id)) !== filters.metodologia) return false
+    if (
+      filters.solicitud === "CON_SOLICITUD" &&
+      !retiroSolicitadoPor(Number(row.id)) &&
+      !anulacionPendiente(Number(row.id))
+    ) {
+      return false
+    }
 
     return true
   })
@@ -192,6 +209,21 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
         fk_tperiodo_academico: 1,
         created_at: matricula.enrollmentDate,
         estado_matricula_nombre: matricula.status,
+        // Variedad fija por pk para ver cada bloqueo de Editar.
+        tipo_matricula: "PRINCIPAL" as const,
+        tiene_complementaria: pk % 3 === 0 ? ("S" as const) : ("N" as const),
+        postulacion_registrada: pk % 3 === 1 ? ("S" as const) : ("N" as const),
+        retiro_solicitado_por: retiroSolicitadoPor(pk),
+        anulacion_pendiente: anulacionPendiente(pk) ? ("S" as const) : ("N" as const),
+        fk_tlv_internado: toNum(details.academic.internado ?? ""),
+        fk_tlv_pais_origen: toNum(details.student.paisOrigen ?? ""),
+        fk_tlv_lengua_materna: toNum(details.student.lenguaMaterna ?? ""),
+        fk_tlv_condicion_migratoria: toNum(details.student.condicionMigratoria ?? ""),
+        fk_tlv_apoyo_academico: toNum(details.complementary.apoyoAcademico ?? ""),
+        fk_tlv_trastorno: toNum(details.complementary.trastorno ?? ""),
+        fk_tlv_srpa: toNum(details.complementary.srpa ?? ""),
+        fecha_inicio_medida: details.complementary.srpaInicio || null,
+        fecha_fin_medida: details.complementary.srpaFin || null,
       },
       acudientes: details.guardian.firstName
         ? [
@@ -350,6 +382,8 @@ export const matriculaHandlers = [
       shift: body.SHIFT ?? undefined,
       grade: body.GRADE ?? undefined,
       group: body.GROUP ?? undefined,
+      metodologia: body.METODOLOGIA ?? undefined,
+      solicitud: body.SOLICITUD ?? undefined,
     }
     const sorting: MatriculaQueryRequest["sorting"] = body.SORTBY
       ? [{ id: body.SORTBY, desc: body.SORTDIR === "desc" }]

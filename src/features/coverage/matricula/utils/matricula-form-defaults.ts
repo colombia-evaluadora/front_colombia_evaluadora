@@ -11,6 +11,13 @@ import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/matricula/utils/mat
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { isPreescolarPrimariaGrado } from "@/features/coverage/matricula/utils/matricula-grado-rules"
 import { CORREO_REGEX, MENSAJE_CORREO_INVALIDO } from "@/lib/email-address"
+import {
+  documentoValido,
+  errorDeFormato,
+  esVictima,
+  MATRICULA_FORMATOS,
+  type MatriculaValidacionOpciones,
+} from "@/features/coverage/matricula/utils/matricula-formatos"
 
 export function resolveMatriculaMunicipioDepartments(
   values: CreateMatriculaInput,
@@ -118,6 +125,7 @@ export function createEmptySupportFiles(): MatriculaSupportFiles {
     previousYearCertificate: [],
     medicalCertificate: [],
     studentPhoto: [],
+    signedSheet: [],
     otherDocuments: [],
   }
 }
@@ -134,6 +142,10 @@ export const REQUIRED_MATRICULA_FIELD_LABELS: Record<string, string> = {
     MATRICULA_FIELD_CATALOG.flatMap((section) => section.fields).map((field) => [field.id, field.label]),
   ),
   ...Object.fromEntries(SUPPORT_FILE_FIELDS.map((field) => [field.key, field.label])),
+  // Campos que no están en la config del establecimiento (siempre visibles).
+  "student-country": "País de origen",
+  "complementary-srpa-start": "Fecha de inicio de la medida",
+  "complementary-srpa-end": "Fecha de fin de la medida",
 }
 
 // Getter por campo NO bloqueado (los bloqueados ya se validan a mano abajo,
@@ -212,14 +224,16 @@ export interface MatriculaAccountsFound {
  */
 /** Misma regla que el SSO: sin tildes ni ñ antes de la @ (ver `@/lib/email-address`). */
 export const EMAIL_REGEX = CORREO_REGEX
-export const DOCUMENT_REGEX = /^\d{3,15}$/
+export const DOCUMENT_REGEX = /^\d{5,20}$/
 
 export function validateMatricula(
   values: CreateMatriculaInput,
   files?: MatriculaSupportFiles,
   fieldSettings?: MatriculaFieldSettingsMap,
-  accountsFound?: MatriculaAccountsFound,
+  _accountsFound?: MatriculaAccountsFound,
+  opciones?: MatriculaValidacionOpciones,
 ): string[] {
+  const extranjero = (tipo: string) => Boolean(opciones?.tiposDocExtranjero?.has(tipo))
   const missing: string[] = []
   if (files) {
     for (const field of SUPPORT_FILE_FIELDS) {
@@ -231,23 +245,54 @@ export function validateMatricula(
   if (!values.academic.shift) missing.push("matricula-shift")
   if (!values.academic.grade) missing.push("matricula-grade")
   if (!values.academic.group) missing.push("matricula-group")
+  if (values.academic.mediaTecnicaExterna && (values.academic.institucionExterna ?? "").trim().length < 3) {
+    missing.push("matricula-institucion-externa")
+  }
   if (!values.student.documentType) missing.push("student-document-type")
   const studentDocument = values.student.documentNumber.trim()
   if (!studentDocument) missing.push("student-document-number")
-  else if (!DOCUMENT_REGEX.test(studentDocument)) missing.push("student-document-number")
+  else if (!documentoValido(studentDocument, extranjero(values.student.documentType))) {
+    missing.push("student-document-number")
+  }
   if (!values.student.firstName.trim()) missing.push("student-first-name")
   if (!values.student.lastName.trim()) missing.push("student-last-name")
   if (!values.student.birthDate) missing.push("student-birth-date")
-  else if (values.student.birthDate > new Date().toISOString().slice(0, 10)) {
-    missing.push("student-birth-date")
-  }
   if (!values.student.gender) missing.push("student-gender")
   if (!values.guardian.relationship) missing.push("guardian-relationship")
   if (!values.guardian.documentType) missing.push("guardian-document-type")
 
   for (const [id, getValue] of Object.entries(OPTIONAL_MATRICULA_FIELD_GETTERS)) {
     if (!isFieldRequired(fieldSettings, id) || !isFieldVisible(fieldSettings, id)) continue
+    // "¿Cuál?" está deshabilitado mientras no venga de otro municipio.
+    if (id === "origin-which-municipality" && values.originSector.fromAnotherMunicipality !== "Sí") continue
+    // El municipio expulsor solo aplica a la población víctima (Regla 5).
+    if (id === "conflict-last-expelling-municipality" && !esVictima(values.conflictVictim.population, opciones)) continue
     if (!getValue(values).trim()) missing.push(id)
+  }
+
+  // País de origen (2.2): obligatorio con documento de extranjero; con Colombia
+  // no se admite un documento de extranjero.
+  const pais = values.student.paisOrigen || opciones?.paisColombia || ""
+  const docExtranjero = extranjero(values.student.documentType)
+  if (docExtranjero && (!values.student.paisOrigen || pais === opciones?.paisColombia)) {
+    missing.push("student-country")
+  }
+  // SRPA (2.8): con situación distinta de «No aplica», la fecha de inicio es obligatoria.
+  const srpa = values.complementary.srpa ?? ""
+  if (srpa && !opciones?.srpaNoAplica?.has(srpa) && !values.complementary.srpaInicio) {
+    missing.push("complementary-srpa-start")
+  }
+
+  // Condicionales del doc, obligatorios aunque la config diga otra cosa.
+  if (values.originSector.fromAnotherMunicipality === "Sí" && !values.originSector.whichMunicipality.trim()) {
+    missing.push("origin-which-municipality")
+  }
+  if (
+    isFieldVisible(fieldSettings, "conflict-last-expelling-municipality") &&
+    esVictima(values.conflictVictim.population, opciones) &&
+    !values.conflictVictim.lastExpellingMunicipality
+  ) {
+    missing.push("conflict-last-expelling-municipality")
   }
 
   // Oculto (preescolar/primaria, ver `applyGradeFieldRules`) no se valida:
@@ -255,18 +300,16 @@ export function validateMatricula(
   // con un error en un campo que ya no se ve.
   const studentEmail = values.studentContact.email.trim()
   if (isFieldVisible(fieldSettings, "student-contact-email")) {
-    if (
-      accountsFound?.student === false &&
-      !studentEmail &&
-      !isPreescolarPrimariaGrado(values.academic.grade)
-    ) {
+    // Básica secundaria y Media: siempre (es su cuenta de acceso).
+    if (!studentEmail && values.academic.grade && !isPreescolarPrimariaGrado(values.academic.grade)) {
       missing.push("student-contact-email")
     } else if (studentEmail && !EMAIL_REGEX.test(studentEmail)) {
       missing.push("student-contact-email")
     }
   }
   const guardianEmail = values.guardianContact.email.trim()
-  if (accountsFound?.guardian === false && !guardianEmail) {
+  // Bloque 2.12: siempre obligatorio.
+  if (!guardianEmail) {
     missing.push("guardian-contact-email")
   } else if (guardianEmail && !EMAIL_REGEX.test(guardianEmail)) {
     missing.push("guardian-contact-email")
@@ -276,8 +319,13 @@ export function validateMatricula(
   // `OPTIONAL_MATRICULA_FIELD_GETTERS`), pero el formato (3-15 dígitos)
   // aplica siempre que haya un valor, sea o no obligatorio.
   const guardianDocument = values.guardian.documentNumber.trim()
-  if (guardianDocument && !DOCUMENT_REGEX.test(guardianDocument)) {
+  if (guardianDocument && !documentoValido(guardianDocument, extranjero(values.guardian.documentType))) {
     missing.push("guardian-document-number")
+  }
+
+  // Formatos (largos, caracteres, rangos) de lo que ya tiene valor.
+  for (const id of Object.keys(MATRICULA_FORMATOS)) {
+    if (!missing.includes(id) && errorDeFormato(id, values)) missing.push(id)
   }
   return missing
 }
@@ -305,10 +353,20 @@ export function getMatriculaFieldErrorMessage(id: string, values: CreateMatricul
       id === "student-document-number"
         ? values.student.documentNumber.trim()
         : values.guardian.documentNumber.trim()
-    if (document && !DOCUMENT_REGEX.test(document)) {
-      return `El documento debe tener entre 3 y 15 dígitos: ${label}.`
+    if (document && !/^[A-Z0-9]{5,20}$/i.test(document)) {
+      return `${label}: debe tener entre 5 y 20 caracteres; solo dígitos, o letras y dígitos si es de extranjero.`
+    }
+    if (document && /[A-Z]/i.test(document)) {
+      return `${label}: solo admite letras si el tipo de documento es de extranjero (PPT, PEP, pasaporte o NES).`
     }
   }
+  if (id === "student-country") {
+    return values.student.paisOrigen
+      ? "País de origen: con Colombia no se admite un documento de extranjero (PPT, PEP, pasaporte o NES)."
+      : "Falta el campo obligatorio: País de origen (el documento es de extranjero)."
+  }
+  const formato = errorDeFormato(id, values)
+  if (formato) return `${label}: ${formato}.`
   return `Falta el campo obligatorio: ${label}.`
 }
 
