@@ -3,207 +3,205 @@ import type { IconBaseProps, IconType } from "react-icons"
 import { GoShieldLock } from "react-icons/go"
 import { IoMdCheckboxOutline } from "react-icons/io"
 import {
-  MdAccessTime,
-  MdOutlineAccountBalance,
-  MdAccountCircle,
-  MdAdd,
   MdAddCircleOutline,
-  MdApartment,
-  MdArrowBack,
-  MdArrowDownward,
-  MdArrowForward,
-  MdArrowUpward,
-  MdSwapVert,
-  MdSwapHoriz,
-  MdAssignment,
   MdAssignmentAdd,
-  MdAssignmentTurnedIn,
-  MdAttachFile,
-  MdAttachMoney,
-  MdAudiotrack,
-  MdAutorenew,
-  MdBackspace,
-  MdBadge,
-  MdBlock,
-  MdBolt,
-  MdBarChart,
-  MdBrush,
-  MdBubbleChart,
-  MdCalendarMonth,
-  MdOutlineEditCalendar,
-  MdCloudDone,
-  MdCloudOff,
-  MdCloudQueue,
-  MdCloudSync,
-  MdCalendarToday,
-  MdCancel,
-  MdCancelPresentation,
-  MdChat,
   MdChatBubbleOutline,
-  MdCheck,
   MdCheckCircle,
+  MdCheckCircleOutline,
   MdCircle,
-  MdClose,
-  MdContacts,
-  MdContrast,
-  MdCoPresent,
-  MdCreditCard,
-  MdDarkMode,
-  MdDescription,
-  MdDragIndicator,
+  MdErrorOutline,
+  MdHelpOutline,
+  MdInfoOutline,
+  MdLockOutline,
+  MdOutlineAccessTime,
+  MdOutlineAccountBalance,
+  MdOutlineAccountCircle,
+  MdOutlineAdd,
+  MdOutlineAdminPanelSettings,
+  MdOutlineAlternateEmail,
+  MdOutlineApartment,
+  MdOutlineApps,
+  MdOutlineArchive,
+  MdOutlineArrowBack,
+  MdOutlineArrowDownward,
+  MdOutlineArrowDropDown,
+  MdOutlineArrowDropUp,
+  MdOutlineArrowForward,
+  MdOutlineArrowUpward,
+  MdOutlineAssignment,
+  MdOutlineAssignmentTurnedIn,
+  MdOutlineAttachFile,
+  MdOutlineAttachMoney,
+  MdOutlineAudiotrack,
+  MdOutlineAutoAwesome,
+  MdOutlineAutorenew,
+  MdOutlineBackspace,
+  MdOutlineBadge,
+  MdOutlineBarChart,
+  MdOutlineBlock,
+  MdOutlineBolt,
+  MdOutlineBorderColor,
+  MdOutlineBrush,
+  MdOutlineBubbleChart,
+  MdOutlineCalendarMonth,
+  MdOutlineCalendarToday,
+  MdOutlineCampaign,
+  MdOutlineCancel,
+  MdOutlineCancelPresentation,
+  MdOutlineChat,
+  MdOutlineCheck,
+  MdOutlineCheckBox,
+  MdOutlineChromeReaderMode,
+  MdOutlineClose,
+  MdOutlineCloudDone,
+  MdOutlineCloudOff,
+  MdOutlineCloudQueue,
+  MdOutlineCloudSync,
+  MdOutlineCoPresent,
+  MdOutlineCode,
+  MdOutlineContacts,
+  MdOutlineContentCopy,
+  MdOutlineContentPaste,
+  MdOutlineContrast,
+  MdOutlineControlPoint,
+  MdOutlineCreditCard,
+  MdOutlineDarkMode,
+  MdOutlineDataObject,
+  MdOutlineDelete,
+  MdOutlineDescription,
+  MdOutlineDevices,
+  MdOutlineDirectionsWalk,
+  MdOutlineDoneAll,
+  MdOutlineDragIndicator,
+  MdOutlineEdit,
+  MdOutlineEditCalendar,
+  MdOutlineEmail,
+  MdOutlineEmojiEmotions,
+  MdOutlineEmojiEvents,
+  MdOutlineEvent,
+  MdOutlineEventSeat,
+  MdOutlineExplore,
+  MdOutlineFactCheck,
   MdOutlineFileDownload,
   MdOutlineFileUpload,
-  MdOutlineBorderColor,
-  MdOutlineDelete,
-  MdEmojiEvents,
-  MdEvent,
-  MdExplore,
-  MdOutlineChromeReaderMode,
-  MdOutlineControlPoint,
-  MdOutlineImage,
-  MdOutlineInsertLink,
-  MdOutlineEmail,
-  MdErrorOutline,
   MdOutlineFilterList,
-  MdFolderOpen,
+  MdOutlineFolderOpen,
   MdOutlineFolderZip,
-  MdOutlinePermMedia,
-  MdFormatBold,
-  MdFormatItalic,
-  MdFormatListNumbered,
-  MdFormatUnderlined,
-  MdGavel,
-  MdGroup,
-  MdGroupAdd,
-  MdGroups,
-  MdHelpOutline,
-  MdHome,
-  MdHomeWork,
-  MdOutlineInbox,
-  MdInfoOutline,
-  MdKey,
-  MdKeyboardArrowDown,
-  MdKeyboardArrowLeft,
-  MdKeyboardArrowRight,
-  MdKeyboardArrowUp,
-  MdLightMode,
-  MdLinkOff,
-  MdLockOutline,
-  MdLogin,
-  MdLogout,
-  MdManageSearch,
-  MdMap,
-  MdMenu,
-  MdMenuBook,
-  MdMilitaryTech,
-  MdMoreHoriz,
-  MdOutlineAdminPanelSettings,
-  MdOutlinePassword,
-  MdOutlineShield,
-  MdPalette,
-  MdPark,
-  MdPeople,
-  MdPictureAsPdf,
-  MdPersonOutline,
-  MdOutlinePersonAddAlt,
-  MdOutlineDirectionsWalk,
-  MdOutlineEventSeat,
-  MdShuffle,
-  MdOutlinePersonRemove,
-  MdPlace,
-  MdPsychology,
-  MdPublic,
-  MdRadioButtonUnchecked,
-  MdRemoveCircleOutline,
-  MdRefresh,
-  MdRemove,
-  MdOutlineRemoveModerator,
-  MdSchool,
-  MdSearch,
-  MdOutlineSend,
-  MdOutlineNearMe,
-  MdSettings,
-  MdOutlineSmartDisplay,
-  MdOutlineNotifications,
-  MdSupportAgent,
-  MdSwitchAccount,
-  MdTableChart,
-  MdTimelapse,
-  MdTransgender,
-  MdTrendingDown,
-  MdTrendingUp,
-  MdUnfoldMore,
-  MdVerifiedUser,
-  MdViewColumn,
-  MdVisibility,
-  MdVisibilityOff,
-  MdWarningAmber,
-  MdCheckCircleOutline,
-  MdAlternateEmail,
-  MdApps,
-  MdArrowDropDown,
-  MdCode,
-  MdContentCopy,
-  MdFormatListBulleted,
-  MdFormatQuote,
-  MdLink,
-  MdMicNone,
-  MdMoreVert,
-  MdOutlineArchive,
-  MdOutlineAssignment,
-  MdOutlineCampaign,
-  MdOutlineChat,
-  MdOutlineDataObject,
-  MdOutlineEdit,
-  MdOutlineEmojiEmotions,
-  MdOutlineFactCheck,
+  MdOutlineFormatAlignCenter,
+  MdOutlineFormatAlignJustify,
+  MdOutlineFormatAlignLeft,
+  MdOutlineFormatAlignRight,
+  MdOutlineFormatBold,
+  MdOutlineFormatClear,
+  MdOutlineFormatColorText,
+  MdOutlineFormatIndentDecrease,
+  MdOutlineFormatIndentIncrease,
+  MdOutlineFormatItalic,
+  MdOutlineFormatLineSpacing,
+  MdOutlineFormatListBulleted,
+  MdOutlineFormatListNumbered,
+  MdOutlineFormatQuote,
+  MdOutlineFormatUnderlined,
+  MdOutlineGavel,
+  MdOutlineGroup,
+  MdOutlineGroupAdd,
+  MdOutlineGroups,
+  MdOutlineHistory,
+  MdOutlineHome,
+  MdOutlineHomeWork,
+  MdOutlineHourglassTop,
   MdOutlineHowToVote,
+  MdOutlineImage,
+  MdOutlineInbox,
+  MdOutlineInsertDriveFile,
+  MdOutlineInsertLink,
+  MdOutlineKey,
+  MdOutlineKeyboardArrowDown,
+  MdOutlineKeyboardArrowLeft,
+  MdOutlineKeyboardArrowRight,
+  MdOutlineKeyboardArrowUp,
   MdOutlineLayers,
+  MdOutlineLightMode,
+  MdOutlineLink,
+  MdOutlineLinkOff,
+  MdOutlineLogin,
+  MdOutlineLogout,
+  MdOutlineManageSearch,
+  MdOutlineMap,
   MdOutlineMarkChatRead,
   MdOutlineMarkChatUnread,
-  MdOutlineNotificationsOff,
+  MdOutlineMenu,
+  MdOutlineMenuBook,
+  MdOutlineMicNone,
+  MdOutlineMilitaryTech,
+  MdOutlineMoreHoriz,
+  MdOutlineMoreVert,
+  MdOutlineNearMe,
+  MdOutlineNotes,
+  MdOutlineNotifications,
   MdOutlineNotificationsActive,
-  MdOutlineVolumeUp,
-  MdOutlineTerminal,
-  MdOutlineUnarchive,
-  MdOutlineVideocam,
-  MdOutlineViewHeadline,
-  MdStrikethroughS,
-  MdTag,
-  MdOutlinePushPin,
-  MdPushPin,
-  MdOutlineInsertDriveFile,
+  MdOutlineNotificationsOff,
+  MdOutlinePalette,
+  MdOutlinePark,
+  MdOutlinePassword,
+  MdOutlinePeople,
+  MdOutlinePermMedia,
+  MdOutlinePersonAddAlt,
+  MdOutlinePersonRemove,
   MdOutlinePhotoLibrary,
-  MdOutlineCheckBox,
+  MdOutlinePictureAsPdf,
+  MdOutlinePlace,
+  MdOutlinePrint,
+  MdOutlinePsychology,
+  MdOutlinePublic,
+  MdOutlinePushPin,
   MdOutlineRadioButtonChecked,
-  MdNotes,
+  MdOutlineRadioButtonUnchecked,
+  MdOutlineRedo,
+  MdOutlineRefresh,
+  MdOutlineRemove,
+  MdOutlineRemoveModerator,
+  MdOutlineReply,
   MdOutlineRule,
-  MdArrowDropUp,
-  MdUndo,
-  MdReply,
-  MdRedo,
-  MdFormatColorText,
-  MdFormatAlignLeft,
-  MdFormatAlignCenter,
-  MdFormatAlignRight,
-  MdFormatAlignJustify,
-  MdFormatLineSpacing,
-  MdFormatIndentDecrease,
-  MdFormatIndentIncrease,
-  MdFormatClear,
-  MdPrint,
   MdOutlineSave,
-  MdStop,
-  MdAutoAwesome,
-  MdHistory,
-  MdContentPaste,
-  MdHourglassTop,
+  MdOutlineSchool,
+  MdOutlineSearch,
+  MdOutlineSend,
+  MdOutlineSettings,
+  MdOutlineShield,
+  MdOutlineShuffle,
+  MdOutlineSmartDisplay,
+  MdOutlineStop,
+  MdOutlineStrikethroughS,
+  MdOutlineSupportAgent,
+  MdOutlineSwapHoriz,
+  MdOutlineSwapVert,
+  MdOutlineSwitchAccount,
+  MdOutlineTableChart,
+  MdOutlineTag,
+  MdOutlineTerminal,
+  MdOutlineTimelapse,
+  MdOutlineTransgender,
+  MdOutlineTrendingDown,
+  MdOutlineTrendingUp,
+  MdOutlineUnarchive,
+  MdOutlineUndo,
+  MdOutlineUnfoldMore,
+  MdOutlineVerifiedUser,
+  MdOutlineVideocam,
+  MdOutlineViewColumn,
+  MdOutlineViewHeadline,
+  MdOutlineVisibility,
+  MdOutlineVisibilityOff,
+  MdOutlineVolumeUp,
+  MdOutlineWarningAmber,
+  MdPauseCircleOutline,
+  MdPersonOutline,
+  MdPlayCircleOutline,
+  MdPushPin,
+  MdRemoveCircleOutline,
   MdStar,
   MdStarBorder,
-  MdDoneAll,
-  MdDevices,
-  MdPauseCircleOutline,
-  MdPlayCircleOutline,
 } from "react-icons/md"
 
 /**
@@ -227,114 +225,114 @@ function makeIcon(Base: IconType): Icon {
   }
 }
 
-export const AddressBookIcon = makeIcon(MdContacts)
+export const AddressBookIcon = makeIcon(MdOutlineContacts)
 export const AdminPanelSettingsIcon = makeIcon(MdOutlineAdminPanelSettings)
-export const ArrowCounterClockwiseIcon = makeIcon(MdRefresh)
-export const ArrowDownIcon = makeIcon(MdArrowDownward)
-export const ArrowLeftIcon = makeIcon(MdArrowBack)
-export const ArrowRightIcon = makeIcon(MdArrowForward)
-export const ArrowUpIcon = makeIcon(MdArrowUpward)
-export const ArrowsDownUpIcon = makeIcon(MdSwapVert)
-export const ArrowsLeftRightIcon = makeIcon(MdSwapHoriz)
-export const AudioIcon = makeIcon(MdAudiotrack)
+export const ArrowCounterClockwiseIcon = makeIcon(MdOutlineRefresh)
+export const ArrowDownIcon = makeIcon(MdOutlineArrowDownward)
+export const ArrowLeftIcon = makeIcon(MdOutlineArrowBack)
+export const ArrowRightIcon = makeIcon(MdOutlineArrowForward)
+export const ArrowUpIcon = makeIcon(MdOutlineArrowUpward)
+export const ArrowsDownUpIcon = makeIcon(MdOutlineSwapVert)
+export const ArrowsLeftRightIcon = makeIcon(MdOutlineSwapHoriz)
+export const AudioIcon = makeIcon(MdOutlineAudiotrack)
 export const BankIcon = makeIcon(MdOutlineAccountBalance)
 export const BellIcon = makeIcon(MdOutlineNotifications)
-export const BookIcon = makeIcon(MdMenuBook)
+export const BookIcon = makeIcon(MdOutlineMenuBook)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
-export const BrainIcon = makeIcon(MdPsychology)
-export const BrushIcon = makeIcon(MdBrush)
-export const BuildingsIcon = makeIcon(MdApartment)
-export const CalendarBlankIcon = makeIcon(MdCalendarToday)
-export const CalendarDotsIcon = makeIcon(MdEvent)
-export const CalendarIcon = makeIcon(MdCalendarMonth)
+export const BrainIcon = makeIcon(MdOutlinePsychology)
+export const BrushIcon = makeIcon(MdOutlineBrush)
+export const BuildingsIcon = makeIcon(MdOutlineApartment)
+export const CalendarBlankIcon = makeIcon(MdOutlineCalendarToday)
+export const CalendarDotsIcon = makeIcon(MdOutlineEvent)
+export const CalendarIcon = makeIcon(MdOutlineCalendarMonth)
 export const CalendarPlusIcon = makeIcon(MdOutlineEditCalendar)
 // Conectividad (banner offline). Material no tiene "cloud alert": se usa
 // `MdCloudQueue` para el estado degradado.
-export const CloudAlertIcon = makeIcon(MdCloudQueue)
-export const CloudCheckIcon = makeIcon(MdCloudDone)
-export const CloudOffIcon = makeIcon(MdCloudOff)
-export const CloudSyncIcon = makeIcon(MdCloudSync)
-export const ChalkboardTeacherIcon = makeIcon(MdCoPresent)
-export const ChartBarIcon = makeIcon(MdBarChart)
-export const ChartLineUpIcon = makeIcon(MdTrendingUp)
-export const ChartLineDownIcon = makeIcon(MdTrendingDown)
-export const CaretDownIcon = makeIcon(MdKeyboardArrowDown)
-export const CaretLeftIcon = makeIcon(MdKeyboardArrowLeft)
-export const CaretRightIcon = makeIcon(MdKeyboardArrowRight)
-export const CaretUpDownIcon = makeIcon(MdUnfoldMore)
-export const CaretUpIcon = makeIcon(MdKeyboardArrowUp)
+export const CloudAlertIcon = makeIcon(MdOutlineCloudQueue)
+export const CloudCheckIcon = makeIcon(MdOutlineCloudDone)
+export const CloudOffIcon = makeIcon(MdOutlineCloudOff)
+export const CloudSyncIcon = makeIcon(MdOutlineCloudSync)
+export const ChalkboardTeacherIcon = makeIcon(MdOutlineCoPresent)
+export const ChartBarIcon = makeIcon(MdOutlineBarChart)
+export const ChartLineUpIcon = makeIcon(MdOutlineTrendingUp)
+export const ChartLineDownIcon = makeIcon(MdOutlineTrendingDown)
+export const CaretDownIcon = makeIcon(MdOutlineKeyboardArrowDown)
+export const CaretLeftIcon = makeIcon(MdOutlineKeyboardArrowLeft)
+export const CaretRightIcon = makeIcon(MdOutlineKeyboardArrowRight)
+export const CaretUpDownIcon = makeIcon(MdOutlineUnfoldMore)
+export const CaretUpIcon = makeIcon(MdOutlineKeyboardArrowUp)
 export const ChatCircleDotsIcon = makeIcon(MdChatBubbleOutline)
-export const ChatCircleTextIcon = makeIcon(MdChat)
+export const ChatCircleTextIcon = makeIcon(MdOutlineChat)
 export const CheckCircleIcon = makeIcon(MdCheckCircleOutline)
 export const CheckCircleFillIcon = makeIcon(MdCheckCircle)
-export const ProhibitIcon = makeIcon(MdBlock)
-export const CheckIcon = makeIcon(MdCheck)
-export const CircleDashedIcon = makeIcon(MdRadioButtonUnchecked)
-export const CircleHalfIcon = makeIcon(MdContrast)
+export const ProhibitIcon = makeIcon(MdOutlineBlock)
+export const CheckIcon = makeIcon(MdOutlineCheck)
+export const CircleDashedIcon = makeIcon(MdOutlineRadioButtonUnchecked)
+export const CircleHalfIcon = makeIcon(MdOutlineContrast)
 export const CircleIcon = makeIcon(MdCircle)
-export const CirclesThreeIcon = makeIcon(MdBubbleChart)
+export const CirclesThreeIcon = makeIcon(MdOutlineBubbleChart)
 export const ClipboardAddIcon = makeIcon(MdAssignmentAdd)
-export const ClipboardCheckIcon = makeIcon(MdAssignmentTurnedIn)
-export const ClipboardTextIcon = makeIcon(MdAssignment)
-export const ClockCountdownIcon = makeIcon(MdTimelapse)
-export const ClockIcon = makeIcon(MdAccessTime)
-export const ColumnsIcon = makeIcon(MdViewColumn)
-export const CompassIcon = makeIcon(MdExplore)
+export const ClipboardCheckIcon = makeIcon(MdOutlineAssignmentTurnedIn)
+export const ClipboardTextIcon = makeIcon(MdOutlineAssignment)
+export const ClockCountdownIcon = makeIcon(MdOutlineTimelapse)
+export const ClockIcon = makeIcon(MdOutlineAccessTime)
+export const ColumnsIcon = makeIcon(MdOutlineViewColumn)
+export const CompassIcon = makeIcon(MdOutlineExplore)
 // Ícono de las acciones "Agregar" (crear un registro), para distinguirlas de
 // `PlusIcon`/`PlusCircleIcon`, que se usan en sumas dentro de un formulario.
 export const ControlPointIcon = makeIcon(MdOutlineControlPoint)
-export const CreditCardIcon = makeIcon(MdCreditCard)
-export const CurrencyDollarIcon = makeIcon(MdAttachMoney)
+export const CreditCardIcon = makeIcon(MdOutlineCreditCard)
+export const CurrencyDollarIcon = makeIcon(MdOutlineAttachMoney)
 // Manija de arrastre (los seis puntitos): marca las filas que se reordenan.
-export const DevicesIcon = makeIcon(MdDevices)
-export const DotsSixVerticalIcon = makeIcon(MdDragIndicator)
-export const DotsThreeIcon = makeIcon(MdMoreHoriz)
+export const DevicesIcon = makeIcon(MdOutlineDevices)
+export const DotsSixVerticalIcon = makeIcon(MdOutlineDragIndicator)
+export const DotsThreeIcon = makeIcon(MdOutlineMoreHoriz)
 export const EnvelopeIcon = makeIcon(MdOutlineEmail)
-export const EraserIcon = makeIcon(MdBackspace)
-export const EyeIcon = makeIcon(MdVisibility)
-export const EyeSlashIcon = makeIcon(MdVisibilityOff)
+export const EraserIcon = makeIcon(MdOutlineBackspace)
+export const EyeIcon = makeIcon(MdOutlineVisibility)
+export const EyeSlashIcon = makeIcon(MdOutlineVisibilityOff)
 // `FileDownloadOutlined` de MUI: el de las acciones de exportar.
 export const FileDownloadOutlinedIcon = makeIcon(MdOutlineFileDownload)
 export const FileUploadOutlinedIcon = makeIcon(MdOutlineFileUpload)
-export const FilePdfIcon = makeIcon(MdPictureAsPdf)
+export const FilePdfIcon = makeIcon(MdOutlinePictureAsPdf)
 export const FileZipIcon = makeIcon(MdOutlineFolderZip)
-export const FileTextIcon = makeIcon(MdDescription)
-export const FileXlsIcon = makeIcon(MdTableChart)
-export const FolderOpenIcon = makeIcon(MdFolderOpen)
+export const FileTextIcon = makeIcon(MdOutlineDescription)
+export const FileXlsIcon = makeIcon(MdOutlineTableChart)
+export const FolderOpenIcon = makeIcon(MdOutlineFolderOpen)
 export const FunnelIcon = makeIcon(MdOutlineFilterList)
-export const GavelIcon = makeIcon(MdGavel)
-export const GearIcon = makeIcon(MdSettings)
-export const GenderIntersexIcon = makeIcon(MdTransgender)
-export const GlobeIcon = makeIcon(MdPublic)
-export const GraduationCapIcon = makeIcon(MdSchool)
-export const HeadsetIcon = makeIcon(MdSupportAgent)
-export const UserSwitchIcon = makeIcon(MdSwitchAccount)
-export const HouseIcon = makeIcon(MdHome)
-export const HouseLineIcon = makeIcon(MdHomeWork)
-export const IdentificationCardIcon = makeIcon(MdBadge)
+export const GavelIcon = makeIcon(MdOutlineGavel)
+export const GearIcon = makeIcon(MdOutlineSettings)
+export const GenderIntersexIcon = makeIcon(MdOutlineTransgender)
+export const GlobeIcon = makeIcon(MdOutlinePublic)
+export const GraduationCapIcon = makeIcon(MdOutlineSchool)
+export const HeadsetIcon = makeIcon(MdOutlineSupportAgent)
+export const UserSwitchIcon = makeIcon(MdOutlineSwitchAccount)
+export const HouseIcon = makeIcon(MdOutlineHome)
+export const HouseLineIcon = makeIcon(MdOutlineHomeWork)
+export const IdentificationCardIcon = makeIcon(MdOutlineBadge)
 export const ImageIcon = makeIcon(MdOutlineImage)
 export const InboxIcon = makeIcon(MdOutlineInbox)
 export const InfoIcon = makeIcon(MdInfoOutline)
 export const InsertLinkOutlinedIcon = makeIcon(MdOutlineInsertLink)
-export const KeyIcon = makeIcon(MdKey)
-export const LightningIcon = makeIcon(MdBolt)
+export const KeyIcon = makeIcon(MdOutlineKey)
+export const LightningIcon = makeIcon(MdOutlineBolt)
 export const LockIcon = makeIcon(MdLockOutline)
-export const LinkBreakIcon = makeIcon(MdLinkOff)
-export const ListMagnifyingGlassIcon = makeIcon(MdManageSearch)
-export const ListNumbersIcon = makeIcon(MdFormatListNumbered)
-export const MagnifyingGlassIcon = makeIcon(MdSearch)
-export const MapPinIcon = makeIcon(MdPlace)
-export const MapTrifoldIcon = makeIcon(MdMap)
-export const MedalIcon = makeIcon(MdMilitaryTech)
-export const MinusIcon = makeIcon(MdRemove)
-export const MoonIcon = makeIcon(MdDarkMode)
-export const NotebookIcon = makeIcon(MdMenuBook)
-export const PaletteIcon = makeIcon(MdPalette)
+export const LinkBreakIcon = makeIcon(MdOutlineLinkOff)
+export const ListMagnifyingGlassIcon = makeIcon(MdOutlineManageSearch)
+export const ListNumbersIcon = makeIcon(MdOutlineFormatListNumbered)
+export const MagnifyingGlassIcon = makeIcon(MdOutlineSearch)
+export const MapPinIcon = makeIcon(MdOutlinePlace)
+export const MapTrifoldIcon = makeIcon(MdOutlineMap)
+export const MedalIcon = makeIcon(MdOutlineMilitaryTech)
+export const MinusIcon = makeIcon(MdOutlineRemove)
+export const MoonIcon = makeIcon(MdOutlineDarkMode)
+export const NotebookIcon = makeIcon(MdOutlineMenuBook)
+export const PaletteIcon = makeIcon(MdOutlinePalette)
 export const PasswordIcon = makeIcon(MdOutlinePassword)
 export const PaperPlaneTiltIcon = makeIcon(MdOutlineSend)
 // Flecha de navegación: Orientar por traslados pendientes.
 export const NavigationArrowIcon = makeIcon(MdOutlineNearMe)
-export const PaperclipIcon = makeIcon(MdAttachFile)
+export const PaperclipIcon = makeIcon(MdOutlineAttachFile)
 // Equivalentes de `BorderColorOutlined`, `DeleteOutlined` y `PermMediaOutlined`
 // de MUI: los tres vienen del mismo set (Material), así que `react-icons/md`
 // los trae con el prefijo `MdOutline`. Se repunta acá y no en cada uso para
@@ -342,47 +340,47 @@ export const PaperclipIcon = makeIcon(MdAttachFile)
 export const PencilIcon = makeIcon(MdOutlineBorderColor)
 export const PermMediaOutlinedIcon = makeIcon(MdOutlinePermMedia)
 export const PlusCircleIcon = makeIcon(MdAddCircleOutline)
-export const PlusIcon = makeIcon(MdAdd)
+export const PlusIcon = makeIcon(MdOutlineAdd)
 export const QuestionIcon = makeIcon(MdHelpOutline)
 export const RemoveCircleOutlineIcon = makeIcon(MdRemoveCircleOutline)
-export const ShieldCheckIcon = makeIcon(MdVerifiedUser)
+export const ShieldCheckIcon = makeIcon(MdOutlineVerifiedUser)
 export const ShieldIcon = makeIcon(MdOutlineShield)
 export const ShieldOffIcon = makeIcon(MdOutlineRemoveModerator)
 export const ShieldLockIcon = makeIcon(GoShieldLock)
-export const SidebarIcon = makeIcon(MdMenu)
-export const SignInIcon = makeIcon(MdLogin)
-export const SignOutIcon = makeIcon(MdLogout)
-export const SpinnerIcon = makeIcon(MdAutorenew)
-export const SunIcon = makeIcon(MdLightMode)
-export const TextBIcon = makeIcon(MdFormatBold)
-export const TextItalicIcon = makeIcon(MdFormatItalic)
-export const TextUnderlineIcon = makeIcon(MdFormatUnderlined)
+export const SidebarIcon = makeIcon(MdOutlineMenu)
+export const SignInIcon = makeIcon(MdOutlineLogin)
+export const SignOutIcon = makeIcon(MdOutlineLogout)
+export const SpinnerIcon = makeIcon(MdOutlineAutorenew)
+export const SunIcon = makeIcon(MdOutlineLightMode)
+export const TextBIcon = makeIcon(MdOutlineFormatBold)
+export const TextItalicIcon = makeIcon(MdOutlineFormatItalic)
+export const TextUnderlineIcon = makeIcon(MdOutlineFormatUnderlined)
 export const TrashIcon = makeIcon(MdOutlineDelete)
-export const TreeIcon = makeIcon(MdPark)
-export const TrophyIcon = makeIcon(MdEmojiEvents)
+export const TreeIcon = makeIcon(MdOutlinePark)
+export const TrophyIcon = makeIcon(MdOutlineEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const PersonAddIcon = makeIcon(MdOutlinePersonAddAlt)
 export const PersonRemoveIcon = makeIcon(MdOutlinePersonRemove)
 export const PersonWalkIcon = makeIcon(MdOutlineDirectionsWalk)
 export const ArmchairIcon = makeIcon(MdOutlineEventSeat)
-export const ShuffleIcon = makeIcon(MdShuffle)
-export const UserCircleIcon = makeIcon(MdAccountCircle)
-export const UserGroupAddIcon = makeIcon(MdGroupAdd)
+export const ShuffleIcon = makeIcon(MdOutlineShuffle)
+export const UserCircleIcon = makeIcon(MdOutlineAccountCircle)
+export const UserGroupAddIcon = makeIcon(MdOutlineGroupAdd)
 export const UserIcon = makeIcon(MdPersonOutline)
-export const UsersIcon = makeIcon(MdGroup)
-export const UsersFourIcon = makeIcon(MdPeople)
-export const UsersThreeIcon = makeIcon(MdGroups)
+export const UsersIcon = makeIcon(MdOutlineGroup)
+export const UsersFourIcon = makeIcon(MdOutlinePeople)
+export const UsersThreeIcon = makeIcon(MdOutlineGroups)
 export const WarningCircleIcon = makeIcon(MdErrorOutline)
-export const WarningIcon = makeIcon(MdWarningAmber)
-export const XCircleIcon = makeIcon(MdCancel)
-export const XIcon = makeIcon(MdClose)
-export const XSquareIcon = makeIcon(MdCancelPresentation)
+export const WarningIcon = makeIcon(MdOutlineWarningAmber)
+export const XCircleIcon = makeIcon(MdOutlineCancel)
+export const XIcon = makeIcon(MdOutlineClose)
+export const XSquareIcon = makeIcon(MdOutlineCancelPresentation)
 
 // Chat de comunicaciones
-export const AtIcon = makeIcon(MdAlternateEmail)
+export const AtIcon = makeIcon(MdOutlineAlternateEmail)
 export const StackIcon = makeIcon(MdOutlineLayers)
-export const HashIcon = makeIcon(MdTag)
+export const HashIcon = makeIcon(MdOutlineTag)
 export const ChatTextIcon = makeIcon(MdOutlineChat)
 export const BallotIcon = makeIcon(MdOutlineHowToVote)
 export const ClipboardIcon = makeIcon(MdOutlineAssignment)
@@ -407,26 +405,26 @@ export const TextAaIcon = makeIcon(({ size = "1em", ...props }) => (
 ))
 export const SmileyIcon = makeIcon(MdOutlineEmojiEmotions)
 export const VideoCameraIcon = makeIcon(MdOutlineVideocam)
-export const MicrophoneIcon = makeIcon(MdMicNone)
+export const MicrophoneIcon = makeIcon(MdOutlineMicNone)
 export const BellSlashIcon = makeIcon(MdOutlineNotificationsOff)
 export const BellRingingIcon = makeIcon(MdOutlineNotificationsActive)
 export const SpeakerHighIcon = makeIcon(MdOutlineVolumeUp)
 export const ChatUnreadIcon = makeIcon(MdOutlineMarkChatUnread)
 export const ChatReadIcon = makeIcon(MdOutlineMarkChatRead)
 export const TerminalIcon = makeIcon(MdOutlineTerminal)
-export const DotsThreeVerticalIcon = makeIcon(MdMoreVert)
-export const CaretDownFillIcon = makeIcon(MdArrowDropDown)
-export const CopyIcon = makeIcon(MdContentCopy)
+export const DotsThreeVerticalIcon = makeIcon(MdOutlineMoreVert)
+export const CaretDownFillIcon = makeIcon(MdOutlineArrowDropDown)
+export const CopyIcon = makeIcon(MdOutlineContentCopy)
 export const ArchiveIcon = makeIcon(MdOutlineArchive)
 export const UnarchiveIcon = makeIcon(MdOutlineUnarchive)
 export const PencilSimpleIcon = makeIcon(MdOutlineEdit)
 export const ListIcon = makeIcon(MdOutlineViewHeadline)
-export const SquaresFourIcon = makeIcon(MdApps)
-export const TextStrikethroughIcon = makeIcon(MdStrikethroughS)
-export const LinkIcon = makeIcon(MdLink)
-export const ListBulletsIcon = makeIcon(MdFormatListBulleted)
-export const QuotesIcon = makeIcon(MdFormatQuote)
-export const CodeIcon = makeIcon(MdCode)
+export const SquaresFourIcon = makeIcon(MdOutlineApps)
+export const TextStrikethroughIcon = makeIcon(MdOutlineStrikethroughS)
+export const LinkIcon = makeIcon(MdOutlineLink)
+export const ListBulletsIcon = makeIcon(MdOutlineFormatListBulleted)
+export const QuotesIcon = makeIcon(MdOutlineFormatQuote)
+export const CodeIcon = makeIcon(MdOutlineCode)
 export const CodeBlockIcon = makeIcon(MdOutlineDataObject)
 export const PushPinIcon = makeIcon(MdOutlinePushPin)
 export const PushPinFillIcon = makeIcon(MdPushPin)
@@ -434,31 +432,31 @@ export const FileIcon = makeIcon(MdOutlineInsertDriveFile)
 export const ImagesIcon = makeIcon(MdOutlinePhotoLibrary)
 export const CheckSquareIcon = makeIcon(MdOutlineCheckBox)
 export const RadioButtonIcon = makeIcon(MdOutlineRadioButtonChecked)
-export const TextAlignLeftIcon = makeIcon(MdNotes)
+export const TextAlignLeftIcon = makeIcon(MdOutlineNotes)
 export const YesNoIcon = makeIcon(MdOutlineRule)
-export const CaretUpFillIcon = makeIcon(MdArrowDropUp)
-export const ArrowUUpLeftIcon = makeIcon(MdUndo)
-export const ArrowBendUpLeftIcon = makeIcon(MdReply)
-export const ArrowUUpRightIcon = makeIcon(MdRedo)
-export const TextColorIcon = makeIcon(MdFormatColorText)
-export const TextAlignLeftFillIcon = makeIcon(MdFormatAlignLeft)
-export const TextAlignCenterIcon = makeIcon(MdFormatAlignCenter)
-export const TextAlignRightIcon = makeIcon(MdFormatAlignRight)
-export const TextAlignJustifyIcon = makeIcon(MdFormatAlignJustify)
-export const LineSpacingIcon = makeIcon(MdFormatLineSpacing)
-export const TextOutdentIcon = makeIcon(MdFormatIndentDecrease)
-export const TextIndentIcon = makeIcon(MdFormatIndentIncrease)
-export const TextClearIcon = makeIcon(MdFormatClear)
-export const PrinterIcon = makeIcon(MdPrint)
+export const CaretUpFillIcon = makeIcon(MdOutlineArrowDropUp)
+export const ArrowUUpLeftIcon = makeIcon(MdOutlineUndo)
+export const ArrowBendUpLeftIcon = makeIcon(MdOutlineReply)
+export const ArrowUUpRightIcon = makeIcon(MdOutlineRedo)
+export const TextColorIcon = makeIcon(MdOutlineFormatColorText)
+export const TextAlignLeftFillIcon = makeIcon(MdOutlineFormatAlignLeft)
+export const TextAlignCenterIcon = makeIcon(MdOutlineFormatAlignCenter)
+export const TextAlignRightIcon = makeIcon(MdOutlineFormatAlignRight)
+export const TextAlignJustifyIcon = makeIcon(MdOutlineFormatAlignJustify)
+export const LineSpacingIcon = makeIcon(MdOutlineFormatLineSpacing)
+export const TextOutdentIcon = makeIcon(MdOutlineFormatIndentDecrease)
+export const TextIndentIcon = makeIcon(MdOutlineFormatIndentIncrease)
+export const TextClearIcon = makeIcon(MdOutlineFormatClear)
+export const PrinterIcon = makeIcon(MdOutlinePrint)
 export const FloppyDiskIcon = makeIcon(MdOutlineSave)
-export const StopIcon = makeIcon(MdStop)
-export const SparkleIcon = makeIcon(MdAutoAwesome)
-export const ClockCounterClockwiseIcon = makeIcon(MdHistory)
+export const StopIcon = makeIcon(MdOutlineStop)
+export const SparkleIcon = makeIcon(MdOutlineAutoAwesome)
+export const ClockCounterClockwiseIcon = makeIcon(MdOutlineHistory)
 export const CheckSquareOffsetIcon = makeIcon(IoMdCheckboxOutline)
-export const ClipboardPasteIcon = makeIcon(MdContentPaste)
-export const HourglassIcon = makeIcon(MdHourglassTop)
+export const ClipboardPasteIcon = makeIcon(MdOutlineContentPaste)
+export const HourglassIcon = makeIcon(MdOutlineHourglassTop)
 export const StarIcon = makeIcon(MdStarBorder)
 export const StarFillIcon = makeIcon(MdStar)
-export const ChecksIcon = makeIcon(MdDoneAll)
+export const ChecksIcon = makeIcon(MdOutlineDoneAll)
 export const PauseCircleIcon = makeIcon(MdPauseCircleOutline)
 export const PlayCircleIcon = makeIcon(MdPlayCircleOutline)
