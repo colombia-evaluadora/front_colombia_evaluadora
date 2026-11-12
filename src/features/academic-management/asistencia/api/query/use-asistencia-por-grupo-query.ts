@@ -147,6 +147,25 @@ export function usePeriodosGrupoQuery(grupo: number | undefined) {
   })
 }
 
+async function fetchRotuloGrupo(grupo: number): Promise<string | null> {
+  const raw = await api.get<{ rows: { nombre_asignatura: string | null }[] } | { nombre_asignatura: string | null }[]>(
+    "/eval-col/asistencias/por-grupo/rotulo",
+    { params: { GRUPO: grupo } },
+  )
+  const rows = Array.isArray(raw) ? raw : (raw.rows ?? [])
+  return rows[0]?.nombre_asignatura || null
+}
+
+export function useRotuloAsignaturaGrupo(grupo: number | undefined): string {
+  const { data } = useQuery({
+    queryKey: asistenciaKeys.porGrupoRotulo(grupo ?? "none"),
+    queryFn: () => fetchRotuloGrupo(grupo!),
+    enabled: grupo != null,
+    staleTime: 5 * 60_000,
+  })
+  return data ?? "Asignatura"
+}
+
 export interface TotalesEstudiante {
   fallas: number
   justificadas: number

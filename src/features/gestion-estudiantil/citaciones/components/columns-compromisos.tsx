@@ -11,10 +11,8 @@ import {
   COLOR_ESTADO_COMPROMISO,
   type PermisosCitaciones,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
-import {
-  MenuAccionesCompromiso,
-  type AccionCompromiso,
-} from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-compromiso"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_COMPROMISO, MenuAccionesCompromiso, type AccionCompromiso } from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-compromiso"
 
 interface ColumnasOpciones {
   permisos: PermisosCitaciones & { puedeVer: boolean }
@@ -79,7 +77,7 @@ export function buildColumnsCompromisos({ permisos, onAccion }: ColumnasOpciones
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_COMPROMISO),
       cell: ({ row }) => (
         <MenuAccionesCompromiso
           estudiante={row.original.estudiante_nombre}

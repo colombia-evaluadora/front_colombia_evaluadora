@@ -8,7 +8,8 @@ import { COLOR_ESTADO, esFinal, fechaHechosTexto } from "@/features/gestion-estu
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoRow } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { SIN_ACCESO } from "@/features/gestion-estudiantil/convivencia/utils/access"
-import { MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_CASO, MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
 
 interface ColumnasOpciones {
   access: ConvivenciaAccess
@@ -123,7 +124,7 @@ export function buildColumnsCasos({ access, puedeCitar, onAccion }: ColumnasOpci
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_CASO),
       cell: ({ row }) => (
         <MenuAccionesCaso
           caso={{

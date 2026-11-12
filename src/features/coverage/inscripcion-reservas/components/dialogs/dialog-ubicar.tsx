@@ -38,7 +38,7 @@ import type {
   TipoCupo,
 } from "@/features/coverage/inscripcion-reservas/api/types/territorial"
 import { Aviso } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
-import { km, num, wrap } from "@/features/coverage/inscripcion-reservas/components/table/territorial-comunes"
+import { km, num } from "@/features/coverage/inscripcion-reservas/components/table/territorial-comunes"
 
 function ConfirmacionAcudiente({
   valor,
@@ -116,7 +116,6 @@ export function UbicarDialog({
   // Con varios: quiénes pidieron una jornada distinta de la elegida.
   const otraJornada =
     opcion && n > 1 ? inscripciones.filter((r) => r.jornada !== opcion.jornada) : []
-  const paraTodos = n > 1 ? ` para los ${n} estudiantes` : ""
   const cerrar = (o: boolean) => {
     if (ubicar.isPending) return
     if (!o) setAbiertaPara("")
@@ -132,25 +131,52 @@ export function UbicarDialog({
               ? `Ubicar estudiante — ${primera.aspirante}`
               : `Ubicar estudiantes — ${n} estudiantes de ${primera?.grado} · ${primera?.modalidad}`}
           </DialogTitle>
-          <DialogDescription className="sr-only">
-            Elija la sede y la jornada con cupo donde se reserva el cupo.
+          <DialogDescription>
+            {n === 1
+              ? `Inscripción ${primera.numero} · ${primera.grado} · ${primera.modalidad} · Jornada pedida: ${primera.jornada}`
+              : `Van todos a la misma sede y jornada; solo se listan las que tienen cupo para los ${n}.`}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
+        {/* La nota queda a 16px de la casilla y de Tipo de cupo (-mb-2 resta al gap-6 del diálogo). */}
+        <div className="-mt-2 -mb-2 grid gap-4">
+          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
             <Checkbox checked={soloJornada} onCheckedChange={(v) => setSoloJornada(!!v)} />
             Solo la jornada pedida
           </label>
-          <div className="w-64">
-            <MatriculaSelectField
-              id="ubicar-establecimiento"
-              label="Establecimiento"
-              placeholder="Todos"
-              value={establecimiento}
-              options={[...new Set(opciones.map((o) => o.establecimiento))]}
-              onChange={setEstablecimiento}
-            />
+          <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium whitespace-nowrap">
+              <span className="text-red">*</span> Tipo de cupo
+            </span>
+            <RadioGroup
+              value={tipo}
+              onValueChange={(v) => cambiarTipo(v as TipoCupo)}
+              className="flex gap-4"
+              aria-label="Tipo de cupo"
+            >
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <RadioGroupItem value="OFICIAL" />
+                Oficial
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <RadioGroupItem value="CONTRATADO" />
+                Contratado
+              </label>
+            </RadioGroup>
           </div>
+          <ConfirmacionAcudiente valor={confirmacion} onChange={setConfirmacion} />
+        </div>
+        <div className="w-64">
+          <MatriculaSelectField
+            id="ubicar-establecimiento"
+            label="Establecimiento"
+            placeholder="Todos"
+            value={establecimiento}
+            options={[...new Set(opciones.map((o) => o.establecimiento))]}
+            onChange={setEstablecimiento}
+          />
         </div>
         {isPending ? (
           <Skeleton className="h-48 w-full" />
@@ -158,25 +184,25 @@ export function UbicarDialog({
           <RadioGroup
             value={elegida == null ? "" : String(elegida)}
             onValueChange={(v) => setElegida(Number(v))}
-            className="overflow-x-auto rounded-md border border-border"
+            aria-label="Sede y jornada"
           >
-            <Table>
+            {/* Filas compactas: py-2 en vez del py-3 de la tabla de página. */}
+            <Table className="[&_td]:py-2">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10" />
                   <TableHead>Establecimiento</TableHead>
                   <TableHead>Sede</TableHead>
                   <TableHead>Jornada</TableHead>
-                  <TableHead className={wrap}>Dentro del área de influencia</TableHead>
-                  <TableHead className="text-center">Distancia (km)</TableHead>
-                  <TableHead className={cn(wrap, "text-center")}>Cupo oficial libre</TableHead>
-                  <TableHead className={cn(wrap, "text-center")}>Cupo contratado libre</TableHead>
+                  <TableHead>Área infl.</TableHead>
+                  <TableHead className="text-center">km</TableHead>
+                  <TableHead className="text-center">Cupo libre</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visibles.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="whitespace-normal py-8 text-center text-muted-foreground">
                       {conCupo(tipo).length
                         ? "Ninguna sede con cupo cumple el filtro."
                         : n > 1
@@ -186,11 +212,13 @@ export function UbicarDialog({
                   </TableRow>
                 ) : (
                   visibles.map((o) => {
+                    const activa = o.id === elegida
                     return (
                       <TableRow
                         key={o.id}
-                        data-state={o.id === elegida ? "selected" : undefined}
-                        className="cursor-pointer"
+                        aria-selected={activa}
+                        // Selección en el tono primario, más liviana que el gris de `selected`.
+                        className={cn("cursor-pointer", activa && "bg-primary/10 hover:bg-primary/10")}
                         onClick={() => setElegida(o.id)}
                       >
                         <TableCell>
@@ -200,7 +228,7 @@ export function UbicarDialog({
                           />
                         </TableCell>
                         <TableCell>{o.establecimiento}</TableCell>
-                        <TableCell className={wrap}>{o.sede}</TableCell>
+                        <TableCell>{o.sede}</TableCell>
                         <TableCell>{o.jornada}</TableCell>
                         <TableCell>
                           <Badge
@@ -214,15 +242,8 @@ export function UbicarDialog({
                             {o.dentroAreaInfluencia ? "Sí" : "No"}
                           </Badge>
                         </TableCell>
-                        <TableCell className={cn(num, "text-center")}>
-                          {km(o.distanciaKm)}
-                        </TableCell>
-                        <TableCell className={cn(num, "text-center")}>
-                          {o.cupoOficialLibre}
-                        </TableCell>
-                        <TableCell className={cn(num, "text-center")}>
-                          {o.cupoContratadoLibre ?? "—"}
-                        </TableCell>
+                        <TableCell className={cn(num, "text-center")}>{km(o.distanciaKm)}</TableCell>
+                        <TableCell className={cn(num, "text-center")}>{cupoLibre(o, tipo)}</TableCell>
                       </TableRow>
                     )
                   })
@@ -231,41 +252,18 @@ export function UbicarDialog({
             </Table>
           </RadioGroup>
         )}
-        <div className="grid gap-2">
-          <div className="flex flex-wrap items-center gap-6">
-            <span className="text-sm font-medium">Tipo de cupo</span>
-            <RadioGroup
-              value={tipo}
-              onValueChange={(v) => cambiarTipo(v as TipoCupo)}
-              className="flex gap-4"
-            >
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <RadioGroupItem value="OFICIAL" />
-                Oficial
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <RadioGroupItem value="CONTRATADO" />
-                Contratado
-              </label>
-            </RadioGroup>
-            <ConfirmacionAcudiente valor={confirmacion} onChange={setConfirmacion} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Solo se muestran las sedes con cupo {tipo === "OFICIAL" ? "oficial" : "contratado"}{" "}
-            libre
-            {paraTodos}.
-          </p>
-        </div>
-        {otraJornada.length > 0 && (
+        {otraJornada.length > 0 ? (
+          // Con confirmación, el aviso de jornada ya dice el plazo: no se repite en azul.
           <Aviso tono="warning">
-            {otraJornada.length} de {n} estudiantes pidieron otra jornada (
-            {otraJornada.map((r) => `${r.aspirante}: ${r.jornada}`).join(", ")}).
+            {otraJornada.length} de {n} estudiantes pidieron otra jornada.
+            {confirmacion && " Cada acudiente confirma por separado y tiene 24 horas."}
           </Aviso>
-        )}
-        {confirmacion && (
-          <Aviso tono="info">
-            {n > 1 ? "Cada acudiente tiene" : "El acudiente tiene"} 24 horas para confirmar.
-          </Aviso>
+        ) : (
+          confirmacion && (
+            <Aviso tono="info">
+              {n > 1 ? "Cada acudiente tiene" : "El acudiente tiene"} 24 horas para confirmar.
+            </Aviso>
+          )
         )}
         <DialogFooter>
           <Button
@@ -283,7 +281,7 @@ export function UbicarDialog({
               ubicar.mutate(
                 {
                   inscripciones: inscripciones.map((r) => r.id),
-                  opcionId: opcion!.id,
+                  opcionId: opcion?.id ?? 0,
                   tipoCupo: tipo,
                   requiereConfirmacion: confirmacion,
                 },

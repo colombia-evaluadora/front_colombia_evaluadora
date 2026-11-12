@@ -44,6 +44,7 @@ import {
   totalesEstudiante,
   useAsistenciaPorGrupoQuery,
   usePeriodosGrupoQuery,
+  useRotuloAsignaturaGrupo,
   type AsistenciaPorGrupo,
   type CeldaAsistencia,
   type EstudianteGrupo,
@@ -169,8 +170,9 @@ export function AsistenciaPorGrupoTab({
     if (c.fk_grupo === filtros.grupo && !c.es_formativa)
       asignaturas.set(c.fk_asignatura, c.asignatura)
   }
+  const rotuloAsignatura = useRotuloAsignaturaGrupo(filtros.grupo)
   const opcionesAsignatura = [
-    ...(soloLasQueDicta ? [] : [{ value: TODAS_ASIGNATURAS, label: "Todas las asignaturas" }]),
+    ...(soloLasQueDicta ? [] : [{ value: TODAS_ASIGNATURAS, label: opcionTodas(rotuloAsignatura) }]),
     ...[...asignaturas]
       .map(([value, label]) => ({ value: String(value), label }))
       .sort((a, b) => a.label.localeCompare(b.label, "es")),
@@ -248,7 +250,7 @@ export function AsistenciaPorGrupoTab({
             }}
           />
           <Filtro
-            etiqueta="Asignatura"
+            etiqueta={rotuloAsignatura}
             opciones={opcionesAsignatura}
             valor={asignatura ?? ""}
             disabled={filtros.grupo == null}
@@ -836,4 +838,17 @@ export function ImpresionPorGrupo({
     </div>,
     document.body,
   )
+}
+
+/** "Asignatura" → "Todas las asignaturas", "Dimensión" → "Todas las dimensiones"
+ *  (solo se pluraliza la primera palabra);
+ *  un rótulo en -o se asume masculino ("Campo" → "Todos los campos"). */
+function opcionTodas(rotulo: string): string {
+  const [r = "", ...resto] = rotulo.trim().toLocaleLowerCase("es").split(" ")
+  const plural = /[aeiouáéó]$/.test(r)
+    ? `${r}s`
+    : /ón$/.test(r)
+      ? `${r.slice(0, -2)}ones`
+      : `${r}es`
+  return [/o$/.test(r) ? "Todos los" : "Todas las", plural, ...resto].join(" ")
 }

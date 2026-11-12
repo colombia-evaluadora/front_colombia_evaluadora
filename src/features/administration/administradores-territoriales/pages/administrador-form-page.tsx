@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useStore } from "@tanstack/react-form"
 
@@ -106,6 +106,11 @@ function AdministradorForm({
   const navigate = useNavigate()
   const permisos = useMenuPermission("ADMINISTRADORES_TERRITORIALES")
   const [notice, setNotice] = useState<Notice | null>(null)
+  const avisosRef = useRef<HTMLDivElement>(null)
+  // El error de guardado sale arriba del formulario; si la persona guardó con la pantalla desplazada, se lo traemos a la vista.
+  useEffect(() => {
+    if (notice) avisosRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }, [notice])
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const save = useSaveAdministrador()
 
@@ -234,7 +239,7 @@ function AdministradorForm({
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>
-        <div className="flex flex-col gap-3">
+        <div ref={avisosRef} className="mb-3 flex scroll-mt-40 flex-col gap-3 empty:hidden">
           {modo === "nuevo" && (
             <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />

@@ -5,7 +5,8 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import type { SesionFila } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
-import { MenuAccionesSesion, type AccionSesion } from "@/features/gestion-estudiantil/convivencia/components/comite/menu-acciones-sesion"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
+import { ACCIONES_SESION, MenuAccionesSesion, type AccionSesion } from "@/features/gestion-estudiantil/convivencia/components/comite/menu-acciones-sesion"
 import { textoAsistentes } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 interface Opciones {
@@ -64,7 +65,7 @@ export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): Co
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      size: 48,
+      size: anchoAccionesFila(ACCIONES_SESION),
       cell: ({ row }) => (
         <MenuAccionesSesion
           numero={row.original.numero}
