@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ACTIONS_BUTTON_HOVER_CLASS } from "@/components/table-row-actions"
 import { OfflineDataMessage } from "@/components/offline/offline-data-message"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 import { useOfflineStall } from "@/lib/offline/use-offline-stall"
@@ -184,6 +185,7 @@ export function DataTable({
   const overlayClass = (active = false) =>
     cn(
       "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2",
+      ACTIONS_BUTTON_HOVER_CLASS,
       insideSubRow ? "bg-muted/20" : "bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]",
       "transition-opacity",
       active

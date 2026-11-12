@@ -69,6 +69,7 @@ export function SearchNotificaciones({
         setOpen(false)
       }}
       size="sm"
+      inputClassName="h-11"
     >
       <div className="flex flex-col gap-4 px-4">
         <Field orientation="vertical" variant="outlined" className="gap-2">
