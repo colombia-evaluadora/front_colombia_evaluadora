@@ -520,6 +520,48 @@ export const paths = {
       path: "gestion-estudiantil/reconocimientos/$reconocimientoId",
       getHref: (reconocimientoId: number | string) => `/app/gestion-estudiantil/reconocimientos/${reconocimientoId}`,
     },
+    prevencionRetencion: {
+      path: "gestion-estudiantil/prevencion-retencion",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion",
+    },
+    prevencionValorar: {
+      path: "gestion-estudiantil/prevencion-retencion/valorar",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/valorar",
+    },
+    prevencionPlanNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/nuevo",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/plan/nuevo",
+    },
+    prevencionPlanEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/$planId/editar",
+      getHref: (planId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/plan/${planId}/editar`,
+    },
+    prevencionPlanDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/$planId",
+      getHref: (planId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/plan/${planId}`,
+    },
+    prevencionPlanCaso: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/$planId/caso-convivencia",
+      getHref: (planId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/plan/${planId}/caso-convivencia`,
+    },
+    prevencionValoracionDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/valoracion/$valoracionId",
+      getHref: (valoracionId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/valoracion/${valoracionId}`,
+    },
+    prevencionHistorial: {
+      path: "gestion-estudiantil/prevencion-retencion/historial/$matricula",
+      getHref: (matricula: number | string) => `/app/gestion-estudiantil/prevencion-retencion/historial/${matricula}`,
+    },
+    prevencionSaludMentalNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/salud-mental/nuevo",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/salud-mental/nuevo",
+    },
+    prevencionSenalSaludMental: {
+      path: "gestion-estudiantil/prevencion-retencion/salud-mental/$senalId",
+      getHref: (senalId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/salud-mental/${senalId}`,
+    },
     observacionesSugerencias: {
       path: "gestion-estudiantil/observaciones-sugerencias",
       getHref: () => "/app/gestion-estudiantil/observaciones-sugerencias",
