@@ -177,15 +177,7 @@ function AdministradoresTerritorialesPageContent() {
           emptyMessage={
             sinRegistros ? (
               // Estado vacío de la Sección 7.3.
-              <span className="flex flex-col items-center gap-3">
-                No hay Administradores territoriales.
-                {permisos.puedeCrear && (
-                  <Button size="sm" color="primary" onClick={nuevo}>
-                    <ControlPointIcon data-icon="inline-start" />
-                    Nuevo Administrador territorial
-                  </Button>
-                )}
-              </span>
+              <span>No hay Administradores territoriales.</span>
             ) : (
               <span className="flex flex-col items-center gap-3">
                 No hay Administradores territoriales que coincidan con la búsqueda y los filtros aplicados.
