@@ -130,22 +130,22 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
     fields: [
       { id: "benefits-subsidized", label: "Subsidiado" },
       { id: "benefits-funding-source", label: "Fuente de recursos" },
-      { id: "benefits-head-household-student", label: "Alumnos madre cabeza de familia" },
+      { id: "benefits-head-household-student", label: "Alumnos madre cabeza de familia", locked: true },
       { id: "benefits-head-household-children", label: "Hijos de madre cabeza de familia" },
       { id: "benefits-public-force-veteran", label: "Veteranos de la fuerza pública" },
-      { id: "benefits-national-heroes", label: "Héroes de la nación" },
+      { id: "benefits-national-heroes", label: "Héroes de la nación", locked: true },
     ],
   },
   {
     title: "Información del acudiente",
     fields: [
       { id: "guardian-relationship", label: "Parentesco", locked: true },
-      { id: "guardian-first-name", label: "Nombre del acudiente" },
+      { id: "guardian-first-name", label: "Nombre del acudiente", locked: true },
       { id: "guardian-second-name", label: "Segundo nombre del acudiente" },
-      { id: "guardian-last-name", label: "Primer apellido del acudiente" },
+      { id: "guardian-last-name", label: "Primer apellido del acudiente", locked: true },
       { id: "guardian-second-last-name", label: "Segundo apellido del acudiente" },
       { id: "guardian-document-type", label: "Tipo de documento del acudiente", locked: true },
-      { id: "guardian-document-number", label: "Documento acudiente" },
+      { id: "guardian-document-number", label: "Documento acudiente", locked: true },
       {
         id: "guardian-document-expedition-department",
         label: "Lugar expedición documento acudiente departamento",
@@ -154,7 +154,7 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
         id: "guardian-document-expedition-municipality",
         label: "Lugar expedición documento acudiente municipio",
       },
-      { id: "guardian-gender", label: "Género del acudiente" },
+      { id: "guardian-gender", label: "Género del acudiente", locked: true },
     ],
   },
   {

@@ -66,6 +66,11 @@ function createMatricula(): Matricula {
     guardian: `${createGuardianName()} (${faker.helpers.arrayElement(RELATIONSHIP_OPTIONS)})`,
     status: pickStatus(),
     hasGrades: faker.datatype.boolean({ probability: 0.4 }),
+    ageSituation: faker.helpers.weightedArrayElement([
+      { value: "EN_EDAD", weight: 8 },
+      { value: "PREEXTRAEDAD", weight: 1 },
+      { value: "EXTRAEDAD", weight: 1 },
+    ]),
   }
 }
 

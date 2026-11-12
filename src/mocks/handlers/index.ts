@@ -57,6 +57,12 @@ import { verificacionBoletinHandlers } from "@/mocks/handlers/verificacion-bolet
 import { preMatriculaHandlers } from "@/mocks/handlers/pre-matricula"
 import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
 import { matriculaHandlers } from "@/mocks/handlers/matricula"
+import { notasHomologadasHandlers } from "@/mocks/handlers/notas-homologadas"
+import { matriculaAsignaturasHandlers } from "@/mocks/handlers/matricula-asignaturas"
+import { unificarEstudiantesHandlers } from "@/mocks/handlers/unificar-estudiantes"
+import { solicitudRetiroHandlers } from "@/mocks/handlers/solicitud-retiro"
+import { reactivarHandlers } from "@/mocks/handlers/reactivar"
+import { estudianteExistenteHandlers } from "@/mocks/handlers/estudiante-existente"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
 import { curricularStatementsHandlers } from "@/mocks/handlers/academic-management/curricular-statements"
 import { planeadorHandlers } from "@/mocks/handlers/planeador"
@@ -148,6 +154,12 @@ export const handlers = [
   ...planeadorHandlers,
   ...planeadorDocentesHandlers,
   ...planeadorPlanillaHandlers,
+  ...notasHomologadasHandlers,
+  ...matriculaAsignaturasHandlers,
+  ...unificarEstudiantesHandlers,
+  ...solicitudRetiroHandlers,
+  ...reactivarHandlers,
+  ...estudianteExistenteHandlers,
   ...matriculaHandlers,
   ...curricularReferencesHandlers,
   ...curricularStatementsHandlers,

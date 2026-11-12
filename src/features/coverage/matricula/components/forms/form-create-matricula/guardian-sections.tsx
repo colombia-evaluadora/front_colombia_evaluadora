@@ -1,6 +1,7 @@
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaGuardianEmploymentInfo, MatriculaGuardianInfo } from "@/features/coverage/matricula/api/types/matricula"
+import { aDocumentoAlfanumerico, aNombre, aTelefono, esTipoDocExtranjero } from "@/features/coverage/matricula/utils/matricula-formatos"
 import { anySettingVisible, catalogLabelFor, catalogOptions } from "./catalog-utils"
 import { type DepartmentOption, DeptMunicipioFields, MatriculaFormSection, MatriculaSelectField, MatriculaTextField } from "./fields"
 
@@ -26,6 +27,8 @@ export function MatriculaGuardianSection({
 }: GuardianSectionProps) {
   const { data: parentesco } = useMatriculaCatalogQuery("parentesco")
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
+  // PPT, PEP, pasaporte o NES: documento alfanumérico (bloques 2.2 y 2.10).
+  const extranjero = esTipoDocExtranjero(tipoDocumento?.find((t) => String(t.id) === value.documentType)?.nombre ?? "")
   const { data: genero } = useMatriculaCatalogQuery("genero")
 
   return (
@@ -47,8 +50,9 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-first-name")}
           invalid={invalidFields.includes("guardian-first-name")}
           value={value.firstName}
-          maxLength={40}
-          disabled={identityDisabled}
+          maxLength={50}
+          transform={aNombre}
+          masked={identityDisabled}
           onChange={(firstName) => onChange({ ...value, firstName })}
         />
       )}
@@ -59,8 +63,9 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-second-name")}
           invalid={invalidFields.includes("guardian-second-name")}
           value={value.secondName}
-          maxLength={40}
-          disabled={identityDisabled}
+          maxLength={50}
+          transform={aNombre}
+          masked={identityDisabled}
           onChange={(secondName) => onChange({ ...value, secondName })}
         />
       )}
@@ -71,8 +76,9 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-last-name")}
           invalid={invalidFields.includes("guardian-last-name")}
           value={value.lastName}
-          maxLength={40}
-          disabled={identityDisabled}
+          maxLength={50}
+          transform={aNombre}
+          masked={identityDisabled}
           onChange={(lastName) => onChange({ ...value, lastName })}
         />
       )}
@@ -83,8 +89,9 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-second-last-name")}
           invalid={invalidFields.includes("guardian-second-last-name")}
           value={value.secondLastName}
-          maxLength={40}
-          disabled={identityDisabled}
+          maxLength={50}
+          transform={aNombre}
+          masked={identityDisabled}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
         />
       )}
@@ -106,8 +113,9 @@ export function MatriculaGuardianSection({
           required={isFieldRequired(fieldSettings, "guardian-document-number")}
           invalid={invalidFields.includes("guardian-document-number")}
           value={value.documentNumber}
-          numeric
-          maxLength={15}
+          numeric={!extranjero}
+          transform={extranjero ? aDocumentoAlfanumerico : undefined}
+          maxLength={20}
           disabled={identityDisabled}
           onChange={(documentNumber) => onChange({ ...value, documentNumber })}
         />
@@ -182,7 +190,7 @@ export function MatriculaGuardianEmploymentSection({
           required={isFieldRequired(fieldSettings, "guardian-employment-entity-name")}
           invalid={invalidFields.includes("guardian-employment-entity-name")}
           value={value.entityName}
-          maxLength={100}
+          maxLength={150}
           onChange={(entityName) => onChange({ ...value, entityName })}
         />
       )}
@@ -193,7 +201,7 @@ export function MatriculaGuardianEmploymentSection({
           required={isFieldRequired(fieldSettings, "guardian-employment-entity-address")}
           invalid={invalidFields.includes("guardian-employment-entity-address")}
           value={value.entityAddress}
-          maxLength={100}
+          maxLength={150}
           onChange={(entityAddress) => onChange({ ...value, entityAddress })}
         />
       )}
@@ -205,8 +213,8 @@ export function MatriculaGuardianEmploymentSection({
           required={isFieldRequired(fieldSettings, "guardian-employment-entity-phone")}
           invalid={invalidFields.includes("guardian-employment-entity-phone")}
           value={value.entityPhone}
-          numeric
-          maxLength={100}
+          maxLength={16}
+          transform={aTelefono}
           onChange={(entityPhone) => onChange({ ...value, entityPhone })}
         />
       )}
