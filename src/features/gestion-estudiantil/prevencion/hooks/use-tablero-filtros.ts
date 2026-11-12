@@ -8,7 +8,7 @@ import {
   useOpcionesGruposQuery,
   useOpcionesPeriodosQuery,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-opciones-prevencion-query"
-import { useSaludMentalAccesoQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-salud-mental-query"
+import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
 import { SENALES_FILTRO, etiquetaSenal } from "@/features/gestion-estudiantil/prevencion/api/ui-mappings"
 import {
   TABLERO_FILTROS_VACIOS,
@@ -38,7 +38,7 @@ export function useTableroFiltros(goToPage: (page: number) => void) {
   })
   const periodos = useOpcionesPeriodosQuery({ establecimiento: establecimientoId })
   // La señal Salud mental es sensible (Regla 1): el filtro la ofrece solo a quien puede leer la pestaña.
-  const verSaludMental = useSaludMentalAccesoQuery(establecimientoId).isSuccess
+  const verSaludMental = useAccesoPrevencionQuery(establecimientoId).data?.puede_salud_mental ?? false
 
   const nivelOpciones = useMemo(() => niveles.map((n) => ({ value: n.codigo, label: n.label })), [niveles])
   const senalOpciones = useMemo(

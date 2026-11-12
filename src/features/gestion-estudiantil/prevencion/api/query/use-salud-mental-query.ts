@@ -57,23 +57,6 @@ export function useSaludMentalQuery(params: SaludMentalParams) {
   })
 }
 
-/**
- * Sondeo de acceso a la pestaña «Salud mental»: la lista con una fila. A quien el backend no deja leer
- * le responde 403 y la pestaña no se muestra (información sensible, Regla 1).
- */
-export function useSaludMentalAccesoQuery(establecimiento: number | null) {
-  return useQuery({
-    queryKey: prevencionKeys.saludMentalAcceso(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol.getRows<SenalSMRow>(
-        `${BASE_PREVENCION}/salud-mental${queryString({ ESTABLECIMIENTO: establecimiento, PAGEINDEX: 0, PAGESIZE: 1 })}`,
-      ),
-    enabled: establecimiento != null,
-    retry: false,
-    staleTime: 60_000,
-  })
-}
-
 /** `GET /salud-mental/:ID` → columna `datos`. Cada apertura deja traza de consulta (Regla 21): no se cachea. */
 export function useSenalSMQuery(senalId: number | undefined) {
   return useQuery({

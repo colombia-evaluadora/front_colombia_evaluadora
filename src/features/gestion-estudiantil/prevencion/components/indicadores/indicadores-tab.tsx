@@ -12,6 +12,7 @@ import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/ic
 import { Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
 import { useExportarIndicadores } from "@/features/gestion-estudiantil/prevencion/api/mutations/exportar-indicadores"
 import {
+  useAccesoPrevencionQuery,
   useIndicadoresGestionQuery,
   useIndicadoresQuery,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
@@ -35,8 +36,9 @@ export function IndicadoresTab({ tabs }: { tabs: ReactNode }) {
   const { notify } = useNotify()
   const f = useIndicadoresFiltros()
   const { data, isPending, isError, error, refetch } = useIndicadoresQuery(f.queryFilters)
-  // IE-01: solo Rector y Coordinador; con 403 el bloque no se muestra.
-  const gestion = useIndicadoresGestionQuery({ establecimiento: f.establecimientoId })
+  // IE-01: solo con `puede_indicadores_gestion`.
+  const acceso = useAccesoPrevencionQuery(f.establecimientoId).data
+  const gestion = useIndicadoresGestionQuery({ establecimiento: f.establecimientoId }, acceso?.puede_indicadores_gestion === true)
   const exportar = useExportarIndicadores({
     mutationConfig: {
       onSuccess: (r) => notify(r.message, { variant: r.status === "error" ? "error" : "success" }),
@@ -117,7 +119,7 @@ export function IndicadoresTab({ tabs }: { tabs: ReactNode }) {
               <TablaSimple columns={COLUMNAS_ESTRATEGIAS} data={estrategias} getRowId={idFila} />
             </Seccion>
           )}
-          {gestion.isSuccess && gestion.data.length > 0 && (
+          {acceso?.puede_indicadores_gestion && gestion.isSuccess && gestion.data.length > 0 && (
             <Seccion titulo="Indicadores de gestión de alertas">
               <TablaSimple columns={COLUMNAS_GESTION} data={gestion.data} getRowId={idGestion} />
             </Seccion>

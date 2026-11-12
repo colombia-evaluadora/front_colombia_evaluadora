@@ -208,6 +208,15 @@ export interface HistorialAnotacion {
   autor: string | null
 }
 
+/** Fila de `GET /acceso`: qué pestañas y acciones del módulo ve quien consulta. */
+export interface AccesoPrevencion {
+  puede_indicadores: boolean
+  puede_indicadores_gestion: boolean
+  puede_parametros: boolean
+  puede_salud_mental: boolean
+  puede_reportar_salud_mental: boolean
+}
+
 /** `GET /estudiantes/:MATRICULA/historial` → columna `datos`. */
 export interface Historial {
   fk_tmatricula: number
@@ -215,6 +224,8 @@ export interface Historial {
   ve_sensible: boolean
   nivel_actual: { valor: NivelRiesgo; nombre: string; fecha: string } | null
   puede_valorar: boolean
+  /** Misma regla del tablero (Regla 40). */
+  puede_crear_plan: boolean
   tiene_plan_abierto: boolean
   fk_tprevencion_plan_abierto: number | null
   valoraciones: HistorialValoracion[]

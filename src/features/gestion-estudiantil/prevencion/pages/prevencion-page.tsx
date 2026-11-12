@@ -6,11 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TablePaginationProvider } from "@/hooks/use-table-pagination"
 
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
-import { useSaludMentalAccesoQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-salud-mental-query"
-import {
-  useIndicadoresAccesoQuery,
-  useParametrosQuery,
-} from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
+import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
 import { IndicadoresTab } from "@/features/gestion-estudiantil/prevencion/components/indicadores/indicadores-tab"
 import { SaludMentalTab } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/salud-mental-tab"
 import { ParametrosTab } from "@/features/gestion-estudiantil/prevencion/components/parametros/parametros-tab"
@@ -30,24 +26,18 @@ const PESTANAS: { value: Pestana; label: string }[] = [
 function PrevencionContent() {
   const [pestana, setPestana] = useState<Pestana>("tablero")
   const { establecimientoId } = useAmbitoPrevencion("")
-  // Solo el Rector lee los parámetros: con 403 (o sin respuesta) la pestaña no se muestra.
-  const parametros = useParametrosQuery(establecimientoId)
-  const verParametros = parametros.isSuccess
-  // Información sensible (Regla 1): con 403 (o sin respuesta) la pestaña «Salud mental» no se muestra.
-  const verSaludMental = useSaludMentalAccesoQuery(establecimientoId).isSuccess
-
-  // Indicadores: con 403 (p. ej. Docente) la pestaña no se muestra.
-  const verIndicadores = useIndicadoresAccesoQuery(establecimientoId).isSuccess
+  // Las pestañas Indicadores, Parámetros y Salud mental salen del acceso que declara el backend.
+  const acceso = useAccesoPrevencionQuery(establecimientoId).data
 
   const visibles = useMemo(
     () =>
       PESTANAS.filter(
         (p) =>
-          (p.value !== "parametros" || verParametros) &&
-          (p.value !== "salud-mental" || verSaludMental) &&
-          (p.value !== "indicadores" || verIndicadores),
+          (p.value !== "indicadores" || acceso?.puede_indicadores) &&
+          (p.value !== "parametros" || acceso?.puede_parametros) &&
+          (p.value !== "salud-mental" || acceso?.puede_salud_mental),
       ),
-    [verParametros, verSaludMental, verIndicadores],
+    [acceso],
   )
   const actual: Pestana = visibles.some((p) => p.value === pestana) ? pestana : "tablero"
 

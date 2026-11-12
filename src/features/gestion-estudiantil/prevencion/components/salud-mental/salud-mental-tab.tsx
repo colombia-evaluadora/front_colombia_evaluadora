@@ -30,7 +30,7 @@ export function SaludMentalTab({ tabs }: { tabs: ReactNode }) {
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            <Button size="sm" type="button" onClick={l.irReporteSaludMental}>
+            <Button size="sm" type="button" disabled={!l.puedeReportar} onClick={l.irReporteSaludMental}>
               <PlusIcon data-icon="inline-start" />
               Nuevo reporte
             </Button>

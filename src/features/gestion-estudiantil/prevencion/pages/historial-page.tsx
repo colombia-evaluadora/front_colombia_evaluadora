@@ -50,7 +50,7 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
                     id: "plan",
                     label: "Crear plan",
                     icon: <ClipboardTextIcon />,
-                    disabled: !h || h.tiene_plan_abierto,
+                    disabled: !h?.puede_crear_plan,
                     onSelect: () => irPlanNuevo(matricula, h ? ultimaValoracionVigente(h) : undefined),
                   },
                   {

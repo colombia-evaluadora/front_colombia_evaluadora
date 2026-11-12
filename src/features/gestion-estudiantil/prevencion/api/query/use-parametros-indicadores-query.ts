@@ -6,16 +6,14 @@ import { queryString } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { prevencionKeys } from "@/features/gestion-estudiantil/prevencion/api/query-keys"
 import { BASE_PREVENCION } from "@/features/gestion-estudiantil/prevencion/api/query/use-tablero-query"
 import type {
+  AccesoPrevencion,
   IndicadorGestionRow,
   IndicadorRow,
   IndicadoresQueryFilters,
   ParametrosRiesgo,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
 
-/**
- * `GET /parametros`: solo el Rector lo lee; el resto recibe 403, y con eso la pestaña «Parámetros de
- * riesgo» no se muestra. Sin reintentos: un 403 no se arregla repitiendo.
- */
+/** `GET /parametros`: lo lee quien tiene `puede_parametros` (la pestaña no se muestra a los demás). */
 export function useParametrosQuery(establecimiento: number | null, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.parametros(establecimiento ?? "none"),
@@ -39,16 +37,14 @@ export function useIndicadoresQuery(filters: IndicadoresQueryFilters | null) {
   })
 }
 
-/**
- * Sondeo de acceso a la pestaña «Indicadores»: `GET /indicadores` con los filtros por defecto. Solo Rector,
- * Coordinador y Orientación lo leen; a los demás (Docente) les responde 403 y la pestaña no se muestra.
- */
-export function useIndicadoresAccesoQuery(establecimiento: number | null) {
+/** `GET /acceso`: qué ve quien consulta (pestañas Indicadores, Parámetros y Salud mental, IE-01, nuevo reporte). */
+export function useAccesoPrevencionQuery(establecimiento: number | null) {
   return useQuery({
-    queryKey: prevencionKeys.indicadores({ acceso: true, ESTABLECIMIENTO: establecimiento }),
-    queryFn: () => evalCol.getRows<IndicadorRow>(`${BASE_PREVENCION}/indicadores${queryString({ ESTABLECIMIENTO: establecimiento })}`),
-    enabled: establecimiento != null,
-    retry: false,
+    queryKey: prevencionKeys.acceso(establecimiento ?? "none"),
+    queryFn: () =>
+      evalCol
+        .getRows<AccesoPrevencion>(`${BASE_PREVENCION}/acceso${queryString({ ESTABLECIMIENTO: establecimiento })}`)
+        .then((r) => r[0] ?? null),
     staleTime: 60_000,
   })
 }
@@ -59,7 +55,7 @@ export interface IndicadoresGestionParams {
   hasta?: string | null
 }
 
-/** `GET /indicadores/gestion` (IE-01): solo Rector y Coordinador; el resto recibe 403 y no se muestra. */
+/** `GET /indicadores/gestion` (IE-01): se pide solo con `puede_indicadores_gestion`. */
 export function useIndicadoresGestionQuery(params: IndicadoresGestionParams, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.indicadoresGestion(params),

@@ -53,8 +53,8 @@ export function useValorarForm(matriculaInicial: number | undefined, onVolver: (
     mutationConfig: {
       onSuccess: (r) => {
         notify("Valoración guardada.", { variant: "success" })
-        // Solo se ofrece crear el plan si no hay uno abierto (Regla 18) y quien valora puede crearlo.
-        if (historial.data && !historial.data.tiene_plan_abierto && historial.data.puede_valorar) setGuardada(r.id)
+        // Solo se ofrece crear el plan si el historial dice que puede (sin plan abierto, Regla 18, y con alcance, Regla 40).
+        if (historial.data?.puede_crear_plan) setGuardada(r.id)
         else onVolver()
       },
       onError: (e: Error) => s.setError(e),

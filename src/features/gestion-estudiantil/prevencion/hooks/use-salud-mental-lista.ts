@@ -15,6 +15,7 @@ import { useDialogosSaludMental } from "@/features/gestion-estudiantil/prevencio
 import type { AccionSenalSM } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/acciones-senal"
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
+import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
 import { useSaludMentalFiltros } from "@/features/gestion-estudiantil/prevencion/hooks/use-salud-mental-filtros"
 
 /** Sede y Grado/Grupo van ocultas de entrada; «Columnas visibles» las ofrece. */
@@ -24,6 +25,8 @@ const COLUMNAS_OCULTAS = { sede: false, grado_grupo: false }
 export function useSaludMentalLista() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const f = useSaludMentalFiltros(goToPage)
+  // «Nuevo reporte» solo lo ofrece quien puede reportar (el backend lo vuelve a validar).
+  const puedeReportar = useAccesoPrevencionQuery(f.establecimientoId).data?.puede_reportar_salud_mental === true
   const ambito = useAmbitoPrevencion("")
   const { irSenalSaludMental, irReporteSaludMental } = useNavegacionPrevencion()
   const dialogos = useDialogosSaludMental()
@@ -74,6 +77,7 @@ export function useSaludMentalLista() {
     goToPage,
     setPageSize,
     irReporteSaludMental,
+    puedeReportar,
     dialogos: dialogos.dialogos,
   }
 }
