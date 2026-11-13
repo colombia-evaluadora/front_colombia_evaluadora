@@ -160,7 +160,8 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
                 const aviso = `Se modificó el comunicado ${tituloLimpio}.`
                 const adjuntos = textoFallidos(fallidos)
                 queueNotice(adjuntos ? `${aviso} ${adjuntos}` : aviso, adjuntos ? { variant: "warning" } : undefined)
-                volver()
+                // Tras guardar se vuelve al detalle del comunicado modificado.
+                void navigate({ to: paths.app.comunicacionesComunicadoDetalle.getHref(c.conversacionId) })
               },
             },
           )

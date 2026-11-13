@@ -47,11 +47,21 @@ export interface PaginaComunicados {
   pageCount: number
 }
 
+/** Tipo de destinatario del filtro avanzado (M.1.LIS.1): los cargos cuentan como funcionarios. */
+export type TipoFiltroComunicado = "ESTUDIANTES" | "ACUDIENTES" | "FUNCIONARIOS"
+
+/** Columnas ordenables del listado; comms-service ordena en el servidor (la tabla pagina allá). */
+export type OrdenComunicados = "fecha" | "titulo" | "publicadoPor" | "destinatarios" | "estado"
+
 export interface FiltrosComunicados {
   pestana: PestanaComunicados
   q?: string
   estado?: EstadoComunicado
   desde?: string
+  emisor?: string
+  tipo?: TipoFiltroComunicado
+  sortBy?: OrdenComunicados
+  sortDir?: "asc" | "desc"
   page: number
   pageSize: number
 }
@@ -71,10 +81,56 @@ export function useComunicadosGestionQuery(filtros: FiltrosComunicados) {
       if (filtros.q?.trim()) params.set("q", filtros.q.trim())
       if (filtros.estado) params.set("estado", filtros.estado)
       if (filtros.desde) params.set("desde", filtros.desde)
+      // Solo con valor: el backend anterior no los conoce y los ignora si faltan.
+      if (filtros.emisor?.trim()) params.set("emisor", filtros.emisor.trim())
+      if (filtros.tipo) params.set("tipo", filtros.tipo)
+      if (filtros.sortBy) {
+        params.set("sortBy", filtros.sortBy)
+        params.set("sortDir", filtros.sortDir ?? "asc")
+      }
       const [pagina] = await evalCol.getRows<PaginaComunicados>(`${RUTA}?${params.toString()}`)
       return pagina ?? { items: [], totalCount: 0, pageCount: 0 }
     },
     placeholderData: keepPreviousData,
+  })
+}
+
+/** Persona sin canal o cuyo correo falló (M.1.DET.1). Nunca se expone quién leyó. */
+export interface PersonaSinCanal {
+  nombre: string
+  tipo: string
+  motivo: string
+  grupo: string | null
+}
+
+/** Seguimiento por canal del comunicado (M.1.DET.1): solo para quien lo gestiona. */
+export interface SeguimientoComunicado {
+  destinatarios: number
+  conAviso: number
+  correosEnviados: number
+  correosFallidos: number
+  sinCanal: number
+  leidos: number
+  personas: PersonaSinCanal[]
+}
+
+export const seguimientoComunicadoKey = (conversacionId: number) =>
+  [...comunicadosGestionKey, "seguimiento", conversacionId] as const
+
+/**
+ * GET /comunicaciones/conversaciones/{id}/comunicado/seguimiento. Mientras el backend no lo tenga
+ * desplegado responde 404: el detalle cae a los contadores del propio comunicado (sin romperse).
+ */
+export function useSeguimientoComunicadoQuery(conversacionId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: seguimientoComunicadoKey(conversacionId),
+    queryFn: async () => {
+      const [fila] = await evalCol.getRows<SeguimientoComunicado>(
+        `/comunicaciones/conversaciones/${conversacionId}/comunicado/seguimiento`,
+      )
+      return fila ? { ...fila, personas: fila.personas ?? [] } : null
+    },
+    enabled: enabled && Number.isFinite(conversacionId),
   })
 }
 
