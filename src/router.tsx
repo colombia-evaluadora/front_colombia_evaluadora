@@ -1704,6 +1704,262 @@ export const reconocimientosRoute = createRoute({
   component: ReconocimientosPage,
 })
 
+const PrevencionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/prevencion-page"),
+  "PrevencionPage",
+)
+
+export const prevencionRetencionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionRetencion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Prevención y retención" }] },
+  component: PrevencionPage,
+})
+
+const PrevencionHistorialPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/historial-page"),
+  "HistorialPage",
+)
+
+export const prevencionHistorialRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionHistorial.path,
+  staticData: {
+    breadcrumb: [
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Prevención y retención", to: paths.app.prevencionRetencion.getHref() },
+      { label: "Historial" },
+    ],
+  },
+  // `grupo` (Grado/Grupo) lo manda el tablero: el historial no lo devuelve.
+  validateSearch: (search: Record<string, unknown>): { grupo?: string } => ({
+    grupo: typeof search.grupo === "string" ? search.grupo : undefined,
+  }),
+  component: function PrevencionHistorialRoute() {
+    const { matricula } = prevencionHistorialRoute.useParams()
+    const { grupo } = prevencionHistorialRoute.useSearch()
+    return <PrevencionHistorialPage matricula={Number(matricula)} gradoGrupo={grupo} />
+  },
+})
+
+const PrevencionValorarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/valorar-page"),
+  "ValorarPage",
+)
+const PrevencionPlanNuevoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/plan-form-page"),
+  "PlanNuevoPage",
+)
+const PrevencionPlanEditarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/plan-form-page"),
+  "PlanEditarPage",
+)
+
+const numeroDeSearch = (v: unknown): number | undefined => {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+const PREVENCION_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Prevención y retención", to: paths.app.prevencionRetencion.getHref() },
+]
+
+export const prevencionValorarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionValorar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Valorar riesgo" }] },
+  validateSearch: (search: Record<string, unknown>): { matricula?: number } => ({
+    matricula: numeroDeSearch(search.matricula),
+  }),
+  component: function PrevencionValorarRoute() {
+    const { matricula } = prevencionValorarRoute.useSearch()
+    return <PrevencionValorarPage matricula={matricula} />
+  },
+})
+
+export const prevencionPlanNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanNuevo.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nuevo plan" }] },
+  validateSearch: (search: Record<string, unknown>): { matricula?: number; valoracion?: number } => ({
+    matricula: numeroDeSearch(search.matricula),
+    valoracion: numeroDeSearch(search.valoracion),
+  }),
+  component: function PrevencionPlanNuevoRoute() {
+    const { matricula, valoracion } = prevencionPlanNuevoRoute.useSearch()
+    return <PrevencionPlanNuevoPage matricula={matricula} valoracion={valoracion} />
+  },
+})
+
+const PrevencionPlanDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/plan-detalle-page"),
+  "PlanDetallePage",
+)
+const PrevencionValoracionDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/valoracion-detalle-page"),
+  "ValoracionDetallePage",
+)
+
+export const prevencionPlanDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Plan de acompañamiento" }] },
+  component: function PrevencionPlanDetalleRoute() {
+    const { planId } = prevencionPlanDetalleRoute.useParams()
+    return <PrevencionPlanDetallePage planId={Number(planId)} />
+  },
+})
+
+const PrevencionAbrirCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/abrir-caso-page"),
+  "AbrirCasoPage",
+)
+
+export const prevencionPlanCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanCaso.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Abrir caso de convivencia" }] },
+  component: function PrevencionPlanCasoRoute() {
+    const { planId } = prevencionPlanCasoRoute.useParams()
+    return <PrevencionAbrirCasoPage planId={Number(planId)} />
+  },
+})
+
+export const prevencionValoracionDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionValoracionDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Valoración" }] },
+  component: function PrevencionValoracionDetalleRoute() {
+    const { valoracionId } = prevencionValoracionDetalleRoute.useParams()
+    return <PrevencionValoracionDetallePage valoracionId={Number(valoracionId)} />
+  },
+})
+
+const PrevencionReporteSaludMentalPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/reporte-salud-mental-page"),
+  "ReporteSaludMentalPage",
+)
+const PrevencionSenalSaludMentalPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/senal-salud-mental-page"),
+  "SenalSaludMentalPage",
+)
+
+export const prevencionSaludMentalNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionSaludMentalNuevo.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nuevo reporte de salud mental" }] },
+  // Desde el Observador llega el estudiante elegido: `matricula` y su nombre para leer «Nombre · grado».
+  validateSearch: (search: Record<string, unknown>): { matricula?: number; estudiante?: string } => ({
+    matricula: Number.isFinite(Number(search.matricula)) && search.matricula != null ? Number(search.matricula) : undefined,
+    estudiante: typeof search.estudiante === "string" ? search.estudiante : undefined,
+  }),
+  component: PrevencionReporteSaludMentalPage,
+})
+
+export const prevencionSenalSaludMentalRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionSenalSaludMental.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Señal de salud mental" }] },
+  component: function PrevencionSenalSaludMentalRoute() {
+    const { senalId } = prevencionSenalSaludMentalRoute.useParams()
+    return <PrevencionSenalSaludMentalPage senalId={Number(senalId)} />
+  },
+})
+
+export const prevencionPlanEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar plan" }] },
+  component: function PrevencionPlanEditarRoute() {
+    const { planId } = prevencionPlanEditarRoute.useParams()
+    return <PrevencionPlanEditarPage planId={Number(planId)} />
+  },
+})
+
+const PrevencionEstrategiaFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/estrategia-form-page"),
+  "EstrategiaNuevaPage",
+)
+const PrevencionEstrategiaEditarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/estrategia-form-page"),
+  "EstrategiaEditarPage",
+)
+const PrevencionEstrategiaDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/estrategia-detalle-page"),
+  "EstrategiaDetallePage",
+)
+
+export const prevencionEstrategiaNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionEstrategiaNueva.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nueva estrategia" }] },
+  component: PrevencionEstrategiaFormPage,
+})
+
+export const prevencionEstrategiaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionEstrategiaEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar estrategia" }] },
+  component: function PrevencionEstrategiaEditarRoute() {
+    const { estrategiaId } = prevencionEstrategiaEditarRoute.useParams()
+    return <PrevencionEstrategiaEditarPage estrategiaId={Number(estrategiaId)} />
+  },
+})
+
+export const prevencionEstrategiaDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionEstrategiaDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Estrategia" }] },
+  component: function PrevencionEstrategiaDetalleRoute() {
+    const { estrategiaId } = prevencionEstrategiaDetalleRoute.useParams()
+    return <PrevencionEstrategiaDetallePage estrategiaId={Number(estrategiaId)} />
+  },
+})
+
+const PrevencionCaracterizacionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/caracterizacion-page"),
+  "CaracterizacionDetallePage",
+)
+const PrevencionCaracterizacionEditarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/caracterizacion-page"),
+  "CaracterizacionEditarPage",
+)
+
+export const prevencionCaracterizacionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionCaracterizacion.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Caracterización familiar" }] },
+  component: function PrevencionCaracterizacionRoute() {
+    const { matricula } = prevencionCaracterizacionRoute.useParams()
+    return <PrevencionCaracterizacionPage matricula={Number(matricula)} />
+  },
+})
+
+export const prevencionCaracterizacionEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionCaracterizacionEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar caracterización" }] },
+  component: function PrevencionCaracterizacionEditarRoute() {
+    const { matricula } = prevencionCaracterizacionEditarRoute.useParams()
+    return <PrevencionCaracterizacionEditarPage matricula={Number(matricula)} />
+  },
+})
+
+const PrevencionHistorialAcademicoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/historial-academico-page"),
+  "HistorialAcademicoPage",
+)
+
+export const prevencionHistorialAcademicoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionHistorialAcademico.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Historial académico" }] },
+  component: function PrevencionHistorialAcademicoRoute() {
+    const { matricula } = prevencionHistorialAcademicoRoute.useParams()
+    return <PrevencionHistorialAcademicoPage matricula={Number(matricula)} />
+  },
+})
+
 /** Enlace del aviso `RECONOCIMIENTO_NUEVO`: la misma página; la fase 2 abre el detalle con el id. */
 export const reconocimientoDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
@@ -2344,6 +2600,22 @@ const routeTree = rootRoute.addChildren([
     compromisoDetalleRoute,
     reconocimientosRoute,
     reconocimientoDetalleRoute,
+    prevencionRetencionRoute,
+    prevencionHistorialRoute,
+    prevencionValorarRoute,
+    prevencionPlanNuevoRoute,
+    prevencionPlanEditarRoute,
+    prevencionPlanDetalleRoute,
+    prevencionValoracionDetalleRoute,
+    prevencionPlanCasoRoute,
+    prevencionSaludMentalNuevoRoute,
+    prevencionSenalSaludMentalRoute,
+    prevencionEstrategiaNuevaRoute,
+    prevencionEstrategiaEditarRoute,
+    prevencionEstrategiaDetalleRoute,
+    prevencionCaracterizacionRoute,
+    prevencionCaracterizacionEditarRoute,
+    prevencionHistorialAcademicoRoute,
     observacionesSugerenciasRoute,
     chatRoute,
     comunicadoNuevoRoute,

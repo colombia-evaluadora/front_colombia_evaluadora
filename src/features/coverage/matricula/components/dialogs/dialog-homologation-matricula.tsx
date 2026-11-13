@@ -7,70 +7,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CheckCircleFillIcon, CheckIcon, XIcon } from "@/components/ui/icons"
-
-import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
-import type { Matricula, MatriculaHomologationInfo } from "@/features/coverage/matricula/api/types/matricula"
+import { CheckIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 
 interface HomologationMatriculaDialogProps {
-  matricula: Matricula
-  homologation: MatriculaHomologationInfo
+  /** Establecimiento de donde viene el estudiante, según el snapshot del traslado. */
+  institucionOrigen: string
   onChoice: (homologate: boolean) => void
 }
 
-export function HomologationMatriculaDialog({
-  matricula,
-  homologation,
-  onChoice,
-}: HomologationMatriculaDialogProps) {
-  const fullName = `${matricula.firstName} ${matricula.lastName}`
-  const gradeLabel = useMatriculaGradeLabel()
-
+/**
+ * Pregunta de homologación al guardar un traslado (Sección 4.5). La matrícula ya
+ * quedó guardada; elegir «No homologar por ahora» deja el snapshot para después.
+ */
+export function HomologationMatriculaDialog({ institucionOrigen, onChoice }: HomologationMatriculaDialogProps) {
   return (
     <Dialog open>
-      <DialogContent showCloseButton={false} className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <CheckCircleFillIcon className="size-6 shrink-0 text-green" />
-            <DialogTitle>Registro realizado</DialogTitle>
+            <WarningIcon className="size-6 shrink-0 text-yellow" aria-hidden />
+            <DialogTitle>¿Homologar las notas del traslado?</DialogTitle>
           </div>
           <DialogDescription>
-            El estudiante <span className="font-semibold text-foreground">{fullName}</span> ha sido
-            registrado correctamente en el grado{" "}
-            <span className="font-semibold text-foreground">{gradeLabel(matricula.grade)}</span>.
-          </DialogDescription>
-          <DialogDescription>
-            Sin embargo, el sistema detectó que el estudiante cursó este{" "}
-            <span className="font-semibold text-foreground">mismo grado</span> en la sede{" "}
-            {homologation.previousCampus} y cuenta con{" "}
-            <span className="font-semibold text-foreground">calificaciones registradas</span>.
+            El estudiante tiene notas en <span className="font-semibold text-foreground">{institucionOrigen}</span>. Si
+            no las homologa ahora, los períodos transcurridos quedan Pendientes por nivelación.
           </DialogDescription>
         </DialogHeader>
-        <p className="-mt-3 text-center text-base font-semibold text-foreground">
-          ¿Desea homologar las calificaciones previas del estudiante?
-        </p>
-        <DialogFooter className="-mt-3 flex-row">
-          <Button
-            size="sm"
-            type="button"
-            variant="fill"
-            color="primary"
-            className="flex-1"
-            onClick={() => onChoice(true)}
-          >
-            <CheckIcon data-icon="inline-start" />
-            Sí, homologar las calificaciones
-          </Button>
-          <Button
-            size="sm"
-            type="button"
-            variant="fill"
-            color="neutral"
-            className="flex-1"
-            onClick={() => onChoice(false)}
-          >
+        <DialogFooter>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onChoice(false)}>
             <XIcon data-icon="inline-start" />
-            No, no homologar ahora
+            No homologar por ahora
+          </Button>
+          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onChoice(true)}>
+            <CheckIcon data-icon="inline-start" />
+            Homologar
           </Button>
         </DialogFooter>
       </DialogContent>

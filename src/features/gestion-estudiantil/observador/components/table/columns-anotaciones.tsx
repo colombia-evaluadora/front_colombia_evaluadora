@@ -19,7 +19,7 @@ import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-ma
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
-/** Ver, Modificar, Anular, Remitir, Citar, Crear compromiso y las dos aún sin backend. */
+/** Ver, Modificar, Anular, Remitir, Citar, Crear compromiso y Reportar salud mental y la que aún no tiene backend. */
 const ACCIONES_ANOTACION = 8
 
 interface ColumnasOpciones {
@@ -33,6 +33,7 @@ interface ColumnasOpciones {
   puedeCitar: boolean
   onCitar: (row: AnotacionRow) => void
   onCompromiso: (row: AnotacionRow) => void
+  onReportarSaludMental: (row: AnotacionRow) => void
 }
 
 export function buildColumnsAnotaciones({
@@ -46,6 +47,7 @@ export function buildColumnsAnotaciones({
   puedeCitar,
   onCitar,
   onCompromiso,
+  onReportarSaludMental,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
@@ -164,8 +166,9 @@ export function buildColumnsAnotaciones({
                 disabled: !vigente || !puedeCitar,
                 onSelect: () => onCompromiso(a),
               },
-              // Sección 9.6 y convivencia: aún sin backend.
-              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: true, onSelect: () => {} },
+              // Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. El backend decide el alcance.
+              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, onSelect: () => onReportarSaludMental(a) },
+              // Convivencia: aún sin backend.
               { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
             ]}
           />

@@ -8,6 +8,10 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TabNotasHomologadas } from "@/features/coverage/matricula/components/notas-homologadas/tab-notas-homologadas"
+import type { MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
+import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import { SpinnerIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
@@ -25,6 +29,9 @@ import type { DepartmentOption } from "@/features/coverage/matricula/components/
 import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { resolveMatriculaMunicipioDepartments } from "@/features/coverage/matricula/utils/matricula-form-defaults"
 
+// Igual que el botón Editar del listado: una matrícula cerrada no se corrige.
+const NOTAS_NO_EDITABLES: MatriculaStatus[] = ["Reubicado", "Promovido"]
+
 export function MatriculaDetailPage() {
   return (
     <NoticeProvider>
@@ -35,6 +42,7 @@ export function MatriculaDetailPage() {
 
 function MatriculaDetailPageContent() {
   const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
+  const gradeLabel = useMatriculaGradeLabel()
   const { notify } = useNotify()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
   // La configuración de campos es la del colegio de la sede de la matrícula.
@@ -79,7 +87,7 @@ function MatriculaDetailPageContent() {
         <TableScreenTitle
           action={
             <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => prev} />}
+              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => ({ ...prev, accion: undefined })} />}
               variant="fill"
               color="neutral"
               size="sm"
@@ -109,17 +117,47 @@ function MatriculaDetailPageContent() {
 
       {data?.status === "ok" && data.matricula && details && (
         <TableScreenBody>
-          <div className="flex flex-col gap-6">
-            <MatriculaToolbar matricula={data.matricula} />
-            <MatriculaFormBody
-              values={details}
-              onChange={() => {}}
-              catalogs={catalogs}
-              departments={departments}
-              disabled
-              fieldSettings={fieldSettings}
-            />
-          </div>
+          <Tabs defaultValue="datos">
+            <TabsList>
+              <TabsTrigger value="datos">Datos de la matrícula</TabsTrigger>
+              <TabsTrigger value="notas">Notas homologadas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="datos" className="pt-4">
+              <div className="flex flex-col gap-6">
+                <MatriculaToolbar matricula={data.matricula} />
+                <MatriculaFormBody
+                  values={details}
+                  onChange={() => {}}
+                  catalogs={catalogs}
+                  departments={departments}
+                  disabled
+                  fieldSettings={fieldSettings}
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="notas" className="pt-4">
+              <TabNotasHomologadas
+                matriculaId={matriculaId}
+                contexto={[
+                  `${data.matricula.firstName} ${data.matricula.lastName}`,
+                  data.matricula.group,
+                  data.matricula.campus,
+                  data.matricula.shift,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                estudiante={`${data.matricula.firstName} ${data.matricula.lastName} (${[
+                  gradeLabel(data.matricula.grade),
+                  data.matricula.group,
+                  data.matricula.institution,
+                  data.matricula.shift,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")})`}
+                editable={!NOTAS_NO_EDITABLES.includes(data.matricula.status)}
+              />
+            </TabsContent>
+          </Tabs>
         </TableScreenBody>
       )}
 
