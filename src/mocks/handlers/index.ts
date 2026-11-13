@@ -62,6 +62,7 @@ import { matriculaAsignaturasHandlers } from "@/mocks/handlers/matricula-asignat
 import { unificarEstudiantesHandlers } from "@/mocks/handlers/unificar-estudiantes"
 import { solicitudRetiroHandlers } from "@/mocks/handlers/solicitud-retiro"
 import { reactivarHandlers } from "@/mocks/handlers/reactivar"
+import { accionesLoteHandlers } from "@/mocks/handlers/acciones-lote"
 import { estudianteExistenteHandlers } from "@/mocks/handlers/estudiante-existente"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
 import { curricularStatementsHandlers } from "@/mocks/handlers/academic-management/curricular-statements"
@@ -91,6 +92,8 @@ import { realtimeHandlers } from "@/mocks/handlers/realtime"
 import { agenteHandlers } from "@/mocks/handlers/agente"
 
 export const handlers = [
+  // Antes que las rutas de matrícula con :id: «lote» no es un id.
+  ...accionesLoteHandlers,
   ...authHandlers,
   ...devicesHandlers,
   ...agenteHandlers,

@@ -267,25 +267,6 @@ export function deleteMatriculaById(id: string) {
   matriculaDetailsDb.delete(id)
 }
 
-export function updateMatriculaRow(id: string, patch: Partial<Matricula>): Matricula | null {
-  const index = matriculaDb.findIndex((item) => item.id === id)
-  if (index < 0) return null
-
-  const updated = { ...matriculaDb[index], ...patch }
-  matriculaDb[index] = updated
-
-  const details = matriculaDetailsDb.get(id)
-  if (details && patch.status) {
-    matriculaDetailsDb.set(id, {
-      ...details,
-      status: patch.status,
-      academic: { ...details.academic, status: patch.status },
-    })
-  }
-
-  return updated
-}
-
 /**
  * Aplica un "Cambio de matrícula masivo" (E01HU33) a todas las filas de
  * `request.ids`. `campus`/`grade`/`group` solo pisan lo que el usuario

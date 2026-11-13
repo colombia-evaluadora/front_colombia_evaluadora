@@ -26,6 +26,10 @@ import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-
 import type { AgeSituation, Matricula, MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
 import { DeleteMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
+import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
+import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
+import { DialogCambiarGrupo } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grupo"
+import { DialogCambiarGrado } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grado"
 import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -62,7 +66,7 @@ const STATUS_DOT: Record<BadgeColor, string> = {
   warning: "bg-yellow",
 }
 
-function MatriculaStatusBadge({ status }: { status: string }) {
+export function MatriculaStatusBadge({ status }: { status: string }) {
   const color = STATUS_COLORS[status] ?? "muted"
   return (
     <Badge variant="outline" color={color} className="rounded-full bg-background text-xs font-medium tracking-normal">
@@ -345,61 +349,64 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
             <DeleteMatriculaDialog matricula={row.original} />
           </OnlineOnlyAction>
         ) : null}
+        <AccionesDocumentos matricula={row.original} />
         <AccionesEditar matricula={row.original} />
         <UnificarAccion matricula={row.original} />
       </div>
   )
 }
 
-type AccionEditar = "cambiar-grupo" | "cambiar-grado" | "corregir-identidad"
-
-const ACCIONES_EDITAR: { accion: AccionEditar; label: string; Icon: typeof EyeIcon }[] = [
-  { accion: "cambiar-grupo", label: "Cambiar de grupo", Icon: ArrowsLeftRightIcon },
-  { accion: "cambiar-grado", label: "Cambiar de grado", Icon: ArrowsDownUpIcon },
-  { accion: "corregir-identidad", label: "Corregir datos de identidad", Icon: IdentificationCardIcon },
-]
-
 /**
- * Acciones de la tabla de acciones (C.1.LIS) que se resuelven en Editar: cada
- * ícono abre la edición con `accion`, que enfoca el campo o abre el modal.
+ * Cambiar de grupo y de grado abren su modal (el mismo de la barra de lote);
+ * corregir identidad se resuelve en Editar con `accion`.
  */
 function AccionesEditar({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const [abierto, setAbierto] = useState<"grupo" | "grado" | null>(null)
   if (!puedeEditar || matricula.status !== "Cursando") return null
   // Con retiro solicitado (Regla 71) no se cambia de grupo ni de grado; corregir identidad sí.
-  const acciones = matricula.retiroSolicitado || matricula.anulacionPendiente
-    ? ACCIONES_EDITAR.filter((a) => a.accion === "corregir-identidad")
-    : ACCIONES_EDITAR
+  const cambios = !matricula.retiroSolicitado && !matricula.anulacionPendiente
   const nombre = `${matricula.firstName} ${matricula.lastName}`
+  const cerrar = (open: boolean) => !open && setAbierto(null)
   return (
     <>
-      {acciones.map(({ accion, label, Icon }) => (
-        <OnlineOnlyAction key={accion}>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`${label} de ${nombre}`}
-                  render={
-                    <Link
-                      to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)}
-                      search={(prev) => ({ ...prev, accion })}
-                    />
-                  }
-                  nativeButton={false}
-                />
-              }
-            >
-              <Icon />
-            </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
-          </Tooltip>
-        </OnlineOnlyAction>
-      ))}
+      {cambios ? (
+        <>
+          <OnlineOnlyAction>
+            <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => setAbierto("grupo")} />
+          </OnlineOnlyAction>
+          <OnlineOnlyAction>
+            <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => setAbierto("grado")} />
+          </OnlineOnlyAction>
+        </>
+      ) : null}
+      <OnlineOnlyAction>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Corregir datos de identidad de ${nombre}`}
+                render={
+                  <Link
+                    to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)}
+                    search={(prev) => ({ ...prev, accion: "corregir-identidad" })}
+                  />
+                }
+                nativeButton={false}
+              />
+            }
+          >
+            <IdentificationCardIcon />
+          </TooltipTrigger>
+          <TooltipContent>Corregir datos de identidad</TooltipContent>
+        </Tooltip>
+      </OnlineOnlyAction>
+      {abierto === "grupo" ? <DialogCambiarGrupo matriculas={[matricula]} onOpenChange={cerrar} /> : null}
+      {abierto === "grado" ? <DialogCambiarGrado matriculas={[matricula]} onOpenChange={cerrar} /> : null}
     </>
   )
 }

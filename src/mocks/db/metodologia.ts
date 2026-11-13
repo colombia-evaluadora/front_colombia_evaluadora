@@ -25,4 +25,6 @@ export const CATALOGOS_MATRICULA_NUEVOS: Record<string, { pk_lista_valor: number
   TRASTORNO_ESPECIFICO: lista(["No aplica", "Trastorno del aprendizaje", "TDAH", "Trastorno del lenguaje"]),
   SITUACION_SRPA: lista(["No aplica", "Con medida privativa de la libertad", "Con medida no privativa de la libertad"]),
   INSTITUCION_BIENESTAR: lista(["Ninguna", "Hogar comunitario ICBF", "CDI", "Jardín infantil privado"]),
+  // Retirar (C.1.LOT.1).
+  MOTIVO_RETIRO: lista(["Cambio de domicilio", "Traslado a otro establecimiento", "Situación económica", "Deserción", "Enfermedad", "Otro"]),
 }
