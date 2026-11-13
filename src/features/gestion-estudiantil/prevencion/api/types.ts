@@ -102,8 +102,29 @@ export interface ValoracionDetalle {
   anulada: boolean
   anulacion: Anulacion | null
   fk_tprevencion_plan: number | null
-  /** Resumen de la caracterización (puede ser null). */
-  caracterizacion_resumen: unknown
+  /** Resumen de la caracterización familiar (§9.8); solo viaja a quien ve lo sensible. */
+  caracterizacion_resumen: CaracterizacionResumen | null
+}
+
+/** `fn_prevencion_caracterizacion_resumen`: con `existe: false` solo trae el estado «Sin diligenciar». */
+export interface CaracterizacionResumen {
+  existe: boolean
+  estado: string
+  estado_nombre: string
+  id?: number
+  anio?: number
+  fecha_confirmacion?: string | null
+  personas_hogar?: number | null
+  vive_solo?: boolean | null
+  tipo_vivienda?: string | null
+  tenencia_vivienda?: string | null
+  internet_hogar?: string | null
+  equipo_estudiar?: string | null
+  trabajo_estudiante?: string | null
+  ingresos?: string | null
+  revision_factores?: string | null
+  factores_vigentes?: string[]
+  estrategias_requeridas?: string[]
 }
 
 export interface AvanceAccion {
@@ -215,6 +236,14 @@ export interface AccesoPrevencion {
   puede_parametros: boolean
   puede_salud_mental: boolean
   puede_reportar_salud_mental: boolean
+  /** Pestaña Estrategias (§9.7). */
+  puede_estrategias?: boolean
+  /** Botón «Nueva estrategia» (solo Supervisor de sede y Administrador). */
+  puede_crear_estrategia?: boolean
+  /** Pestaña Caracterización familiar y de vivienda (§9.8). */
+  puede_caracterizacion?: boolean
+  /** Consultar historial académico (§9.8): Supervisor de sede, Orientación, Trabajo social y Administrador. */
+  puede_historial_academico?: boolean
 }
 
 /** `GET /estudiantes/:MATRICULA/historial` → columna `datos`. */
@@ -232,8 +261,25 @@ export interface Historial {
   planes: HistorialPlan[]
   eventos: HistorialEvento[]
   anotaciones_permanencia: HistorialAnotacion[]
-  /** Estrategias del estudiante (fase posterior). */
-  estrategias: unknown
+  /** Estrategias de las que es o fue beneficiario (§9.7), la más reciente primero. */
+  estrategias: HistorialEstrategia[]
+}
+
+/** `fn_prevencion_estrategias_estudiante_interno`: `motivo_salida` y `origen_plan` solo en el historial (no en el portal). */
+export interface HistorialEstrategia {
+  id: number
+  nombre: string
+  tipo_nombre: string
+  fecha_inicio: string
+  fecha_fin: string | null
+  estado: string
+  estado_nombre: string
+  fecha_ingreso: string
+  fecha_salida: string | null
+  resultado_salida_nombre: string | null
+  motivo_salida?: string | null
+  /** Solo si ve lo sensible: la entró una acción del plan de acompañamiento. */
+  origen_plan?: boolean | null
 }
 
 /** Fila de `GET /estudiantes/:MATRICULA/alertas`. */
@@ -658,3 +704,541 @@ export type ResumenSenalSM = Pick<
   SenalSMRow,
   "id" | "fecha" | "estudiante_nombre" | "tipo_nombre" | "severidad_valor" | "severidad_nombre" | "estado" | "estado_nombre"
 >
+
+// --- Estrategias de permanencia (§9.7) ---
+
+export type EstadoEstrategia = "PLANEADA" | "EN_EJECUCION" | "FINALIZADA"
+
+/** `GET /estrategias`: fecha como timestamp ISO; `beneficiarios` son los activos hoy. */
+export interface EstrategiaRow {
+  id: number
+  nombre: string
+  tipo_valor: string
+  tipo_nombre: string
+  fk_tperiodo_academico: number
+  periodo_nombre: string
+  fk_tsede: number
+  sede_nombre: string
+  fk_tlv_jornada: number
+  fecha_inicio: string
+  fecha_fin: string | null
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  beneficiarios: number | null
+  meta: number | null
+  estado: EstadoEstrategia
+  estado_nombre: string
+  puede_modificar: boolean
+  puede_agregar_beneficiarios: boolean
+  puede_copiar: boolean
+  puede_finalizar: boolean
+  total_count: number
+}
+
+export interface BeneficiarioEstrategia {
+  id: number
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string
+  grado_grupo: string
+  fecha_ingreso: string
+  fecha_salida: string | null
+  resultado_salida_valor: string | null
+  resultado_salida_nombre: string | null
+  motivo_salida: string | null
+  /** Solo si ve lo sensible. */
+  origen_plan?: boolean
+  puede_retirar: boolean
+  /** Estado de la matrícula (`valor` «1» = Cursando). */
+  matricula_estado_valor: string | null
+  matricula_estado_nombre: string | null
+}
+
+export interface EfectividadGrupo {
+  siguen_cursando: number
+  retirados: number
+  tasa_promocion_pct: number | null
+  rendimiento_promedio: number | null
+}
+
+export interface Efectividad extends EfectividadGrupo {
+  beneficiarios: number
+  no_beneficiarios: EfectividadGrupo & { estudiantes: number }
+}
+
+/** `GET /estrategias/:ID` → columna `datos`. */
+export interface EstrategiaDetalle {
+  id: number
+  nombre: string
+  tipo_valor: string
+  tipo_nombre: string
+  fk_tperiodo_academico: number
+  periodo_nombre: string
+  fk_tsede: number
+  fecha_inicio: string
+  fecha_fin: string | null
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  fuente_financiacion: string | null
+  meta: number | null
+  descripcion: string
+  requisitos_ingreso: string | null
+  estado: EstadoEstrategia
+  estado_nombre: string
+  resultado: string | null
+  finalizada_en: string | null
+  fk_testrategia_origen: number | null
+  ve_sensible: boolean
+  puede_modificar: boolean
+  puede_copiar: boolean
+  puede_agregar_beneficiarios: boolean
+  puede_finalizar: boolean
+  beneficiarios_activos: number
+  beneficiarios_total: number
+  beneficiarios_copiables: number
+  efectividad: Efectividad | null
+  beneficiarios: BeneficiarioEstrategia[]
+}
+
+/** Lo que los modales de una estrategia necesitan; lo cumplen la fila del listado y el detalle. */
+export type ResumenEstrategia = Pick<
+  EstrategiaRow,
+  "id" | "nombre" | "estado" | "estado_nombre" | "fecha_inicio" | "fecha_fin" | "responsable_nombre"
+>
+
+export interface MatriculadoEstrategia {
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string
+  fk_tgrado: number
+  grado_nombre: string
+  grado_grupo: string
+  ya_es_beneficiario: boolean
+  /** `EN_EDAD`, `EXTRAEDAD`, `PREEXTRAEDAD`, `SIN_CALCULAR`… */
+  situacion_edad: string
+  total_count: number
+}
+
+export interface GradoEstrategia {
+  fk_tgrado: number
+  grado_nombre: string
+  matriculados: number
+}
+
+export interface BeneficiarioAgregado {
+  fk_tmatricula: number
+  fk_tbeneficiario: number
+  estudiante_nombre: string
+  situacion_edad: string
+  advertencia: string | null
+}
+
+export interface EstrategiasFiltros {
+  tipo: string
+  estado: string
+  sede: string
+  jornada: string
+}
+
+export const ESTRATEGIAS_FILTROS_VACIOS: EstrategiasFiltros = { tipo: "", estado: "", sede: "", jornada: "" }
+
+export interface EstrategiasQueryFilters {
+  ESTABLECIMIENTO: number
+  SEDE: number | null
+  JORNADA: number | null
+  TIPO: string | null
+  ESTADO: string | null
+  SEARCH: string | null
+}
+
+/** Cuerpo de crear (con `PERIODO_ACADEMICO`) y de modificar (sin él: es inmutable). */
+export interface EstrategiaInput {
+  NOMBRE: string
+  FK_TIPO: number
+  FECHA_INICIO: string
+  FECHA_FIN: string | null
+  FK_RESPONSABLE: number
+  FUENTE_FINANCIACION: string | null
+  META: number | null
+  DESCRIPCION: string
+  REQUISITOS_INGRESO: string | null
+}
+
+export interface CrearEstrategiaInput extends EstrategiaInput {
+  PERIODO_ACADEMICO: number
+}
+
+export interface ModificarEstrategiaInput extends EstrategiaInput {
+  id: number
+}
+
+export interface CopiarEstrategiaInput {
+  id: number
+  FECHA_INICIO: string
+  FECHA_FIN: string | null
+  PERIODO_ACADEMICO: number | null
+  CON_BENEFICIARIOS: boolean
+}
+
+export interface AgregarBeneficiariosInput {
+  id: number
+  MATRICULAS: number[]
+  FECHA_INGRESO: string
+}
+
+export interface RetirarBeneficiarioInput {
+  /** Id del beneficiario, no de la estrategia. */
+  id: number
+  FECHA_SALIDA: string
+  FK_RESULTADO: number
+  MOTIVO: string | null
+}
+
+export interface FinalizarEstrategiaInput {
+  id: number
+  RESULTADO: string
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Caracterización familiar y de vivienda (§9.8)
+// ---------------------------------------------------------------------------------------------------------------
+
+export type EstadoCaracterizacion = "SIN_DILIGENCIAR" | "POR_CONFIRMAR" | "CONFIRMADA"
+
+/** Fila de `GET /caracterizaciones`; `total_count` y `sin_confirmar` viajan en cada fila. */
+export interface CaracterizacionRow {
+  fk_tmatricula: number
+  fk_tprevencion_caracterizacion: number | null
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tgrupo: number
+  grado_grupo: string
+  fk_tsede: number
+  fk_tlv_jornada: number
+  personas_hogar: number | null
+  estado: EstadoCaracterizacion
+  estado_nombre: string
+  fecha_confirmacion: string | null
+  confirmada_por: string | null
+  puede_modificar: boolean
+  sin_confirmar: number
+  total_count: number
+}
+
+export interface CaracterizacionesFiltros {
+  sede: string
+  jornada: string
+  grupo: string
+  estado: string[]
+}
+
+export const CARACTERIZACIONES_FILTROS_VACIOS: CaracterizacionesFiltros = { sede: "", jornada: "", grupo: "", estado: [] }
+
+export interface CaracterizacionesQueryFilters {
+  ESTABLECIMIENTO: number
+  SEDE: number | null
+  JORNADA: number | null
+  GRUPO: number | null
+  ESTADO: string | null
+  SEARCH: string | null
+}
+
+/** Fila de `GET /opciones/caracterizacion-filtros`: un grupo con estudiantes Cursando. */
+export interface OpcionCaracterizacionFiltro {
+  fk_tsede: number
+  sede_nombre: string
+  fk_tlv_jornada: number
+  jornada_nombre: string
+  fk_tgrupo: number
+  grado_grupo: string
+}
+
+/** Fila de `GET /opciones/caracterizacion`: una opción de lista con su id y su código estable. */
+export interface OpcionListaCaracterizacion {
+  lista: string
+  id: number
+  valor: string
+  nombre: string
+  orden: number
+  es_sistema: boolean
+}
+
+/** Una opción de lista dentro del detalle. */
+export interface ItemLista {
+  id: number
+  valor: string
+  nombre: string
+}
+
+export interface IntegranteDetalle {
+  id: number | null
+  orden: number
+  parentesco: ItemLista | null
+  nombre: string | null
+  edad: number | null
+  escolaridad: ItemLista | null
+  empleo: ItemLista | null
+  vive_con_estudiante: boolean | null
+  es_cuidador_principal: boolean | null
+  es_acudiente: boolean
+  apoyo: string | null
+  numero_hijos: number | null
+  /** El acudiente de Cobertura cuando ningún integrante lo es: solo lectura y nunca se envía. */
+  derivado: boolean
+}
+
+export type EstadoFactor = "VIGENTE" | "DESACTIVADO" | "PENDIENTE"
+
+export interface FactorDetalle {
+  id: number | null
+  factor: ItemLista
+  estado: EstadoFactor
+  fuente: string | null
+  fecha_conocimiento: string | null
+  responsable: string | null
+  fecha_revision: string | null
+  fecha_fin: string | null
+  motivo_fin: string | null
+}
+
+export interface RevisionHistorial {
+  fecha: string
+  revision: ItemLista | null
+  funcionario: string | null
+  factores_vigentes: number
+}
+
+export interface AsistenciaCalculada {
+  sesiones: number
+  justificadas: number
+  inasistencias: number
+  porcentaje_asistencia: number | null
+}
+
+export interface TrayectoriaCalculada {
+  repitente: boolean | null
+  matricula_anio_anterior: boolean
+  anio_anterior: {
+    fk_tmatricula: number
+    anio: number
+    grado_grupo: string | null
+    resultado: string | null
+    promovido: boolean
+    asistencia: AsistenciaCalculada | null
+    areas_reprobadas: { periodo: string; areas_evaluadas: number; areas_reprobadas: number } | null
+  } | null
+  asistencia_anio_actual: AsistenciaCalculada | null
+  antecedentes_disciplinarios: {
+    anotaciones_negativas: number
+    casos_convivencia: number
+    casos_tipo_ii_iii: number
+    procesos_disciplinarios: number
+  } | null
+}
+
+/** `GET /caracterizaciones/:MATRICULA` → columna `datos`. Sin fila (`existe: false`) es una vista previa que no se escribe. */
+export interface CaracterizacionDetalle {
+  fk_tmatricula: number
+  existe: boolean
+  id: number | null
+  anio: number
+  estado: EstadoCaracterizacion
+  estado_nombre: string
+  fecha_confirmacion: string | null
+  confirmada_por: string | null
+  actualizada_en: string | null
+  /** Año de la caracterización de la que se copió (vista previa o fila copiada). */
+  copiada_de_anio: number | null
+  ve_sensible: boolean
+  puede_modificar: boolean
+  puede_revisar_factores: boolean
+  estudiante: {
+    nombre: string
+    documento: string | null
+    grado_grupo: string
+    fk_tgrupo: number
+    fk_tsede: number
+    fk_tlv_jornada: number
+  }
+  matricula: {
+    direccion: string | null
+    estrato: ItemLista | null
+    sisben: ItemLista | null
+    victima_conflicto: ItemLista | null
+    subsidiado: boolean | null
+    acudiente: string | null
+    acudiente_parentesco: ItemLista | null
+  }
+  hogar: {
+    personas_hogar: number | null
+    vive_solo: boolean | null
+    estado_civil_padres: ItemLista | null
+    motivo_no_vive_padres: string | null
+    aportantes_convivientes: number | null
+    aportantes_externos: number | null
+    ingresos: ItemLista | null
+    tipologia_familiar: ItemLista | null
+    temas_escuela_padres: string | null
+    convivientes_identificados: number
+    diferencia_hogar: number | null
+    integrantes: IntegranteDetalle[]
+  }
+  vivienda: {
+    tipo_vivienda: ItemLista | null
+    tenencia_vivienda: ItemLista | null
+    descripcion_otra_vivienda: string | null
+    info_servicios: ItemLista | null
+    servicios: ItemLista[]
+    internet_hogar: ItemLista | null
+    internet_estudiar: ItemLista | null
+    frecuencia_domicilio: ItemLista | null
+  }
+  socioeconomica: {
+    info_programas: ItemLista | null
+    programas: ItemLista[]
+    equipo_estudiar: ItemLista | null
+  }
+  situacion: {
+    trabajo_estudiante: ItemLista | null
+    padre_temprana_edad: ItemLista | null
+    que_desea_estudiar: string | null
+    lugar_hermanos: number | null
+    proteccion_estado: ItemLista | null
+    desempeno_percibido: ItemLista | null
+    lugar_estudio: ItemLista | null
+    horas_estudio: ItemLista | null
+    programas_complementarios: string | null
+    medio_transporte: string | null
+    tiempo_desplazamiento: number | null
+    otra_informacion: string | null
+  }
+  estrategias_requeridas: ItemLista[]
+  trayectoria: {
+    declarada: {
+      curso_preescolar: ItemLista | null
+      anios_preescolar: number | null
+      retiros_previos: number | null
+      interrupciones_previas: number | null
+      meses_fuera_sistema: number | null
+      fuente: string | null
+      fecha_referencia: string | null
+      asistencia_anterior_pct: number | null
+      asistencia_anterior_periodo: string | null
+      asistencia_anterior_institucion: string | null
+      asistencia_anterior_fuente: string | null
+      dificultades: ItemLista | null
+      dificultades_cuales: string | null
+      dificultades_fuente: string | null
+      dificultades_fecha: string | null
+      causas_repitencia: string | null
+    }
+    calculada: TrayectoriaCalculada
+  }
+  establecimiento: {
+    asistencia_acudiente: ItemLista | null
+    revision_factores: ItemLista | null
+    fecha_revision: string | null
+    revisada_por: string | null
+    observaciones: string | null
+    factores: FactorDetalle[]
+    historial_revisiones: RevisionHistorial[]
+  }
+}
+
+/** Cuerpo `BODY.DATOS` de `PUT /caracterizaciones/:MATRICULA` (todo lo que captura el formulario, sin los factores). */
+export type DatosCaracterizacion = Record<string, unknown>
+
+export interface GuardarCaracterizacionInput {
+  matricula: number
+  DATOS: DatosCaracterizacion
+}
+
+export interface FactorRevisionInput {
+  fk_factor: number
+  fuente: string
+  fecha_conocimiento: string
+}
+
+export interface FactorDesactivarInput {
+  fk_factor: number
+  motivo: string
+}
+
+export interface RevisarFactoresInput {
+  matricula: number
+  REVISION: number
+  FACTORES: FactorRevisionInput[]
+  DESACTIVAR: FactorDesactivarInput[]
+  OBSERVACIONES: string | null
+}
+
+/** Matrícula de un año anterior que ofrece `GET /historial-academico/opciones`. */
+export interface HistorialAcademicoMatricula {
+  fk_tmatricula: number
+  anio: number
+  sede: string
+  fk_tsede: number
+  jornada: string
+  modalidad: string | null
+  ciclo: string | null
+  grado_grupo: string
+  estado: string | null
+  resultado: string | null
+  periodos: { fk_tperiodo_evaluacion: number; nombre: string }[]
+  asignaturas: { fk_tasignatura: number; nombre: string; area: string | null }[]
+}
+
+/** `GET /estudiantes/:MATRICULA/historial-academico/opciones` → columna `datos`. */
+export interface HistorialAcademicoOpciones {
+  fk_tmatricula: number
+  estudiante_nombre: string
+  establecimiento_nombre: string
+  grado_grupo: string
+  sin_anios_anteriores: boolean
+  mensaje: string | null
+  anios: number[]
+  matriculas: HistorialAcademicoMatricula[]
+}
+
+export interface HistorialAcademicoNotaPeriodo {
+  fk_tperiodo_evaluacion: number
+  periodo: string
+  nota: number | null
+  nota_texto: string | null
+  nota_provisional: number | null
+  definitiva: boolean
+  valoracion: string | null
+  aprobada: boolean | null
+  con_recuperacion: boolean
+  nota_original: number | null
+  valoracion_original: string | null
+  sin_registro: boolean
+}
+
+export interface HistorialAcademicoAsignatura {
+  fk_tasignatura: number
+  nombre: string
+  area: string | null
+  periodos: HistorialAcademicoNotaPeriodo[]
+  final: { nota: number | null; valoracion: string | null; aprobada: boolean | null; sin_registro: boolean } | null
+}
+
+export interface HistorialAcademicoObservacion {
+  fk_tperiodo_evaluacion: number
+  periodo: string
+  observacion: string | null
+  sin_registro: boolean
+}
+
+/** `GET /estudiantes/:MATRICULA/historial-academico` → columna `datos`: Evaluativo (`resultados`) o Formativo (`observaciones`). */
+export interface HistorialAcademico {
+  fk_tmatricula: number
+  anio: number
+  enfoque: "EVALUATIVO" | "FORMATIVO"
+  resultado_matricula: string | null
+  resultados: { asignaturas: HistorialAcademicoAsignatura[] } | null
+  observaciones: {
+    periodos: HistorialAcademicoObservacion[]
+    final: { observacion: string | null; sin_registro: boolean } | null
+  } | null
+}
