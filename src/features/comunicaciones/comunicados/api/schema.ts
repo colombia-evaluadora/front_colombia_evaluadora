@@ -13,6 +13,11 @@ export const comunicadosSearchSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional()
     .catch(undefined),
+  // Filtros avanzados del popover (M.1.LIS.1).
+  emisor: z.string().max(100).optional().catch(undefined),
+  tipo: z.enum(["ESTUDIANTES", "ACUDIENTES", "FUNCIONARIOS"]).optional().catch(undefined),
+  sortBy: z.enum(["fecha", "titulo", "publicadoPor", "destinatarios", "estado"]).optional().catch(undefined),
+  sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
   page: z.coerce.number().int().min(0).catch(0).default(0),
   pageSize: z.coerce.number().int().min(1).max(100).catch(10).default(10),
 })

@@ -380,7 +380,8 @@ function NuevoComunicadoContent() {
                       : `Se publicó el comunicado ${canal.nombre}.`
                   const adjuntos = textoFallidos(fallidos)
                   queueNotice(adjuntos ? `${aviso} ${adjuntos}` : aviso, adjuntos ? { variant: "warning" } : undefined)
-                  void navigate({ to: paths.app.comunicacionesChat.getHref(), search: { canal: canal.id } })
+                  // Tras publicar o programar se vuelve al listado (pestaña Publicados), donde se ve el nuevo comunicado.
+                  void navigate({ to: paths.app.comunicacionesComunicados.getHref(), search: { pestana: "PUBLICADOS" } })
                 },
               },
             )
@@ -472,12 +473,13 @@ function PrevisualizarDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !pendiente && onVolver()}>
-      <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-xl">
+        {/* Cabecera y pie fijos: solo el cuerpo hace scroll. */}
+        <DialogHeader className="shrink-0">
           <DialogTitle>Previsualizar — {titulo}</DialogTitle>
         </DialogHeader>
-        <ErrorNoticeBanner error={error ?? null} />
-        <div className="min-h-0 space-y-2 overflow-y-auto text-sm">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">
+          <ErrorNoticeBanner error={error ?? null} />
           <p className="text-base font-semibold">Destinatarios únicos: {d.unicos}</p>
           {tipos.length > 0 && <p>{tipos.join(" · ")}</p>}
           <p>
@@ -539,7 +541,7 @@ function PrevisualizarDialog({
             Un acudiente de varios estudiantes recibe una sola copia.
           </p>
         </div>
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button type="button" variant="outline" color="neutral" disabled={pendiente} onClick={onVolver}>
             Volver
           </Button>
