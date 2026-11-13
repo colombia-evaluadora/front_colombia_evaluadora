@@ -11,7 +11,6 @@ import {
   insertMatricula,
   matriculaDb,
   updateMatriculaDetails,
-  updateMatriculaRow,
 } from "@/mocks/db/matricula"
 import {
   findMatriculaConfigCampo,
@@ -556,46 +555,6 @@ export const matriculaHandlers = [
     return HttpResponse.json<MatriculaMutationResult>({
       status: "ok",
       message: "Estudiante actualizado.",
-      matricula: updated,
-    })
-  }),
-
-  http.post("*/api/coverage/matricula/:id/retirar", async ({ params }) => {
-    await delay(250)
-
-    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
-    const updated = idParam ? updateMatriculaRow(idParam, { status: "Retirado" }) : null
-
-    if (!updated) {
-      return HttpResponse.json<MatriculaMutationResult>(
-        { status: "error", message: "Estudiante no encontrado.", matricula: null },
-        { status: 404 },
-      )
-    }
-
-    return HttpResponse.json<MatriculaMutationResult>({
-      status: "ok",
-      message: "Estudiante retirado.",
-      matricula: updated,
-    })
-  }),
-
-  http.post("*/api/coverage/matricula/:id/reingresar", async ({ params }) => {
-    await delay(250)
-
-    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
-    const updated = idParam ? updateMatriculaRow(idParam, { status: "Cursando" }) : null
-
-    if (!updated) {
-      return HttpResponse.json<MatriculaMutationResult>(
-        { status: "error", message: "Estudiante no encontrado.", matricula: null },
-        { status: 404 },
-      )
-    }
-
-    return HttpResponse.json<MatriculaMutationResult>({
-      status: "ok",
-      message: "Estudiante reingresado.",
       matricula: updated,
     })
   }),

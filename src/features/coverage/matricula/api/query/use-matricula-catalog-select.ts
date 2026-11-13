@@ -28,6 +28,7 @@ export const MATRICULA_CATALOG_CATEGORIA = {
   trastorno: "TRASTORNO_ESPECIFICO",
   srpa: "SITUACION_SRPA",
   institucionBienestar: "INSTITUCION_BIENESTAR",
+  motivoRetiro: "MOTIVO_RETIRO",
 } as const
 
 export type MatriculaCatalogKey = keyof typeof MATRICULA_CATALOG_CATEGORIA

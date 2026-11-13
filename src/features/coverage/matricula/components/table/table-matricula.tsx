@@ -35,8 +35,7 @@ import { Button } from "@/components/ui/button"
 import { XIcon } from "@/components/ui/icons"
 import { SearchMatricula } from "@/features/coverage/matricula/components/search/search-matricula"
 import { ExportMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-export-matricula"
-import { ExportSelectedMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-export-selected-matricula"
-import { ModificarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-modificar-matricula"
+import { BarraLote } from "@/features/coverage/matricula/components/dialogs/acciones/barra-lote"
 
 interface MatriculaDataTableProps {
   title: ReactNode
@@ -57,7 +56,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     pageSize,
   })
 
-  const { table, selectedIds: selectedRowIds, selectedRows, hasSelection, resetSelection } = useDataTable({
+  const { table, selectedRows, hasSelection, resetSelection } = useDataTable({
     columns: columnsMatricula,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -84,11 +83,6 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     filters.periodo ? sedeId : null,
     filters.periodo ? jornadaId : null,
   )
-
-  function deselectRow(id: string) {
-    // Sobre el estado: la fila puede estar en otra página.
-    table.setRowSelection(({ [id]: _, ...rest }) => rest)
-  }
 
   const exportColumns = table
     .getVisibleLeafColumns()
@@ -129,8 +123,6 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     })),
   ].filter((chip): chip is Chip => Boolean(chip))
 
-  const selectedCount = selectedRowIds.length
-
   return (
     <NoticeProvider>
       <TableScreen>
@@ -142,29 +134,8 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
           />
           {hasSelection ? (
             <TableScreenToolbar>
-              {/* La selección reemplaza la barra: las acciones masivas quedan solas a la vista. */}
-              <div className="flex w-full flex-wrap items-center gap-2 rounded-md bg-primary-22 p-3">
-                <span className="mr-2 text-sm font-medium tabular-nums">
-                  {selectedCount === 1 ? "1 seleccionado" : `${selectedCount} seleccionados`}
-                </span>
-                <Button type="button" variant="ghost" color="primary" size="sm" onClick={resetSelection}>
-                  <XIcon data-icon="inline-start" />
-                  Quitar selección
-                </Button>
-                <OnlineOnlyAction>
-                  <ModificarMatriculaDialog
-                    selected={selectedRows}
-                    onRemove={deselectRow}
-                    resetSelection={resetSelection}
-                  />
-                </OnlineOnlyAction>
-                <OnlineOnlyAction>
-                  <ExportSelectedMatriculaDialog
-                    selectedIds={selectedRowIds}
-                    resetSelection={resetSelection}
-                  />
-                </OnlineOnlyAction>
-              </div>
+              {/* La selección reemplaza la barra: las acciones por lote quedan solas a la vista (C.1.LOT). */}
+              <BarraLote selected={selectedRows} resetSelection={resetSelection} />
             </TableScreenToolbar>
           ) : (
             <TableScreenToolbar>

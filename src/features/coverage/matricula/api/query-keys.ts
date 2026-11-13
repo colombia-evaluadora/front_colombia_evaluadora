@@ -29,6 +29,8 @@ export const matriculaKeys = {
   estudianteExistente: (documento: string) => [...all, "estudiante-existente", documento] as const,
   previaReactivar: (id: number | string | undefined) => [...detalleAll, id, "reactivar-previa"] as const,
   solicitudRetiro: (id: number | string | undefined) => [...detalleAll, id, "solicitud-retiro"] as const,
+  /** Previas de las acciones de fila y lote: cuelgan de la lista, se refrescan con ella. */
+  loteAll: [...listaAll, "lote"] as const,
   buscarEstudiantesAll: [...all, "buscar-estudiantes"] as const,
   buscarEstudiantes: (q: string) => [...all, "buscar-estudiantes", q] as const,
   asignaturasPlan: (grupoId: number | null) => [...all, "asignaturas-plan", grupoId] as const,
