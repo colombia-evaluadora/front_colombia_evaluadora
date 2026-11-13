@@ -4,8 +4,6 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import {
   BrainIcon,
-  CalendarBlankIcon,
-  ClipboardAddIcon,
   EyeIcon,
   GavelIcon,
   PencilIcon,
@@ -19,33 +17,30 @@ import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-ma
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
-/** Ver, Modificar, Anular, Remitir, Citar, Crear compromiso y las dos aún sin backend. */
-const ACCIONES_ANOTACION = 8
+/** Ver, Modificar, Anular, Reportar salud mental, Remitir y Abrir proceso disciplinario (orden de la guía de diseño). */
+const ACCIONES_ANOTACION = 6
 
 interface ColumnasOpciones {
   onVer: (row: AnotacionRow) => void
   onModificar: (row: AnotacionRow) => void
   onAnular: (row: AnotacionRow) => void
+  /** Reporte de salud mental (solo vista mientras no haya backend, Sección 9.6). */
+  onReportarSalud: (row: AnotacionRow) => void
   puedeEditar: boolean
   puedeAnular: boolean
   puedeRemitir: boolean
   onRemitir: (row: AnotacionRow) => void
-  puedeCitar: boolean
-  onCitar: (row: AnotacionRow) => void
-  onCompromiso: (row: AnotacionRow) => void
 }
 
 export function buildColumnsAnotaciones({
   onVer,
   onModificar,
   onAnular,
+  onReportarSalud,
   puedeEditar,
   puedeAnular,
   puedeRemitir,
   onRemitir,
-  puedeCitar,
-  onCitar,
-  onCompromiso,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
@@ -95,9 +90,15 @@ export function buildColumnsAnotaciones({
       meta: { label: "Código y descripción" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Código y descripción" />,
       cell: ({ row }) => (
-        <span className="flex flex-col gap-0.5 whitespace-normal">
+        // `min-w-64`: la columna ya no absorbe el sobrante de la tabla, y sin un mínimo cortaba
+        // en la primera palabra posible. Código y descripción van en una línea; solo una descripción
+        // larga pasa a la siguiente (hasta `max-w-md`). El código y el «·» no se separan.
+        <span className="flex max-w-md min-w-64 flex-col gap-0.5 whitespace-normal">
           <span>
-            <span className="font-semibold">{row.original.codigo}</span> · {row.original.descripcion}
+            <span className="whitespace-nowrap">
+              <span className="font-semibold">{row.original.codigo}</span> ·
+            </span>{" "}
+            {row.original.descripcion}
           </span>
           {row.original.situacion_nombre && (
             <span className="text-xs text-muted-foreground">Situación {row.original.situacion_nombre}</span>
@@ -149,23 +150,9 @@ export function buildColumnsAnotaciones({
                 onSelect: () => onModificar(a),
               },
               { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
+              // Salud mental: modal solo de vista (Sección 9.6, sin backend). Proceso disciplinario: aún sin backend.
+              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: !vigente, onSelect: () => onReportarSalud(a) },
               { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
-              {
-                id: "citar",
-                label: "Citar al acudiente",
-                icon: <CalendarBlankIcon />,
-                disabled: !vigente || !puedeCitar,
-                onSelect: () => onCitar(a),
-              },
-              {
-                id: "compromiso",
-                label: "Crear compromiso",
-                icon: <ClipboardAddIcon />,
-                disabled: !vigente || !puedeCitar,
-                onSelect: () => onCompromiso(a),
-              },
-              // Sección 9.6 y convivencia: aún sin backend.
-              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: true, onSelect: () => {} },
               { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
             ]}
           />

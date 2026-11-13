@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { InfoIcon, ProhibitIcon } from "@/components/ui/icons"
+import { InfoIcon, ProhibitIcon, XIcon } from "@/components/ui/icons"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -104,17 +104,18 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
           </div>
         </Field>
 
-        <Alert>
+        <Alert variant="info">
               <InfoIcon aria-hidden="true" />
               <AlertDescription>
             La anotación se conserva con la marca Anulada, pero no saldrá en el boletín ni en el portal del
             acudiente, ni contará como señal de riesgo.
           </AlertDescription>
             </Alert>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" color="destructive" disabled={anular.isPending} onClick={handleAnular}>
