@@ -31,6 +31,8 @@ import {
   MdOutlineAssignment,
   MdOutlineAssignmentTurnedIn,
   MdOutlineAttachFile,
+  MdOutlineUpload,
+  MdOutlineCallMerge,
   MdOutlineAttachMoney,
   MdOutlineAudiotrack,
   MdOutlineAutoAwesome,
@@ -333,6 +335,8 @@ export const PaperPlaneTiltIcon = makeIcon(MdOutlineSend)
 // Flecha de navegación: Orientar por traslados pendientes.
 export const NavigationArrowIcon = makeIcon(MdOutlineNearMe)
 export const PaperclipIcon = makeIcon(MdOutlineAttachFile)
+export const GitMergeIcon = makeIcon(MdOutlineCallMerge)
+export const UploadSimpleIcon = makeIcon(MdOutlineUpload)
 // Equivalentes de `BorderColorOutlined`, `DeleteOutlined` y `PermMediaOutlined`
 // de MUI: los tres vienen del mismo set (Material), así que `react-icons/md`
 // los trae con el prefijo `MdOutline`. Se repunta acá y no en cada uso para

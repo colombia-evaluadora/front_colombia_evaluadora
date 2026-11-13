@@ -92,15 +92,25 @@ interface LocationMapProps {
   disabled?: boolean
   /** Sube cada vez que el punto cambia desde afuera, para recentrar el mapa. */
   recenterVersion?: number
+  /** Qué se ubica, para los textos del mapa (matrícula lo usa para el domicilio). */
+  placeLabel?: string
 }
 
 /** Ubicación de la sede (Regla 89): un punto que se arrastra; sin punto, se marca con un clic. */
-export function CampusLocationMap({ value, onChange, onLocate, locating = false, disabled = false, recenterVersion = 0 }: LocationMapProps) {
+export function CampusLocationMap({
+  value,
+  onChange,
+  onLocate,
+  locating = false,
+  disabled = false,
+  recenterVersion = 0,
+  placeLabel = "la sede",
+}: LocationMapProps) {
   const editable = !disabled
-  const hint = !editable ? undefined : value ? "Arrastre el punto para corregirlo" : "Haga clic en el mapa para marcar la sede"
+  const hint = !editable ? undefined : value ? "Arrastre el punto para corregirlo" : `Haga clic en el mapa para marcar ${placeLabel}`
   return (
     <div className="flex flex-col gap-2">
-      <BaseMap center={value ?? COLOMBIA_CENTER} zoom={value ? ZOOM_CAMPUS : ZOOM_COUNTRY} hint={hint} label="Mapa de la ubicación de la sede">
+      <BaseMap center={value ?? COLOMBIA_CENTER} zoom={value ? ZOOM_CAMPUS : ZOOM_COUNTRY} hint={hint} label={`Mapa de la ubicación de ${placeLabel}`}>
         <FollowLocation location={value} version={recenterVersion} />
         <ClickToPlace enabled={editable} onPlace={onChange} />
         {value ? (

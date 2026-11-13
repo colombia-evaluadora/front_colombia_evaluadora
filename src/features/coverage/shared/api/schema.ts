@@ -142,6 +142,14 @@ export const matriculaFiltersFormSchema = z.object({
   shift: z.string(),
   grade: z.string(),
   group: z.string(),
+  /** Periodo académico (id); el filtro solo ofrece Abiertos (Regla 54). */
+  periodo: z.string(),
+  /** "" (todas), PRINCIPAL o COMPLEMENTARIA. */
+  tipo: z.string(),
+  /** pk_lista_valor de METODOLOGIA; "" = todas. */
+  metodologia: z.string(),
+  /** "" o CON_SOLICITUD: retiro solicitado (origen) o anulación pendiente (destino), Sección 2.2. */
+  solicitud: z.string(),
 })
 export type MatriculaFiltersFormInput = z.input<typeof matriculaFiltersFormSchema>
 export type MatriculaFiltersFormValues = z.infer<typeof matriculaFiltersFormSchema>
@@ -157,6 +165,12 @@ export const matriculaSearchSchema = z.object({
   shift: z.string().optional().catch(undefined),
   grade: z.coerce.number().optional().catch(undefined),
   group: z.string().optional().catch(undefined),
+  periodo: z.coerce.number().int().positive().optional().catch(undefined),
+  tipo: z.enum(["PRINCIPAL", "COMPLEMENTARIA"]).optional().catch(undefined),
+  metodologia: z.coerce.number().int().positive().optional().catch(undefined),
+  solicitud: z.enum(["CON_SOLICITUD"]).optional().catch(undefined),
+  /** Acción de la fila de la lista que Editar abre al entrar. */
+  accion: z.enum(["cambiar-grupo", "cambiar-grado", "corregir-identidad"]).optional().catch(undefined),
 })
 export type MatriculaSearch = z.infer<typeof matriculaSearchSchema>
 

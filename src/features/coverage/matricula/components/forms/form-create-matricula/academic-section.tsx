@@ -1,3 +1,6 @@
+import { useMatriculaPeriodosAbiertosQuery } from "@/features/coverage/matricula/api/query/use-matricula-periodos-abiertos"
+import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
+import { catalogLabelFor, catalogOptions } from "./catalog-utils"
 import { useEffect } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -10,7 +13,8 @@ import { useEspecialidadesQuery } from "@/features/establishment/academic-period
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mappings"
 import type { MatriculaAcademicInfo, MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
-import { MatriculaFormSection, MatriculaSelectField } from "./fields"
+import { Switch } from "@/components/ui/switch"
+import { MatriculaFormSection, MatriculaSelectField, MatriculaTextField } from "./fields"
 
 interface AcademicSectionProps {
   value: MatriculaAcademicInfo
@@ -20,6 +24,10 @@ interface AcademicSectionProps {
   showStatus?: boolean
   fieldSettings?: MatriculaFieldSettingsMap
   academicDisabled?: boolean
+  /** «Principal» o «Complementaria»: siempre de solo lectura (bloque 2.1). */
+  tipoMatricula?: string
+  /** Si viene, la especialidad queda en solo lectura con esta ayuda. */
+  especialidadBloqueo?: string
 }
 
 export function MatriculaAcademicSection({
@@ -30,6 +38,8 @@ export function MatriculaAcademicSection({
   showStatus = true,
   fieldSettings,
   academicDisabled,
+  tipoMatricula = "Principal",
+  especialidadBloqueo,
 }: AcademicSectionProps) {
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
@@ -38,6 +48,7 @@ export function MatriculaAcademicSection({
     campus: value.campus || undefined,
     shift: value.shift || undefined,
     grade: value.grade ? Number(value.grade) : undefined,
+    periodoId: value.periodoId ? Number(value.periodoId) : null,
   })
   const gradoNombreByValor = new Map(
     (dependentCatalogs?.grades ?? []).map((grado) => [String(grado.valor), grado.nombre]),
@@ -58,7 +69,15 @@ export function MatriculaAcademicSection({
   const etiquetaSede = new Map(sedeOptions.map((sede) => [sede.id, sede.label]))
   const { data: jornadasActivas } = useSedeJornadasActivasQuery(sedeId ?? null)
   const jornadaId = value.shift ? jornadasActivas?.find((j) => j.nombre === value.shift)?.id : undefined
-  const { data: periodoId } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
+  const { data: periodoResuelto } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
+  // Periodo (modalidad y ciclo): los Abiertos de la sede y jornada (Regla 54). Con uno solo queda elegido.
+  const { data: periodos = [] } = useMatriculaPeriodosAbiertosQuery(sedeId ?? null, jornadaId ?? null)
+  const periodoElegido = value.periodoId || (periodos.length === 1 ? periodos[0].value : "")
+  const periodoId = periodoElegido ? Number(periodoElegido) : periodoResuelto
+  const etiquetaPeriodo = new Map(periodos.map((p) => [p.value, p.label]))
+  const anio = etiquetaPeriodo.get(periodoElegido)?.split(" · ")[0] ?? ""
+  const { data: internado } = useMatriculaCatalogQuery("internado")
+  const internadoNo = internado?.find((i) => /^no$/i.test(i.nombre.trim()))?.id
   const { data: especialidades } = useEspecialidadesQuery(periodoId ?? undefined)
   const especialidadNombreById = new Map((especialidades ?? []).map((e) => [String(e.id), e.label]))
 
@@ -93,7 +112,20 @@ export function MatriculaAcademicSection({
         placeholder={!value.campus ? "Elegí sede primero" : "Seleccionar"}
         disabled={academicDisabled || !value.campus}
         invalid={invalidFields.includes("matricula-shift")}
-        onChange={(shift) => onChange({ ...value, shift, grade: "", group: "" })}
+        onChange={(shift) => onChange({ ...value, shift, periodoId: "", grade: "", group: "" })}
+      />
+      <MatriculaTextField id="matricula-anio" label="Año" value={anio} disabled onChange={() => {}} />
+      <MatriculaSelectField
+        id="matricula-periodo"
+        label="Periodo (modalidad y ciclo)"
+        required
+        value={periodoElegido}
+        options={periodos.map((p) => p.value)}
+        labelFor={(id) => etiquetaPeriodo.get(id) ?? id}
+        placeholder={!value.shift ? "Elegí jornada primero" : "Seleccionar"}
+        disabled={academicDisabled || !value.shift}
+        invalid={invalidFields.includes("matricula-periodo")}
+        onChange={(periodo) => onChange({ ...value, periodoId: periodo, grade: "", group: "" })}
       />
       <MatriculaSelectField
         id="matricula-grade"
@@ -131,6 +163,8 @@ export function MatriculaAcademicSection({
           options={(especialidades ?? []).map((e) => String(e.id))}
           labelFor={(option) => especialidadNombreById.get(option) ?? option}
           placeholder={!value.shift ? "Elegí jornada primero" : "Seleccionar"}
+          disabled={academicDisabled || Boolean(especialidadBloqueo)}
+          description={especialidadBloqueo}
           onChange={(specialty) => onChange({ ...value, specialty })}
         />
       )}
@@ -147,6 +181,54 @@ export function MatriculaAcademicSection({
           disabled
         />
       )}
+      <MatriculaSelectField
+        id="matricula-internado"
+        label="Internado"
+        value={value.internado || (internadoNo != null ? String(internadoNo) : "")}
+        options={catalogOptions(internado)}
+        labelFor={catalogLabelFor(internado)}
+        onChange={(v) => onChange({ ...value, internado: v })}
+      />
+      <MatriculaTextField
+        id="matricula-tipo"
+        label="Tipo de matrícula"
+        value={tipoMatricula}
+        disabled
+        onChange={() => {}}
+      />
+      {/* Regla 41: con Sí, el bloque 15 deja marcar qué asignaturas se cursan afuera. */}
+      <div className="flex flex-col gap-2 md:col-span-3">
+        <span id="matricula-media-tecnica-label" className="text-sm font-medium">
+          ¿Media técnica en institución externa?
+        </span>
+        <label className="flex w-fit items-center gap-2 text-sm">
+          <Switch
+            round
+            id="matricula-media-tecnica"
+            aria-labelledby="matricula-media-tecnica-label"
+            checked={Boolean(value.mediaTecnicaExterna)}
+            onCheckedChange={(checked) =>
+              onChange({
+                ...value,
+                mediaTecnicaExterna: checked,
+                institucionExterna: checked ? value.institucionExterna : "",
+              })
+            }
+          />
+          {value.mediaTecnicaExterna ? "Sí" : "No"}
+        </label>
+      </div>
+      {value.mediaTecnicaExterna ? (
+        <MatriculaTextField
+          id="matricula-institucion-externa"
+          label="Nombre de la institución"
+          required
+          invalid={invalidFields.includes("matricula-institucion-externa")}
+          value={value.institucionExterna ?? ""}
+          maxLength={150}
+          onChange={(institucionExterna) => onChange({ ...value, institucionExterna })}
+        />
+      ) : null}
     </MatriculaFormSection>
   )
 }

@@ -19,6 +19,16 @@ export const MATRICULA_CATALOG_CATEGORIA = {
   frecuenciaDomicilio: "FRECUENCIA_DOMICILIO",
   tipoDocumento: "TIPO_DOCUMENTO",
   genero: "GENERO",
+  metodologia: "METODOLOGIA",
+  internado: "INTERNADO",
+  pais: "PAIS",
+  lenguaMaterna: "LENGUA_MATERNA",
+  condicionMigratoria: "CONDICION_MIGRATORIA",
+  apoyoAcademico: "APOYO_ACADEMICO_ESPECIAL",
+  trastorno: "TRASTORNO_ESPECIFICO",
+  srpa: "SITUACION_SRPA",
+  institucionBienestar: "INSTITUCION_BIENESTAR",
+  motivoRetiro: "MOTIVO_RETIRO",
 } as const
 
 export type MatriculaCatalogKey = keyof typeof MATRICULA_CATALOG_CATEGORIA

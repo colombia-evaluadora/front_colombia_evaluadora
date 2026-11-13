@@ -6,6 +6,8 @@ export interface MatriculaSupportFiles {
   medicalCertificate: File[]
   studentPhoto: File[]
   otherDocuments: File[]
+  /** Hoja de matrícula firmada (bloque 2.14). */
+  signedSheet: File[]
 }
 
 export interface SupportFileFieldConfig {
@@ -29,12 +31,15 @@ export const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
   { key: "medicalCertificate", fieldId: "file-medical-certificate", label: "Certificado médico del estudiante" },
   { key: "studentPhoto", fieldId: "file-student-photo", label: "Foto del estudiante", soloImagen: true },
   { key: "otherDocuments", fieldId: "file-other-documents", label: "Otros documentos relevantes", multiple: true },
+  // No está en la config del establecimiento: siempre visible y opcional (Regla 6).
+  { key: "signedSheet", fieldId: "file-signed-sheet", label: "Hoja de matrícula firmada" },
 ]
 
-export const MATRICULA_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+// Bloque 2.14: 10 MB por archivo.
+export const MATRICULA_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 // Formatos de los archivos de soporte: los mismos que ya piden los soportes de
-// cambio de sede y de grado (PDF, JPG y PNG, 25 MB). El file-service no
+// cambio de sede y de grado (PDF, JPG y PNG, 10 MB). El file-service no
 // restringe el tipo, así que la regla vive en el formulario.
 const FORMATOS = {
   documento: { extensiones: ["pdf", "jpg", "jpeg", "png"], texto: "PDF, JPG o PNG" },
@@ -47,8 +52,8 @@ const formatoDe = (config: SupportFileFieldConfig) => FORMATOS[config.soloImagen
 export const acceptDe = (config: SupportFileFieldConfig) =>
   formatoDe(config).extensiones.map((ext) => `.${ext}`).join(",")
 
-/** La indicación que se muestra en cada campo: "PDF, JPG o PNG · máximo 25 MB". */
-export const formatosTexto = (config: SupportFileFieldConfig) => `${formatoDe(config).texto} · máximo 25 MB`
+/** La indicación que se muestra en cada campo: "PDF, JPG o PNG · máximo 10 MB". */
+export const formatosTexto = (config: SupportFileFieldConfig) => `${formatoDe(config).texto} · máximo 10 MB`
 
 /** Motivo por el que se rechaza el archivo (se muestra tras su nombre), o null si se acepta. */
 export function validarArchivoSoporte(file: File, config: SupportFileFieldConfig): string | null {
@@ -56,7 +61,7 @@ export function validarArchivoSoporte(file: File, config: SupportFileFieldConfig
   if (!(formatoDe(config).extensiones as readonly string[]).includes(extension)) {
     return `no es un formato permitido: use ${formatoDe(config).texto}`
   }
-  if (file.size > MATRICULA_MAX_FILE_SIZE_BYTES) return "supera el máximo permitido de 25 MB"
+  if (file.size > MATRICULA_MAX_FILE_SIZE_BYTES) return "supera el máximo permitido de 10 MB"
   return null
 }
 
@@ -82,6 +87,7 @@ function matchSupportFileKey(typeLabel: string): keyof MatriculaSupportFiles {
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
+  if (normalized.includes("hoja")) return "signedSheet"
   if (normalized.includes("identidad")) return "studentIdDocument"
   if (normalized.includes("medic")) return "medicalCertificate"
   if (normalized.includes("foto")) return "studentPhoto"
@@ -98,6 +104,7 @@ export function groupExistingFilesByKey(
     medicalCertificate: [],
     studentPhoto: [],
     otherDocuments: [],
+    signedSheet: [],
   }
   for (const file of files) {
     grouped[matchSupportFileKey(file.typeLabel)].push(file)
