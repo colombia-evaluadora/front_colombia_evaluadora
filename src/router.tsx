@@ -1704,6 +1704,65 @@ export const reconocimientosRoute = createRoute({
   component: ReconocimientosPage,
 })
 
+const ReintegracionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/reintegracion-page"),
+  "ReintegracionPage",
+)
+
+export const reintegracionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Reintegración" }] },
+  component: ReintegracionPage,
+})
+
+const REINTEGRACION_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Reintegración", to: paths.app.reintegracion.getHref() },
+]
+
+const ReintegracionAbrirCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/abrir-caso-page"),
+  "AbrirCasoPage",
+)
+
+export const reintegracionAbrirRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionAbrir.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Abrir caso" }] },
+  component: ReintegracionAbrirCasoPage,
+})
+
+const ReintegracionCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/caso-detalle-page"),
+  "CasoDetallePage",
+)
+
+export const reintegracionCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionCaso.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Caso" }] },
+  component: function ReintegracionCasoRoute() {
+    const { casoId } = reintegracionCasoRoute.useParams()
+    return <ReintegracionCasoPage casoId={Number(casoId)} />
+  },
+})
+
+const ReintegracionConvivenciaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/abrir-convivencia-page"),
+  "AbrirConvivenciaPage",
+)
+
+export const reintegracionConvivenciaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionConvivencia.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Abrir caso de convivencia" }] },
+  component: function ReintegracionConvivenciaRoute() {
+    const { casoId } = reintegracionConvivenciaRoute.useParams()
+    return <ReintegracionConvivenciaPage casoId={Number(casoId)} />
+  },
+})
+
 const PrevencionPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/prevencion/pages/prevencion-page"),
   "PrevencionPage",
@@ -2600,6 +2659,10 @@ const routeTree = rootRoute.addChildren([
     compromisoDetalleRoute,
     reconocimientosRoute,
     reconocimientoDetalleRoute,
+    reintegracionRoute,
+    reintegracionAbrirRoute,
+    reintegracionCasoRoute,
+    reintegracionConvivenciaRoute,
     prevencionRetencionRoute,
     prevencionHistorialRoute,
     prevencionValorarRoute,

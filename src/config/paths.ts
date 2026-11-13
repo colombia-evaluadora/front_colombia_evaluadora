@@ -520,6 +520,22 @@ export const paths = {
       path: "gestion-estudiantil/reconocimientos/$reconocimientoId",
       getHref: (reconocimientoId: number | string) => `/app/gestion-estudiantil/reconocimientos/${reconocimientoId}`,
     },
+    reintegracion: {
+      path: "gestion-estudiantil/reintegracion",
+      getHref: () => "/app/gestion-estudiantil/reintegracion",
+    },
+    reintegracionAbrir: {
+      path: "gestion-estudiantil/reintegracion/abrir",
+      getHref: () => "/app/gestion-estudiantil/reintegracion/abrir",
+    },
+    reintegracionCaso: {
+      path: "gestion-estudiantil/reintegracion/caso/$casoId",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/reintegracion/caso/${casoId}`,
+    },
+    reintegracionConvivencia: {
+      path: "gestion-estudiantil/reintegracion/caso/$casoId/convivencia",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/reintegracion/caso/${casoId}/convivencia`,
+    },
     prevencionRetencion: {
       path: "gestion-estudiantil/prevencion-retencion",
       getHref: () => "/app/gestion-estudiantil/prevencion-retencion",
