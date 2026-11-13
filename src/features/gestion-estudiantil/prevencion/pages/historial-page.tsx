@@ -5,14 +5,16 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon, ClipboardCheckIcon, ClipboardTextIcon, GearIcon, ListMagnifyingGlassIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ClipboardCheckIcon, ClipboardTextIcon, GearIcon, GraduationCapIcon, ListMagnifyingGlassIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
 
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { useHistorialQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-tablero-query"
+import { EstrategiasHistorial } from "@/features/gestion-estudiantil/prevencion/components/historial/estrategias-historial"
 import { LineaTiempo } from "@/features/gestion-estudiantil/prevencion/components/historial/linea-tiempo"
 import { ResumenHistorial } from "@/features/gestion-estudiantil/prevencion/components/historial/resumen-historial"
+import { useEntradaHistorialAcademico } from "@/features/gestion-estudiantil/prevencion/hooks/use-entrada-historial-academico"
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
 import { construirFilas, ultimaValoracionVigente } from "@/features/gestion-estudiantil/prevencion/utils/historial"
 
@@ -26,6 +28,7 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
   const navigate = useNavigate()
   const { irValorar, irPlanNuevo, irPlan } = useNavegacionPrevencion()
   const q = useHistorialQuery(matricula)
+  const historialAcademico = useEntradaHistorialAcademico(matricula)
   const h = q.data
   const filas = useMemo(() => (h ? construirFilas(h) : []), [h])
 
@@ -61,6 +64,13 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
                     onSelect: () => h?.fk_tprevencion_plan_abierto != null && irPlan(h.fk_tprevencion_plan_abierto),
                   },
                   {
+                    id: "historial-academico",
+                    label: "Consultar historial académico",
+                    icon: <GraduationCapIcon />,
+                    disabled: !historialAcademico.habilitada,
+                    onSelect: historialAcademico.abrir,
+                  },
+                  {
                     id: "gestionar",
                     label: "Gestionar",
                     icon: <GearIcon />,
@@ -92,6 +102,7 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
         ) : (
           <div className="flex flex-col gap-4 pb-6">
             <ResumenHistorial historial={h} />
+            <EstrategiasHistorial estrategias={h.estrategias ?? []} />
             <LineaTiempo filas={filas} />
           </div>
         )}

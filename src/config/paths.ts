@@ -554,6 +554,34 @@ export const paths = {
       path: "gestion-estudiantil/prevencion-retencion/historial/$matricula",
       getHref: (matricula: number | string) => `/app/gestion-estudiantil/prevencion-retencion/historial/${matricula}`,
     },
+    prevencionEstrategiaNueva: {
+      path: "gestion-estudiantil/prevencion-retencion/estrategias/nueva",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/estrategias/nueva",
+    },
+    prevencionEstrategiaEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/estrategias/$estrategiaId/editar",
+      getHref: (estrategiaId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/estrategias/${estrategiaId}/editar`,
+    },
+    prevencionEstrategiaDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/estrategias/$estrategiaId",
+      getHref: (estrategiaId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/estrategias/${estrategiaId}`,
+    },
+    prevencionCaracterizacion: {
+      path: "gestion-estudiantil/prevencion-retencion/caracterizacion/$matricula",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/caracterizacion/${matricula}`,
+    },
+    prevencionCaracterizacionEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/caracterizacion/$matricula/editar",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/caracterizacion/${matricula}/editar`,
+    },
+    prevencionHistorialAcademico: {
+      path: "gestion-estudiantil/prevencion-retencion/historial-academico/$matricula",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/historial-academico/${matricula}`,
+    },
     prevencionSaludMentalNuevo: {
       path: "gestion-estudiantil/prevencion-retencion/salud-mental/nuevo",
       getHref: () => "/app/gestion-estudiantil/prevencion-retencion/salud-mental/nuevo",
