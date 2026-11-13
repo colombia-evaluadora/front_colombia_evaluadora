@@ -520,6 +520,29 @@ export const paths = {
       path: "gestion-estudiantil/reconocimientos/$reconocimientoId",
       getHref: (reconocimientoId: number | string) => `/app/gestion-estudiantil/reconocimientos/${reconocimientoId}`,
     },
+    actividadesExtracurriculares: {
+      path: "gestion-estudiantil/actividades-extracurriculares",
+      getHref: () => "/app/gestion-estudiantil/actividades-extracurriculares",
+    },
+    actividadNueva: {
+      path: "gestion-estudiantil/actividades-extracurriculares/nueva",
+      getHref: () => "/app/gestion-estudiantil/actividades-extracurriculares/nueva",
+    },
+    actividadDetalle: {
+      path: "gestion-estudiantil/actividades-extracurriculares/$actividadId",
+      getHref: (actividadId: number | string) =>
+        `/app/gestion-estudiantil/actividades-extracurriculares/${actividadId}`,
+    },
+    actividadEditar: {
+      path: "gestion-estudiantil/actividades-extracurriculares/$actividadId/editar",
+      getHref: (actividadId: number | string) =>
+        `/app/gestion-estudiantil/actividades-extracurriculares/${actividadId}/editar`,
+    },
+    servicioSocialEstudiante: {
+      path: "gestion-estudiantil/actividades-extracurriculares/servicio-social/$matricula",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/actividades-extracurriculares/servicio-social/${matricula}`,
+    },
     reintegracion: {
       path: "gestion-estudiantil/reintegracion",
       getHref: () => "/app/gestion-estudiantil/reintegracion",
