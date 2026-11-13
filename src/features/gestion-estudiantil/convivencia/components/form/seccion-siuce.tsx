@@ -4,7 +4,7 @@ import { SoportesUpload } from "@/features/gestion-estudiantil/commons/component
 import type { CasoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 /** Bloque plegable «Datos para el SIUCE» con el soporte del caso. */
-export function SeccionSiuce({ form }: { form: CasoFormState }) {
+export function SeccionSiuce({ form }: { form: Pick<CasoFormState, "v" | "set" | "errores" | "grave" | "siuceAbierto" | "setSiuceAbierto"> }) {
   const { v, set, errores, grave, siuceAbierto, setSiuceAbierto } = form
   return (
     <SeccionPlegable

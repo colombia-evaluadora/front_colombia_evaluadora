@@ -1,3 +1,4 @@
+import { env } from "@/config/env"
 import type { CreateMatriculaInput } from "@/features/coverage/matricula/api/types/matricula"
 
 function toIntOrNull(value: string | undefined | null): number | null {
@@ -44,6 +45,8 @@ export function toCreateMatriculaBody(
     LUGAR_DE_NACIMIENTO_MUNICIPIO: toIntOrNull(student.birthPlace.municipality),
     LUGAR_DE_RESIDENCIA_MUNICIPIO_ESTUDIANTE: toIntOrNull(studentAddress.municipality),
     DIRECCION_DEL_ESTUDIANTE: toTextOrNull(studentAddress.address),
+    BARRIO_DEL_ESTUDIANTE: toTextOrNull(studentAddress.neighborhood ?? ""),
+    GEOREFERENCIACION: toTextOrNull(studentAddress.location ?? ""),
     ESTRATO_SOCIO_ECONOMICO_DEL_ESTUDIANTE: toIntOrNull(complementary.socioeconomicStratum),
     SISBEN: toIntOrNull(complementary.sisben),
     SITUACION_DEL_ANO_ANTERIOR: toIntOrNull(previousYear.situation),
@@ -78,5 +81,27 @@ export function toCreateMatriculaBody(
     DIRECCION_DE_LA_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityAddress),
     TELEFONO_DE_LA_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityPhone),
     CARGO_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityPosition),
+    ...camposNuevosBody(values),
+  }
+}
+
+/**
+ * Bloques 2.1, 2.2 y 2.8 que el back aún no recibe (docs/matricula/pendientes-back.md,
+ * tarea 8). El validador de placeholders rechaza claves no declaradas, así que solo
+ * viajan con el mock; al implementarlas en el SSO se quita la condición.
+ */
+export function camposNuevosBody(values: CreateMatriculaInput) {
+  if (!env.ENABLE_API_MOCKING) return {}
+  const { academic, student, complementary } = values
+  return {
+    INTERNADO: toIntOrNull(academic.internado),
+    PAIS_ORIGEN: toIntOrNull(student.paisOrigen),
+    LENGUA_MATERNA: toIntOrNull(student.lenguaMaterna),
+    CONDICION_MIGRATORIA: toIntOrNull(student.condicionMigratoria),
+    APOYO_ACADEMICO_ESPECIAL: toIntOrNull(complementary.apoyoAcademico),
+    TRASTORNO_ESPECIFICO: toIntOrNull(complementary.trastorno),
+    SITUACION_SRPA: toIntOrNull(complementary.srpa),
+    FECHA_INICIO_MEDIDA: toTextOrNull(complementary.srpaInicio),
+    FECHA_FIN_MEDIDA: toTextOrNull(complementary.srpaFin),
   }
 }

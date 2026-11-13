@@ -1,3 +1,4 @@
+import { camposNuevosBody } from "@/features/coverage/matricula/api/mutations/to-create-matricula-body"
 import type { CreateMatriculaInput } from "@/features/coverage/matricula/api/types/matricula"
 
 function toIntOrNull(value: string | undefined | null): number | null {
@@ -71,6 +72,8 @@ export function toUpdateMatriculaBody(
     LUGAR_DE_NACIMIENTO_MUNICIPIO: toIntOrNull(student.birthPlace.municipality),
     LUGAR_DE_RESIDENCIA_MUNICIPIO_ESTUDIANTE: toIntOrNull(studentAddress.municipality),
     DIRECCION_DEL_ESTUDIANTE: toTextOrNull(studentAddress.address),
+    BARRIO_DEL_ESTUDIANTE: toTextOrNull(studentAddress.neighborhood ?? ""),
+    GEOREFERENCIACION: toTextOrNull(studentAddress.location ?? ""),
     ESTRATO_SOCIO_ECONOMICO_DEL_ESTUDIANTE: toIntOrNull(complementary.socioeconomicStratum),
     SISBEN: toIntOrNull(complementary.sisben),
     SITUACION_DEL_ANO_ANTERIOR: toIntOrNull(previousYear.situation),
@@ -101,5 +104,6 @@ export function toUpdateMatriculaBody(
     DIRECCION_DE_LA_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityAddress),
     TELEFONO_DE_LA_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityPhone),
     CARGO_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityPosition),
+    ...camposNuevosBody(values),
   }
 }

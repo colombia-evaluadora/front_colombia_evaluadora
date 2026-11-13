@@ -8,6 +8,7 @@ import { paths } from "@/config/paths"
 import { DeleteMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
+import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
 import type { Matricula, MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -47,6 +48,7 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
       */}
       {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" /> : null}
       {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
+      <AccionesDocumentos matricula={matricula} modo="button" />
       <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable && puedeEditar} />
       {puedeEliminar ? (
         <DeleteMatriculaDialog
