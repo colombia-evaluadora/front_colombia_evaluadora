@@ -4,7 +4,7 @@ import { preferenciasFormSchema } from "@/features/notificaciones/api/schema"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { toNotificacion } from "@/features/notificaciones/api/query/use-notificaciones-query"
 import { toPreferenciasPayload } from "@/features/notificaciones/api/mutations/update-preferencias"
-import { agruparPorDia, etiquetaDia } from "@/features/notificaciones/lib/agrupar-por-dia"
+import { agruparPorDia, etiquetaDia, fechaCorta } from "@/features/notificaciones/lib/agrupar-por-dia"
 import { DEEP_LINK_FALLBACK, formatActores, formatContador, safeDeepLink, tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
 
 describe("safeDeepLink", () => {
@@ -54,6 +54,18 @@ describe("agruparPorDia", () => {
     expect(grupos.map((g) => g.etiqueta)).toEqual(["Hoy", "Ayer", etiquetaDia(new Date(2026, 9, 10), hoy)])
     expect(grupos[0].items.map((i) => i.id)).toEqual(["a", "b"])
     expect(grupos[2].etiqueta).toMatch(/^Sábado, 10 de octubre$/)
+  })
+})
+
+describe("fechaCorta", () => {
+  const hoy = new Date(2026, 10, 12, 12, 0)
+  it("usa Hoy/Ayer con la hora y, si no, día y mes abreviado", () => {
+    expect(fechaCorta(new Date(2026, 10, 12, 8, 0).toISOString(), hoy)).toBe("Hoy, 08:00")
+    expect(fechaCorta(new Date(2026, 10, 11, 16, 20).toISOString(), hoy)).toBe("Ayer, 16:20")
+    expect(fechaCorta(new Date(2026, 10, 3, 9, 5).toISOString(), hoy)).toBe("3 nov, 09:05")
+  })
+  it("devuelve vacío con una fecha ilegible", () => {
+    expect(fechaCorta("no-es-fecha", hoy)).toBe("")
   })
 })
 

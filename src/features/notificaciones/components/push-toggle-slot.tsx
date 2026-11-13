@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
 
+import { SECCION_DESCRIPCION, SECCION_TITULO } from "@/features/notificaciones/components/preferencias-seccion"
+
 /**
  * Hueco para la UX de suscripción Web Push ("Activar notificaciones en este
  * dispositivo", PLAN-comunicaciones §11.4), que vive en el change
@@ -25,11 +27,11 @@ export function PushToggleSlot({ children }: { children?: ReactNode }) {
       aria-labelledby="push-toggle-titulo"
       className="flex flex-col gap-2 rounded-md border p-4"
     >
-      <h2 id="push-toggle-titulo" className="text-sm font-semibold">
+      <h2 id="push-toggle-titulo" className={SECCION_TITULO}>
         Notificaciones en este dispositivo
       </h2>
       {children ?? (
-        <p className="text-sm text-muted-foreground">
+        <p className={SECCION_DESCRIPCION}>
           Pronto podrás recibir notificaciones push en este navegador. Mientras tanto, revisa la campana de la
           aplicación.
         </p>

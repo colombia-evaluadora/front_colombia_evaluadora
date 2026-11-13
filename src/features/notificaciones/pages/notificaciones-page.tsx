@@ -18,12 +18,12 @@ import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { ArchiveIcon, ChatReadIcon, ChatUnreadIcon, CheckIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
+import { ArchiveIcon, ChatReadIcon, ChatUnreadIcon, ChecksIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { ACTIONS_CELL_CLASS, actionsOverlayClass, actionsSpacerCell } from "@/components/table-row-actions"
+import { ACTIONS_CELL_CLASS, actionsOverlayClass } from "@/components/table-row-actions"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
@@ -65,7 +65,7 @@ function NotificacionesContent() {
     mutationConfig: { onSuccess: () => notify("Notificación archivada."), onError },
   })
   const marcarTodas = useMarcarTodasLeidas({
-    mutationConfig: { onSuccess: () => notify("Todas las notificaciones quedaron leídas."), onError },
+    mutationConfig: { onSuccess: () => notify("Marcaste todas las notificaciones como leídas."), onError },
   })
 
   const items = (lista.data?.pages ?? []).flatMap((p) => p.items)
@@ -96,10 +96,9 @@ function NotificacionesContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle
-          description={noLeidas > 0 ? `${noLeidas} sin leer` : "Estás al día"}
-          action={<DatosDelBadge updatedAt={lista.dataUpdatedAt} ttl={TTL_OFFLINE.detalle} />}
-        >
+        {/* Figma "Notificaciones/Bandeja": el encabezado lleva solo el título; el
+            contador "N sin leer" baja al cuerpo, encima de la lista. */}
+        <TableScreenTitle action={<DatosDelBadge updatedAt={lista.dataUpdatedAt} ttl={TTL_OFFLINE.detalle} />}>
           Notificaciones
         </TableScreenTitle>
         <TableScreenToolbar>
@@ -113,49 +112,65 @@ function NotificacionesContent() {
             <OnlineOnlyTooltip tooltip={onlineOnly.tooltip}>
               <Button
                 variant="outline"
-                color="primary"
+                color="neutral"
                 disabled={onlineOnly.disabled || noLeidas === 0 || marcarTodas.isPending}
                 onClick={() => marcarTodas.mutate({ categoria: queryFilters.categoria })}
               >
-                <CheckIcon data-icon="inline-start" />
+                <ChecksIcon data-icon="inline-start" className="size-4" />
                 {queryFilters.categoria ? "Marcar estas como leídas" : "Marcar todas como leídas"}
               </Button>
             </OnlineOnlyTooltip>
-            <Button
-              variant="ghost"
-              color="muted"
-              nativeButton={false}
-              render={<Link to={paths.app.notificacionesPreferencias.getHref()} />}
-            >
-              <GearIcon data-icon="inline-start" />
-              Preferencias
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    color="neutral"
+                    size="icon"
+                    aria-label="Preferencias"
+                    // Hover de Figma: ícono azul sobre fondo azul claro.
+                    className="hover:border-primary-stroke hover:bg-primary-22 hover:text-primary"
+                    nativeButton={false}
+                    render={<Link to={paths.app.notificacionesPreferencias.getHref()} />}
+                  />
+                }
+              >
+                {/* Íconos de la barra a 16px como en Figma (el default de `Button` es 14px). */}
+                <GearIcon className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent>Preferencias</TooltipContent>
+            </Tooltip>
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>
+        <p className="pt-[5px] text-xs text-muted-foreground">{noLeidas} sin leer</p>
         {lista.isError && items.length === 0 && status === "offline" ? (
           <OfflineEmptyState kind="sinDatosGuardados" />
         ) : !lista.isPending && !lista.isError && items.length === 0 ? (
-          <Empty className="py-16">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <InboxIcon />
-              </EmptyMedia>
-              <EmptyTitle>No hay notificaciones</EmptyTitle>
-              <EmptyDescription>
-                {activeFilterCount > 0 || filters.texto
-                  ? "Ninguna notificación coincide con la búsqueda."
-                  : "Cuando algo requiera tu atención aparecerá aquí."}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <div className="pt-[5px] pb-4">
+            <Empty className="rounded-lg bg-muted-22 py-8">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <InboxIcon />
+                </EmptyMedia>
+                <EmptyTitle>
+                  {activeFilterCount > 0 || filters.texto ? "No hay notificaciones" : "No tienes notificaciones"}
+                </EmptyTitle>
+                <EmptyDescription>
+                  {activeFilterCount > 0 || filters.texto
+                    ? "Ninguna notificación coincide con la búsqueda."
+                    : "Aquí verás los avisos del chat, de las elecciones y de otros procesos."}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </div>
         ) : (
           // Misma anatomía que `DataTable`: filas `group/row`, esqueletos al
           // cargar, error con "Reintentar" y columna de acciones en overlay al
           // hover (`table-row-actions`). No usa `DataTable` porque la bandeja
           // pagina por cursor ("Cargar más") y agrupa por día (D-2.3).
-          <div className="flex flex-col gap-4 py-4">
+          <div className="flex flex-col gap-4 pt-[5px] pb-4">
             <Table containerClassName="border">
               <TableBody>
                 {lista.isPending ? (
@@ -179,12 +194,15 @@ function NotificacionesContent() {
                   grupos.map((grupo) => (
                     <GrupoDia key={grupo.dia} dia={grupo.dia} etiqueta={grupo.etiqueta}>
                       {grupo.items.map((n) => (
-                        <TableRow key={n.id} className={cn("group/row", !n.leida && "bg-blue-22/40")}>
-                          <TableCell className="whitespace-normal">
+                        // Figma: las no leídas van sobre la tarjeta (blanco) y las
+                        // leídas con el gris suave `muted-22`, al revés que antes.
+                        <TableRow key={n.id} className={cn("group/row", n.leida && "bg-muted-22")}>
+                          <TableCell className="py-3.5 whitespace-normal">
                             <NotificacionItem notificacion={n} onOpen={abrir} />
                           </TableCell>
-                          {actionsSpacerCell}
-                          <TableCell className={ACTIONS_CELL_CLASS}>
+                          {/* Sin `actionsSpacerCell`: la hora va pegada al borde derecho
+                              (Figma) y las acciones del hover se superponen sobre ella. */}
+                          <TableCell className={cn(ACTIONS_CELL_CLASS, "p-0")}>
                             <div className={actionsOverlayClass(false, "background")}>{acciones(n)}</div>
                           </TableCell>
                         </TableRow>
@@ -252,8 +270,8 @@ function AccionFila({
 function GrupoDia({ dia, etiqueta, children }: { dia: string; etiqueta: string; children: ReactNode }) {
   return (
     <>
-      <TableRow className="bg-muted/50 hover:bg-muted/50">
-        <TableHead id={`notif-dia-${dia}`} colSpan={3} scope="colgroup" className="h-9 text-foreground">
+      <TableRow className="bg-background hover:bg-background">
+        <TableHead id={`notif-dia-${dia}`} colSpan={3} scope="colgroup" className="h-auto py-2.5 text-xs tracking-normal">
           {etiqueta}
         </TableHead>
       </TableRow>

@@ -18,6 +18,7 @@ import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query
 import { SILENCIOS, describirSilencio } from "@/features/comunicaciones/chat/lib/silencios"
 import { MEDIOS_ALERTA, alertasDe, describirAlertas } from "@/features/comunicaciones/chat/lib/alertas"
 import { useAlertasConversacion } from "@/features/comunicaciones/chat/api/mutations/use-ajustes-chat"
+import { SECCION_DESCRIPCION, SECCION_TITULO } from "@/features/notificaciones/components/preferencias-seccion"
 
 /**
  * Panel de configuración de mensajería: lista las conversaciones del chat con su estado de
@@ -36,11 +37,11 @@ export function SilencioConversaciones({ disabled }: { disabled?: boolean }) {
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="silencio-conversaciones-titulo">
-      <div>
-        <h2 id="silencio-conversaciones-titulo" className="text-base font-semibold">
+      <div className="flex flex-col gap-0.5">
+        <h2 id="silencio-conversaciones-titulo" className={SECCION_TITULO}>
           Conversaciones del chat
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className={SECCION_DESCRIPCION}>
           Silencia o activa las notificaciones de cada conversación y elige por qué medios te avisa.
         </p>
       </div>

@@ -41,6 +41,21 @@ const LINE_CLAMP: Record<NavMaxLines, string> = {
   4: "line-clamp-4",
 }
 
+/**
+ * Botones principales del menú (con o sin submenú), activos o no: padding de
+ * 10px, radio de 8px, títulos en peso medio e ícono de 20px. Hover de los no
+ * seleccionados: texto e ícono `primary` sobre `primary-22`. La carpeta activa
+ * conserva su propio hover (`hover:!bg-primary/90`, con `!`).
+ *
+ * `[&_svg:first-child]` y no `[&_svg]`: el caret del colapsable es el último
+ * `svg` y debe quedar en 16px.
+ */
+const BOTON_PRINCIPAL = cn(
+  "rounded-[8px] p-2.5 font-medium [&_svg:first-child]:size-5",
+  "not-data-active:hover:bg-primary-22 not-data-active:hover:text-primary",
+  "not-data-active:data-open:hover:bg-primary-22 not-data-active:data-open:hover:text-primary",
+)
+
 function lineClamp(maxLines: NavMaxLines = 1) {
   return LINE_CLAMP[maxLines]
 }
@@ -104,6 +119,7 @@ export function NavMain() {
                 <SidebarMenuButton
                   isActive={isActive}
                   tooltip={item.title}
+                  className={BOTON_PRINCIPAL}
                   render={<Link to={item.url} />}
                 >
                   <item.icon />
@@ -183,6 +199,7 @@ function NavCollapsibleItem({
              * `sidebar-accent` al pasar el cursor.
              */
             className={cn(
+              BOTON_PRINCIPAL,
               (isActive || hasActiveChild) &&
                 "bg-primary text-primary-foreground font-medium shadow-md hover:!bg-primary/90 hover:!text-primary-foreground active:!bg-primary/80 active:!text-primary-foreground data-open:hover:!bg-primary/90 data-open:hover:!text-primary-foreground",
             )}
@@ -199,6 +216,8 @@ function NavCollapsibleItem({
             <SidebarMenuSubItem key={sub.url}>
               <SidebarMenuSubButton
                 isActive={isUnder(pathname, sub.url)}
+                // Submenú activo: además del color primario, peso medio.
+                className="data-active:font-medium"
                 render={<Link to={sub.url} />}
               >
                 <span className={lineClamp(sub.maxLines)}>{sub.title}</span>

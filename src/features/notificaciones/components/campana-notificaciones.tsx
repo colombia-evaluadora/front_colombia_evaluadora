@@ -7,8 +7,8 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { BellIcon, CloudOffIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { ArrowCounterClockwiseIcon, BellIcon,ChatCircleTextIcon, CloudOffIcon, GearIcon, InboxIcon, InfoIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
@@ -30,6 +30,10 @@ import { noLeidosCampana } from "@/features/notificaciones/lib/mensajes-campana"
 
 /** La campana muestra las 10 más recientes (spec "Campana y página"). */
 const RECIENTES = 10
+
+/** Segmento de las pestañas Notificaciones / Mensajes (Figma "Segmentado"). */
+const SEGMENTO =
+  "h-auto flex-1 rounded-full px-3 py-1.5 text-sm font-normal tracking-normal normal-case text-muted-foreground after:hidden data-active:bg-card data-active:font-medium data-active:text-foreground data-active:shadow-[0_1px_4px_0_rgba(0,0,0,0.1)]"
 
 /**
  * Campana global del header (D-2.6). Comparte la cache de la lista sin filtros
@@ -92,7 +96,9 @@ export function CampanaNotificaciones() {
           />
         }
       >
-        <BellIcon />
+        {/* Figma "Layout/Cabecera" › btn_top: ícono de 22px (el default de
+            `Button` es 14px y se veía muy chico). */}
+        <BellIcon className="size-5.5" />
         {noLeidas > 0 && (
           <Badge
             aria-hidden
@@ -108,24 +114,38 @@ export function CampanaNotificaciones() {
       <span className="sr-only" aria-live="polite">
         {noLeidas > 0 ? `${etiqueta} notificaciones sin leer` : ""}
       </span>
-      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] gap-0 p-0">
-        <div className="flex items-center gap-2 border-b px-4 py-2">
-          <h2 className="flex-1 text-sm font-semibold">Notificaciones</h2>
+      {/* Figma "Notificaciones/Panel de la campana": 392px, encabezado sin línea,
+          pestañas segmentadas (pastilla) y entradas de 12px separadas por líneas. */}
+      <PopoverContent align="end" className="w-98 max-w-[calc(100vw-2rem)] gap-0 p-0">
+        {/* `px-3`: el botón `link` no tiene padding (`!p-0`), así que el margen
+            derecho de Figma (12px) lo pone el contenedor. */}
+        <div className="flex min-w-0 items-center gap-2 px-3 pt-3 pb-2">
+          <h2 className="font-sans text-sm font-medium">Notificaciones</h2>
           {noLeidas > 0 && (
-            <Badge variant="soft" color="info">
+            <Badge
+              variant="soft"
+              color="primary"
+              className="rounded-full border-primary-stroke font-medium tracking-normal text-foreground"
+            >
+              <span aria-hidden className="size-1.5 rounded-full bg-primary" />
               {etiqueta} sin leer
             </Badge>
           )}
+          <span className="flex-1" />
+          {/* Con la lista en error no hay nada que marcar (Figma oculta el enlace). */}
+          {!(lista.isError && recientes.length === 0) && (
           <OnlineOnlyTooltip tooltip={onlineOnly.tooltip}>
             <Button
               variant="link"
-              size="sm"
+              size="xs"
+              className="shrink-0 text-xs font-medium no-underline hover:underline"
               disabled={onlineOnly.disabled || noLeidas === 0 || marcarTodas.isPending}
               onClick={() => marcarTodas.mutate({})}
             >
               Marcar todas como leídas
             </Button>
           </OnlineOnlyTooltip>
+          )}
         </div>
 
         {status === "offline" && (
@@ -137,21 +157,29 @@ export function CampanaNotificaciones() {
         <ErrorNoticeBanner error={marcarTodas.isError ? marcarTodas.error : null} className="mx-4 my-2" />
 
         {tieneChat && (
-          <Tabs value={pestana} onValueChange={(v) => setPestana(v === "mensajes" ? "mensajes" : "notificaciones")}>
-            <TabsList>
-              <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
-              <TabsTrigger value="mensajes">
+          <Tabs
+            value={pestana}
+            onValueChange={(v) => setPestana(v === "mensajes" ? "mensajes" : "notificaciones")}
+            className="px-3 pb-3"
+          >
+            {/* Segmentado de Figma: pastilla gris con la pestaña activa en blanco
+                y sombra; sin el subrayado ni las versalitas de `Tabs`. */}
+            <TabsList className="gap-1 rounded-full border-0 bg-sidebar p-1 group-data-horizontal/tabs:h-auto">
+              <TabsTrigger value="notificaciones" className={SEGMENTO}>
+                Notificaciones{noLeidas > 0 && ` (${etiqueta})`}
+              </TabsTrigger>
+              <TabsTrigger value="mensajes" className={SEGMENTO}>
                 Mensajes
                 {mensajesSinLeer > 0 && (
-                  <Badge variant="fill" color="warning" className="ml-1 h-4.5 min-w-4.5 rounded-full px-1 tracking-normal tabular-nums">
-                    <span className="sr-only">sin leer: </span>
-                    {formatContador(mensajesSinLeer)}
-                  </Badge>
+                  <>
+                    <span className="sr-only">, sin leer:</span> ({formatContador(mensajesSinLeer)})
+                  </>
                 )}
               </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
+        <div className="h-px bg-border" />
 
         {verMensajes ? (
           <div className="max-h-96 overflow-y-auto">
@@ -164,15 +192,21 @@ export function CampanaNotificaciones() {
               <Spinner />
             </div>
           ) : lista.isError && recientes.length === 0 ? (
-            <Empty className="py-8">
-              <EmptyHeader>
-                <EmptyTitle>No se pudieron cargar las notificaciones</EmptyTitle>
-                <EmptyDescription>{getErrorMessage(lista.error)}</EmptyDescription>
-              </EmptyHeader>
-              <Button size="sm" variant="link" onClick={() => void lista.refetch()}>
+            // Figma: aviso naranja con ícono, título, causa y "Reintentar" a la derecha.
+            <div
+              role="alert"
+              className="m-3 flex items-center gap-3 rounded-lg border border-orange-stroke bg-orange-22 px-3 py-3"
+            >
+              <InfoIcon aria-hidden className="size-5 shrink-0 self-start text-orange" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm/4 font-bold text-foreground">No se pudieron cargar las notificaciones</p>
+                <p className="text-xs text-foreground">{getErrorMessage(lista.error)}</p>
+              </div>
+              <Button size="sm" className="shrink-0" onClick={() => void lista.refetch()}>
+                <ArrowCounterClockwiseIcon data-icon="inline-start" />
                 Reintentar
               </Button>
-            </Empty>
+            </div>
           ) : recientes.length === 0 ? (
             <Empty className="py-8">
               <EmptyHeader>
@@ -185,7 +219,8 @@ export function CampanaNotificaciones() {
           ) : (
             <ul className="divide-y">
               {recientes.map((n) => (
-                <li key={n.id} className={cn("hover:bg-muted/50", !n.leida && "bg-blue-22/40")}>
+                // Mismo patrón que la bandeja: sin leer en blanco, leídas en gris `muted-22`.
+                <li key={n.id} className={cn("hover:bg-muted/50", n.leida && "bg-muted-22")}>
                   <NotificacionItem
                     compact
                     notificacion={n}
@@ -202,29 +237,38 @@ export function CampanaNotificaciones() {
         </div>
         )}
 
-        <div className="flex items-center justify-between border-t px-2 py-1">
+        {/* `px-1`: al hacer hover el fondo de los botones no queda a ras del borde. */}
+        <div className="flex items-center justify-between border-t px-1 py-1">
           {verMensajes ? (
-            <Button variant="ghost" size="sm" onClick={() => irA(paths.app.comunicacionesChat.getHref())}>
+            <Button
+              variant="ghost"
+              size="xs"
+              className="text-xs font-medium text-primary"
+              onClick={() => irA(paths.app.comunicacionesChat.getHref())}
+            >
+              <ChatCircleTextIcon data-icon="inline-start" className="size-4" />
               Ir al chat
             </Button>
           ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            nativeButton={false}
-            render={<Link to={paths.app.notificaciones.getHref()} onClick={() => setOpen(false)} />}
-          >
-            Ver todas
-          </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              className="text-xs font-medium text-primary"
+              nativeButton={false}
+              render={<Link to={paths.app.notificaciones.getHref()} onClick={() => setOpen(false)} />}
+            >
+              Ver todas
+            </Button>
           )}
           <Button
             variant="ghost"
-            size="sm"
-            color="muted"
+            size="xs"
+            color="neutral"
+            className="text-xs font-medium"
             nativeButton={false}
             render={<Link to={paths.app.notificacionesPreferencias.getHref()} onClick={() => setOpen(false)} />}
           >
-            <GearIcon data-icon="inline-start" />
+            <GearIcon data-icon="inline-start" className="size-4" />
             Preferencias
           </Button>
         </div>
