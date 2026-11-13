@@ -110,13 +110,16 @@ export function AccionPlanItem({
             todos="Opcional"
             value={a.estrategia}
             options={estrategias}
-            disabled={estrategiasNoDisponibles}
+            disabled={estrategiasNoDisponibles || a.estrategiaFija}
             onChange={(estrategia) => onChange(a.clave, { estrategia })}
           />
           {estrategiasNoDisponibles && (
             <FieldDescription className="mt-1">Las estrategias no están disponibles por ahora.</FieldDescription>
           )}
-          {a.estrategia && (
+          {a.estrategiaFija && (
+            <FieldDescription className="mt-1">La estrategia de una acción guardada no se puede cambiar.</FieldDescription>
+          )}
+          {a.estrategia && !a.estrategiaFija && (
             <FieldDescription className="mt-1">El estudiante queda como beneficiario de la estrategia.</FieldDescription>
           )}
         </div>

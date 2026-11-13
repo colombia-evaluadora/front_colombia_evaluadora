@@ -56,6 +56,7 @@ function valoresIniciales(m: ModoPlan, tipoPorCodigo: (codigo: string) => string
         responsable: String(a.fk_responsable),
         plazo: parseDateValue(a.plazo),
         estrategia: a.fk_estrategia != null ? String(a.fk_estrategia) : "",
+        estrategiaFija: a.fk_estrategia != null,
       })),
     }
   }

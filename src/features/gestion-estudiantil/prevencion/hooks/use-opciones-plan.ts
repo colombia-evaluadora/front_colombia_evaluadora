@@ -5,9 +5,18 @@ import {
   useOpcionesEstrategiasQuery,
   useOpcionesResponsablesQuery,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-opciones-prevencion-query"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import type { OpcionEstrategia } from "@/features/gestion-estudiantil/prevencion/api/types"
 import type { ModoPlan } from "@/features/gestion-estudiantil/prevencion/hooks/use-plan-form"
 
 const ESPERA_MS = 300
+
+const diaMes = (fecha: string) => formatFecha(fecha).slice(0, 5)
+
+/** «Nombre · Tipo · 01/04-30/11»: tipo y vigencia de la estrategia (más «ya es beneficiario»). */
+function etiquetaEstrategia(e: OpcionEstrategia) {
+  return `${e.nombre} · ${e.tipo_nombre} · ${diaMes(e.fecha_inicio)}-${diaMes(e.fecha_fin)}${e.ya_es_beneficiario ? " · ya es beneficiario" : ""}`
+}
 
 interface Opciones {
   modo: ModoPlan
@@ -34,10 +43,15 @@ export function useOpcionesPlan({ modo, matricula, establecimiento }: Opciones) 
   }, [responsables.data])
 
   const estrategias = useOpcionesEstrategiasQuery(matricula)
-  const estrategiaOpciones = useMemo(
-    () => (estrategias.data ?? []).map((e) => ({ value: String(e.fk_testrategia), label: e.nombre })),
-    [estrategias.data],
-  )
+  const estrategiaOpciones = useMemo(() => {
+    const lista = (estrategias.data ?? []).map((e) => ({ value: String(e.fk_testrategia), label: etiquetaEstrategia(e) }))
+    // Las ya guardadas siguen visibles aunque la estrategia haya dejado de estar En ejecución.
+    if (modo.modo === "modificar")
+      for (const a of modo.plan.acciones)
+        if (a.fk_estrategia != null && !lista.some((o) => o.value === String(a.fk_estrategia)))
+          lista.push({ value: String(a.fk_estrategia), label: a.estrategia_nombre ?? `Estrategia ${a.fk_estrategia}` })
+    return lista
+  }, [estrategias.data, modo])
 
   // Nombres ya elegidos: siguen en las opciones aunque la búsqueda del servidor ya no los traiga.
   const [elegidos, setElegidos] = useState<Record<string, string>>(() =>

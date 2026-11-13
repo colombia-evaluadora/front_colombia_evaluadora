@@ -48,7 +48,8 @@ export function useSearchFiltros<F extends object>({
     // Al abrir, el borrador arranca de lo aplicado.
   }, [open, filters, onDraftChange])
 
-  const badgeCount = Object.values(filters).filter(Boolean).length
+  // Un filtro multivalor vacío (`[]`) es truthy: cuenta solo si tiene elegidos.
+  const badgeCount = Object.values(filters).filter((v) => (Array.isArray(v) ? v.length > 0 : Boolean(v))).length
   const activeFilterCount = badgeCount + (search ? 1 : 0)
 
   function handleApply() {

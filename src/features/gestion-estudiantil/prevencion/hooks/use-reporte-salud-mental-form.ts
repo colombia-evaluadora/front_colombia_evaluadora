@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useSearch } from "@tanstack/react-router"
 
 import { useNotify } from "@/components/notice/notice-context"
 
@@ -18,7 +19,14 @@ export function useReporteSaludMentalForm() {
   const { volver } = useNavegacionPrevencion()
   const s = useEstadoDialogo()
   const { establecimientoId } = useAmbitoPrevencion("")
-  const selector = useSelectorEstudiantePrevencion({ establecimiento: establecimientoId, saludMental: true })
+  // Precarga desde el Observador (?matricula=&estudiante=).
+  const { matricula, estudiante } = useSearch({ strict: false }) as { matricula?: number; estudiante?: string }
+  const selector = useSelectorEstudiantePrevencion({
+    establecimiento: establecimientoId,
+    saludMental: true,
+    inicial: matricula,
+    nombreInicial: estudiante,
+  })
 
   const [fecha, setFecha] = useState<Date | undefined>(() => new Date())
   const [tipo, setTipo] = useState("")

@@ -9,7 +9,10 @@ export function useNavegacionPrevencion() {
   const router = useRouter()
   const puedeVolver = useCanGoBack()
 
-  const ir = useCallback((to: string, search?: Record<string, unknown>) => navigate({ to, search } as never), [navigate])
+  const ir = useCallback(
+    (to: string, search?: Record<string, unknown>, replace?: boolean) => navigate({ to, search, replace } as never),
+    [navigate],
+  )
 
   const irValorar = useCallback(
     (matricula?: number) => ir(paths.app.prevencionValorar.getHref(), { matricula }),
@@ -36,11 +39,36 @@ export function useNavegacionPrevencion() {
     (senalId: number) => ir(paths.app.prevencionSenalSaludMental.getHref(senalId)),
     [ir],
   )
+  const irEstrategiaNueva = useCallback(() => ir(paths.app.prevencionEstrategiaNueva.getHref()), [ir])
+  /** Con `reemplazar`, el formulario de creación no queda en el historial (tras el primer guardado). */
+  const irEstrategiaEditar = useCallback(
+    (estrategiaId: number, reemplazar = false) =>
+      ir(paths.app.prevencionEstrategiaEditar.getHref(estrategiaId), undefined, reemplazar),
+    [ir],
+  )
+  const irEstrategia = useCallback(
+    (estrategiaId: number) => ir(paths.app.prevencionEstrategiaDetalle.getHref(estrategiaId)),
+    [ir],
+  )
+  const irCaracterizacion = useCallback(
+    (matricula: number) => ir(paths.app.prevencionCaracterizacion.getHref(matricula)),
+    [ir],
+  )
+  /** Desde la vista de lectura se reemplaza la entrada, para que Cancelar y Guardar vuelvan a donde se venía. */
+  const irCaracterizacionEditar = useCallback(
+    (matricula: number, reemplazar = false) =>
+      ir(paths.app.prevencionCaracterizacionEditar.getHref(matricula), undefined, reemplazar),
+    [ir],
+  )
+  const irHistorialAcademico = useCallback(
+    (matricula: number) => ir(paths.app.prevencionHistorialAcademico.getHref(matricula)),
+    [ir],
+  )
   /** Atrás en el historial del navegador; sin historial, al tablero. */
   const volver = useCallback(() => {
     if (puedeVolver) router.history.back()
     else ir(paths.app.prevencionRetencion.getHref())
   }, [puedeVolver, router, ir])
 
-  return { irValorar, irPlanNuevo, irHistorial, irPlan, irPlanEditar, irValoracion, irAbrirCaso, irCaso, irReporteSaludMental, irSenalSaludMental, volver }
+  return { irValorar, irPlanNuevo, irHistorial, irPlan, irPlanEditar, irValoracion, irAbrirCaso, irCaso, irReporteSaludMental, irSenalSaludMental, irEstrategiaNueva, irEstrategiaEditar, irEstrategia, irCaracterizacion, irCaracterizacionEditar, irHistorialAcademico, volver }
 }

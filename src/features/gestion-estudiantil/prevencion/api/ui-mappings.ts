@@ -1,5 +1,5 @@
 import type { BadgeColor } from "@/features/gestion-estudiantil/commons/utils/badge-color"
-import type { EstadoPlan, EstadoSenalSM, NivelRiesgo, SenalRiesgo, SeveridadSaludMental } from "@/features/gestion-estudiantil/prevencion/api/types"
+import type { EstadoCaracterizacion, EstadoEstrategia, EstadoPlan, EstadoSenalSM, NivelRiesgo, SenalRiesgo, SeveridadSaludMental } from "@/features/gestion-estudiantil/prevencion/api/types"
 
 /** Etiquetas de las señales del tablero (nunca el código). */
 export const SENAL_ETIQUETA: Record<SenalRiesgo, string> = {
@@ -96,3 +96,38 @@ export const ESTADOS_SM_FILTRO = (Object.keys(ESTADO_SM_ETIQUETA) as EstadoSenal
   value,
   label: ESTADO_SM_ETIQUETA[value],
 }))
+
+export const ESTADO_ESTRATEGIA_ETIQUETA: Record<EstadoEstrategia, string> = {
+  PLANEADA: "Planeada",
+  EN_EJECUCION: "En ejecución",
+  FINALIZADA: "Finalizada",
+}
+
+export const ESTADO_ESTRATEGIA_COLOR: Record<EstadoEstrategia, BadgeColor> = {
+  PLANEADA: "muted",
+  EN_EJECUCION: "primary",
+  FINALIZADA: "muted",
+}
+
+/** Estados que ofrece el filtro de Estrategias (el backend los deriva de las fechas). */
+export const ESTADOS_ESTRATEGIA_FILTRO = (Object.keys(ESTADO_ESTRATEGIA_ETIQUETA) as EstadoEstrategia[]).map((value) => ({
+  value,
+  label: ESTADO_ESTRATEGIA_ETIQUETA[value],
+}))
+
+export const ESTADO_CARACTERIZACION_ETIQUETA: Record<EstadoCaracterizacion, string> = {
+  SIN_DILIGENCIAR: "Sin diligenciar",
+  POR_CONFIRMAR: "Por confirmar",
+  CONFIRMADA: "Confirmada",
+}
+
+export const ESTADO_CARACTERIZACION_COLOR: Record<EstadoCaracterizacion, BadgeColor> = {
+  SIN_DILIGENCIAR: "muted",
+  POR_CONFIRMAR: "warning",
+  CONFIRMADA: "success",
+}
+
+/** Estados que ofrece el filtro de Caracterización (valor del backend, etiqueta de pantalla). */
+export const ESTADOS_CARACTERIZACION_FILTRO = (
+  Object.keys(ESTADO_CARACTERIZACION_ETIQUETA) as EstadoCaracterizacion[]
+).map((value) => ({ value, label: ESTADO_CARACTERIZACION_ETIQUETA[value] }))
