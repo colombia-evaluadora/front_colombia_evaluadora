@@ -84,6 +84,7 @@ import {
   MdOutlineFactCheck,
   MdOutlineFileDownload,
   MdOutlineFileUpload,
+  MdOutlineFilterAltOff,
   MdOutlineFilterList,
   MdOutlineFolderOpen,
   MdOutlineFolderZip,
@@ -300,6 +301,8 @@ export const FileTextIcon = makeIcon(MdOutlineDescription)
 export const FileXlsIcon = makeIcon(MdOutlineTableChart)
 export const FolderOpenIcon = makeIcon(MdOutlineFolderOpen)
 export const FunnelIcon = makeIcon(MdOutlineFilterList)
+// "Limpiar filtros".
+export const FunnelXIcon = makeIcon(MdOutlineFilterAltOff)
 export const GavelIcon = makeIcon(MdOutlineGavel)
 export const GearIcon = makeIcon(MdOutlineSettings)
 export const GenderIntersexIcon = makeIcon(MdOutlineTransgender)

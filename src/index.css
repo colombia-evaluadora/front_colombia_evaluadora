@@ -545,6 +545,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* El `*` de obligatorio de los formularios va en rojo en todo el proyecto. */
+  [data-required-mark] {
+    @apply text-red;
+  }
   html {
     @apply font-sans;
   }

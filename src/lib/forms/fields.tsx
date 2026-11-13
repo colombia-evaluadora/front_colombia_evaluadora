@@ -52,6 +52,9 @@ interface BaseFieldProps {
   label: ReactNode
   /** Agrega el `*` de obligatorio al label ("Código*"). */
   required?: boolean
+  /** Oculta el label a la vista (queda para lectores de pantalla), p. ej. cuando el título de la
+   *  sección que lo contiene ya dice lo mismo. */
+  hideLabel?: boolean
   /** Ayuda bajo el control; se oculta mientras se muestra el error. Un
    *  string va en `FieldDescription`, un nodo se pinta tal cual. */
   description?: ReactNode
@@ -85,6 +88,7 @@ function useRegisteredField<TValue>(disabledProp?: boolean) {
 function FieldFrame({
   label,
   required,
+  hideLabel,
   description,
   variant = "outlined",
   className,
@@ -109,7 +113,7 @@ function FieldFrame({
       data-invalid={invalid}
       data-disabled={disabled || undefined}
     >
-      <FieldLabel htmlFor={htmlFor}>
+      <FieldLabel htmlFor={htmlFor} className={hideLabel ? "sr-only" : undefined}>
         {label}
         {required && "*"}
       </FieldLabel>
@@ -254,7 +258,7 @@ export function TextareaField({
 
 /** Mismo borde que un `Input` outlined, para cuando el control lleva sufijo. */
 const OUTLINED_INPUT_GROUP =
-  "h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:disabled]:hover:border-input has-[[data-slot=input-group-control]:disabled]:cursor-not-allowed has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red"
+  "h-10 rounded-sm border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:disabled]:hover:border-input has-[[data-slot=input-group-control]:disabled]:cursor-not-allowed has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red"
 
 interface NumberFieldProps extends BaseFieldProps {
   placeholder?: string

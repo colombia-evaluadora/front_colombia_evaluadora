@@ -50,6 +50,12 @@ function buildPageRange(current: number, total: number): (number | "ellipsis")[]
   return items
 }
 
+/**
+ * La paginación va en tamaño compacto (28px), más chica que los botones y
+ * campos de formulario (40px): es un control secundario al pie de la tabla.
+ */
+const PAGINA_COMPACTA = "h-7"
+
 export function Pagination({
   viewOptions,
   pageIndex,
@@ -85,7 +91,7 @@ export function Pagination({
                   href={canPrev ? `#page=${pageIndex}` : undefined}
                   aria-label="Página anterior"
                   text="Previo"
-                  className={!canPrev ? "pointer-events-none opacity-50" : ""}
+                  className={cn(PAGINA_COMPACTA, !canPrev && "pointer-events-none opacity-50")}
                   onClick={(e) => {
                     e.preventDefault()
                     if (canPrev) onPageChange(pageIndex - 1)
@@ -113,6 +119,7 @@ export function Pagination({
                       // primario — sigue siendo la página actual, solo que con
                       // el peso visual que el resto del UI usa para "seleccionado".
                       className={cn(
+                        "size-7",
                         item === pageIndex + 1 &&
                           "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
                       )}
@@ -132,7 +139,7 @@ export function Pagination({
                   href={canNext ? `#page=${pageIndex + 2}` : undefined}
                   aria-label="Página siguiente"
                   text="Próximo"
-                  className={!canNext ? "pointer-events-none opacity-50" : ""}
+                  className={cn(PAGINA_COMPACTA, !canNext && "pointer-events-none opacity-50")}
                   onClick={(e) => {
                     e.preventDefault()
                     if (canNext) onPageChange(pageIndex + 1)
@@ -146,7 +153,7 @@ export function Pagination({
               value={`${pageSize}`}
               onValueChange={(value) => onPageSizeChange(Number(value))}
             >
-              <SelectTrigger id="rows-per-page" variant="outlined" className="bg-muted/50 w-17">
+              <SelectTrigger id="rows-per-page" variant="outlined" className="h-7 w-17 bg-muted/50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -161,7 +168,7 @@ export function Pagination({
             </Select>
             <FieldLabel
               htmlFor="rows-per-page"
-              className="text-sm normal-case text-muted-foreground"
+              className="text-xs font-normal normal-case text-muted-foreground"
             >
               Entradas
             </FieldLabel>

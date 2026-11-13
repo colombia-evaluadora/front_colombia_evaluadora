@@ -151,7 +151,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon
-        render={<CaretDownIcon className="pointer-events-none size-3.5 text-muted-foreground" />}
+        render={<CaretDownIcon className="pointer-events-none size-5 text-muted-foreground" />}
       />
     </SelectPrimitive.Trigger>
   )

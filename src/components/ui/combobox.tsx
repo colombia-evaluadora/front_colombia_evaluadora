@@ -37,7 +37,7 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
       {...props}
     >
       {children}
-      <CaretDownIcon className="pointer-events-none size-3.5 text-muted-foreground" />
+      <CaretDownIcon className="pointer-events-none size-5 text-muted-foreground" />
     </ComboboxPrimitive.Trigger>
   )
 }
@@ -240,7 +240,8 @@ function ComboboxChip({
       {showRemove && (
         <ComboboxPrimitive.ChipRemove
           render={<Button variant="ghost" size="icon-xs" />}
-          className="-ml-1 opacity-50 hover:opacity-100"
+          // La X toma el color del texto del chip y no cambia al pasar el cursor.
+          className="-ml-1 text-current hover:bg-transparent hover:text-current active:bg-transparent aria-expanded:bg-transparent dark:hover:bg-transparent"
           data-slot="combobox-chip-remove"
         >
           <XIcon className="pointer-events-none" />
@@ -556,7 +557,7 @@ function ComboboxFieldTrigger({
         inputTriggerVariants({ variant: resolvedVariant }),
         comboboxFocusVariants({ variant: resolvedVariant }),
         // cursor-text pisa el `cursor-pointer` del trigger: acá se escribe.
-        "relative flex cursor-text items-center gap-1.5 has-disabled:pointer-events-none has-disabled:cursor-not-allowed has-disabled:opacity-50",
+        "relative flex cursor-text items-center gap-1.5 has-disabled:pointer-events-none has-disabled:cursor-not-allowed has-disabled:bg-muted-22 has-disabled:text-muted-foreground",
         className,
       )}
     >
@@ -583,7 +584,7 @@ function ComboboxFieldTrigger({
         aria-label="Mostrar opciones"
         className="peer/caret order-last -mr-1 flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground"
       >
-        <CaretDownIcon className="pointer-events-none size-3.5" />
+        <CaretDownIcon className="pointer-events-none size-5" />
       </ComboboxPrimitive.Trigger>
       {/*
         Mientras no se escribe, el valor tapa al input; al primer carácter se

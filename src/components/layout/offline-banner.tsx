@@ -22,12 +22,13 @@ import { getPersistedSession } from "@/lib/offline/session"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 import { cn } from "@/lib/utils"
 
+// Estilo de alerta del proyecto: borde `-stroke`, fondo `-22`, texto normal e ícono del color.
 const TONE: Record<QueueBanner["tone"], string> = {
-  red: "bg-red-22 text-red",
-  orange: "bg-orange-22 text-orange",
-  blue: "bg-blue-22 text-blue",
-  green: "bg-green-22 text-green",
-  yellow: "bg-yellow-22 text-yellow",
+  red: "border-red-stroke bg-red-22 [&>svg]:text-red",
+  orange: "border-orange-stroke bg-orange-22 [&>svg]:text-orange",
+  blue: "border-blue-stroke bg-blue-22 [&>svg]:text-blue",
+  green: "border-green-stroke bg-green-22 [&>svg]:text-green",
+  yellow: "border-yellow-stroke bg-yellow-22 [&>svg]:text-yellow",
 }
 
 /** Aviso de la ventana de 14 días (§0.2): fecha límite desde el día 12. */
@@ -134,9 +135,11 @@ export function OfflineBanner() {
       {banner && Icon && (
         <div
           className={cn(
-            "flex flex-wrap items-center gap-2 px-4 py-2 text-sm font-medium",
+            "mr-4 mb-3 flex flex-wrap items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium text-foreground max-md:ml-4",
             // Sin conexión conserva el navy de la Fase 0/1.
-            banner.text === connectivityMessage && isOffline ? "bg-navy-22 text-navy" : TONE[banner.tone],
+            banner.text === connectivityMessage && isOffline
+              ? "border-navy-stroke bg-navy-22 [&>svg]:text-navy"
+              : TONE[banner.tone],
           )}
         >
           <Icon aria-hidden className="size-4 shrink-0" />
@@ -149,7 +152,7 @@ export function OfflineBanner() {
         </div>
       )}
       {missingLine && (
-        <p data-slot="offline-missing-data" className="bg-navy-22 px-4 pb-2 text-sm text-navy">
+        <p data-slot="offline-missing-data" className="mr-4 mb-3 rounded-md border border-navy-stroke bg-navy-22 px-4 py-2 text-sm text-foreground max-md:ml-4">
           {OFFLINE_MISSING_DATA_BANNER}
         </p>
       )}
