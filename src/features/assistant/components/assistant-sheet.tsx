@@ -54,7 +54,8 @@ function AssistantSheetContenido({ puedeAccionar }: { puedeAccionar: boolean }) 
     >
       <MessageScrollerProvider>
         <SheetTrigger render={<Button variant="outline" size="icon" color="muted" className="bg-background" />}>
-          <ChatCircleTextIcon />
+          {/* Figma "Button - Asistente": ícono de 16px (el default de `Button` es 14px). */}
+          <ChatCircleTextIcon className="size-4" />
           <span className="sr-only">Abrir asistente</span>
         </SheetTrigger>
         {/* Foco inicial en el mensaje. */}

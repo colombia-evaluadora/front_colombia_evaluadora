@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
-import { horaVistaPrevia, lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
+import { lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
+import { fechaCorta } from "@/features/notificaciones/lib/agrupar-por-dia"
 import { AvatarColevabot } from "@/features/comunicaciones/chat/components/tarjeta-bot"
 import { conversacionesCampana } from "@/features/notificaciones/lib/mensajes-campana"
 import type { useConversacionesCampana } from "@/features/notificaciones/hooks/use-mensajes-campana"
@@ -63,7 +64,8 @@ export function MensajesCampana({
       {lista.map((c) => {
         const pendientes = c.noLeidos > 0
         return (
-          <li key={c.id} className={cn("hover:bg-muted/50", pendientes && "bg-blue-22/40")}>
+          // Igual que las notificaciones: pendientes en blanco, leídas en gris `muted-22`.
+          <li key={c.id} className={cn("hover:bg-muted/50", !pendientes && "bg-muted-22")}>
             <button
               type="button"
               onClick={() => onAbrir(`${CHAT_HREF}?canal=${c.id}`)}
@@ -85,17 +87,18 @@ export function MensajesCampana({
               )}
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
-                  <span className={cn("min-w-0 flex-1 truncate text-sm", pendientes && "font-semibold")}>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {c.nombre}
                   </span>
                   {c.ultimoMensaje && (
-                    <time dateTime={c.ultimoMensaje.enviadoEn} className="shrink-0 text-[11px] text-muted-foreground">
-                      {horaVistaPrevia(c.ultimoMensaje.enviadoEn)}
+                    // Mismo "Hoy, 08:00" que las notificaciones de la campana.
+                    <time dateTime={c.ultimoMensaje.enviadoEn} className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      {fechaCorta(c.ultimoMensaje.enviadoEn)}
                     </time>
                   )}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate text-xs text-foreground">
                     {lineaVistaPrevia(c) || "Sin mensajes"}
                   </span>
                   {pendientes && (

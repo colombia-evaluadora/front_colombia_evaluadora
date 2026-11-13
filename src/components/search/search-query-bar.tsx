@@ -54,6 +54,11 @@ interface SearchQueryBarProps {
   size?: "sm" | "lg"
   /** Ancho de la barra; por defecto la misma medida en todos los listados. */
   className?: string
+  /**
+   * Clases del campo en sí (p. ej. `h-11` para igualar el alto de los botones
+   * del toolbar, como pide el diseño de la bandeja de notificaciones).
+   */
+  inputClassName?: string
   children: ReactNode
 }
 
@@ -74,10 +79,16 @@ export function SearchQueryBar({
   applyDisabled,
   size,
   className,
+  inputClassName,
   children,
 }: SearchQueryBarProps) {
   const input = (
-    <InputGroup className="h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+    <InputGroup
+      className={cn(
+        "h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20",
+        inputClassName,
+      )}
+    >
       <InputGroupAddon align="inline-start" className="ml-2">
         <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
       </InputGroupAddon>
