@@ -12,6 +12,9 @@ import { BadgeEstadoCaracterizacion } from "@/features/gestion-estudiantil/preve
 const SIN_DATO = "—"
 const nombre = (i: ItemLista | null | undefined) => i?.nombre ?? SIN_DATO
 const lista = (items: ItemLista[] | undefined) => (items && items.length > 0 ? items.map((i) => i.nombre).join(", ") : SIN_DATO)
+/** La lista marcada o, si no se marcó ninguna, lo que se respondió en su pregunta de información (p. ej. «Ninguno»). */
+const listaOInfo = (items: ItemLista[] | undefined, info: ItemLista | null | undefined) =>
+  items && items.length > 0 ? lista(items) : nombre(info)
 const num = (n: number | null | undefined) => (n == null ? SIN_DATO : String(n))
 const siNo = (v: boolean | null | undefined) => (v == null ? SIN_DATO : v ? "Sí" : "No")
 
@@ -68,7 +71,7 @@ export function BloqueCaracterizacion({ caracterizacion: c, puedeActualizar, sin
         </ul>
       ),
     ],
-    ["Servicios básicos", lista(v.servicios)],
+    ["Servicios básicos", listaOInfo(v.servicios, v.info_servicios)],
     ["Frecuencia de cambio de domicilio", nombre(v.frecuencia_domicilio)],
     ["Ingresos mensuales del hogar", nombre(h.ingresos)],
     [
@@ -77,7 +80,7 @@ export function BloqueCaracterizacion({ caracterizacion: c, puedeActualizar, sin
         ? SIN_DATO
         : String((h.aportantes_convivientes ?? 0) + (h.aportantes_externos ?? 0)),
     ],
-    ["Programas sociales", lista(c.socioeconomica.programas)],
+    ["Programas sociales", listaOInfo(c.socioeconomica.programas, c.socioeconomica.info_programas)],
     ["Computador o tableta para estudiar", nombre(c.socioeconomica.equipo_estudiar)],
     ["Trabajo del estudiante", nombre(c.situacion.trabajo_estudiante)],
     [
