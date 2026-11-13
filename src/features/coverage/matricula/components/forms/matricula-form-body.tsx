@@ -1,3 +1,4 @@
+import { MatriculaSectionDisabledContext } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
 import type { CreateMatriculaInput, MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
 import {
   MatriculaAcademicSection,
@@ -25,6 +26,14 @@ interface MatriculaFormBodyProps {
   showStatus?: boolean
   fieldSettings?: MatriculaFieldSettingsMap
   academicDisabled?: boolean
+  /** Editar: la identidad del estudiante se corrige aparte (Regla 43). */
+  studentIdentityDisabled?: boolean
+  /** Editar: acudiente ya registrado, identidad protegida (bloque 2.10, Regla 19). */
+  guardianIdentityDisabled?: boolean
+  /** Alta: el documento es de un estudiante ya registrado (Regla 8). */
+  studentIdentidadExistente?: boolean
+  tipoMatricula?: string
+  especialidadBloqueo?: string
 }
 
 
@@ -38,9 +47,14 @@ export function MatriculaFormBody({
   showStatus = true,
   fieldSettings,
   academicDisabled,
+  studentIdentityDisabled,
+  guardianIdentityDisabled,
+  studentIdentidadExistente,
+  tipoMatricula,
+  especialidadBloqueo,
 }: MatriculaFormBodyProps) {
   return (
-    <fieldset disabled={disabled} className="contents border-0 p-0 m-0 min-w-0">
+    <MatriculaSectionDisabledContext.Provider value={disabled}>
       <MatriculaAcademicSection
         value={values.academic}
         onChange={(academic) => onChange({ ...values, academic })}
@@ -49,6 +63,8 @@ export function MatriculaFormBody({
         showStatus={showStatus}
         fieldSettings={fieldSettings}
         academicDisabled={academicDisabled}
+        tipoMatricula={tipoMatricula}
+        especialidadBloqueo={especialidadBloqueo}
       />
 
       <MatriculaStudentSection
@@ -57,11 +73,15 @@ export function MatriculaFormBody({
         departments={departments}
         invalidFields={invalidFields}
         fieldSettings={fieldSettings}
+        identityDisabled={studentIdentityDisabled}
+        identidadExistente={studentIdentidadExistente}
       />
 
       <MatriculaResidenceSection
         title="Domicilio del estudiante"
         addressLabel="Dirección del estudiante"
+        neighborhoodLabel="Barrio del estudiante"
+        locationLabel="Ubicación del domicilio"
         departmentLabel="Lugar de residencia departamento estudiante"
         municipalityLabel="Lugar de residencia municipio estudiante"
         idPrefix="student-residence"
@@ -122,6 +142,7 @@ export function MatriculaFormBody({
       <MatriculaGuardianSection
         value={values.guardian}
         onChange={(guardian) => onChange({ ...values, guardian })}
+        identityDisabled={guardianIdentityDisabled}
         departments={departments}
         invalidFields={invalidFields}
         fieldSettings={fieldSettings}
@@ -157,6 +178,6 @@ export function MatriculaFormBody({
         invalidFields={invalidFields}
         fieldSettings={fieldSettings}
       />
-    </fieldset>
+    </MatriculaSectionDisabledContext.Provider>
   )
 }

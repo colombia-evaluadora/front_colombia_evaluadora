@@ -24,23 +24,23 @@ interface ColumnasOpciones {
   onVer: (row: AnotacionRow) => void
   onModificar: (row: AnotacionRow) => void
   onAnular: (row: AnotacionRow) => void
-  /** Reporte de salud mental (solo vista mientras no haya backend, Sección 9.6). */
-  onReportarSalud: (row: AnotacionRow) => void
   puedeEditar: boolean
   puedeAnular: boolean
   puedeRemitir: boolean
   onRemitir: (row: AnotacionRow) => void
+  /** Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. */
+  onReportarSaludMental: (row: AnotacionRow) => void
 }
 
 export function buildColumnsAnotaciones({
   onVer,
   onModificar,
   onAnular,
-  onReportarSalud,
   puedeEditar,
   puedeAnular,
   puedeRemitir,
   onRemitir,
+  onReportarSaludMental,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
@@ -150,8 +150,8 @@ export function buildColumnsAnotaciones({
                 onSelect: () => onModificar(a),
               },
               { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
-              // Salud mental: modal solo de vista (Sección 9.6, sin backend). Proceso disciplinario: aún sin backend.
-              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: !vigente, onSelect: () => onReportarSalud(a) },
+              // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario: aún sin backend.
+              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, onSelect: () => onReportarSaludMental(a) },
               { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
               { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
             ]}

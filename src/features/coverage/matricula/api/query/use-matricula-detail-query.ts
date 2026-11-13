@@ -59,6 +59,9 @@ interface RawMatriculaEstudiante {
   segundo_apellido: string | null
   correo_electronico: string | null
   direccion_residencia: string | null
+  barrio_residencia?: string | null
+  /** "latitud,longitud". */
+  georeferenciacion?: string | null
   fk_tlv_tipo_documento: number | null
   fk_tmunicipio_documento: number | null
   fk_tmunicipio_nacimiento: number | null
@@ -81,6 +84,22 @@ interface RawMatriculaCore {
   fk_tperiodo_academico: number
   created_at: string
   estado_matricula_nombre: string
+  // Pendiente en el back (docs/matricula/pendientes-back.md): por ahora solo lo trae el mock.
+  tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
+  tiene_complementaria?: "S" | "N"
+  postulacion_registrada?: "S" | "N"
+  retiro_solicitado_por?: string | null
+  anulacion_pendiente?: "S" | "N"
+  // Bloques 2.1, 2.2 y 2.8 nuevos (pendientes-back, tarea 8): solo los trae el mock.
+  fk_tlv_internado?: number | null
+  fk_tlv_pais_origen?: number | null
+  fk_tlv_lengua_materna?: number | null
+  fk_tlv_condicion_migratoria?: number | null
+  fk_tlv_apoyo_academico?: number | null
+  fk_tlv_trastorno?: number | null
+  fk_tlv_srpa?: number | null
+  fecha_inicio_medida?: string | null
+  fecha_fin_medida?: string | null
 }
 
 interface RawMatriculaSocioeconomico {
@@ -176,6 +195,13 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
     pkTpadre: m.fk_tpadre,
     pkUsuarioEstudiante: est.fk_tusuario,
     pkUsuarioAcudiente: guardianRaw?.fk_tusuario ?? null,
+    restricciones: {
+      tipo: m.tipo_matricula ?? "PRINCIPAL",
+      tieneComplementaria: m.tiene_complementaria === "S",
+      postulacionRegistrada: m.postulacion_registrada === "S",
+      retiroSolicitadoPor: m.retiro_solicitado_por?.trim() || null,
+      anulacionPendiente: m.anulacion_pendiente === "S",
+    },
     academic: {
       campus: m.sede_nombre,
       campusId: m.fk_tsede != null ? String(m.fk_tsede) : "",
@@ -184,6 +210,7 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       group: toIdString(m.fk_tgrupo),
       status,
       specialty: toIdString(m.fk_enfasis),
+      internado: toIdString(m.fk_tlv_internado),
     },
     student: {
       documentType: toIdString(est.fk_tlv_tipo_documento),
@@ -197,11 +224,16 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       birthPlace: { department: "", municipality: toIdString(est.fk_tmunicipio_nacimiento) },
       gender: toIdString(est.fk_tlv_genero),
       ethnicity: toIdString(est.fk_tresguardo),
+      paisOrigen: toIdString(m.fk_tlv_pais_origen),
+      lenguaMaterna: toIdString(m.fk_tlv_lengua_materna),
+      condicionMigratoria: toIdString(m.fk_tlv_condicion_migratoria),
     },
     studentAddress: {
       department: "",
       municipality: toIdString(est.fk_tmunicipio_residencia),
       address: est.direccion_residencia ?? "",
+      neighborhood: est.barrio_residencia ?? "",
+      location: est.georeferenciacion ?? "",
     },
     studentContact: {
       phone: est.telefono ?? "",
@@ -230,6 +262,11 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       ars: socio.seguridad_social_ars ?? "",
       specialConditions: toIdString(est.fk_tdiscapacidad),
       talent: toIdString(est.fk_tlv_talento),
+      apoyoAcademico: toIdString(m.fk_tlv_apoyo_academico),
+      trastorno: toIdString(m.fk_tlv_trastorno),
+      srpa: toIdString(m.fk_tlv_srpa),
+      srpaInicio: m.fecha_inicio_medida ?? "",
+      srpaFin: m.fecha_fin_medida ?? "",
     },
     benefits: {
       subsidized: toBoolSNLabel(socio.estudiante_subsidiado),

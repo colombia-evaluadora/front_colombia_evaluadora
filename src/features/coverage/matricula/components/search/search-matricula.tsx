@@ -15,10 +15,72 @@ import {
 import type { MatriculaFiltersFormInput } from "@/features/coverage/shared/api/schema"
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
-import { useMatriculaStatusOptionsQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
+import { useMatriculaPeriodosAbiertosQuery } from "@/features/coverage/matricula/api/query/use-matricula-periodos-abiertos"
+import { useMatriculaCatalogQuery, useMatriculaStatusOptionsQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 
 const SEARCH_INPUT_ID = "matricula-search"
+
+const EMPTY_FILTERS: MatriculaFiltersFormInput = {
+  search: "",
+  statuses: [],
+  campus: "",
+  shift: "",
+  grade: "",
+  group: "",
+  periodo: "",
+  tipo: "",
+  metodologia: "",
+  solicitud: "",
+}
+
+// Aún no hay matrículas complementarias (informe 2.16): el back las devuelve vacías.
+const SOLICITUD_ITEMS = [
+  { value: "", label: "Todas" },
+  { value: "CON_SOLICITUD", label: "Con solicitud pendiente" },
+]
+
+const TIPO_ITEMS = [
+  { value: "", label: "Todas" },
+  { value: "PRINCIPAL", label: "Principal" },
+  { value: "COMPLEMENTARIA", label: "Complementaria" },
+]
+
+interface FilterSelectProps {
+  id: string
+  label: string
+  items: { value: string; label: string }[]
+  value: string
+  onChange: (value: string) => void
+  disabled?: boolean
+  /** Lo que se muestra mientras falta el campo anterior de la cascada. */
+  blockedPlaceholder?: string
+}
+
+function FilterSelect({ id, label, items, value, onChange, disabled, blockedPlaceholder }: FilterSelectProps) {
+  return (
+    <Field orientation="vertical" variant="outlined" className="gap-2">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <ComboboxField
+        items={toSelectItemsMap(items)}
+        value={value}
+        onValueChange={(next) => onChange(next ?? "")}
+        disabled={disabled}
+      >
+        <ComboboxFieldTrigger id={id} size="sm" className="w-full">
+          <ComboboxFieldValue placeholder={disabled && blockedPlaceholder ? blockedPlaceholder : items[0]?.label} />
+        </ComboboxFieldTrigger>
+        <ComboboxFieldContent>
+          {items.map((item) => (
+            <ComboboxFieldItem key={item.value} value={item.value}>
+              {item.label}
+            </ComboboxFieldItem>
+          ))}
+        </ComboboxFieldContent>
+      </ComboboxField>
+    </Field>
+  )
+}
 
 interface SearchMatriculaProps {
   filters: MatriculaFiltersFormInput
@@ -27,77 +89,55 @@ interface SearchMatriculaProps {
   activeFilterCount: number
 }
 
-export function SearchMatricula({
-  filters,
-  applyFilters,
-  clearAllFilters,
-  activeFilterCount,
-}: SearchMatriculaProps) {
+/**
+ * Búsqueda por nombre o documento y panel de filtros (informe sección 2):
+ * Sede → Jornada → Periodo (solo Abiertos, Regla 54) → Grado → Grupo, más
+ * Estado y Tipo de matrícula. Son los mismos filtros con los que se exporta.
+ */
+export function SearchMatricula({ filters, applyFilters, clearAllFilters, activeFilterCount }: SearchMatriculaProps) {
   const [open, setOpen] = useState(false)
-  const [draftStatus, setDraftStatus] = useState<string>(filters.statuses[0] ?? "")
-  // Cascada Sede → Jornada → Grado → Grupo, igual que "Modificar".
-  const [draftCampus, setDraftCampus] = useState(filters.campus)
-  const [draftShift, setDraftShift] = useState(filters.shift)
-  const [draftGrade, setDraftGrade] = useState(filters.grade)
-  const [draftGroup, setDraftGroup] = useState(filters.group)
+  const [draft, setDraft] = useState<MatriculaFiltersFormInput>(filters)
 
   const { data: catalogs } = useMatriculaCampusesQuery()
-  const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
-    campus: draftCampus || undefined,
-    shift: draftShift || undefined,
-    grade: draftGrade ? Number(draftGrade) : undefined,
+  const { data: dependentCatalogs, sedeId, jornadaId } = useMatriculaDependentCatalogsQuery({
+    campus: draft.campus || undefined,
+    shift: draft.shift || undefined,
+    grade: draft.grade ? Number(draft.grade) : undefined,
+    periodoId: draft.periodo ? Number(draft.periodo) : null,
   })
+  const { data: periodos = [] } = useMatriculaPeriodosAbiertosQuery(
+    draft.campus ? sedeId : null,
+    draft.shift ? jornadaId : null,
+  )
   const { data: STATUS_OPTIONS = [] } = useMatriculaStatusOptionsQuery()
+  const { data: metodologias } = useMatriculaCatalogQuery("metodologia")
 
-  // El estado se escribe dentro del input: `estado:(Activo)`.
+  // El estado también se escribe dentro del input: `estado:(Cursando)`.
   const syntax: QuerySyntax<MatriculaFiltersFormInput> = {
-      empty: { search: "", statuses: [], campus: "", shift: "", grade: "", group: "" },
-      freeText: { key: "texto", field: "search" },
-      terms: [optionsTerm("estado", "statuses", STATUS_OPTIONS)],
-    }
-
+    empty: EMPTY_FILTERS,
+    freeText: { key: "texto", field: "search" },
+    terms: [optionsTerm("estado", "statuses", STATUS_OPTIONS)],
+  }
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
-
   const advancedFilterCount = activeFilterCount - (filters.search ? 1 : 0)
 
   useEffect(() => {
-    if (!open) return
-    setDraftStatus(filters.statuses[0] ?? "")
-    setDraftCampus(filters.campus)
-    setDraftShift(filters.shift)
-    setDraftGrade(filters.grade)
-    setDraftGroup(filters.group)
-  }, [open, filters.statuses, filters.campus, filters.shift, filters.grade, filters.group])
+    if (open) setDraft(filters)
+  }, [open, filters])
 
-  // Cambiar un prerequisito limpia los campos que dependen de él.
-  function handleDraftCampusChange(value: string) {
-    setDraftCampus(value)
-    setDraftShift("")
-    setDraftGrade("")
-    setDraftGroup("")
-  }
-
-  function handleDraftShiftChange(value: string) {
-    setDraftShift(value as MatriculaFiltersFormInput["shift"])
-    setDraftGrade("")
-    setDraftGroup("")
-  }
-
-  function handleDraftGradeChange(value: string) {
-    setDraftGrade(value)
-    setDraftGroup("")
+  // Cambiar un campo de la cascada limpia los que dependen de él.
+  const CASCADA = ["campus", "shift", "periodo", "grade", "group"] as const
+  function setCascada(key: (typeof CASCADA)[number], value: string) {
+    const index = CASCADA.indexOf(key)
+    setDraft((prev) => {
+      const next = { ...prev, [key]: value }
+      for (const dependiente of CASCADA.slice(index + 1)) next[dependiente] = ""
+      return next
+    })
   }
 
   function handleApplyAdvanced() {
-    applyFilters({
-      ...filters,
-      search: freeText,
-      statuses: draftStatus ? [draftStatus as MatriculaFiltersFormInput["statuses"][number]] : [],
-      campus: draftCampus,
-      shift: draftShift,
-      grade: draftGrade,
-      group: draftGroup,
-    })
+    applyFilters({ ...draft, search: freeText })
     setOpen(false)
   }
 
@@ -107,12 +147,9 @@ export function SearchMatricula({
     setOpen(false)
   }
 
-  const statusItems = [{ value: "", label: "Todos" }, ...STATUS_OPTIONS]
   const campusItems = [{ value: "", label: "Todas" }, ...(catalogs?.campuses ?? []).map((c) => ({ value: c, label: c }))]
-  const shiftItems = [
-    { value: "", label: "Todas" },
-    ...(dependentCatalogs?.shifts ?? []).map((s) => ({ value: s, label: s })),
-  ]
+  const shiftItems = [{ value: "", label: "Todas" }, ...(dependentCatalogs?.shifts ?? []).map((s) => ({ value: s, label: s }))]
+  const periodoItems = [{ value: "", label: "Todos" }, ...periodos]
   const gradeItems = [
     { value: "", label: "Todos" },
     ...(dependentCatalogs?.grades ?? []).map((g) => ({ value: String(g.valor), label: g.nombre })),
@@ -121,12 +158,17 @@ export function SearchMatricula({
     { value: "", label: "Todos" },
     ...(dependentCatalogs?.groups ?? []).map((g) => ({ value: g.codigo, label: g.codigo })),
   ]
+  const statusItems = [{ value: "", label: "Todos" }, ...STATUS_OPTIONS]
+  const metodologiaItems = [
+    { value: "", label: "Todas" },
+    ...(metodologias ?? []).map((m) => ({ value: String(m.id), label: m.nombre })),
+  ]
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        placeholder="Buscar por"
+        placeholder="Buscar por nombre o documento"
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}
@@ -137,109 +179,72 @@ export function SearchMatricula({
         onApply={handleApplyAdvanced}
         size="lg"
       >
-        <div className="grid grid-cols-2 gap-3 px-4">
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="matricula-campus">Sede</FieldLabel>
-            <ComboboxField
-              items={toSelectItemsMap(campusItems)}
-              value={draftCampus}
-              onValueChange={(value) => handleDraftCampusChange(value ?? "")}
-            >
-              <ComboboxFieldTrigger id="matricula-campus" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todas" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {campusItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="matricula-shift">Jornada</FieldLabel>
-            <ComboboxField
-              items={toSelectItemsMap(shiftItems)}
-              value={draftShift}
-              onValueChange={(value) => handleDraftShiftChange(value ?? "")}
-              disabled={!draftCampus}
-            >
-              <ComboboxFieldTrigger id="matricula-shift" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder={!draftCampus ? "Elegí sede primero" : "Todas"} />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {shiftItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="matricula-grade">Grado</FieldLabel>
-            <ComboboxField
-              items={toSelectItemsMap(gradeItems)}
-              value={draftGrade}
-              onValueChange={(value) => handleDraftGradeChange(value ?? "")}
-              disabled={!draftShift}
-            >
-              <ComboboxFieldTrigger id="matricula-grade" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder={!draftShift ? "Elegí jornada primero" : "Todos"} />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {gradeItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="matricula-group">Grupo</FieldLabel>
-            <ComboboxField
-              items={toSelectItemsMap(groupItems)}
-              value={draftGroup}
-              onValueChange={(value) => setDraftGroup(value ?? "")}
-              disabled={!draftGrade}
-            >
-              <ComboboxFieldTrigger id="matricula-group" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder={!draftGrade ? "Elegí grado primero" : "Todos"} />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {groupItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor="matricula-status">Estado</FieldLabel>
-            <ComboboxField
-              items={toSelectItemsMap(statusItems)}
-              value={draftStatus}
-              onValueChange={(value) => setDraftStatus(value ?? "")}
-            >
-              <ComboboxFieldTrigger id="matricula-status" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {statusItems.map((item) => (
-                  <ComboboxFieldItem key={item.value} value={item.value}>
-                    {item.label}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
+        <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2">
+          <FilterSelect id="matricula-campus" label="Sede" items={campusItems} value={draft.campus} onChange={(v) => setCascada("campus", v)} />
+          <FilterSelect
+            id="matricula-shift"
+            label="Jornada"
+            items={shiftItems}
+            value={draft.shift}
+            onChange={(v) => setCascada("shift", v)}
+            disabled={!draft.campus}
+            blockedPlaceholder="Elija la sede primero"
+          />
+          <FilterSelect
+            id="matricula-periodo"
+            label="Período"
+            items={periodoItems}
+            value={draft.periodo}
+            onChange={(v) => setCascada("periodo", v)}
+            disabled={!draft.shift}
+            blockedPlaceholder="Elija la jornada primero"
+          />
+          <FilterSelect
+            id="matricula-grade"
+            label="Grado"
+            items={gradeItems}
+            value={draft.grade}
+            onChange={(v) => setCascada("grade", v)}
+            disabled={!draft.shift}
+            blockedPlaceholder="Elija la jornada primero"
+          />
+          <FilterSelect
+            id="matricula-group"
+            label="Grupo"
+            items={groupItems}
+            value={draft.group}
+            onChange={(v) => setCascada("group", v)}
+            disabled={!draft.grade}
+            blockedPlaceholder="Elija el grado primero"
+          />
+          <FilterSelect
+            id="matricula-status"
+            label="Estado"
+            items={statusItems}
+            value={draft.statuses[0] ?? ""}
+            onChange={(v) => setDraft((prev) => ({ ...prev, statuses: v ? [v] : [] }))}
+          />
+          <FilterSelect
+            id="matricula-tipo"
+            label="Tipo de matrícula"
+            items={TIPO_ITEMS}
+            value={draft.tipo}
+            onChange={(v) => setDraft((prev) => ({ ...prev, tipo: v }))}
+          />
+          <FilterSelect
+            id="matricula-metodologia"
+            label="Metodología"
+            items={metodologiaItems}
+            value={draft.metodologia}
+            onChange={(v) => setDraft((prev) => ({ ...prev, metodologia: v }))}
+          />
+          <FilterSelect
+            id="matricula-solicitud"
+            label="Solicitud de retiro"
+            items={SOLICITUD_ITEMS}
+            value={draft.solicitud}
+            onChange={(v) => setDraft((prev) => ({ ...prev, solicitud: v }))}
+          />
         </div>
       </SearchQueryBar>
     </div>

@@ -32,7 +32,6 @@ import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/fea
 import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
 import { SearchAnotaciones } from "@/features/gestion-estudiantil/observador/components/search/search-anotaciones"
 import { DialogAnularAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-anular-anotacion"
-import { DialogReportarSaludMental } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-reportar-salud-mental"
 import { DialogDetalleAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-detalle-anotacion"
 import { DialogImprimirObservador } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-imprimir-observador"
 import { DialogCargarObservadorFirmado } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-cargar-observador-firmado"
@@ -63,7 +62,6 @@ function ObservadorContent() {
   const [borrador, setBorrador] = useState<ObservadorFiltros>(FILTROS_VACIOS)
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
   const [anular, setAnular] = useState<AnotacionRow | null>(null)
-  const [saludMental, setSaludMental] = useState<AnotacionRow | null>(null)
   const [remitir, setRemitir] = useState<AnotacionRow | "nuevo" | null>(null)
   const [pestana, setPestana] = useState("anotaciones")
   const { notify } = useNotify()
@@ -110,12 +108,16 @@ function ObservadorContent() {
   const columns = buildColumnsAnotaciones({
     onVer: setVerDetalle,
     onAnular: setAnular,
-    onReportarSalud: setSaludMental,
     onModificar: (a) => navigate({ to: paths.app.observadorEditar.getHref(a.id) }),
     puedeEditar: access.puedeEditar,
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
     onRemitir: setRemitir,
+    onReportarSaludMental: (a) =>
+      navigate({
+        to: paths.app.prevencionSaludMentalNuevo.getHref(),
+        search: { matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
+      } as never),
   })
 
   const { table } = useDataTable({
@@ -239,7 +241,6 @@ function ObservadorContent() {
       )}
       <DialogDetalleAnotacion anotacion={verDetalle} onClose={() => setVerDetalle(null)} />
       <DialogAnularAnotacion anotacion={anular} onClose={() => setAnular(null)} />
-      <DialogReportarSaludMental anotacion={saludMental} onClose={() => setSaludMental(null)} />
     </>
   )
 }

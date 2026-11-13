@@ -18,16 +18,10 @@ export interface UpdateMatriculaMutationInput {
   guardianReplaced: boolean
 }
 
-async function updateEstudiante(pk: number, { student, studentContact }: CreateMatriculaInput) {
+// La identidad del estudiante no viaja aquí: solo se cambia con Corregir datos
+// de identidad (Regla 43), con motivo y soporte. Lo vacío no cambia nada en el PATCH.
+async function updateEstudiante(pk: number, { studentContact }: CreateMatriculaInput) {
   await updatePersona(pk, {
-    documentTypeId: student.documentType,
-    documentNumber: student.documentNumber,
-    firstName: student.firstName,
-    secondName: student.secondName,
-    lastName: student.lastName,
-    secondLastName: student.secondLastName,
-    birthDate: student.birthDate,
-    genderId: student.gender,
     phone: studentContact.phone,
     email: studentContact.email,
   })

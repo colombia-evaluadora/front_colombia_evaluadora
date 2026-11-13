@@ -66,6 +66,11 @@ function createMatricula(): Matricula {
     guardian: `${createGuardianName()} (${faker.helpers.arrayElement(RELATIONSHIP_OPTIONS)})`,
     status: pickStatus(),
     hasGrades: faker.datatype.boolean({ probability: 0.4 }),
+    ageSituation: faker.helpers.weightedArrayElement([
+      { value: "EN_EDAD", weight: 8 },
+      { value: "PREEXTRAEDAD", weight: 1 },
+      { value: "EXTRAEDAD", weight: 1 },
+    ]),
   }
 }
 
@@ -260,25 +265,6 @@ export function deleteMatriculaById(id: string) {
     matriculaDb.splice(index, 1)
   }
   matriculaDetailsDb.delete(id)
-}
-
-export function updateMatriculaRow(id: string, patch: Partial<Matricula>): Matricula | null {
-  const index = matriculaDb.findIndex((item) => item.id === id)
-  if (index < 0) return null
-
-  const updated = { ...matriculaDb[index], ...patch }
-  matriculaDb[index] = updated
-
-  const details = matriculaDetailsDb.get(id)
-  if (details && patch.status) {
-    matriculaDetailsDb.set(id, {
-      ...details,
-      status: patch.status,
-      academic: { ...details.academic, status: patch.status },
-    })
-  }
-
-  return updated
 }
 
 /**

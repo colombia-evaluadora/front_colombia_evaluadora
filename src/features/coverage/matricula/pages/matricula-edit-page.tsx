@@ -1,5 +1,8 @@
 import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
+import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/hooks/use-matricula-validacion-opciones"
 import { useEffect, useMemo, useRef, useState } from "react"
+
+import { OPEN_SECTION_EVENT } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
@@ -10,7 +13,8 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { WarningIcon, CheckIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { DialogCorregirIdentidadEstudiante } from "@/features/coverage/matricula/components/dialogs/dialog-corregir-identidad-estudiante"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
@@ -24,6 +28,9 @@ import { useEstablecimientoDeSede } from "@/features/coverage/matricula/api/quer
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
 import { useUpdateMatricula } from "@/features/coverage/matricula/api/mutations/update-matricula"
+import { useSaveMatriculaAsignaturas } from "@/features/coverage/matricula/api/mutations/save-matricula-asignaturas"
+import { useMatriculaAsignaturasQuery } from "@/features/coverage/matricula/api/query/use-matricula-asignaturas"
+import { MatriculaAsignaturasSection } from "@/features/coverage/matricula/components/forms/form-create-matricula/asignaturas-section"
 import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/matricula/api/query/use-matricula-usuario-por-documento"
 import { useMoveMatricula } from "@/features/coverage/matricula/api/mutations/move-matricula"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
@@ -84,11 +91,13 @@ function MatriculaEditPageContent() {
   const navigate = useNavigate()
   const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("MATRICULA")
   // Sin Guardar, entrar por URL lleva al detalle.
+  // Catálogos que la validación necesita (documento de extranjero, población víctima).
+  const validacion = useMatriculaValidacionOpciones()
   useEffect(() => {
     if (!permisoCargando && !puedeEditar) {
       navigate({
         to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId),
-        search: (prev) => prev,
+        search: (prev) => ({ ...prev, accion: undefined }),
         replace: true,
       })
     }
@@ -118,6 +127,20 @@ function MatriculaEditPageContent() {
   }, [isFieldConfigError, fieldConfigError, notify])
 
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
+  const { accion } = coberturaMatriculaEditarRoute.useSearch()
+  const [corrigiendo, setCorrigiendo] = useState(accion === "corregir-identidad")
+  const valoresListos = values != null
+  // Ícono de la fila en la lista: cambiar de grupo o de grado se hace en su campo; se abre su sección y se enfoca.
+  useEffect(() => {
+    if (!valoresListos || (accion !== "cambiar-grupo" && accion !== "cambiar-grado")) return
+    const id = accion === "cambiar-grupo" ? "matricula-group" : "matricula-grade"
+    window.dispatchEvent(new CustomEvent(OPEN_SECTION_EVENT, { detail: id }))
+    requestAnimationFrame(() => {
+      const campo = document.getElementById(id)
+      campo?.scrollIntoView({ block: "center" })
+      campo?.focus()
+    })
+  }, [valoresListos, accion])
   const grade = values?.academic.grade
   // Estable a propósito: es dep del efecto de validación y el compiler no la memoiza aquí (si cambia en cada render, bucle).
   const fieldSettings = useMemo(() => applyGradeFieldRules(configuredFieldSettings, grade), [configuredFieldSettings, grade])
@@ -134,6 +157,12 @@ function MatriculaEditPageContent() {
   const initialGroup = inicial?.academic.group || null
   // Si el documento cambia, se sustituye al acudiente (ver `performSave`).
   const initialGuardianDocument = inicial?.guardian ?? null
+  const restricciones = data?.details?.restricciones
+  // Mientras sea el mismo acudiente, su identidad queda protegida; cambiar el documento lo reemplaza (Sección 2.10).
+  const guardianSinCambio =
+    Boolean(initialGuardianDocument?.documentNumber) &&
+    values?.guardian.documentType === initialGuardianDocument?.documentType &&
+    values?.guardian.documentNumber === initialGuardianDocument?.documentNumber
   const [gradeChange, setGradeChange] = useState<{ from: number; to: number } | null>(null)
   const [gradeChangeSummary, setGradeChangeSummary] = useState<GradeChangeSummary | null>(null)
   const summaryNavigateIdRef = useRef(matriculaId)
@@ -147,9 +176,21 @@ function MatriculaEditPageContent() {
   } | null>(null)
   const [groupChange, setGroupChange] = useState<{ from: string; to: string } | null>(null)
 
+  // Bloque 15: la media técnica y las asignaturas viven en su propio endpoint, no en el detalle.
+  const asignaturasQuery = useMatriculaAsignaturasQuery(matriculaId)
+  const asignaturasData = asignaturasQuery.data
+
   // Estado ajustado durante el render (sin efecto): se siembra una vez y el estado sigue al backend.
-  if (data?.status === "ok" && data.details && values === null && municipalities.length > 0) {
-    const resolved = resolveMatriculaMunicipioDepartments(data.details, municipalities)
+  if (data?.status === "ok" && data.details && values === null && municipalities.length > 0 && asignaturasData) {
+    const base = resolveMatriculaMunicipioDepartments(data.details, municipalities)
+    const resolved = {
+      ...base,
+      academic: {
+        ...base.academic,
+        mediaTecnicaExterna: asignaturasData.mediaTecnicaExterna,
+        institucionExterna: asignaturasData.institucionExterna,
+      },
+    }
     setValues(resolved)
     setInicial(resolved)
   }
@@ -249,7 +290,7 @@ function MatriculaEditPageContent() {
 
   useEffect(() => {
     if (!hasSubmitted || !values) return
-    setMissingFields(validateMatricula(values, undefined, fieldSettings))
+    setMissingFields(validateMatricula(values, undefined, fieldSettings, undefined, validacion))
   }, [values, hasSubmitted, fieldSettings])
 
   useEffect(() => {
@@ -263,7 +304,19 @@ function MatriculaEditPageContent() {
       autoCloseMs: 0,
     })
   }, [missingFields, values, notify, dismiss])
-  const saving = updateMatricula.isPending
+  const saveAsignaturas = useSaveMatriculaAsignaturas()
+  const saving = updateMatricula.isPending || saveAsignaturas.isPending
+
+  /** ¿Cambió la media técnica o alguna asignatura respecto de lo guardado? */
+  function asignaturasCambiaron() {
+    if (!values || !asignaturasData) return false
+    const media = Boolean(values.academic.mediaTecnicaExterna)
+    return (
+      media !== asignaturasData.mediaTecnicaExterna ||
+      (media && (values.academic.institucionExterna ?? "").trim() !== asignaturasData.institucionExterna.trim()) ||
+      Object.keys(values.asignaturas ?? {}).length > 0
+    )
+  }
 
   function performSave(onSaved?: () => void) {
     if (!values || !data?.details || saving) return
@@ -285,13 +338,28 @@ function MatriculaEditPageContent() {
         guardianReplaced,
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          if (asignaturasCambiaron()) {
+            try {
+              await saveAsignaturas.mutateAsync({
+                matriculaId,
+                academic: values.academic,
+                cambios: values.asignaturas ?? {},
+              })
+              setValues((prev) => (prev ? { ...prev, asignaturas: undefined } : prev))
+            } catch (error) {
+              notify(`Los datos se guardaron, pero no las asignaturas ni la media técnica: ${getErrorMessage(error)}`, {
+                variant: "error",
+              })
+              return
+            }
+          }
           if (onSaved) {
             onSaved()
             return
           }
           notify(SUCCESS_MESSAGES.matricula.updated)
-          navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId), search: (prev) => prev })
+          navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId), search: (prev) => ({ ...prev, accion: undefined }) })
         },
       },
     )
@@ -350,7 +418,7 @@ function MatriculaEditPageContent() {
 
   function handleGradeChangeSummaryClose() {
     setGradeChangeSummary(null)
-    navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(summaryNavigateIdRef.current), search: (prev) => prev })
+    navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(summaryNavigateIdRef.current), search: (prev) => ({ ...prev, accion: undefined }) })
   }
 
   function handleSedeChangeCancel() {
@@ -458,7 +526,7 @@ function MatriculaEditPageContent() {
   function handleSave() {
     if (!values) return
     setHasSubmitted(true)
-    const missing = validateMatricula(values, undefined, fieldSettings)
+    const missing = validateMatricula(values, undefined, fieldSettings, undefined, validacion)
     setMissingFields(missing)
     if (missing.length > 0) return
 
@@ -516,7 +584,7 @@ function MatriculaEditPageContent() {
         <TableScreenTitle
           action={
             <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => prev} />}
+              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => ({ ...prev, accion: undefined })} />}
               variant="fill"
               color="neutral"
               size="sm"
@@ -559,7 +627,36 @@ function MatriculaEditPageContent() {
         <>
           <TableScreenBody className="rounded-b-none border-b-0">
             <div id={EDIT_MATRICULA_FORM_ID} className="flex flex-col gap-6">
-              <MatriculaToolbar matricula={data.matricula} showModificar={false} filesEditable />
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {/* Regla 43: la identidad no se edita aquí; el back limita a Administrador y Gestor administrativo. */}
+                {puedeEditar && data.matricula.status === "Cursando" ? (
+                  <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => setCorrigiendo(true)}>
+                    <PencilIcon data-icon="inline-start" />
+                    Corregir datos de identidad
+                  </Button>
+                ) : null}
+                <MatriculaToolbar matricula={data.matricula} showModificar={false} filesEditable />
+              </div>
+              {restricciones?.anulacionPendiente ? (
+                <div role="status" className="flex items-start gap-3 rounded-md border border-red-stroke bg-red-22 px-4 py-3 text-sm">
+                  <WarningIcon className="size-5 shrink-0 text-red" aria-hidden />
+                  <p>
+                    La matrícula de {data.matricula.firstName} {data.matricula.lastName} tiene una anulación pendiente:
+                    el Administrador territorial cerró la solicitud de retiro sin retiro. Anule la matrícula desde la lista
+                    para continuar; mientras tanto no se cambian sede, jornada, grado ni grupo.
+                  </p>
+                </div>
+              ) : null}
+              {restricciones?.retiroSolicitadoPor ? (
+                <div role="status" className="flex items-start gap-3 rounded-md border border-yellow-stroke bg-yellow-22 px-4 py-3 text-sm">
+                  <WarningIcon className="size-5 shrink-0 text-yellow" aria-hidden />
+                  <p>
+                    La matrícula de {data.matricula.firstName} {data.matricula.lastName} tiene un retiro solicitado por{" "}
+                    {restricciones.retiroSolicitadoPor}. Responda la solicitud (Retirar u Objetar) para cambiar sede,
+                    jornada, grado o grupo.
+                  </p>
+                </div>
+              ) : null}
               <MatriculaFormBody
                 values={values}
                 onChange={setValues}
@@ -567,8 +664,46 @@ function MatriculaEditPageContent() {
                 departments={departments}
                 invalidFields={missingFields}
                 fieldSettings={fieldSettings}
-                academicDisabled={data.matricula.status !== "Cursando"}
+                academicDisabled={
+                  data.matricula.status !== "Cursando" ||
+                  Boolean(restricciones?.retiroSolicitadoPor) ||
+                  Boolean(restricciones?.anulacionPendiente)
+                }
+                tipoMatricula={restricciones?.tipo === "COMPLEMENTARIA" ? "Complementaria" : "Principal"}
+                especialidadBloqueo={
+                  restricciones?.tieneComplementaria
+                    ? "Cambie la especialidad desde su matrícula complementaria."
+                    : restricciones?.postulacionRegistrada
+                      ? "Cambie la especialidad con Cambiar cupo."
+                      : undefined
+                }
+                guardianIdentityDisabled={guardianSinCambio}
+                studentIdentityDisabled
               />
+              <MatriculaAsignaturasSection
+                asignaturas={asignaturasData?.asignaturas ?? []}
+                cambios={values.asignaturas ?? {}}
+                onChange={(asignaturas) => setValues((prev) => (prev ? { ...prev, asignaturas } : prev))}
+                mediaTecnicaExterna={Boolean(values.academic.mediaTecnicaExterna)}
+                institucionExterna={values.academic.institucionExterna ?? ""}
+                isLoading={asignaturasQuery.isPending}
+                estudiante={`${values.student.firstName} ${values.student.lastName}`}
+                disabled={data.matricula.status !== "Cursando"}
+              />
+              {corrigiendo ? (
+                <DialogCorregirIdentidadEstudiante
+                  open
+                  onOpenChange={setCorrigiendo}
+                  matriculaId={data.matricula.id}
+                  student={values.student}
+                  departments={departments}
+                  onCorrected={(student) => {
+                    setValues((prev) => (prev ? { ...prev, student } : prev))
+                    setCorrigiendo(false)
+                    notify("Datos de identidad corregidos.")
+                  }}
+                />
+              ) : null}
             </div>
           </TableScreenBody>
 

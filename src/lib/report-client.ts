@@ -50,6 +50,8 @@ export type ReportKey =
   | "convivencia-acta-comite"
   | "convivencia-siuce"
   | "inscripcion-lista-sorteo"
+  | "prevencion-indicadores"
+  | "prevencion-indicadores"
 
 interface ReportInput {
   format: ExportFormat

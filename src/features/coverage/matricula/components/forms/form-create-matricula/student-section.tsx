@@ -1,3 +1,4 @@
+import { aDocumentoAlfanumerico, aNombre, esTipoDocExtranjero, fechaMinimaNacimiento } from "@/features/coverage/matricula/utils/matricula-formatos"
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { useEtniasQuery } from "@/features/establishment/institution/api/query/use-etnias"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
@@ -15,6 +16,9 @@ interface StudentSectionProps {
    * son identidad de la persona (`PATCH /usuarios/:ID`), no de la
    * matrícula. Sin efecto en el alta. */
   identityDisabled?: boolean
+  /** Alta de un estudiante ya registrado (Regla 8): el documento se puede cambiar,
+   * el resto de su identidad queda en solo lectura, sin enmascarar los nombres. */
+  identidadExistente?: boolean
 }
 
 export function MatriculaStudentSection({
@@ -24,8 +28,18 @@ export function MatriculaStudentSection({
   invalidFields = [],
   fieldSettings,
   identityDisabled,
+  identidadExistente = false,
 }: StudentSectionProps) {
+  const bloqueado = Boolean(identityDisabled) || identidadExistente
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
+  const { data: paises } = useMatriculaCatalogQuery("pais")
+  const { data: lenguas } = useMatriculaCatalogQuery("lenguaMaterna")
+  const { data: condiciones } = useMatriculaCatalogQuery("condicionMigratoria")
+  const colombia = paises?.find((p) => /^colombia$/i.test(p.nombre.trim()))?.id
+  const colombiaId = colombia != null ? String(colombia) : ""
+  const esOtroPais = Boolean(value.paisOrigen) && value.paisOrigen !== colombiaId
+  // PPT, PEP, pasaporte o NES: documento alfanumérico (bloques 2.2 y 2.10).
+  const extranjero = esTipoDocExtranjero(tipoDocumento?.find((t) => String(t.id) === value.documentType)?.nombre ?? "")
   const { data: genero } = useMatriculaCatalogQuery("genero")
   const { data: etnias } = useEtniasQuery()
   const etniaNombreById = new Map((etnias ?? []).map((e) => [String(e.id), e.name]))
@@ -49,8 +63,9 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-document-number")}
         value={value.documentNumber}
-        numeric
-        maxLength={15}
+        numeric={!extranjero}
+          transform={extranjero ? aDocumentoAlfanumerico : undefined}
+        maxLength={20}
         disabled={identityDisabled}
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
@@ -60,8 +75,10 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-first-name")}
         value={value.firstName}
-        maxLength={40}
-        disabled={identityDisabled}
+        maxLength={50}
+          transform={aNombre}
+        masked={identityDisabled}
+          disabled={bloqueado}
         onChange={(firstName) => onChange({ ...value, firstName })}
       />
       {isFieldVisible(fieldSettings, "student-second-name") && (
@@ -71,8 +88,10 @@ export function MatriculaStudentSection({
           required={isFieldRequired(fieldSettings, "student-second-name")}
           invalid={invalidFields.includes("student-second-name")}
           value={value.secondName}
-          maxLength={40}
-          disabled={identityDisabled}
+          maxLength={50}
+          transform={aNombre}
+          masked={identityDisabled}
+          disabled={bloqueado}
           onChange={(secondName) => onChange({ ...value, secondName })}
         />
       )}
@@ -82,8 +101,10 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-last-name")}
         value={value.lastName}
-        maxLength={40}
-        disabled={identityDisabled}
+        maxLength={50}
+          transform={aNombre}
+        masked={identityDisabled}
+          disabled={bloqueado}
         onChange={(lastName) => onChange({ ...value, lastName })}
       />
       {isFieldVisible(fieldSettings, "student-second-last-name") && (
@@ -93,8 +114,10 @@ export function MatriculaStudentSection({
           required={isFieldRequired(fieldSettings, "student-second-last-name")}
           invalid={invalidFields.includes("student-second-last-name")}
           value={value.secondLastName}
-          maxLength={40}
-          disabled={identityDisabled}
+          maxLength={50}
+          transform={aNombre}
+          masked={identityDisabled}
+          disabled={bloqueado}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
         />
       )}
@@ -106,6 +129,7 @@ export function MatriculaStudentSection({
         departments={departments}
         onChange={(documentExpedition) => onChange({ ...value, documentExpedition })}
         fieldSettings={fieldSettings}
+        disabled={bloqueado}
       />
       <MatriculaDateField
         id="student-birth-date"
@@ -114,6 +138,8 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-birth-date")}
         value={value.birthDate}
         maxDate={new Date()}
+        minDate={fechaMinimaNacimiento()}
+        disabled={bloqueado}
         onChange={(birthDate) => onChange({ ...value, birthDate })}
       />
       <DeptMunicipioFields
@@ -124,6 +150,7 @@ export function MatriculaStudentSection({
         departments={departments}
         onChange={(birthPlace) => onChange({ ...value, birthPlace })}
         fieldSettings={fieldSettings}
+        disabled={bloqueado}
       />
       <MatriculaSelectField
         id="student-gender"
@@ -133,6 +160,7 @@ export function MatriculaStudentSection({
         options={catalogOptions(genero)}
         labelFor={catalogLabelFor(genero)}
         invalid={invalidFields.includes("student-gender")}
+        disabled={bloqueado}
         onChange={(gender) => onChange({ ...value, gender })}
       />
       {isFieldVisible(fieldSettings, "student-ethnicity") && (
@@ -141,12 +169,48 @@ export function MatriculaStudentSection({
           label="Etnia/Resguardo"
           required={isFieldRequired(fieldSettings, "student-ethnicity")}
           invalid={invalidFields.includes("student-ethnicity")}
+          disabled={bloqueado}
           value={value.ethnicity}
           options={(etnias ?? []).map((e) => String(e.id))}
           labelFor={(option) => etniaNombreById.get(option) ?? option}
           onChange={(ethnicity) => onChange({ ...value, ethnicity })}
         />
       )}
+      <MatriculaSelectField
+        id="student-country"
+        label="País de origen"
+        required={extranjero}
+        invalid={invalidFields.includes("student-country")}
+        value={value.paisOrigen || colombiaId}
+        options={catalogOptions(paises)}
+        labelFor={catalogLabelFor(paises)}
+        disabled={bloqueado}
+        onChange={(paisOrigen) =>
+          onChange({
+            ...value,
+            paisOrigen,
+            condicionMigratoria: paisOrigen && paisOrigen !== colombiaId ? value.condicionMigratoria : "",
+          })
+        }
+      />
+      <MatriculaSelectField
+        id="student-mother-tongue"
+        label="Lengua materna"
+        value={value.lenguaMaterna ?? ""}
+        options={catalogOptions(lenguas)}
+        labelFor={catalogLabelFor(lenguas)}
+        onChange={(lenguaMaterna) => onChange({ ...value, lenguaMaterna })}
+      />
+      <MatriculaSelectField
+        id="student-migration-status"
+        label="Condición migratoria"
+        value={value.condicionMigratoria ?? ""}
+        options={catalogOptions(condiciones)}
+        labelFor={catalogLabelFor(condiciones)}
+        disabled={!esOtroPais}
+        description={esOtroPais ? undefined : "Se habilita si el país de origen no es Colombia."}
+        onChange={(condicionMigratoria) => onChange({ ...value, condicionMigratoria })}
+      />
     </MatriculaFormSection>
   )
 }

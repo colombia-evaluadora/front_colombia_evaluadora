@@ -27,7 +27,10 @@ const COLOR_ESTADO: Record<string, "warning" | "success"> = {
   ATENDIDA: "success",
 }
 
-const ETIQUETA_TIPO: Record<string, string> = { REMISION_ORIENTACION: "Remisión a orientación" }
+const ETIQUETA_TIPO: Record<string, string> = {
+  REMISION_ORIENTACION: "Remisión a orientación",
+  SENAL_SALUD_MENTAL: "Señal de salud mental",
+}
 
 interface FiltrosMis {
   tipo: string
@@ -37,7 +40,7 @@ const SIN_FILTROS: FiltrosMis = { tipo: "", estado: "" }
 // Estable fuera del componente: `useSearchFiltros` la tiene en las dependencias de un efecto.
 const sinOpcionesDependientes = () => {}
 
-/** G.1.REP.3: las remisiones propias, solo con su estado (Regla 1). Los reportes de salud mental llegan con la Sección 9.6. */
+/** G.1.REP.3: las remisiones propias, solo con su estado (Regla 1). Incluye las señales de salud mental reportadas (§9.6). */
 export function TabMisRemisiones() {
   const [filtros, setFiltros] = useState<FiltrosMis>(SIN_FILTROS)
   const [texto, setTexto] = useState("")
