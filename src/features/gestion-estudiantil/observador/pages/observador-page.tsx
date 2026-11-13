@@ -115,6 +115,11 @@ function ObservadorContent() {
         to: paths.app.citacionNueva.getHref(),
         search: { origen_tipo: "ANOTACION", origen_id: a.id, matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
       } as never),
+    onReportarSaludMental: (a) =>
+      navigate({
+        to: paths.app.prevencionSaludMentalNuevo.getHref(),
+        search: { matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
+      } as never),
     onCompromiso: (a) =>
       navigate({
         to: paths.app.compromisoNuevo.getHref(),

@@ -24,6 +24,7 @@ export function SeccionAccionesPlan({ acciones, onRegistrarAvance }: Props) {
           <TableRow>
             <TableHead>Acción</TableHead>
             <TableHead>Responsable</TableHead>
+            <TableHead>Estrategia</TableHead>
             <TableHead>Plazo</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="w-12">
@@ -39,6 +40,7 @@ export function SeccionAccionesPlan({ acciones, onRegistrarAvance }: Props) {
                 <span className="block text-muted-foreground">{a.descripcion}</span>
               </TableCell>
               <TableCell>{abreviarPersona(a.responsable_nombre)}</TableCell>
+              <TableCell className="whitespace-normal">{a.estrategia_nombre ?? "—"}</TableCell>
               <TableCell>{formatFecha(a.plazo)}</TableCell>
               <TableCell>
                 <Badge variant="soft" color={ACCION_COLOR[a.estado]}>

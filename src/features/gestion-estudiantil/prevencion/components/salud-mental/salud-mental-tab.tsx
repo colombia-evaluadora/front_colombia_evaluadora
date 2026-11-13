@@ -12,7 +12,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { SearchSaludMental } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/search-salud-mental"
@@ -31,7 +31,7 @@ export function SaludMentalTab({ tabs }: { tabs: ReactNode }) {
         <TableScreenTitle
           action={
             <Button size="sm" type="button" disabled={!l.puedeReportar} onClick={l.irReporteSaludMental}>
-              <PlusIcon data-icon="inline-start" />
+              <ControlPointIcon data-icon="inline-start" />
               Nuevo reporte
             </Button>
           }

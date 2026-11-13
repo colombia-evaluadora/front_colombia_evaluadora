@@ -45,6 +45,8 @@ export interface ValoresAccion {
   plazo: Date | undefined
   /** pk de la estrategia de permanencia (opcional); "" = ninguna. */
   estrategia: string
+  /** La acción ya guardada con estrategia: queda fija (cambiarla o quitarla es 22023). */
+  estrategiaFija?: boolean
 }
 
 export type ErroresAccion = Partial<Record<"tipo" | "descripcion" | "responsable" | "plazo", string>>
