@@ -33,7 +33,7 @@ function TiraSilenciados({ detalle }: { detalle: EspacioDetalle }) {
   const { reactivar } = useSilenciar(detalle.espacio.id)
   if (detalle.silenciados.length === 0) return null
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md bg-yellow-22 p-2 text-sm">
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-yellow-stroke bg-yellow-22 p-2 text-sm">
       <span className="font-medium">Silenciados en este espacio:</span>
       <ul aria-label="Silenciados en este espacio" className="flex flex-wrap gap-2">
       {detalle.silenciados.map((s) => (

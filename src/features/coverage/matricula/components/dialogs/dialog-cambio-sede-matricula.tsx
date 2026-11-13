@@ -204,7 +204,7 @@ export function CambioSedeMatriculaDialog({
           )}
         </div>
 
-        <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
+        <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-end">
           {onBack && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={onBack}>
               <ArrowLeftIcon data-icon="inline-start" />

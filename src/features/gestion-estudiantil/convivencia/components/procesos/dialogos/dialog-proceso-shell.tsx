@@ -67,8 +67,9 @@ export function DialogProcesoShell({ titulo, resumen, onClose, error, pending, c
         </DialogHeader>
         <ErrorNoticeBanner error={error} />
         <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">{children}</div>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" color={confirmar.color} disabled={pending || confirmar.disabled} onClick={confirmar.onClick}>
             <IconoCarga cargando={pending}>{confirmar.icon}</IconoCarga>

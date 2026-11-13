@@ -165,7 +165,7 @@ export function ManageStatementDialog({
           </Field>
         </form>
 
-        <DialogFooter className="shrink-0 justify-end gap-2 px-6 pb-6">
+        <DialogFooter className="m-0 shrink-0 justify-end gap-2 px-6 pb-6">
           {canSave && (
             <Button
               size="sm"

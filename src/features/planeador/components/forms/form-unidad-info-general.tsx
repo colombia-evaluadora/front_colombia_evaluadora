@@ -60,7 +60,7 @@ import type {
 // variante `outlined` propia, así que se le aplican a mano las clases de
 // `inputVariants({variant: "outlined"})`.
 export const TEXTAREA_OUTLINED =
-  "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
+  "rounded-sm border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
 // Exportado: `CrearUnidadPopover` (form-editar-actividad.tsx) reusa el
 // mismo label corto para su `<Select>` compacto de método de cálculo —

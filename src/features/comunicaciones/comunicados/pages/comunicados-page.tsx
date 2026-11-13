@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, DotsThreeVerticalIcon } from "@/components/ui/icons"
+import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, DotsThreeVerticalIcon, FunnelXIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Spinner } from "@/components/ui/spinner"
@@ -174,6 +174,7 @@ function Filtros({
         />
       </Field>
       <Button variant="ghost" color="neutral" disabled={!hayFiltros} onClick={onLimpiar}>
+        <FunnelXIcon data-icon="inline-start" />
         Limpiar filtros
       </Button>
     </div>

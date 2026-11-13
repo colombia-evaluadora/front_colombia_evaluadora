@@ -152,7 +152,7 @@ function CurricularReferenceDetailPageContent() {
               variant="ghost"
               color="neutral"
               size="sm"
-              className="-ml-3 h-auto font-normal text-sm"
+              className="-ml-3 h-auto"
               render={<Link to={paths.app.gestionAcademicaReferentesCurriculares.getHref()} search={(prev) => prev} />}
               nativeButton={false}
             >

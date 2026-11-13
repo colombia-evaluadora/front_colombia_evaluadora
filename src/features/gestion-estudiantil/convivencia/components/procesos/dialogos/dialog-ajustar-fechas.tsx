@@ -79,7 +79,7 @@ export function DialogAjustarFechas({ proceso: p, sancionId, onClose }: Props) {
         <CampoFecha id="ajuste-inicio" label="Fecha de inicio" value={inicio} error={e.inicio} onChange={(v) => setEdicion({ id: idSancion, inicio: v, fin })} />
         <CampoFecha id="ajuste-fin" label="Fecha de fin" value={fin} min={inicio || null} max={limites?.fin_maximo} error={e.fin} onChange={(v) => setEdicion({ id: idSancion, inicio, fin: v })} />
       </div>
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>Se avisará a {p.acudiente?.nombre ?? "el acudiente"} de las nuevas fechas.</AlertDescription>
       </Alert>

@@ -112,7 +112,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
         </div>
       </header>
 
-      <p className="flex items-start gap-2 rounded-lg bg-blue-22 p-3 text-sm">
+      <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 p-3 text-sm">
         <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
         Al guardar se avisa a los destinatarios originales autorizados, sin agregar personas nuevas. Un error de
         destinatarios se corrige anulando y publicando otro.

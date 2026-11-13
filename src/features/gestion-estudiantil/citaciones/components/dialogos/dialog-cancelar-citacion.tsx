@@ -69,7 +69,7 @@ export function DialogCancelarCitacion({ citacion: c, onClose }: Props) {
         onChange={setMotivo}
       />
       {avisa && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
             Se avisará a {c.acudiente_nombre ?? "el acudiente"} de la cancelación.

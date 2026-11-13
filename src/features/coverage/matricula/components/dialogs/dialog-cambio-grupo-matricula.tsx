@@ -138,7 +138,7 @@ export function CambioGrupoMatriculaDialog(props: CambioGrupoMatriculaDialogProp
                 <RadioGroup
                   value={gradesAction}
                   onValueChange={(value) => value && setGradesAction(value as GroupChangeGradesAction)}
-                  className="flex min-h-11 flex-row items-center gap-6 rounded-md border border-input px-3"
+                  className="flex min-h-10 flex-row items-center gap-6 rounded-sm border border-input px-3"
                 >
                   <label className="flex items-center gap-2 text-sm">
                     <RadioGroupItem value="eliminar" />

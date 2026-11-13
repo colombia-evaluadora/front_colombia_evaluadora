@@ -15,7 +15,7 @@ export function FirstPrepareBanner() {
   if (!snapshot.running || !snapshot.firstRun || snapshot.origin !== "auto") return null
   const porcentaje = snapshot.total ? Math.round((snapshot.done / snapshot.total) * 100) : 0
   return (
-    <div role="status" data-slot="first-prepare-banner" className="flex flex-col gap-2 bg-blue-22 px-4 py-2 text-sm text-blue">
+    <div role="status" data-slot="first-prepare-banner" className="mr-4 mb-3 max-md:ml-4 rounded-md border border-blue-stroke flex flex-col gap-2 bg-blue-22 px-4 py-2 text-sm text-foreground [&_svg]:text-blue">
       <p className="flex items-center gap-2 font-medium">
         <CloudSyncIcon aria-hidden className="size-4 shrink-0" />
         Guardando tus datos en este equipo para que puedas trabajar sin conexión ({snapshot.done} de {snapshot.total}).

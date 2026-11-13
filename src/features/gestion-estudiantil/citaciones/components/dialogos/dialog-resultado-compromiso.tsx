@@ -86,7 +86,7 @@ export function DialogResultadoCompromiso({ compromiso: c, onClose }: Props) {
         <FieldLabel id="resultado-label">Resultado*</FieldLabel>
         <RadioGroup
           aria-labelledby="resultado-label"
-          className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
+          className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
           value={resultado}
           onValueChange={(v) => setResultado(v as ResultadoCompromisoInput["RESULTADO"])}
         >

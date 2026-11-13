@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { FunnelXIcon } from "@/components/ui/icons"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner } from "@/components/notice/notice-banner"
@@ -205,7 +206,7 @@ function Postulaciones({ e, revisor }: { e: EleccionProceso; revisor: boolean })
           <NativeSelectOption value="">Estado: Todos</NativeSelectOption>
           {(Object.keys(ESTADO_POSTULACION_LABEL) as EstadoPostulacion[]).map((k) => <NativeSelectOption key={k} value={k}>{ESTADO_POSTULACION_LABEL[k]}</NativeSelectOption>)}
         </NativeSelect>
-        {estado && <Button size="sm" variant="ghost" color="neutral" onClick={() => { setEstado(""); reiniciar() }}>Limpiar filtros</Button>}
+        {estado && <Button size="sm" variant="ghost" color="neutral" onClick={() => { setEstado(""); reiniciar() }}><FunnelXIcon data-icon="inline-start" />Limpiar filtros</Button>}
       </div>
       <Table>
         <TableHeader><TableRow><TableHead>Candidato</TableHead><TableHead>Tipo</TableHead><TableHead>Estado</TableHead><TableHead>Presentada</TableHead><TableHead /></TableRow></TableHeader>
@@ -323,7 +324,7 @@ function PadronPanel({ e, admin }: { e: EleccionProceso; admin: boolean }) {
             <NativeSelectOption value="HABILITADA">Habilitada</NativeSelectOption>
             <NativeSelectOption value="EXCLUIDA">Excluida</NativeSelectOption>
           </NativeSelect>
-          {(texto || condicion) && <Button size="sm" variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setCondicion("") })}>Limpiar filtros</Button>}
+          {(texto || condicion) && <Button size="sm" variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setCondicion("") })}><FunnelXIcon data-icon="inline-start" />Limpiar filtros</Button>}
         </div>
       )}
       {padron && (

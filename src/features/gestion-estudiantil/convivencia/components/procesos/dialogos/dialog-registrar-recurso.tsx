@@ -128,7 +128,7 @@ export function DialogRegistrarRecurso({ proceso: p, onClose }: Props) {
           <TooltipContent>En reposición, la misma que decidió; en apelación, una distinta.</TooltipContent>
         </Tooltip>
       </div>
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>El proceso pasará a En recurso.</AlertDescription>
       </Alert>

@@ -59,7 +59,7 @@ function draftVacio(valoraciones: UnidadValoracion[]): CriterioDraft {
 // `inputVariants({variant: "outlined"})` para que matchee el label flotante
 // del `Field` que la envuelve.
 const TEXTAREA_OUTLINED =
-  "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
+  "rounded-sm border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
 function isDraftCompleto(draft: CriterioDraft): boolean {
   return (

@@ -600,8 +600,8 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                   {/* Última columna de ancho fijo: con `auto` el `sr-only` del encabezado no mide y los títulos se corren.
                       2.75rem = el botón de quitar (`size="icon"`, 44px); con 2.5rem sobraban 4px y salía el scroll. */}
                   <div className="grid min-w-[44rem] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_9rem_4rem_4rem_2.75rem] gap-2 text-sm font-semibold">
-                    <span>Nombre del menú*</span>
-                    <span>URL*</span>
+                    <span>Nombre del menú<span className="text-red">*</span></span>
+                    <span>URL<span className="text-red">*</span></span>
                     <span>Visible</span>
                     <span>Plan</span>
                     <span>Guardar</span>
@@ -683,7 +683,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
         </div>
 
         {hasParentChoice && (
-          <DialogFooter className="shrink-0 px-6 pb-6">
+          <DialogFooter className="m-0 shrink-0 px-6 pb-6">
             <Button
               size="sm"
               type="button"

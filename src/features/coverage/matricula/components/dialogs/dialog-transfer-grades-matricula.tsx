@@ -459,7 +459,7 @@ export function TransferGradesDialog({
           )}
           </div>
 
-          <DialogFooter className="shrink-0 px-6 pb-6">
+          <DialogFooter className="m-0 shrink-0 px-6 pb-6">
             {step === "asignaturas" && (
               <Button
                 type="button"

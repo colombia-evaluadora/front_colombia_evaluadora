@@ -78,7 +78,7 @@ export function DateRangeField({
             className={cn(
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-11 items-center gap-2 text-left",
+              "flex h-10 items-center gap-2 text-left",
             )}
           />
         }

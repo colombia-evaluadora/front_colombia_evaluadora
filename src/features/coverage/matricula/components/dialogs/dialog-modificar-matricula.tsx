@@ -686,7 +686,7 @@ export function ModificarMatriculaDialog({
                 value={accion}
                 onValueChange={(value) => value && setAccion(value as MatriculaAction)}
                 disabled={hasFinalStatus}
-                className="flex min-h-11 flex-row flex-wrap items-center gap-6 rounded-md border border-input px-3"
+                className="flex min-h-10 flex-row flex-wrap items-center gap-6 rounded-sm border border-input px-3"
               >
                 <label className="flex items-center gap-2 text-sm">
                   <RadioGroupItem value="sinCambios" />
@@ -710,7 +710,7 @@ export function ModificarMatriculaDialog({
             </Field>
           </div>
 
-          <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
+          <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-end">
             <Button
               type="button"
               color="primary"

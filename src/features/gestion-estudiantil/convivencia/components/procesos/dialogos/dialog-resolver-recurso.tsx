@@ -110,7 +110,7 @@ export function DialogResolverRecurso({ proceso: p, recurso: r, onClose }: Props
       )}
       <CampoArchivo label="Acto firmado*" archivos={v.acto} error={e.acto} onChange={(acto) => set({ acto })} />
       {aviso && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>{aviso}</AlertDescription>
         </Alert>

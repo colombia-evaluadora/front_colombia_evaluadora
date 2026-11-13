@@ -151,7 +151,7 @@ export function RatingSymbolSelect({
             <span className="text-muted-foreground">{placeholder}</span>
           )}
         </span>
-        <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
+        <CaretDownIcon className="text-muted-foreground size-5 shrink-0" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto min-w-72">
         <RatingSymbolPicker

@@ -103,7 +103,7 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
         }
       >
         <span className="flex-1 truncate">{displayValue || "Seleccionar"}</span>
-        <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+        <CaretDownIcon className="size-5 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       {/* Mismo ancho que el campo; mínimo para que entren nombre, check y papelera. */}
       <PopoverContent align="start" className="w-(--anchor-width) min-w-64 p-0">
@@ -144,7 +144,7 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
           ))}
         </div>
         <div className="border-t border-border p-1.5">
-          <InputGroup className="h-8 rounded-md border border-input hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+          <InputGroup className="h-8 rounded-sm border border-input hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
             <InputGroupInput
               value={draft}
               maxLength={130}

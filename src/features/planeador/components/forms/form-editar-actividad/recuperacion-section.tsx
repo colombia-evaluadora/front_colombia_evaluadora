@@ -181,7 +181,7 @@ export function RecuperacionSection({
                               <Field variant="outlined" data-invalid={!!errorAplicacion}>
                                 <FieldLabel>¿Cómo se aplicará la nota de recuperación? *</FieldLabel>
                                 <RadioGroup
-                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  className="flex min-h-10 flex-wrap items-center gap-x-6 gap-y-2 rounded-sm border border-input px-3 py-2"
                                   value={field.state.value}
                                   disabled={disabled}
                                   onValueChange={(v) => {
@@ -239,7 +239,7 @@ export function RecuperacionSection({
                                   {destino === "NOTA_FINAL" ? "final" : "de la actividad"}? *
                                 </FieldLabel>
                                 <RadioGroup
-                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  className="flex min-h-10 flex-wrap items-center gap-x-6 gap-y-2 rounded-sm border border-input px-3 py-2"
                                   value={field.state.value}
                                   disabled={disabled}
                                   onValueChange={(v) => {

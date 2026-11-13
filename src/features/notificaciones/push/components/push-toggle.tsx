@@ -82,7 +82,7 @@ export function PushToggle({ showDevices = true }: { showDevices?: boolean }) {
       </div>
 
       {availability === "ios-requiere-instalar" && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden />
           <AlertTitle>Instalá la aplicación para recibir notificaciones</AlertTitle>
           <AlertDescription>
@@ -98,7 +98,7 @@ export function PushToggle({ showDevices = true }: { showDevices?: boolean }) {
       )}
 
       {availability === "no-soportado" && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden />
           <AlertDescription>
             Este navegador no admite notificaciones del sistema. Seguirás viendo tus

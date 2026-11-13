@@ -272,7 +272,7 @@ export function SolicitarTrasladoDialog({ reserva, onOpenChange }: Props) {
             <form.Field name="compartirSoportes">
               {(f) => (
                 <div className="grid content-start gap-2">
-                  <span className="text-sm font-medium">Compartir archivos de soporte *</span>
+                  <span className="text-sm font-medium">Compartir archivos de soporte<span className="text-red">*</span></span>
                   <label className="flex w-fit cursor-pointer items-center gap-2">
                     <Switch
                       checked={f.state.value}

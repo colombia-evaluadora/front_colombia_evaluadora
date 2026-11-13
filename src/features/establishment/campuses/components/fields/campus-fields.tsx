@@ -110,7 +110,7 @@ export function LocationField({
         recenterVersion={recenterVersion}
       />
       {!location && !invalid ? (
-        <p className="flex items-start gap-2 rounded-md bg-yellow-22 px-3 py-2 text-xs">
+        <p className="flex items-start gap-2 rounded-md border border-yellow-stroke bg-yellow-22 px-3 py-2 text-xs">
           <WarningIcon aria-hidden className="mt-px size-4 shrink-0 text-yellow" />
           Ubicación pendiente. Geolocalice la sede desde su dirección o márquela en el mapa.
         </p>
