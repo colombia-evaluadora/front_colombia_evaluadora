@@ -67,7 +67,7 @@ export function WipeDeviceDataDialog({
         </DialogHeader>
 
         {paso === "aviso" && pendientes > 0 && (
-          <p role="alert" className="flex items-start gap-2 rounded-md bg-red-22 px-3 py-2 text-sm text-red">
+          <p role="alert" className="flex items-start gap-2 rounded-md border border-red-stroke bg-red-22 px-3 py-2 text-sm text-red">
             <WarningIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
             <span>
               Tienes {pendientes} cambios sin sincronizar. Si borras ahora se perderán. Sincroniza primero cuando tengas

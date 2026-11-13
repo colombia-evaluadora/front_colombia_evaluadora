@@ -115,9 +115,9 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
             Este código ya se usó en anotaciones: su tipo y tipo de situación no se pueden cambiar.
           </p>
         )}
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.guardar}>
             <IconoCarga cargando={f.pending}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>

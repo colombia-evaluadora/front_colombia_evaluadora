@@ -124,13 +124,13 @@ export function EstudiantesMultiSelect({
             className={cn(
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-11 items-center justify-between gap-2 text-left",
+              "flex h-10 items-center justify-between gap-2 text-left",
             )}
           />
         }
       >
         <span className={cn("truncate", estudiantes.length === 0 && "text-muted-foreground")}>{label}</span>
-        <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
+        <CaretDownIcon className="text-muted-foreground size-5 shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 min-w-72 overflow-y-auto">
         {estudiantes.length === 0 ? (

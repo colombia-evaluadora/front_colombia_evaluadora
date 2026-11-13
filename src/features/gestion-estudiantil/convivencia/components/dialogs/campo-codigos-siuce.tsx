@@ -84,7 +84,7 @@ export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso,
         </ul>
       )}
       {todosReportados && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
             Con este código todos los afectados quedan reportados y el caso sale de los pendientes de reporte al SIUCE.

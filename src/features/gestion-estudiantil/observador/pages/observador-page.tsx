@@ -12,6 +12,7 @@ import {
   TableScreenBody,
   TableScreenHeader,
   TableScreenTitle,
+  TableScreenActions,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
@@ -26,7 +27,6 @@ import { toObservadorFilters, useAnotacionesQuery } from "@/features/gestion-est
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
-import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { useObservadorAccess } from "@/features/gestion-estudiantil/observador/api/use-observador-access"
 import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
 import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
@@ -34,6 +34,7 @@ import { SearchAnotaciones } from "@/features/gestion-estudiantil/observador/com
 import { DialogAnularAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-anular-anotacion"
 import { DialogDetalleAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-detalle-anotacion"
 import { DialogImprimirObservador } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-imprimir-observador"
+import { DialogCargarObservadorFirmado } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-cargar-observador-firmado"
 import { DialogExportarAnotaciones } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-exportar-anotaciones"
 
 const DialogRemitir = lazy(() =>
@@ -54,7 +55,6 @@ function ObservadorContent() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useObservadorAccess()
-  const { puedeCrear: puedeCitar } = useCitacionesAccess()
 
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<ObservadorFiltros>(FILTROS_VACIOS)
@@ -90,6 +90,10 @@ function ObservadorContent() {
     )
   }, [data])
 
+  // «Cargar observador firmado»: estudiantes y períodos del listado, mientras no haya un buscador en el backend.
+  const estudiantesFirmado = unicas(rows.map((r) => [r.fk_tmatricula, `${r.estudiante_nombre} · ${r.grado_grupo}`]))
+  const periodosFirmado = unicas(rows.map((r) => [r.fk_tperiodo_evaluacion, r.periodo_evaluacion_nombre]))
+
   const lista = codigos.data ?? []
   const opcionesFiltros = {
     sedes: opciones.sedeOpciones,
@@ -109,21 +113,10 @@ function ObservadorContent() {
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
     onRemitir: setRemitir,
-    puedeCitar,
-    onCitar: (a) =>
-      navigate({
-        to: paths.app.citacionNueva.getHref(),
-        search: { origen_tipo: "ANOTACION", origen_id: a.id, matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
-      } as never),
     onReportarSaludMental: (a) =>
       navigate({
         to: paths.app.prevencionSaludMentalNuevo.getHref(),
         search: { matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
-      } as never),
-    onCompromiso: (a) =>
-      navigate({
-        to: paths.app.compromisoNuevo.getHref(),
-        search: { origen_tipo: "ANOTACION", origen_id: a.id, matricula: a.fk_tmatricula, estudiante: a.estudiante_nombre },
       } as never),
   })
 
@@ -146,25 +139,7 @@ function ObservadorContent() {
   return (
     <>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            pestana === "anotaciones" && <div className="flex flex-wrap items-center gap-2">
-              {access.puedeImprimir && <DialogImprimirObservador filtros={filtros} />}
-              <DialogExportarAnotaciones filters={queryFilters} />
-              {access.puedeRemitir && (
-                <Button size="sm" variant="outline" color="muted" onClick={() => setRemitir("nuevo")}>Remitir a orientación</Button>
-              )}
-              {access.puedeCrear && (
-                <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
-                  <ControlPointIcon data-icon="inline-start" />
-                  Nueva anotación
-                </Button>
-              )}
-            </div>
-          }
-        >
-          Observador
-        </TableScreenTitle>
+        <TableScreenTitle>Observador</TableScreenTitle>
         <NoticeOutlet className="px-(--screen-spacing) pt-3" />
         {access.veMisRemisiones && (
           <Tabs value={pestana} onValueChange={(v) => setPestana(v as string)}>
@@ -196,6 +171,20 @@ function ObservadorContent() {
             onDraftChange={setBorrador}
             opciones={opcionesFiltros}
           />
+          {/* Acciones en la barra de la tabla, a la derecha del buscador, como en el resto del
+              proyecto (orden de la guía de diseño). «Remitir a orientación» se hace desde la acción
+              de cada anotación. */}
+          <TableScreenActions>
+            {access.puedeImprimir && <DialogImprimirObservador filtros={filtros} />}
+            {access.puedeCrear && <DialogCargarObservadorFirmado estudiantes={estudiantesFirmado} periodos={periodosFirmado} />}
+            <DialogExportarAnotaciones filters={queryFilters} />
+            {access.puedeCrear && (
+              <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
+                <ControlPointIcon data-icon="inline-start" />
+                Nueva anotación
+              </Button>
+            )}
+          </TableScreenActions>
         </TableScreenToolbar>}
       </TableScreenHeader>
 
@@ -213,7 +202,9 @@ function ObservadorContent() {
           isError={isError}
           onRetry={refetch}
           isRowMuted={(row) => row.original.anulada}
-          growColumnId="codigo"
+          // El sobrante va al final (Estado), donde aparecen las acciones al pasar el cursor; en
+          // «Código y descripción» dejaba un hueco en medio con descripciones cortas.
+          growColumnId="estado"
           emptyMessage={
             hayFiltros
               ? "No hay anotaciones para los filtros aplicados."

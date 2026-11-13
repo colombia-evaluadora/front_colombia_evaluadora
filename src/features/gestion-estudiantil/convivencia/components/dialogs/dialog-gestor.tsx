@@ -83,7 +83,7 @@ export function DialogGestor({ caso, onClose }: Props) {
         error={error}
         onChange={setGestor}
       />
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>
           Solo aparecen los Supervisores de sede con rol activo en la sede y jornada de un estudiante del caso. Las

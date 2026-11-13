@@ -15,7 +15,7 @@ export function UpdateRequiredBanner() {
   const { total } = useOutboxSummary()
   if (!required || total > 0) return null
   return (
-    <div role="alert" className="flex items-center gap-2 bg-orange-22 px-4 py-2 text-sm text-orange">
+    <div role="alert" className="mr-4 mb-3 max-md:ml-4 rounded-md border border-orange-stroke flex items-center gap-2 bg-orange-22 px-4 py-2 text-sm text-foreground [&>svg]:text-orange">
       <WarningIcon className="size-4 shrink-0" aria-hidden />
       <p className="grow">Hay una versión nueva de la aplicación. Actualiza para seguir trabajando sin conexión.</p>
       <Button variant="outline" color="warning" onClick={() => window.location.reload()}>

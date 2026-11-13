@@ -28,7 +28,7 @@ export function DialogExportarSiuce({ open, onOpenChange }: Props) {
         </DialogHeader>
         <NoticeBanner notice={f.notice} onClose={f.cerrarNotice} variant="error" />
         <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto pr-1">
-          <Alert>
+          <Alert variant="info">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>
               Reporte de apoyo en Excel para el módulo Convivencia Escolar del SIUCE: una fila por afectado de cada caso Tipo II o III, con sus
@@ -59,8 +59,9 @@ export function DialogExportarSiuce({ open, onOpenChange }: Props) {
           />
           <VistaPreviaSiuce rangoOk={f.rangoOk} isPending={vp.isPending} isError={vp.isError} data={vp.data} />
         </div>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.exportar}>
             <IconoCarga cargando={f.pending}><FileDownloadOutlinedIcon data-icon="inline-start" /></IconoCarga>

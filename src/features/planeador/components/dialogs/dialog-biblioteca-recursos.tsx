@@ -258,7 +258,7 @@ export function DialogBibliotecaRecursos({
         )}
         </div>
 
-        <DialogFooter className="shrink-0 px-6 pb-6">
+        <DialogFooter className="m-0 shrink-0 px-6 pb-6">
           {/* El footer acá es solo "Cerrar" — la selección es single-shot
               (cada card click agrega y cierra), no hay draft que confirmar
               como en el dialog de áreas. Diferencia explícita con

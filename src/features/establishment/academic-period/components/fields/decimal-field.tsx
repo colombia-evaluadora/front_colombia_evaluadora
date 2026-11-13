@@ -58,7 +58,7 @@ export function DecimalField({
       </FieldLabel>
       <InputGroup
         className={cn(
-          "h-11 rounded-md border border-input px-3 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red",
+          "h-10 rounded-sm border border-input px-3 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red",
           // Sin hover cuando no se puede modificar.
           disabled ? "cursor-not-allowed bg-muted/50" : "hover:border-ring",
         )}

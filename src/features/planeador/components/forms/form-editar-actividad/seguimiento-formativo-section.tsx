@@ -62,7 +62,7 @@ export function SeguimientoFormativoSection() {
           </li>
         ))}
       </ul>
-      <p className="flex items-start gap-2 rounded-md bg-blue-22 p-3 text-sm">
+      <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 p-3 text-sm">
         <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
         Después de guardar, registre estos datos por estudiante en la Vista de Registro de Resultados.
       </p>

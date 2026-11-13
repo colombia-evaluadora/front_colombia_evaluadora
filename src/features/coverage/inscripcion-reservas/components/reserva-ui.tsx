@@ -131,7 +131,7 @@ export function Seccion({
       onOpenChange={(open) => alternar(value, open)}
       className="group/section overflow-hidden rounded-lg border border-border bg-background"
     >
-      <CollapsibleTrigger className="flex w-full items-center gap-2 bg-muted/60 px-4 py-3 text-left text-base font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
+      <CollapsibleTrigger className="flex w-full items-center gap-2 bg-table-screen-title px-4 py-3 text-left text-base font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
         <CaretDownIcon className="size-5 shrink-0 -rotate-90 text-muted-foreground transition-transform group-data-[open]/section:rotate-0 motion-reduce:transition-none" />
         <span className="flex items-center gap-3">
           {titulo}

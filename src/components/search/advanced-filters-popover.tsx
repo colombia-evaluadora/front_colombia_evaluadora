@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-import { CheckIcon, FunnelIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, FunnelIcon, FunnelXIcon, XIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { InputGroupButton } from "@/components/ui/input-group"
 import {
@@ -136,8 +136,8 @@ export function AdvancedFiltersPopover({
               render={
                 <Button
                   type="button"
-                  variant="fill"
-                  color="neutral"
+                  variant="ghost"
+                  color="muted"
                   size="icon-xs"
                   aria-label="Cerrar filtros avanzados"
                   onClick={() => onOpenChange(false)}
@@ -171,7 +171,8 @@ export function AdvancedFiltersPopover({
         */}
         <div className="flex items-center justify-end gap-2 px-4 pb-4">
           {onClear && (
-            <Button type="button" variant="ghost" color="neutral" size="sm" onClick={onClear} className="mr-auto">
+            <Button type="button" variant="outline" color="neutral" size="sm" onClick={onClear}>
+              <FunnelXIcon data-icon="inline-start" />
               Limpiar filtros
             </Button>
           )}

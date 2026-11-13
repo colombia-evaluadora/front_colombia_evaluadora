@@ -157,7 +157,7 @@ export function CrearChatDialog({
               <FieldLabel htmlFor="crear-chat-nombre" className="bg-popover">
                 Nombre
               </FieldLabel>
-              <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+              <InputGroup className="rounded-sm border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
                 {!esGrupo && (
                   <InputGroupAddon align="inline-start" className="ml-2">
                     <HashIcon aria-hidden className="size-5 text-muted-foreground" />

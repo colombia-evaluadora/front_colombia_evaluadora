@@ -61,7 +61,7 @@ export function StorageStatusCard() {
         </span>
       </p>
       {risks.map((risk) => (
-        <p key={risk} role="alert" className="flex items-start gap-2 rounded-md bg-red-22 px-2 py-1 text-red">
+        <p key={risk} role="alert" className="flex items-start gap-2 rounded-md border border-red-stroke bg-red-22 px-2 py-1 text-red">
           <WarningIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{RISK_COPY[risk as keyof typeof RISK_COPY]}</span>
         </p>

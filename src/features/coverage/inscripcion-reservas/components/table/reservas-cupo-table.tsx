@@ -30,7 +30,6 @@ import { AsignarGrupoLoteDialog } from "@/features/coverage/inscripcion-reservas
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
-import { cn } from "@/lib/utils"
 import { coberturaInscritosRoute } from "@/router"
 
 import { useReservasCupoQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
@@ -153,7 +152,6 @@ export function ReservasCupoTable({ encabezado }: { encabezado: ReactNode }) {
                 variant={active ? "fill" : "outline"}
                 color={active ? "primary" : "neutral"}
                 aria-pressed={active}
-                className={cn(!active && "font-normal")}
                 onClick={() => setFilters({ rapido: f.value === "TODAS" ? undefined : f.value })}
               >
                 {active && <CheckIcon data-icon="inline-start" />}

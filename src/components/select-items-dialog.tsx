@@ -211,7 +211,7 @@ export function SelectItemsDialog({
         className={cn(
           inputVariants({ variant: resolvedVariant }),
           inputTriggerVariants({ variant: resolvedVariant }),
-          "relative flex h-auto min-h-11 items-center gap-1.5 text-left",
+          "relative flex h-auto min-h-10 items-center gap-1.5 text-left",
           resolvedVariant === "outlined" && "bg-background",
         )}
       >
@@ -315,7 +315,7 @@ export function SelectItemsDialog({
             +{selectedNames.length}
           </Badge>
         </div>
-        <CaretDownIcon className="pointer-events-none relative z-10 size-3.5 shrink-0 text-muted-foreground" />
+        <CaretDownIcon className="pointer-events-none relative z-10 size-5 shrink-0 text-muted-foreground" />
       </div>
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />

@@ -54,7 +54,7 @@ export function SeccionPlegable({
     </CollapsibleTrigger>
   ) : (
     <CollapsibleTrigger
-      className={cn("flex w-full items-center gap-2 bg-muted/60 px-4 py-3 text-left text-base font-medium", FOCO)}
+      className={cn("flex w-full items-center gap-2 bg-table-screen-title px-4 py-3 text-left text-base font-medium", FOCO)}
     >
       <CaretDownIcon className={CARET} />
       {titulo}
@@ -71,7 +71,7 @@ export function SeccionPlegable({
       className={cn("group/section", encuadrada && "overflow-hidden rounded-lg border border-border bg-background")}
     >
       {accion ? (
-        <div className="flex items-center gap-2 bg-muted/60 px-4 py-2">
+        <div className="flex items-center gap-2 bg-table-screen-title px-4 py-2">
           {cabecera}
           {accion}
         </div>

@@ -18,7 +18,7 @@ export function AvisosCierre({ caso }: { caso: CasoDetalle }) {
         </Alert>
       )}
       {caso.cierre && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
             Cerrado el {formatFechaHora(caso.cierre.cerrado_en)}

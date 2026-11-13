@@ -293,7 +293,7 @@ export function EscalaValoracionSection({
               <Field variant="outlined" className="sm:max-w-md">
                 <FieldLabel>Modo de la escala</FieldLabel>
                 <RadioGroup
-                  className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
+                  className="flex min-h-10 items-center gap-6 rounded-sm border border-input px-3"
                   value={escala.tipo}
                   disabled={disabled || cargandoPrecarga}
                   onValueChange={(value) => {

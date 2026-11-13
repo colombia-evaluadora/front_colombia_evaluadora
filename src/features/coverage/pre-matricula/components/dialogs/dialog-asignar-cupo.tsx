@@ -174,7 +174,7 @@ export function AsignarCupoDialog({
         </div>
         </div>
 
-        <DialogFooter className="shrink-0 px-6 pb-6">
+        <DialogFooter className="m-0 shrink-0 px-6 pb-6">
           <Button size="sm" color="primary" onClick={handleConfirm}>
             <CheckIcon data-icon="inline-start" />
             Aceptar

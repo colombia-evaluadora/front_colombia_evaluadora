@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 
 import {
@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils"
 const CHIP =
   "inline-flex h-7 max-w-full min-w-0 items-center rounded-full border bg-muted/40 px-3 text-sm font-normal text-muted-foreground"
 
-// Selección múltiple con chips. Muestra `visibles` chips y el resto como "+N"
-// para que el campo no crezca. El popup es claro, como los menús del chat
+// Selección múltiple con chips. Muestra los chips que caben en una línea (o
+// `visibles` como tope) y el resto como "+N" para que el campo no crezca. El popup es claro, como los menús del chat
 // (el de ui/combobox es oscuro).
 export function SelectorChips<T>({
   items,
@@ -26,7 +26,7 @@ export function SelectorChips<T>({
   getLabel,
   filtrar,
   renderItem,
-  visibles = 1,
+  visibles,
   cargando,
   placeholder,
   ariaLabel,
@@ -45,6 +45,7 @@ export function SelectorChips<T>({
   getLabel: (item: T) => string
   filtrar?: (item: T, consulta: string) => boolean
   renderItem?: (item: T) => ReactNode
+  // Máximo de chips a la vista; sin valor, los que quepan en la línea.
   visibles?: number
   cargando?: boolean
   placeholder?: string
@@ -62,8 +63,53 @@ export function SelectorChips<T>({
   conFlecha?: boolean
 }) {
   const anchor = useComboboxAnchor()
-  const mostrados = value.slice(0, visibles)
-  const resto = value.slice(visibles)
+  const medidas = useRef<HTMLDivElement | null>(null)
+  const flecha = useRef<HTMLButtonElement | null>(null)
+  const [caben, setCaben] = useState(value.length)
+
+  /**
+   * Cuántos chips caben en una línea. Se miden todos en una fila invisible
+   * (`medidas`) y se suman contra el ancho útil del campo, descontando la
+   * flecha, el mínimo del buscador (`min-w-16` del input) y, si sobran chips,
+   * el "+N". Así el "+N" solo aparece cuando el campo está lleno; antes salía
+   * desde el segundo chip aunque hubiera espacio.
+   */
+  useLayoutEffect(() => {
+    const campo = anchor.current
+    const fila = medidas.current
+    if (!campo || !fila) return
+    const calcular = () => {
+      const estilo = getComputedStyle(campo)
+      const gap = parseFloat(estilo.columnGap) || 0
+      const util =
+        campo.clientWidth -
+        parseFloat(estilo.paddingLeft) -
+        parseFloat(estilo.paddingRight) -
+        (flecha.current ? flecha.current.offsetWidth + gap : 0) -
+        (64 + gap)
+      const chips = Array.from(fila.children) as HTMLElement[]
+      const mas = chips.pop()?.offsetWidth ?? 0
+      let usado = 0
+      let n = 0
+      for (let i = 0; i < chips.length; i++) {
+        const quedan = chips.length - (i + 1)
+        const reserva = quedan > 0 ? mas + gap : 0
+        if (usado + chips[i].offsetWidth + gap + reserva > util) break
+        usado += chips[i].offsetWidth + gap
+        n++
+      }
+      // Al menos uno: un nombre largo se recorta (`truncate`) antes que desaparecer.
+      setCaben(Math.max(1, n))
+    }
+    calcular()
+    const observer = new ResizeObserver(calcular)
+    observer.observe(campo)
+    return () => observer.disconnect()
+  }, [anchor, value, getLabel])
+
+  const limite = Math.min(caben, visibles ?? Infinity)
+  const mostrados = value.slice(0, limite)
+  const resto = value.slice(limite)
 
   return (
     <Combobox
@@ -84,10 +130,28 @@ export function SelectorChips<T>({
         ref={anchor}
         aria-invalid={invalido || undefined}
         className={cn(
-          "min-h-11 w-full min-w-0 gap-2 rounded-lg border border-input px-3 py-2 focus-within:border-primary has-data-[slot=combobox-chip]:px-3",
+          "relative min-h-10 w-full min-w-0 gap-2 rounded-sm border border-input px-3 py-2 focus-within:border-primary has-data-[slot=combobox-chip]:px-3",
           invalido && "border-red",
         )}
       >
+        {/* Fila de medición: todos los chips más un "+N" de muestra, invisibles. */}
+        <div
+          ref={medidas}
+          aria-hidden
+          className="pointer-events-none invisible absolute top-0 left-0 flex w-max gap-2 whitespace-nowrap"
+        >
+          {value.map((item) => (
+            // Mismo ancho que `ComboboxChip`: texto + botón X (`icon-xs`, `-ml-1`, `pr-0`).
+            <span key={getId(item)} className={cn(CHIP, "gap-1 pr-0")}>
+              {getLabel(item)}
+              <span className="-ml-1 size-7 shrink-0" />
+            </span>
+          ))}
+          <span className={cn(CHIP, "gap-1 pr-1")}>
+            +{value.length}
+            <span className="size-5" />
+          </span>
+        </div>
         <ComboboxValue>
           {() => (
             <>
@@ -104,7 +168,7 @@ export function SelectorChips<T>({
                     type="button"
                     aria-label={`Quitar ${resto.length} más`}
                     onClick={() => onChange(mostrados)}
-                    className="grid size-5 place-items-center rounded-full opacity-60 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    className="grid size-5 place-items-center rounded-full text-current focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                   >
                     <XIcon className="size-3" />
                   </button>
@@ -121,6 +185,7 @@ export function SelectorChips<T>({
         />
         {conFlecha && (
           <ComboboxPrimitive.Trigger
+            ref={flecha}
             aria-label={`Ver opciones de ${ariaLabel.toLowerCase()}`}
             className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:text-foreground"
           >

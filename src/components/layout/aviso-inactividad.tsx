@@ -57,7 +57,7 @@ export function AvisoInactividad() {
 
   if (!avisar) return null
   return (
-    <div role="alert" className="bg-yellow-22 text-foreground flex flex-wrap items-center gap-3 border-b px-4 py-2 text-sm">
+    <div role="alert" className="mr-4 mb-3 max-md:ml-4 rounded-md border border-yellow-stroke bg-yellow-22 text-foreground flex flex-wrap items-center gap-3 px-4 py-2 text-sm [&>svg]:text-yellow">
       <ClockIcon className="size-4 shrink-0" aria-hidden />
       <span className="flex-1">
         Su sesión se cerrará en 2 minutos por inactividad. Lo que no haya guardado se perderá.

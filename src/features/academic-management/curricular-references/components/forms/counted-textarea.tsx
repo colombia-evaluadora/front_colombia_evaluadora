@@ -10,7 +10,7 @@ export function CountedTextarea({
   ...props
 }: React.ComponentProps<typeof Textarea> & { value: string; maxLength: number }) {
   return (
-    <div className="rounded-md border border-input transition-[color,border-color] hover:border-ring focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20 has-[[aria-invalid=true]]:border-red has-[[aria-invalid=true]]:focus-within:ring-red/20">
+    <div className="rounded-sm border border-input transition-[color,border-color] hover:border-ring focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20 has-[[aria-invalid=true]]:border-red has-[[aria-invalid=true]]:focus-within:ring-red/20">
       <Textarea
         value={value}
         maxLength={maxLength}

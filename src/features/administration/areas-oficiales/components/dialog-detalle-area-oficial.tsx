@@ -74,7 +74,7 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
             </Dato>
           </dl>
           {area.enUso && (
-            <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
+            <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
               {AREA_EN_USO_MENSAJE}
             </p>

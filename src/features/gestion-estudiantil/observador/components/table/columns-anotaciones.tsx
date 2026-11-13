@@ -4,8 +4,6 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import {
   BrainIcon,
-  CalendarBlankIcon,
-  ClipboardAddIcon,
   EyeIcon,
   GavelIcon,
   PencilIcon,
@@ -19,8 +17,8 @@ import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-ma
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
-/** Ver, Modificar, Anular, Remitir, Citar, Crear compromiso y Reportar salud mental y la que aún no tiene backend. */
-const ACCIONES_ANOTACION = 8
+/** Ver, Modificar, Anular, Reportar salud mental, Remitir y Abrir proceso disciplinario (orden de la guía de diseño). */
+const ACCIONES_ANOTACION = 6
 
 interface ColumnasOpciones {
   onVer: (row: AnotacionRow) => void
@@ -30,9 +28,7 @@ interface ColumnasOpciones {
   puedeAnular: boolean
   puedeRemitir: boolean
   onRemitir: (row: AnotacionRow) => void
-  puedeCitar: boolean
-  onCitar: (row: AnotacionRow) => void
-  onCompromiso: (row: AnotacionRow) => void
+  /** Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. */
   onReportarSaludMental: (row: AnotacionRow) => void
 }
 
@@ -44,9 +40,6 @@ export function buildColumnsAnotaciones({
   puedeAnular,
   puedeRemitir,
   onRemitir,
-  puedeCitar,
-  onCitar,
-  onCompromiso,
   onReportarSaludMental,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
@@ -97,9 +90,15 @@ export function buildColumnsAnotaciones({
       meta: { label: "Código y descripción" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Código y descripción" />,
       cell: ({ row }) => (
-        <span className="flex flex-col gap-0.5 whitespace-normal">
+        // `min-w-64`: la columna ya no absorbe el sobrante de la tabla, y sin un mínimo cortaba
+        // en la primera palabra posible. Código y descripción van en una línea; solo una descripción
+        // larga pasa a la siguiente (hasta `max-w-md`). El código y el «·» no se separan.
+        <span className="flex max-w-md min-w-64 flex-col gap-0.5 whitespace-normal">
           <span>
-            <span className="font-semibold">{row.original.codigo}</span> · {row.original.descripcion}
+            <span className="whitespace-nowrap">
+              <span className="font-semibold">{row.original.codigo}</span> ·
+            </span>{" "}
+            {row.original.descripcion}
           </span>
           {row.original.situacion_nombre && (
             <span className="text-xs text-muted-foreground">Situación {row.original.situacion_nombre}</span>
@@ -151,24 +150,9 @@ export function buildColumnsAnotaciones({
                 onSelect: () => onModificar(a),
               },
               { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
-              { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
-              {
-                id: "citar",
-                label: "Citar al acudiente",
-                icon: <CalendarBlankIcon />,
-                disabled: !vigente || !puedeCitar,
-                onSelect: () => onCitar(a),
-              },
-              {
-                id: "compromiso",
-                label: "Crear compromiso",
-                icon: <ClipboardAddIcon />,
-                disabled: !vigente || !puedeCitar,
-                onSelect: () => onCompromiso(a),
-              },
-              // Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. El backend decide el alcance.
+              // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario: aún sin backend.
               { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, onSelect: () => onReportarSaludMental(a) },
-              // Convivencia: aún sin backend.
+              { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
               { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
             ]}
           />

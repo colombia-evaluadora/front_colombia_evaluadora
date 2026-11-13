@@ -68,7 +68,7 @@ export function DialogAsistenciaCitacion({ citacion: c, onClose }: Props) {
         <FieldLabel id="asistencia-label">Asistencia*</FieldLabel>
         <RadioGroup
           aria-labelledby="asistencia-label"
-          className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
+          className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
           value={asistencia}
           onValueChange={(v) => setAsistencia(v as RegistrarAsistenciaInput["ASISTENCIA"])}
         >

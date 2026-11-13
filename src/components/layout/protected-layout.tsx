@@ -60,13 +60,20 @@ export function ProtectedLayout() {
             <NavUser />
           </div>
         </header>
-        <AvisoInactividad />
-        <OfflineBanner />
-        <FirstPrepareBanner />
+        {/*
+          Avisos de toda la app sobre el mismo gris del contenido (`bg-sidebar`), no sobre el blanco
+          del encabezado. `flex-col` evita que el margen de cada aviso se salga del contenedor, y
+          el `pt-3` solo aparece cuando hay alguno a la vista (el de conexión queda montado vacío).
+        */}
+        <div data-slot="app-banners" className="flex flex-col bg-sidebar has-[>*:not(:empty)]:pt-3">
+          <AvisoInactividad />
+          <OfflineBanner />
+          <FirstPrepareBanner />
+          <UpdateRequiredBanner />
+          <StorageWarningBanner />
+        </div>
         <AutoPrepareRunner />
         <DetectorInactividad />
-        <UpdateRequiredBanner />
-        <StorageWarningBanner />
         {/*
           `flex flex-col` para que la card de contenido de cada página pueda
           estirarse (`grow`) hasta el borde inferior cuando la tabla es corta.

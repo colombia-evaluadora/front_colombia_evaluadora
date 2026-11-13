@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { DatePicker } from "@/components/date-picker"
-import { FunnelIcon } from "@/components/ui/icons"
+import { FunnelIcon, FunnelXIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { useOpcionesFiltroQuery } from "@/features/comunicaciones/chat/api/query/use-busqueda-chat-query"
@@ -226,6 +226,7 @@ export function FiltrosChatPopover({
             className="w-full"
             onClick={() => onFiltros({ ...FILTROS_VACIOS, q: filtros.q })}
           >
+            <FunnelXIcon data-icon="inline-start" />
             Limpiar filtros
           </Button>
         )}

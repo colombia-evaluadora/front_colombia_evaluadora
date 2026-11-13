@@ -86,7 +86,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/dropdown-menu-item relative flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-inset:pl-9.5 data-[variant=destructive]:text-red data-[variant=destructive]:data-highlighted:bg-red/10 data-[variant=destructive]:data-highlighted:text-red dark:data-[variant=destructive]:data-highlighted:bg-red/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 data-[variant=destructive]:*:[svg]:text-red",
+        "group/dropdown-menu-item relative flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-sm outline-hidden transition-colors select-none data-highlighted:bg-primary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-inset:pl-9.5 data-[variant=destructive]:text-red data-[variant=destructive]:data-highlighted:bg-red/10 data-[variant=destructive]:data-highlighted:text-red dark:data-[variant=destructive]:data-highlighted:bg-red/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 data-[variant=destructive]:*:[svg]:text-red",
         className,
       )}
       {...props}
@@ -111,7 +111,7 @@ function DropdownMenuSubTrigger({
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none focus:bg-secondary-22 focus:text-foreground not-data-[variant=destructive]:focus:**:text-foreground data-inset:pl-9.5 data-popup-open:bg-secondary-22 data-popup-open:text-foreground data-open:bg-secondary-22 data-open:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-hidden transition-colors select-none focus:bg-primary-22 focus:text-foreground not-data-[variant=destructive]:focus:**:text-foreground data-inset:pl-9.5 data-popup-open:bg-primary-22 data-popup-open:text-foreground data-open:bg-primary-22 data-open:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
@@ -180,7 +180,7 @@ function DropdownMenuCheckboxItem({
         // `data-checked:focus:` / `data-checked:data-highlighted:` ganán sobre
         // el focus/highlight base: si hovereás un item ya seleccionado, no
         // salta al verde del focus sino que se queda en marca.
-        "group/dropdown-menu-checkbox-item relative flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 focus:bg-secondary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-secondary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-checked:bg-primary-22 data-checked:text-primary data-checked:**:text-primary data-checked:focus:bg-primary-22 data-checked:focus:text-primary data-checked:focus:**:text-primary data-checked:data-highlighted:bg-primary-22 data-checked:data-highlighted:text-primary data-checked:data-highlighted:**:text-primary",
+        "group/dropdown-menu-checkbox-item relative my-1 flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm outline-hidden transition-colors select-none data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 focus:bg-primary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-primary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-checked:bg-primary-22 data-checked:text-primary data-checked:**:text-primary data-checked:focus:bg-primary-22 data-checked:focus:text-primary data-checked:focus:**:text-primary data-checked:data-highlighted:bg-primary-22 data-checked:data-highlighted:text-primary data-checked:data-highlighted:**:text-primary",
         className,
       )}
       checked={checked}
@@ -228,7 +228,7 @@ function DropdownMenuRadioItem({
         // note cuál está activo, no solo el check. Los pares con
         // `data-checked:focus:` / `data-checked:data-highlighted:` evitan que
         // el hover/focus pise el estado seleccionado con el verde base.
-        "group/dropdown-menu-radio-item relative flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 focus:bg-secondary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-secondary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-checked:bg-primary-22 data-checked:text-primary data-checked:**:text-primary data-checked:focus:bg-primary-22 data-checked:focus:text-primary data-checked:focus:**:text-primary data-checked:data-highlighted:bg-primary-22 data-checked:data-highlighted:text-primary data-checked:data-highlighted:**:text-primary",
+        "group/dropdown-menu-radio-item relative my-1 flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm outline-hidden transition-colors select-none data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 focus:bg-primary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-primary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-checked:bg-primary-22 data-checked:text-primary data-checked:**:text-primary data-checked:focus:bg-primary-22 data-checked:focus:text-primary data-checked:focus:**:text-primary data-checked:data-highlighted:bg-primary-22 data-checked:data-highlighted:text-primary data-checked:data-highlighted:**:text-primary",
         className,
       )}
       {...props}

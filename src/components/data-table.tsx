@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ACTIONS_BUTTON_HOVER_CLASS } from "@/components/table-row-actions"
 import { OfflineDataMessage } from "@/components/offline/offline-data-message"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 import { useOfflineStall } from "@/lib/offline/use-offline-stall"
@@ -184,6 +185,7 @@ export function DataTable({
   const overlayClass = (active = false) =>
     cn(
       "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2",
+      ACTIONS_BUTTON_HOVER_CLASS,
       insideSubRow ? "bg-muted/20" : "bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]",
       "transition-opacity",
       active
@@ -194,8 +196,12 @@ export function DataTable({
   // Ancho y clases de la columna que absorbe el sobrante, para th y td.
   const growCellClass = (columnId: string) =>
     columnId === growColumnId ? growColumnClassName : undefined
+  // Sin filas (vacío, cargando o error) no hay texto que justifique el ancho:
+  // la columna dejaba un hueco grande entre los encabezados y el sobrante se
+  // reparte entre todas las columnas.
+  const hayFilas = table.getRowModel().rows.length > 0
   const growCellStyle = (columnId: string) =>
-    columnId === growColumnId ? { width: "100%" } : undefined
+    hayFilas && columnId === growColumnId ? { width: "100%" } : undefined
 
   // Columna de respiro, JUSTO ANTES de la de acciones: el overlay está anclado
   // al borde derecho de su celda y crece hacia la IZQUIERDA, así que el hueco
@@ -205,19 +211,17 @@ export function DataTable({
   // El ancho sale del `size` que cada `columns.tsx` declara para `actions`, así
   // que el hueco mide exactamente lo que ocupan los botones de esa tabla.
   //
-  // El ancho va en un `div` interno además de en la celda: con
-  // `table-layout: auto` el `width` de un `<td>` es solo una sugerencia y una
-  // celda vacía tiene `min-content: 0`, así que el navegador la colapsa. Un
-  // hijo con ancho fijo sí le da min-content real.
+  // El ancho va SOLO en la celda, como sugerencia: con `table-layout: auto` y
+  // `min-content: 0` (celda vacía) el navegador lo respeta si sobra espacio y
+  // lo colapsa si no. Antes iba también en un `div` interno con ancho fijo, y
+  // ese hueco vacío —276px con 6 acciones— forzaba scroll horizontal en tablas
+  // que sin él cabían. Si la tabla no tiene espacio, el overlay (opaco) se
+  // dibuja encima de las últimas columnas solo mientras dura el hover.
   const actionsColumn = visibleColumns.find((c) => isActionsColumn(c.id))
   const hasActionsColumn = actionsColumn !== undefined
   const columnCount = visibleColumns.length + (hasActionsColumn ? 1 : 0)
   const spacerWidth = actionsColumn?.getSize() ?? 96
-  const spacerCell = (
-    <td aria-hidden className="p-0">
-      <div style={{ width: spacerWidth }} />
-    </td>
-  )
+  const spacerCell = <td aria-hidden className="p-0" style={{ width: spacerWidth }} />
 
   return (
     // El borde, el radio y el scroll horizontal los pone el contenedor propio
@@ -237,9 +241,7 @@ export function DataTable({
                 return (
                   <Fragment key={header.id}>
                     {isActions ? (
-                      <th aria-hidden className="p-0">
-                        <div style={{ width: spacerWidth }} />
-                      </th>
+                      <th aria-hidden className="p-0" style={{ width: spacerWidth }} />
                     ) : null}
                     <TableHead
                       className={cn(
@@ -444,7 +446,7 @@ export function DataTableColumnHeader<TData, TValue>({
               size="sm"
               variant="ghost"
               color="neutral"
-              className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-end]:pr-3 data-[state=open]:bg-accent"
+              className="-ml-3 h-8 px-3 text-sm font-medium has-data-[icon=inline-end]:pr-3 data-[state=open]:bg-accent"
             />
           }
         >

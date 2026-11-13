@@ -123,7 +123,7 @@ export function DialogRegistrarSesion({
           calificable hasta hoy.
         </p>
         <div className="grid gap-4">
-          <span className="-mb-3 text-sm font-medium">Grado/Grupo *</span>
+          <span className="-mb-3 text-sm font-medium">Grado/Grupo<span className="text-red">*</span></span>
           <Select
             items={toSelectItemsMap(opcionesGrupo)}
             value={grupo}
@@ -144,7 +144,7 @@ export function DialogRegistrarSesion({
               ))}
             </SelectContent>
           </Select>
-          <span className="-mb-3 text-sm font-medium">Área *</span>
+          <span className="-mb-3 text-sm font-medium">Área<span className="text-red">*</span></span>
           <Select
             items={toSelectItemsMap(opcionesAsignatura)}
             value={asignatura}
@@ -162,7 +162,7 @@ export function DialogRegistrarSesion({
               ))}
             </SelectContent>
           </Select>
-          <span className="-mb-3 text-sm font-medium">Fecha *</span>
+          <span className="-mb-3 text-sm font-medium">Fecha<span className="text-red">*</span></span>
           <Select items={toSelectItemsMap(opcionesFecha)} value={fecha} disabled={!asignatura} onValueChange={(next) => setFecha(next ?? "")}>
             <SelectTrigger variant="outlined" aria-label="Fecha">
               <SelectValue placeholder="Seleccione" />

@@ -7,7 +7,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
-import { FileDownloadOutlinedIcon, FilePdfIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, MagnifyingGlassIcon, FunnelXIcon } from "@/components/ui/icons"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { SelectCampo } from "@/features/administration/conservacion-datos/components/select-campo"
@@ -219,7 +219,7 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
               filtrar({ q: undefined, establecimiento: undefined, tipo: undefined, anio: undefined })
             }}
           >
-            <XIcon data-icon="inline-start" />
+            <FunnelXIcon data-icon="inline-start" />
             Limpiar filtros
           </Button>
         ) : null}

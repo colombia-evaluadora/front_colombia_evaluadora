@@ -89,7 +89,7 @@ export function SubjectsMultiSelect<T extends string | number>({
         className={cn(
           inputVariants({ variant: resolvedVariant }),
           inputTriggerVariants({ variant: resolvedVariant }),
-          "relative flex h-auto min-h-11 items-center gap-2 text-left",
+          "relative flex h-auto min-h-10 items-center gap-2 text-left",
           // El contorno es un div: sin esto seguía resaltando al pasar el mouse.
           disabled && "cursor-not-allowed bg-muted/50 opacity-70 hover:border-input",
         )}
@@ -143,7 +143,7 @@ export function SubjectsMultiSelect<T extends string | number>({
             </>
           )}
         </div>
-        <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-4 shrink-0" />
+        <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-5 shrink-0" />
       </div>
       <DropdownMenuContent align="start" className="min-w-64">
         {options.length === 0 ? (

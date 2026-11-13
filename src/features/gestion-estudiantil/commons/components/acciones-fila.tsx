@@ -40,7 +40,7 @@ interface Props {
 
 /**
  * Acciones de una fila de Gestión Estudiantil, como en Matrícula: los iconos aparecen al pasar sobre la
- * fila (el overlay de `DataTable`). Hasta 4 acciones van todas a la vista; desde 5, las 4 primeras como
+ * fila (el overlay de `DataTable`). Hasta 6 acciones van todas a la vista; desde 7, las 6 primeras como
  * iconos y el resto en un menú ⋮.
  */
 export function AccionesFila({ etiqueta, acciones, modo = "fila", extra }: Props) {

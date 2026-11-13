@@ -43,7 +43,7 @@ export function EspecialidadSelect({ value, academicPeriodId, onChange }: Especi
         }
       >
         <span className="flex-1 truncate">{value || "Seleccionar"}</span>
-        <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+        <CaretDownIcon className="size-5 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       {/* Mismo ancho que el campo; mínimo para que se lean los nombres. */}
       <PopoverContent align="start" className="w-(--anchor-width) min-w-64 p-0">

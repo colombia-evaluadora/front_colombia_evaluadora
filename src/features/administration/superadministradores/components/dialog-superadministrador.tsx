@@ -268,20 +268,20 @@ function SuperadministradorForm({
           </DialogDescription>
         </DialogHeader>
         {modo === "nuevo" && (
-          <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
+          <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
             <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
             Se enviará al correo un enlace para que establezca su contraseña. Si la persona ya tiene
             una cuenta activa en la plataforma, conserva la suya.
           </p>
         )}
         {yaEs && (
-          <p className="flex items-start gap-2 rounded-md bg-yellow-22 px-3 py-2 text-sm text-yellow">
+          <p className="flex items-start gap-2 rounded-md border border-yellow-stroke bg-yellow-22 px-3 py-2 text-sm text-yellow">
             <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
             {yaEs.nombre} ya es Superadministrador.
           </p>
         )}
         {persona && (
-          <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
+          <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
             <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
             Esta persona ya existe en la plataforma: se le agregará el rol de Superadministrador con
             su cuenta actual{persona.correo ? ` (${persona.correo})` : ""}, sin crear una nueva.

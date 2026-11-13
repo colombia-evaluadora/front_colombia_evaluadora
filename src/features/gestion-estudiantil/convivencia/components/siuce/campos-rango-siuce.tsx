@@ -26,7 +26,7 @@ export function CamposRangoSiuce({ base, onBase, desde, hasta, onDesde, onHasta,
         <FieldLabel id="siuce-base-label">Base de fecha*</FieldLabel>
         <RadioGroup
           aria-labelledby="siuce-base-label"
-          className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
+          className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
           value={base}
           onValueChange={(v) => onBase(v as BaseFechaSiuce)}
         >

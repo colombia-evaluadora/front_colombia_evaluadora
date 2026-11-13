@@ -26,11 +26,9 @@ import { cn } from "@/lib/utils"
 interface SearchQueryBarProps {
   /** Id del control: lo necesita el `htmlFor` de la etiqueta. */
   id: string
-  /**
-   * Etiqueta visible. `null` para las barras que van dentro de un tab y ya
-   * tienen contexto alrededor: ahí el nombre accesible lo da `aria-label`.
-   */
+  /** Etiqueta descriptiva («Buscar por nombre…»). Sin ella (o `null`), se usa `placeholder`. */
   label?: string | null
+  /** Qué se busca. Se muestra como etiqueta; el input siempre dice «Buscar». */
   placeholder: string
   value: string
   onValueChange: (value: string) => void
@@ -54,6 +52,11 @@ interface SearchQueryBarProps {
   size?: "sm" | "lg"
   /** Ancho de la barra; por defecto la misma medida en todos los listados. */
   className?: string
+  /**
+   * Clases del campo en sí (p. ej. `h-12` si un caso puntual necesita otro alto que los botones
+   * del toolbar, como pide el diseño de la bandeja de notificaciones).
+   */
+  inputClassName?: string
   children: ReactNode
 }
 
@@ -74,10 +77,25 @@ export function SearchQueryBar({
   applyDisabled,
   size,
   className,
+  inputClassName,
   children,
 }: SearchQueryBarProps) {
+  /**
+   * Guía de diseño (aplica a todos los buscadores): la etiqueta dice qué se busca y el placeholder
+   * solo «Buscar». La etiqueta es la descriptiva que pase el buscador o, si no tiene (o es el
+   * genérico «Buscar»), el texto que antes iba de placeholder. Siempre se ve, también en los
+   * buscadores que antes la ocultaban (`label={null}`). «Buscar por» suelto no dice nada: queda
+   * «Buscar».
+   */
+  const descriptiva = label && label !== "Buscar" ? label : placeholder
+  const etiqueta = descriptiva.trim() === "Buscar por" ? "Buscar" : descriptiva
   const input = (
-    <InputGroup className="h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+    <InputGroup
+      className={cn(
+        "h-10 w-full rounded-sm border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20",
+        inputClassName,
+      )}
+    >
       <InputGroupAddon align="inline-start" className="ml-2">
         <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
       </InputGroupAddon>
@@ -86,8 +104,7 @@ export function SearchQueryBar({
         id={id}
         type="search"
         autoComplete="off"
-        placeholder={placeholder}
-        aria-label={label ? undefined : placeholder}
+        placeholder="Buscar"
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         // La X que Chrome inyecta en los `type="search"` duplicaba a la
@@ -135,14 +152,12 @@ export function SearchQueryBar({
     </InputGroup>
   )
 
-  if (!label) return <div className={cn("w-full sm:w-96", className)}>{input}</div>
-
   // El `Field` outlined solo aporta la etiqueta flotante: el borde y el foco
   // los sigue pintando el propio `InputGroup`. Sin `aria-label` en el control,
   // para que el nombre accesible lo dé la etiqueta visible.
   return (
     <Field orientation="vertical" variant="outlined" className={cn("w-full max-w-xl", className)}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id}>{etiqueta}</FieldLabel>
       {input}
     </Field>
   )
