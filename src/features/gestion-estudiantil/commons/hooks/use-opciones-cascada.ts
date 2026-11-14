@@ -32,6 +32,12 @@ export function useOpcionesCascada(sede: string, jornada: string) {
     value: String(g.grupoId),
     label: `${g.gradoNombre} · ${g.grupoEtiqueta}`,
   }))
+  // Grados únicos de los grupos del período (el filtro por grado de un listado es por PK_TGRADO, no por grupo).
+  const gradoOpciones: Opcion[] = [
+    ...new Map((grupos.data ?? []).map((g) => [g.gradoId, { value: String(g.gradoId), label: g.gradoNombre }])).values(),
+  ]
+  // VALOR del catálogo GRADOS de cada grado (TGRADO.CODIGO), por PK_TGRADO: así se cruza con listas por código.
+  const gradoCodigos = new Map((grupos.data ?? []).map((g) => [String(g.gradoId), g.gradoCodigo ?? ""]))
   const periodoOpciones: Opcion[] = (periodos.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre }))
 
   // Un rector de varios colegios: el catálogo de códigos es el del colegio de la sede elegida.
@@ -44,6 +50,8 @@ export function useOpcionesCascada(sede: string, jornada: string) {
     sedeOpciones,
     jornadaOpciones,
     grupoOpciones,
+    gradoOpciones,
+    gradoCodigos,
     periodoOpciones,
     periodos: periodos.data ?? [],
     establecimientoId,
