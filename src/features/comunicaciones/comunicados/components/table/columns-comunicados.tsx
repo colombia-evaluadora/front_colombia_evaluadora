@@ -1,7 +1,7 @@
 "use no memo"
 
 import { format } from "date-fns"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
@@ -15,6 +15,8 @@ import { DotsThreeVerticalIcon, EyeIcon, PencilIcon, ProhibitIcon, XCircleIcon }
 import { paths } from "@/config/paths"
 import { EstadoComunicadoBadge } from "@/features/comunicaciones/chat/components/comunicado-panel"
 import type { ComunicadoGestion } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
+import { AccionesFila, type AccionFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
+import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { tiposAbreviados, tiposCompletos } from "@/features/comunicaciones/comunicados/lib/tipos-destinatario"
 
 export type DialogoComunicado = { tipo: "anular" | "cancelar"; c: ComunicadoGestion }
@@ -46,13 +48,10 @@ export function createComunicadosColumns({
       meta: { label: "Título" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Título" />,
       cell: ({ row }) => (
-        <Link
-          to={paths.app.comunicacionesComunicadoDetalle.getHref(row.original.id)}
-          title={row.original.titulo}
-          className="block max-w-72 truncate font-medium hover:underline"
-        >
+        // Texto plano como el prototipo: al detalle se entra por "Ver detalle" del hover.
+        <span title={row.original.titulo} className="block max-w-72 truncate font-medium">
           {row.original.titulo}
-        </Link>
+        </span>
       ),
     },
     {
@@ -91,16 +90,62 @@ export function createComunicadosColumns({
     },
     {
       id: "actions",
-      size: 48,
+      // Como máximo 3 iconos a la vez: Ver detalle + Modificar + Cancelar/Anular.
+      size: anchoAccionesFila(3),
       enableHiding: false,
       enableSorting: false,
       header: () => <span className="sr-only">Acciones</span>,
-      cell: ({ row }) => <MenuAccionesComunicado c={row.original} onDialogo={onDialogo} />,
+      cell: ({ row }) => <AccionesComunicado c={row.original} onDialogo={onDialogo} />,
     },
   ]
 }
 
-/** Menú ⁞ (M.1.LIS.2 y M.1.LIS.3): Modificar solo al autor; Cancelar los programados; Anular los publicados. */
+/**
+ * Iconos en el hover de la fila (escritorio). Mismas reglas que el menú ⁞: las acciones que no aplican
+ * se ocultan (no se deshabilitan) para no ofrecer operaciones que el estado no admite.
+ */
+function AccionesComunicado({
+  c,
+  onDialogo,
+}: {
+  c: ComunicadoGestion
+  onDialogo: (d: DialogoComunicado) => void
+}) {
+  const navigate = useNavigate()
+  const vigente = c.estado === "PUBLICADO" || c.estado === "PROGRAMADO"
+  const acciones: AccionFila[] = [
+    {
+      id: "ver",
+      label: "Ver detalle",
+      icon: <EyeIcon />,
+      onSelect: () => navigate({ to: paths.app.comunicacionesComunicadoDetalle.getHref(c.id) }),
+    },
+  ]
+  if (c.esAutor && vigente)
+    acciones.push({
+      id: "modificar",
+      label: "Modificar",
+      icon: <PencilIcon />,
+      onSelect: () => navigate({ to: paths.app.comunicacionesComunicadoEditar.getHref(c.id) }),
+    })
+  if (c.estado === "PROGRAMADO")
+    acciones.push({
+      id: "cancelar",
+      label: "Cancelar comunicado",
+      icon: <XCircleIcon />,
+      onSelect: () => onDialogo({ tipo: "cancelar", c }),
+    })
+  if (c.estado === "PUBLICADO")
+    acciones.push({
+      id: "anular",
+      label: "Anular",
+      icon: <ProhibitIcon className="text-red" />,
+      onSelect: () => onDialogo({ tipo: "anular", c }),
+    })
+  return <AccionesFila etiqueta={`Opciones de ${c.titulo}`} acciones={acciones} />
+}
+
+/** Menú ⁞ para las tarjetas de móvil (M.1.LIS.2 y M.1.LIS.3): Modificar solo al autor; Cancelar los programados; Anular los publicados. */
 export function MenuAccionesComunicado({
   c,
   onDialogo,
