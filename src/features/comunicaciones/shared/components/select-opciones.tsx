@@ -31,6 +31,7 @@ type Comunes = {
   className?: string
   "aria-label"?: string
   "aria-required"?: boolean
+  "aria-invalid"?: boolean
 }
 
 type Simple = Comunes & { multiple?: false; value: string; onValueChange: (valor: string) => void }
@@ -48,6 +49,7 @@ export function SelectOpciones(props: Simple | Multiple) {
       className={className ?? "w-full"}
       aria-label={props["aria-label"]}
       aria-required={props["aria-required"]}
+      aria-invalid={props["aria-invalid"] || undefined}
     >
       {props.multiple ? (
         <SelectValue placeholder={placeholder}>
