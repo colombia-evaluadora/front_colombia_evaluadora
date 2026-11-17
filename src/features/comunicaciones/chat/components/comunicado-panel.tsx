@@ -269,6 +269,7 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
           </FieldLabel>
           <Textarea
             id="motivo-anulacion"
+            placeholder="Agregar"
             className={TEXTAREA_OUTLINED}
             value={motivo}
             maxLength={MAX_MOTIVO}
