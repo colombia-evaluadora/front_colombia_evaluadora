@@ -44,13 +44,13 @@ function PublicHeader() {
           <span className="text-lg">{PUBLIC_SITE_NAME}</span>
         </Link>
 
-        <nav aria-label="Sitio público" className="ml-auto hidden items-center gap-6 md:flex">
+        <nav aria-label="Sitio público" className="ml-auto hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="text-navy-foreground/90 hover:text-navy-foreground border-b-2 border-transparent py-1 text-sm"
-              activeProps={{ className: "border-navy-foreground font-bold text-navy-foreground" }}
+              className="text-navy-foreground hover:border-navy-foreground/40 border-b-2 border-transparent py-1 text-sm font-normal transition-colors"
+              activeProps={{ className: "border-navy-foreground! font-semibold" }}
             >
               {link.label}
             </Link>
@@ -59,7 +59,7 @@ function PublicHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <ModeToggle />
+          <ModeToggle appearance="ghost" />
           <Button
             variant="ghost"
             size="icon"
@@ -99,12 +99,11 @@ function LoginButton({ className }: { className?: string }) {
     <Link
       to={paths.auth.login.getHref()}
       className={cn(
-        "border-navy-foreground/80 inline-flex items-center gap-2 rounded-md border px-4 py-1.5 text-sm font-semibold hover:bg-white/10",
+        "bg-navy-foreground text-navy inline-flex h-10 items-center gap-2 rounded-sm px-5 text-xs font-medium shadow-sm transition-colors hover:bg-navy-foreground/90",
         className,
       )}
-      activeProps={{ className: "bg-navy-foreground text-navy" }}
     >
-      <SignInIcon className="size-4" aria-hidden="true" />
+      <SignInIcon className="size-5" aria-hidden="true" />
       Iniciar sesión
     </Link>
   )
