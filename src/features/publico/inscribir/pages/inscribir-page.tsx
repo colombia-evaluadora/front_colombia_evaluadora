@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeftIcon, ArrowRightIcon, ClipboardTextIcon, FloppyDiskIcon, InfoIcon, WarningIcon } from "@/components/ui/icons"
+import { env } from "@/config/env"
 import { inscribirRoute } from "@/router"
 
 import { CatalogosFijosContext } from "@/features/coverage/matricula/api/query/catalogos-fijos"
@@ -73,7 +74,10 @@ const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export function InscribirPage() {
   const { vista } = inscribirRoute.useSearch()
 
-  if (vista !== "formulario") {
+  // El asistente es una vista previa que no guarda nada: solo se abre con mocks
+  // (vitrina dev). En test/producción una familia podría llenarlo creyendo que
+  // quedó inscrita, así que ahí siempre se ve el aviso de inscripciones cerradas.
+  if (vista !== "formulario" || !env.ENABLE_API_MOCKING) {
     return (
       <PublicBand
         icon={ClipboardTextIcon}
@@ -401,7 +405,7 @@ function AsistenteInscripcion() {
       </div>
 
       <Dialog open={bloqueo} onOpenChange={setBloqueo}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <WarningIcon className="text-orange size-5" aria-hidden />

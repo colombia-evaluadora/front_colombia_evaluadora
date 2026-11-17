@@ -27,7 +27,7 @@ import {
   matriculaSearchSchema,
 } from "@/features/coverage/shared/api/schema"
 import { inscripcionReservasSearchSchema } from "@/features/coverage/inscripcion-reservas/api/schema"
-import { inscribirSearchSchema } from "@/features/publico/inscribir/datos-demo"
+import { inscribirSearchSchema } from "@/features/publico/inscribir/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,

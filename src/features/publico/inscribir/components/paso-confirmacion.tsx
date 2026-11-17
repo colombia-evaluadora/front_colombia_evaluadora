@@ -126,7 +126,7 @@ export function PasoConfirmacion({
       </div>
 
       <Dialog open={verTexto} onOpenChange={setVerTexto}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Tratamiento de datos personales</DialogTitle>
             <DialogDescription>Ley 1581 de 2012 y Decreto 1377 de 2013.</DialogDescription>
