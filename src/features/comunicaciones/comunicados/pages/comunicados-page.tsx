@@ -93,9 +93,6 @@ function ComunicadosContent() {
   const pestana: PestanaComunicados = search.pestana ?? (publica ? "PUBLICADOS" : "RECIBIDOS")
   const gestion = pestana === "PUBLICADOS"
 
-  const cambiar = (cambios: Partial<typeof search>) =>
-    void navigate({ search: (prev) => ({ ...prev, ...cambios, page: 0 }), replace: true })
-
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -119,7 +116,9 @@ function ComunicadosContent() {
           <Tabs
             value={pestana}
             onValueChange={(v) =>
-              void navigate({ search: { pestana: v as PestanaComunicados, page: 0, pageSize: search.pageSize } })
+              void navigate({
+                search: { pestana: v as PestanaComunicados, page: 0, pageSize: search.pageSize },
+              })
             }
           >
             <TabsList>
@@ -130,37 +129,28 @@ function ComunicadosContent() {
           </Tabs>
         </TableScreenTabs>
         <TableScreenToolbar>
-          {gestion ? (
-            <FiltrosPublicados />
-          ) : (
-            // Misma barra que Publicados, pero sin embudo: la bandeja solo filtra por título.
-            <SearchQueryBar
-              id="comunicados-q"
-              label="Buscar por título"
-              placeholder="Buscar por título"
-              value={search.q ?? ""}
-              onValueChange={(v) => cambiar({ q: v || undefined })}
-              onClearAll={() => cambiar({ q: undefined })}
-              activeFilterCount={search.q ? 1 : 0}
-            />
-          )}
+          {/* Recibidos y Anteriores filtran igual, sin Estado: cada pestaña ya fija el suyo. */}
+          <FiltrosComunicados conEstado={gestion} />
         </TableScreenToolbar>
       </TableScreenHeader>
 
-      <TableScreenBody>{gestion ? <TablaPublicados /> : <Bandeja pestana={pestana} />}</TableScreenBody>
+      <TableScreenBody>
+        {gestion ? <TablaPublicados /> : <Bandeja pestana={pestana} />}
+      </TableScreenBody>
     </TableScreen>
   )
 }
 
 const etiquetaEstado = (e: EstadoComunicado) => ESTADOS.find((x) => x.valor === e)?.etiqueta ?? e
-const etiquetaTipo = (t: TipoFiltroComunicado) => TIPOS_FILTRO.find((x) => x.valor === t)?.etiqueta ?? t
+const etiquetaTipo = (t: TipoFiltroComunicado) =>
+  TIPOS_FILTRO.find((x) => x.valor === t)?.etiqueta ?? t
 
 /**
- * Buscador de Publicados (M.1.LIS.1): un solo campo "Buscar por título" con el embudo que abre los
- * filtros avanzados (Estado, Desde, Emisor y Tipo de destinatario). Los aplicados se ven como chips
+ * Buscador de las tres pestañas (M.1.LIS.1): un solo campo "Buscar por título" con el embudo que abre
+ * los filtros avanzados (Estado solo en Publicados; Desde, Emisor y Tipo de destinatario en todas). Los aplicados se ven como chips
  * removibles debajo, con "Limpiar filtros". Todo vive en la URL.
  */
-function FiltrosPublicados() {
+function FiltrosComunicados({ conEstado }: { conEstado: boolean }) {
   const search = comunicadosRoute.useSearch()
   const navigate = comunicadosRoute.useNavigate()
   const [abierto, setAbierto] = useState(false)
@@ -182,7 +172,11 @@ function FiltrosPublicados() {
     void navigate({ search: (prev) => ({ ...prev, ...cambios, page: 0 }), replace: true })
 
   const chips = [
-    search.estado && { clave: "estado" as const, texto: `Estado: ${etiquetaEstado(search.estado)}` },
+    conEstado &&
+      search.estado && {
+        clave: "estado" as const,
+        texto: `Estado: ${etiquetaEstado(search.estado)}`,
+      },
     search.desde && {
       clave: "desde" as const,
       texto: `Desde ${format(new Date(`${search.desde}T00:00:00`), "dd/MM/yyyy")}`,
@@ -193,7 +187,13 @@ function FiltrosPublicados() {
   const hayFiltros = chips.length > 0 || !!search.q
 
   const limpiar = () =>
-    cambiar({ q: undefined, estado: undefined, desde: undefined, emisor: undefined, tipo: undefined })
+    cambiar({
+      q: undefined,
+      estado: undefined,
+      desde: undefined,
+      emisor: undefined,
+      tipo: undefined,
+    })
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-2">
@@ -213,7 +213,7 @@ function FiltrosPublicados() {
         onOpenChange={setAbierto}
         onApply={() => {
           cambiar({
-            estado: estado || undefined,
+            estado: conEstado ? estado || undefined : undefined,
             desde: desde || undefined,
             emisor: emisor.trim() || undefined,
             tipo: tipo || undefined,
@@ -223,18 +223,20 @@ function FiltrosPublicados() {
         size="sm"
       >
         <div className="flex flex-col gap-3 px-4">
-          <Field variant="outlined">
-            <FieldLabel htmlFor="comunicados-estado">Estado</FieldLabel>
-            <SelectOpciones
-              id="comunicados-estado"
-              value={estado}
-              onValueChange={(x) => setEstado(x as EstadoComunicado | "")}
-              opciones={[
-                { value: "", label: "Todos" },
-                ...ESTADOS.map((x) => ({ value: x.valor, label: x.etiqueta })),
-              ]}
-            />
-          </Field>
+          {conEstado && (
+            <Field variant="outlined">
+              <FieldLabel htmlFor="comunicados-estado">Estado</FieldLabel>
+              <SelectOpciones
+                id="comunicados-estado"
+                value={estado}
+                onValueChange={(x) => setEstado(x as EstadoComunicado | "")}
+                opciones={[
+                  { value: "", label: "Todos" },
+                  ...ESTADOS.map((x) => ({ value: x.valor, label: x.etiqueta })),
+                ]}
+              />
+            </Field>
+          )}
           <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-desde">Desde</FieldLabel>
             <DatePicker
@@ -305,9 +307,9 @@ function useLista(pestana: PestanaComunicados) {
     pestana,
     q: search.q,
     estado: pestana === "PUBLICADOS" ? search.estado : undefined,
-    desde: pestana === "PUBLICADOS" ? search.desde : undefined,
-    emisor: pestana === "PUBLICADOS" ? search.emisor : undefined,
-    tipo: pestana === "PUBLICADOS" ? search.tipo : undefined,
+    desde: search.desde,
+    emisor: search.emisor,
+    tipo: search.tipo,
     sortBy: search.sortBy as OrdenComunicados | undefined,
     sortDir: search.sortDir,
     page: search.page,
@@ -316,19 +318,17 @@ function useLista(pestana: PestanaComunicados) {
 }
 
 /** Cargando, error o vacío; null cuando hay filas que mostrar. */
-function estadoLista({
-  lista,
-  vacio,
-}: {
-  lista: ReturnType<typeof useLista>
-  vacio: string
-}) {
+function estadoLista({ lista, vacio }: { lista: ReturnType<typeof useLista>; vacio: string }) {
   if (lista.isPending) return <Spinner className="m-6" />
   if (lista.isError) {
     return (
       <p className="text-sm text-muted-foreground">
         {getErrorMessage(lista.error)}{" "}
-        <button type="button" onClick={() => void lista.refetch()} className="font-medium text-primary underline">
+        <button
+          type="button"
+          onClick={() => void lista.refetch()}
+          className="font-medium text-primary underline"
+        >
           Reintentar
         </button>
       </p>
@@ -380,8 +380,8 @@ function TablaPublicados() {
                   <MenuAccionesComunicado c={c} onDialogo={setDialogo} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)} · {c.destinatarios ?? 0}{" "}
-                  destinatarios
+                  {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)} ·{" "}
+                  {c.destinatarios ?? 0} destinatarios
                 </p>
                 <div className="mt-1">
                   <EstadoComunicadoBadge estado={c.estado} />
@@ -414,14 +414,15 @@ function TablaPublicados() {
         onPageSizeChange={paginacion.setPageSize}
       />
 
-      {dialogo?.tipo === "anular" && <AnularDialog comunicado={accion(dialogo.c)} onClose={() => setDialogo(null)} />}
+      {dialogo?.tipo === "anular" && (
+        <AnularDialog comunicado={accion(dialogo.c)} onClose={() => setDialogo(null)} />
+      )}
       {dialogo?.tipo === "cancelar" && (
         <CancelarDialog comunicado={accion(dialogo.c)} onClose={() => setDialogo(null)} />
       )}
     </>
   )
 }
-
 
 /**
  * Recibidos y Anteriores (M.1.REC.1): misma tabla que Publicados (orden, columnas visibles y
@@ -434,7 +435,8 @@ function Bandeja({ pestana }: { pestana: PestanaComunicados }) {
   const filas = lista.data?.items ?? []
   const pageCount = lista.data?.pageCount ?? 0
   const totalCount = lista.data?.totalCount ?? 0
-  const vacio = pestana === "RECIBIDOS" ? "No tienes comunicados recibidos." : "No hay comunicados anteriores."
+  const vacio =
+    pestana === "RECIBIDOS" ? "No tienes comunicados recibidos." : "No hay comunicados anteriores."
 
   const { table } = useDataTable({
     columns: createBandejaColumns(),
@@ -460,9 +462,14 @@ function Bandeja({ pestana }: { pestana: PestanaComunicados }) {
                     <span
                       aria-label={c.leido ? undefined : "No leído"}
                       role={c.leido ? undefined : "img"}
-                      className={cn("mt-1.5 size-2 shrink-0 rounded-full", !c.leido && "bg-primary")}
+                      className={cn(
+                        "mt-1.5 size-2 shrink-0 rounded-full",
+                        !c.leido && "bg-primary",
+                      )}
                     />
-                    <span className={cn("min-w-0 break-words", !c.leido && "font-semibold")}>{c.titulo}</span>
+                    <span className={cn("min-w-0 break-words", !c.leido && "font-semibold")}>
+                      {c.titulo}
+                    </span>
                   </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)}
