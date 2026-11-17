@@ -5,11 +5,20 @@ import { useNavigate } from "@tanstack/react-router"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { queueNotice } from "@/components/notice/notice-context"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { InfoIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { comunicadoEditarRoute } from "@/router"
@@ -96,21 +105,13 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
   const total = c.totalDestinatarios
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 p-4">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">Modificar comunicado</h1>
-          {c.estado && <EstadoComunicadoBadge estado={c.estado} />}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" color="neutral" onClick={cancelar} disabled={corregir.isPending}>
-            Cancelar
-          </Button>
-          <Button type="submit" form={FORM_ID} disabled={corregir.isPending} aria-busy={corregir.isPending}>
-            Guardar
-          </Button>
-        </div>
-      </header>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle action={c.estado ? <EstadoComunicadoBadge estado={c.estado} /> : undefined}>
+          Modificar comunicado
+        </TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody className="rounded-b-none border-b-0" contentClassName="flex flex-col gap-4">
 
       <p className="flex items-start gap-2 rounded-lg bg-blue-22 p-3 text-sm">
         <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
@@ -121,7 +122,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
       <ErrorNoticeBanner error={corregir.isError ? corregir.error : null} />
 
       <section aria-labelledby="destinatarios-titulo" className="space-y-2 rounded-lg border p-4 text-sm">
-        <h2 id="destinatarios-titulo" className="font-medium">
+        <h2 id="destinatarios-titulo" className="text-base font-semibold">
           Destinatarios (no se modifican después de publicar)
         </h2>
         <dl className="grid gap-2 sm:grid-cols-3">
@@ -167,11 +168,11 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           )
         }}
       >
-        <h2 className="font-medium">Contenido</h2>
-        <div className="space-y-1.5">
-          <label htmlFor="modificar-titulo" className="text-sm font-medium">
+        <h2 className="text-base font-semibold">Contenido</h2>
+        <Field variant="outlined" data-invalid={intentado && tituloLimpio === "" ? true : undefined}>
+          <FieldLabel htmlFor="modificar-titulo">
             Título<span className="text-red"> *</span>
-          </label>
+          </FieldLabel>
           <Input
             id="modificar-titulo"
             value={titulo}
@@ -179,26 +180,26 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
             aria-invalid={intentado && tituloLimpio === ""}
             onChange={(e) => setTitulo(e.target.value)}
           />
-          <p className="text-right text-xs text-muted-foreground">
-            {titulo.length} / {MAX_TITULO}
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="modificar-mensaje" className="text-sm font-medium">
+          <CharacterCounter value={titulo} max={MAX_TITULO} />
+        </Field>
+        <Field
+          variant="outlined"
+          data-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE ? true : undefined}
+        >
+          <FieldLabel htmlFor="modificar-mensaje">
             Mensaje<span className="text-red"> *</span>
-          </label>
+          </FieldLabel>
           <Textarea
             id="modificar-mensaje"
+            className={TEXTAREA_OUTLINED}
             value={mensaje}
             rows={6}
             maxLength={MAX_MENSAJE}
             aria-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE}
             onChange={(e) => setMensaje(e.target.value)}
           />
-          <p className="text-right text-xs text-muted-foreground">
-            {mensaje.length} / {MAX_MENSAJE}
-          </p>
-        </div>
+          <CharacterCounter value={mensaje} max={MAX_MENSAJE} />
+        </Field>
         {intentado && errores.length > 0 && (
           <ul role="alert" className="list-inside list-disc text-xs text-red">
             {errores.map((e) => (
@@ -219,10 +220,21 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           <p className="text-xs text-muted-foreground">Fecha de actualización</p>
           <p className="text-sm">{fechaHora(c.actualizadoEn)}</p>
         </div>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
       </form>
+      </TableScreenBody>
+      <TableScreenFooter>
+        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
+        <div className="flex gap-2">
+          <Button variant="ghost" color="neutral" onClick={cancelar} disabled={corregir.isPending}>
+            Cancelar
+          </Button>
+          <Button type="submit" form={FORM_ID} disabled={corregir.isPending} aria-busy={corregir.isPending}>
+            Guardar
+          </Button>
+        </div>
+      </TableScreenFooter>
 
       <ConfirmDiscardDialog open={salir} onOpenChange={setSalir} onConfirm={volver} />
-    </div>
+    </TableScreen>
   )
 }

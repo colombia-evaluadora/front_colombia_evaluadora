@@ -1,4 +1,10 @@
 import { useState } from "react"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
@@ -72,11 +78,13 @@ export function ComunicadosTerritorialPage() {
   const hayFiltros = !!(q || establecimiento || estado || desde)
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 p-4">
-      <header>
-        <h1 className="text-xl font-semibold">Comunicados institucionales</h1>
-        <p className="text-sm text-muted-foreground">Consulta de los comunicados de sus establecimientos, sin publicar.</p>
-      </header>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle description="Consulta de los comunicados de sus establecimientos, sin publicar.">
+          Comunicados institucionales
+        </TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="flex min-w-0 flex-col gap-4">
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
         <Field variant="outlined">
@@ -226,7 +234,8 @@ export function ComunicadosTerritorialPage() {
       )}
 
       {abierto != null && <DetalleDialog id={abierto} onClose={() => setAbierto(null)} />}
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 

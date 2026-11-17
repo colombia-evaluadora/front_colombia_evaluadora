@@ -3,6 +3,12 @@
 import { Fragment, useState } from "react"
 import { format } from "date-fns"
 import { Link } from "@tanstack/react-router"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
@@ -17,7 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   ArrowLeftIcon,
-  CaretRightIcon,
   DotsThreeVerticalIcon,
   FileDownloadOutlinedIcon,
   InfoIcon,
@@ -94,22 +99,13 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
   const adjuntos = c.adjuntos ?? []
 
   return (
-    <article
-      aria-labelledby="comunicado-titulo"
-      className="rounded-lg border bg-card text-sm text-card-foreground"
-    >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 id="comunicado-titulo" className="flex min-w-0 items-center gap-1.5 text-xl font-bold">
-            <Link to={paths.app.comunicacionesComunicados.getHref()} className="shrink-0 text-primary hover:underline">
-              Comunicados
-            </Link>
-            <CaretRightIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 break-words">{c.titulo}</span>
-          </h1>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          description="Comunicados institucionales"
+          action={
+        <div className="flex shrink-0 items-center gap-2">
           {c.estado && <EstadoComunicadoBadge estado={c.estado} />}
-        </div>
-        <div className="flex items-center gap-2">
           {(modificable || cancelable || anulable) && (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -154,7 +150,12 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
             Volver
           </Button>
         </div>
-      </header>
+          }
+        >
+          {c.titulo}
+        </TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody className="py-0" contentClassName="px-0">
 
       <div className="space-y-1 px-4 pt-4 text-muted-foreground">
         <p>
@@ -200,10 +201,11 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
       />
 
       {gestiona && <Seguimiento c={c} />}
+      </TableScreenBody>
 
       {dialogo === "anular" && <AnularDialog comunicado={c} onClose={() => setDialogo(null)} />}
       {dialogo === "cancelar" && <CancelarDialog comunicado={c} onClose={() => setDialogo(null)} />}
-    </article>
+    </TableScreen>
   )
 }
 
