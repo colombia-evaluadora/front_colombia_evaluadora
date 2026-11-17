@@ -254,7 +254,7 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Anular comunicado</DialogTitle>
         </DialogHeader>
@@ -316,7 +316,7 @@ export function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunic
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Cancelar comunicado programado</DialogTitle>
         </DialogHeader>

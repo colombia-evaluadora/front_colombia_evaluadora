@@ -87,7 +87,7 @@ export function DialogReingresar({
     const m = matriculas[0]
     return (
       <Dialog open onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="sm:max-w-lg">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <ProhibitIcon className="size-6 shrink-0 text-red" aria-hidden />
@@ -165,7 +165,7 @@ export function DialogReingresar({
 
   return (
     <Dialog open onOpenChange={(o) => !reingresar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{tituloAccion("Reingresar", matriculas)}</DialogTitle>
           <MatriculasAfectadas

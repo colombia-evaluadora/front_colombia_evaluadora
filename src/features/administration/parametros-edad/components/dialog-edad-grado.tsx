@@ -161,7 +161,7 @@ export function DialogEdadGrado({
 
   return (
     <Dialog open={open} onOpenChange={guardedOpenChange}>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {nuevo ? "Agregar edad recomendada" : `Modificar edad recomendada de ${fila.nombre}`}

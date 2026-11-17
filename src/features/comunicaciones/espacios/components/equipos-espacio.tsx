@@ -44,7 +44,7 @@ function DialogoEquipo({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !guardar.isPending && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{equipo ? `Editar ${equipo.nombre}` : "Nuevo equipo"}</DialogTitle>
         </DialogHeader>
@@ -133,7 +133,7 @@ function DialogoMover({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !guardar.isPending && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>
             {destino ? `Mover a ${estudiante.nombre} al ${destino.nombre}` : `Mover a ${estudiante.nombre}`}

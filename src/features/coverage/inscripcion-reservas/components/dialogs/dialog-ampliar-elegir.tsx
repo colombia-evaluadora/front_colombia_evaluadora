@@ -81,7 +81,7 @@ export function AmpliarInscripcionDialog({
 
   return (
     <Dialog open={objetivo != null} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ampliar inscripción — {objetivo?.aspirante}</DialogTitle>
           <DialogDescription>
@@ -180,7 +180,7 @@ export function ElegirOpcionDialog({
 
   return (
     <Dialog open={objetivo != null} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {opcion

@@ -116,7 +116,7 @@ export function DialogUnificarEstudiantes({ open, onOpenChange, documentoInicial
 
   return (
     <Dialog open={open} onOpenChange={(o) => !unificar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Unificar estudiantes</DialogTitle>
         </DialogHeader>

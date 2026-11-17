@@ -251,7 +251,7 @@ export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matricul
 
   return (
     <Dialog open={open} onOpenChange={(next) => !corregir.isPending && onOpenChange(next)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Corregir datos de identidad — {nombre}</DialogTitle>
         </DialogHeader>

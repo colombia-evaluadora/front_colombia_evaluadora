@@ -596,7 +596,7 @@ function Confirmar({
 }) {
   return (
     <Dialog open={abierto} onOpenChange={(o) => !pendiente && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription render={<div />}>{children}</DialogDescription>

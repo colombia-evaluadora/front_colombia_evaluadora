@@ -314,7 +314,7 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
   const personas = usePersonasQuery(tipo, eleccion.puedeProponer)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>{eleccion.nombre} › Postular</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         {eleccion.puedeProponer && (
@@ -392,7 +392,7 @@ function DialogoTramite({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
   }
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Completar postulación</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         {!p ? <Spinner /> : (

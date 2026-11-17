@@ -70,7 +70,7 @@ export function ProgramarMensajeDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !guardando && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{titulo ?? (editaTexto ? "Editar mensaje programado" : "Programar envío")}</DialogTitle>
           <DialogDescription>

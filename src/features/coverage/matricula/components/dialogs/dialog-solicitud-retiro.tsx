@@ -136,7 +136,7 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
 
   return (
     <Dialog open onOpenChange={(o) => !responder.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Responder solicitud de retiro — {nombre}</DialogTitle>
         </DialogHeader>
@@ -293,7 +293,7 @@ export function DialogAnularMatricula({ matricula, onOpenChange, onDone }: Props
 
   return (
     <Dialog open onOpenChange={(o) => !anular.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Anular matrícula — {nombre}</DialogTitle>
         </DialogHeader>

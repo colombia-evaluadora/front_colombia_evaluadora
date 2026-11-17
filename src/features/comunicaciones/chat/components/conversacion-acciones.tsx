@@ -461,7 +461,7 @@ export function ConversacionAcciones({
       )}
 
       <Dialog open={dialogo === "renombrar" && c.tipo !== "GRUPO"} onOpenChange={(open) => !open && cerrar()}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <form
             onSubmit={(e) => {
               e.preventDefault()

@@ -108,7 +108,7 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}>
-      <DialogContent className="sm:max-w-md" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-md" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Modificar ícono" : "Nuevo ícono"}</DialogTitle>
         </DialogHeader>

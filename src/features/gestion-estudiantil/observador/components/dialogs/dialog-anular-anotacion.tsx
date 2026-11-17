@@ -66,7 +66,7 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
 
   return (
     <Dialog open={anotacion != null} onOpenChange={(open) => !open && !anular.isPending && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Anular anotación — {anotacion?.estudiante_nombre}</DialogTitle>
           {anotacion && (

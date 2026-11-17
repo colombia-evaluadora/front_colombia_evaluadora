@@ -149,7 +149,7 @@ export function CrearEncuestaAcademicaDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void cerrar()}>
-        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar encuesta" : "Nueva encuesta"}</DialogTitle>
           </DialogHeader>

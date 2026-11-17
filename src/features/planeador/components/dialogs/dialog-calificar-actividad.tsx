@@ -213,7 +213,7 @@ export function DialogCalificarActividad({
         </TooltipTrigger>
         <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
       </Tooltip>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>Calificar {rotuloLabel.toLowerCase()}</DialogTitle>
           <p className="text-muted-foreground text-sm">

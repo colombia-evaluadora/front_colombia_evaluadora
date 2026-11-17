@@ -254,7 +254,7 @@ export function CrearEleccionDialog({
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         {/* Título, pie y (en candidatos) "Agregar candidato" quedan fijos; solo scrollea el contenido
             largo de cada paso (Natalia: antes scrolleaba todo el modal). */}
-        <DialogContent className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
           </DialogHeader>

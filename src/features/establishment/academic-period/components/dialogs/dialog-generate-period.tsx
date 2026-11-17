@@ -135,7 +135,7 @@ export function GeneratePeriodDialog({
       open={open}
       onOpenChange={(next) => (next ? onOpenChange(true) : !isGenerating && close())}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{COPY[kind].title}</DialogTitle>
           <DialogDescription>

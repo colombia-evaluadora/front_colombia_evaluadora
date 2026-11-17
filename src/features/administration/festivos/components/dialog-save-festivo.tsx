@@ -143,7 +143,7 @@ function SaveFestivoContent({ festivo, onClose }: { festivo: Festivo | null; onC
   return (
     // Escape, click afuera y la X pasan por la confirmación de descarte.
     <Dialog open onOpenChange={(next) => !next && requestClose()}>
-      <DialogContent className="sm:max-w-xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Modificar festivo" : "Nuevo festivo"}</DialogTitle>
         </DialogHeader>

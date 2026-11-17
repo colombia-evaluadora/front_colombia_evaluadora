@@ -142,7 +142,7 @@ export function FormDialogPiar({
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && !pending && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           {descripcion && <DialogDescription render={<div />}>{descripcion}</DialogDescription>}

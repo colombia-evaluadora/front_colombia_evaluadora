@@ -67,7 +67,7 @@ export function DialogoCerrar({ caso: c, onClose, onIrCaso }: Props) {
   if (casoNuevo != null)
     return (
       <Dialog open onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent showCloseButton={false} className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Caso cerrado</DialogTitle>
             <DialogDescription>
