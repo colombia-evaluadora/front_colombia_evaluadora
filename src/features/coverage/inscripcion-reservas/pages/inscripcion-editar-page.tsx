@@ -303,8 +303,8 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
         <form
           id={FORM_ID}
           noValidate
-          // El * de obligatorio con el color de la marca de pendientes.
-          className="[&_[data-required-mark]]:text-orange"
+          // El * de obligatorio va en rojo, como en el resto de formularios
+          // (regla global de `[data-required-mark]` en index.css).
           onSubmit={(e) => {
             e.preventDefault()
             guardar()

@@ -221,7 +221,7 @@ export function CreateGradeGroupDialog({
             <FieldLabel htmlFor="grade-group-jornada">
               Jornada<span className="text-red"> *</span>
             </FieldLabel>
-            <InputGroup className="h-11 rounded-md border border-input bg-muted/50 px-3">
+            <InputGroup className="h-10 rounded-sm border border-input bg-muted/50 px-3">
               <InputGroupInput
                 id="grade-group-jornada"
                 readOnly

@@ -7,6 +7,7 @@ import {
   SpinnerIcon,
   WarningIcon,
   XCircleIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import {
   Dialog,
@@ -208,8 +209,9 @@ export function DialogImportarActividadesJson({
           </div>
         )}
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+        <DialogFooter>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             {yaAplicado ? "Cerrar" : "Cancelar"}
           </DialogClose>
           {!yaAplicado && (

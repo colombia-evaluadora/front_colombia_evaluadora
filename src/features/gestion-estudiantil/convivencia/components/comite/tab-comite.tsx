@@ -28,7 +28,7 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
   if (tab.periodos.isError) return <ErrorNoticeBanner error={tab.periodos.error} fallback="No se pudieron cargar los períodos." />
   if (!actual)
     return (
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>No hay períodos académicos para el Comité de Convivencia.</AlertDescription>
       </Alert>
@@ -53,7 +53,7 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
       ) : comite.isError || !comite.data ? (
         <ErrorNoticeBanner error={comite.error ?? true} fallback="No se pudo cargar el Comité." />
       ) : comite.data.fk_comite == null ? (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription className="flex flex-wrap items-center gap-3">
             <span>Este período aún no tiene Comité de Convivencia.{puedeGestionarComite && " Registre a sus integrantes para empezar a documentar sesiones."}</span>

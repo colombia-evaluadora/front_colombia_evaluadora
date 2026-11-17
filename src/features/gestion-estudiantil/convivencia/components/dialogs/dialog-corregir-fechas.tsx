@@ -31,7 +31,7 @@ export function DialogCorregirFechas({ caso, onClose }: Props) {
       }}
     >
       {s.incompleto ? (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
             El Lugar o la Manifestación de este caso faltan o ya no están vigentes. Actualícelos con Modificar antes de corregir las fechas.

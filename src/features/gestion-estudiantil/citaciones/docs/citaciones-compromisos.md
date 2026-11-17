@@ -160,7 +160,7 @@ El Motivo no aparece en el documento de la citación: la especificación lo excl
 
 ### Entradas desde Observador y Convivencia
 
-- Observador, menú ⋮ de cada anotación vigente: «Citar al acudiente» y «Crear compromiso». Abren Nueva citación o Nuevo compromiso con `origen_tipo=ANOTACION`, `origen_id`, `matricula` y `estudiante`. Están deshabilitadas si la anotación no está vigente (`columns-anotaciones.tsx`, `observador-page.tsx`).
+- Observador: ya no tiene «Citar al acudiente» ni «Crear compromiso». Sus acciones se alinearon con la guía de diseño (DCU Observador): Ver detalle, Modificar, Anular, Reportar salud mental, Remitir a orientación y Abrir proceso disciplinario. Las rutas de citación y compromiso siguen aceptando `origen_tipo=ANOTACION` por si se vuelve a enlazar.
 - Convivencia, menú de cada caso («Citar al acudiente» y «Crear compromiso»; `menu-acciones-caso.tsx`): abren los mismos formularios con `origen_tipo=CASO_CONVIVENCIA` y `origen_id`. Desde la pestaña de casos (`convivencia-page.tsx`) y desde el detalle del caso (`use-caso-detalle.ts`).
 
 

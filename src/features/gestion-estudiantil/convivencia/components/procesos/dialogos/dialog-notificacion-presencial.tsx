@@ -62,7 +62,7 @@ export function DialogNotificacionPresencial({ proceso: p, onClose }: Props) {
       <CampoFecha id="notificacion-fecha" label="Fecha de notificación" value={fecha} min={fechaActo} max={hoy} error={e.fecha} onChange={setFecha} />
       <CampoArchivo label="Soporte firmado*" archivos={soporte} error={e.soporte} onChange={setSoporte} />
       {plazo.data?.limite && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
             El plazo para recurrir correrá desde esta fecha: hasta el {formatFecha(plazo.data.limite)}.

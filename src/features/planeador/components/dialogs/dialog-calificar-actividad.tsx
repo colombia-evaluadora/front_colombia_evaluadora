@@ -256,7 +256,7 @@ export function DialogCalificarActividad({
           )}
         </div>
 
-        <DialogFooter className="shrink-0 sm:justify-end">
+        <DialogFooter className="m-0 shrink-0 sm:justify-end">
           {soloEnLinea.disabled && (
             <p className="text-muted-foreground mr-auto self-center text-xs">{soloEnLinea.tooltip}</p>
           )}
