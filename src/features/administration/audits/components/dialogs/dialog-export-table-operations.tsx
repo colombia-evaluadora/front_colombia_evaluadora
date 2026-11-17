@@ -5,6 +5,7 @@ import {
   FilePdfIcon,
   FileXlsIcon,
   SpinnerIcon,
+  XIcon,
 } from "@/components/ui/icons"
 
 import {
@@ -74,8 +75,9 @@ export function ExportTableOperationsDialog({
             activos.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+        <DialogFooter>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">

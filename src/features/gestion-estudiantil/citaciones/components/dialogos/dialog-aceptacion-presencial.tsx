@@ -77,7 +77,7 @@ export function DialogAceptacionPresencial({ compromiso: c, onClose }: Props) {
         />
         {s.intento && error && <FieldError>{error}</FieldError>}
       </div>
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>Al registrar la aceptación, el compromiso pasará a Vigente.</AlertDescription>
       </Alert>

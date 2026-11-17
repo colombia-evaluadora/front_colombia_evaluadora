@@ -10,7 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ControlPointIcon, DotsThreeVerticalIcon } from "@/components/ui/icons"
+import { ControlPointIcon, DotsThreeVerticalIcon, FunnelXIcon } from "@/components/ui/icons"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { usePaginaLocal } from "@/features/comunicaciones/procesos/components/paginar"
 import { Spinner } from "@/components/ui/spinner"
@@ -141,7 +141,7 @@ function ListaProcesos() {
           onValueChange={(x) => filtrar(() => setEtapa(x))}
           opciones={[{ value: "", label: "Etapa: Todas" }, ...ETAPAS.map((k) => ({ value: k, label: ETAPA_LABEL[k] }))]}
         />
-        {hayFiltros && <Button variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setEstado(""); setEtapa("") })}>Limpiar filtros</Button>}
+        {hayFiltros && <Button variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setEstado(""); setEtapa("") })}><FunnelXIcon data-icon="inline-start" />Limpiar filtros</Button>}
       </div>
       <Table>
         <TableHeader>

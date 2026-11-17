@@ -43,7 +43,7 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
           <SeccionDatosApertura form={form} />
           <ConstructorCargos form={form} />
           <ConstructorPruebas form={form} />
-          <Alert>
+          <Alert variant="info">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>
               Al guardar, los cargos se comunican al acudiente en el portal y por correo, y se crea la citación a la

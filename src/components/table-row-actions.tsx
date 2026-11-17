@@ -7,6 +7,18 @@ import { cn } from "@/lib/utils"
  */
 export const ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
 
+/**
+ * Hover de los botones de acción de las filas (editar, eliminar, marcar…), igual
+ * en `DataTable` y en las tablas a mano: ícono azul sobre fondo azul claro, como
+ * el "Botón ícono" de Figma. Se aplica desde el contenedor del overlay para no
+ * tener que tocar cada `columns-*.tsx`.
+ *
+ * Va por `button` y no por `[data-slot=button]`: cuando el botón es el `render`
+ * de un `TooltipTrigger`, el `data-slot` que queda es `tooltip-trigger`.
+ */
+export const ACTIONS_BUTTON_HOVER_CLASS =
+  "[&_button:not(:disabled)]:hover:bg-primary-22 [&_button:not(:disabled)]:hover:text-primary"
+
 const ACTIONS_SPACER_WIDTH = 96
 
 export const actionsSpacerCell = (
@@ -33,6 +45,7 @@ export const actionsSpacerHeadCell = (
 export const actionsOverlayClass = (active = false, surface: "popover" | "background" = "popover") =>
   cn(
     "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
+    ACTIONS_BUTTON_HOVER_CLASS,
     surface === "popover"
       ? "bg-[color-mix(in_srgb,var(--muted)_28%,var(--popover))]"
       : "bg-[color-mix(in_srgb,var(--muted)_28%,var(--background))]",

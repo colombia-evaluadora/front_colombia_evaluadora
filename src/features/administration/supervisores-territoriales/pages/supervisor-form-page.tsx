@@ -261,19 +261,19 @@ function SupervisorForm({
       <TableScreenBody>
         <div ref={avisosRef} className="mb-3 flex scroll-mt-40 flex-col gap-3 empty:hidden">
           {modo === "nuevo" && (
-            <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
+            <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
               Se enviará un enlace de un solo uso, válido por 48 horas, para que establezca su contraseña.
             </p>
           )}
           {yaEs && (
-            <p className="flex items-start gap-2 rounded-md bg-yellow-22 px-3 py-2 text-sm text-yellow">
+            <p className="flex items-start gap-2 rounded-md border border-yellow-stroke bg-yellow-22 px-3 py-2 text-sm text-yellow">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
               {yaEs.nombre} ya es Supervisor territorial{yaEs.activo ? "" : " (inactivo): actívelo desde el listado"}.
             </p>
           )}
           {persona && (
-            <p className="flex items-start gap-2 rounded-md bg-blue-22 px-3 py-2 text-sm text-blue">
+            <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
               Esta persona ya tiene cuenta en la plataforma: se le agregará el rol de Supervisor territorial
               {persona.correo ? ` con su cuenta actual (${persona.correo})` : ""}, sin crear otra.

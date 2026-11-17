@@ -74,7 +74,7 @@ export function AdjuntosMensaje({
       {adjuntos.map((a, i) => (
         <li key={a.id ?? `${a.nombre}-${i}`}>
           {a.eliminadoEn ? (
-            <p className="flex items-center gap-2 rounded-lg bg-green-22 px-3 py-2 text-xs text-green">
+            <p className="flex items-center gap-2 rounded-md border border-green-stroke bg-green-22 px-3 py-2 text-xs text-green">
               <CheckCircleIcon aria-hidden className="size-5 shrink-0" />
               <span className="min-w-0 truncate">
                 <span className="font-medium">Archivo eliminado</span>

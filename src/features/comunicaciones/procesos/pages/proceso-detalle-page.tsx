@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { FunnelXIcon } from "@/components/ui/icons"
 
 import {
   TableScreen,
@@ -222,7 +223,7 @@ function Postulaciones({ e, revisor }: { e: EleccionProceso; revisor: boolean })
             ...(Object.keys(ESTADO_POSTULACION_LABEL) as EstadoPostulacion[]).map((k) => ({ value: k, label: ESTADO_POSTULACION_LABEL[k] })),
           ]}
         />
-        {estado && <Button size="sm" variant="ghost" color="neutral" onClick={() => { setEstado(""); reiniciar() }}>Limpiar filtros</Button>}
+        {estado && <Button size="sm" variant="ghost" color="neutral" onClick={() => { setEstado(""); reiniciar() }}><FunnelXIcon data-icon="inline-start" />Limpiar filtros</Button>}
       </div>
       <Table>
         <TableHeader><TableRow><TableHead>Candidato</TableHead><TableHead>Tipo</TableHead><TableHead>Estado</TableHead><TableHead>Presentada</TableHead><TableHead /></TableRow></TableHeader>
@@ -350,7 +351,7 @@ function PadronPanel({ e, admin }: { e: EleccionProceso; admin: boolean }) {
               { value: "EXCLUIDA", label: "Excluida" },
             ]}
           />
-          {(texto || condicion) && <Button size="sm" variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setCondicion("") })}>Limpiar filtros</Button>}
+          {(texto || condicion) && <Button size="sm" variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setCondicion("") })}><FunnelXIcon data-icon="inline-start" />Limpiar filtros</Button>}
         </div>
       )}
       {padron && (

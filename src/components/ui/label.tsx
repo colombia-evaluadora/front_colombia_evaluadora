@@ -4,7 +4,37 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Label({ className, ...props }: React.ComponentProps<"label">) {
+/**
+ * Pinta en rojo el `*` de obligatorio al final del label, venga como sea:
+ * en el mismo texto (`"Estudiantes*"`, `"Sede *"`) o como nodo aparte
+ * (`{label}{required && "*"}`, lo que hacen los campos de `@/lib/forms`).
+ *
+ * El texto y el `*` se envuelven en un único `span`: el `label` es `flex` con
+ * `gap-2`, y si el `*` quedara como hijo suelto se separaría 8px del texto.
+ */
+function marcarObligatorio(children: React.ReactNode): React.ReactNode {
+  const hijos = React.Children.toArray(children)
+  let i = hijos.length - 1
+  while (i >= 0 && typeof hijos[i] === "string" && (hijos[i] as string).trim() === "") i--
+  const ultimo = hijos[i]
+  if (typeof ultimo !== "string" || !ultimo.trimEnd().endsWith("*")) return children
+
+  // Texto contiguo anterior (p. ej. el `label` antes del `"*"` suelto).
+  let j = i
+  while (j > 0 && (typeof hijos[j - 1] === "string" || typeof hijos[j - 1] === "number")) j--
+  const texto = hijos.slice(j, i).join("") + ultimo.trimEnd().slice(0, -1)
+
+  return [
+    ...hijos.slice(0, j),
+    <span key="label-obligatorio">
+      {texto}
+      <span className="text-red">*</span>
+    </span>,
+    ...hijos.slice(i + 1),
+  ]
+}
+
+function Label({ className, children, ...props }: React.ComponentProps<"label">) {
   return (
     <label
       data-slot="label"
@@ -13,7 +43,9 @@ function Label({ className, ...props }: React.ComponentProps<"label">) {
         className,
       )}
       {...props}
-    />
+    >
+      {marcarObligatorio(children)}
+    </label>
   )
 }
 

@@ -90,7 +90,7 @@ export function SesionFormPage({ periodo, sesionId }: { periodo?: number; sesion
     <NoticeProvider>
       <TableScreen>
         {!puedeGestionarComite ? (
-          <Alert className="m-6 w-auto">
+          <Alert variant="info" className="m-6 w-auto">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>No tiene permiso para registrar sesiones del Comité.</AlertDescription>
           </Alert>
@@ -99,7 +99,7 @@ export function SesionFormPage({ periodo, sesionId }: { periodo?: number; sesion
         ) : error || !actual || !comite.data || (sesionId != null && !sesion.data) ? (
           <ErrorNoticeBanner error={error ?? true} fallback="No se encontró el Comité de este período." className="m-6" />
         ) : comite.data.fk_comite == null ? (
-          <Alert className="m-6 w-auto">
+          <Alert variant="info" className="m-6 w-auto">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>Este período aún no tiene Comité: registre primero a sus integrantes.</AlertDescription>
           </Alert>

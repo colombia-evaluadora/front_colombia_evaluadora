@@ -153,7 +153,7 @@ function CompromisoForm({ citacion, origenManual, matricula, estudiante }: { cit
               <FieldLabel id="compromiso-tipo-label">Tipo de compromiso*</FieldLabel>
               <RadioGroup
                 aria-labelledby="compromiso-tipo-label"
-                className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
+                className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
                 value={v.tipo}
                 onValueChange={(tipo) => set({ tipo })}
               >
@@ -202,7 +202,7 @@ function CompromisoForm({ citacion, origenManual, matricula, estudiante }: { cit
 
           {/* G.3.CMP.4: el interruptor a su ancho natural y el soporte ocupa el resto de la fila. */}
           <div className="grid grid-cols-1 items-start gap-x-8 gap-y-3 sm:grid-cols-[auto_1fr]">
-            <label className="flex h-11 items-center gap-3 text-sm">
+            <label className="flex h-10 items-center gap-3 text-sm">
               <Switch
                 round
                 checked={v.aceptado}
@@ -226,7 +226,7 @@ function CompromisoForm({ citacion, origenManual, matricula, estudiante }: { cit
             </div>
           </div>
 
-          <Alert>
+          <Alert variant="info">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>
               Sin aceptación presencial, el compromiso queda Pendiente de aceptación hasta que el acudiente lo acepte en el portal.

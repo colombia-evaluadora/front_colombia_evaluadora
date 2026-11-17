@@ -1,8 +1,8 @@
-import { useEffect } from "react"
+import { Fragment, useEffect } from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 
 import { DatePicker } from "@/components/date-picker"
-import { FormSectionHeading } from "@/components/form-section-heading"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { LockIcon } from "@/components/ui/icons"
@@ -25,6 +25,7 @@ import {
 } from "@/features/notificaciones/api/schema"
 import type { Preferencias, PreferenciaTipo } from "@/features/notificaciones/api/types"
 import { CATEGORIA_LABELS, DIAS_SEMANA } from "@/features/notificaciones/api/ui-mappings"
+import { SECCION_DESCRIPCION, SECCION_TITULO } from "@/features/notificaciones/components/preferencias-seccion"
 
 export const PREFERENCIAS_FORM_ID = "form-preferencias-notificaciones"
 
@@ -75,7 +76,7 @@ export function FormPreferencias({
     const bloqueado = canal === "push" ? tipo.pushBloqueado : tipo.emailBloqueado
     const nombreCanal = canal === "push" ? "push" : "correo"
     return (
-      <TableCell>
+      <TableCell className="py-2.5">
         <form.Field name={`tipos[${index}].${canal}`}>
           {(field) => (
             <span className="inline-flex items-center gap-2">
@@ -105,58 +106,70 @@ export function FormPreferencias({
         void form.handleSubmit()
       }}
     >
-      <section aria-labelledby="pref-matriz-titulo" className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <FormSectionHeading as="h2" id="pref-matriz-titulo">
-            Medios de aviso por tipo de notificación
-          </FormSectionHeading>
-          <p className="text-sm text-muted-foreground">
+      {/* Figma "Notificaciones/Preferencias" › "Canales": título de sección en
+          14px medio + bajada de 12px, el aviso de guardado debajo y la tabla
+          agrupada por categoría (filas de grupo en versalitas). */}
+      <section aria-labelledby="pref-matriz-titulo" className="flex flex-col gap-4">
+        <div className="flex flex-col gap-0.5">
+          <h2 id="pref-matriz-titulo" className={SECCION_TITULO}>
+            Canales por tipo de notificación
+          </h2>
+          <p className={SECCION_DESCRIPCION}>
             La bandeja de la aplicación siempre recibe todas tus notificaciones; aquí eliges qué más
             quieres recibir por push y por correo.
           </p>
         </div>
+        <NoticeOutlet />
         <Table containerClassName="border">
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-foreground">Tipo</TableHead>
-              <TableHead className="w-32 text-foreground">En la app</TableHead>
-              <TableHead className="w-32 text-foreground">Push</TableHead>
-              <TableHead className="w-32 text-foreground">Correo</TableHead>
+            <TableRow className="bg-background hover:bg-background">
+              <TableHead className="h-auto py-2.5 text-xs tracking-normal">Tipo</TableHead>
+              <TableHead className="h-auto w-[110px] py-2.5 text-xs tracking-normal">En la app</TableHead>
+              <TableHead className="h-auto w-[110px] py-2.5 text-xs tracking-normal">Push</TableHead>
+              <TableHead className="h-auto w-[110px] py-2.5 text-xs tracking-normal">Correo</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {preferencias.tipos.map((tipo, index) => (
-              <TableRow key={tipo.tipo}>
-                <TableCell className="whitespace-normal">
-                  <span className="flex flex-col items-start gap-1">
-                    <span className="font-medium">{tipo.etiqueta}</span>
-                    <Badge variant="soft" color="muted">
-                      {CATEGORIA_LABELS[tipo.categoria]}
-                    </Badge>
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    round
-                    checked
-                    disabled
-                    aria-label={`${tipo.etiqueta}: en la app (siempre activo)`}
-                  />
-                </TableCell>
-                {celdaCanal(index, "push", tipo)}
-                {celdaCanal(index, "email", tipo)}
-              </TableRow>
+            {agruparPorCategoria(preferencias.tipos).map((grupo) => (
+              <Fragment key={grupo.categoria}>
+                <TableRow className="bg-background hover:bg-background">
+                  {/* Fila de grupo: `--card-foreground` en negrita, como los títulos de sección. */}
+                  <TableHead
+                    colSpan={4}
+                    scope="colgroup"
+                    className="h-auto py-2 text-xs font-bold tracking-normal text-card-foreground"
+                  >
+                    {CATEGORIA_LABELS[grupo.categoria]}
+                  </TableHead>
+                </TableRow>
+                {grupo.items.map(({ tipo, index }) => (
+                  <TableRow key={tipo.tipo}>
+                    <TableCell className="py-2.5 whitespace-normal text-foreground">{tipo.etiqueta}</TableCell>
+                    <TableCell className="py-2.5">
+                      {/* "En la app" no se puede apagar (D-3.1): interruptor encendido y bloqueado. */}
+                      <Switch
+                        round
+                        checked
+                        disabled
+                        aria-label={`${tipo.etiqueta}: en la app (siempre activo)`}
+                      />
+                    </TableCell>
+                    {celdaCanal(index, "push", tipo)}
+                    {celdaCanal(index, "email", tipo)}
+                  </TableRow>
+                ))}
+              </Fragment>
             ))}
           </TableBody>
         </Table>
       </section>
 
       <section aria-labelledby="pref-horario-titulo" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <FormSectionHeading as="h2" id="pref-horario-titulo">
+        <div className="flex flex-col gap-0.5">
+          <h2 id="pref-horario-titulo" className={SECCION_TITULO}>
             Horario silencioso
-          </FormSectionHeading>
-          <p className="text-sm text-muted-foreground">
+          </h2>
+          <p className={SECCION_DESCRIPCION}>
             Durante este horario no se envían push ni correos; se entregan al terminar si siguen sin
             leer. Los avisos urgentes de la institución sí llegan. Zona horaria: {horario.zona}.
           </p>
@@ -263,6 +276,20 @@ export function FormPreferencias({
       </section>
     </form>
   )
+}
+
+/**
+ * Agrupa los tipos por categoría en el orden en que llegan, conservando el
+ * índice original: el form direcciona `tipos[index]`.
+ */
+function agruparPorCategoria(tipos: PreferenciaTipo[]) {
+  const grupos: { categoria: PreferenciaTipo["categoria"]; items: { tipo: PreferenciaTipo; index: number }[] }[] = []
+  tipos.forEach((tipo, index) => {
+    const grupo = grupos.find((g) => g.categoria === tipo.categoria)
+    if (grupo) grupo.items.push({ tipo, index })
+    else grupos.push({ categoria: tipo.categoria, items: [{ tipo, index }] })
+  })
+  return grupos
 }
 
 function BloqueadoIndicador() {
