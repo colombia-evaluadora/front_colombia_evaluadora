@@ -176,8 +176,8 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
             <AlertDialogTitle>Retirar para todos</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <span className="block">
-                El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá Mensaje
-                retirado por el remitente.
+                El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá{" "}
+                <em>Mensaje retirado por el remitente</em>.
               </span>
               <span className="block">
                 Solo puede retirarlo durante los primeros 15 minutos desde su envío. Después solo podrá
@@ -188,10 +188,9 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
           </AlertDialogHeader>
           {/* Textos literales de M.2.RET.1. */}
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={eliminar.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              color="destructive"
               disabled={eliminar.isPending}
               aria-busy={eliminar.isPending}
               onClick={() =>
