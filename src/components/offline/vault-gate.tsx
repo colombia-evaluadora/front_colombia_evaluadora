@@ -80,7 +80,7 @@ function PinUnlock() {
           void submit()
         }}
       >
-        <Field data-invalid={error ? true : undefined}>
+        <Field variant="outlined" data-invalid={error ? true : undefined}>
           <FieldLabel htmlFor="vault-pin">PIN</FieldLabel>
           <Input
             id="vault-pin"

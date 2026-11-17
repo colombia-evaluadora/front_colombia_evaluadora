@@ -79,11 +79,11 @@ export function ComunicadosTerritorialPage() {
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-q">Buscar por título</FieldLabel>
           <Input id="territorial-q" value={q} onChange={(e) => filtrar(setQ)(e.target.value)} />
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-est">Establecimiento</FieldLabel>
           <NativeSelect id="territorial-est" value={establecimiento} onChange={(e) => filtrar(setEstablecimiento)(e.target.value)}>
             <NativeSelectOption value="">Todos</NativeSelectOption>
@@ -94,7 +94,7 @@ export function ComunicadosTerritorialPage() {
             ))}
           </NativeSelect>
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-estado">Estado</FieldLabel>
           <NativeSelect id="territorial-estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
             <NativeSelectOption value="">Todos</NativeSelectOption>
@@ -105,7 +105,7 @@ export function ComunicadosTerritorialPage() {
             ))}
           </NativeSelect>
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-desde">Desde</FieldLabel>
           <Input id="territorial-desde" type="date" value={desde} onChange={(e) => filtrar(setDesde)(e.target.value)} />
         </Field>

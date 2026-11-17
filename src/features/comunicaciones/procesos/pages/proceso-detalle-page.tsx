@@ -260,7 +260,7 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
           </li>
         ))}</ul>}
         {e.requisitos.map((r) => (
-          <Field key={r}>
+          <Field variant="outlined" key={r}>
             <FieldLabel>{r}</FieldLabel>
             <NativeSelect value={res[r].resultado} onChange={(x) => setRes((v) => ({ ...v, [r]: { ...v[r], resultado: x.target.value } }))}>
               <NativeSelectOption value="CUMPLE">Cumple</NativeSelectOption>
@@ -270,8 +270,8 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
             <Input placeholder="Observación" value={res[r].observacion} onChange={(x) => setRes((v) => ({ ...v, [r]: { ...v[r], observacion: x.target.value } }))} />
           </Field>
         ))}
-        <Field><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
-        <Field><FieldLabel>Fecha límite de subsanación</FieldLabel><Input type="datetime-local" value={limite} onChange={(x) => setLimite(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Fecha límite de subsanación</FieldLabel><Input type="datetime-local" value={limite} onChange={(x) => setLimite(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button variant="outline" color="destructive" disabled={m.isPending} onClick={() => enviar("NO_HABILITAR")}>No habilitar</Button>
@@ -365,7 +365,7 @@ function DialogoExcepcion({ e, onCerrar, onHecho }: { e: EleccionProceso; onCerr
           <NativeSelectOption value="">Elige la persona</NativeSelectOption>
           {(personas.data ?? []).map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.nombre}</NativeSelectOption>)}
         </NativeSelect>
-        <Field><FieldLabel>* Motivo</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Motivo</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!usuario || !motivo.trim() || m.isPending} onClick={() => m.mutate(
@@ -483,7 +483,7 @@ function DialogoResolver({ id, onCerrar, onHecho }: { id: number; onCerrar: () =
           <NativeSelectOption value="N">No afecta el resultado</NativeSelectOption>
           <NativeSelectOption value="S">Afecta el resultado (crea versión nueva del acta)</NativeSelectOption>
         </NativeSelect>
-        <Field><FieldLabel>* Respuesta</FieldLabel><Textarea value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Respuesta</FieldLabel><Textarea value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!respuesta.trim() || m.isPending} onClick={() => m.mutate(
@@ -535,7 +535,7 @@ function DialogoNovedad({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
           <NativeSelectOption value="REEMPLAZO">Reemplazo</NativeSelectOption>
           <NativeSelectOption value="VACANCIA">Vacancia</NativeSelectOption>
         </NativeSelect>
-        <Field><FieldLabel>* Detalle</FieldLabel><Textarea value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Detalle</FieldLabel><Textarea value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!detalle.trim() || m.isPending} onClick={() => m.mutate(
@@ -563,7 +563,7 @@ function DialogoDecision({ e, tipo, onCerrar, onHecho }: { e: EleccionProceso; t
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <p className="text-sm text-muted-foreground">Cupos: {e.titulares} titular(es) y {e.suplentes} suplente(s).</p>
         {(candidaturas.data ?? []).map((c) => (
-          <Field key={c.id}>
+          <Field variant="outlined" key={c.id}>
             <FieldLabel>{c.nombre}</FieldLabel>
             <NativeSelect value={condicion[c.id] ?? ""} onChange={(x) => setCondicion((v) => ({ ...v, [c.id]: x.target.value }))}>
               <NativeSelectOption value="">No seleccionado</NativeSelectOption>
@@ -572,7 +572,7 @@ function DialogoDecision({ e, tipo, onCerrar, onHecho }: { e: EleccionProceso; t
             </NativeSelect>
           </Field>
         ))}
-        <Field><FieldLabel>* Motivación</FieldLabel><Textarea value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Motivación</FieldLabel><Textarea value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!personas.length || !motivacion.trim() || m.isPending} onClick={() => m.mutate(

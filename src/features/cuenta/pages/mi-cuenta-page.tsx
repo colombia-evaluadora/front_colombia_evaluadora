@@ -93,7 +93,7 @@ function MisDatos() {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
+                  <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Correo nuevo</FieldLabel>
                     <Input
                       id={field.name}
@@ -113,7 +113,7 @@ function MisDatos() {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
+                  <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Contraseña actual</FieldLabel>
                     <Input
                       id={field.name}

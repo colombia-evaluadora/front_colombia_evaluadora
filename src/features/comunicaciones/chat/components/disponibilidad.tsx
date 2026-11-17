@@ -200,7 +200,7 @@ function ConfigurarDisponibilidadDialog({
             guardar()
           }}
         >
-          <Field data-invalid={largo || undefined}>
+          <Field variant="outlined" data-invalid={largo || undefined}>
             <FieldLabel htmlFor="respuesta-automatica">Respuesta automática (Ausente)</FieldLabel>
             <Textarea
               id="respuesta-automatica"

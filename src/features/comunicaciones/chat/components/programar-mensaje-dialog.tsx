@@ -87,7 +87,7 @@ export function ProgramarMensajeDialog({
           className="space-y-4"
         >
           {editaTexto && (
-            <Field data-invalid={(intentado && !!errorTexto) || undefined}>
+            <Field variant="outlined" data-invalid={(intentado && !!errorTexto) || undefined}>
               <FieldLabel htmlFor="programado-texto">Mensaje</FieldLabel>
               <Textarea
                 id="programado-texto"
@@ -99,7 +99,7 @@ export function ProgramarMensajeDialog({
               {intentado && errorTexto && <FieldError>{errorTexto}</FieldError>}
             </Field>
           )}
-          <Field data-invalid={(intentado && !!errorFecha) || undefined}>
+          <Field variant="outlined" data-invalid={(intentado && !!errorFecha) || undefined}>
             <FieldLabel htmlFor="programado-cuando">Fecha y hora de envío</FieldLabel>
             <DatePicker
               id="programado-cuando"

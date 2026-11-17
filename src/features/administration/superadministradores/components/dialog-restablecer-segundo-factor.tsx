@@ -59,7 +59,7 @@ export function DialogRestablecerSegundoFactor({
             <AlertDescription>{getErrorMessage(restablecer.error)}</AlertDescription>
           </Alert>
         )}
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="motivo-2fa">Motivo</FieldLabel>
           <Textarea id="motivo-2fa" value={motivo} maxLength={500} onChange={(e) => setMotivo(e.target.value)} />
           <FieldDescription>Entre 10 y 500 caracteres.</FieldDescription>

@@ -74,7 +74,7 @@ export function UsbPackageCard() {
         Exporta tus cambios pendientes a un archivo cifrado y llévalo a un equipo con internet. Allí inicia sesión con
         tu misma cuenta, abre esta pantalla e impórtalo con la misma frase.
       </p>
-      <Field data-invalid={error ? true : undefined}>
+      <Field variant="outlined" data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor="usb-frase">Frase del paquete ({PASSPHRASE_MIN_LENGTH}+ caracteres)</FieldLabel>
         <Input id="usb-frase" type="password" autoComplete="off" value={frase} onChange={(e) => setFrase(e.target.value)} />
       </Field>
