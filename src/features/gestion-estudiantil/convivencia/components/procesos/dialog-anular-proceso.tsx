@@ -54,7 +54,7 @@ export function DialogAnularProceso({ proceso, onClose }: Props) {
 
   return (
     <Dialog open={proceso != null} onOpenChange={(open) => !open && !mut.isPending && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Anular el proceso — {proceso?.estudiante_nombre}</DialogTitle>
           {proceso && (

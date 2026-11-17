@@ -285,7 +285,7 @@ export function CrearEvaluacionDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
-        <DialogContent className={cn("flex max-h-[90dvh] flex-col", paso === 1 ? "sm:max-w-3xl" : "sm:max-w-lg")}>
+        <DialogContent showCloseButton={false} className={cn("flex max-h-[90dvh] flex-col", paso === 1 ? "sm:max-w-3xl" : "sm:max-w-lg")}>
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Evaluación" : "Crear una Evaluación"}</DialogTitle>
             <p className="text-sm text-muted-foreground" aria-live="polite">

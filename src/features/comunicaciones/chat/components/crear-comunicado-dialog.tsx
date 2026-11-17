@@ -312,7 +312,7 @@ export function CrearComunicadoDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
-        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-xl">
+        <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Comunicado" : "Crear un Comunicado"}</DialogTitle>
           </DialogHeader>

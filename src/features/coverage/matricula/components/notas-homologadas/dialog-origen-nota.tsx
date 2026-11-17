@@ -22,7 +22,7 @@ export function DialogOrigenNota({ matriculaId, nota, onOpenChange }: Props) {
 
   return (
     <Dialog open={nota != null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             Origen de la nota — {nota?.asignatura} · {nota?.periodo}

@@ -25,7 +25,7 @@ export function DialogoConCaso({ casoId, titulo, onClose, children }: Props) {
   if (q.data) return <>{children(q.data)}</>
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
         </DialogHeader>

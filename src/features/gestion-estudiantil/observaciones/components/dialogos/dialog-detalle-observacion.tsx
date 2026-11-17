@@ -43,7 +43,7 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Observación</span>

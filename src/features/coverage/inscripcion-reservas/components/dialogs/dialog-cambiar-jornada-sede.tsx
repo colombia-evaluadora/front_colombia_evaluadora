@@ -66,7 +66,7 @@ export function CambiarJornadaSedeDialog({ reserva, onOpenChange }: Props) {
 
   return (
     <Dialog open={reserva != null} onOpenChange={(open) => !open && !cambiar.isPending && cerrar()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Cambiar jornada o sede — {reserva?.estudiante}</DialogTitle>
           {reserva && (

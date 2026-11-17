@@ -142,7 +142,7 @@ export function CalendarEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={guardedOpenChange}>
-      <DialogContent className="sm:max-w-3xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Modificar entrada del calendario" : "Agregar al calendario"}

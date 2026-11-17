@@ -66,7 +66,7 @@ export function DialogRemitir({ matricula, estudiante, remisionId, onClose, onRe
 
   return (
     <Dialog open onOpenChange={(o) => !o && !crear.isPending && !corregir.isPending && onClose()}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{remisionId ? "Corregir remisión" : "Remitir a orientación"}{(estudiante ?? detalle?.estudiante?.nombre) ? ` — ${estudiante ?? detalle?.estudiante?.nombre}` : ""}</DialogTitle>
         </DialogHeader>

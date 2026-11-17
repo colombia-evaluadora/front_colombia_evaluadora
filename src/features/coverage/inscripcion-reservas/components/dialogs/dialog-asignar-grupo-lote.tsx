@@ -66,7 +66,7 @@ export function AsignarGrupoLoteDialog({ open, reservas, onOpenChange, onDone }:
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             Asignar grupo — {n} estudiantes de {primera?.grado} · {primera?.sede} ·{" "}

@@ -137,7 +137,7 @@ export function DialogImportarActividadesJson({
         if (!next) reset()
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Importar actividades</DialogTitle>
           <DialogDescription>

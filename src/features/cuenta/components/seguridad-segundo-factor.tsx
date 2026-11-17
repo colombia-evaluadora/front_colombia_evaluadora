@@ -100,7 +100,7 @@ export function SeguridadSegundoFactor() {
           }}
         >
           <QrApp config={config} />
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="codigo-activar">2. Código de 6 dígitos de la app</FieldLabel>
             <Input id="codigo-activar" value={codigo} onChange={(e) => setCodigo(e.target.value)} inputMode="numeric" maxLength={6} />
           </Field>
@@ -117,7 +117,7 @@ export function SeguridadSegundoFactor() {
       ) : accion ? (
         <form className="flex flex-col gap-3" onSubmit={enviarContrasena}>
           <p className="text-sm">{TEXTO[accion].ayuda}</p>
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="password-2fa">Contraseña actual</FieldLabel>
             <Input
               id="password-2fa"

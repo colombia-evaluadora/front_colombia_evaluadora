@@ -589,7 +589,7 @@ function DialogRechazarCambios({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !rechazar.isPending && onOpenChange(next)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Rechazar cambios</DialogTitle>
           <DialogDescription>

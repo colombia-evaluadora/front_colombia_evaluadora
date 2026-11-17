@@ -90,7 +90,7 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
         <PrinterIcon data-icon="inline-start" />
         Imprimir observador
       </DialogTrigger>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Imprimir observador</DialogTitle>
           <DialogDescription>Documento para imprimir y firmar a mano por el estudiante y su acudiente.</DialogDescription>

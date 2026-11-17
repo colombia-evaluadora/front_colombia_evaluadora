@@ -155,7 +155,7 @@ export function SolicitarTrasladoDialog({ reserva, onOpenChange }: Props) {
       open={reserva != null}
       onOpenChange={(open) => !open && !solicitar.isPending && cerrar()}
     >
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Solicitar traslado — {reserva?.estudiante}</DialogTitle>
         </DialogHeader>

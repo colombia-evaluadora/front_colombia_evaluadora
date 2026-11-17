@@ -39,9 +39,9 @@ interface SearchQueryBarProps {
   /** Filtros puestos en total: decide si el embudo se ve activo. */
   activeFilterCount: number
   /** Cuántos de esos son avanzados: es el número del badge. */
-  badgeCount: number
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  badgeCount?: number
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   /** "Aplicar filtros" hace submit de este form… */
   formId?: string
   /** …o llama a esto, si el panel no tiene un `<form>` propio. */
@@ -57,7 +57,8 @@ interface SearchQueryBarProps {
    * del toolbar, como pide el diseño de la bandeja de notificaciones).
    */
   inputClassName?: string
-  children: ReactNode
+  /** Campos del panel de filtros; sin ellos no se muestra el embudo. */
+  children?: ReactNode
 }
 
 export function SearchQueryBar({
@@ -135,19 +136,23 @@ export function SearchQueryBar({
           </Tooltip>
         )}
 
-        <AdvancedFiltersPopover
-          open={open}
-          onOpenChange={onOpenChange}
-          activeFilterCount={activeFilterCount}
-          badgeCount={badgeCount}
-          formId={formId}
-          onApply={onApply}
-          onClear={onClearFilters}
-          applyDisabled={applyDisabled}
-          size={size}
-        >
-          {children}
-        </AdvancedFiltersPopover>
+        {/* Sin campos de panel (p. ej. bandejas que solo buscan por texto) no
+            hay embudo: la barra queda igual que en el resto de listados. */}
+        {children != null && (
+          <AdvancedFiltersPopover
+            open={open ?? false}
+            onOpenChange={onOpenChange ?? (() => {})}
+            activeFilterCount={activeFilterCount}
+            badgeCount={badgeCount ?? 0}
+            formId={formId}
+            onApply={onApply}
+            onClear={onClearFilters}
+            applyDisabled={applyDisabled}
+            size={size}
+          >
+            {children}
+          </AdvancedFiltersPopover>
+        )}
       </InputGroupAddon>
     </InputGroup>
   )

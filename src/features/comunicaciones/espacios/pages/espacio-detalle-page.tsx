@@ -1,5 +1,11 @@
 import { getRouteApi, Link } from "@tanstack/react-router"
 
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -83,34 +89,41 @@ function Contenido({ id }: { id: number }) {
   const supervision = espacio.rol === "SUPERVISOR"
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-3 p-4">
-      <header className="rounded-md border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold">{espacio.actividad}</h1>
-          <span className="flex gap-2">
-            {supervision && (
-              <Badge variant="soft" color="info">
-                Solo lectura · Supervisión
-              </Badge>
-            )}
-            <BadgeEstadoEspacio estado={espacio.estado} />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          description={
+            <>
+              {[espacio.grupo, espacio.asignatura, espacio.docente].filter(Boolean).join(" · ")} ·{" "}
+              {fechaDiaMes(espacio.fechaInicio)} – {fechaDiaMes(espacio.fechaCierre)}
+            </>
+          }
+        >
+          {/* Los estados van al lado del título, no empujados a la derecha. */}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 truncate">{espacio.actividad}</span>
+            <span className="flex shrink-0 gap-2 text-sm font-normal">
+              {supervision && (
+                <Badge variant="soft" color="info">
+                  Solo lectura · Supervisión
+                </Badge>
+              )}
+              <BadgeEstadoEspacio estado={espacio.estado} />
+            </span>
           </span>
-        </div>
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="space-y-3">
+      {supervision && (
         <p className="text-sm text-muted-foreground">
-          {[espacio.grupo, espacio.asignatura, espacio.docente].filter(Boolean).join(" · ")} ·{" "}
-          {fechaDiaMes(espacio.fechaInicio)} – {fechaDiaMes(espacio.fechaCierre)}
+          Consulta en solo lectura: un espacio académico es un aula supervisada. Moderan el Responsable de enseñanza
+          y los estudiantes participan.
         </p>
-        {supervision && (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Consulta en solo lectura: un espacio académico es un aula supervisada. Moderan el Responsable de enseñanza
-            y los estudiantes participan.
-          </p>
-        )}
-        {detalle.silenciado && (
-          <p className="mt-1 text-sm text-red">El docente lo silenció en este espacio: puede consultar, pero no escribir.</p>
-        )}
-      </header>
-      <NoticeOutlet />
+      )}
+      {detalle.silenciado && (
+        <p className="text-sm text-red">El docente lo silenció en este espacio: puede consultar, pero no escribir.</p>
+      )}
       <TiraSilenciados detalle={detalle} />
       <BuscarEspacio espacioId={id} />
       <Tabs defaultValue={visibles[0] ?? "MATERIALES"}>
@@ -157,7 +170,8 @@ function Contenido({ id }: { id: number }) {
           <MaterialesEspacio espacioId={id} />
         </TabsContent>
       </Tabs>
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 

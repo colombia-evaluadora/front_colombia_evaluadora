@@ -21,7 +21,7 @@ export function DialogExportarSiuce({ open, onOpenChange }: Props) {
   const vp = f.vistaPrevia
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !f.pending && f.cerrar()}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Exportar para el SIUCE</DialogTitle>
           <DialogDescription>Elija el rango, las columnas y revise la previsualización antes de exportar.</DialogDescription>

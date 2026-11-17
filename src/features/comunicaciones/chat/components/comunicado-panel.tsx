@@ -4,7 +4,9 @@ import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,6 +16,7 @@ import {
   LockIcon,
   MegaphoneIcon,
   WarningCircleIcon,
+  WarningIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
@@ -252,7 +255,7 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Anular comunicado</DialogTitle>
         </DialogHeader>
@@ -261,26 +264,22 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
           Se anulará {c.titulo}. Los destinatarios dejarán de verlo y su aviso dirá que el contenido ya no está
           disponible.
         </p>
-        <div className="space-y-1.5">
-          <label htmlFor="motivo-anulacion" className="text-sm font-medium">
+        <Field variant="outlined" data-invalid={intentado && vacio ? true : undefined}>
+          <FieldLabel htmlFor="motivo-anulacion">
             Motivo<span className="text-red"> *</span>
-          </label>
+          </FieldLabel>
           <Textarea
             id="motivo-anulacion"
+            placeholder="Agregar"
+            className={TEXTAREA_OUTLINED}
             value={motivo}
             maxLength={MAX_MOTIVO}
             aria-invalid={intentado && vacio}
             onChange={(e) => setMotivo(e.target.value)}
           />
-          <p className="text-right text-xs text-muted-foreground">
-            {motivo.length} / {MAX_MOTIVO}
-          </p>
-          {intentado && vacio && (
-            <p role="alert" className="text-xs text-red">
-              Escribe el motivo de la anulación.
-            </p>
-          )}
-        </div>
+          <CharacterCounter value={motivo} max={MAX_MOTIVO} />
+          {intentado && vacio && <FieldError>Escribe el motivo de la anulación.</FieldError>}
+        </Field>
         <DialogFooter>
           <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
             Cancelar
@@ -319,18 +318,26 @@ export function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunic
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cancelar comunicado programado</DialogTitle>
+          {/* Prototipo M.1.ANU.2: ícono de advertencia, título en negrita y el estado final como badge. */}
+          <DialogTitle className="flex items-center gap-2">
+            <WarningIcon aria-hidden className="size-5 shrink-0 text-orange" />
+            Cancelar comunicado programado
+          </DialogTitle>
         </DialogHeader>
         <ErrorNoticeBanner error={cancelar.isError ? cancelar.error : null} />
-        <p className="text-sm text-muted-foreground">
-          Se cancelará {c.titulo}, programado para el{" "}
-          {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' H:mm")}. Pasará a Cancelado (estado final) y no se
-          publicará.
-        </p>
+        <div className="space-y-2 text-sm">
+          <p>
+            Se cancelará <strong>{c.titulo}</strong>, programado para el{" "}
+            {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' H:mm")}.
+          </p>
+          <p className="flex flex-wrap items-center gap-1.5">
+            Pasará a <EstadoComunicadoBadge estado="CANCELADO" /> (estado final) y no se publicará.
+          </p>
+        </div>
         <DialogFooter>
-          <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={cancelar.isPending}>
+          <Button type="button" variant="outline" color="neutral" onClick={cerrar} disabled={cancelar.isPending}>
             Volver
           </Button>
           <Button

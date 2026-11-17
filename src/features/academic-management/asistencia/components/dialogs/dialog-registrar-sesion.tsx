@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ClipboardCheckIcon } from "@/components/ui/icons"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 import { paths } from "@/config/paths"
@@ -114,7 +115,7 @@ export function DialogRegistrarSesion({
         <ClipboardCheckIcon data-icon="inline-start" />
         Registrar sesión
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Registrar sesión</DialogTitle>
         </DialogHeader>
@@ -123,7 +124,8 @@ export function DialogRegistrarSesion({
           calificable hasta hoy.
         </p>
         <div className="grid gap-4">
-          <span className="-mb-3 text-sm font-medium">Grado/Grupo<span className="text-red">*</span></span>
+          <Field variant="outlined">
+          <FieldLabel htmlFor="registrar-sesion-grupo">Grado/Grupo*</FieldLabel>
           <Select
             items={toSelectItemsMap(opcionesGrupo)}
             value={grupo}
@@ -133,7 +135,7 @@ export function DialogRegistrarSesion({
               setFecha("")
             }}
           >
-            <SelectTrigger variant="outlined" aria-label="Grado/Grupo">
+            <SelectTrigger id="registrar-sesion-grupo" variant="outlined">
               <SelectValue placeholder="Seleccione" />
             </SelectTrigger>
             <SelectContent>
@@ -144,14 +146,16 @@ export function DialogRegistrarSesion({
               ))}
             </SelectContent>
           </Select>
-          <span className="-mb-3 text-sm font-medium">Área<span className="text-red">*</span></span>
+          </Field>
+          <Field variant="outlined">
+          <FieldLabel htmlFor="registrar-sesion-area">Área*</FieldLabel>
           <Select
             items={toSelectItemsMap(opcionesAsignatura)}
             value={asignatura}
             disabled={!grupo}
             onValueChange={elegirAsignatura}
           >
-            <SelectTrigger variant="outlined" aria-label="Área">
+            <SelectTrigger id="registrar-sesion-area" variant="outlined">
               <SelectValue placeholder="Seleccione" />
             </SelectTrigger>
             <SelectContent>
@@ -162,9 +166,11 @@ export function DialogRegistrarSesion({
               ))}
             </SelectContent>
           </Select>
-          <span className="-mb-3 text-sm font-medium">Fecha<span className="text-red">*</span></span>
+          </Field>
+          <Field variant="outlined">
+          <FieldLabel htmlFor="registrar-sesion-fecha">Fecha*</FieldLabel>
           <Select items={toSelectItemsMap(opcionesFecha)} value={fecha} disabled={!asignatura} onValueChange={(next) => setFecha(next ?? "")}>
-            <SelectTrigger variant="outlined" aria-label="Fecha">
+            <SelectTrigger id="registrar-sesion-fecha" variant="outlined">
               <SelectValue placeholder="Seleccione" />
             </SelectTrigger>
             <SelectContent>
@@ -175,6 +181,7 @@ export function DialogRegistrarSesion({
               ))}
             </SelectContent>
           </Select>
+          </Field>
         </div>
         <DialogFooter>
           <Button size="sm" variant="outline" color="neutral" onClick={() => setOpen(false)}>

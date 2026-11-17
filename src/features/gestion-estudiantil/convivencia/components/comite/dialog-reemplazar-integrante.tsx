@@ -24,7 +24,7 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
   const r = useComiteReemplazar(integrante, onClose)
   return (
     <Dialog open={integrante != null} onOpenChange={(open) => !open && !r.pending && r.cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Reemplazar — {integrante?.cargo_nombre}</DialogTitle>
         </DialogHeader>

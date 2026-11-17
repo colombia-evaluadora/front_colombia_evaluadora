@@ -104,7 +104,7 @@ export function DialogJustificarAusencia({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !justificar.isPending && onOpenChange(next)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Justificar sin archivo</DialogTitle>
         </DialogHeader>

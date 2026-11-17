@@ -27,7 +27,7 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
   return (
     <Dialog open={area != null} onOpenChange={(next) => !next && onClose()}>
       {area && (
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{area.nombre}</DialogTitle>
           </DialogHeader>

@@ -2,6 +2,7 @@ import { useId, useState } from "react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CheckIcon, PencilSimpleIcon, StarFillIcon, StarIcon, TrashIcon, XIcon } from "@/components/ui/icons"
@@ -126,24 +127,24 @@ export function FavoritosFiltrosPopover({
             guardarActual()
           }}
         >
-          <label htmlFor={`${ids}-nombre`} className="text-xs font-medium text-muted-foreground">
-            Guardar los filtros actuales
-          </label>
+          <p className="text-xs font-medium text-muted-foreground">Guardar los filtros actuales</p>
           {puedeGuardar ? (
             <>
               <p className="truncate text-xs text-muted-foreground" title={describirFiltros(filtros)}>
                 {[filtros.q.trim() && `“${filtros.q.trim()}”`, describirFiltros(filtros)].filter(Boolean).join(" · ")}
               </p>
               <div className="flex items-center gap-2">
-                <Input
-                  id={`${ids}-nombre`}
-                  size="sm"
-                  variant="outlined"
-                  maxLength={NOMBRE_MAX}
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej.: No leídos de 601"
-                />
+                <Field variant="outlined" className="flex-1">
+                  <FieldLabel htmlFor={`${ids}-nombre`}>Nombre del favorito</FieldLabel>
+                  <Input
+                    id={`${ids}-nombre`}
+                    size="sm"
+                    maxLength={NOMBRE_MAX}
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    placeholder="Ej.: No leídos de 601"
+                  />
+                </Field>
                 <Button type="submit" size="sm" disabled={!nombre.trim() || guardar.isPending}>
                   Guardar
                 </Button>

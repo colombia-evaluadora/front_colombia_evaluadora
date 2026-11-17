@@ -33,7 +33,7 @@ export function VerificarPage() {
           if (limpio) navigate({ to: paths.verificarBoletin.getHref(limpio) })
         }}
       >
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="codigo-verificacion">
             Código de verificación <span aria-hidden="true" data-required-mark="">*</span>
           </FieldLabel>
