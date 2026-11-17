@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Textarea } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import {
@@ -148,17 +148,15 @@ export function DialogoProceso({ proceso, onCerrar, onHecho }: { proceso?: Proce
           return (
             <Field variant="outlined" key={funcion}>
               <FieldLabel>{FUNCION_LABEL[funcion]}</FieldLabel>
-              <NativeSelect
+              <SelectOpciones
                 multiple
-                className="h-24"
                 value={asignados.map(String)}
-                onChange={(e) => {
-                  const ids = Array.from(e.target.selectedOptions).map((o) => Number(o.value))
+                onValueChange={(valores) => {
+                  const ids = valores.map(Number)
                   setFunciones((prev) => [...prev.filter((f) => f.FUNCION !== funcion), ...ids.map((USUARIO) => ({ USUARIO, FUNCION: funcion }))])
                 }}
-              >
-                {(personas.data ?? []).map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.nombre}</NativeSelectOption>)}
-              </NativeSelect>
+                opciones={(personas.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre }))}
+              />
             </Field>
           )
         })}
@@ -284,18 +282,26 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
       </div>
       <Field variant="outlined">
         <FieldLabel>* Método</FieldLabel>
-        <NativeSelect disabled={publicada} value={v.METODO} onChange={(e) => set("METODO", e.target.value as typeof v.METODO)}>
-          <NativeSelectOption value="VOTACION">Votación (secreta, una opción, con voto en blanco)</NativeSelectOption>
-          <NativeSelectOption value="SELECCION_MOTIVADA">Selección motivada por responsable</NativeSelectOption>
-        </NativeSelect>
+        <SelectOpciones
+          disabled={publicada}
+          value={v.METODO}
+          onValueChange={(x) => set("METODO", x as typeof v.METODO)}
+          opciones={[
+            { value: "VOTACION", label: "Votación (secreta, una opción, con voto en blanco)" },
+            { value: "SELECCION_MOTIVADA", label: "Selección motivada por responsable" },
+          ]}
+        />
       </Field>
       <Field><FieldLabel>* Pueden postularse</FieldLabel><Poblaciones valor={v.POBLACION_POSTULA} onCambio={(x) => set("POBLACION_POSTULA", x)} /></Field>
       {votacion && <Field><FieldLabel>* Votan</FieldLabel><Poblaciones valor={v.POBLACION_VOTA} onCambio={(x) => set("POBLACION_VOTA", x)} /></Field>}
       <Field variant="outlined">
         <FieldLabel>Cursos (acotan a los estudiantes; sin marcar, todos)</FieldLabel>
-        <NativeSelect multiple className="h-24" value={v.CURSOS} onChange={(e) => set("CURSOS", Array.from(e.target.selectedOptions).map((o) => o.value))}>
-          {(cursos.data ?? []).map((c) => <NativeSelectOption key={c} value={c}>{c}</NativeSelectOption>)}
-        </NativeSelect>
+        <SelectOpciones
+          multiple
+          value={v.CURSOS}
+          onValueChange={(x) => set("CURSOS", x)}
+          opciones={(cursos.data ?? []).map((c) => ({ value: c, label: c }))}
+        />
       </Field>
       <Field variant="outlined">
         <FieldLabel>Requisitos (uno por línea)</FieldLabel>
@@ -315,10 +321,14 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
         <div className="grid gap-4 sm:grid-cols-3">
           <Field variant="outlined">
             <FieldLabel>* Jornada</FieldLabel>
-            <NativeSelect value={v.FK_JORNADA} onChange={(e) => set("FK_JORNADA", e.target.value)}>
-              <NativeSelectOption value="">Elige</NativeSelectOption>
-              {(jornadas.data ?? []).map((j) => <NativeSelectOption key={j.id} value={String(j.id)}>{j.nombre}</NativeSelectOption>)}
-            </NativeSelect>
+            <SelectOpciones
+              value={v.FK_JORNADA}
+              onValueChange={(x) => set("FK_JORNADA", x)}
+              opciones={[
+                { value: "", label: "Elige" },
+                ...(jornadas.data ?? []).map((j) => ({ value: String(j.id), label: j.nombre })),
+              ]}
+            />
           </Field>
           <Field variant="outlined"><FieldLabel>Umbral (%)</FieldLabel><Input inputMode="decimal" value={v.UMBRAL_PCT} onChange={(e) => set("UMBRAL_PCT", e.target.value)} /></Field>
           <Field variant="outlined"><FieldLabel>Participación mínima (%)</FieldLabel><Input inputMode="decimal" value={v.PARTICIPACION_MINIMA_PCT} onChange={(e) => set("PARTICIPACION_MINIMA_PCT", e.target.value)} /></Field>
@@ -327,11 +337,15 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field variant="outlined">
           <FieldLabel>Mecanismo ante empate o umbral</FieldLabel>
-          <NativeSelect value={v.MECANISMO_EMPATE} onChange={(e) => set("MECANISMO_EMPATE", e.target.value)}>
-            <NativeSelectOption value="DECISION">Decisión documentada</NativeSelectOption>
-            <NativeSelectOption value="NUEVA_VOTACION">Nueva votación</NativeSelectOption>
-            <NativeSelectOption value="SEGUNDA_VUELTA">Segunda vuelta</NativeSelectOption>
-          </NativeSelect>
+          <SelectOpciones
+            value={v.MECANISMO_EMPATE}
+            onValueChange={(x) => set("MECANISMO_EMPATE", x)}
+            opciones={[
+              { value: "DECISION", label: "Decisión documentada" },
+              { value: "NUEVA_VOTACION", label: "Nueva votación" },
+              { value: "SEGUNDA_VUELTA", label: "Segunda vuelta" },
+            ]}
+          />
         </Field>
         <Field variant="outlined">
           <FieldLabel>Días para reclamar (vacío: sin reclamaciones)</FieldLabel>

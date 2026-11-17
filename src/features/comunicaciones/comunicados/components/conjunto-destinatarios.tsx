@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { InfoIcon, WarningCircleIcon } from "@/components/ui/icons"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import {
@@ -295,9 +295,14 @@ export function ConjuntoDestinatarios({
             Selección de funcionarios
           </Etiqueta>
           {!conFuncionarios ? (
-            <NativeSelect id={`${id}-seleccion`} className="w-full" disabled value="">
-              <NativeSelectOption value="">{NO_APLICA}</NativeSelectOption>
-            </NativeSelect>
+            <SelectOpciones
+              id={`${id}-seleccion`}
+              variant="outlined"
+              disabled
+              value=""
+              opciones={[{ value: "", label: NO_APLICA }]}
+              onValueChange={() => {}}
+            />
           ) : (
             <div
               id={`${id}-seleccion`}
@@ -433,23 +438,19 @@ function Selector({
       <Etiqueta requerido={requerido} htmlFor={id}>
         {etiqueta}
       </Etiqueta>
-      <NativeSelect
+      <SelectOpciones
         id={id}
-        className="w-full"
+        variant="outlined"
         value={vacio ? "" : valor}
         disabled={deshabilitado}
         aria-required={requerido}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <NativeSelectOption value="">{vacio ?? "Seleccione"}</NativeSelectOption>
-        {todos && !vacio && <NativeSelectOption value={valorTodos}>{todos}</NativeSelectOption>}
-        {!vacio &&
-          opciones.map((o) => (
-            <NativeSelectOption key={o.valor} value={o.valor}>
-              {o.etiqueta}
-            </NativeSelectOption>
-          ))}
-      </NativeSelect>
+        onValueChange={onChange}
+        opciones={[
+          { value: "", label: vacio ?? "Seleccione" },
+          ...(todos && !vacio ? [{ value: valorTodos, label: todos }] : []),
+          ...(vacio ? [] : opciones.map((o) => ({ value: o.valor, label: o.etiqueta }))),
+        ]}
+      />
     </div>
   )
 }
@@ -491,9 +492,14 @@ function Multiple({
         {etiqueta}
       </Etiqueta>
       {motivo || opciones.length === 0 ? (
-        <NativeSelect id={id} className="w-full" disabled value="">
-          <NativeSelectOption value="">{motivo ?? SIN}</NativeSelectOption>
-        </NativeSelect>
+        <SelectOpciones
+          id={id}
+          variant="outlined"
+          disabled
+          value=""
+          opciones={[{ value: "", label: motivo ?? SIN }]}
+          onValueChange={() => {}}
+        />
       ) : (
         <SelectorChips
           items={items}
