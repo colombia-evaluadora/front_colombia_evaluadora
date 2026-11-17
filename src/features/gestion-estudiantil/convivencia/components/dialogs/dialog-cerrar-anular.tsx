@@ -55,7 +55,7 @@ export function DialogCerrarCaso({ caso, onClose }: Props) {
   if (caso && bloqueo) {
     return (
       <Dialog open onOpenChange={(open) => !open && s.cerrar()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent showCloseButton={false} className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>No se puede cerrar el caso {caso.numero}</DialogTitle>
             <DialogDescription>{bloqueo}</DialogDescription>

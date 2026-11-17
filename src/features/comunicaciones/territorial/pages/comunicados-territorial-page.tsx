@@ -1,4 +1,10 @@
 import { useState } from "react"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/pagination"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getErrorMessage } from "@/lib/api-client"
@@ -72,40 +78,44 @@ export function ComunicadosTerritorialPage() {
   const hayFiltros = !!(q || establecimiento || estado || desde)
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 p-4">
-      <header>
-        <h1 className="text-xl font-semibold">Comunicados institucionales</h1>
-        <p className="text-sm text-muted-foreground">Consulta de los comunicados de sus establecimientos, sin publicar.</p>
-      </header>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle description="Consulta de los comunicados de sus establecimientos, sin publicar.">
+          Comunicados institucionales
+        </TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="flex min-w-0 flex-col gap-4">
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-q">Buscar por título</FieldLabel>
           <Input id="territorial-q" value={q} onChange={(e) => filtrar(setQ)(e.target.value)} />
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-est">Establecimiento</FieldLabel>
-          <NativeSelect id="territorial-est" value={establecimiento} onChange={(e) => filtrar(setEstablecimiento)(e.target.value)}>
-            <NativeSelectOption value="">Todos</NativeSelectOption>
-            {(establecimientos.data ?? []).map((o) => (
-              <NativeSelectOption key={o.valor} value={o.valor}>
-                {o.etiqueta}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+          <SelectOpciones
+            id="territorial-est"
+            value={establecimiento}
+            onValueChange={(x) => filtrar(setEstablecimiento)(x)}
+            opciones={[
+              { value: "", label: "Todos" },
+              ...(establecimientos.data ?? []).map((o) => ({ value: o.valor, label: o.etiqueta })),
+            ]}
+          />
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-estado">Estado</FieldLabel>
-          <NativeSelect id="territorial-estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
-            <NativeSelectOption value="">Todos</NativeSelectOption>
-            {(Object.keys(ESTADOS) as EstadoTerritorial[]).map((k) => (
-              <NativeSelectOption key={k} value={k}>
-                {ESTADOS[k].etiqueta}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+          <SelectOpciones
+            id="territorial-estado"
+            value={estado}
+            onValueChange={(x) => filtrar(setEstado)(x)}
+            opciones={[
+              { value: "", label: "Todos" },
+              ...(Object.keys(ESTADOS) as EstadoTerritorial[]).map((k) => ({ value: k, label: ESTADOS[k].etiqueta })),
+            ]}
+          />
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="territorial-desde">Desde</FieldLabel>
           <Input id="territorial-desde" type="date" value={desde} onChange={(e) => filtrar(setDesde)(e.target.value)} />
         </Field>
@@ -224,7 +234,8 @@ export function ComunicadosTerritorialPage() {
       )}
 
       {abierto != null && <DetalleDialog id={abierto} onClose={() => setAbierto(null)} />}
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 

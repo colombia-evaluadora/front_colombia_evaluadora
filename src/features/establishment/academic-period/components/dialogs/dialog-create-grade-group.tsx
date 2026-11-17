@@ -191,7 +191,7 @@ export function CreateGradeGroupDialog({
           Agregar grupo
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Modificar grupo" : "Agregar grupo"}</DialogTitle>
         </DialogHeader>

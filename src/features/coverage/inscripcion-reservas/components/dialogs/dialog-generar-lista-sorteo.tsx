@@ -107,7 +107,7 @@ export function GenerarListaSorteoDialog({
         onOpenChange={(o) => !generar.isPending && !sortear.isPending && setOpen(o)}
       >
         {!conSorteo ? (
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent showCloseButton={false} className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Generar lista del sorteo</DialogTitle>
               <DialogDescription>
@@ -139,7 +139,7 @@ export function GenerarListaSorteoDialog({
             </DialogFooter>
           </DialogContent>
         ) : (
-          <DialogContent className="sm:max-w-4xl">
+          <DialogContent showCloseButton={false} className="sm:max-w-4xl">
             <DialogHeader>
               <DialogTitle>Generar lista del sorteo</DialogTitle>
             </DialogHeader>

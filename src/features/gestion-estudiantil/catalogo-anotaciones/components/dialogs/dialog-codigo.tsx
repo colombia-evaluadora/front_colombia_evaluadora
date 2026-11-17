@@ -39,7 +39,7 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
 
   return (
     <Dialog open onOpenChange={(open) => !open && !f.pending && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{codigo ? `Modificar ${codigo.codigo}` : "Nuevo código"}</DialogTitle>
           <DialogDescription>Códigos del Manual de Convivencia del establecimiento.</DialogDescription>

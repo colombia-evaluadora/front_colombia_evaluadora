@@ -26,7 +26,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
   const ocupado = f.agregando || f.pendingPanel
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !ocupado && (f.cerrar(), onOpenChange(false))}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             Soportes de la acción — {accion.nombre} · {accion.fecha} (Caso {caso.numero})

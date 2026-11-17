@@ -20,7 +20,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
   const a = anotacion
   return (
     <Dialog open={a != null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Anotación — {a?.estudiante_nombre}</DialogTitle>
         </DialogHeader>

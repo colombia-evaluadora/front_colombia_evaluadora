@@ -59,7 +59,7 @@ export function DialogSolicitarAprobacion({ solicitud, enviando, onCancelar, onE
         onCancelar()
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{correccion ? "Corregir una sesión de asistencia" : "Registrar una sesión pendiente"}</DialogTitle>
         </DialogHeader>

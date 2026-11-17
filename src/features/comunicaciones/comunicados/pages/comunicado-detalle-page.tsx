@@ -1,8 +1,16 @@
 "use no memo"
 
-import { Fragment, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { Link } from "@tanstack/react-router"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
@@ -10,15 +18,7 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   ArrowLeftIcon,
-  CaretRightIcon,
-  DotsThreeVerticalIcon,
   FileDownloadOutlinedIcon,
   InfoIcon,
   PencilIcon,
@@ -42,13 +42,14 @@ import {
 import { descargarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 import {
+  comunicadosGestionKey,
   useSeguimientoComunicadoQuery,
   type PersonaSinCanal,
 } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 
 /**
- * Detalle y seguimiento (Guía M.1.DET.1), en una tarjeta: cabecera con la miga "Comunicados ›
- * título", estado, menú ⁞ (Modificar / Cancelar / Anular según estado y autoría) y Volver; los datos
+ * Detalle y seguimiento (Guía M.1.DET.1), en una tarjeta: cabecera con el título, su estado al lado y
+ * Volver; pie fijo con Modificar / Cancelar / Anular según estado y autoría; los datos
  * de publicación, el mensaje y, para quien lo gestiona, el seguimiento por canal con las personas
  * sin canal o con correo fallido. Nunca se muestra quién leyó: solo el total.
  */
@@ -64,6 +65,12 @@ function DetalleContent() {
   const { id } = comunicadoDetalleRoute.useParams()
   const q = useComunicadoQuery(Number(id))
   const c = q.data
+  const queryClient = useQueryClient()
+  const cargado = q.isSuccess
+  // Abrir el comunicado lo marca leído en comms-service: se refresca la bandeja para quitar el punto.
+  useEffect(() => {
+    if (cargado) void queryClient.invalidateQueries({ queryKey: comunicadosGestionKey })
+  }, [cargado, id, queryClient])
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -92,69 +99,42 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
   const cancelable = gestiona && c.estado === "PROGRAMADO"
   const anulable = gestiona && (c.estado === "PUBLICADO" || c.estado === "VENCIDO")
   const adjuntos = c.adjuntos ?? []
+  const conAcciones = modificable || cancelable || anulable
 
   return (
-    <article
-      aria-labelledby="comunicado-titulo"
-      className="rounded-lg border bg-card text-sm text-card-foreground"
-    >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 id="comunicado-titulo" className="flex min-w-0 items-center gap-1.5 text-xl font-bold">
-            <Link to={paths.app.comunicacionesComunicados.getHref()} className="shrink-0 text-primary hover:underline">
-              Comunicados
-            </Link>
-            <CaretRightIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 break-words">{c.titulo}</span>
-          </h1>
-          {c.estado && <EstadoComunicadoBadge estado={c.estado} />}
-        </div>
-        <div className="flex items-center gap-2">
-          {(modificable || cancelable || anulable) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                aria-label="Opciones del comunicado"
-                className="grid size-8 place-items-center rounded-md hover:bg-muted"
-              >
-                <DotsThreeVerticalIcon className="size-4.5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {modificable && (
-                  <DropdownMenuItem
-                    render={<Link to={paths.app.comunicacionesComunicadoEditar.getHref(c.conversacionId)} />}
-                    nativeButton={false}
-                  >
-                    <PencilIcon aria-hidden />
-                    Modificar
-                  </DropdownMenuItem>
-                )}
-                {cancelable && (
-                  <DropdownMenuItem onClick={() => setDialogo("cancelar")}>
-                    <XCircleIcon aria-hidden />
-                    Cancelar comunicado
-                  </DropdownMenuItem>
-                )}
-                {anulable && (
-                  <DropdownMenuItem variant="destructive" onClick={() => setDialogo("anular")}>
-                    <ProhibitIcon aria-hidden />
-                    Anular
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            color="neutral"
-            render={<Link to={paths.app.comunicacionesComunicados.getHref()} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon data-icon="inline-start" aria-hidden />
-            Volver
-          </Button>
-        </div>
-      </header>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          description="Comunicados institucionales"
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              color="neutral"
+              className="shrink-0"
+              render={<Link to={paths.app.comunicacionesComunicados.getHref()} />}
+              nativeButton={false}
+            >
+              <ArrowLeftIcon data-icon="inline-start" aria-hidden />
+              Volver
+            </Button>
+          }
+        >
+          {/* El estado va al lado del título (M.1.DET.1). */}
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="min-w-0 truncate">{c.titulo}</span>
+            {c.estado && (
+              <span className="shrink-0 text-sm font-normal">
+                <EstadoComunicadoBadge estado={c.estado} />
+              </span>
+            )}
+          </span>
+        </TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody
+        className={cn("py-0", conAcciones && "rounded-b-none border-b-0")}
+        contentClassName="px-0"
+      >
 
       <div className="space-y-1 px-4 pt-4 text-muted-foreground">
         <p>
@@ -200,10 +180,40 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
       />
 
       {gestiona && <Seguimiento c={c} />}
+      </TableScreenBody>
+      {/* Acciones del comunicado en el pie fijo, como los formularios de página completa. */}
+      {conAcciones && (
+        <TableScreenFooter>
+          <span />
+          <div className="flex flex-wrap justify-end gap-2">
+            {anulable && (
+              <Button type="button" variant="outline" color="destructive" onClick={() => setDialogo("anular")}>
+                <ProhibitIcon data-icon="inline-start" aria-hidden />
+                Anular
+              </Button>
+            )}
+            {cancelable && (
+              <Button type="button" variant="outline" color="neutral" onClick={() => setDialogo("cancelar")}>
+                <XCircleIcon data-icon="inline-start" aria-hidden />
+                Cancelar comunicado
+              </Button>
+            )}
+            {modificable && (
+              <Button
+                render={<Link to={paths.app.comunicacionesComunicadoEditar.getHref(c.conversacionId)} />}
+                nativeButton={false}
+              >
+                <PencilIcon data-icon="inline-start" aria-hidden />
+                Modificar
+              </Button>
+            )}
+          </div>
+        </TableScreenFooter>
+      )}
 
       {dialogo === "anular" && <AnularDialog comunicado={c} onClose={() => setDialogo(null)} />}
       {dialogo === "cancelar" && <CancelarDialog comunicado={c} onClose={() => setDialogo(null)} />}
-    </article>
+    </TableScreen>
   )
 }
 
@@ -232,11 +242,12 @@ function Seguimiento({ c }: { c: Comunicado }) {
         <h2 id="seguimiento-titulo" className="mb-3 text-base font-semibold">
           Seguimiento
         </h2>
-        <dl className="grid grid-cols-2 gap-y-3 sm:grid-cols-3 lg:grid-cols-6 lg:divide-x">
+        <dl className="grid grid-cols-2 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
           {contadores.map((x) => (
-            <div key={x.etiqueta} className="flex flex-col gap-0.5 px-3 first:pl-0">
+            // Como el prototipo M.1.DET.1: el número arriba y su rótulo debajo, separados por líneas verticales.
+            <div key={x.etiqueta} className="flex flex-col-reverse gap-0.5 border-l px-3 text-center first:border-l-0">
               <dt className="text-xs text-muted-foreground">{x.etiqueta}</dt>
-              <dd className="text-xl font-semibold tabular-nums">{q.isPending ? "…" : x.valor}</dd>
+              <dd className="text-2xl font-semibold tabular-nums">{q.isPending ? "…" : x.valor}</dd>
             </div>
           ))}
         </dl>

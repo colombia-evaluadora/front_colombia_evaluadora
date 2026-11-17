@@ -33,7 +33,7 @@ export function PrevisualizacionDestinatarios({
   return (
     <div className="-mx-1 space-y-4 overflow-y-auto px-1 py-1 text-sm" aria-live="polite">
       <section aria-labelledby="previsualizacion-resumen" className="rounded-lg border px-3 py-2">
-        <h3 id="previsualizacion-resumen" className="font-medium">
+        <h3 id="previsualizacion-resumen" className="text-base font-semibold">
           {titulo}
         </h3>
         <dl className="text-muted-foreground">
@@ -55,7 +55,7 @@ export function PrevisualizacionDestinatarios({
       </section>
 
       <section aria-labelledby="previsualizacion-destinatarios" className="space-y-2">
-        <h3 id="previsualizacion-destinatarios" className="font-medium">
+        <h3 id="previsualizacion-destinatarios" className="text-base font-semibold">
           Destinatarios
         </h3>
         {d.unicos === 0 ? (

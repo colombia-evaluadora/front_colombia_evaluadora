@@ -86,7 +86,7 @@ export function DialogRetirar({
 
   return (
     <Dialog open onOpenChange={(o) => !retirar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{tituloAccion("Retirar", matriculas)}</DialogTitle>
           <MatriculasAfectadas matriculas={matriculas} />

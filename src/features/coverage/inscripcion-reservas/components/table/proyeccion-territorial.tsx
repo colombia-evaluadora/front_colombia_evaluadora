@@ -297,7 +297,7 @@ export function AprobarProyeccionDialog({
   const nDeficit = detalle ? deficit.length : (proyeccion?.gradosConDeficit ?? 0)
   return (
     <Dialog open={proyeccion != null} onOpenChange={(o) => !aprobar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Aprobar la proyección — {nombre}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -391,7 +391,7 @@ export function DevolverProyeccionDialog({
   }
   return (
     <Dialog open={proyeccion != null} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Devolver la proyección — {nombre}</DialogTitle>
           <DialogDescription>Los campos marcados con * son obligatorios</DialogDescription>

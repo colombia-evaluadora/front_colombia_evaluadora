@@ -122,7 +122,7 @@ export function CreateAreaDialog({ academicPeriodId, open, onOpenChange, onSaved
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Crear área</DialogTitle>
         </DialogHeader>

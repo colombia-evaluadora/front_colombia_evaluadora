@@ -60,7 +60,7 @@ interface ShellProps {
 export function DialogProcesoShell({ titulo, resumen, onClose, error, pending, confirmar, children, className = "sm:max-w-2xl" }: ShellProps) {
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onClose()}>
-      <DialogContent className={className}>
+      <DialogContent showCloseButton={false} className={className}>
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription render={<div />}>{resumen}</DialogDescription>

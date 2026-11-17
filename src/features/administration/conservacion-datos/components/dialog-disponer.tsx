@@ -114,7 +114,7 @@ export function DialogDisponer({
 
   return (
     <Dialog open onOpenChange={(open) => !open && !disponer.isPending && onClose()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             Disponer: {vencido.tipoRegistro} · {vencido.establecimiento} ·{" "}

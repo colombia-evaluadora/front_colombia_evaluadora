@@ -3,6 +3,7 @@ import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNotify } from "@/components/notice/notice-context"
@@ -183,13 +184,15 @@ export function ForoEspacio({
       )}
       {nuevo && (
         <div className="space-y-2 rounded-md border p-3">
-          <Input
-            aria-label="Título del tema"
-            placeholder="Título del tema"
-            maxLength={200}
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-          />
+          <Field variant="outlined">
+            <FieldLabel htmlFor={`foro-${id}-titulo`}>Título del tema</FieldLabel>
+            <Input
+              id={`foro-${id}-titulo`}
+              maxLength={200}
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+            />
+          </Field>
           <ComposerEspacio
             espacioId={id}
             equipo={equipo}

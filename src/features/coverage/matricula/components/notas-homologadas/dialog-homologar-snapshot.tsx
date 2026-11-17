@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CheckIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
@@ -102,12 +103,12 @@ export function DialogHomologarSnapshot({ matriculaId, snapshot, estudiante, onO
     onChange: (value: string | null) => void,
     invalido: boolean,
   ) => (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">
-        Destino <span className="text-red">*</span>
-      </span>
+    <Field variant="outlined" data-invalid={invalido || undefined}>
+      <FieldLabel htmlFor={`homologar-destino-${label.replace(/W+/g, "-")}`}>
+        Destino<span className="text-red"> *</span>
+      </FieldLabel>
       <Select items={toSelectItemsMap(items)} value={value} onValueChange={(v) => onChange((v as string) ?? null)}>
-        <SelectTrigger variant="outlined" aria-label={label} aria-invalid={invalido} className="w-full">
+        <SelectTrigger id={`homologar-destino-${label.replace(/W+/g, "-")}`} variant="outlined" aria-label={label} aria-invalid={invalido} className="w-full">
           <SelectValue placeholder="Seleccione" />
         </SelectTrigger>
         <SelectContent>
@@ -118,12 +119,12 @@ export function DialogHomologarSnapshot({ matriculaId, snapshot, estudiante, onO
           ))}
         </SelectContent>
       </Select>
-    </div>
+    </Field>
   )
 
   return (
     <Dialog open onOpenChange={(next) => !homologar.isPending && onOpenChange(next)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Homologar desde snapshot — {estudiante}</DialogTitle>
           <p className="text-sm text-muted-foreground">

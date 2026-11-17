@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -160,7 +161,7 @@ export function DialogEdadGrado({
 
   return (
     <Dialog open={open} onOpenChange={guardedOpenChange}>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {nuevo ? "Agregar edad recomendada" : `Modificar edad recomendada de ${fila.nombre}`}
@@ -180,11 +181,16 @@ export function DialogEdadGrado({
         <form id={FORM_ID} onSubmit={guardar} className="flex flex-col gap-6">
           <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
             {nuevo && (
-              <div className="flex min-w-56 flex-1 flex-col gap-1">
-                <span className="text-sm">
+              <Field
+                variant="outlined"
+                className="min-w-56 flex-1"
+                data-invalid={errores.grado ? true : undefined}
+              >
+                <FieldLabel htmlFor="edad-grado-grado">
                   Grado<span className="text-red"> *</span>
-                </span>
+                </FieldLabel>
                 <SelectFila
+                  id="edad-grado-grado"
                   label="Grado"
                   placeholder="Seleccione el grado"
                   className="h-9 max-w-none"
@@ -193,14 +199,15 @@ export function DialogEdadGrado({
                   onChange={(v) => cambiar({ grado: v }, "grado")}
                 />
                 <ErrorCampo mensaje={errores.grado ?? null} />
-              </div>
+              </Field>
             )}
-            <label className="flex flex-col gap-1">
-              <span className="text-sm">
+            <Field variant="outlined" className="w-auto" data-invalid={errores.edad ? true : undefined}>
+              <FieldLabel htmlFor="edad-grado-edad">
                 Edad recomendada<span className="text-red"> *</span>
-              </span>
+              </FieldLabel>
               <span className="flex items-center gap-2">
                 <Input
+                  id="edad-grado-edad"
                   inputMode="numeric"
                   autoFocus={!nuevo}
                   aria-invalid={Boolean(errores.edad)}
@@ -212,7 +219,7 @@ export function DialogEdadGrado({
                 <span className="text-sm text-muted-foreground">años</span>
               </span>
               <ErrorCampo mensaje={errores.edad ?? null} />
-            </label>
+            </Field>
           </div>
 
           <fieldset className="flex flex-col gap-3">
