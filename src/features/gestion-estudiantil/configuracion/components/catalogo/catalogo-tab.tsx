@@ -1,27 +1,19 @@
 "use no memo"
 
-import { useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
-import {
-  TableScreen,
-  TableScreenBody,
-  TableScreenHeader,
-  TableScreenTitle,
-  TableScreenToolbar,
-} from "@/components/layout/table-screen"
-import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { TableScreenBody, TableScreenToolbar } from "@/components/layout/table-screen"
+import { useNotify } from "@/components/notice/notice-context"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useDataTable } from "@/hooks/use-data-table"
-import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 
-import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { useCambiarEstadoCodigo } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/mutations/codigos"
 import { useCodigosQuery } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/query/use-codigos-query"
 import { FILTROS_VACIOS, type CatalogoFiltros, type CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
@@ -29,15 +21,22 @@ import { DialogCodigo } from "@/features/gestion-estudiantil/catalogo-anotacione
 import { DialogEliminarCodigo } from "@/features/gestion-estudiantil/catalogo-anotaciones/components/dialogs/dialog-eliminar-codigo"
 import { SearchCodigos } from "@/features/gestion-estudiantil/catalogo-anotaciones/components/search/search-codigos"
 import { buildColumnsCodigos } from "@/features/gestion-estudiantil/catalogo-anotaciones/components/table/columns-codigos"
-import { useEstablecimientoCatalogo } from "@/features/gestion-estudiantil/catalogo-anotaciones/hooks/use-establecimiento-catalogo"
+import type { AccesoConfiguracion } from "@/features/gestion-estudiantil/configuracion/api/types"
+import { EncabezadoConfiguracion } from "@/features/gestion-estudiantil/configuracion/components/encabezado-configuracion"
 
 type Modal = { tipo: "nuevo" } | { tipo: "modificar"; codigo: CodigoRow } | { tipo: "eliminar"; codigo: CodigoRow } | null
 
-function CatalogoContent() {
+interface Props {
+  tabs: ReactNode
+  establecimiento: number | null
+  cargandoEstablecimiento: boolean
+  acceso: AccesoConfiguracion
+}
+
+/** Catálogo de anotaciones (G.10.CAT.1–4, Gestión Estudiantil 2.1): los códigos del Manual de Convivencia del establecimiento. */
+export function CatalogoTab({ tabs, establecimiento, cargandoEstablecimiento, acceso }: Props) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { notify } = useNotify()
-  const permiso = useMenuPermission("CATALOGO_ANOTACIONES")
-  const ee = useEstablecimientoCatalogo()
 
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<CatalogoFiltros>(FILTROS_VACIOS)
@@ -45,15 +44,18 @@ function CatalogoContent() {
 
   const tiposQ = useQuery(selectCategoryQueryOptions("TIPO_COMPORTAMIENTO"))
   const situacionesQ = useQuery(selectCategoryQueryOptions("TIPO_SITUACION"))
-  const tipoRows = tiposQ.data ?? []
-  const tipos = tipoRows.map((r) => ({ value: String(r.pk_lista_valor), label: r.nombre }))
-  const situaciones = (situacionesQ.data ?? []).map((r) => ({ value: String(r.pk_lista_valor), label: r.nombre }))
+  const tipoRows = useMemo(() => tiposQ.data ?? [], [tiposQ.data])
+  const tipos = useMemo(() => tipoRows.map((r) => ({ value: String(r.pk_lista_valor), label: r.nombre })), [tipoRows])
+  const situaciones = useMemo(
+    () => (situacionesQ.data ?? []).map((r) => ({ value: String(r.pk_lista_valor), label: r.nombre })),
+    [situacionesQ.data],
+  )
   // Por NOMBRE, como fn_observador_tipo_es_negativo: el VALOR no es estable entre entornos ("3", "Negativo") ni el pk.
   const esNegativo = (tipo: string) =>
     tipoRows.find((r) => String(r.pk_lista_valor) === tipo)?.nombre?.trim().toLowerCase() === "negativo"
 
   const { data, isPending, isError, error, refetch } = useCodigosQuery({
-    establecimiento: ee.id,
+    establecimiento,
     search,
     filtros,
     pageIndex,
@@ -62,8 +64,8 @@ function CatalogoContent() {
 
   const cambiarEstado = useCambiarEstadoCodigo()
   const columns = buildColumnsCodigos({
-    puedeEditar: permiso.puedeEditar,
-    puedeEliminar: permiso.puedeEliminar,
+    puedeEditar: acceso.puede_editar,
+    puedeEliminar: acceso.puede_eliminar,
     onModificar: (codigo) => setModal({ tipo: "modificar", codigo }),
     onEliminar: (codigo) => setModal({ tipo: "eliminar", codigo }),
     onCambiarEstado: (c) =>
@@ -94,19 +96,15 @@ function CatalogoContent() {
 
   return (
     <>
-      <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            permiso.puedeCrear && (
-              <Button size="sm" disabled={ee.id == null} onClick={() => setModal({ tipo: "nuevo" })}>
-                <ControlPointIcon data-icon="inline-start" />
-                Nuevo código
-              </Button>
-            )
-          }
-        >
-          Catálogo de anotaciones
-        </TableScreenTitle>
+      <EncabezadoConfiguracion
+        tabs={tabs}
+        action={
+          <Button size="sm" disabled={establecimiento == null || !acceso.puede_crear} onClick={() => setModal({ tipo: "nuevo" })}>
+            <ControlPointIcon data-icon="inline-start" />
+            Nuevo código
+          </Button>
+        }
+      >
         <TableScreenToolbar>
           <SearchCodigos
             search={search}
@@ -127,28 +125,13 @@ function CatalogoContent() {
             tipos={tipos}
             situaciones={situaciones}
           />
-          {ee.opciones.length > 1 && (
-            <div className="w-full sm:w-80">
-              <ComboOpciones
-                id="catalogo-establecimiento"
-                label="Establecimiento"
-                todos={false}
-                value={ee.valor}
-                options={ee.opciones}
-                onChange={(v) => {
-                  ee.elegir(v)
-                  goToPage(0)
-                }}
-              />
-            </div>
-          )}
         </TableScreenToolbar>
-      </TableScreenHeader>
+      </EncabezadoConfiguracion>
 
       <TableScreenBody>
         <DataTable
           table={table}
-          isPending={ee.cargando || (ee.id != null && isPending)}
+          isPending={cargandoEstablecimiento || (establecimiento != null && isPending)}
           isError={isError}
           onRetry={refetch}
           isRowMuted={(row) => !row.original.habilitado}
@@ -171,7 +154,7 @@ function CatalogoContent() {
 
       {(modal?.tipo === "nuevo" || modal?.tipo === "modificar") && (
         <DialogCodigo
-          establecimiento={ee.id}
+          establecimiento={establecimiento}
           codigo={modal.tipo === "modificar" ? modal.codigo : null}
           tipos={tipos}
           situaciones={situaciones}
@@ -181,18 +164,5 @@ function CatalogoContent() {
       )}
       {modal?.tipo === "eliminar" && <DialogEliminarCodigo codigo={modal.codigo} onClose={() => setModal(null)} />}
     </>
-  )
-}
-
-/** Catálogo de anotaciones (Gestión Estudiantil 2.1): los códigos del Manual de Convivencia del establecimiento. */
-export function CatalogoAnotacionesPage() {
-  return (
-    <NoticeProvider>
-      <TableScreen>
-        <TablePaginationProvider>
-          <CatalogoContent />
-        </TablePaginationProvider>
-      </TableScreen>
-    </NoticeProvider>
   )
 }

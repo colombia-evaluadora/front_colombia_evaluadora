@@ -13,7 +13,7 @@ import type {
   ParametrosRiesgo,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
 
-/** `GET /parametros`: lo lee quien tiene `puede_parametros` (la pestaña no se muestra a los demás). */
+/** `GET /parametros`: lo usa la pestaña Parámetros de riesgo de Configuración (CONFIGURACION_GE/VER). */
 export function useParametrosQuery(establecimiento: number | null, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.parametros(establecimiento ?? "none"),
