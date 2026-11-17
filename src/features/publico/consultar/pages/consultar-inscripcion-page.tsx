@@ -6,6 +6,7 @@ import { MagnifyingGlassIcon } from "@/components/ui/icons"
 import { FormularioConsulta } from "@/features/publico/consultar/components/formulario-consulta"
 import { ResultadoInscripcion } from "@/features/publico/consultar/components/resultado-inscripcion"
 import { SUBTITULO_ESTADO } from "@/features/publico/consultar/ui-mappings"
+import type { CredencialesConsulta } from "@/features/publico/consultar/api/consulta-publica"
 import type { EstadoInscripcionPublica, InscripcionConsulta } from "@/features/publico/consultar/datos-demo"
 
 const BREADCRUMB = ["Consultar inscripción"]
@@ -18,6 +19,7 @@ const PUNTOS = ["Estado de cada opción de cupo", "Elija o anule su inscripción
  */
 export function ConsultarInscripcionPage() {
   const [inscripcion, setInscripcion] = useState<InscripcionConsulta | null>(null)
+  const [credenciales, setCredenciales] = useState<CredencialesConsulta | null>(null)
   const [estado, setEstado] = useState<EstadoInscripcionPublica | null>(null)
 
   if (!inscripcion) {
@@ -31,8 +33,9 @@ export function ConsultarInscripcionPage() {
         width="md"
       >
         <FormularioConsulta
-          onEncontrada={(i) => {
+          onEncontrada={(i, c) => {
             setInscripcion(i)
+            setCredenciales(c)
             setEstado(i.estado)
             window.scrollTo({ top: 0, behavior: "smooth" })
           }}
@@ -49,7 +52,7 @@ export function ConsultarInscripcionPage() {
       breadcrumb={BREADCRUMB}
       width="xl"
     >
-      <ResultadoInscripcion inicial={inscripcion} onEstadoChange={setEstado} />
+      <ResultadoInscripcion inicial={inscripcion} credenciales={credenciales} onEstadoChange={setEstado} />
     </PublicBand>
   )
 }

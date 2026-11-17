@@ -80,6 +80,7 @@ import {
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { debeElegirPerfil } from "@/features/navigation/lib/perfil"
 import { tokenSearchSchema } from "@/features/cuenta/api/cambio-correo"
+import { miCuentaSearchSchema } from "@/features/cuenta/api/schema"
 import { menuPermissionsQueryOptions } from "@/features/navigation/api/query/use-menu-permissions-query"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
@@ -2557,6 +2558,7 @@ const MisDispositivosPage = lazyRouteComponent(
 export const miCuentaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.miCuenta.path,
+  validateSearch: miCuentaSearchSchema,
   staticData: { breadcrumb: [{ label: "Mi cuenta", to: paths.app.miCuenta.getHref() }] },
   component: lazyRouteComponent(() => import("@/features/cuenta/pages/mi-cuenta-page"), "MiCuentaPage"),
 })

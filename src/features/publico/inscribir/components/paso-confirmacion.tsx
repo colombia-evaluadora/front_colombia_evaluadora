@@ -13,6 +13,7 @@ import {
 import { EnvelopeIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
+import { AvisoSinAutorizacion } from "@/features/autorizacion-datos/components/aviso-autorizacion-pendiente"
 import { MatriculaTextField } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import { SEGUNDOS_REENVIO } from "@/features/publico/inscribir/datos-demo"
 import { enmascararCorreo } from "@/features/publico/inscribir/utils"
@@ -77,18 +78,17 @@ export function PasoConfirmacion({
           <Checkbox
             checked={autoriza}
             onCheckedChange={(c) => onAutorizaChange(Boolean(c))}
-            aria-invalid={intentado && !autoriza}
           />
           <span>
             Autorizo el tratamiento de datos (Ley 1581 de 2012){" "}
             <button type="button" className="text-primary hover:underline" onClick={() => setVerTexto(true)}>
               Ver el texto
-            </button>{" "}
-            <span data-required-mark="">*</span>
+            </button>
           </span>
         </label>
-        {intentado && !autoriza && <p className="text-red text-xs">Debe autorizar el tratamiento de datos para continuar.</p>}
       </div>
+      {/* Regla 81: la autorización es opcional; sin ella el establecimiento solo ve lo no sensible. */}
+      {!autoriza && <AvisoSinAutorizacion />}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="flex w-full max-w-xs flex-col gap-1.5">

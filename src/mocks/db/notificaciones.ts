@@ -153,6 +153,19 @@ const TIPOS: TipoFixture[] = [
     deepLink: () => "/app/planeador/actividades",
   },
   {
+    // Regla 81 / Regla 116 (sso #1004): un establecimiento pide la autorización de datos.
+    tipo: "AUTORIZACION_PENDIENTE",
+    categoria: "ESTABLECIMIENTO",
+    etiqueta: "Autorización pendiente",
+    prioridad: "NORMAL",
+    silenciable: true,
+    push: true,
+    email: true,
+    titulo: () => "IE Central le pide autorización para consultar su información",
+    cuerpo: () => "Abrir Mi cuenta · Autorizar ahora",
+    deepLink: () => "/app/cuenta?seccion=autorizaciones",
+  },
+  {
     // Aviso de la tarea diaria de vencimiento de roles (sso V579.11): tres días antes.
     tipo: "ROL_POR_VENCER",
     categoria: "ESTABLECIMIENTO",

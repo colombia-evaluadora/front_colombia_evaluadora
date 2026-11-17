@@ -48,6 +48,8 @@ import { reservationsHandlers } from "@/mocks/handlers/reservations"
 import { reservasCupoHandlers } from "@/mocks/handlers/reservas-cupo"
 import { reservaCupoAccionesHandlers } from "@/mocks/handlers/reservas-cupo-acciones"
 import { inscripcionesConfiguracionHandlers } from "@/mocks/handlers/inscripciones-configuracion"
+import { autorizacionDatosHandlers } from "@/mocks/handlers/autorizacion-datos"
+import { inscripcionPublicaHandlers } from "@/mocks/handlers/inscripcion-publica"
 import { inscripcionesHandlers } from "@/mocks/handlers/inscripciones"
 import { entidadTerritorialHandlers } from "@/mocks/handlers/entidad-territorial"
 import { rolesHandlers } from "@/mocks/handlers/roles"
@@ -138,6 +140,9 @@ export const handlers = [
   ...reservasCupoHandlers,
   ...reservaCupoAccionesHandlers,
   ...inscripcionesConfiguracionHandlers,
+  // Antes que inscripciones: `autorizaciones-pendientes` no debe tomarse como un `:id`.
+  ...autorizacionDatosHandlers,
+  ...inscripcionPublicaHandlers,
   ...inscripcionesHandlers,
   ...entidadTerritorialHandlers,
   ...reservationsHandlers,
