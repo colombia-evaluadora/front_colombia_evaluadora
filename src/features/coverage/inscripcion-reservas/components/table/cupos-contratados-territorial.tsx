@@ -276,7 +276,7 @@ function CupoContratadoForm({
 
   return (
     <Dialog open onOpenChange={(o) => !guardar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             Cupo contratado — {grupo.establecimiento} · {grupo.grupo}
@@ -345,7 +345,7 @@ function OferentesDialog({
   )
   return (
     <Dialog open onOpenChange={(o) => !guardar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Oferentes de cupo contratado</DialogTitle>
           <DialogDescription>

@@ -64,7 +64,7 @@ export function DialogCasoShell({
 }: DialogCasoShellProps) {
   return (
     <Dialog open={caso != null} onOpenChange={(open) => !open && !pending && onClose()}>
-      <DialogContent className={className}>
+      <DialogContent showCloseButton={false} className={className}>
         <DialogHeader>
           <DialogTitle>
             {titulo} — Caso {caso?.numero}

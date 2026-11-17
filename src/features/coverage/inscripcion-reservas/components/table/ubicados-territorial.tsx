@@ -324,7 +324,7 @@ function LiberarDialog({
         onOpenChange(o)
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Liberar ubicación — {ubicado?.aspirante}</DialogTitle>
           <DialogDescription className="sr-only">

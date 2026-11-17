@@ -104,7 +104,7 @@ export function ReopenAcademicPeriodDialog({
 
   return (
     <Dialog open={open} onOpenChange={guardedOpenChange}>
-      <DialogContent className="sm:max-w-lg" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-lg" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>Reabrir el período académico</DialogTitle>
           <DialogDescription>

@@ -132,7 +132,7 @@ function SaveAreaOficialContent({
   return (
     // Escape, click afuera y la X pasan por la confirmación de descarte.
     <Dialog open onOpenChange={(next) => !next && requestClose()}>
-      <DialogContent className="sm:max-w-xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Modificar área oficial" : "Nueva área oficial"}</DialogTitle>
           {area?.esDimensionTransversal && (

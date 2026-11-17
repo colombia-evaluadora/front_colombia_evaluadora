@@ -44,11 +44,11 @@ function DialogoEquipo({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !guardar.isPending && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{equipo ? `Editar ${equipo.nombre}` : "Nuevo equipo"}</DialogTitle>
         </DialogHeader>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="nombre-equipo">Nombre</FieldLabel>
           <Input id="nombre-equipo" maxLength={80} value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </Field>
@@ -133,7 +133,7 @@ function DialogoMover({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !guardar.isPending && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>
             {destino ? `Mover a ${estudiante.nombre} al ${destino.nombre}` : `Mover a ${estudiante.nombre}`}
@@ -218,7 +218,7 @@ export function EquiposEspacio({ detalle }: { detalle: EspacioDetalle }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-medium">
+        <h2 className="text-base font-semibold">
           {["Equipos de trabajo", espacio.grupo, espacio.asignatura].filter(Boolean).join(" · ")}
         </h2>
         {gestiona && (

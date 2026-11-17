@@ -38,7 +38,7 @@ interface Props {
 export function DialogoDocumento({ titulo, isPending, error, onClose, children }: Props) {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
         <style>{ESTILO_IMPRESION}</style>
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>

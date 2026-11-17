@@ -29,7 +29,7 @@ export function DialogAgregarEstudiante({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Agregar estudiante</DialogTitle>
         </DialogHeader>

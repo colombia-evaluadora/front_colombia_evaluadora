@@ -329,7 +329,7 @@ function ConvertCampusForm({ campus, onClose, onConverted }: { campus: CampusDet
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="max-h-[92vh] overflow-y-auto sm:max-w-4xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>Convertir «{campus.name}» en establecimiento</DialogTitle>
         </DialogHeader>

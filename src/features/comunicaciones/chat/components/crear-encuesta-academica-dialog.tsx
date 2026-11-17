@@ -149,7 +149,7 @@ export function CrearEncuestaAcademicaDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void cerrar()}>
-        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar encuesta" : "Nueva encuesta"}</DialogTitle>
           </DialogHeader>
@@ -223,7 +223,7 @@ export function CrearEncuestaAcademicaDialog({
                 const error = f.state.meta.errors[0]
                 const mensaje = typeof error === "string" ? error : error?.message
                 return (
-                  <Field data-invalid={!!mensaje || undefined}>
+                  <Field variant="outlined" data-invalid={!!mensaje || undefined}>
                     <FieldLabel>Cierra<span aria-hidden className="text-red">*</span></FieldLabel>
                     <DatePicker mode="datetime" value={f.state.value ? new Date(f.state.value) : undefined} onChange={(d) => f.handleChange(d ? format(d, "yyyy-MM-dd'T'HH:mm") : null)} />
                     {mensaje && <FieldError>{mensaje}</FieldError>}

@@ -172,6 +172,50 @@ const filaGestion = (c: Comunicado, gestion: boolean) => ({
 
 const MENSAJE_MIN = 10
 
+// Tipo de destinatario del filtro (Estudiantes / Acudientes / Funcionarios), igual que la columna "Tipos".
+const GRUPO_TIPO: Record<string, "ESTUDIANTES" | "ACUDIENTES" | "FUNCIONARIOS"> = {
+  ESTUDIANTES: "ESTUDIANTES",
+  PADRES: "ACUDIENTES",
+  ACUDIENTES: "ACUDIENTES",
+  DOCENTES: "FUNCIONARIOS",
+  DIRECTIVOS: "FUNCIONARIOS",
+  ADMINISTRATIVOS: "FUNCIONARIOS",
+  FUNCIONARIOS: "FUNCIONARIOS",
+}
+
+// Orden del listado (sortBy/sortDir de comms-service); por defecto, los más recientes primero.
+const ORDEN_GESTION: Record<string, (c: Comunicado) => string | number> = {
+  fecha: (c) => c.publicarEn,
+  titulo: (c) => c.titulo.toLowerCase(),
+  publicadoPor: (c) => c.publicadoPor.toLowerCase(),
+  destinatarios: (c) => c.totalDestinatarios ?? 0,
+  estado: (c) => estadoDe(c),
+}
+
+// Seguimiento (M.1.DET.1) simulado a partir de los totales del comunicado.
+function seguimientoMock(c: Comunicado) {
+  const destinatarios = c.totalDestinatarios ?? 0
+  const sinCanal = Math.min(destinatarios, Math.floor(destinatarios * 0.04))
+  const correosFallidos = Math.min(destinatarios - sinCanal, Math.floor(destinatarios * 0.02))
+  const motivos = ["Sin correo registrado", "Sin cuenta en la plataforma", "Correo rechazado"]
+  const tipos = ["Acudiente", "Estudiante", "Funcionario"]
+  const personasSinCanal = personas.slice(0, Math.min(personas.length, sinCanal + correosFallidos)).map((p, i) => ({
+    nombre: p.nombre,
+    tipo: tipos[i % tipos.length],
+    motivo: motivos[i % motivos.length],
+    grupo: i % 3 === 2 ? null : `${6 + (i % 5)}-0${1 + (i % 3)}`,
+  }))
+  return {
+    destinatarios,
+    conAviso: Math.max(0, destinatarios - sinCanal - Math.floor(destinatarios * 0.1)),
+    correosEnviados: Math.max(0, destinatarios - sinCanal - correosFallidos),
+    correosFallidos,
+    sinCanal,
+    leidos: c.leidos ?? 0,
+    personas: personasSinCanal,
+  }
+}
+
 export const comunicacionesComunicadosHandlers = [
   http.get(URL("comunicados/gestion"), async ({ request }) => {
     await delay(250)
@@ -180,6 +224,10 @@ export const comunicacionesComunicadosHandlers = [
     const estado = p.get("estado")
     const desde = p.get("desde")
     const q = p.get("q")?.trim().toLowerCase()
+    const emisor = p.get("emisor")?.trim().toLowerCase()
+    const tipo = p.get("tipo")
+    const orden = ORDEN_GESTION[p.get("sortBy") ?? ""] ?? ORDEN_GESTION.fecha
+    const dir = p.get("sortBy") ? (p.get("sortDir") === "asc" ? 1 : -1) : -1
     const page = Math.max(0, Number(p.get("page") ?? 0) || 0)
     const pageSize = Math.min(100, Math.max(1, Number(p.get("pageSize") ?? 10) || 10))
     const gestion = pestana === "PUBLICADOS"
@@ -192,7 +240,13 @@ export const comunicacionesComunicadosHandlers = [
       .filter((c) => !estado || estadoDe(c) === estado)
       .filter((c) => !desde || c.publicarEn.slice(0, 10) >= desde)
       .filter((c) => !q || c.titulo.toLowerCase().includes(q))
-      .sort((a, b) => b.publicarEn.localeCompare(a.publicarEn))
+      .filter((c) => !emisor || c.publicadoPor.toLowerCase().includes(emisor))
+      .filter((c) => !tipo || c.audiencia.some((a) => GRUPO_TIPO[a] === tipo))
+      .sort((a, b) => {
+        const x = orden(a)
+        const y = orden(b)
+        return (x < y ? -1 : x > y ? 1 : 0) * dir
+      })
     const totalCount = filas.length
     return HttpResponse.json({
       rows: [
@@ -310,6 +364,16 @@ export const comunicacionesComunicadosHandlers = [
     const conv = conversaciones.find((x) => x.id === c.conversacionId)
     if (conv) conv.comunicadoEstado = "CANCELADO"
     return HttpResponse.json({ rows: [c] })
+  }),
+
+  http.get(URL("conversaciones/:id/comunicado/seguimiento"), async ({ params }) => {
+    await delay(200)
+    const c = buscarComunicado(params.id)
+    if (!c) return sinComunicado()
+    if (!c.esCreador) {
+      return HttpResponse.json({ message: "Solo quien gestiona el comunicado ve su seguimiento." }, { status: 403 })
+    }
+    return HttpResponse.json({ rows: [seguimientoMock(c)] })
   }),
 
   http.get(URL("conversaciones/:id/comunicado/recepcion"), async ({ params }) => {

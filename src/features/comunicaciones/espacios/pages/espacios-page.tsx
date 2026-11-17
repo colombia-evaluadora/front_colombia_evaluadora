@@ -1,5 +1,11 @@
 import { Link } from "@tanstack/react-router"
 
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
 import { useEspaciosQuery } from "@/features/comunicaciones/espacios/api/query/use-espacios-query"
@@ -10,8 +16,11 @@ export function EspaciosPage() {
   const { data: espacios = [], isPending, isError, refetch } = useEspaciosQuery()
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 p-4">
-      <h1 className="text-xl font-semibold">Espacios académicos</h1>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle>Espacios académicos</TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="space-y-4">
       {isPending && <Skeleton className="h-32 w-full" />}
       {isError && (
         <p className="text-sm text-red">
@@ -45,6 +54,7 @@ export function EspaciosPage() {
           </li>
         ))}
       </ul>
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }

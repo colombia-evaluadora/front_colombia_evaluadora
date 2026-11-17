@@ -98,7 +98,7 @@ export function DialogCorregirIdentidad({ open, onOpenChange, ficha, establishme
         onOpenChange(next)
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Corregir datos de identidad de {nombre}</DialogTitle>
           <DialogDescription>

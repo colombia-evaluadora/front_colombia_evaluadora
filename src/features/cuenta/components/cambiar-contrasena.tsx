@@ -61,13 +61,13 @@ export function CambiarContrasena() {
         </Alert>
       )}
       <form className="flex flex-col gap-3" onSubmit={guardar}>
-        <Field data-invalid={intentado && !actual}>
+        <Field variant="outlined" data-invalid={intentado && !actual}>
           <FieldLabel htmlFor="pwd-actual">Contraseña actual</FieldLabel>
           <Input id="pwd-actual" type="password" autoComplete="current-password" value={actual}
             onChange={(e) => setActual(e.target.value)} />
           {intentado && !actual && <FieldError errors={[{ message: "Requerido" }]} />}
         </Field>
-        <Field data-invalid={intentado && fallas.length > 0}>
+        <Field variant="outlined" data-invalid={intentado && fallas.length > 0}>
           <FieldLabel htmlFor="pwd-nueva">Nueva contraseña</FieldLabel>
           <Input id="pwd-nueva" type="password" autoComplete="new-password" maxLength={64} value={nueva}
             onChange={(e) => setNueva(e.target.value)} />
@@ -79,7 +79,7 @@ export function CambiarContrasena() {
             </FieldDescription>
           )}
         </Field>
-        <Field data-invalid={noCoinciden}>
+        <Field variant="outlined" data-invalid={noCoinciden}>
           <FieldLabel htmlFor="pwd-confirmar">Confirmar contraseña</FieldLabel>
           <Input id="pwd-confirmar" type="password" autoComplete="new-password" maxLength={64} value={confirmar}
             onChange={(e) => setConfirmar(e.target.value)} />

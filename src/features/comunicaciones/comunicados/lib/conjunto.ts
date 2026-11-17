@@ -1,3 +1,4 @@
+import { required } from "@/lib/forms/messages"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import {
   esAcademico,
@@ -73,29 +74,70 @@ export function resumenConjunto(c: Conjunto, datos: Cascada | undefined): string
     .join(" · ")
 }
 
-/** Lo que le falta al conjunto para previsualizar: cada campo obligatorio exige una selección válida. */
-export function faltantesConjunto(c: Conjunto): string[] {
-  const f: string[] = []
-  if (!c.establecimiento) f.push("el establecimiento")
-  if (!c.sede) f.push("la sede")
-  if (!c.jornada) f.push("la jornada")
-  if (c.tipos.length === 0) f.push("al menos un tipo de destinatario")
+/**
+ * Id del control de cada campo del conjunto N en el DOM: clave de los errores por campo, para
+ * marcarlo en rojo y enfocar el primero al intentar previsualizar.
+ */
+export const conjuntoCampoId = (numero: number, campo: string) => `conjunto-${numero}-${campo}`
+
+export type ErroresCampos = Record<string, string>
+
+/**
+ * Lo que le falta al conjunto para previsualizar, por id de control y en el orden visual del panel
+ * (el primero es el que se enfoca): cada campo obligatorio exige una selección válida.
+ */
+export function erroresConjunto(c: Conjunto, numero: number): ErroresCampos {
+  const e: ErroresCampos = {}
+  const id = (campo: string) => conjuntoCampoId(numero, campo)
+  if (!c.establecimiento) e[id("est")] = required("El establecimiento")
+  if (!c.sede) e[id("sede")] = required("La sede", { femenino: true })
+  if (!c.jornada) e[id("jornada")] = required("La jornada", { femenino: true })
+  if (c.tipos.length === 0) e[id("tipos")] = "Selecciona al menos un tipo de destinatario"
   if (esAcademico(c)) {
-    if (!c.anio) f.push("el año")
-    if (!c.modalidad) f.push("la modalidad")
-    if (!c.ciclo) f.push("el ciclo")
-    if (!c.grado) f.push("el grado")
-    if (c.grado && c.grado !== TODOS && !c.grupo) f.push("el grupo")
+    if (!c.anio) e[id("anio")] = required("El año")
+    if (!c.modalidad) e[id("modalidad")] = required("La modalidad", { femenino: true })
+    if (!c.ciclo) e[id("ciclo")] = required("El ciclo")
+    if (!c.grado) e[id("grado")] = required("El grado")
+    if (c.grado && c.grado !== TODOS && !c.grupo) e[id("grupo")] = required("El grupo")
     if (c.grupo && c.grupo !== TODOS && !c.todosEstudiantes && c.estudiantes.length === 0) {
-      f.push("los estudiantes de referencia")
+      e[id("estudiantes")] = "Selecciona al menos un estudiante de referencia"
     }
   }
   if (c.tipos.includes("FUNCIONARIOS")) {
-    if (!c.todosRoles && c.roles.length === 0) f.push("los roles de funcionarios")
-    if (!c.seleccionFuncionarios) f.push("la selección de funcionarios")
-    if (c.seleccionFuncionarios === "ESPECIFICOS" && c.funcionarios.length === 0) f.push("los funcionarios")
+    if (!c.todosRoles && c.roles.length === 0) e[id("roles")] = "Selecciona al menos un rol de funcionarios"
+    if (!c.seleccionFuncionarios) e[id("seleccion")] = required("La selección de funcionarios", { femenino: true })
+    if (c.seleccionFuncionarios === "ESPECIFICOS" && c.funcionarios.length === 0) {
+      e[id("funcionarios")] = "Selecciona al menos un funcionario"
+    }
   }
-  return f
+  return e
+}
+
+/** Número de conjunto (desde 1) al que pertenece un id de `conjuntoCampoId`, o null. */
+export function numeroDeCampo(id: string): number | null {
+  const m = /^conjunto-(\d+)-/.exec(id)
+  return m ? Number(m[1]) : null
+}
+
+/** Aviso de página al intentar con errores (el detalle va en cada campo), igual que en planeador. */
+export const ERRORES_MENSAJE = "Revisa los campos marcados en rojo antes de guardar."
+
+/**
+ * Scroll suave y foco al control del primer error. Se espera al render que pinta los errores y abre
+ * el panel plegado; si el id es de un grupo (checkboxes, radios), se enfoca su primer control.
+ */
+export function enfocarPrimerError(errores: ErroresCampos) {
+  const primero = Object.keys(errores)[0]
+  if (!primero) return
+  setTimeout(() => {
+    const el = document.getElementById(primero)
+    if (!el) return
+    const FOCO =
+      "input:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex='-1'])"
+    const campo = el.matches(FOCO) ? el : (el.querySelector<HTMLElement>(FOCO) ?? el)
+    campo.scrollIntoView({ block: "center", behavior: "smooth" })
+    campo.focus({ preventScroll: true })
+  }, 50)
 }
 
 // Qué limpia cada nivel al cambiar (informe §3.1, "Cambios de contexto").

@@ -45,6 +45,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -460,7 +461,7 @@ export function ConversacionAcciones({
       )}
 
       <Dialog open={dialogo === "renombrar" && c.tipo !== "GRUPO"} onOpenChange={(open) => !open && cerrar()}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -483,15 +484,18 @@ export function ConversacionAcciones({
               <DialogTitle>{c.tipo === "GRUPO" ? "Editar grupo" : "Editar foro"}</DialogTitle>
               <DialogDescription>El nuevo nombre lo verán todos los miembros.</DialogDescription>
             </DialogHeader>
-            <label className="block space-y-1.5 text-sm">
-              <span className="font-medium">{c.tipo === "GRUPO" ? "Nombre del grupo" : "Nombre del foro"}</span>
+            <Field variant="outlined">
+              <FieldLabel htmlFor={`renombrar-${c.id}`}>
+                {c.tipo === "GRUPO" ? "Nombre del grupo" : "Nombre del foro"}*
+              </FieldLabel>
               <Input
+                id={`renombrar-${c.id}`}
                 autoFocus
                 value={nombre}
                 maxLength={80}
                 onChange={(e) => setNombre(e.target.value)}
               />
-            </label>
+            </Field>
             <DialogFooter>
               <Button
                 type="button"

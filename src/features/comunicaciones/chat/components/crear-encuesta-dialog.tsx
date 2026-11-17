@@ -230,7 +230,7 @@ function EncuestaInstitucionalDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
-        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
           </DialogHeader>
