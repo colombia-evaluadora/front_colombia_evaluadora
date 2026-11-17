@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -143,10 +144,10 @@ export function DialogUnificarEstudiantes({ open, onOpenChange, documentoInicial
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="unificar-motivo" className="text-sm">
-            <span className="text-red">*</span> Motivo
-          </label>
+        <Field variant="outlined" data-invalid={intentado && !motivoValido ? true : undefined}>
+          <FieldLabel htmlFor="unificar-motivo">
+            Motivo<span className="text-red"> *</span>
+          </FieldLabel>
           <Textarea
             id="unificar-motivo"
             rows={3}
@@ -155,18 +156,18 @@ export function DialogUnificarEstudiantes({ open, onOpenChange, documentoInicial
             placeholder="Explique por qué son la misma persona"
             aria-invalid={intentado && !motivoValido}
             aria-describedby="unificar-motivo-ayuda"
-            className="min-h-20 resize-y rounded-md border border-input px-3 py-2 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red"
+            className={TEXTAREA_OUTLINED}
             onChange={(e) => setMotivo(e.target.value)}
           />
-          <div id="unificar-motivo-ayuda" className="flex justify-between text-sm text-muted-foreground">
-            <span className={cn(intentado && !motivoValido && "text-red")}>
-              De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.
-            </span>
-            <span className="tabular-nums">
-              {motivo.length} / {MOTIVO_MAX}
-            </span>
-          </div>
-        </div>
+          <span id="unificar-motivo-ayuda" className="flex justify-between gap-2">
+            {intentado && !motivoValido ? (
+              <FieldError>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldError>
+            ) : (
+              <FieldDescription>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldDescription>
+            )}
+            <CharacterCounter value={motivo} max={MOTIVO_MAX} />
+          </span>
+        </Field>
 
         <div className="flex flex-col items-start gap-1.5">
           <span id="unificar-soporte-label" className="text-sm">

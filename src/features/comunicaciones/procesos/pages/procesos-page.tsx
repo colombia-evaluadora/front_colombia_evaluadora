@@ -1,4 +1,10 @@
 import { useState } from "react"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
@@ -12,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -51,16 +57,22 @@ function ProcesosContent() {
   const { notify } = useNotify()
   const [nuevo, setNuevo] = useState(false)
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Procesos de postulación y elección</h1>
-        {permiso.puedeCrear && (
-          <Button onClick={() => setNuevo(true)}>
-            <ControlPointIcon data-icon="inline-start" /> Nuevo proceso
-          </Button>
-        )}
-      </div>
-      <NoticeOutlet />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            permiso.puedeCrear ? (
+              <Button onClick={() => setNuevo(true)}>
+                <ControlPointIcon data-icon="inline-start" /> Nuevo proceso
+              </Button>
+            ) : undefined
+          }
+        >
+          Procesos de postulación y elección
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="flex flex-col gap-4">
       <Tabs defaultValue="mios">
         <TabsList>
           <TabsTrigger value="mios">Mis procesos</TabsTrigger>
@@ -70,7 +82,8 @@ function ProcesosContent() {
         <TabsContent value="todos"><ListaProcesos /></TabsContent>
       </Tabs>
       {nuevo && <DialogoProceso onCerrar={() => setNuevo(false)} onHecho={(m) => { setNuevo(false); notify(m) }} />}
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 
@@ -329,7 +342,7 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
         )}
         <Field variant="outlined">
           <FieldLabel>* Propuesta o presentación</FieldLabel>
-          <Textarea maxLength={2000} value={propuesta} onChange={(e) => setPropuesta(e.target.value)} />
+          <Textarea className={TEXTAREA_OUTLINED} maxLength={2000} value={propuesta} onChange={(e) => setPropuesta(e.target.value)} />
         </Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
@@ -390,7 +403,7 @@ function DialogoTramite({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
             ))}
             <Field variant="outlined">
               <FieldLabel>* Propuesta o presentación</FieldLabel>
-              <Textarea maxLength={2000} value={propuesta ?? p.propuesta} onChange={(e) => setPropuesta(e.target.value)} />
+              <Textarea className={TEXTAREA_OUTLINED} maxLength={2000} value={propuesta ?? p.propuesta} onChange={(e) => setPropuesta(e.target.value)} />
             </Field>
             <Field variant="outlined">
               <FieldLabel>Documentos exigidos (reservados; hasta 5 archivos de 10 MB)</FieldLabel>

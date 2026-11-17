@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import {
   FUNCION_LABEL,
@@ -81,7 +81,7 @@ export function DialogoTexto({ titulo, etiqueta, descripcion, accion, metodo, on
       {etiqueta && (
         <Field variant="outlined">
           <FieldLabel>{etiqueta}</FieldLabel>
-          <Textarea value={texto} maxLength={1000} onChange={(e) => setTexto(e.target.value)} />
+          <Textarea className={TEXTAREA_OUTLINED} value={texto} maxLength={1000} onChange={(e) => setTexto(e.target.value)} />
         </Field>
       )}
     </Marco>
@@ -122,7 +122,7 @@ export function DialogoProceso({ proceso, onCerrar, onHecho }: { proceso?: Proce
         <Field variant="outlined" data-invalid={f.state.meta.errors.length > 0}>
           <FieldLabel>{etiqueta}</FieldLabel>
           {area
-            ? <Textarea value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} />
+            ? <Textarea className={TEXTAREA_OUTLINED} value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} />
             : <Input value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} />}
           <FieldError errors={f.state.meta.errors} />
         </Field>
@@ -305,7 +305,7 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
       </Field>
       <Field variant="outlined">
         <FieldLabel>Requisitos (uno por línea)</FieldLabel>
-        <Textarea value={v.REQUISITOS} onChange={(e) => set("REQUISITOS", e.target.value)} />
+        <Textarea className={TEXTAREA_OUTLINED} value={v.REQUISITOS} onChange={(e) => set("REQUISITOS", e.target.value)} />
       </Field>
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 text-sm"><Checkbox checked={v.AUTOPOSTULACION} onCheckedChange={(c) => set("AUTOPOSTULACION", Boolean(c))} /> Autopostulación</label>

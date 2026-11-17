@@ -3,6 +3,13 @@ import { addDays, format } from "date-fns"
 import { useNavigate } from "@tanstack/react-router"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { DatePicker } from "@/components/date-picker"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
@@ -19,7 +26,9 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { paths } from "@/config/paths"
 import { textoFallidos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import { validarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
@@ -124,32 +133,12 @@ function NuevoComunicadoContent() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl min-w-0 p-4">
-      <div className="rounded-lg border bg-card">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <h1 className="min-w-0 text-base font-medium break-words">Comunicados institucionales › Nuevo comunicado</h1>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" color="neutral" onClick={() => (sucio ? setDescartar(true) : volver())}>
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              // Sin períodos Abiertos en algún conjunto no se publica para esa audiencia (M.1.AGR.5).
-              disabled={bloqueado || previsualizar.isPending}
-              aria-busy={previsualizar.isPending}
-              onClick={() => {
-                setIntentado(true)
-                if (faltantes.length > 0) return
-                previsualizar.mutate(entrada())
-              }}
-            >
-              <EyeIcon data-icon="inline-start" />
-              Previsualizar
-            </Button>
-          </div>
-        </header>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle description="Comunicados institucionales">Nuevo comunicado</TableScreenTitle>
+      </TableScreenHeader>
 
-        <div className="space-y-3 p-4">
+      <TableScreenBody className="rounded-b-none border-b-0" contentClassName="space-y-3">
           <ErrorNoticeBanner error={previsualizar.isError ? previsualizar.error : null} />
           {intentado && faltantes.length > 0 && (
             <div role="alert" className="flex items-start gap-2 rounded-md border border-red-stroke bg-red-22 px-3 py-2 text-sm">
@@ -202,40 +191,37 @@ function NuevoComunicadoContent() {
 
             <Panel titulo="Contenido">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Etiqueta requerido htmlFor="comunicado-titulo">
-                    Título
-                  </Etiqueta>
-                  <div className="relative">
-                    <Input
-                      id="comunicado-titulo"
-                      className="pr-20"
-                      value={titulo}
-                      maxLength={MAX_TITULO}
-                      aria-invalid={intentado && !titulo.trim()}
-                      onChange={(e) => setTitulo(e.target.value)}
-                    />
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground tabular-nums">
-                      {titulo.length} / {MAX_TITULO}
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Etiqueta requerido htmlFor="comunicado-mensaje">
-                    Mensaje
-                  </Etiqueta>
+                <Field variant="outlined" data-invalid={intentado && !titulo.trim() ? true : undefined}>
+                  <FieldLabel htmlFor="comunicado-titulo">
+                    Título<span className="text-red"> *</span>
+                  </FieldLabel>
+                  <Input
+                    id="comunicado-titulo"
+                    value={titulo}
+                    maxLength={MAX_TITULO}
+                    aria-invalid={intentado && !titulo.trim()}
+                    onChange={(e) => setTitulo(e.target.value)}
+                  />
+                  <CharacterCounter value={titulo} max={MAX_TITULO} />
+                </Field>
+                <Field
+                  variant="outlined"
+                  data-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE ? true : undefined}
+                >
+                  <FieldLabel htmlFor="comunicado-mensaje">
+                    Mensaje<span className="text-red"> *</span>
+                  </FieldLabel>
                   <Textarea
                     id="comunicado-mensaje"
+                    className={TEXTAREA_OUTLINED}
                     value={mensaje}
                     rows={4}
                     maxLength={MAX_MENSAJE}
                     aria-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE}
                     onChange={(e) => setMensaje(e.target.value)}
                   />
-                  <p className="text-right text-xs text-muted-foreground tabular-nums">
-                    {mensaje.length} / {MAX_MENSAJE}
-                  </p>
-                </div>
+                  <CharacterCounter value={mensaje} max={MAX_MENSAJE} />
+                </Field>
                 <div className="space-y-2">
                   <Etiqueta>Adjuntos</Etiqueta>
                   <div className="flex flex-wrap items-center gap-2">
@@ -313,9 +299,12 @@ function NuevoComunicadoContent() {
                     ))}
                   </div>
                 </div>
-                <div className="min-w-0 space-y-2">
-                  <Etiqueta requerido>Fecha y hora</Etiqueta>
+                <Field variant="outlined" className="min-w-0">
+                  <FieldLabel htmlFor="comunicado-fecha">
+                    Fecha y hora<span className="text-red"> *</span>
+                  </FieldLabel>
                   <DatePicker
+                    id="comunicado-fecha"
                     mode="datetime"
                     value={fecha}
                     onChange={setFecha}
@@ -323,11 +312,16 @@ function NuevoComunicadoContent() {
                     minDate={new Date()}
                     maxDate={addDays(new Date(), MAX_DIAS_PROGRAMADO)}
                   />
-                </div>
-                <div className="min-w-0 space-y-2">
-                  <Etiqueta>Visible hasta</Etiqueta>
-                  <DatePicker value={visibleHasta} onChange={setVisibleHasta} minDate={addDays(fecha ?? new Date(), 1)} />
-                </div>
+                </Field>
+                <Field variant="outlined" className="min-w-0">
+                  <FieldLabel htmlFor="comunicado-visible-hasta">Visible hasta</FieldLabel>
+                  <DatePicker
+                    id="comunicado-visible-hasta"
+                    value={visibleHasta}
+                    onChange={setVisibleHasta}
+                    minDate={addDays(fecha ?? new Date(), 1)}
+                  />
+                </Field>
               </div>
             </Panel>
           </div>
@@ -348,8 +342,29 @@ function NuevoComunicadoContent() {
             </Button>
             <p className="mt-2 text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
           </div>
+      </TableScreenBody>
+      <TableScreenFooter>
+        <span />
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" color="neutral" onClick={() => (sucio ? setDescartar(true) : volver())}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            // Sin períodos Abiertos en algún conjunto no se publica para esa audiencia (M.1.AGR.5).
+            disabled={bloqueado || previsualizar.isPending}
+            aria-busy={previsualizar.isPending}
+            onClick={() => {
+              setIntentado(true)
+              if (faltantes.length > 0) return
+              previsualizar.mutate(entrada())
+            }}
+          >
+            <EyeIcon data-icon="inline-start" />
+            Previsualizar
+          </Button>
         </div>
-      </div>
+      </TableScreenFooter>
 
       {previsualizar.data && (
         <PrevisualizarDialog
@@ -397,7 +412,7 @@ function NuevoComunicadoContent() {
           volver()
         }}
       />
-    </div>
+    </TableScreen>
   )
 }
 

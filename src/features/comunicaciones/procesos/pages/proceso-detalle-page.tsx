@@ -1,5 +1,11 @@
 import { useState } from "react"
 
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +17,7 @@ import { SelectOpciones } from "@/features/comunicaciones/shared/components/sele
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 import { DialogoEleccion, DialogoProceso, DialogoTexto } from "@/features/comunicaciones/procesos/components/dialogos"
@@ -62,32 +68,36 @@ function Contenido() {
   const ejecutar = (ruta: string, mensaje: string, metodo?: "patch") =>
     accion.mutate({ ruta, metodo }, { onSuccess: () => notify(mensaje), onError: (e) => notify(getErrorMessage(e), { variant: "error" }) })
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{p.nombre}</h1>
-          <p className="text-sm text-muted-foreground">{p.objeto}</p>
-          <p className="text-xs text-muted-foreground">Convocatoria versión {p.version}{p.publicadoEn ? ` · publicada ${fechaCorta(p.publicadoEn)}` : " · sin publicar"}</p>
-        </div>
-        {admin && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" color="neutral" onClick={() => setEditar(true)}>Modificar</Button>
-            {!p.publicadoEn && <Button variant="outline" color="destructive" onClick={() => setEliminar(true)}>Eliminar</Button>}
-            {!p.publicadoEn && <Button variant="outline" color="neutral" onClick={() => setAgregar(true)}>Agregar elección</Button>}
-            {!p.publicadoEn && <Button onClick={() => ejecutar(`/${p.id}/publicar`, "Convocatoria publicada.")}>Publicar convocatoria</Button>}
-          </div>
-        )}
-      </div>
-      <NoticeOutlet />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          description={p.objeto}
+          action={
+            admin ? (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" color="neutral" onClick={() => setEditar(true)}>Modificar</Button>
+                {!p.publicadoEn && <Button variant="outline" color="destructive" onClick={() => setEliminar(true)}>Eliminar</Button>}
+                {!p.publicadoEn && <Button variant="outline" color="neutral" onClick={() => setAgregar(true)}>Agregar elección</Button>}
+                {!p.publicadoEn && <Button onClick={() => ejecutar(`/${p.id}/publicar`, "Convocatoria publicada.")}>Publicar convocatoria</Button>}
+              </div>
+            ) : undefined
+          }
+        >
+          {p.nombre}
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="flex flex-col gap-4">
+      <p className="text-xs text-muted-foreground">Convocatoria versión {p.version}{p.publicadoEn ? ` · publicada ${fechaCorta(p.publicadoEn)}` : " · sin publicar"}</p>
       {p.reglamento && (
         <section>
-          <h2 className="text-sm font-medium">Reglamento</h2>
+          <h2 className="text-base font-semibold">Reglamento</h2>
           <p className="whitespace-pre-wrap text-sm">{p.reglamento}</p>
         </section>
       )}
       {p.funciones.length > 0 && (
         <section className="text-sm">
-          <h2 className="font-medium">Funciones</h2>
+          <h2 className="text-base font-semibold">Funciones</h2>
           <ul className="list-disc pl-5">
             {p.funciones.map((f) => <li key={`${f.usuario}-${f.funcion}`}>{FUNCION_LABEL[f.funcion]}: {f.nombre}</li>)}
           </ul>
@@ -112,7 +122,8 @@ function Contenido() {
           onHecho={() => navigate({ to: paths.app.comunicacionesProcesos.getHref() })} />
       )}
       {agregar && <DialogoEleccion proceso={p} onCerrar={() => setAgregar(false)} onHecho={(m) => { setAgregar(false); notify(m) }} />}
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 
@@ -280,7 +291,7 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
             <Input placeholder="Observación" value={res[r].observacion} onChange={(x) => setRes((v) => ({ ...v, [r]: { ...v[r], observacion: x.target.value } }))} />
           </Field>
         ))}
-        <Field variant="outlined"><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
         <Field variant="outlined"><FieldLabel>Fecha límite de subsanación</FieldLabel><Input type="datetime-local" value={limite} onChange={(x) => setLimite(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
@@ -397,7 +408,7 @@ function DialogoExcepcion({ e, onCerrar, onHecho }: { e: EleccionProceso; onCerr
             ]}
           />
         </Field>
-        <Field variant="outlined"><FieldLabel>* Motivo</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Motivo</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!usuario || !motivo.trim() || m.isPending} onClick={() => m.mutate(
@@ -444,7 +455,7 @@ function Resultados({ e }: { e: EleccionProceso }) {
       <p>Elegidos: {c.elegidos?.length ? c.elegidos.map((x) => `${x.nombre} (${x.condicion === "SUPLENTE" ? "suplente" : "titular"})`).join(", ") : "—"}</p>
       {c.incidencias?.map((i) => <NoticeBanner key={i} onClose={() => {}} variant="warning" notice={{ id: 0, message: `Incidencia: ${i} Mecanismo publicado: ${e.mecanismoEmpate === "DECISION" ? "decisión documentada" : e.mecanismoEmpate === "SEGUNDA_VUELTA" ? "segunda vuelta" : "nueva votación"}.` }} />)}
       <div>
-        <h3 className="font-medium">Actas</h3>
+        <h3 className="text-base font-semibold">Actas</h3>
         <ul className="flex flex-col gap-1">
           {q.data.map((a) => (
             <li key={a.id} className="flex items-center gap-2">
@@ -526,7 +537,7 @@ function DialogoResolver({ id, onCerrar, onHecho }: { id: number; onCerrar: () =
             ]}
           />
         </Field>
-        <Field variant="outlined"><FieldLabel>* Respuesta</FieldLabel><Textarea value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Respuesta</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!respuesta.trim() || m.isPending} onClick={() => m.mutate(
@@ -585,7 +596,7 @@ function DialogoNovedad({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
             ]}
           />
         </Field>
-        <Field variant="outlined"><FieldLabel>* Detalle</FieldLabel><Textarea value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Detalle</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!detalle.trim() || m.isPending} onClick={() => m.mutate(
@@ -626,7 +637,7 @@ function DialogoDecision({ e, tipo, onCerrar, onHecho }: { e: EleccionProceso; t
             />
           </Field>
         ))}
-        <Field variant="outlined"><FieldLabel>* Motivación</FieldLabel><Textarea value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Motivación</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!personas.length || !motivacion.trim() || m.isPending} onClick={() => m.mutate(

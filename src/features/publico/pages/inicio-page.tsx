@@ -16,6 +16,7 @@ import {
   UsersIcon,
   EyeSlashIcon,
 } from "@/components/ui/icons"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { paths } from "@/config/paths"
 
@@ -229,17 +230,18 @@ function VerificarCard() {
         <ShieldLockIcon className="text-primary size-5" aria-hidden="true" />
         Verificar un documento
       </h2>
-      <label htmlFor="inicio-codigo" className="text-muted-foreground text-sm">
-        Escriba el código que aparece junto al código QR del documento.
-      </label>
-      <Input
-        id="inicio-codigo"
-        value={codigo}
-        onChange={(e) => setCodigo(e.target.value)}
-        placeholder="K7QM-4XPA-9TRB"
-        autoComplete="off"
-        spellCheck={false}
-      />
+      <p className="text-muted-foreground text-sm">Escriba el código que aparece junto al código QR del documento.</p>
+      <Field variant="outlined">
+        <FieldLabel htmlFor="inicio-codigo">Código del documento</FieldLabel>
+        <Input
+          id="inicio-codigo"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          placeholder="K7QM-4XPA-9TRB"
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </Field>
       <Button type="submit" color="primary" disabled={!limpio}>
         Verificar
       </Button>
