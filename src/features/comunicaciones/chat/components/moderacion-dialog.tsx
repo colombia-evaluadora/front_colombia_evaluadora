@@ -63,7 +63,7 @@ export function ReportarDialog({
   const reportar = useReportarConversacion()
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !reportar.isPending && onClose()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Reportar conversación — {nombre}</DialogTitle>
           <DialogDescription>Avisaremos al Supervisor de sede, que podrá leer esta conversación.</DialogDescription>
@@ -229,7 +229,7 @@ function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: numbe
   const suspender = useSuspender()
   return (
     <Dialog open onOpenChange={(o) => !o && !suspender.isPending && onClose()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Suspender mensajería — {persona.nombre}</DialogTitle>
           <DialogDescription>{persona.nombre}{persona.rol ? ` (${persona.rol.toLowerCase()})` : ""} no podrá enviar mensajes internos hasta que se levante la suspensión.</DialogDescription>

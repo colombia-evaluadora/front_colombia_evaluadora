@@ -176,7 +176,7 @@ export function ParticipacionItem({
       )}
 
       <Dialog open={dialogo !== null} onOpenChange={(o) => !o && setDialogo(null)}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>
               {dialogo === "editar" && "Editar participación"}

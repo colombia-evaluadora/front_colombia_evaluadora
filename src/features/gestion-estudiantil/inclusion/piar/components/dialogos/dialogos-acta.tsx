@@ -117,7 +117,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
     case "bloqueos":
       return (
         <Dialog open onOpenChange={(o) => !o && onClose()}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent showCloseButton={false} className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>No se puede activar el PIAR de {estudiante}</DialogTitle>
             </DialogHeader>

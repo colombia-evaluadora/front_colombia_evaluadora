@@ -199,7 +199,7 @@ export function DialogCreateCategoria({ categorias, onCreated }: DialogCreateCat
         </TooltipTrigger>
         <TooltipContent>Agregar lista</TooltipContent>
       </Tooltip>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="flex max-h-[85vh] flex-col sm:max-w-3xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>Agregar lista</DialogTitle>
         </DialogHeader>

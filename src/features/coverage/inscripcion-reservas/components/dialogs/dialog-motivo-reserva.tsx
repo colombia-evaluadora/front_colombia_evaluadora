@@ -81,7 +81,7 @@ function DialogMotivo({
         onOpenChange(open)
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {titulo} — {reserva?.estudiante}

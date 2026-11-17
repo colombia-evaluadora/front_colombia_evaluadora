@@ -221,7 +221,7 @@ export function AcademicAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={guardedOpenChange}>
-      <DialogContent className="sm:max-w-xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Modificar asignación académica" : "Nueva asignación académica"}

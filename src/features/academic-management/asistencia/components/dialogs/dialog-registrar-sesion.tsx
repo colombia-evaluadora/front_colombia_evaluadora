@@ -115,7 +115,7 @@ export function DialogRegistrarSesion({
         <ClipboardCheckIcon data-icon="inline-start" />
         Registrar sesión
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Registrar sesión</DialogTitle>
         </DialogHeader>

@@ -89,7 +89,7 @@ function VigenciaContent({ accion, rol, employeeName, onClose, prorrogar, activa
 
   const vence = fechaCorta(rol.validUntil)
   return (
-    <DialogContent className="sm:max-w-md">
+    <DialogContent showCloseButton={false} className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>
           {esProrrogar ? "Prorrogar" : "Activar"} el rol {rol.roleName}

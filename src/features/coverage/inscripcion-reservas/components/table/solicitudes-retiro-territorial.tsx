@@ -456,7 +456,7 @@ function RegistrarRetiroDialog({
   const registrar = useRegistrarRetiro()
   return (
     <Dialog open={solicitud != null} onOpenChange={(o) => !registrar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Registrar retiro — {solicitud?.estudiante}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -557,7 +557,7 @@ function CerrarSinRetiroDialog({
         onOpenChange(o)
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Cerrar sin retiro — {solicitud?.estudiante}</DialogTitle>
           <DialogDescription>

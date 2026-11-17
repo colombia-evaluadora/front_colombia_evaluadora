@@ -113,7 +113,7 @@ function DialogCambiarGrupoIndividual({
 
   return (
     <Dialog open onOpenChange={(o) => !cambiar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {tituloAccion("Cambiar de grupo", matriculas)}
@@ -320,7 +320,7 @@ function DialogCambiarGrupoLote({ matriculas, onOpenChange, onDone }: Props) {
 
   return (
     <Dialog open onOpenChange={(o) => !cambiar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             Cambiar de grupo — {n} estudiantes de {gradeLabel(origen.grade)}

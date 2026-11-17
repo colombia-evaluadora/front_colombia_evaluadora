@@ -47,7 +47,7 @@ export function DialogoOperacionShell({
 }: Props) {
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onClose()}>
-      <DialogContent className={className}>
+      <DialogContent showCloseButton={false} className={className}>
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           {resumen && <DialogDescription render={<div />}>{resumen}</DialogDescription>}
