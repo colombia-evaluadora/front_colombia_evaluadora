@@ -297,7 +297,7 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         {eleccion.puedeProponer && (
           <>
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Proponer a otra persona (opcional)</FieldLabel>
               <NativeSelect value={tipo} onChange={(e) => { setTipo(e.target.value as typeof tipo); setTercero("") }}>
                 {TIPOS_POBLACION.map((t) => <NativeSelectOption key={t} value={t}>{t}</NativeSelectOption>)}
@@ -309,7 +309,7 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
             </NativeSelect>
           </>
         )}
-        <Field>
+        <Field variant="outlined">
           <FieldLabel>* Propuesta o presentación</FieldLabel>
           <Textarea maxLength={2000} value={propuesta} onChange={(e) => setPropuesta(e.target.value)} />
         </Field>
@@ -370,15 +370,15 @@ function DialogoTramite({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
             {p.requisitos.filter((r) => r.resultado === "SUBSANAR").map((r) => (
               <p key={r.requisito} className="text-sm text-yellow">Subsanar: {r.requisito}{r.observacion ? ` — ${r.observacion}` : ""}</p>
             ))}
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>* Propuesta o presentación</FieldLabel>
               <Textarea maxLength={2000} value={propuesta ?? p.propuesta} onChange={(e) => setPropuesta(e.target.value)} />
             </Field>
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Documentos exigidos (reservados; hasta 5 archivos de 10 MB)</FieldLabel>
               <Input type="file" accept={EXTENSIONES} onChange={(e) => { subir(e.target.files?.[0], "SOPORTE"); e.target.value = "" }} />
             </Field>
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Autorización del acudiente (obligatoria para estudiantes; reservada)</FieldLabel>
               <Input type="file" accept={EXTENSIONES} onChange={(e) => { subir(e.target.files?.[0], "AUTORIZACION"); e.target.value = "" }} />
             </Field>

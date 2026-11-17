@@ -136,14 +136,16 @@ function ComunicadosContent() {
           {gestion ? (
             <FiltrosPublicados />
           ) : (
-            <Field className="w-full max-w-sm">
-              <FieldLabel htmlFor="comunicados-q">Buscar por título</FieldLabel>
-              <Input
-                id="comunicados-q"
-                value={search.q ?? ""}
-                onChange={(e) => cambiar({ q: e.target.value || undefined })}
-              />
-            </Field>
+            // Misma barra que Publicados, pero sin embudo: la bandeja solo filtra por título.
+            <SearchQueryBar
+              id="comunicados-q"
+              label="Buscar por título"
+              placeholder="Buscar por título"
+              value={search.q ?? ""}
+              onValueChange={(v) => cambiar({ q: v || undefined })}
+              onClearAll={() => cambiar({ q: undefined })}
+              activeFilterCount={search.q ? 1 : 0}
+            />
           )}
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -224,7 +226,7 @@ function FiltrosPublicados() {
         size="sm"
       >
         <div className="flex flex-col gap-3 px-4">
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-estado">Estado</FieldLabel>
             <NativeSelect
               id="comunicados-estado"
@@ -239,7 +241,7 @@ function FiltrosPublicados() {
               ))}
             </NativeSelect>
           </Field>
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-desde">Desde</FieldLabel>
             <DatePicker
               id="comunicados-desde"
@@ -247,7 +249,7 @@ function FiltrosPublicados() {
               onChange={(d) => setDesde(formatDateValue(d))}
             />
           </Field>
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-emisor">Emisor</FieldLabel>
             <Input
               id="comunicados-emisor"
@@ -257,7 +259,7 @@ function FiltrosPublicados() {
               onChange={(e) => setEmisor(e.target.value)}
             />
           </Field>
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-tipo">Tipo de destinatario</FieldLabel>
             <NativeSelect
               id="comunicados-tipo"
@@ -516,7 +518,10 @@ function Bandeja({ pestana }: { pestana: PestanaComunicados }) {
             ))}
           </ul>
         )}
-        {lista.data && <Paginacion total={lista.data.totalCount} paginas={lista.data.pageCount} />}
+        {/* Con la lista vacía basta el mensaje de vacío: sin pie "0 comunicados". */}
+        {lista.data && filas.length > 0 && (
+          <Paginacion total={lista.data.totalCount} paginas={lista.data.pageCount} />
+        )}
       </div>
       {seleccionado != null && <Lectura id={seleccionado} />}
     </div>
