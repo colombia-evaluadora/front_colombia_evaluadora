@@ -95,7 +95,7 @@ function DialogEmitir({ piar, onClose }: { piar: PiarDetalle; onClose: () => voi
   ]
   return (
     <Dialog open onOpenChange={(o) => !o && !pending && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Emitir versión del PIAR — {piar.estudiante.nombre}</DialogTitle>
         </DialogHeader>

@@ -124,7 +124,7 @@ export function DialogHomologarSnapshot({ matriculaId, snapshot, estudiante, onO
 
   return (
     <Dialog open onOpenChange={(next) => !homologar.isPending && onOpenChange(next)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Homologar desde snapshot — {estudiante}</DialogTitle>
           <p className="text-sm text-muted-foreground">

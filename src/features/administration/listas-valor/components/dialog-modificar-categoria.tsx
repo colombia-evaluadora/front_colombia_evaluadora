@@ -178,7 +178,7 @@ export function DialogModificarCategoria({
         <PencilIcon data-icon="inline-start" />
         Modificar
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen || confirmDeleteOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen || confirmDeleteOpen}>
         <DialogHeader>
           <DialogTitle>Modificar lista</DialogTitle>
         </DialogHeader>

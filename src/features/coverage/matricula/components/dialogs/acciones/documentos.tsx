@@ -80,7 +80,7 @@ export function DialogGenerarConstancias({
 
   return (
     <Dialog open onOpenChange={(o) => !generar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{tituloAccion(titulo, matriculas)}</DialogTitle>
           <MatriculasAfectadas matriculas={matriculas} />
@@ -161,7 +161,7 @@ export function DialogPaqueteSoporte({ matricula, onOpenChange }: { matricula: M
 
   return (
     <Dialog open onOpenChange={(o) => !generar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Generar paquete de soporte — {nombreDe(matricula)}</DialogTitle>
           <DialogDescription>Un solo PDF para entregar a la Secretaría o a una auditoría.</DialogDescription>

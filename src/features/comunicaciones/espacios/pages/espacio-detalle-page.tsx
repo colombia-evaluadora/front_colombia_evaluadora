@@ -98,8 +98,11 @@ function Contenido({ id }: { id: number }) {
               {fechaDiaMes(espacio.fechaInicio)} – {fechaDiaMes(espacio.fechaCierre)}
             </>
           }
-          action={
-            <span className="flex shrink-0 gap-2">
+        >
+          {/* Los estados van al lado del título, no empujados a la derecha. */}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 truncate">{espacio.actividad}</span>
+            <span className="flex shrink-0 gap-2 text-sm font-normal">
               {supervision && (
                 <Badge variant="soft" color="info">
                   Solo lectura · Supervisión
@@ -107,9 +110,7 @@ function Contenido({ id }: { id: number }) {
               )}
               <BadgeEstadoEspacio estado={espacio.estado} />
             </span>
-          }
-        >
-          {espacio.actividad}
+          </span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

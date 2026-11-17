@@ -183,7 +183,7 @@ function ConfigurarDisponibilidadDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !actualizar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Configurar disponibilidad</DialogTitle>
           <DialogDescription>

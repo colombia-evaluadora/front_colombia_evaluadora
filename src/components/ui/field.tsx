@@ -119,7 +119,7 @@ const floatingLabelVariants = cva(
         // -translate-y-1/2 un label de dos líneas caía por debajo del borde y
         // tapaba el control.
         outlined:
-          "left-2.5 top-0 -translate-y-[calc(100%-0.625rem)] bg-background rounded-xs px-1",
+          "left-2.5 top-0 -translate-y-[calc(100%-0.625rem)] bg-background px-1",
         filled: "left-3 top-2",
         standard: "left-0 top-0 -translate-y-full",
       },

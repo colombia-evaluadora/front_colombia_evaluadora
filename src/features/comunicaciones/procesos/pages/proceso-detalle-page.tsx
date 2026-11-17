@@ -265,7 +265,7 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
   }, { onSuccess: () => onHecho("Revisión registrada."), onError: (x) => setError(getErrorMessage(x)) })
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Revisar: {p.nombre}</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <p className="whitespace-pre-wrap text-sm">{p.propuesta}</p>
@@ -378,7 +378,7 @@ function DialogoExcepcion({ e, onCerrar, onHecho }: { e: EleccionProceso; onCerr
   const [error, setError] = useState<string | null>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>Inclusión o exclusión excepcional</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <Field variant="outlined">
@@ -515,7 +515,7 @@ function DialogoResolver({ id, onCerrar, onHecho }: { id: number; onCerrar: () =
   const [error, setError] = useState<string | null>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>Resolver reclamación</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <Field variant="outlined">
@@ -580,7 +580,7 @@ function DialogoNovedad({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
   const [error, setError] = useState<string | null>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>Registrar novedad</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <Field variant="outlined">
@@ -619,7 +619,7 @@ function DialogoDecision({ e, tipo, onCerrar, onHecho }: { e: EleccionProceso; t
   const personas = Object.entries(condicion).filter(([, c]) => c).map(([id, c]) => ({ POSTULACION: Number(id), CONDICION: c }))
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>{tipo === "seleccion" ? "Registrar selección" : "Decisión documentada"}</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <p className="text-sm text-muted-foreground">Cupos: {e.titulares} titular(es) y {e.suplentes} suplente(s).</p>

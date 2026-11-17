@@ -99,7 +99,7 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
 
   return (
     <Dialog open onOpenChange={(next) => !corregir.isPending && onOpenChange(next)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             Corregir nota homologada — {nota.asignatura} · {nota.periodo}

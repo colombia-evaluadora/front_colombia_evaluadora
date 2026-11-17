@@ -187,7 +187,7 @@ export function DialogCambiarGrado({
 
   return (
     <Dialog open onOpenChange={(o) => !cambiar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {lote ? `Corregir grado — ${matriculas.length} estudiantes de ${gradeLabel(origen.grade)}` : tituloAccion("Cambiar de grado", matriculas)}

@@ -29,7 +29,7 @@ export function LogoutDeviceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-slot="logout-device-dialog">
+      <DialogContent showCloseButton={false} data-slot="logout-device-dialog">
         <DialogHeader>
           <DialogTitle>Cerrar sesión en este equipo</DialogTitle>
           <DialogDescription>

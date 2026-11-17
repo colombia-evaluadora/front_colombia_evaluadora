@@ -90,7 +90,7 @@ function Contenido({
   }
 
   return (
-    <DialogContent className="sm:max-w-2xl">
+    <DialogContent showCloseButton={false} className="sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>Restaurar información</DialogTitle>
       </DialogHeader>

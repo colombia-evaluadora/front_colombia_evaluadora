@@ -49,7 +49,7 @@ export function LogoutPendingDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent data-slot="logout-pending-dialog">
+      <DialogContent showCloseButton={false} data-slot="logout-pending-dialog">
         <DialogHeader>
           <DialogTitle>Tienes {summary.total} cambios sin sincronizar</DialogTitle>
           <DialogDescription>

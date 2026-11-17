@@ -22,7 +22,7 @@ export function DialogoVerSesion({ sesionId, onClose }: { sesionId: number; onCl
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Sesión{s ? ` — ${s.actividad}` : ""}</DialogTitle>
           <DialogDescription>Detalle de la sesión y de sus asistentes.</DialogDescription>
