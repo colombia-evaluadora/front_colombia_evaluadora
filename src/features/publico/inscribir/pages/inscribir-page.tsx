@@ -149,10 +149,8 @@ function AsistenteInscripcion() {
         ["hermano", hermanoValido(hermano), ""],
       ])
     if (p === 4)
-      return vacios([
-        ["autoriza", autoriza, ""],
-        ["codigo", codigo.length === 6, ""],
-      ])
+      // La autorización de datos es opcional (Regla 81): no bloquea el guardado.
+      return vacios([["codigo", codigo.length === 6, ""]])
     return []
   }
 

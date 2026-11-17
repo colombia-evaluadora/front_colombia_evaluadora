@@ -7,28 +7,36 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { EnvelopeIcon, InfoIcon, MagnifyingGlassIcon, WarningIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
+import { env } from "@/config/env"
+import { getErrorMessage } from "@/lib/api-client"
 import { toDigitsOnly } from "@/lib/text-input"
 
 import { SEGUNDOS_REENVIO } from "@/features/publico/inscribir/datos-demo"
-import { enmascararCorreo } from "@/features/publico/inscribir/utils"
 import {
-  EJEMPLOS_DEMO,
-  buscarInscripcionDemo,
-  correoDemo,
-  type InscripcionConsulta,
-} from "@/features/publico/consultar/datos-demo"
+  consultarInscripcion,
+  pedirCodigoConsulta,
+  type CredencialesConsulta,
+} from "@/features/publico/consultar/api/consulta-publica"
+import { EJEMPLOS_DEMO, type InscripcionConsulta } from "@/features/publico/consultar/datos-demo"
 
 /**
- * U.3 paso 1: número de inscripción + documento del aspirante + código que
- * llega al correo del acudiente. No revela si la inscripción existe (Regla 31):
- * el código "se envía" si los datos coinciden y el error es siempre el mismo.
+ * U.3 paso 1: número de inscripción + documento del aspirante + código que llega al
+ * correo del acudiente (sso V426, `/eval-col/public/service`). No revela si la
+ * inscripción existe (Regla 31): el código "se envía" siempre y el error es el mismo.
  */
-export function FormularioConsulta({ onEncontrada }: { onEncontrada: (i: InscripcionConsulta) => void }) {
+export function FormularioConsulta({
+  onEncontrada,
+}: {
+  onEncontrada: (i: InscripcionConsulta, credenciales: CredencialesConsulta) => void
+}) {
   const [numero, setNumero] = useState("")
   const [documento, setDocumento] = useState("")
   const [codigo, setCodigo] = useState("")
   const [robot, setRobot] = useState(false)
   const [enviado, setEnviado] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [consultando, setConsultando] = useState(false)
   const [espera, setEspera] = useState(0)
   const [intentado, setIntentado] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,40 +47,58 @@ export function FormularioConsulta({ onEncontrada }: { onEncontrada: (i: Inscrip
     return () => window.clearTimeout(t)
   }, [espera])
 
-  const correo = correoDemo(numero, documento)
-  const puedeEnviar = Boolean(numero && documento) && espera === 0
+  const puedeEnviar = Boolean(numero && documento.length >= 3) && espera === 0 && !enviando
   const reloj = `${Math.floor(espera / 60)}:${String(espera % 60).padStart(2, "0")}`
 
-  function enviarCodigo() {
-    setEnviado(true)
-    setEspera(SEGUNDOS_REENVIO)
+  async function enviarCodigo() {
+    setError(null)
+    setEnviando(true)
+    try {
+      await pedirCodigoConsulta(numero, documento)
+      setEnviado(true)
+      // Un código por minuto (sso): el botón espera lo mismo que en Inscribir.
+      setEspera(SEGUNDOS_REENVIO)
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setEnviando(false)
+    }
   }
 
-  function consultar(e: React.FormEvent) {
+  async function consultar(e: React.FormEvent) {
     e.preventDefault()
     setIntentado(true)
     setError(null)
     if (!numero || !documento || codigo.length !== 6 || !robot) return
-    // Vista previa: cualquier código de 6 dígitos sirve; lo que se valida es la pareja número + documento.
-    const encontrada = buscarInscripcionDemo(numero, documento)
-    if (!encontrada) {
-      setError("Los datos no coinciden o el código no es correcto. Revíselos e intente de nuevo.")
-      return
+    const credenciales = { numero, documento, codigo }
+    setConsultando(true)
+    try {
+      const r = await consultarInscripcion(credenciales)
+      if (!r.encontrada) {
+        setError(r.mensaje)
+        return
+      }
+      onEncontrada(r.inscripcion, credenciales)
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setConsultando(false)
     }
-    onEncontrada(encontrada)
   }
 
   const invalido = (v: unknown) => intentado && !v
 
   return (
-    <form noValidate onSubmit={consultar} className="flex flex-col gap-5">
-      <Alert variant="info">
-        <InfoIcon />
-        <AlertDescription>
-          Vista previa con datos de ejemplo (cualquier código de 6 dígitos):{" "}
-          {EJEMPLOS_DEMO.map((d) => `${d.numero} / ${d.documento}`).join(" · ")}.
-        </AlertDescription>
-      </Alert>
+    <form noValidate onSubmit={(e) => void consultar(e)} className="flex flex-col gap-5">
+      {env.ENABLE_API_MOCKING && (
+        <Alert variant="info">
+          <InfoIcon />
+          <AlertDescription>
+            Vista previa con datos de ejemplo (cualquier código de 6 dígitos):{" "}
+            {EJEMPLOS_DEMO.map((d) => `${d.numero} / ${d.documento}`).join(" · ")}.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -126,16 +152,23 @@ export function FormularioConsulta({ onEncontrada }: { onEncontrada: (i: Inscrip
               onChange={(e) => setCodigo(toDigitsOnly(e.target.value, 6))}
             />
           </Field>
-          <Button type="button" variant="outline" color="neutral" className="mt-2" disabled={!puedeEnviar} onClick={enviarCodigo}>
-            <EnvelopeIcon data-icon="inline-start" />
+          <Button
+            type="button"
+            variant="outline"
+            color="neutral"
+            className="mt-2"
+            disabled={!puedeEnviar}
+            onClick={() => void enviarCodigo()}
+          >
+            {enviando ? <Spinner data-icon="inline-start" /> : <EnvelopeIcon data-icon="inline-start" />}
             {espera > 0 ? `Reenviar (${reloj})` : enviado ? "Reenviar código" : "Enviar código"}
           </Button>
         </div>
         <FieldDescription className={intentado && codigo.length !== 6 ? "text-red" : undefined}>
           {intentado && codigo.length !== 6
             ? "Digite los 6 dígitos del código."
-            : enviado && correo
-              ? `Lo enviamos a ${enmascararCorreo(correo)}. Vence en 15 minutos.`
+            : enviado
+              ? "Si los datos coinciden, lo enviamos al correo del acudiente. Vence en 15 minutos."
               : "Si los datos coinciden, enviaremos el código al correo registrado."}
         </FieldDescription>
       </div>
@@ -149,8 +182,8 @@ export function FormularioConsulta({ onEncontrada }: { onEncontrada: (i: Inscrip
         {invalido(robot) && <p className="text-red text-xs">Confirme que no es un robot.</p>}
       </div>
 
-      <Button type="submit" className="w-full">
-        <MagnifyingGlassIcon data-icon="inline-start" />
+      <Button type="submit" className="w-full" disabled={consultando}>
+        {consultando ? <Spinner data-icon="inline-start" /> : <MagnifyingGlassIcon data-icon="inline-start" />}
         Consultar
       </Button>
 

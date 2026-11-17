@@ -84,7 +84,7 @@ describe("mock de Inscripciones con la forma del back", () => {
   })
 
   it("el detalle se convierte al modelo de la pantalla", async () => {
-    const [o] = (await lista()).rows
+    const o = (await lista()).rows.find((x) => !x.sinAutorizacion)!
     const d = toInscripcionDetalle(
       datos(await evalCol.getRow(`${INSCRIPCIONES_BASE}/${o.inscripcionId}`)),
     )
@@ -147,5 +147,42 @@ describe("mock de Inscripciones con la forma del back", () => {
   it("grupos del establecimiento con sus períodos", async () => {
     const grupos = await fetchGruposAdmisionRows(1)
     expect(grupos[0].periodos.length).toBeGreaterThan(0)
+  })
+
+  it("sin autorización la fila oculta lo sensible y el detalle viene restringido (Regla 81)", async () => {
+    const r = await lista(["PENDIENTE", "EN_LISTA_ESPERA", "ADMITIDA", "NO_ADMITIDA", "DESCARTADA"])
+    const o = r.rows.find((x) => x.sinAutorizacion)!
+    expect(o.documento).toBe("")
+    expect(o.aspirante).toBe(`Inscripción ${o.numeroInscripcion}`)
+    const d = toInscripcionDetalle(datos(await evalCol.getRow(`${INSCRIPCIONES_BASE}/${o.inscripcionId}`)))
+    expect(d.datosRestringidos).toBe(true)
+    expect(d.estudiante.documento).toBe("")
+    expect(d.soportes).toEqual([])
+    expect(d.autorizaciones.some((a) => !a.autorizado)).toBe(true)
+  })
+
+  it("autorizar quita la restricción del detalle", async () => {
+    const r = await lista(["PENDIENTE", "EN_LISTA_ESPERA", "ADMITIDA", "NO_ADMITIDA", "DESCARTADA"])
+    const o = r.rows.find((x) => x.sinAutorizacion)!
+    const antes = toInscripcionDetalle(datos(await evalCol.getRow(`${INSCRIPCIONES_BASE}/${o.inscripcionId}`)))
+    const ids = antes.autorizaciones.map((a) => a.establecimientoId)
+    const autorizadas = datos(
+      await evalCol.postRow<{ datos: { autorizado: boolean }[] }>(`${INSCRIPCIONES_BASE}/${o.inscripcionId}/autorizar`, {
+        ESTABLECIMIENTOS: ids,
+      }),
+    )
+    expect(autorizadas.every((a) => a.autorizado)).toBe(true)
+    const d = toInscripcionDetalle(datos(await evalCol.getRow(`${INSCRIPCIONES_BASE}/${o.inscripcionId}`)))
+    expect(d.datosRestringidos).toBe(false)
+  })
+
+  it("crear sin autorizar responde autorizacionPendiente", async () => {
+    const fd = new FormData()
+    fd.set("AUTORIZA_DATOS", "false")
+    const r = await api.post<{ rows: { datos: { autorizacionPendiente: boolean } }[] }>(
+      "/files/eval-col/cobertura-academica/inscripciones",
+      fd,
+    )
+    expect(r.rows[0].datos.autorizacionPendiente).toBe(true)
   })
 })

@@ -1,4 +1,5 @@
 import type { CreateMatriculaInput } from "@/features/coverage/matricula/api/types/matricula"
+import type { AutorizacionEstablecimiento } from "@/features/autorizacion-datos/api/types"
 
 // Inscripciones del establecimiento (Cobertura Educativa, Sección 3.3).
 
@@ -55,6 +56,11 @@ export interface OpcionInscripcion {
   situacionEdad: SituacionEdad
   /** Cantidad de opciones de la inscripción (para Ampliar: menos de tres). */
   totalOpciones: number
+  /**
+   * Regla 81: el acudiente no autorizó el tratamiento de datos a este establecimiento.
+   * Aspirante, documento, documentos faltantes y situación de edad llegan vacíos.
+   */
+  sinAutorizacion: boolean
 }
 
 export interface InscripcionesFilters {
@@ -103,7 +109,8 @@ export interface OpcionCupoInscripcion {
   jornada: string
   numeroSorteo: string | null
   estado: EstadoOpcion
-  hermanoVerificado: boolean
+  /** null si los datos están restringidos (Regla 81). */
+  hermanoVerificado: boolean | null
 }
 
 export type RevisionSoporte = "SOPORTADO" | "SIN_REVISAR" | "SIN_ARCHIVO" | "RECHAZADO"
@@ -119,6 +126,9 @@ export interface SoporteInscripcion {
 export interface InscripcionDetalle {
   id: string
   numeroInscripcion: string
+  /** Regla 81: sin autorización para este establecimiento; personas, soportes y hermano llegan vacíos. */
+  datosRestringidos: boolean
+  autorizaciones: AutorizacionEstablecimiento[]
   grado: string
   estado: EstadoInscripcion
   documentoHermano: string | null
@@ -172,7 +182,7 @@ export interface EditarInscripcionInput {
   foto: File | null
   /** null = no tiene hermano en los establecimientos de las opciones. */
   documentoHermano: string | null
-  /** Autorización de tratamiento de datos (Ley 1581): obligatoria al crear. */
+  /** Autorización de tratamiento de datos (Ley 1581): opcional, solo al crear (Regla 81). */
   autorizaDatos: boolean
 }
 

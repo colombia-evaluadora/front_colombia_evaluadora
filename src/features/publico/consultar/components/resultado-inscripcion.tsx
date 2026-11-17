@@ -31,6 +31,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import { DialogAutorizarDatos } from "@/features/autorizacion-datos/components/dialog-autorizar-datos"
+import { AvisoAutorizacionPendiente } from "@/features/autorizacion-datos/components/aviso-autorizacion-pendiente"
+import { mensajeAutorizados, pendientesDe } from "@/features/autorizacion-datos/lib/autorizaciones"
+import { autorizarConsultaPublica, type CredencialesConsulta } from "@/features/publico/consultar/api/consulta-publica"
 import { ESTADO_OPCION_UI } from "@/features/coverage/inscripcion-reservas/api/ui-mappings-inscripcion"
 import { MatriculaSelectField } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import {
@@ -61,9 +65,12 @@ function EstadoOpcionBadge({ opcion }: { opcion: OpcionConsulta }) {
  */
 export function ResultadoInscripcion({
   inicial,
+  credenciales,
   onEstadoChange,
 }: {
   inicial: InscripcionConsulta
+  /** Número, documento y código con los que se consultó: autorizar los reusa. */
+  credenciales: CredencialesConsulta | null
   onEstadoChange: (estado: EstadoInscripcionPublica) => void
 }) {
   const [insc, setInsc] = useState(inicial)
@@ -72,6 +79,18 @@ export function ResultadoInscripcion({
   const [motivo, setMotivo] = useState("")
   const [motivoIntentado, setMotivoIntentado] = useState(false)
   const [notificacionConfirmada, setNotificacionConfirmada] = useState(false)
+  const [autorizando, setAutorizando] = useState(false)
+  const [autorizados, setAutorizados] = useState<string | null>(null)
+  const pendientes = pendientesDe(insc.autorizaciones)
+
+  // U.3.EST.1c-d: autoriza con el mismo código; el aviso desaparece y queda la confirmación.
+  async function autorizar(ids: number[]) {
+    if (!credenciales) throw new Error("Vuelva a consultar la inscripción para autorizar.")
+    const despues = await autorizarConsultaPublica(credenciales, ids)
+    setAutorizados(mensajeAutorizados(insc.autorizaciones, despues, ids))
+    setInsc({ ...insc, autorizaciones: despues.length ? despues : insc.autorizaciones })
+    setAutorizando(false)
+  }
 
   function actualizar(cambio: Partial<InscripcionConsulta>) {
     const nueva = { ...insc, ...cambio }
@@ -156,13 +175,21 @@ export function ResultadoInscripcion({
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{insc.aspirante}</p>
           <p className="text-muted-foreground text-sm">
-            Inscripción {insc.numero} · {insc.grado} · {insc.anio} · {insc.modalidad}
+            {[`Inscripción ${insc.numero}`, insc.grado, insc.grupoAdmision].filter(Boolean).join(" · ")}
           </p>
         </div>
         <Badge variant="soft" color={estado.color}>
           {estado.label}
         </Badge>
       </div>
+
+      {pendientes.length > 0 && <AvisoAutorizacionPendiente onAutorizar={() => setAutorizando(true)} />}
+      {autorizados && (
+        <Alert variant="info" role="status">
+          <CheckIcon />
+          <AlertDescription>{autorizados}</AlertDescription>
+        </Alert>
+      )}
 
       {aviso}
 
@@ -245,6 +272,12 @@ export function ResultadoInscripcion({
           ))}
         </TableBody>
       </Table>
+
+      <DialogAutorizarDatos
+        establecimientos={autorizando ? insc.autorizaciones : null}
+        onOpenChange={(open) => !open && setAutorizando(false)}
+        onAutorizar={autorizar}
+      />
 
       <Dialog open={elegir != null} onOpenChange={(open) => !open && setElegir(null)}>
         <DialogContent>
