@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type ComponentProps } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { ArrowLeftIcon, ShieldLockIcon, WarningIcon } from "@/components/ui/icons"
-import { Input } from "@/components/ui/input"
+import { ArrowLeftIcon, KeyIcon, ShieldLockIcon, WarningIcon } from "@/components/ui/icons"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
+import { toDigitsOnly } from "@/lib/text-input"
 import { getErrorMessage } from "@/lib/api-client"
 import {
   leerDesafio,
@@ -93,12 +94,12 @@ export function VerificacionPage() {
         <form id="form-segundo-factor" onSubmit={verificar} className="flex flex-col gap-4">
           {completar.isError && <AvisoError error={completar.error} />}
           {alCorreo.isError && <AvisoError error={alCorreo.error} />}
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="codigo-2fa">{tipo === "RESPALDO" ? "Código de respaldo" : "Código"}</FieldLabel>
-            <Input
+            <CampoCodigo
               id="codigo-2fa"
               value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
+              onChange={(v) => setCodigo(tipo === "RESPALDO" ? v.toUpperCase() : toDigitsOnly(v, 6))}
               inputMode={tipo === "RESPALDO" ? "text" : "numeric"}
               autoComplete="one-time-code"
               maxLength={tipo === "RESPALDO" ? 10 : 6}
@@ -117,30 +118,33 @@ export function VerificacionPage() {
           {completar.isPending && <Spinner data-icon="inline-start" />}
           Verificar
         </Button>
-        {tipo !== "APP" && (
-          <Button variant="link" color="primary" onClick={() => { setTipo("APP"); setCodigo("") }}>
-            Usar el código de la app
+        {/* Alternativas y volver en una sola fila; flex-wrap las baja si no entran (móvil). */}
+        <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Button variant="ghost" color="primary" nativeButton={false} render={<Link to={paths.auth.login.getHref()} />}>
+            <ArrowLeftIcon data-icon="inline-start" />
+            Volver a iniciar sesión
           </Button>
-        )}
-        {tipo !== "CORREO" && (
-          <Button
-            variant="link"
-            color="primary"
-            disabled={alCorreo.isPending}
-            onClick={() => alCorreo.mutate(desafio, { onSuccess: () => { setTipo("CORREO"); setCodigo("") } })}
-          >
-            Enviar un código a mi correo
-          </Button>
-        )}
-        {tipo !== "RESPALDO" && (
-          <Button variant="link" color="primary" onClick={() => { setTipo("RESPALDO"); setCodigo("") }}>
-            Usar un código de respaldo
-          </Button>
-        )}
-        <Button variant="ghost" color="primary" nativeButton={false} render={<Link to={paths.auth.login.getHref()} />}>
-          <ArrowLeftIcon data-icon="inline-start" />
-          Volver a iniciar sesión
-        </Button>
+          {tipo !== "APP" && (
+            <Button variant="link" color="primary" onClick={() => { setTipo("APP"); setCodigo("") }}>
+              Usar el código de la app
+            </Button>
+          )}
+          {tipo !== "CORREO" && (
+            <Button
+              variant="link"
+              color="primary"
+              disabled={alCorreo.isPending}
+              onClick={() => alCorreo.mutate(desafio, { onSuccess: () => { setTipo("CORREO"); setCodigo("") } })}
+            >
+              Enviar un código a mi correo
+            </Button>
+          )}
+          {tipo !== "RESPALDO" && (
+            <Button variant="link" color="primary" onClick={() => { setTipo("RESPALDO"); setCodigo("") }}>
+              Usar un código de respaldo
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </>
   )
@@ -185,12 +189,12 @@ export function ConfigurarVerificacionPage() {
               }}
             >
               {confirmar.isError && <AvisoError error={confirmar.error} />}
-              <Field>
+              <Field variant="outlined">
                 <FieldLabel htmlFor="codigo-config">2. Código de 6 dígitos de la app</FieldLabel>
-                <Input
+                <CampoCodigo
                   id="codigo-config"
                   value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
+                  onChange={(v) => setCodigo(toDigitsOnly(v, 6))}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={6}
@@ -227,5 +231,20 @@ export function ConfigurarVerificacionPage() {
         </CardFooter>
       )}
     </>
+  )
+}
+
+/** Campo del código con el mismo input con borde e ícono que el login (form-login.tsx). */
+function CampoCodigo({
+  onChange,
+  ...props
+}: Omit<ComponentProps<typeof InputGroupInput>, "onChange"> & { onChange: (valor: string) => void }) {
+  return (
+    <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+      <InputGroupAddon align="inline-start" className="ml-2">
+        <KeyIcon className="size-4 text-muted-foreground" />
+      </InputGroupAddon>
+      <InputGroupInput {...props} className="tracking-widest" onChange={(e) => onChange(e.target.value)} />
+    </InputGroup>
   )
 }
