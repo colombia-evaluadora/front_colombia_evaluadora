@@ -1,7 +1,8 @@
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ImageUploadField } from "@/components/image-upload-field"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import type { ModoGrupo } from "@/features/comunicaciones/chat/api/types"
@@ -36,12 +37,11 @@ export function OpcionesGrupoCampos({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <label htmlFor={`${idPrefijo}-descripcion`} className="text-sm font-medium">
-          Descripción <span className="font-normal text-muted-foreground">(opcional)</span>
-        </label>
+      <Field variant="outlined">
+        <FieldLabel htmlFor={`${idPrefijo}-descripcion`}>Descripción (opcional)</FieldLabel>
         <Textarea
           id={`${idPrefijo}-descripcion`}
+          className={TEXTAREA_OUTLINED}
           value={value.descripcion}
           maxLength={DESCRIPCION_MAX}
           rows={3}
@@ -49,7 +49,7 @@ export function OpcionesGrupoCampos({
           placeholder="De qué trata el grupo"
         />
         <CharacterCounter value={value.descripcion} max={DESCRIPCION_MAX} />
-      </div>
+      </Field>
 
       <div className="space-y-1.5">
         <span className="text-sm font-medium">

@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, PaperclipIcon, SpinnerIcon, UploadSimpleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
@@ -183,10 +185,10 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
               />
             ) : (
               <>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="objecion-motivo" className="text-sm">
-                    <span className="text-red">*</span> Motivo de la objeción
-                  </label>
+                <Field variant="outlined" data-invalid={intentado && !motivoValido ? true : undefined}>
+                  <FieldLabel htmlFor="objecion-motivo">
+                    Motivo de la objeción<span className="text-red"> *</span>
+                  </FieldLabel>
                   <Textarea
                     id="objecion-motivo"
                     rows={3}
@@ -194,18 +196,18 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
                     value={motivo}
                     placeholder="Explique por qué el estudiante sigue en este establecimiento"
                     aria-invalid={intentado && !motivoValido}
-                    className="min-h-20 resize-y rounded-md border border-input px-3 py-2 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red"
+                    className={TEXTAREA_OUTLINED}
                     onChange={(e) => setMotivo(e.target.value)}
                   />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span className={cn(intentado && !motivoValido && "text-red")}>
-                      De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.
-                    </span>
-                    <span className="tabular-nums">
-                      {motivo.length} / {MOTIVO_MAX}
-                    </span>
-                  </div>
-                </div>
+                  <span className="flex justify-between gap-2">
+                    {intentado && !motivoValido ? (
+                      <FieldError>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldError>
+                    ) : (
+                      <FieldDescription>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldDescription>
+                    )}
+                    <CharacterCounter value={motivo} max={MOTIVO_MAX} />
+                  </span>
+                </Field>
                 <div className="flex flex-col items-start gap-1.5">
                   <span id="objecion-evidencia-label" className="text-sm">
                     Evidencia (opcional)

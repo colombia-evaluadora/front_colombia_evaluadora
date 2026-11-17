@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import {
   errorProgramacion,
   instanteABogota,
@@ -94,7 +95,7 @@ export function ProgramarMensajeDialog({
                 value={texto}
                 maxLength={MAX_TEXTO}
                 onChange={(e) => setTexto(e.target.value)}
-                className="max-h-48 min-h-24"
+                className={cn(TEXTAREA_OUTLINED, "max-h-48 min-h-24")}
               />
               {intentado && errorTexto && <FieldError>{errorTexto}</FieldError>}
             </Field>

@@ -215,6 +215,7 @@ export function SelectFila({
   value,
   onChange,
   className,
+  id,
 }: {
   label: string
   placeholder: string
@@ -222,6 +223,7 @@ export function SelectFila({
   value: string
   onChange: (value: string) => void
   className?: string
+  id?: string
 }) {
   return (
     <Select
@@ -232,6 +234,7 @@ export function SelectFila({
       <SelectTrigger
         variant="outlined"
         size="sm"
+        id={id}
         aria-label={label}
         className={cn("h-8 w-full max-w-56", className)}
       >
