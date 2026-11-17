@@ -14,7 +14,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
@@ -111,14 +111,23 @@ function ListaProcesos() {
     <div className="flex flex-col gap-3 pt-2">
       <div className="flex flex-wrap items-end gap-2">
         <Input className="w-64" placeholder="Buscar por nombre" value={texto} onChange={(e) => filtrar(() => setTexto(e.target.value))} />
-        <NativeSelect aria-label="Estado" value={estado} onChange={(e) => filtrar(() => setEstado(e.target.value))}>
-          <NativeSelectOption value="">Estado: Todos</NativeSelectOption>
-          {(Object.keys(ESTADO_LABEL) as ProcesoFila["estado"][]).map((k) => <NativeSelectOption key={k} value={k}>{ESTADO_LABEL[k]}</NativeSelectOption>)}
-        </NativeSelect>
-        <NativeSelect aria-label="Etapa" value={etapa} onChange={(e) => filtrar(() => setEtapa(e.target.value))}>
-          <NativeSelectOption value="">Etapa: Todas</NativeSelectOption>
-          {ETAPAS.map((k) => <NativeSelectOption key={k} value={k}>{ETAPA_LABEL[k]}</NativeSelectOption>)}
-        </NativeSelect>
+        <SelectOpciones
+          aria-label="Estado"
+          className="w-48"
+          value={estado}
+          onValueChange={(x) => filtrar(() => setEstado(x))}
+          opciones={[
+            { value: "", label: "Estado: Todos" },
+            ...(Object.keys(ESTADO_LABEL) as ProcesoFila["estado"][]).map((k) => ({ value: k, label: ESTADO_LABEL[k] })),
+          ]}
+        />
+        <SelectOpciones
+          aria-label="Etapa"
+          className="w-48"
+          value={etapa}
+          onValueChange={(x) => filtrar(() => setEtapa(x))}
+          opciones={[{ value: "", label: "Etapa: Todas" }, ...ETAPAS.map((k) => ({ value: k, label: ETAPA_LABEL[k] }))]}
+        />
         {hayFiltros && <Button variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setEstado(""); setEtapa("") })}>Limpiar filtros</Button>}
       </div>
       <Table>
@@ -299,14 +308,23 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
           <>
             <Field variant="outlined">
               <FieldLabel>Proponer a otra persona (opcional)</FieldLabel>
-              <NativeSelect value={tipo} onChange={(e) => { setTipo(e.target.value as typeof tipo); setTercero("") }}>
-                {TIPOS_POBLACION.map((t) => <NativeSelectOption key={t} value={t}>{t}</NativeSelectOption>)}
-              </NativeSelect>
+              <SelectOpciones
+                value={tipo}
+                onValueChange={(x) => { setTipo(x as typeof tipo); setTercero("") }}
+                opciones={TIPOS_POBLACION.map((t) => ({ value: t, label: t }))}
+              />
             </Field>
-            <NativeSelect value={tercero} onChange={(e) => setTercero(e.target.value)}>
-              <NativeSelectOption value="">Yo mismo</NativeSelectOption>
-              {(personas.data ?? []).map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.nombre}</NativeSelectOption>)}
-            </NativeSelect>
+            <Field variant="outlined">
+              <FieldLabel>Persona</FieldLabel>
+              <SelectOpciones
+                value={tercero}
+                onValueChange={setTercero}
+                opciones={[
+                  { value: "", label: "Yo mismo" },
+                  ...(personas.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre })),
+                ]}
+              />
+            </Field>
           </>
         )}
         <Field variant="outlined">

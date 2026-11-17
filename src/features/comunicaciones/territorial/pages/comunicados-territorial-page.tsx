@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/pagination"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getErrorMessage } from "@/lib/api-client"
@@ -85,25 +85,27 @@ export function ComunicadosTerritorialPage() {
         </Field>
         <Field variant="outlined">
           <FieldLabel htmlFor="territorial-est">Establecimiento</FieldLabel>
-          <NativeSelect id="territorial-est" value={establecimiento} onChange={(e) => filtrar(setEstablecimiento)(e.target.value)}>
-            <NativeSelectOption value="">Todos</NativeSelectOption>
-            {(establecimientos.data ?? []).map((o) => (
-              <NativeSelectOption key={o.valor} value={o.valor}>
-                {o.etiqueta}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+          <SelectOpciones
+            id="territorial-est"
+            value={establecimiento}
+            onValueChange={(x) => filtrar(setEstablecimiento)(x)}
+            opciones={[
+              { value: "", label: "Todos" },
+              ...(establecimientos.data ?? []).map((o) => ({ value: o.valor, label: o.etiqueta })),
+            ]}
+          />
         </Field>
         <Field variant="outlined">
           <FieldLabel htmlFor="territorial-estado">Estado</FieldLabel>
-          <NativeSelect id="territorial-estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
-            <NativeSelectOption value="">Todos</NativeSelectOption>
-            {(Object.keys(ESTADOS) as EstadoTerritorial[]).map((k) => (
-              <NativeSelectOption key={k} value={k}>
-                {ESTADOS[k].etiqueta}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+          <SelectOpciones
+            id="territorial-estado"
+            value={estado}
+            onValueChange={(x) => filtrar(setEstado)(x)}
+            opciones={[
+              { value: "", label: "Todos" },
+              ...(Object.keys(ESTADOS) as EstadoTerritorial[]).map((k) => ({ value: k, label: ESTADOS[k].etiqueta })),
+            ]}
+          />
         </Field>
         <Field variant="outlined">
           <FieldLabel htmlFor="territorial-desde">Desde</FieldLabel>
