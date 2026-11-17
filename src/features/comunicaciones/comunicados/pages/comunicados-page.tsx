@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
@@ -228,18 +228,15 @@ function FiltrosPublicados() {
         <div className="flex flex-col gap-3 px-4">
           <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-estado">Estado</FieldLabel>
-            <NativeSelect
+            <SelectOpciones
               id="comunicados-estado"
               value={estado}
-              onChange={(e) => setEstado(e.target.value as EstadoComunicado | "")}
-            >
-              <NativeSelectOption value="">Todos</NativeSelectOption>
-              {ESTADOS.map((x) => (
-                <NativeSelectOption key={x.valor} value={x.valor}>
-                  {x.etiqueta}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              onValueChange={(x) => setEstado(x as EstadoComunicado | "")}
+              opciones={[
+                { value: "", label: "Todos" },
+                ...ESTADOS.map((x) => ({ value: x.valor, label: x.etiqueta })),
+              ]}
+            />
           </Field>
           <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-desde">Desde</FieldLabel>
@@ -261,18 +258,15 @@ function FiltrosPublicados() {
           </Field>
           <Field variant="outlined">
             <FieldLabel htmlFor="comunicados-tipo">Tipo de destinatario</FieldLabel>
-            <NativeSelect
+            <SelectOpciones
               id="comunicados-tipo"
               value={tipo}
-              onChange={(e) => setTipo(e.target.value as TipoFiltroComunicado | "")}
-            >
-              <NativeSelectOption value="">Todos</NativeSelectOption>
-              {TIPOS_FILTRO.map((x) => (
-                <NativeSelectOption key={x.valor} value={x.valor}>
-                  {x.etiqueta}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              onValueChange={(x) => setTipo(x as TipoFiltroComunicado | "")}
+              opciones={[
+                { value: "", label: "Todos" },
+                ...TIPOS_FILTRO.map((x) => ({ value: x.valor, label: x.etiqueta })),
+              ]}
+            />
           </Field>
         </div>
       </SearchQueryBar>
@@ -425,12 +419,7 @@ function TablaPublicados() {
             {filas.map((c) => (
               <li key={c.id} className="rounded-lg border p-3 text-sm">
                 <div className="flex items-start justify-between gap-2">
-                  <Link
-                    to={paths.app.comunicacionesComunicadoDetalle.getHref(c.id)}
-                    className="min-w-0 font-medium break-words hover:underline"
-                  >
-                    {c.titulo}
-                  </Link>
+                  <span className="min-w-0 font-medium break-words">{c.titulo}</span>
                   <MenuAccionesComunicado c={c} onDialogo={setDialogo} />
                 </div>
                 <p className="text-xs text-muted-foreground">
