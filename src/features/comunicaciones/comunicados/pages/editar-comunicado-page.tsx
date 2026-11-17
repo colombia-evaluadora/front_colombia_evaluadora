@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
-import { queueNotice } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -14,26 +14,34 @@ import {
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { InfoIcon } from "@/components/ui/icons"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { FloppyDiskIcon, InfoIcon, LockIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
+import { minLength, required } from "@/lib/forms/messages"
 import { comunicadoEditarRoute } from "@/router"
 import type { Comunicado } from "@/features/comunicaciones/chat/api/types"
 import { textoFallidos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import { useComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-comunicado-query"
-import { AdjuntosComunicadoCampo } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
 import { EstadoComunicadoBadge } from "@/features/comunicaciones/chat/components/comunicado-panel"
 import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
 import { useCorregirComunicado } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
+import { AdjuntosCarga } from "@/features/comunicaciones/comunicados/components/adjuntos-carga"
+import { Panel } from "@/features/comunicaciones/comunicados/components/panel-plegable"
+import {
+  enfocarPrimerError,
+  ERRORES_MENSAJE,
+  type ErroresCampos,
+} from "@/features/comunicaciones/comunicados/lib/conjunto"
 
 const MAX_TITULO = 100
 const MAX_MENSAJE = 1000
 const MIN_MENSAJE = 10
 const FORM_ID = "form-modificar-comunicado"
+const CAMPO = { titulo: "modificar-titulo", mensaje: "modificar-mensaje" } as const
 
 /** El contenido se guarda como HTML en párrafos; el formulario M.1 lo edita como texto plano. */
 function htmlATexto(html: string): string {
@@ -44,7 +52,20 @@ function htmlATexto(html: string): string {
   return (doc.body.textContent ?? "").trim()
 }
 
-const fechaHora = (iso: string | null | undefined) => (iso ? format(new Date(iso), "dd/MM/yyyy h:mm a") : "—")
+const fechaHora = (iso: string | null | undefined) => (iso ? format(new Date(iso), "dd/MM/yyyy H:mm") : "—")
+
+/** Dato de solo lectura como campo deshabilitado con candado (prototipo M.1.EDI.1). */
+function CampoBloqueado({ id, etiqueta, valor }: { id: string; etiqueta: string; valor: string }) {
+  return (
+    <Field variant="outlined" className="min-w-0">
+      <FieldLabel htmlFor={id}>{etiqueta}</FieldLabel>
+      <div className="relative">
+        <Input id={id} value={valor} disabled readOnly className="pr-9" />
+        <LockIcon aria-hidden className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
+    </Field>
+  )
+}
 
 /**
  * "Modificar comunicado" (Guía M.1.EDI.1): corrección del autor. Solo cambian título, mensaje y
@@ -73,11 +94,17 @@ export function EditarComunicadoPage() {
     )
   }
   // Los valores iniciales se leen una vez: la key reinicia el formulario si cambia de comunicado.
-  return <FormularioModificar key={c.conversacionId} comunicado={c} />
+  // Con el proveedor, el aviso de campos faltantes sale arriba de la pantalla (como en planeador).
+  return (
+    <NoticeProvider>
+      <FormularioModificar key={c.conversacionId} comunicado={c} />
+    </NoticeProvider>
+  )
 }
 
 function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
   const navigate = useNavigate()
+  const { notify } = useNotify()
   const corregir = useCorregirComunicado(c.conversacionId)
   const inicialMensaje = htmlATexto(c.contenidoHtml)
   const [titulo, setTitulo] = useState(c.titulo)
@@ -89,10 +116,13 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
 
   const tituloLimpio = titulo.trim()
   const mensajeLimpio = mensaje.trim()
-  const errores = [
-    ...(tituloLimpio === "" ? ["Escribe el título."] : []),
-    ...(mensajeLimpio.length < MIN_MENSAJE ? [`El mensaje debe tener al menos ${MIN_MENSAJE} caracteres.`] : []),
-  ]
+  // Errores por id de control en orden visual; se pintan tras el primer intento y se apagan al corregir.
+  const errores: ErroresCampos = {}
+  if (tituloLimpio === "") errores[CAMPO.titulo] = required("El título")
+  if (mensajeLimpio.length < MIN_MENSAJE) {
+    errores[CAMPO.mensaje] = mensajeLimpio ? minLength(MIN_MENSAJE, "El mensaje") : required("El mensaje")
+  }
+  const visibles: ErroresCampos = intentado ? errores : {}
   const sucio =
     titulo !== c.titulo || mensaje !== inicialMensaje || archivos.length > 0 || quitados.length > 0
   const volver = () => void navigate({ to: paths.app.comunicacionesComunicados.getHref() })
@@ -107,8 +137,15 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle action={c.estado ? <EstadoComunicadoBadge estado={c.estado} /> : undefined}>
-          Modificar comunicado
+        <TableScreenTitle>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 truncate">Comunicados institucionales › Modificar comunicado</span>
+            {c.estado && (
+              <span className="shrink-0 text-sm font-normal">
+                <EstadoComunicadoBadge estado={c.estado} />
+              </span>
+            )}
+          </span>
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0" contentClassName="flex flex-col gap-4">
@@ -119,41 +156,50 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
         destinatarios se corrige anulando y publicando otro.
       </p>
 
+      <NoticeOutlet />
       <ErrorNoticeBanner error={corregir.isError ? corregir.error : null} />
 
-      <section aria-labelledby="destinatarios-titulo" className="space-y-2 rounded-lg border p-4 text-sm">
-        <h2 id="destinatarios-titulo" className="text-base font-semibold">
-          Destinatarios (no se modifican después de publicar)
-        </h2>
-        <dl className="grid gap-2 sm:grid-cols-3">
-          <div>
-            <dt className="text-xs text-muted-foreground">Publicado por</dt>
-            <dd>{c.publicadoPor}</dd>
+      <div className="overflow-hidden rounded-lg border">
+      <Panel titulo="Destinatarios (no se modifican después de publicar)">
+        <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CampoBloqueado
+              id="modificar-publicado-por"
+              etiqueta="Publicado por"
+              valor={c.publicadoPorRol ? `${c.publicadoPor} (${c.publicadoPorRol})` : c.publicadoPor}
+            />
+            <CampoBloqueado
+              id="modificar-fecha-publicacion"
+              etiqueta="Fecha y hora de publicación"
+              valor={fechaHora(c.publicarEn)}
+            />
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs text-muted-foreground">Estado</p>
+              <div className="flex min-h-9 items-center">{c.estado && <EstadoComunicadoBadge estado={c.estado} />}</div>
+            </div>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Fecha y hora de publicación</dt>
-            <dd>{fechaHora(c.publicarEn)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Estado</dt>
-            <dd>{c.estado && <EstadoComunicadoBadge estado={c.estado} />}</dd>
-          </div>
-        </dl>
-        <p className="text-muted-foreground">
-          {[dirigidoA, total != null ? `${total.toLocaleString("es-CO")} destinatarios` : null]
-            .filter(Boolean)
-            .join(" · ") || "—"}
-        </p>
-      </section>
+          {/* comms-service no devuelve el resumen por conjunto: se arma con los destinos guardados. */}
+          <p className="text-sm break-words text-muted-foreground">
+            {[dirigidoA, total != null ? `${total.toLocaleString("es-CO")} destinatarios` : null]
+              .filter(Boolean)
+              .join(" · ") || "—"}
+          </p>
+        </div>
+      </Panel>
 
       <form
         id={FORM_ID}
         noValidate
-        className="space-y-4 rounded-lg border p-4"
+        className="contents"
         onSubmit={(e) => {
           e.preventDefault()
           setIntentado(true)
-          if (errores.length > 0 || corregir.isPending) return
+          if (corregir.isPending) return
+          if (Object.keys(errores).length > 0) {
+            notify(ERRORES_MENSAJE, { variant: "error" })
+            enfocarPrimerError(errores)
+            return
+          }
           corregir.mutate(
             { titulo: tituloLimpio, mensaje: mensajeLimpio, archivos, quitarAdjuntos: quitados },
             {
@@ -168,46 +214,44 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           )
         }}
       >
-        <h2 className="text-base font-semibold">Contenido</h2>
-        <Field variant="outlined" data-invalid={intentado && tituloLimpio === "" ? true : undefined}>
-          <FieldLabel htmlFor="modificar-titulo">
+        <Panel titulo="Contenido">
+        <div className="space-y-4">
+        <Field variant="outlined" data-invalid={visibles[CAMPO.titulo] ? true : undefined}>
+          <FieldLabel htmlFor={CAMPO.titulo}>
             Título<span className="text-red"> *</span>
           </FieldLabel>
           <Input
-            id="modificar-titulo"
+            id={CAMPO.titulo}
+            placeholder="Agregar"
             value={titulo}
             maxLength={MAX_TITULO}
-            aria-invalid={intentado && tituloLimpio === ""}
+            aria-invalid={!!visibles[CAMPO.titulo]}
             onChange={(e) => setTitulo(e.target.value)}
           />
           <CharacterCounter value={titulo} max={MAX_TITULO} />
+          {visibles[CAMPO.titulo] && <FieldError>{visibles[CAMPO.titulo]}</FieldError>}
         </Field>
         <Field
           variant="outlined"
-          data-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE ? true : undefined}
+          data-invalid={visibles[CAMPO.mensaje] ? true : undefined}
         >
-          <FieldLabel htmlFor="modificar-mensaje">
+          <FieldLabel htmlFor={CAMPO.mensaje}>
             Mensaje<span className="text-red"> *</span>
           </FieldLabel>
           <Textarea
-            id="modificar-mensaje"
+            id={CAMPO.mensaje}
+            placeholder="Agregar"
             className={TEXTAREA_OUTLINED}
             value={mensaje}
             rows={6}
             maxLength={MAX_MENSAJE}
-            aria-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE}
+            aria-invalid={!!visibles[CAMPO.mensaje]}
             onChange={(e) => setMensaje(e.target.value)}
           />
           <CharacterCounter value={mensaje} max={MAX_MENSAJE} />
+          {visibles[CAMPO.mensaje] && <FieldError>{visibles[CAMPO.mensaje]}</FieldError>}
         </Field>
-        {intentado && errores.length > 0 && (
-          <ul role="alert" className="list-inside list-disc text-xs text-red">
-            {errores.map((e) => (
-              <li key={e}>{e}</li>
-            ))}
-          </ul>
-        )}
-        <AdjuntosComunicadoCampo
+        <AdjuntosCarga
           archivos={archivos}
           onArchivos={setArchivos}
           guardados={c.adjuntos ?? []}
@@ -216,11 +260,15 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           deshabilitado={corregir.isPending}
         />
         <p className="text-xs text-muted-foreground">Los adjuntos anteriores se conservan para auditoría.</p>
-        <div>
-          <p className="text-xs text-muted-foreground">Fecha de actualización</p>
-          <p className="text-sm">{fechaHora(c.actualizadoEn)}</p>
+        <CampoBloqueado
+          id="modificar-actualizado"
+          etiqueta="Fecha de actualización"
+          valor={c.actualizadoEn ? fechaHora(c.actualizadoEn) : "Se registra al guardar"}
+        />
         </div>
+        </Panel>
       </form>
+      </div>
       </TableScreenBody>
       <TableScreenFooter>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
@@ -229,6 +277,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
             Cancelar
           </Button>
           <Button type="submit" form={FORM_ID} disabled={corregir.isPending} aria-busy={corregir.isPending}>
+            <FloppyDiskIcon data-icon="inline-start" aria-hidden />
             Guardar
           </Button>
         </div>

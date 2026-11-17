@@ -13,8 +13,9 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, WarningCircleIcon } from "@/components/ui/icons"
+import { cn } from "@/lib/utils"
 import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
@@ -37,6 +38,7 @@ import {
   sinPeriodos,
   textoPeriodo,
   TODAS_LAS_JORNADAS,
+  type ErroresCampos,
   type Nivel,
 } from "@/features/comunicaciones/comunicados/lib/conjunto"
 
@@ -54,12 +56,15 @@ export function ConjuntoDestinatarios({
   conjunto: c,
   onChange,
   onDatos,
+  errores,
 }: {
   numero: number
   conjunto: Conjunto
   onChange: (c: Conjunto) => void
   // La página necesita las etiquetas (previsualización) y saber si el conjunto quedó sin períodos.
   onDatos: (datos: Cascada | undefined) => void
+  // Errores por id de control (`conjuntoCampoId`); la página solo los pasa tras el primer intento.
+  errores?: ErroresCampos
 }) {
   const cascada = useCascadaQuery(c)
   const datos = cascada.data
@@ -113,6 +118,7 @@ export function ConjuntoDestinatarios({
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
         <Selector
+          errores={errores}
           id={`${id}-est`}
           etiqueta="Establecimiento"
           requerido
@@ -121,6 +127,7 @@ export function ConjuntoDestinatarios({
           onChange={(v) => cambiar("establecimiento", v)}
         />
         <Selector
+          errores={errores}
           id={`${id}-sede`}
           etiqueta="Sede"
           requerido
@@ -130,6 +137,7 @@ export function ConjuntoDestinatarios({
           onChange={(v) => cambiar("sede", v)}
         />
         <Selector
+          errores={errores}
           id={`${id}-jornada`}
           etiqueta="Jornada"
           requerido
@@ -146,10 +154,20 @@ export function ConjuntoDestinatarios({
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <div className="min-w-0 space-y-2">
           <Etiqueta requerido>Tipos de destinatario</Etiqueta>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <div
+            id={`${id}-tipos`}
+            role="group"
+            aria-label="Tipos de destinatario"
+            data-invalid={errores?.[`${id}-tipos`] ? true : undefined}
+            className={cn(
+              "flex flex-wrap items-center gap-x-4 gap-y-2 text-sm",
+              errores?.[`${id}-tipos`] && "rounded-md text-red outline outline-offset-4 outline-red-stroke",
+            )}
+          >
             {TIPOS.map((t) => (
               <label key={t.valor} className="flex items-center gap-2">
                 <Checkbox
+                  aria-invalid={errores?.[`${id}-tipos`] ? true : undefined}
                   checked={c.tipos.includes(t.valor)}
                   onCheckedChange={(v) =>
                     ponerTipos(v === true ? [...c.tipos, t.valor] : c.tipos.filter((x) => x !== t.valor))
@@ -168,6 +186,7 @@ export function ConjuntoDestinatarios({
               Toda la comunidad
             </Button>
           </div>
+          <ErrorCampo mensaje={errores?.[`${id}-tipos`]} />
         </div>
         <div className="min-w-0 space-y-2">
           <Etiqueta requerido={academico}>Población académica</Etiqueta>
@@ -191,6 +210,7 @@ export function ConjuntoDestinatarios({
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="min-w-0">
           <Selector
+            errores={errores}
             id={`${id}-anio`}
             etiqueta="Año"
             requerido={academico}
@@ -203,6 +223,7 @@ export function ConjuntoDestinatarios({
           {bloqueado && <p className="mt-1 text-xs text-red">No hay años con períodos Abiertos</p>}
         </div>
         <Selector
+          errores={errores}
           id={`${id}-modalidad`}
           etiqueta="Modalidad"
           requerido={academico}
@@ -213,6 +234,7 @@ export function ConjuntoDestinatarios({
           onChange={(v) => cambiar("modalidad", v)}
         />
         <Selector
+          errores={errores}
           id={`${id}-ciclo`}
           etiqueta="Ciclo"
           requerido={academico}
@@ -237,6 +259,7 @@ export function ConjuntoDestinatarios({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Selector
+          errores={errores}
           id={`${id}-grado`}
           etiqueta="Grado"
           requerido={academico}
@@ -248,6 +271,7 @@ export function ConjuntoDestinatarios({
           onChange={(v) => cambiar("grado", v)}
         />
         <Selector
+          errores={errores}
           id={`${id}-grupo`}
           etiqueta="Grupo"
           requerido={academico}
@@ -259,6 +283,7 @@ export function ConjuntoDestinatarios({
           onChange={(v) => cambiar("grupo", v)}
         />
         <Multiple
+          errores={errores}
           id={`${id}-estudiantes`}
           etiqueta="Estudiantes de referencia"
           requerido={academico && !!c.grupo && c.grupo !== TODOS}
@@ -281,6 +306,7 @@ export function ConjuntoDestinatarios({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Multiple
+          errores={errores}
           id={`${id}-roles`}
           etiqueta="Roles de funcionarios"
           requerido={conFuncionarios}
@@ -307,9 +333,13 @@ export function ConjuntoDestinatarios({
           ) : (
             <div
               id={`${id}-seleccion`}
-              className="flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 text-sm"
               role="radiogroup"
               aria-label="Selección de funcionarios"
+              aria-invalid={errores?.[`${id}-seleccion`] ? true : undefined}
+              className={cn(
+                "flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 text-sm",
+                errores?.[`${id}-seleccion`] && "rounded-md text-red outline outline-offset-4 outline-red-stroke",
+              )}
             >
               {(
                 [
@@ -329,11 +359,13 @@ export function ConjuntoDestinatarios({
               ))}
             </div>
           )}
+          <ErrorCampo mensaje={errores?.[`${id}-seleccion`]} />
         </div>
       </div>
 
       {conFuncionarios && c.seleccionFuncionarios === "ESPECIFICOS" && (
         <Multiple
+          errores={errores}
           id={`${id}-funcionarios`}
           etiqueta="Funcionarios"
           requerido
@@ -409,7 +441,13 @@ export function Etiqueta({
   )
 }
 
+/** Mensaje de error bajo un grupo que no es un `Field` (checkboxes, radios). */
+function ErrorCampo({ mensaje }: { mensaje?: string }) {
+  return mensaje ? <FieldError>{mensaje}</FieldError> : null
+}
+
 function Selector({
+  errores,
   id,
   etiqueta,
   requerido,
@@ -433,9 +471,11 @@ function Selector({
   // Texto del selector cuando no aplica o no tiene opciones.
   vacio?: string
   onChange: (valor: string) => void
+  errores?: ErroresCampos
 }) {
+  const error = errores?.[id]
   return (
-    <Field variant="outlined" className="min-w-0">
+    <Field variant="outlined" className="min-w-0" data-invalid={error ? true : undefined}>
       <FieldLabel htmlFor={id}>
         {etiqueta}
         {requerido && "*"}
@@ -446,6 +486,7 @@ function Selector({
         value={vacio ? "" : valor}
         disabled={deshabilitado}
         aria-required={requerido}
+        aria-invalid={!!error}
         onValueChange={onChange}
         opciones={[
           { value: "", label: vacio ?? "Seleccione" },
@@ -453,6 +494,7 @@ function Selector({
           ...(vacio ? [] : opciones.map((o) => ({ value: o.valor, label: o.etiqueta }))),
         ]}
       />
+      {error && <FieldError>{error}</FieldError>}
     </Field>
   )
 }
@@ -464,6 +506,7 @@ const TODOS_ITEM = "__todos__"
  * que dice por qué ("No aplica a funcionarios", "Incluidos en la selección superior").
  */
 function Multiple({
+  errores,
   id,
   etiqueta,
   requerido,
@@ -483,13 +526,15 @@ function Multiple({
   etiquetaTodos?: string
   motivo?: string
   onChange: (todos: boolean, seleccion: string[]) => void
+  errores?: ErroresCampos
 }) {
+  const error = errores?.[id]
   const items: OpcionSeleccion[] = etiquetaTodos
     ? [{ valor: TODOS_ITEM, etiqueta: etiquetaTodos, detalle: null, total: 0 }, ...opciones]
     : opciones
   const valor = todos ? items.filter((o) => o.valor === TODOS_ITEM) : items.filter((o) => seleccion.includes(o.valor))
   return (
-    <Field variant="outlined" className="min-w-0">
+    <Field variant="outlined" className="min-w-0" data-invalid={error ? true : undefined}>
       <FieldLabel htmlFor={id}>
         {etiqueta}
         {requerido && "*"}
@@ -500,10 +545,13 @@ function Multiple({
           variant="outlined"
           disabled
           value=""
+          aria-invalid={!!error}
           opciones={[{ value: "", label: motivo ?? SIN }]}
           onValueChange={() => {}}
         />
       ) : (
+        // El id va en un contenedor: `enfocarPrimerError` busca adentro el input de los chips.
+        <div id={id} className="min-w-0">
         <SelectorChips
           items={items}
           value={valor}
@@ -511,6 +559,7 @@ function Multiple({
           getLabel={(o) => (o.detalle ? `${o.etiqueta} · ${o.detalle}` : o.etiqueta)}
           visibles={2}
           conFlecha
+          invalido={!!error}
           ariaLabel={etiqueta}
           placeholder="Seleccione"
           onChange={(v) => {
@@ -520,7 +569,9 @@ function Multiple({
             else onChange(false, v.filter((o) => o.valor !== TODOS_ITEM).map((o) => o.valor))
           }}
         />
+        </div>
       )}
+      {error && <FieldError>{error}</FieldError>}
     </Field>
   )
 }

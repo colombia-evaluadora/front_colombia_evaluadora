@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
-import { useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -20,7 +19,7 @@ import { Pagination } from "@/components/pagination"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, XIcon } from "@/components/ui/icons"
+import { ControlPointIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
@@ -34,16 +33,13 @@ import { cn } from "@/lib/utils"
 import { comunicadosRoute } from "@/router"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
-import { useComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-comunicado-query"
 import {
   AnularDialog,
   CancelarDialog,
-  ComunicadoArticulo,
   EstadoComunicadoBadge,
   type ComunicadoAccion,
 } from "@/features/comunicaciones/chat/components/comunicado-panel"
 import {
-  comunicadosGestionKey,
   useComunicadosGestionQuery,
   type ComunicadoGestion,
   type OrdenComunicados,
@@ -51,6 +47,7 @@ import {
   type TipoFiltroComunicado,
 } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 import {
+  createBandejaColumns,
   createComunicadosColumns,
   MenuAccionesComunicado,
   type DialogoComunicado,
@@ -311,8 +308,8 @@ function useLista(pestana: PestanaComunicados) {
     desde: pestana === "PUBLICADOS" ? search.desde : undefined,
     emisor: pestana === "PUBLICADOS" ? search.emisor : undefined,
     tipo: pestana === "PUBLICADOS" ? search.tipo : undefined,
-    sortBy: pestana === "PUBLICADOS" ? (search.sortBy as OrdenComunicados | undefined) : undefined,
-    sortDir: pestana === "PUBLICADOS" ? search.sortDir : undefined,
+    sortBy: search.sortBy as OrdenComunicados | undefined,
+    sortDir: search.sortDir,
     page: search.page,
     pageSize: search.pageSize,
   })
@@ -341,46 +338,6 @@ function estadoLista({
     return <p className="py-8 text-center text-sm text-muted-foreground">{vacio}</p>
   }
   return null
-}
-
-function Paginacion({ total, paginas }: { total: number; paginas: number }) {
-  const search = comunicadosRoute.useSearch()
-  const navigate = comunicadosRoute.useNavigate()
-  const ir = (page: number) => void navigate({ search: (prev) => ({ ...prev, page }), replace: true })
-  return (
-    <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-      <span>
-        {total} {total === 1 ? "comunicado" : "comunicados"}
-      </span>
-      {paginas > 1 && (
-        <div className="flex items-center gap-1">
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            color="neutral"
-            aria-label="Página anterior"
-            disabled={search.page <= 0}
-            onClick={() => ir(search.page - 1)}
-          >
-            <CaretLeftIcon aria-hidden />
-          </Button>
-          <span className="tabular-nums">
-            {search.page + 1} / {paginas}
-          </span>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            color="neutral"
-            aria-label="Página siguiente"
-            disabled={search.page + 1 >= paginas}
-            onClick={() => ir(search.page + 1)}
-          >
-            <CaretRightIcon aria-hidden />
-          </Button>
-        </div>
-      )}
-    </div>
-  )
 }
 
 const accion = (c: ComunicadoGestion): ComunicadoAccion => ({
@@ -466,69 +423,81 @@ function TablaPublicados() {
 }
 
 
-/** Recibidos y Anteriores (M.1.REC.1): lista con punto de no leído y el comunicado al lado. */
+/**
+ * Recibidos y Anteriores (M.1.REC.1): misma tabla que Publicados (orden, columnas visibles y
+ * paginación en la URL) con el punto de no leído junto al título; "Ver detalle" abre el comunicado y
+ * lo marca leído. En móvil, tarjetas como Publicados.
+ */
 function Bandeja({ pestana }: { pestana: PestanaComunicados }) {
   const lista = useLista(pestana)
-  const [abierto, setAbierto] = useState<number | null>(null)
+  const paginacion = useTablePagination()
   const filas = lista.data?.items ?? []
-  const estado = estadoLista({
-    lista,
-    vacio: pestana === "RECIBIDOS" ? "No tienes comunicados recibidos." : "No hay comunicados anteriores.",
+  const pageCount = lista.data?.pageCount ?? 0
+  const totalCount = lista.data?.totalCount ?? 0
+  const vacio = pestana === "RECIBIDOS" ? "No tienes comunicados recibidos." : "No hay comunicados anteriores."
+
+  const { table } = useDataTable({
+    columns: createBandejaColumns(),
+    data: filas,
+    pageCount,
+    getRowId: (c) => String(c.id),
+    ...paginacion,
+    columnVisibilityStorageKey: "comunicados-bandeja-column-visibility",
   })
-  const seleccionado = abierto ?? filas[0]?.id ?? null
 
   return (
-    <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-      <div className="flex min-w-0 flex-col gap-2">
-        {estado ?? (
-          <ul className="flex flex-col divide-y rounded-lg border" aria-label="Comunicados">
+    <>
+      <div className="md:hidden">
+        {estadoLista({ lista, vacio }) ?? (
+          <ul className="flex flex-col gap-2" aria-label="Comunicados">
             {filas.map((c) => (
               <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => setAbierto(c.id)}
-                  aria-current={seleccionado === c.id}
-                  className={cn(
-                    "grid w-full grid-cols-[0.75rem_1fr_auto] items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted",
-                    seleccionado === c.id && "bg-muted",
-                  )}
+                <Link
+                  to={paths.app.comunicacionesComunicadoDetalle.getHref(c.id)}
+                  className="block rounded-lg border p-3 text-sm hover:bg-muted"
                 >
-                  <span
-                    aria-label={c.leido ? undefined : "No leído"}
-                    className={cn("size-2 rounded-full", !c.leido && "bg-primary")}
-                  />
-                  <span className="min-w-0">
-                    <span className={cn("block truncate", !c.leido && "font-semibold")}>{c.titulo}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{c.publicadoPor}</span>
+                  <span className="flex items-start gap-2">
+                    <span
+                      aria-label={c.leido ? undefined : "No leído"}
+                      role={c.leido ? undefined : "img"}
+                      className={cn("mt-1.5 size-2 shrink-0 rounded-full", !c.leido && "bg-primary")}
+                    />
+                    <span className={cn("min-w-0 break-words", !c.leido && "font-semibold")}>{c.titulo}</span>
                   </span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{fecha(c.publicarEn)}</span>
-                </button>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)}
+                  </span>
+                  <span className="mt-1 block">
+                    <EstadoComunicadoBadge estado={c.estado} />
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
         )}
-        {/* Con la lista vacía basta el mensaje de vacío: sin pie "0 comunicados". */}
-        {lista.data && filas.length > 0 && (
-          <Paginacion total={lista.data.totalCount} paginas={lista.data.pageCount} />
-        )}
       </div>
-      {seleccionado != null && <Lectura id={seleccionado} />}
-    </div>
+      <div className="hidden md:block">
+        <DataTable
+          table={table}
+          isPending={lista.isPending}
+          isError={lista.isError}
+          onRetry={() => void lista.refetch()}
+          errorMessage={lista.error ? getErrorMessage(lista.error) : undefined}
+          emptyMessage={vacio}
+          growColumnId="titulo"
+        />
+      </div>
+      <Pagination
+        viewOptions={<DataTableViewOptions table={table} />}
+        pageIndex={paginacion.pageIndex}
+        pageCount={Math.max(pageCount, 1)}
+        canPrev={paginacion.pageIndex > 0}
+        canNext={paginacion.pageIndex + 1 < pageCount}
+        onPageChange={paginacion.goToPage}
+        totalCount={totalCount}
+        pageSize={paginacion.pageSize}
+        onPageSizeChange={paginacion.setPageSize}
+      />
+    </>
   )
-}
-
-/** Abrir el comunicado lo marca leído en comms-service: se refresca la lista para quitar el punto. */
-function Lectura({ id }: { id: number }) {
-  const queryClient = useQueryClient()
-  const q = useComunicadoQuery(id)
-  const cargado = q.isSuccess
-  useEffect(() => {
-    if (cargado) void queryClient.invalidateQueries({ queryKey: comunicadosGestionKey })
-  }, [cargado, id, queryClient])
-
-  if (q.isPending) return <Spinner className="m-6" />
-  if (q.isError || !q.data) {
-    return <p className="text-sm text-muted-foreground">{q.isError ? getErrorMessage(q.error) : "El comunicado no existe."}</p>
-  }
-  return <ComunicadoArticulo comunicado={q.data} />
 }
