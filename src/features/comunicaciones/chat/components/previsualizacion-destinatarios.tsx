@@ -59,7 +59,7 @@ export function PrevisualizacionDestinatarios({
           Destinatarios
         </h3>
         {d.unicos === 0 ? (
-          <p role="alert" className="flex items-start gap-2 rounded-lg bg-red-22 px-3 py-2 text-red">
+          <p role="alert" className="flex items-start gap-2 rounded-md border border-red-stroke bg-red-22 px-3 py-2 text-red">
             <WarningCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
             No hay personas en los destinatarios elegidos. Vuelve atrás y cámbialos.
           </p>
@@ -82,7 +82,7 @@ export function PrevisualizacionDestinatarios({
           </dl>
         )}
         {d.sinCuenta > 0 && (
-          <p role="status" className="flex items-start gap-2 rounded-lg bg-yellow-22 px-3 py-2">
+          <p role="status" className="flex items-start gap-2 rounded-md border border-yellow-stroke bg-yellow-22 px-3 py-2">
             <WarningCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-yellow" />
             <span>
               Sin cuenta: {persona(d.sinCuenta)} de los grados, grupos o roles elegidos no{" "}

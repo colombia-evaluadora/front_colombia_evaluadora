@@ -64,7 +64,7 @@ export function DialogReprogramarCitacion({ citacion: c, onClose }: Props) {
       pending={mut.isPending}
       confirmar={{ label: "Reprogramar", icon: <CalendarDotsIcon data-icon="inline-start" />, onClick: reprogramar }}
     >
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>
           Programación actual: {formatFechaHora(c.fecha_programada)}

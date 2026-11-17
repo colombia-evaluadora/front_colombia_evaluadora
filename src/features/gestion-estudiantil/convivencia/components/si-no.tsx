@@ -33,7 +33,7 @@ export function SiNo({ id, label, value, onChange, disabled, required, error, no
       <RadioGroup
         aria-labelledby={`${id}-label`}
         // pl-3.5: el mismo sangrado que el texto de la etiqueta flotante, para que el círculo arranque bajo ella.
-        className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
+        className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
         value={value == null ? "" : value ? "si" : "no"}
         onValueChange={(v) => onChange(v === "si")}
         disabled={disabled}

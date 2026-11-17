@@ -9,7 +9,7 @@ import type { ArchivoRef } from "@/features/gestion-estudiantil/inclusion/piar/a
 
 const AVISO = {
   warning: { variant: "warning", Icono: WarningCircleIcon },
-  info: { variant: "default", Icono: InfoIcon },
+  info: { variant: "info", Icono: InfoIcon },
   error: { variant: "destructive", Icono: WarningCircleIcon },
 } as const
 

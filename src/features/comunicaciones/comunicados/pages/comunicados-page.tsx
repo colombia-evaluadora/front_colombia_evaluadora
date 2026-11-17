@@ -20,7 +20,7 @@ import { Pagination } from "@/components/pagination"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, XIcon } from "@/components/ui/icons"
+import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, FunnelXIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Spinner } from "@/components/ui/spinner"
@@ -297,7 +297,7 @@ function FiltrosPublicados() {
             onClick={limpiar}
             className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
           >
-            <XIcon aria-hidden className="size-3.5" />
+            <FunnelXIcon aria-hidden className="size-3.5" />
             Limpiar filtros
           </button>
         </div>

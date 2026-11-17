@@ -8,13 +8,22 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground after:bg-foreground",
+        // Sin variante: aviso informativo, con la misma forma que las demás (todas las alertas del
+        // proyecto van en caja con borde y fondo suave, sin barra lateral).
+        default:
+          "rounded-md border-blue-stroke bg-blue-22 text-foreground after:hidden *:data-[slot=alert-description]:text-foreground *:[svg]:text-blue",
+        // Error, advertencia e info comparten forma: caja con borde `-stroke`, fondo `-22`, esquinas
+        // redondeadas, ícono del color y texto normal; sin la barra lateral.
         destructive:
-          "bg-card text-red after:bg-red *:data-[slot=alert-description]:text-red/90 *:[svg]:text-current",
+          "rounded-md border-red-stroke bg-red-22 text-foreground after:hidden *:data-[slot=alert-description]:text-foreground *:[svg]:text-red",
         // Advertencia estática (no se cierra): misma familia que la variante
         // `warning` de NoticeBanner. El ícono lleva el color; el texto, el normal.
         warning:
-          "border-transparent bg-yellow-22 text-foreground after:bg-yellow *:data-[slot=alert-description]:text-foreground/80 *:[svg]:text-yellow",
+          "rounded-md border-yellow-stroke bg-yellow-22 text-foreground after:hidden *:data-[slot=alert-description]:text-foreground *:[svg]:text-yellow",
+        // Aviso informativo: caja azul suave con borde `blue-stroke`, ícono azul
+        // y texto normal; sin la barra lateral. Es el mismo estilo de los avisos
+        // "Registro único del período" de Periodos académicos.
+        info: "rounded-md border-blue-stroke bg-blue-22 text-foreground after:hidden *:data-[slot=alert-description]:text-foreground *:[svg]:text-blue",
       },
     },
     defaultVariants: {

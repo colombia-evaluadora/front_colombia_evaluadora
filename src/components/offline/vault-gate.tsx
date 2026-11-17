@@ -99,7 +99,7 @@ function PinUnlock() {
         </Button>
       </form>
       {olvido ? (
-        <div role="alert" className="flex flex-col gap-2 rounded-md bg-red-22 p-3 text-sm text-red">
+        <div role="alert" className="flex flex-col gap-2 rounded-md border border-red-stroke bg-red-22 p-3 text-sm text-red">
           <p>
             Sin el PIN no se pueden recuperar los datos ni los cambios que no se han sincronizado: se borrarán de
             este equipo y tendrás que iniciar sesión con conexión.

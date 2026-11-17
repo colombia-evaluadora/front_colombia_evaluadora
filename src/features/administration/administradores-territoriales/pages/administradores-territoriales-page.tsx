@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ControlPointIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, ControlPointIcon, SpinnerIcon, XIcon, FunnelXIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -182,6 +182,7 @@ function AdministradoresTerritorialesPageContent() {
               <span className="flex flex-col items-center gap-3">
                 No hay Administradores territoriales que coincidan con la búsqueda y los filtros aplicados.
                 <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
+                  <FunnelXIcon data-icon="inline-start" />
                   Limpiar filtros
                 </Button>
               </span>

@@ -278,7 +278,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
                   Elija a quién cederl{o}. No se elimina: pasa a ser de esa persona y usted deja de administrarl
                   {o}.
                 </span>
-                <InputGroup className="h-10 rounded-md border border-input px-1 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+                <InputGroup className="h-10 rounded-sm border border-input px-1 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
                   <InputGroupAddon>
                     <MagnifyingGlassIcon />
                   </InputGroupAddon>

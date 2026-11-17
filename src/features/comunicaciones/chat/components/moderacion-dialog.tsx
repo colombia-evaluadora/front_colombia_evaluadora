@@ -25,7 +25,7 @@ const MAX_MOTIVO = 500
 function Motivo({ valor, onCambiar }: { valor: string; onCambiar: (v: string) => void }) {
   return (
     <label className="block space-y-1 text-sm">
-      <span className="font-medium">Motivo *</span>
+      <span className="font-medium">Motivo<span className="text-red">*</span></span>
       <textarea
         value={valor}
         maxLength={MAX_MOTIVO}
@@ -307,7 +307,7 @@ function FormConfiguracion({ inicial }: { inicial: { horaInicio: string; horaFin
       {guardar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(guardar.error)}</p>}
       {guardar.isSuccess && <p role="status" className="text-sm text-green">Configuración guardada.</p>}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium">Horario de atención *</span>
+        <span className="font-medium">Horario de atención<span className="text-red">*</span></span>
         <Input aria-label="Desde" type="time" className="w-32" value={valores.horaInicio} onChange={(e) => setValores({ ...valores, horaInicio: e.target.value })} />
         <span>a</span>
         <Input aria-label="Hasta" type="time" className="w-32" value={valores.horaFin} onChange={(e) => setValores({ ...valores, horaFin: e.target.value })} />

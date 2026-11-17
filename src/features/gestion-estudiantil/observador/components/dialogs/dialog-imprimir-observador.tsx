@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { FilePdfIcon, PrinterIcon } from "@/components/ui/icons"
+import { FilePdfIcon, PrinterIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -167,10 +167,11 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
             </RadioGroup>
           </Field>
         </div>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" disabled={imprimir.isPending} onClick={generar}>

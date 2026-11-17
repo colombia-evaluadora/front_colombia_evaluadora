@@ -43,6 +43,22 @@ export function tiempoRelativo(iso: string): string {
   }
 }
 
+/**
+ * "Hoy, 08:00", "Ayer, 16:20" o "10 nov, 09:15": fecha y hora de una entrada
+ * de la campana (Figma "Panel de la campana"), que no va agrupada por día.
+ */
+export function fechaCorta(iso: string, hoy: Date = new Date()): string {
+  try {
+    const fecha = parseISO(iso)
+    const hora = format(fecha, "HH:mm")
+    const dia = etiquetaDia(fecha, hoy)
+    if (dia === "Hoy" || dia === "Ayer") return `${dia}, ${hora}`
+    return `${format(fecha, "d MMM", { locale: es }).replace(".", "")}, ${hora}`
+  } catch {
+    return ""
+  }
+}
+
 /** "14:05": hora local de una entrada en la página (ya agrupada por día). */
 export function horaDelDia(iso: string): string {
   try {

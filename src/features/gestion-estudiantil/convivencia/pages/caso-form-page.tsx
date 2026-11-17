@@ -73,7 +73,7 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
           />
 
           {grave && !editar && (
-            <Alert>
+            <Alert variant="info">
               <InfoIcon aria-hidden="true" />
               <AlertDescription>
                 Los datos de un caso {form.tipoLabel} son sensibles: solo los ven quien lo gestiona, el Supervisor de

@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils"
 const FILA_OUTLINED = cn(
   inputVariants({ variant: "outlined" }),
   // El alto y el padding vertical los pone el input de adentro, que ya es
-  // `h-11 py-2`: dejar también los del grupo lo desbordaría.
+  // `h-10 py-2`: dejar también los del grupo lo desbordaría.
   "py-0",
   "has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20",
 )

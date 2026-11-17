@@ -37,7 +37,7 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
       {...props}
     >
       {children}
-      <CaretDownIcon className="pointer-events-none size-3.5 text-muted-foreground" />
+      <CaretDownIcon className="pointer-events-none size-5 text-muted-foreground" />
     </ComboboxPrimitive.Trigger>
   )
 }
@@ -240,7 +240,8 @@ function ComboboxChip({
       {showRemove && (
         <ComboboxPrimitive.ChipRemove
           render={<Button variant="ghost" size="icon-xs" />}
-          className="-ml-1 opacity-50 hover:opacity-100"
+          // La X toma el color del texto del chip y no cambia al pasar el cursor.
+          className="-ml-1 text-current hover:bg-transparent hover:text-current active:bg-transparent aria-expanded:bg-transparent dark:hover:bg-transparent"
           data-slot="combobox-chip-remove"
         >
           <XIcon className="pointer-events-none" />
@@ -556,7 +557,7 @@ function ComboboxFieldTrigger({
         inputTriggerVariants({ variant: resolvedVariant }),
         comboboxFocusVariants({ variant: resolvedVariant }),
         // cursor-text pisa el `cursor-pointer` del trigger: acá se escribe.
-        "relative flex cursor-text items-center gap-1.5 has-disabled:pointer-events-none has-disabled:cursor-not-allowed has-disabled:opacity-50",
+        "relative flex cursor-text items-center gap-1.5 has-disabled:pointer-events-none has-disabled:cursor-not-allowed has-disabled:bg-muted-22 has-disabled:text-muted-foreground",
         className,
       )}
     >
@@ -583,7 +584,7 @@ function ComboboxFieldTrigger({
         aria-label="Mostrar opciones"
         className="peer/caret order-last -mr-1 flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground"
       >
-        <CaretDownIcon className="pointer-events-none size-3.5" />
+        <CaretDownIcon className="pointer-events-none size-5" />
       </ComboboxPrimitive.Trigger>
       {/*
         Mientras no se escribe, el valor tapa al input; al primer carácter se
@@ -642,8 +643,10 @@ function ComboboxFieldContent({
             // la `List`, no acá. Si el popup es el scroller, la capa de vidrio
             // (`before:inset-0`) mide solo el alto visible y se desplaza con el
             // contenido, así que al bajar la lista el fondo blureado desaparece
-            // y el `bg-popover/70` deja ver la página de atrás.
-            "isolate z-50 flex max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) flex-col overflow-hidden rounded-lg text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 animate-none! relative bg-popover/70 before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:backdrop-blur-2xl before:backdrop-saturate-150 **:data-[slot$=-separator]:bg-foreground/5 **:data-[slot$=-trigger]:focus:bg-foreground/10 **:data-[slot$=-trigger]:aria-expanded:bg-foreground/10! **:data-[variant=destructive]:focus:bg-foreground/10! **:data-[variant=destructive]:text-accent-foreground! **:data-[variant=destructive]:**:text-accent-foreground!",
+            // y el fondo dejaba ver la página de atrás. Hoy el fondo es opaco
+            // (`bg-popover`, blanco) y el hover `primary-22`: el vidrio se veía gris
+            // sobre los modales.
+            "isolate z-50 flex max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) flex-col overflow-hidden rounded-lg text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 animate-none! relative bg-popover **:data-[slot$=-separator]:bg-foreground/5 **:data-[slot$=-trigger]:focus:bg-foreground/10 **:data-[slot$=-trigger]:aria-expanded:bg-foreground/10! **:data-[variant=destructive]:focus:bg-foreground/10! **:data-[variant=destructive]:text-accent-foreground! **:data-[variant=destructive]:**:text-accent-foreground!",
             className,
           )}
           {...props}
@@ -683,7 +686,7 @@ function ComboboxFieldContent({
 }
 
 const comboboxFieldItemClassName =
-  "group/combobox-field-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5"
+  "group/combobox-field-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-primary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5"
 
 function ComboboxFieldItem({ className, children, value, title, ...props }: ComboboxPrimitive.Item.Props) {
   const { query, register } = React.useContext(ComboboxFilterContext)

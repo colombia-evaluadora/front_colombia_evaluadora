@@ -389,7 +389,9 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
       <DialogContent
         className={cn(
           "flex max-h-[85vh] flex-col overflow-hidden p-0",
-          hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm",
+          // `4xl` (56rem): la grilla de submenús mide 44rem + padding del modal y
+          // de la tarjeta; con `2xl` (42rem) quedaba un scroll horizontal.
+          hasParentChoice ? "sm:max-w-4xl" : "sm:max-w-sm",
         )}
         // Sin padre elegido no hay footer: la X es la única forma de cerrar.
         showCloseButton={!hasParentChoice}
@@ -594,11 +596,12 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
               </header>
 
               {drafts.length > 0 && (
-                <div className="mt-4 overflow-x-auto">
-                  {/* Última columna de ancho fijo: con `auto` el `sr-only` del encabezado no mide y los títulos se corren. */}
-                  <div className="grid min-w-[44rem] grid-cols-[1fr_1fr_7rem_9rem_4rem_4rem_2.5rem] gap-2 text-sm font-semibold">
-                    <span>Nombre del menú*</span>
-                    <span>URL*</span>
+                <div className="mt-4 overflow-x-auto pb-3">
+                  {/* Última columna de ancho fijo: con `auto` el `sr-only` del encabezado no mide y los títulos se corren.
+                      2.75rem = el botón de quitar (`size="icon"`, 44px); con 2.5rem sobraban 4px y salía el scroll. */}
+                  <div className="grid min-w-[44rem] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_9rem_4rem_4rem_2.75rem] gap-2 text-sm font-semibold">
+                    <span>Nombre del menú<span className="text-red">*</span></span>
+                    <span>URL<span className="text-red">*</span></span>
                     <span>Visible</span>
                     <span>Plan</span>
                     <span>Guardar</span>
@@ -609,9 +612,10 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                     {drafts.map((draft) => (
                       <li
                         key={draft.key}
-                        className="grid min-w-[44rem] grid-cols-[1fr_1fr_7rem_9rem_4rem_4rem_2.5rem] items-center gap-2"
+                        className="grid min-w-[44rem] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_9rem_4rem_4rem_2.75rem] items-center gap-2"
                       >
                         <Input
+                          className="min-w-0"
                           variant="outlined"
                           aria-label="Nombre del menú"
                           placeholder="Agregar"
@@ -619,6 +623,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                           onChange={(event) => updateDraft(draft.key, { name: event.target.value })}
                         />
                         <Input
+                          className="min-w-0"
                           variant="outlined"
                           aria-label="URL"
                           placeholder="Agregar"
@@ -678,7 +683,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
         </div>
 
         {hasParentChoice && (
-          <DialogFooter className="shrink-0 px-6 pb-6">
+          <DialogFooter className="m-0 shrink-0 px-6 pb-6">
             <Button
               size="sm"
               type="button"

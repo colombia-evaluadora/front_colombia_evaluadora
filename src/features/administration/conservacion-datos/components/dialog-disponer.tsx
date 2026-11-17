@@ -228,7 +228,7 @@ export function DialogDisponer({
             <AlertDescription>{ARCHIVAR_NO_DISPONIBLE}</AlertDescription>
           </Alert>
         ) : (
-          <Alert>
+          <Alert variant="info">
             <InfoIcon />
             <AlertDescription>
               {vencido.disposicion === "ARCHIVAR"

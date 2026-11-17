@@ -12,6 +12,7 @@ import {
   FileUploadTrigger,
 } from "@/components/ui/file-upload"
 import { FolderOpenIcon, PaperclipIcon } from "@/components/ui/icons"
+import { Label } from "@/components/ui/label"
 
 const MAX_MB = 10
 
@@ -43,10 +44,17 @@ export function SoportesUpload({ label, archivos, onChange, max, disabled }: Sop
         label={label}
         className="gap-2"
       >
-        <FileUploadDropzone className="flex-row flex-wrap items-center gap-3 p-3 text-left">
+        {/* Label sobre la línea del recuadro, como el label flotante de inputs y selects. */}
+        <div className="relative mt-2">
+          <Label
+            aria-hidden
+            className="pointer-events-none absolute top-0 left-2.5 z-10 -translate-y-1/2 rounded-xs bg-background px-1 text-sm font-medium tracking-normal text-foreground normal-case"
+          >
+            {label}
+          </Label>
+        <FileUploadDropzone className="flex-row flex-wrap items-center gap-3 rounded-sm border border-dashed border-input p-3 pt-4 text-left hover:border-ring">
           <FolderOpenIcon aria-hidden className="size-6 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">{label}</p>
             <p className="text-xs text-muted-foreground">
               PDF, JPG o PNG; hasta {MAX_MB} MB{max > 1 ? ` cada uno y ${max} archivos` : ""}.
             </p>
@@ -56,6 +64,7 @@ export function SoportesUpload({ label, archivos, onChange, max, disabled }: Sop
             Adjuntar
           </FileUploadTrigger>
         </FileUploadDropzone>
+        </div>
         <FileUploadList>
           {archivos.map((f) => (
             <FileUploadItem key={`${f.name}:${f.size}:${f.lastModified}`} value={f}>

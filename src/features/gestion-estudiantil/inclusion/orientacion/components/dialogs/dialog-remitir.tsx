@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { FloppyDiskIcon, PaperPlaneTiltIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useAppForm } from "@/lib/forms"
 
@@ -95,18 +96,24 @@ export function DialogRemitir({ matricula, estudiante, remisionId, onClose, onRe
                   }
                   contentClassName="p-4"
                 >
-                  <form.AppField name={s.name}>{(f) => <f.TextareaField label={s.label} maxLength={1500} placeholder={s.guia || undefined} />}</form.AppField>
+                  <form.AppField name={s.name}>{(f) => <f.TextareaField label={s.label} hideLabel maxLength={1500} placeholder={s.guia || undefined} />}</form.AppField>
                 </SeccionPlegable>
               )}
             </form.Subscribe>
           ))}
         </div>
         <AvisoPiar>Si sospecha autolesión o ideación suicida, use el Reporte de salud mental.</AvisoPiar>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-        <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
           <Button size="sm" disabled={crear.isPending || corregir.isPending} onClick={() => form.handleSubmit()}>
-            <IconoCarga cargando={crear.isPending || corregir.isPending} />
+            <IconoCarga cargando={crear.isPending || corregir.isPending}>
+              {remisionId ? <FloppyDiskIcon data-icon="inline-start" /> : <PaperPlaneTiltIcon data-icon="inline-start" />}
+            </IconoCarga>
             {remisionId ? "Guardar" : "Remitir"}
           </Button>
         </DialogFooter>

@@ -21,9 +21,10 @@ const badgeVariants = cva(
       variant: {
         // Solid en Figma
         fill: "",
-        // Soft en Figma: bg-X-22 + texto del color, SIN borde (el `border` de la
-        // base queda transparente y solo reserva el mismo 1px que las otras
-        // variantes, para que no cambie el alto entre una y otra).
+        // Soft (etiqueta de estado, guía de diseño): píldora con borde `-stroke`,
+        // fondo `-22`, punto del color a la izquierda y texto de 12px en el
+        // color normal. El punto se omite si la etiqueta ya trae ícono o su
+        // propio marcador (un `span`), para no duplicarlo.
         soft: "",
         // Outline en Figma: border-X-stroke + texto del color (sin fondo)
         outline: "",
@@ -97,49 +98,56 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "primary",
-        class: "bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-primary-stroke bg-primary-22 text-foreground [a]:hover:bg-primary/30 focus-visible:ring-primary/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-primary not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "secondary",
         class:
-          "bg-secondary-22 text-secondary [a]:hover:bg-secondary/30 focus-visible:ring-ring/30",
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-secondary-stroke bg-secondary-22 text-foreground [a]:hover:bg-secondary/30 focus-visible:ring-ring/30 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-secondary not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "muted",
-        class: "bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-border bg-background text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-muted-foreground not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "neutral",
         class:
-          "bg-foreground-22 text-foreground [a]:hover:bg-foreground/30 focus-visible:ring-foreground/20",
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-foreground-stroke bg-foreground-22 text-foreground [a]:hover:bg-foreground/30 focus-visible:ring-foreground/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-foreground not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "destructive",
-        class: "bg-red-22 text-red [a]:hover:bg-red/30 focus-visible:ring-red/20",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-red-stroke bg-red-22 text-foreground [a]:hover:bg-red/30 focus-visible:ring-red/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-red not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "info",
-        class: "bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-blue-stroke bg-blue-22 text-foreground [a]:hover:bg-blue/30 focus-visible:ring-blue/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-blue not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "warning",
-        class: "bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-yellow-stroke bg-yellow-22 text-foreground [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-yellow not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "orange",
-        class: "bg-orange-22 text-orange [a]:hover:bg-orange/30 focus-visible:ring-orange/20",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-orange-stroke bg-orange-22 text-foreground [a]:hover:bg-orange/30 focus-visible:ring-orange/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-orange not-has-[svg]:not-has-[span]:before:content-['']",
       },
       {
         variant: "soft",
         color: "success",
-        class: "bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
+        class:
+          "rounded-full gap-1.5 px-2.5 py-0.5 text-xs font-normal tracking-normal border-green-stroke bg-green-22 text-foreground [a]:hover:bg-green/30 focus-visible:ring-green/20 not-has-[svg]:not-has-[span]:before:size-1.5 not-has-[svg]:not-has-[span]:before:shrink-0 not-has-[svg]:not-has-[span]:before:rounded-full not-has-[svg]:not-has-[span]:before:bg-green not-has-[svg]:not-has-[span]:before:content-['']",
       },
 
       // ============ outline (Outline en Figma) ============
