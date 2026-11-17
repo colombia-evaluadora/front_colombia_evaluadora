@@ -57,6 +57,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { catalogoSearchSchema } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/schema"
+import { guardarPestanaConfiguracion } from "@/features/gestion-estudiantil/configuracion/utils/pestana"
 import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
 import { citacionesSearchSchema, origenDeSearch, origenSearchSchema } from "@/features/gestion-estudiantil/citaciones/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
@@ -1669,17 +1670,27 @@ export const convivenciaProcesoRoute = createRoute({
   },
 })
 
-const CatalogoAnotacionesPage = lazyRouteComponent(
-  () => import("@/features/gestion-estudiantil/catalogo-anotaciones/pages/catalogo-anotaciones-page"),
-  "CatalogoAnotacionesPage",
+const ConfiguracionGePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/configuracion/pages/configuracion-page"),
+  "ConfiguracionPage",
 )
 
+export const configuracionGeRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.configuracionGe.path,
+  validateSearch: catalogoSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Configuración" }] },
+  component: ConfiguracionGePage,
+})
+
+// El catálogo vive ahora en la pestaña "Catálogo de anotaciones" de Configuración; la URL vieja solo redirige.
 export const catalogoAnotacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.catalogoAnotaciones.path,
-  validateSearch: catalogoSearchSchema,
-  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Catálogo de anotaciones" }] },
-  component: CatalogoAnotacionesPage,
+  beforeLoad: () => {
+    guardarPestanaConfiguracion("catalogo")
+    throw redirect({ to: paths.app.configuracionGe.getHref(), replace: true })
+  },
 })
 
 const CitacionesCompromisosPage = lazyRouteComponent(
@@ -2707,6 +2718,7 @@ const routeTree = rootRoute.addChildren([
     planeadorPlanillaRoute,
     asistenciaRoute,
     catalogoAnotacionesRoute,
+    configuracionGeRoute,
     inclusionOrientacionRoute,
     atencionNuevaRoute,
     atencionFichaRoute,
