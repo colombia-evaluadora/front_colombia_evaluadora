@@ -191,7 +191,7 @@ export function DialogSaveValor({ categoria, valor }: DialogSaveValorProps) {
           Agregar valor
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar valor" : "Agregar valor"}</DialogTitle>
           <DialogDescription className="font-mono">{categoria.categoria}</DialogDescription>

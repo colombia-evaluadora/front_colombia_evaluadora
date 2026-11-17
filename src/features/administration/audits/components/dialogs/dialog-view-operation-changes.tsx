@@ -82,7 +82,7 @@ export function ViewOperationChangesDialog({
       >
         <EyeIcon weight="bold" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
         <DialogHeader>
           {/* El título es FIJO. `entityName` no sirve de título: con datos
               reales es un texto de largo arbitrario que crece en cada

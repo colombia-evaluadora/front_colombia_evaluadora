@@ -4,6 +4,7 @@ import { es } from "date-fns/locale"
 
 import { PublicBreadcrumb } from "@/components/public/public-page"
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Turnstile } from "@/components/captcha/turnstile"
@@ -156,22 +157,23 @@ function PdfVigente({ codigo }: { codigo: string }) {
 
       {!url && (
         <form onSubmit={onSubmit} className="space-y-3" noValidate>
-          <label htmlFor="ultimos4" className="block text-sm">
-            Para ver el boletín, escribe los últimos 4 dígitos del documento del estudiante.
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id="ultimos4"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="0000"
-              maxLength={4}
-              value={digitos}
-              onChange={(e) => setDigitos(toDigitsOnly(e.target.value, 4))}
-              aria-invalid={pdf.isError || undefined}
-              aria-describedby={pdf.isError ? "ultimos4-error" : undefined}
-              className="w-28 text-center tracking-[0.4em]"
-            />
+          <p className="text-sm">Para ver el boletín, escribe los últimos 4 dígitos del documento del estudiante.</p>
+          <div className="flex items-start gap-2">
+            <Field variant="outlined" className="w-40">
+              <FieldLabel htmlFor="ultimos4">Últimos 4 dígitos*</FieldLabel>
+              <Input
+                id="ultimos4"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="0000"
+                maxLength={4}
+                value={digitos}
+                onChange={(e) => setDigitos(toDigitsOnly(e.target.value, 4))}
+                aria-invalid={pdf.isError || undefined}
+                aria-describedby={pdf.isError ? "ultimos4-error" : undefined}
+                className="text-center tracking-[0.4em]"
+              />
+            </Field>
             <Button type="submit" disabled={digitos.length !== 4 || pdf.isPending || !captcha.ready}>
               {pdf.isPending && <Spinner data-icon="inline-start" />}
               Ver boletín

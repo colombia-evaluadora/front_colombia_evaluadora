@@ -125,7 +125,7 @@ export function DialogReactivarMatricula({ matricula, onOpenChange, onDone }: Pr
     const siguiente = previa.matriculaSiguiente
     return (
       <Dialog open onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="sm:max-w-lg">
           <DialogHeader>
             {titulo}
             <DialogDescription>{bloqueado}</DialogDescription>
@@ -153,7 +153,7 @@ export function DialogReactivarMatricula({ matricula, onOpenChange, onDone }: Pr
 
   return (
     <Dialog open onOpenChange={(o) => !reactivar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           {titulo}
           {previa ? (

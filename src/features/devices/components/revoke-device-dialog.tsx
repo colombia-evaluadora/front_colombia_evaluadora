@@ -35,7 +35,7 @@ export function RevokeDeviceDialog({
         }
       }}
     >
-      <DialogContent data-slot="revoke-device-dialog">
+      <DialogContent showCloseButton={false} data-slot="revoke-device-dialog">
         <DialogHeader>
           <DialogTitle>Revocar {nombre}</DialogTitle>
           <DialogDescription>

@@ -124,7 +124,7 @@ export function UbicarDialog({
 
   return (
     <Dialog open={n > 0} onOpenChange={cerrar}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {n === 1

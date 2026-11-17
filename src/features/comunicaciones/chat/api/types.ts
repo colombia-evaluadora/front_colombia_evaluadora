@@ -522,6 +522,8 @@ export interface Comunicado {
   // HTML del editor; se sanea antes de mostrarlo.
   contenidoHtml: string
   publicadoPor: string
+  // Rol de quien lo publicó ("Rector", "Coordinador"...): lo muestra el detalle (M.1.DET.1). Opcional.
+  publicadoPorRol?: string | null
   esCreador: boolean
   // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
   // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.

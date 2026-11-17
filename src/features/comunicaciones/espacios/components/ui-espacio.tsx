@@ -35,7 +35,7 @@ export function EncabezadoHerramienta({ herramienta, detalle }: { herramienta: s
   const { espacio } = detalle
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="font-medium">
+      <h2 className="text-base font-semibold">
         {[herramienta, espacio.actividad, espacio.grupo, espacio.asignatura].filter(Boolean).join(" · ")}
       </h2>
       {espacio.estado === "ABIERTO" && espacio.fechaCierre && (

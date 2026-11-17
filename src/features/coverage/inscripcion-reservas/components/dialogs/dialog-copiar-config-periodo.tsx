@@ -102,7 +102,7 @@ function Contenido({
   ]
 
   return (
-    <DialogContent className="sm:max-w-xl">
+    <DialogContent showCloseButton={false} className="sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>Copiar configuración de {nombrePeriodo(origen)}</DialogTitle>
       </DialogHeader>
@@ -183,7 +183,7 @@ function Resultado({
   onClose: () => void
 }) {
   return (
-    <DialogContent className="sm:max-w-xl">
+    <DialogContent showCloseButton={false} className="sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>Resultado de copiar {nombrePeriodo(origen)}</DialogTitle>
       </DialogHeader>

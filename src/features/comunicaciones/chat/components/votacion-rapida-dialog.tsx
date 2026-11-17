@@ -77,7 +77,7 @@ export function VotacionRapidaDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{editar ? "Editar la votación rápida" : "Crear una Votación rápida"}</DialogTitle>
         </DialogHeader>

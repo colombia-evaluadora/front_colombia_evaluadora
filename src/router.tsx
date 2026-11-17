@@ -1704,6 +1704,135 @@ export const reconocimientosRoute = createRoute({
   component: ReconocimientosPage,
 })
 
+const ActividadesPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/actividades-page"),
+  "ActividadesPage",
+)
+const ActividadFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/actividad-form-page"),
+  "ActividadFormPage",
+)
+const ActividadDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/actividad-detalle-page"),
+  "ActividadDetallePage",
+)
+const ServicioSocialEstudiantePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/servicio-social-estudiante-page"),
+  "ServicioSocialEstudiantePage",
+)
+
+export const actividadesExtracurricularesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadesExtracurriculares.path,
+  validateSearch: (search: Record<string, unknown>): { tab?: "servicio-social" } =>
+    search.tab === "servicio-social" ? { tab: "servicio-social" } : {},
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Actividades extracurriculares" }] },
+  component: ActividadesPage,
+})
+
+const ACTIVIDADES_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Actividades extracurriculares", to: paths.app.actividadesExtracurriculares.getHref() },
+]
+
+export const actividadNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadNueva.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Nueva actividad" }] },
+  component: function ActividadNuevaRoute() {
+    return <ActividadFormPage />
+  },
+})
+
+export const actividadDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadDetalle.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Actividad" }] },
+  component: function ActividadDetalleRoute() {
+    const { actividadId } = actividadDetalleRoute.useParams()
+    return <ActividadDetallePage actividadId={Number(actividadId)} />
+  },
+})
+
+export const actividadEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadEditar.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Modificar actividad" }] },
+  component: function ActividadEditarRoute() {
+    const { actividadId } = actividadEditarRoute.useParams()
+    return <ActividadFormPage actividadId={Number(actividadId)} />
+  },
+})
+
+export const servicioSocialEstudianteRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.servicioSocialEstudiante.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Servicio social" }] },
+  component: function ServicioSocialEstudianteRoute() {
+    const { matricula } = servicioSocialEstudianteRoute.useParams()
+    return <ServicioSocialEstudiantePage matricula={Number(matricula)} />
+  },
+})
+
+const ReintegracionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/reintegracion-page"),
+  "ReintegracionPage",
+)
+
+export const reintegracionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Reintegración" }] },
+  component: ReintegracionPage,
+})
+
+const REINTEGRACION_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Reintegración", to: paths.app.reintegracion.getHref() },
+]
+
+const ReintegracionAbrirCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/abrir-caso-page"),
+  "AbrirCasoPage",
+)
+
+export const reintegracionAbrirRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionAbrir.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Abrir caso" }] },
+  component: ReintegracionAbrirCasoPage,
+})
+
+const ReintegracionCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/caso-detalle-page"),
+  "CasoDetallePage",
+)
+
+export const reintegracionCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionCaso.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Caso" }] },
+  component: function ReintegracionCasoRoute() {
+    const { casoId } = reintegracionCasoRoute.useParams()
+    return <ReintegracionCasoPage casoId={Number(casoId)} />
+  },
+})
+
+const ReintegracionConvivenciaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/abrir-convivencia-page"),
+  "AbrirConvivenciaPage",
+)
+
+export const reintegracionConvivenciaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionConvivencia.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Abrir caso de convivencia" }] },
+  component: function ReintegracionConvivenciaRoute() {
+    const { casoId } = reintegracionConvivenciaRoute.useParams()
+    return <ReintegracionConvivenciaPage casoId={Number(casoId)} />
+  },
+})
+
 const PrevencionPage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/prevencion/pages/prevencion-page"),
   "PrevencionPage",
@@ -2600,6 +2729,15 @@ const routeTree = rootRoute.addChildren([
     compromisoDetalleRoute,
     reconocimientosRoute,
     reconocimientoDetalleRoute,
+    actividadesExtracurricularesRoute,
+    actividadNuevaRoute,
+    actividadDetalleRoute,
+    actividadEditarRoute,
+    servicioSocialEstudianteRoute,
+    reintegracionRoute,
+    reintegracionAbrirRoute,
+    reintegracionCasoRoute,
+    reintegracionConvivenciaRoute,
     prevencionRetencionRoute,
     prevencionHistorialRoute,
     prevencionValorarRoute,

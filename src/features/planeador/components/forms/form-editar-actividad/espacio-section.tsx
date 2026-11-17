@@ -41,7 +41,7 @@ function Formulario({ actividadId, config }: { actividadId: number; config: Conf
 
   return (
     <div className="space-y-3">
-      <Field>
+      <Field variant="outlined">
         <FieldLabel>Espacio de interacción</FieldLabel>
         <Select
           items={OPCIONES}

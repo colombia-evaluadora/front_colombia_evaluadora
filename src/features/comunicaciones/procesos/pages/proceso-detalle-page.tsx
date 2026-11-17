@@ -1,5 +1,11 @@
 import { useState } from "react"
 
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { Badge } from "@/components/ui/badge"
@@ -7,11 +13,11 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 import { DialogoEleccion, DialogoProceso, DialogoTexto } from "@/features/comunicaciones/procesos/components/dialogos"
@@ -62,32 +68,36 @@ function Contenido() {
   const ejecutar = (ruta: string, mensaje: string, metodo?: "patch") =>
     accion.mutate({ ruta, metodo }, { onSuccess: () => notify(mensaje), onError: (e) => notify(getErrorMessage(e), { variant: "error" }) })
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{p.nombre}</h1>
-          <p className="text-sm text-muted-foreground">{p.objeto}</p>
-          <p className="text-xs text-muted-foreground">Convocatoria versión {p.version}{p.publicadoEn ? ` · publicada ${fechaCorta(p.publicadoEn)}` : " · sin publicar"}</p>
-        </div>
-        {admin && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" color="neutral" onClick={() => setEditar(true)}>Modificar</Button>
-            {!p.publicadoEn && <Button variant="outline" color="destructive" onClick={() => setEliminar(true)}>Eliminar</Button>}
-            {!p.publicadoEn && <Button variant="outline" color="neutral" onClick={() => setAgregar(true)}>Agregar elección</Button>}
-            {!p.publicadoEn && <Button onClick={() => ejecutar(`/${p.id}/publicar`, "Convocatoria publicada.")}>Publicar convocatoria</Button>}
-          </div>
-        )}
-      </div>
-      <NoticeOutlet />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          description={p.objeto}
+          action={
+            admin ? (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" color="neutral" onClick={() => setEditar(true)}>Modificar</Button>
+                {!p.publicadoEn && <Button variant="outline" color="destructive" onClick={() => setEliminar(true)}>Eliminar</Button>}
+                {!p.publicadoEn && <Button variant="outline" color="neutral" onClick={() => setAgregar(true)}>Agregar elección</Button>}
+                {!p.publicadoEn && <Button onClick={() => ejecutar(`/${p.id}/publicar`, "Convocatoria publicada.")}>Publicar convocatoria</Button>}
+              </div>
+            ) : undefined
+          }
+        >
+          {p.nombre}
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="flex flex-col gap-4">
+      <p className="text-xs text-muted-foreground">Convocatoria versión {p.version}{p.publicadoEn ? ` · publicada ${fechaCorta(p.publicadoEn)}` : " · sin publicar"}</p>
       {p.reglamento && (
         <section>
-          <h2 className="text-sm font-medium">Reglamento</h2>
+          <h2 className="text-base font-semibold">Reglamento</h2>
           <p className="whitespace-pre-wrap text-sm">{p.reglamento}</p>
         </section>
       )}
       {p.funciones.length > 0 && (
         <section className="text-sm">
-          <h2 className="font-medium">Funciones</h2>
+          <h2 className="text-base font-semibold">Funciones</h2>
           <ul className="list-disc pl-5">
             {p.funciones.map((f) => <li key={`${f.usuario}-${f.funcion}`}>{FUNCION_LABEL[f.funcion]}: {f.nombre}</li>)}
           </ul>
@@ -112,7 +122,8 @@ function Contenido() {
           onHecho={() => navigate({ to: paths.app.comunicacionesProcesos.getHref() })} />
       )}
       {agregar && <DialogoEleccion proceso={p} onCerrar={() => setAgregar(false)} onHecho={(m) => { setAgregar(false); notify(m) }} />}
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 
@@ -201,10 +212,16 @@ function Postulaciones({ e, revisor }: { e: EleccionProceso; revisor: boolean })
   return (
     <div className="flex flex-col gap-3 py-2">
       <div className="flex flex-wrap items-center gap-2">
-        <NativeSelect aria-label="Estado" value={estado} onChange={(x) => { setEstado(x.target.value); reiniciar() }}>
-          <NativeSelectOption value="">Estado: Todos</NativeSelectOption>
-          {(Object.keys(ESTADO_POSTULACION_LABEL) as EstadoPostulacion[]).map((k) => <NativeSelectOption key={k} value={k}>{ESTADO_POSTULACION_LABEL[k]}</NativeSelectOption>)}
-        </NativeSelect>
+        <SelectOpciones
+          aria-label="Estado"
+          className="w-48"
+          value={estado}
+          onValueChange={(x) => { setEstado(x); reiniciar() }}
+          opciones={[
+            { value: "", label: "Estado: Todos" },
+            ...(Object.keys(ESTADO_POSTULACION_LABEL) as EstadoPostulacion[]).map((k) => ({ value: k, label: ESTADO_POSTULACION_LABEL[k] })),
+          ]}
+        />
         {estado && <Button size="sm" variant="ghost" color="neutral" onClick={() => { setEstado(""); reiniciar() }}>Limpiar filtros</Button>}
       </div>
       <Table>
@@ -248,7 +265,7 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
   }, { onSuccess: () => onHecho("Revisión registrada."), onError: (x) => setError(getErrorMessage(x)) })
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Revisar: {p.nombre}</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <p className="whitespace-pre-wrap text-sm">{p.propuesta}</p>
@@ -260,18 +277,22 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
           </li>
         ))}</ul>}
         {e.requisitos.map((r) => (
-          <Field key={r}>
+          <Field variant="outlined" key={r}>
             <FieldLabel>{r}</FieldLabel>
-            <NativeSelect value={res[r].resultado} onChange={(x) => setRes((v) => ({ ...v, [r]: { ...v[r], resultado: x.target.value } }))}>
-              <NativeSelectOption value="CUMPLE">Cumple</NativeSelectOption>
-              <NativeSelectOption value="NO_CUMPLE">No cumple</NativeSelectOption>
-              <NativeSelectOption value="SUBSANAR">Pendiente de subsanar</NativeSelectOption>
-            </NativeSelect>
+            <SelectOpciones
+              value={res[r].resultado}
+              onValueChange={(x) => setRes((v) => ({ ...v, [r]: { ...v[r], resultado: x } }))}
+              opciones={[
+                { value: "CUMPLE", label: "Cumple" },
+                { value: "NO_CUMPLE", label: "No cumple" },
+                { value: "SUBSANAR", label: "Pendiente de subsanar" },
+              ]}
+            />
             <Input placeholder="Observación" value={res[r].observacion} onChange={(x) => setRes((v) => ({ ...v, [r]: { ...v[r], observacion: x.target.value } }))} />
           </Field>
         ))}
-        <Field><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
-        <Field><FieldLabel>Fecha límite de subsanación</FieldLabel><Input type="datetime-local" value={limite} onChange={(x) => setLimite(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Fecha límite de subsanación</FieldLabel><Input type="datetime-local" value={limite} onChange={(x) => setLimite(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button variant="outline" color="destructive" disabled={m.isPending} onClick={() => enviar("NO_HABILITAR")}>No habilitar</Button>
@@ -318,11 +339,17 @@ function PadronPanel({ e, admin }: { e: EleccionProceso; admin: boolean }) {
       {padron && (
         <div className="flex flex-wrap items-center gap-2">
           <Input className="w-64" placeholder="Buscar persona" value={texto} onChange={(x) => filtrar(() => setTexto(x.target.value))} />
-          <NativeSelect aria-label="Condición" value={condicion} onChange={(x) => filtrar(() => setCondicion(x.target.value))}>
-            <NativeSelectOption value="">Condición: Todas</NativeSelectOption>
-            <NativeSelectOption value="HABILITADA">Habilitada</NativeSelectOption>
-            <NativeSelectOption value="EXCLUIDA">Excluida</NativeSelectOption>
-          </NativeSelect>
+          <SelectOpciones
+            aria-label="Condición"
+            className="w-48"
+            value={condicion}
+            onValueChange={(x) => filtrar(() => setCondicion(x))}
+            opciones={[
+              { value: "", label: "Condición: Todas" },
+              { value: "HABILITADA", label: "Habilitada" },
+              { value: "EXCLUIDA", label: "Excluida" },
+            ]}
+          />
           {(texto || condicion) && <Button size="sm" variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setCondicion("") })}>Limpiar filtros</Button>}
         </div>
       )}
@@ -351,21 +378,37 @@ function DialogoExcepcion({ e, onCerrar, onHecho }: { e: EleccionProceso; onCerr
   const [error, setError] = useState<string | null>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>Inclusión o exclusión excepcional</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
-        <NativeSelect value={accion} onChange={(x) => setAccion(x.target.value)}>
-          <NativeSelectOption value="EXCLUIR">Excluir</NativeSelectOption>
-          <NativeSelectOption value="INCLUIR">Incluir</NativeSelectOption>
-        </NativeSelect>
-        <NativeSelect value={tipo} onChange={(x) => { setTipo(x.target.value as typeof tipo); setUsuario("") }}>
-          {VINCULOS.map((v) => <NativeSelectOption key={v} value={v}>{v}</NativeSelectOption>)}
-        </NativeSelect>
-        <NativeSelect value={usuario} onChange={(x) => setUsuario(x.target.value)}>
-          <NativeSelectOption value="">Elige la persona</NativeSelectOption>
-          {(personas.data ?? []).map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.nombre}</NativeSelectOption>)}
-        </NativeSelect>
-        <Field><FieldLabel>* Motivo</FieldLabel><Textarea value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
+        <Field variant="outlined">
+          <FieldLabel>Acción</FieldLabel>
+          <SelectOpciones
+            value={accion}
+            onValueChange={setAccion}
+            opciones={[{ value: "EXCLUIR", label: "Excluir" }, { value: "INCLUIR", label: "Incluir" }]}
+          />
+        </Field>
+        <Field variant="outlined">
+          <FieldLabel>Vínculo</FieldLabel>
+          <SelectOpciones
+            value={tipo}
+            onValueChange={(x) => { setTipo(x as typeof tipo); setUsuario("") }}
+            opciones={VINCULOS.map((v) => ({ value: v, label: v }))}
+          />
+        </Field>
+        <Field variant="outlined">
+          <FieldLabel>* Persona</FieldLabel>
+          <SelectOpciones
+            value={usuario}
+            onValueChange={setUsuario}
+            opciones={[
+              { value: "", label: "Elige la persona" },
+              ...(personas.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre })),
+            ]}
+          />
+        </Field>
+        <Field variant="outlined"><FieldLabel>* Motivo</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!usuario || !motivo.trim() || m.isPending} onClick={() => m.mutate(
@@ -412,7 +455,7 @@ function Resultados({ e }: { e: EleccionProceso }) {
       <p>Elegidos: {c.elegidos?.length ? c.elegidos.map((x) => `${x.nombre} (${x.condicion === "SUPLENTE" ? "suplente" : "titular"})`).join(", ") : "—"}</p>
       {c.incidencias?.map((i) => <NoticeBanner key={i} onClose={() => {}} variant="warning" notice={{ id: 0, message: `Incidencia: ${i} Mecanismo publicado: ${e.mecanismoEmpate === "DECISION" ? "decisión documentada" : e.mecanismoEmpate === "SEGUNDA_VUELTA" ? "segunda vuelta" : "nueva votación"}.` }} />)}
       <div>
-        <h3 className="font-medium">Actas</h3>
+        <h3 className="text-base font-semibold">Actas</h3>
         <ul className="flex flex-col gap-1">
           {q.data.map((a) => (
             <li key={a.id} className="flex items-center gap-2">
@@ -472,18 +515,29 @@ function DialogoResolver({ id, onCerrar, onHecho }: { id: number; onCerrar: () =
   const [error, setError] = useState<string | null>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>Resolver reclamación</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
-        <NativeSelect value={decision} onChange={(x) => setDecision(x.target.value)}>
-          <NativeSelectOption value="RECHAZADA">Rechazada</NativeSelectOption>
-          <NativeSelectOption value="ACEPTADA">Aceptada</NativeSelectOption>
-        </NativeSelect>
-        <NativeSelect value={afecta} onChange={(x) => setAfecta(x.target.value)}>
-          <NativeSelectOption value="N">No afecta el resultado</NativeSelectOption>
-          <NativeSelectOption value="S">Afecta el resultado (crea versión nueva del acta)</NativeSelectOption>
-        </NativeSelect>
-        <Field><FieldLabel>* Respuesta</FieldLabel><Textarea value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
+        <Field variant="outlined">
+          <FieldLabel>Decisión</FieldLabel>
+          <SelectOpciones
+            value={decision}
+            onValueChange={setDecision}
+            opciones={[{ value: "RECHAZADA", label: "Rechazada" }, { value: "ACEPTADA", label: "Aceptada" }]}
+          />
+        </Field>
+        <Field variant="outlined">
+          <FieldLabel>Efecto en el resultado</FieldLabel>
+          <SelectOpciones
+            value={afecta}
+            onValueChange={setAfecta}
+            opciones={[
+              { value: "N", label: "No afecta el resultado" },
+              { value: "S", label: "Afecta el resultado (crea versión nueva del acta)" },
+            ]}
+          />
+        </Field>
+        <Field variant="outlined"><FieldLabel>* Respuesta</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!respuesta.trim() || m.isPending} onClick={() => m.mutate(
@@ -526,16 +580,23 @@ function DialogoNovedad({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
   const [error, setError] = useState<string | null>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>Registrar novedad</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
-        <NativeSelect value={tipo} onChange={(x) => setTipo(x.target.value)}>
-          <NativeSelectOption value="ACEPTACION">Aceptación del cargo</NativeSelectOption>
-          <NativeSelectOption value="RENUNCIA">Renuncia</NativeSelectOption>
-          <NativeSelectOption value="REEMPLAZO">Reemplazo</NativeSelectOption>
-          <NativeSelectOption value="VACANCIA">Vacancia</NativeSelectOption>
-        </NativeSelect>
-        <Field><FieldLabel>* Detalle</FieldLabel><Textarea value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
+        <Field variant="outlined">
+          <FieldLabel>Tipo de novedad</FieldLabel>
+          <SelectOpciones
+            value={tipo}
+            onValueChange={setTipo}
+            opciones={[
+              { value: "ACEPTACION", label: "Aceptación del cargo" },
+              { value: "RENUNCIA", label: "Renuncia" },
+              { value: "REEMPLAZO", label: "Reemplazo" },
+              { value: "VACANCIA", label: "Vacancia" },
+            ]}
+          />
+        </Field>
+        <Field variant="outlined"><FieldLabel>* Detalle</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!detalle.trim() || m.isPending} onClick={() => m.mutate(
@@ -558,21 +619,25 @@ function DialogoDecision({ e, tipo, onCerrar, onHecho }: { e: EleccionProceso; t
   const personas = Object.entries(condicion).filter(([, c]) => c).map(([id, c]) => ({ POSTULACION: Number(id), CONDICION: c }))
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>{tipo === "seleccion" ? "Registrar selección" : "Decisión documentada"}</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         <p className="text-sm text-muted-foreground">Cupos: {e.titulares} titular(es) y {e.suplentes} suplente(s).</p>
         {(candidaturas.data ?? []).map((c) => (
-          <Field key={c.id}>
+          <Field variant="outlined" key={c.id}>
             <FieldLabel>{c.nombre}</FieldLabel>
-            <NativeSelect value={condicion[c.id] ?? ""} onChange={(x) => setCondicion((v) => ({ ...v, [c.id]: x.target.value }))}>
-              <NativeSelectOption value="">No seleccionado</NativeSelectOption>
-              <NativeSelectOption value="TITULAR">Titular</NativeSelectOption>
-              <NativeSelectOption value="SUPLENTE">Suplente</NativeSelectOption>
-            </NativeSelect>
+            <SelectOpciones
+              value={condicion[c.id] ?? ""}
+              onValueChange={(x) => setCondicion((v) => ({ ...v, [c.id]: x }))}
+              opciones={[
+                { value: "", label: "No seleccionado" },
+                { value: "TITULAR", label: "Titular" },
+                { value: "SUPLENTE", label: "Suplente" },
+              ]}
+            />
           </Field>
         ))}
-        <Field><FieldLabel>* Motivación</FieldLabel><Textarea value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>* Motivación</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
           <Button disabled={!personas.length || !motivacion.trim() || m.isPending} onClick={() => m.mutate(

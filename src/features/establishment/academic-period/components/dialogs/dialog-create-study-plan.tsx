@@ -236,7 +236,7 @@ export function CreateStudyPlanDialog({
           Agregar {subjectWord}
         </DialogTrigger>
       )}
-      <DialogContent
+      <DialogContent showCloseButton={false}
         className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl"
         inert={confirmDiscardOpen || createSubjectOpen}
       >

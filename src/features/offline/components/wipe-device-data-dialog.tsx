@@ -54,7 +54,7 @@ export function WipeDeviceDataDialog({
 
   return (
     <Dialog open={open} onOpenChange={cerrar}>
-      <DialogContent data-slot="wipe-device-data-dialog">
+      <DialogContent showCloseButton={false} data-slot="wipe-device-data-dialog">
         <DialogHeader>
           <DialogTitle>
             {paso === "aviso" ? "Borrar los datos de este equipo" : "¿Seguro? Esto no se puede deshacer"}

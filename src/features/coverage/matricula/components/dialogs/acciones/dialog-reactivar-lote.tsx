@@ -78,7 +78,7 @@ export function DialogReactivarLote({
 
   return (
     <Dialog open onOpenChange={(o) => !reactivar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <WarningIcon className="size-6 shrink-0 text-yellow" aria-hidden />

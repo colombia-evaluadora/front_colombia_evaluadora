@@ -73,7 +73,7 @@ function SuperadministradorContent(props: ContentProps) {
   if (tipos) return <SuperadministradorForm {...props} tipos={tipos} />
   return (
     <Dialog open onOpenChange={(next) => !next && props.onClose()}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {props.modo === "nuevo" ? "Nuevo Superadministrador" : "Superadministrador"}

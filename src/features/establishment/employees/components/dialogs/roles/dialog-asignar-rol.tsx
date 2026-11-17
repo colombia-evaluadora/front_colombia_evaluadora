@@ -103,7 +103,7 @@ export function DialogAsignarRol({ funcionarioId, establishmentId, employeeName 
         <ControlPointIcon data-icon="inline-start" />
         Asignar permisos
       </Button>
-      <DialogContent className="sm:max-w-lg" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-lg" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>Asignar permisos</DialogTitle>
           <DialogDescription>
