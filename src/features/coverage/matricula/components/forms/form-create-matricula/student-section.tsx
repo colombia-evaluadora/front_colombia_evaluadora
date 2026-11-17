@@ -1,6 +1,6 @@
 import { aDocumentoAlfanumerico, aNombre, esTipoDocExtranjero, fechaMinimaNacimiento } from "@/features/coverage/matricula/utils/matricula-formatos"
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
-import { useEtniasQuery } from "@/features/establishment/institution/api/query/use-etnias"
+import { useEtniasCatalogo } from "@/features/coverage/matricula/api/query/catalogos-fijos"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaStudentInfo } from "@/features/coverage/matricula/api/types/matricula"
 import { catalogLabelFor, catalogOptions } from "./catalog-utils"
@@ -41,7 +41,7 @@ export function MatriculaStudentSection({
   // PPT, PEP, pasaporte o NES: documento alfanumérico (bloques 2.2 y 2.10).
   const extranjero = esTipoDocExtranjero(tipoDocumento?.find((t) => String(t.id) === value.documentType)?.nombre ?? "")
   const { data: genero } = useMatriculaCatalogQuery("genero")
-  const { data: etnias } = useEtniasQuery()
+  const { data: etnias } = useEtniasCatalogo()
   const etniaNombreById = new Map((etnias ?? []).map((e) => [String(e.id), e.name]))
 
   return (

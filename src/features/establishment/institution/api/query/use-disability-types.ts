@@ -34,8 +34,10 @@ async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
   }))
 }
 
-export function useDisabilityTypesQuery() {
+/** `enabled: false` cuando la pantalla trae su propio catálogo (inscripción pública, sin sesión). */
+export function useDisabilityTypesQuery({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
+    enabled,
     staleTime: Infinity,
     queryKey: ["catalogs", "disability-types"],
     meta: catalogoMeta(),

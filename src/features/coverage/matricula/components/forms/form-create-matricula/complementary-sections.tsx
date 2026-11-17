@@ -1,5 +1,5 @@
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
-import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
+import { useDiscapacidadesCatalogo } from "@/features/coverage/matricula/api/query/catalogos-fijos"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaBenefitsInfo, MatriculaComplementaryInfo } from "@/features/coverage/matricula/api/types/matricula"
 import { anySettingVisible, catalogLabelFor, catalogOptions } from "./catalog-utils"
@@ -26,7 +26,7 @@ export function MatriculaComplementarySection({
   const { data: srpa } = useMatriculaCatalogQuery("srpa")
   const srpaNoAplica = (id: string) => /no aplica/i.test(srpa?.find((s) => String(s.id) === id)?.nombre ?? "")
   const conMedida = Boolean(value.srpa) && !srpaNoAplica(value.srpa ?? "")
-  const { data: discapacidades } = useDisabilityTypesQuery()
+  const { data: discapacidades } = useDiscapacidadesCatalogo()
   const discapacidadNombreById = new Map(
     (discapacidades ?? []).map((item) => [String(item.id), item.name]),
   )
