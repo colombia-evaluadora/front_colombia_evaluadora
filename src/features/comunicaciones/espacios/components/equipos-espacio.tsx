@@ -48,7 +48,7 @@ function DialogoEquipo({
         <DialogHeader>
           <DialogTitle>{equipo ? `Editar ${equipo.nombre}` : "Nuevo equipo"}</DialogTitle>
         </DialogHeader>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel htmlFor="nombre-equipo">Nombre</FieldLabel>
           <Input id="nombre-equipo" maxLength={80} value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </Field>

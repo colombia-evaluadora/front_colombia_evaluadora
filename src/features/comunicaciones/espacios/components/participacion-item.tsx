@@ -189,7 +189,7 @@ export function ParticipacionItem({
               anteriores se conservan.
             </p>
           )}
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor={`valor-${p.id}`}>{dialogo === "editar" ? "Texto" : "Motivo"}</FieldLabel>
             <Textarea
               id={`valor-${p.id}`}
