@@ -66,7 +66,7 @@ export function DialogAnularReconocimiento({ reconocimiento: r, onClose }: Props
         error={s.intento ? error : undefined}
         onChange={setMotivo}
       />
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>El reconocimiento no se elimina: queda registrado como anulado, con su motivo.</AlertDescription>
       </Alert>

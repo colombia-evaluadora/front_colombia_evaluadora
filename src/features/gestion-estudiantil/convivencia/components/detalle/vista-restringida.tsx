@@ -15,7 +15,7 @@ export function VistaRestringida({ caso }: { caso: CasoDetalle }) {
         <Dato label="Estado">{caso.estado_nombre}</Dato>
         <Dato label="Fecha de conocimiento">{formatFecha(caso.fecha_conocimiento)}</Dato>
       </dl>
-      <Alert>
+      <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>
           Los datos de un caso {caso.tipo_nombre} son sensibles: como quien lo reportó, solo ve su estado.

@@ -1,15 +1,10 @@
 import { useState, type ReactNode } from "react"
-import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
-import {
-  TableScreen,
-  TableScreenBody,
-  TableScreenFooter,
-  TableScreenHeader,
-  TableScreenTitle,
-} from "@/components/layout/table-screen"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon } from "@/components/ui/icons"
@@ -40,39 +35,63 @@ export function PreferenciasNotificacionesPage({ pushToggle }: { pushToggle?: Re
 
 function PreferenciasContent({ pushToggle }: { pushToggle?: ReactNode }) {
   const { notify } = useNotify()
+  const navigate = useNavigate()
   const onlineOnly = useOnlineOnly("Las preferencias de notificaciones necesitan conexión.")
   const preferencias = usePreferenciasQuery()
   const [dirty, setDirty] = useState(false)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
   const update = useUpdatePreferencias({
     mutationConfig: {
-      onSuccess: () => notify("Preferencias de notificaciones actualizadas."),
+      onSuccess: () => notify("Preferencias guardadas. Los cambios aplican desde ahora."),
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
+  const volver = () => void navigate({ href: paths.app.notificaciones.getHref() })
 
   return (
     <TableScreen>
       <TableScreenHeader>
+        {/* Figma "Notificaciones/Preferencias": solo el título, con Volver y
+            Guardar arriba a la derecha (antes Guardar iba en un pie fijo). */}
         <TableScreenTitle
-          description="Elige por dónde quieres enterarte de cada tipo de notificación."
           action={
-            <Button
-              variant="ghost"
-              color="muted"
-              nativeButton={false}
-              render={<Link to={paths.app.notificaciones.getHref()} />}
-            >
-              <ArrowLeftIcon data-icon="inline-start" />
-              Volver
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                color="neutral"
+                // Con cambios sin guardar, Volver pregunta antes (Figma "Salir sin guardar").
+                onClick={() => (dirty ? setConfirmarSalida(true) : volver())}
+              >
+                <ArrowLeftIcon data-icon="inline-start" className="size-4" />
+                Volver
+              </Button>
+              <OnlineOnlyTooltip tooltip={onlineOnly.tooltip}>
+                <Button
+                  type="submit"
+                  form={PREFERENCIAS_FORM_ID}
+                  disabled={onlineOnly.disabled || update.isPending || !dirty || !preferencias.data}
+                >
+                  {update.isPending && <Spinner data-icon="inline-start" />}
+                  Guardar
+                </Button>
+              </OnlineOnlyTooltip>
+            </div>
           }
         >
           Preferencias de notificaciones
         </TableScreenTitle>
       </TableScreenHeader>
-      <TableScreenBody className="rounded-b-none border-b-0">
+      <ConfirmDiscardDialog
+        open={confirmarSalida}
+        onOpenChange={setConfirmarSalida}
+        onConfirm={volver}
+        title="¿Salir sin guardar?"
+        description="Tienes cambios en tus preferencias que no se han guardado. Si sales ahora, se pierden."
+        confirmLabel="Descartar cambios"
+        cancelLabel="Seguir editando"
+      />
+      <TableScreenBody>
         <div className="flex flex-col gap-6 py-4">
-          <NoticeOutlet />
           {preferencias.isPending ? (
             <div className="flex flex-col gap-3">
               <Skeleton className="h-6 w-72" />
@@ -103,21 +122,6 @@ function PreferenciasContent({ pushToggle }: { pushToggle?: ReactNode }) {
           <SilencioConversaciones disabled={onlineOnly.disabled} />
         </div>
       </TableScreenBody>
-      <TableScreenFooter>
-        <span className="text-xs text-muted-foreground">
-          {dirty ? "Tienes cambios sin guardar." : "La bandeja de la aplicación siempre está activa."}
-        </span>
-        <OnlineOnlyTooltip tooltip={onlineOnly.tooltip}>
-          <Button
-            type="submit"
-            form={PREFERENCIAS_FORM_ID}
-            disabled={onlineOnly.disabled || update.isPending || !dirty || !preferencias.data}
-          >
-            {update.isPending && <Spinner data-icon="inline-start" />}
-            Guardar
-          </Button>
-        </OnlineOnlyTooltip>
-      </TableScreenFooter>
     </TableScreen>
   )
 }

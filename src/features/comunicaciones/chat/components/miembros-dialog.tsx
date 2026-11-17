@@ -234,7 +234,7 @@ export function MiembrosDialog({
             disabled={agregando}
             aria-busy={agregando}
             onClick={onAgregar}
-            className="size-11 shrink-0"
+            className="size-10 shrink-0"
           >
             <PlusIcon className="size-6" />
           </Button>

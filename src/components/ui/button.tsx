@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 //   - 5 variantes: Solid (fill) · Soft · Outline · Ghost · Link
 //   - 4 sizes: sm · md · lg · icon (en Figma); aquí conservamos también xs/icon-xs/icon-sm/icon-lg
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent bg-clip-padding text-xs font-semibold whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-red aria-invalid:ring-2 aria-invalid:ring-red/20 dark:aria-invalid:border-red/50 dark:aria-invalid:ring-red/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-sm border border-transparent bg-clip-padding text-xs font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-red aria-invalid:ring-2 aria-invalid:ring-red/20 dark:aria-invalid:border-red/50 dark:aria-invalid:ring-red/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       variant: {
@@ -40,11 +40,11 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-11 gap-1.5 px-6 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
+          "h-10 gap-1.5 px-6 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
         xs: "h-7 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-10 gap-1 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         lg: "h-12 gap-1.5 px-8 has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
-        icon: "size-11",
+        icon: "size-10",
         "icon-xs": "size-7 [&_svg:not([class*='size-'])]:size-3",
         // El glifo va a size-5 y no al size-3.5 de la base: es el tamaño de los
         // botones de acción (editar/eliminar) de las filas de tabla, donde el
@@ -172,14 +172,19 @@ const buttonVariants = cva(
       {
         variant: "outline",
         color: "muted",
+        // Mismo botón secundario que `outline` + `neutral` (ver abajo): en la
+        // práctica se usan indistintamente (Imprimir, Exportar, Remitir…).
         class:
-          "border-border text-muted-foreground hover:bg-muted hover:text-muted-foreground aria-expanded:text-muted-foreground focus-visible:ring-ring/30",
+          "border-input bg-background text-foreground hover:bg-muted-22 aria-expanded:text-foreground focus-visible:ring-ring/30 [&_svg:not([class*='size-'])]:size-4",
       },
       {
         variant: "outline",
         color: "neutral",
+        // Botón secundario (Cancelar, Volver, Limpiar filtros…): fondo blanco,
+        // borde gris claro de los inputs, texto de 12px en peso medio (como todos los botones) e ícono
+        // de 16px, según la referencia de diseño.
         class:
-          "border-foreground-stroke text-foreground hover:bg-foreground/10 aria-expanded:text-foreground focus-visible:ring-foreground/20",
+          "border-input bg-background text-foreground hover:bg-muted-22 aria-expanded:text-foreground focus-visible:ring-foreground/20 [&_svg:not([class*='size-'])]:size-4",
       },
       {
         variant: "outline",

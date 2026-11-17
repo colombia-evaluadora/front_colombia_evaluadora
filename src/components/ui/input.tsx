@@ -11,22 +11,22 @@ const inputVariants = cva(
   // pero dejaba al input más grande que el resto de los controles (las opciones
   // de Select/Combobox son `text-sm` siempre) en viewports angostos. La app se
   // usa en escritorio, así que pesa más la consistencia.
-  "w-full min-w-0 bg-transparent text-sm transition-[color,border-color,background-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+  "w-full min-w-0 bg-transparent text-sm transition-[color,border-color,background-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-muted-22 disabled:text-muted-foreground data-disabled:bg-muted-22 data-disabled:text-muted-foreground",
   {
     variants: {
       variant: {
         standard:
           "rounded-none border border-transparent border-b-input px-0 py-2 focus-visible:border-b-ring aria-invalid:border-b-red dark:aria-invalid:border-b-red/50",
         outlined:
-          "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20",
+          "rounded-sm border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20",
         filled:
-          "rounded-t-md border-0 border-b border-b-input bg-muted/40 px-3 pt-6 pb-2 hover:bg-muted/55 focus-visible:border-b-ring focus-visible:bg-muted/50 aria-invalid:border-b-red",
+          "rounded-t-sm border-0 border-b border-b-input bg-muted/40 px-3 pt-6 pb-2 hover:bg-muted/55 focus-visible:border-b-ring focus-visible:bg-muted/50 aria-invalid:border-b-red",
       },
       // `size` controla la altura. Vive en una variante aparte (no en el
       // `variant`) para que `Input` y `Select` queden alineados: ambos
       // comparten `inputVariants`, así que `sm` se hereda gratis al trigger.
       size: {
-        default: "h-11",
+        default: "h-10",
         sm: "h-10",
       },
     },

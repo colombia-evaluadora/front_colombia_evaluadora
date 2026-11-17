@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { FileUpload, FileUploadDropzone } from "@/components/ui/file-upload"
-import { FileTextIcon, ImageIcon, WarningCircleIcon } from "@/components/ui/icons"
+import { FileTextIcon, ImageIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import {
   OBSERVACION_EVIDENCIA_ACCEPT,
@@ -141,8 +141,8 @@ export function DialogSubirEvidencia({
           </p>
         )}
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>Cancelar</DialogClose>
+        <DialogFooter>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button
             size="sm"
             type="button"
@@ -220,8 +220,8 @@ export function DialogEnlaceEvidencia({ open, onOpenChange, inicial, onConfirmar
           </div>
         )}
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>Cancelar</DialogClose>
+        <DialogFooter>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" color="primary" disabled={!valido} onClick={() => onConfirmar(limpio)}>
             Agregar
           </Button>

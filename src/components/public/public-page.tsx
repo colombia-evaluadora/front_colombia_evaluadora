@@ -94,6 +94,8 @@ interface PublicBandProps {
   title: string
   subtitle?: string
   breadcrumb: string[]
+  /** Puntos de confianza bajo el título (los del panel de `PublicSplit`). */
+  points?: string[]
   /** Acciones de la vista: van arriba de la tarjeta, nunca al pie (Guía UX §3). */
   actions?: ReactNode
   width?: "md" | "lg" | "xl"
@@ -101,7 +103,7 @@ interface PublicBandProps {
 }
 
 /** Páginas anchas (Guía UX §22): franja de color con ruta y título, y tarjeta flotante. */
-export function PublicBand({ icon: Icon, title, subtitle, breadcrumb, actions, width = "lg", children }: PublicBandProps) {
+export function PublicBand({ icon: Icon, title, subtitle, breadcrumb, points, actions, width = "lg", children }: PublicBandProps) {
   const max = { md: "max-w-3xl", lg: "max-w-4xl", xl: "max-w-5xl" }[width]
   return (
     <div className="flex-1 pb-10">
@@ -118,6 +120,16 @@ export function PublicBand({ icon: Icon, title, subtitle, breadcrumb, actions, w
               {subtitle && <p className="text-sm opacity-90">{subtitle}</p>}
             </div>
           </div>
+          {points && (
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {points.map((p) => (
+                <li key={p} className="flex items-center gap-2">
+                  <CheckCircleIcon className="size-4 shrink-0" aria-hidden="true" />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
       <div className={cn("relative mx-auto -mt-16 px-4", max)}>

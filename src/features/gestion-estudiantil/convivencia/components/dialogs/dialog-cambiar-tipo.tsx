@@ -129,7 +129,7 @@ function DialogCambiarTipoForm({ caso, detalle, onClose }: Props & { detalle: Ca
         )}
         <TextoLargo id="tipo-motivo" label="Motivo" required max={1000} value={motivo} onChange={setMotivo} error={ver.motivo} />
         {nuevoCodigo && (
-          <Alert>
+          <Alert variant="info">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>
               Se agregan los pasos obligatorios del nuevo tipo: {PASOS_POR_TIPO[nuevoCodigo]}.

@@ -14,7 +14,7 @@ import {
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
-import { ControlPointIcon } from "@/components/ui/icons"
+import { ControlPointIcon, FunnelXIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
@@ -158,6 +158,7 @@ function AreasOficialesPageContent() {
       <span className="flex flex-col items-center gap-3">
         No hay áreas oficiales que coincidan con la búsqueda y los filtros aplicados.
         <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
+          <FunnelXIcon data-icon="inline-start" />
           Limpiar filtros
         </Button>
       </span>

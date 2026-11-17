@@ -355,6 +355,9 @@ const UNAUTHENTICATED_ENDPOINTS = [
   "/eval-col/health",
   // Credencial del equipo (D-3): la autenticación es el token del equipo en
   // el body; un Bearer vencido haría que el gateway rechazara el canje.
+  // Consultar inscripción pública (sso V426): filas `public_end` sin sesión; el gate es el
+  // código que llega al correo del acudiente. Un Bearer de otra sesión no aporta nada.
+  "/eval-col/public/service",
   "/auth/device/refresh",
   "/auth/device/wipe-ack",
 ]
@@ -406,6 +409,8 @@ const PUBLIC_ENDPOINTS = [
   "/sso-admin/forgotUsername",
   "/sso-admin/activateAccount",
   "/sso-admin/activationTokenStatus",
+  // Consultar inscripción pública: un 401/403 ahí no es "sesión vencida" (no hay sesión).
+  "/eval-col/public/service",
 ]
 
 // Sondas: se llaman para *averiguar* un estado y una respuesta de error es

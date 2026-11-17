@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { subirAdjuntos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
+import { comunicadosGestionKey } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 import type { Comunicado, Conversacion, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 
 /**
@@ -205,6 +206,12 @@ export function usePublicarDocumento() {
         .catch(() => undefined)
       return { canal, fallidos }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+    // Además del chat, el listado "Comunicados institucionales": sin esto el nuevo no aparecía hasta
+    // recargar (staleTime de 60 s), como sí lo hacen Anular y Cancelar.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
+        queryClient.invalidateQueries({ queryKey: comunicadosGestionKey }),
+      ]),
   })
 }

@@ -35,12 +35,11 @@ export function VerificarPage() {
       >
         <Field variant="outlined">
           <FieldLabel htmlFor="codigo-verificacion">
-            <span aria-hidden="true" className="text-red">*</span> Código de verificación
+            Código de verificación <span aria-hidden="true" data-required-mark="">*</span>
           </FieldLabel>
           <Input
             id="codigo-verificacion"
             required
-            className="h-12"
             value={codigo}
             onChange={(e) => setCodigo(e.target.value)}
             placeholder="K7QM-4XPA-9TRB"

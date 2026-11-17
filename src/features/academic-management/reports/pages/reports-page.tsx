@@ -235,7 +235,7 @@ function GrupoTabContent({
           <FieldLabel htmlFor={`buscar-estudiante-${grupoId}`}>
             Buscar estudiante por nombre y documento
           </FieldLabel>
-          <InputGroup className="h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+          <InputGroup className="h-10 w-full rounded-sm border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
             <InputGroupAddon align="inline-start" className="ml-2">
               <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
             </InputGroupAddon>

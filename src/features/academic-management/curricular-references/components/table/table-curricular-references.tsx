@@ -100,7 +100,7 @@ export function CurricularReferencesDataTable() {
               onClick={openCreateDialog}
               disabled={soloEnLinea.disabled}
               title={soloEnLinea.tooltip ?? undefined}
-              className="text-sm [&_svg:not([class*='size-'])]:size-4"
+              className="[&_svg:not([class*='size-'])]:size-4"
             >
               <ControlPointIcon data-icon="inline-start" />
               Nuevo referente

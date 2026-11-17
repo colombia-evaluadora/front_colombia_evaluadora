@@ -29,7 +29,7 @@ export function DatosSiuceFields({ idPrefix, value: v, onChange, required, error
     <div className="flex flex-col gap-4">
       <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.tiposDano) || undefined}>
         <FieldLabel id={`${idPrefix}-dano`}>Tipo de daño{req}</FieldLabel>
-        <div role="group" aria-labelledby={`${idPrefix}-dano`} className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 px-3 pt-3">
+        <div role="group" aria-labelledby={`${idPrefix}-dano`} className="flex min-h-10 flex-wrap items-center gap-x-6 gap-y-2 px-3 pt-3">
           {danos.map((d) => (
             <label key={d.value} className="flex items-center gap-2 text-sm">
               <Checkbox

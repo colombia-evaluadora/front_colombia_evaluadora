@@ -18,6 +18,7 @@ interface ConfirmDiscardDialogProps {
   title?: string
   description?: string
   confirmLabel?: string
+  cancelLabel?: string
 }
 
 // Confirmación reusada por los diálogos de alta/edición del sistema al
@@ -29,6 +30,7 @@ export function ConfirmDiscardDialog({
   title = "¿Estás seguro de salir?",
   description = "Perderás los cambios no guardados.",
   confirmLabel = "Si, salir",
+  cancelLabel = "Continuar editando",
 }: ConfirmDiscardDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -44,7 +46,7 @@ export function ConfirmDiscardDialog({
           </AlertDialogAction>
           <AlertDialogCancel variant="fill" color="neutral">
             <XIcon data-icon="inline-start" />
-            Continuar editando
+            {cancelLabel}
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>

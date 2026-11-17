@@ -9,6 +9,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useGuardarAjustesChat } from "@/features/comunicaciones/chat/api/mutations/use-ajustes-chat"
 import { useAjustesChatQuery } from "@/features/comunicaciones/chat/api/query/use-ajustes-chat-query"
 import type { AjustesChat } from "@/features/comunicaciones/chat/api/types"
+import { SECCION_DESCRIPCION, SECCION_TITULO } from "@/features/notificaciones/components/preferencias-seccion"
 
 const OPCIONES: Array<{ clave: keyof AjustesChat; titulo: string; descripcion: string }> = [
   {
@@ -46,11 +47,11 @@ export function AjustesChatSeccion({ disabled }: { disabled?: boolean }) {
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby={`${id}-titulo`}>
-      <div>
-        <h2 id={`${id}-titulo`} className="text-base font-semibold">
+      <div className="flex flex-col gap-0.5">
+        <h2 id={`${id}-titulo`} className={SECCION_TITULO}>
           Sonido y confirmación de lectura
         </h2>
-        <p className="text-sm text-muted-foreground">Se aplican a todos tus avisos y conversaciones.</p>
+        <p className={SECCION_DESCRIPCION}>Se aplican a todos tus avisos y conversaciones.</p>
       </div>
       {ajustes.isPending ? (
         <Skeleton className="h-24 w-full" />

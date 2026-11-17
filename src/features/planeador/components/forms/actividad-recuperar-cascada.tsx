@@ -209,7 +209,7 @@ export function ActividadRecuperarCascada({
         }
       >
         <span className="min-w-0 truncate">{nombreSeleccionado ?? "Seleccione"}</span>
-        <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
+        <CaretDownIcon className="text-muted-foreground size-5 shrink-0" />
       </PopoverTrigger>
 
       <PopoverContent align="start" className="w-auto flex-row gap-0 p-0">

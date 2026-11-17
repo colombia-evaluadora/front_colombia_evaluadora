@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
@@ -148,6 +148,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" onClick={guardar} disabled={guardando}>
@@ -257,7 +258,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
                 onChange={(c) => setV({ ...v, codigo: c, mediacion: false })}
               />
               {codigo && (
-                <div className="mt-2 flex h-11 items-center gap-3 text-sm">
+                <div className="mt-2 flex h-10 items-center gap-3 text-sm">
                   <span className="flex items-center gap-1.5">
                     Tipo:
                     <Badge variant="soft" color={colorDeTipo(codigo.tipo_nombre)}>
@@ -326,7 +327,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
           </div>
 
           {esGrave && (
-            <Alert>
+            <Alert variant="info">
               <InfoIcon aria-hidden="true" />
               <AlertDescription>
                 Al guardar se crea un caso de convivencia {codigo?.situacion_nombre} con{" "}

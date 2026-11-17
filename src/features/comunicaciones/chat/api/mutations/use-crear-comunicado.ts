@@ -129,6 +129,8 @@ export function useCrearComunicado() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
         queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+        // Listado "Comunicados institucionales" (literal para no importar en ciclo, como abajo).
+        queryClient.invalidateQueries({ queryKey: ["comunicados-gestion"] }),
       ]),
   })
 }
@@ -160,6 +162,8 @@ export function useEditarComunicado(conversacionId: number) {
         queryClient.invalidateQueries({ queryKey: chatKeys.recepcion(conversacionId) }),
         // Guardar desde el borrador de la edición lo elimina (comms-service, ?borrador).
         queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
+        // Listado "Comunicados institucionales" (literal para no importar en ciclo, como abajo).
+        queryClient.invalidateQueries({ queryKey: ["comunicados-gestion"] }),
       ])
     },
   })

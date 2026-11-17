@@ -84,7 +84,10 @@ export function Marca({
   )
 }
 
-const ACTIONS_SIZE = 6 * 32 + 5 * 4 + 16
+const TOOLTIP_SIN_AUTORIZACION =
+  "El acudiente no ha autorizado el tratamiento de datos: solo se ven número, grado y opciones."
+
+const ACTIONS_SIZE =6 * 32 + 5 * 4 + 16
 
 export function createInscripcionesColumns({
   sorteoEjecutado,
@@ -143,7 +146,16 @@ export function createInscripcionesColumns({
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex flex-col items-start gap-1">
-          <span>{row.original.aspirante}</span>
+          <span>{row.original.sinAutorizacion ? "—" : row.original.aspirante}</span>
+          {/* C.3.INS.1d (Regla 81): sin autorización el back oculta lo sensible. */}
+          {row.original.sinAutorizacion && (
+            <Tooltip>
+              <TooltipTrigger render={<span />}>
+                <Marca label="Sin autorización" color="muted" punto />
+              </TooltipTrigger>
+              <TooltipContent>{TOOLTIP_SIN_AUTORIZACION}</TooltipContent>
+            </Tooltip>
+          )}
           {row.original.documentosIncompletos && (
             <Tooltip>
               <TooltipTrigger render={<span />}>
@@ -188,7 +200,12 @@ export function createInscripcionesColumns({
       meta: { label: "Situación de edad" },
       header: "Situación de edad",
       enableSorting: false,
-      cell: ({ row }) => <Marca {...SITUACION_EDAD_UI[row.original.situacionEdad]} />,
+      cell: ({ row }) =>
+        row.original.sinAutorizacion ? (
+          <span className="text-muted-foreground">—</span>
+        ) : (
+          <Marca {...SITUACION_EDAD_UI[row.original.situacionEdad]} />
+        ),
     },
     {
       id: "actions",
