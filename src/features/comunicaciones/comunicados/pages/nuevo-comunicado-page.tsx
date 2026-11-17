@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useRef, useState } from "react"
 import { addDays, format } from "date-fns"
 import { useNavigate } from "@tanstack/react-router"
 
@@ -12,26 +12,23 @@ import {
 } from "@/components/layout/table-screen"
 import { DatePicker } from "@/components/date-picker"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
-import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
-  CaretDownIcon,
-  CaretRightIcon,
   ControlPointIcon,
   EyeIcon,
   InfoIcon,
   WarningCircleIcon,
-  XIcon,
 } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { paths } from "@/config/paths"
+import { minLength, required } from "@/lib/forms/messages"
 import { textoFallidos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
-import { validarAdjunto } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import {
   CONJUNTO_VACIO,
   TIPOS,
@@ -42,13 +39,19 @@ import {
   type Conjunto,
   type PrevisualizacionDocumento,
 } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
+import { AdjuntosCarga } from "@/features/comunicaciones/comunicados/components/adjuntos-carga"
 import { ConjuntoDestinatarios, Etiqueta } from "@/features/comunicaciones/comunicados/components/conjunto-destinatarios"
+import { Panel } from "@/features/comunicaciones/comunicados/components/panel-plegable"
 import {
-  faltantesConjunto,
+  enfocarPrimerError,
+  erroresConjunto,
+  ERRORES_MENSAJE,
+  numeroDeCampo,
   resumenConjunto,
   sinPeriodos,
   textoFiltros,
   textoPeriodo,
+  type ErroresCampos,
 } from "@/features/comunicaciones/comunicados/lib/conjunto"
 
 const MAX_TITULO = 100
@@ -56,8 +59,14 @@ const MIN_MENSAJE = 10
 const MAX_MENSAJE = 1000
 const MAX_DIAS_PROGRAMADO = 90
 const MAX_CONJUNTOS = 10
-const MAX_ADJUNTOS = 5
-const MAX_ADJUNTO_MB = 10
+
+/** Ids de los controles de Contenido y Publicación: claves de sus errores (y destino del foco). */
+const CAMPO = {
+  titulo: "comunicado-titulo",
+  mensaje: "comunicado-mensaje",
+  fecha: "comunicado-fecha",
+  visibleHasta: "comunicado-visible-hasta",
+} as const
 
 /**
  * Nuevo comunicado (informe de Comunicaciones §3.1; prototipo M.1.AGR.1 a M.1.AGR.5): una tarjeta
@@ -75,6 +84,7 @@ export function NuevoComunicadoPage() {
 
 function NuevoComunicadoContent() {
   const navigate = useNavigate()
+  const { notify } = useNotify()
   const [conjuntos, setConjuntos] = useState<Conjunto[]>([CONJUNTO_VACIO])
   // Opciones cargadas de cada conjunto: dan las etiquetas de la previsualización y el bloqueo de M.1.AGR.5.
   const datos = useRef<(Cascada | undefined)[]>([])
@@ -83,13 +93,11 @@ function NuevoComunicadoContent() {
   const [titulo, setTitulo] = useState("")
   const [mensaje, setMensaje] = useState("")
   const [archivos, setArchivos] = useState<File[]>([])
-  const [rechazo, setRechazo] = useState<string | null>(null)
   const [publicacion, setPublicacion] = useState<"INMEDIATA" | "PROGRAMADA">("INMEDIATA")
   const [fecha, setFecha] = useState<Date | undefined>()
   const [visibleHasta, setVisibleHasta] = useState<Date | undefined>()
   const [intentado, setIntentado] = useState(false)
   const [descartar, setDescartar] = useState(false)
-  const selector = useRef<HTMLInputElement>(null)
   const previsualizar = usePrevisualizarDocumento()
   const publicar = usePublicarDocumento()
 
@@ -97,18 +105,20 @@ function NuevoComunicadoContent() {
   const sucio = !!titulo || !!mensaje || archivos.length > 0 || conjuntos.some((c) => c.tipos.length > 0 || !!c.sede)
   const bloqueado = conjuntos.some((c, i) => sinPeriodos(c, datos.current[i]))
   const mensajeLimpio = mensaje.trim()
-  const faltantes = [
-    ...conjuntos.flatMap((c, i) => faltantesConjunto(c).map((f) => `Conjunto ${i + 1}: falta ${f}.`)),
-    ...(titulo.trim() ? [] : ["Falta el título."]),
-    ...(mensajeLimpio.length < MIN_MENSAJE ? [`El mensaje debe tener al menos ${MIN_MENSAJE} caracteres.`] : []),
-    ...(publicacion === "PROGRAMADA" && !fecha ? ["Falta la fecha y hora programada."] : []),
-    ...(publicacion === "PROGRAMADA" && fecha && fecha <= new Date()
-      ? ["La fecha y hora programada debe ser posterior a la actual."]
-      : []),
-    ...(visibleHasta && format(visibleHasta, "yyyy-MM-dd") <= format(fecha ?? new Date(), "yyyy-MM-dd")
-      ? ["Visible hasta debe ser posterior a la fecha de publicación."]
-      : []),
-  ]
+  // Errores por id de control y en orden visual (conjuntos, Contenido, Publicación): el primero es
+  // el que se enfoca. Se recalculan en cada render, así se van apagando al corregir.
+  const errores: ErroresCampos = conjuntos.reduce<ErroresCampos>((acc, c, i) => ({ ...acc, ...erroresConjunto(c, i + 1) }), {})
+  if (!titulo.trim()) errores[CAMPO.titulo] = required("El título")
+  if (mensajeLimpio.length < MIN_MENSAJE) errores[CAMPO.mensaje] = mensajeLimpio ? minLength(MIN_MENSAJE, "El mensaje") : required("El mensaje")
+  if (publicacion === "PROGRAMADA" && !fecha) errores[CAMPO.fecha] = required("La fecha y hora programada", { femenino: true })
+  else if (publicacion === "PROGRAMADA" && fecha && fecha <= new Date()) {
+    errores[CAMPO.fecha] = "La fecha y hora programada debe ser posterior a la actual."
+  }
+  if (visibleHasta && format(visibleHasta, "yyyy-MM-dd") <= format(fecha ?? new Date(), "yyyy-MM-dd")) {
+    errores[CAMPO.visibleHasta] = "Visible hasta debe ser posterior a la fecha de publicación."
+  }
+  // Como en planeador: los campos se marcan en rojo recién tras el primer intento.
+  const visibles: ErroresCampos = intentado ? errores : {}
 
   const entrada = (): ComunicadoDocumentoInput => ({
     titulo: titulo.trim(),
@@ -120,18 +130,6 @@ function NuevoComunicadoContent() {
     archivos,
   })
 
-  const agregarArchivos = (nuevos: File[]) => {
-    setRechazo(null)
-    const aceptados = [...archivos]
-    for (const f of nuevos) {
-      const error = validarAdjunto(f, MAX_ADJUNTO_MB)
-      if (error) setRechazo(`${f.name}: ${error}`)
-      else if (aceptados.length >= MAX_ADJUNTOS) setRechazo(`Puede adjuntar máximo ${MAX_ADJUNTOS} archivos.`)
-      else if (!aceptados.some((x) => x.name === f.name && x.size === f.size)) aceptados.push(f)
-    }
-    setArchivos(aceptados)
-  }
-
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -140,16 +138,7 @@ function NuevoComunicadoContent() {
 
       <TableScreenBody className="rounded-b-none border-b-0" contentClassName="space-y-3">
           <ErrorNoticeBanner error={previsualizar.isError ? previsualizar.error : null} />
-          {intentado && faltantes.length > 0 && (
-            <div role="alert" className="flex items-start gap-2 rounded-md border border-red-stroke bg-red-22 px-3 py-2 text-sm">
-              <WarningCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-red" />
-              <ul className="min-w-0 list-inside list-disc">
-                {faltantes.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <NoticeOutlet />
 
           <div className="overflow-hidden rounded-lg border">
             {conjuntos.map((c, i) => (
@@ -181,6 +170,7 @@ function NuevoComunicadoContent() {
                   numero={i + 1}
                   conjunto={c}
                   onChange={(nuevo) => setConjuntos((prev) => prev.map((x, j) => (j === i ? nuevo : x)))}
+                  errores={visibles}
                   onDatos={(d) => {
                     datos.current[i] = d
                     refrescar((n) => n + 1)
@@ -191,87 +181,42 @@ function NuevoComunicadoContent() {
 
             <Panel titulo="Contenido">
               <div className="space-y-4">
-                <Field variant="outlined" data-invalid={intentado && !titulo.trim() ? true : undefined}>
-                  <FieldLabel htmlFor="comunicado-titulo">
+                <Field variant="outlined" data-invalid={visibles[CAMPO.titulo] ? true : undefined}>
+                  <FieldLabel htmlFor={CAMPO.titulo}>
                     Título<span className="text-red"> *</span>
                   </FieldLabel>
                   <Input
-                    id="comunicado-titulo"
+                    id={CAMPO.titulo}
                     placeholder="Agregar"
                     value={titulo}
                     maxLength={MAX_TITULO}
-                    aria-invalid={intentado && !titulo.trim()}
+                    aria-invalid={!!visibles[CAMPO.titulo]}
                     onChange={(e) => setTitulo(e.target.value)}
                   />
                   <CharacterCounter value={titulo} max={MAX_TITULO} />
+                  {visibles[CAMPO.titulo] && <FieldError>{visibles[CAMPO.titulo]}</FieldError>}
                 </Field>
                 <Field
                   variant="outlined"
-                  data-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE ? true : undefined}
+                  data-invalid={visibles[CAMPO.mensaje] ? true : undefined}
                 >
-                  <FieldLabel htmlFor="comunicado-mensaje">
+                  <FieldLabel htmlFor={CAMPO.mensaje}>
                     Mensaje<span className="text-red"> *</span>
                   </FieldLabel>
                   <Textarea
-                    id="comunicado-mensaje"
+                    id={CAMPO.mensaje}
                     placeholder="Agregar"
                     className={TEXTAREA_OUTLINED}
                     value={mensaje}
                     rows={4}
                     maxLength={MAX_MENSAJE}
-                    aria-invalid={intentado && mensajeLimpio.length < MIN_MENSAJE}
+                    aria-invalid={!!visibles[CAMPO.mensaje]}
                     onChange={(e) => setMensaje(e.target.value)}
                   />
                   <CharacterCounter value={mensaje} max={MAX_MENSAJE} />
+                  {visibles[CAMPO.mensaje] && <FieldError>{visibles[CAMPO.mensaje]}</FieldError>}
                 </Field>
-                <div className="space-y-2">
-                  <Etiqueta>Adjuntos</Etiqueta>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={selector}
-                      type="file"
-                      multiple
-                      hidden
-                      onChange={(e) => {
-                        agregarArchivos(Array.from(e.target.files ?? []))
-                        e.target.value = ""
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      color="neutral"
-                      disabled={archivos.length >= MAX_ADJUNTOS || publicar.isPending}
-                      onClick={() => selector.current?.click()}
-                    >
-                      Cargar archivos
-                    </Button>
-                    {archivos.map((f) => (
-                      <span
-                        key={`${f.name}-${f.size}`}
-                        className="inline-flex max-w-full items-center gap-1 rounded border px-2 py-0.5 text-xs"
-                      >
-                        <span className="min-w-0 truncate">{f.name}</span>
-                        <button
-                          type="button"
-                          aria-label={`Quitar ${f.name}`}
-                          className="rounded hover:bg-muted"
-                          onClick={() => setArchivos((prev) => prev.filter((x) => x !== f))}
-                        >
-                          <XIcon className="size-3.5" />
-                        </button>
-                      </span>
-                    ))}
-                    <span className="text-sm text-muted-foreground">
-                      {archivos.length} de {MAX_ADJUNTOS} · {MAX_ADJUNTO_MB} MB cada uno
-                    </span>
-                  </div>
-                  {rechazo && (
-                    <p role="alert" className="text-xs text-red">
-                      {rechazo}
-                    </p>
-                  )}
-                </div>
+                <AdjuntosCarga archivos={archivos} onArchivos={setArchivos} deshabilitado={publicar.isPending} />
               </div>
             </Panel>
 
@@ -301,28 +246,36 @@ function NuevoComunicadoContent() {
                     ))}
                   </div>
                 </div>
-                <Field variant="outlined" className="min-w-0">
-                  <FieldLabel htmlFor="comunicado-fecha">
+                <Field variant="outlined" className="min-w-0" data-invalid={visibles[CAMPO.fecha] ? true : undefined}>
+                  <FieldLabel htmlFor={CAMPO.fecha}>
                     Fecha y hora<span className="text-red"> *</span>
                   </FieldLabel>
                   <DatePicker
-                    id="comunicado-fecha"
+                    id={CAMPO.fecha}
                     mode="datetime"
+                    aria-invalid={!!visibles[CAMPO.fecha]}
                     value={fecha}
                     onChange={setFecha}
                     disabled={publicacion !== "PROGRAMADA"}
                     minDate={new Date()}
                     maxDate={addDays(new Date(), MAX_DIAS_PROGRAMADO)}
                   />
+                  {visibles[CAMPO.fecha] && <FieldError>{visibles[CAMPO.fecha]}</FieldError>}
                 </Field>
-                <Field variant="outlined" className="min-w-0">
-                  <FieldLabel htmlFor="comunicado-visible-hasta">Visible hasta</FieldLabel>
+                <Field
+                  variant="outlined"
+                  className="min-w-0"
+                  data-invalid={visibles[CAMPO.visibleHasta] ? true : undefined}
+                >
+                  <FieldLabel htmlFor={CAMPO.visibleHasta}>Visible hasta</FieldLabel>
                   <DatePicker
-                    id="comunicado-visible-hasta"
+                    id={CAMPO.visibleHasta}
+                    aria-invalid={!!visibles[CAMPO.visibleHasta]}
                     value={visibleHasta}
                     onChange={setVisibleHasta}
                     minDate={addDays(fecha ?? new Date(), 1)}
                   />
+                  {visibles[CAMPO.visibleHasta] && <FieldError>{visibles[CAMPO.visibleHasta]}</FieldError>}
                 </Field>
               </div>
             </Panel>
@@ -358,7 +311,16 @@ function NuevoComunicadoContent() {
             aria-busy={previsualizar.isPending}
             onClick={() => {
               setIntentado(true)
-              if (faltantes.length > 0) return
+              const primero = Object.keys(errores)[0]
+              if (primero) {
+                // Aviso único arriba; el detalle va en cada campo. Si el primer error está en un
+                // conjunto plegado, se abre ese panel antes de llevar el foco.
+                notify(ERRORES_MENSAJE, { variant: "error" })
+                const numero = numeroDeCampo(primero)
+                if (numero != null) setAbierto(numero - 1)
+                enfocarPrimerError(errores)
+                return
+              }
               previsualizar.mutate(entrada())
             }}
           >
@@ -418,44 +380,6 @@ function NuevoComunicadoContent() {
   )
 }
 
-/** Panel plegable con encabezado gris y flecha, como los del prototipo. Sin `onAlternar` se pliega solo. */
-function Panel({
-  titulo,
-  abierto,
-  onAlternar,
-  accion,
-  children,
-}: {
-  titulo: string
-  abierto?: boolean
-  onAlternar?: () => void
-  accion?: ReactNode
-  children: ReactNode
-}) {
-  const [propio, setPropio] = useState(true)
-  const visible = onAlternar ? !!abierto : propio
-  return (
-    <section className="border-b last:border-b-0">
-      <div className="flex items-center gap-2 bg-muted/40 px-3 py-2">
-        <button
-          type="button"
-          aria-expanded={visible}
-          className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left text-sm"
-          onClick={() => (onAlternar ? onAlternar() : setPropio((v) => !v))}
-        >
-          {visible ? <CaretDownIcon aria-hidden className="size-4 shrink-0" /> : <CaretRightIcon aria-hidden className="size-4 shrink-0" />}
-          <span className="min-w-0 break-words">{titulo}</span>
-        </button>
-        {accion}
-      </div>
-      {/* Plegado se oculta, no se desmonta: el conjunto conserva sus opciones cargadas. */}
-      <div className="border-t p-4" hidden={!visible}>
-        {children}
-      </div>
-    </section>
-  )
-}
-
 /** Previsualizar y publicar (prototipo M.1.AGR.2). */
 function PrevisualizarDialog({
   datos: d,
@@ -490,7 +414,8 @@ function PrevisualizarDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !pendiente && onVolver()}>
-      <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-xl">
+      {/* Sin X: el pie ya tiene Volver; Escape cierra salvo mientras se publica (onOpenChange). */}
+      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-xl">
         {/* Cabecera y pie fijos: solo el cuerpo hace scroll. */}
         <DialogHeader className="shrink-0">
           <DialogTitle>Previsualizar — {titulo}</DialogTitle>

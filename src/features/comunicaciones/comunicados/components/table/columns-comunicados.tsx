@@ -2,7 +2,7 @@
 
 import { format } from "date-fns"
 import { Link, useNavigate } from "@tanstack/react-router"
-import type { ColumnDef } from "@tanstack/react-table"
+import type { CellContext, ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DotsThreeVerticalIcon, EyeIcon, PencilIcon, ProhibitIcon, XCircleIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import { cn } from "@/lib/utils"
 import { EstadoComunicadoBadge } from "@/features/comunicaciones/chat/components/comunicado-panel"
 import type { ComunicadoGestion } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 import { AccionesFila, type AccionFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
@@ -98,6 +99,63 @@ export function createComunicadosColumns({
       cell: ({ row }) => <AccionesComunicado c={row.original} onDialogo={onDialogo} />,
     },
   ]
+}
+
+/**
+ * Columnas de Recibidos y Anteriores (M.1.REC.1): las de Publicados que aplican a quien recibe (sin
+ * Destinatarios, que nunca se muestra) y el punto de no leído junto al título. Única acción: Ver detalle
+ * (abrirlo lo marca leído en comms-service).
+ */
+export function createBandejaColumns(): ColumnDef<ComunicadoGestion>[] {
+  return createComunicadosColumns({ onDialogo: () => undefined })
+    .filter((col) => col.id !== "destinatarios" && col.id !== "actions")
+    .map((col) =>
+      col.id === "titulo"
+        ? {
+            ...col,
+            cell: ({ row }: CellContext<ComunicadoGestion, unknown>) => (
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  role={row.original.leido ? undefined : "img"}
+                  aria-label={row.original.leido ? undefined : "No leído"}
+                  className={cn("size-2 shrink-0 rounded-full", !row.original.leido && "bg-primary")}
+                />
+                <span
+                  title={row.original.titulo}
+                  className={cn("block max-w-72 truncate", !row.original.leido && "font-semibold")}
+                >
+                  {row.original.titulo}
+                </span>
+              </span>
+            ),
+          }
+        : col,
+    )
+    .concat({
+      id: "actions",
+      size: anchoAccionesFila(1),
+      enableHiding: false,
+      enableSorting: false,
+      header: () => <span className="sr-only">Acciones</span>,
+      cell: ({ row }) => <AccionesBandeja c={row.original} />,
+    })
+}
+
+function AccionesBandeja({ c }: { c: ComunicadoGestion }) {
+  const navigate = useNavigate()
+  return (
+    <AccionesFila
+      etiqueta={`Opciones de ${c.titulo}`}
+      acciones={[
+        {
+          id: "ver",
+          label: "Ver detalle",
+          icon: <EyeIcon />,
+          onSelect: () => navigate({ to: paths.app.comunicacionesComunicadoDetalle.getHref(c.id) }),
+        },
+      ]}
+    />
+  )
 }
 
 /**
