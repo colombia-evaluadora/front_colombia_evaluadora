@@ -42,6 +42,7 @@ const MENU = {
   inclusion: "/app/gestion-estudiantil/inclusion-orientacion",
   catalogoAnotaciones: "/app/gestion-estudiantil/catalogo-anotaciones",
   chat: "/app/comunicaciones/chat",
+  comunicadosInstitucionales: "/app/comunicaciones/comunicados",
   procesos: "/app/comunicaciones/procesos",
   comunicadosTerritorial: "/app/comunicaciones/comunicados-territorial",
 } as const
@@ -207,10 +208,10 @@ const ROUTE_OWNERS: Record<string, Owner> = {
 
   "/app/comunicaciones/chat": MENU.chat,
   "/app/comunicaciones/comunicados-territorial": MENU.comunicadosTerritorial,
-  "/app/comunicaciones/comunicados": MENU.chat,
-  "/app/comunicaciones/comunicados/detalle/$id": MENU.chat,
-  "/app/comunicaciones/comunicados/editar/$id": MENU.chat,
-  "/app/comunicaciones/comunicados/nuevo": MENU.chat,
+  "/app/comunicaciones/comunicados": MENU.comunicadosInstitucionales,
+  "/app/comunicaciones/comunicados/detalle/$id": MENU.comunicadosInstitucionales,
+  "/app/comunicaciones/comunicados/editar/$id": MENU.comunicadosInstitucionales,
+  "/app/comunicaciones/comunicados/nuevo": MENU.comunicadosInstitucionales,
   "/app/comunicaciones/procesos": MENU.procesos,
   "/app/comunicaciones/procesos/detalle/$id": MENU.procesos,
   "/app/comunicaciones/espacios": MENU.chat,
