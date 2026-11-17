@@ -44,6 +44,7 @@ import {
   type OpcionConsulta,
 } from "@/features/publico/consultar/datos-demo"
 import { ESTADO_INSCRIPCION } from "@/features/publico/consultar/ui-mappings"
+import { env } from "@/config/env"
 
 const lugar = (o: OpcionConsulta) => `${o.establecimiento} · ${o.sede} · ${o.jornada}`
 
@@ -102,8 +103,16 @@ export function ResultadoInscripcion({
   const admitidas = insc.opciones.filter((o) => o.estado === "ADMITIDA")
   const abierta = insc.estado !== "ANULADA"
   const enPreparacion = () => toast.info("Disponible cuando se conecte el servicio de inscripción.")
+  // Elegir, responder la propuesta, anular y confirmar la notificación todavía no
+  // tienen servicio: con el backend real no se simula el cambio (la familia creería
+  // que quedó hecho), solo se avisa. Con mocks se mantiene la vista previa.
+  const vistaPrevia = env.ENABLE_API_MOCKING
 
   function quedarmeCon(opcion: OpcionConsulta) {
+    if (!vistaPrevia) {
+      setElegir(null)
+      return enPreparacion()
+    }
     actualizar({
       estado: "ADMITIDA",
       opciones: insc.opciones.map((o) =>
@@ -114,6 +123,7 @@ export function ResultadoInscripcion({
   }
 
   function responderPropuesta(acepta: boolean) {
+    if (!vistaPrevia) return enPreparacion()
     actualizar({
       estado: acepta ? "UBICADO" : "SIN_CUPO",
       opciones: insc.opciones.map((o) =>
@@ -127,6 +137,10 @@ export function ResultadoInscripcion({
   function confirmarAnulacion() {
     setMotivoIntentado(true)
     if (!motivo) return
+    if (!vistaPrevia) {
+      setAnular(false)
+      return enPreparacion()
+    }
     actualizar({
       estado: "ANULADA",
       opciones: insc.opciones.map((o) => ({
@@ -140,7 +154,9 @@ export function ResultadoInscripcion({
   }
 
   const estado = ESTADO_INSCRIPCION[insc.estado]
-  const aviso = avisoDe(insc, notificacionConfirmada, () => setNotificacionConfirmada(true))
+  const aviso = avisoDe(insc, notificacionConfirmada, () =>
+    vistaPrevia ? setNotificacionConfirmada(true) : enPreparacion(),
+  )
   const accionesFila = insc.estado === "POR_ELEGIR" || insc.estado === "UBICACION_PROPUESTA"
 
   return (
@@ -280,7 +296,7 @@ export function ResultadoInscripcion({
       />
 
       <Dialog open={elegir != null} onOpenChange={(open) => !open && setElegir(null)}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <WarningIcon className="text-orange size-5 shrink-0" aria-hidden />
@@ -313,7 +329,7 @@ export function ResultadoInscripcion({
           }
         }}
       >
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <WarningIcon className="text-orange size-5 shrink-0" aria-hidden />
