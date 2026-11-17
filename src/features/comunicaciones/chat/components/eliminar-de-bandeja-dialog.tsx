@@ -40,18 +40,26 @@ export function EliminarDeBandejaDialog({
         </AlertDialogHeader>
         <ErrorNoticeBanner error={error ?? null} />
         <AlertDialogDescription>
-          {conversacion
-            ? `La conversación ${conversacion} dejará de verse en su bandeja.`
-            : "El mensaje dejará de verse en su bandeja."}
-          <br />
-          No se elimina la copia de los otros participantes ni el registro conservado, y no cambia la lectura
-          de los demás.
+          {/* M.2.RET.2: lo que se oculta va en negrita y la aclaración en la línea siguiente. */}
+          <span className="block">
+            {conversacion ? (
+              <>
+                La conversación <strong className="text-foreground">{conversacion}</strong> dejará de verse en su
+                bandeja.
+              </>
+            ) : (
+              "El mensaje dejará de verse en su bandeja."
+            )}
+          </span>
+          <span className="mt-2 block">
+            No se elimina la copia de los otros participantes ni el registro conservado, y no cambia la lectura
+            de los demás.
+          </span>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={pendiente}>
-            Cancelar
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={pendiente}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={pendiente}
             aria-busy={pendiente}
             onClick={(e) => {
