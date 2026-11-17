@@ -4,6 +4,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { YES_NO_OPTIONS } from "@/features/coverage/matricula/api/ui-mappings"
 import { CaretDownIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useTruncated } from "@/hooks/use-truncated"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/date-picker"
@@ -32,6 +34,46 @@ export const MatriculaSectionDisabledContext = createContext(false)
 
 export const OPEN_SECTION_EVENT = "matricula:abrir-seccion"
 
+/**
+ * Label flotante en UNA línea: los nombres largos ("Lugar expedición documento
+ * acudiente (municipio)") se cortan con "…" en vez de partirse en dos líneas y
+ * montarse sobre el campo de arriba. El * queda siempre visible al final y,
+ * solo si el texto se cortó, al pasar el mouse por el label se ve completo.
+ */
+function EtiquetaFlotante({ id, label, required }: { id: string; label: string; required?: boolean }) {
+  const { ref, isTruncated } = useTruncated<HTMLSpanElement>()
+  return (
+    <Tooltip disabled={!isTruncated}>
+      <TooltipTrigger
+        // El trigger pone su propio data-slot; se conserva el del label, del que
+        // dependen los estilos del campo flotante.
+        data-slot="field-label"
+        render={
+          <FieldLabel
+            htmlFor={id}
+            // w-max: con w-fit el label flex con un hijo truncate tomaba todo el
+            // ancho máximo y su fondo tapaba el borde del campo.
+            className={cn("flex w-max max-w-[calc(100%-1.25rem)] gap-1", isTruncated && "pointer-events-auto cursor-help")}
+          />
+        }
+      >
+        <span ref={ref} className="truncate">
+          {label}
+        </span>
+        {required ? (
+          <span data-required-mark="" className="shrink-0">
+            *
+          </span>
+        ) : null}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Si la sección arranca abierta (por defecto sí); la inscripción pública abre solo la primera de cada paso. */
+export const MatriculaSectionDefaultOpenContext = createContext(true)
+
 // Plegable (prototipo C.1.AGR): el número sale de un contador CSS del
 // contenedor (`[counter-reset:seccion]`), porque las secciones se ocultan
 // según la configuración de campos y la numeración tiene que seguir corrida.
@@ -39,7 +81,7 @@ export const OPEN_SECTION_EVENT = "matricula:abrir-seccion"
 export function MatriculaFormSection({ title, columns = 3, children }: SectionProps) {
   const pending = useContext(MatriculaPendingContext)
   const disabled = useContext(MatriculaSectionDisabledContext)
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(useContext(MatriculaSectionDefaultOpenContext))
   const [pendingCount, setPendingCount] = useState(0)
   const bodyRef = useRef<HTMLDivElement>(null)
   const bodyId = useId()
@@ -69,7 +111,7 @@ export function MatriculaFormSection({ title, columns = 3, children }: SectionPr
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((current) => !current)}
-          className="flex w-full items-center gap-3 bg-muted/40 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+          className="flex w-full items-center gap-3 bg-table-screen-title px-4 py-3 text-left text-sm font-medium text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
         >
           <CaretDownIcon
             aria-hidden
@@ -87,11 +129,13 @@ export function MatriculaFormSection({ title, columns = 3, children }: SectionPr
       <div ref={bodyRef} id={bodyId} hidden={!open} className="border-t border-border px-4 py-4">
         <fieldset
           disabled={disabled}
-          className={
-            columns === 2
-              ? "m-0 min-w-0 border-0 p-0 grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2"
-              : "m-0 min-w-0 border-0 p-0 grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3"
-          }
+          // Con menos campos que columnas, los que hay se reparten todo el ancho
+          // (2 campos → 2 columnas, 1 campo → ancho completo) en vez de dejar un hueco.
+          className={cn(
+            "m-0 grid min-w-0 grid-cols-1 gap-x-4 gap-y-3 border-0 p-0",
+            columns === 2 ? "md:grid-cols-2" : "md:grid-cols-3 md:has-[>:nth-child(2):last-child]:grid-cols-2",
+            "md:has-[>:only-child]:grid-cols-1",
+          )}
         >
           {children}
         </fieldset>
@@ -143,10 +187,7 @@ export function MatriculaTextField({
       className="w-full gap-2"
       data-invalid={invalid ? "true" : undefined}
     >
-      <FieldLabel htmlFor={id}>
-        {label}
-        {required ? <span data-required-mark="">*</span> : ""}
-      </FieldLabel>
+      <EtiquetaFlotante id={id} label={label} required={required} />
       <Input
         id={id}
         name={id}
@@ -244,10 +285,7 @@ export function MatriculaDateField({
       className="w-full gap-2"
       data-invalid={invalid ? "true" : undefined}
     >
-      <FieldLabel htmlFor={id}>
-        {label}
-        {required ? <span data-required-mark="">*</span> : ""}
-      </FieldLabel>
+      <EtiquetaFlotante id={id} label={label} required={required} />
       <DatePicker
         id={id}
         mode="date"
@@ -301,10 +339,7 @@ export function MatriculaSelectField({
       className="w-full gap-2"
       data-invalid={invalid ? "true" : undefined}
     >
-      <FieldLabel htmlFor={id}>
-        {label}
-        {required ? <span data-required-mark="">*</span> : ""}
-      </FieldLabel>
+      <EtiquetaFlotante id={id} label={label} required={required} />
       <ComboboxField
         items={items}
         value={value}

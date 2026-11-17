@@ -27,6 +27,7 @@ import {
   matriculaSearchSchema,
 } from "@/features/coverage/shared/api/schema"
 import { inscripcionReservasSearchSchema } from "@/features/coverage/inscripcion-reservas/api/schema"
+import { inscribirSearchSchema } from "@/features/publico/inscribir/datos-demo"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -388,18 +389,19 @@ const verificarRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/publico/pages/verificar-page"), "VerificarPage"),
 })
 
-const inscribirRoute = createRoute({
+export const inscribirRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: paths.publico.inscribir.path,
   head: publicHead("Inscribir"),
-  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "InscribirProximamentePage"),
+  validateSearch: inscribirSearchSchema,
+  component: lazyRouteComponent(() => import("@/features/publico/inscribir/pages/inscribir-page"), "InscribirPage"),
 })
 
 const consultarInscripcionRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: paths.publico.consultarInscripcion.path,
   head: publicHead("Consultar inscripción"),
-  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "ConsultarProximamentePage"),
+  component: lazyRouteComponent(() => import("@/features/publico/consultar/pages/consultar-inscripcion-page"), "ConsultarInscripcionPage"),
 })
 
 // U.6.COR: enlaces de los correos de cambio de correo (sin sesión).

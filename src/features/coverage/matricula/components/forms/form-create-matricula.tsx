@@ -4,6 +4,7 @@ export {
   MatriculaDateField,
   MatriculaFormSection,
   MatriculaPendingContext,
+  MatriculaSectionDefaultOpenContext,
   MatriculaSelectField,
   MatriculaTextField,
   OPEN_SECTION_EVENT,

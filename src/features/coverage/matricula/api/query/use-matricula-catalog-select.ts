@@ -1,7 +1,9 @@
+import { useContext } from "react"
 import { useQuery } from "@tanstack/react-query"
 
 import { selectCategoryQueryOptions, type SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
+import { CatalogosFijosContext } from "@/features/coverage/matricula/api/query/catalogos-fijos"
 
 export const MATRICULA_CATALOG_CATEGORIA = {
   talento: "TALENTO",
@@ -42,8 +44,15 @@ function toMatriculaCatalog(rows: SelectCategoryRow[]): MatriculaCatalogOption[]
   return rows.map((row) => ({ id: row.pk_lista_valor, nombre: row.nombre }))
 }
 
+/** Con `CatalogosFijosContext` arriba no consulta: usa el catálogo que trae la pantalla. */
 export function useMatriculaCatalogQuery(key: MatriculaCatalogKey) {
-  return useQuery({ ...selectCategoryQueryOptions(MATRICULA_CATALOG_CATEGORIA[key]), select: toMatriculaCatalog })
+  const fijos = useContext(CatalogosFijosContext)
+  const query = useQuery({
+    ...selectCategoryQueryOptions(MATRICULA_CATALOG_CATEGORIA[key]),
+    select: toMatriculaCatalog,
+    enabled: !fijos,
+  })
+  return fijos ? { ...query, data: fijos[key] ?? [] } : query
 }
 
 export interface MatriculaStatusOption {

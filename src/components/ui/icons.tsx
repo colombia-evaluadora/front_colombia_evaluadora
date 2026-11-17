@@ -10,6 +10,7 @@ import {
   MdCheckCircleOutline,
   MdCircle,
   MdErrorOutline,
+  MdHelp,
   MdHelpOutline,
   MdInfoOutline,
   MdLockOutline,
@@ -349,6 +350,7 @@ export const PermMediaOutlinedIcon = makeIcon(MdOutlinePermMedia)
 export const PlusCircleIcon = makeIcon(MdAddCircleOutline)
 export const PlusIcon = makeIcon(MdOutlineAdd)
 export const QuestionIcon = makeIcon(MdHelpOutline)
+export const QuestionFillIcon = makeIcon(MdHelp)
 export const RemoveCircleOutlineIcon = makeIcon(MdRemoveCircleOutline)
 export const ShieldCheckIcon = makeIcon(MdOutlineVerifiedUser)
 export const ShieldIcon = makeIcon(MdOutlineShield)
