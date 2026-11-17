@@ -197,6 +197,7 @@ function NuevoComunicadoContent() {
                   </FieldLabel>
                   <Input
                     id="comunicado-titulo"
+                    placeholder="Agregar"
                     value={titulo}
                     maxLength={MAX_TITULO}
                     aria-invalid={intentado && !titulo.trim()}
@@ -213,6 +214,7 @@ function NuevoComunicadoContent() {
                   </FieldLabel>
                   <Textarea
                     id="comunicado-mensaje"
+                    placeholder="Agregar"
                     className={TEXTAREA_OUTLINED}
                     value={mensaje}
                     rows={4}

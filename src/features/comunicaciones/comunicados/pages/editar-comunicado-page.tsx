@@ -175,6 +175,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           </FieldLabel>
           <Input
             id="modificar-titulo"
+            placeholder="Agregar"
             value={titulo}
             maxLength={MAX_TITULO}
             aria-invalid={intentado && tituloLimpio === ""}
@@ -191,6 +192,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           </FieldLabel>
           <Textarea
             id="modificar-mensaje"
+            placeholder="Agregar"
             className={TEXTAREA_OUTLINED}
             value={mensaje}
             rows={6}
