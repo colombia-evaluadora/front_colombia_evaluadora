@@ -1,6 +1,9 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { WarningIcon } from "@/components/ui/icons"
@@ -23,20 +26,22 @@ import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 const MAX_MOTIVO = 500
 
 function Motivo({ valor, onCambiar }: { valor: string; onCambiar: (v: string) => void }) {
+  const id = useId()
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">Motivo *</span>
-      <textarea
+    <Field variant="outlined">
+      <FieldLabel htmlFor={id}>
+        Motivo<span className="text-red"> *</span>
+      </FieldLabel>
+      <Textarea
+        id={id}
         value={valor}
         maxLength={MAX_MOTIVO}
         rows={3}
         onChange={(e) => onCambiar(e.target.value)}
-        className="w-full rounded-lg border bg-card p-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-primary"
+        className={TEXTAREA_OUTLINED}
       />
-      <span className="block text-right text-xs text-muted-foreground tabular-nums">
-        {valor.length} / {MAX_MOTIVO}
-      </span>
-    </label>
+      <CharacterCounter value={valor} max={MAX_MOTIVO} />
+    </Field>
   )
 }
 
@@ -231,10 +236,15 @@ function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: numbe
         </DialogHeader>
         {suspender.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(suspender.error)}</p>}
         <Motivo valor={motivo} onCambiar={setMotivo} />
-        <label className="block space-y-1 text-sm">
-          <span className="font-medium">Vigente hasta (opcional)</span>
-          <Input type="datetime-local" value={vence} onChange={(e) => setVence(e.target.value)} />
-        </label>
+        <Field variant="outlined">
+          <FieldLabel htmlFor={`suspender-vence-${persona.id}`}>Vigente hasta (opcional)</FieldLabel>
+          <Input
+            id={`suspender-vence-${persona.id}`}
+            type="datetime-local"
+            value={vence}
+            onChange={(e) => setVence(e.target.value)}
+          />
+        </Field>
         <DialogFooter>
           <Button variant="ghost" color="neutral" disabled={suspender.isPending} onClick={onClose}>
             Cancelar

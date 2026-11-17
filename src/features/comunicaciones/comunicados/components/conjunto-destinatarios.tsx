@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, WarningCircleIcon } from "@/components/ui/icons"
 import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
@@ -434,10 +435,11 @@ function Selector({
   onChange: (valor: string) => void
 }) {
   return (
-    <div className="min-w-0 space-y-2">
-      <Etiqueta requerido={requerido} htmlFor={id}>
+    <Field variant="outlined" className="min-w-0">
+      <FieldLabel htmlFor={id}>
         {etiqueta}
-      </Etiqueta>
+        {requerido && "*"}
+      </FieldLabel>
       <SelectOpciones
         id={id}
         variant="outlined"
@@ -451,7 +453,7 @@ function Selector({
           ...(vacio ? [] : opciones.map((o) => ({ value: o.valor, label: o.etiqueta }))),
         ]}
       />
-    </div>
+    </Field>
   )
 }
 
@@ -487,10 +489,11 @@ function Multiple({
     : opciones
   const valor = todos ? items.filter((o) => o.valor === TODOS_ITEM) : items.filter((o) => seleccion.includes(o.valor))
   return (
-    <div className="min-w-0 space-y-2">
-      <Etiqueta requerido={requerido} htmlFor={id}>
+    <Field variant="outlined" className="min-w-0">
+      <FieldLabel htmlFor={id}>
         {etiqueta}
-      </Etiqueta>
+        {requerido && "*"}
+      </FieldLabel>
       {motivo || opciones.length === 0 ? (
         <SelectOpciones
           id={id}
@@ -518,6 +521,6 @@ function Multiple({
           }}
         />
       )}
-    </div>
+    </Field>
   )
 }

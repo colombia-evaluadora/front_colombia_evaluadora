@@ -4,7 +4,9 @@ import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -261,26 +263,21 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
           Se anulará {c.titulo}. Los destinatarios dejarán de verlo y su aviso dirá que el contenido ya no está
           disponible.
         </p>
-        <div className="space-y-1.5">
-          <label htmlFor="motivo-anulacion" className="text-sm font-medium">
+        <Field variant="outlined" data-invalid={intentado && vacio ? true : undefined}>
+          <FieldLabel htmlFor="motivo-anulacion">
             Motivo<span className="text-red"> *</span>
-          </label>
+          </FieldLabel>
           <Textarea
             id="motivo-anulacion"
+            className={TEXTAREA_OUTLINED}
             value={motivo}
             maxLength={MAX_MOTIVO}
             aria-invalid={intentado && vacio}
             onChange={(e) => setMotivo(e.target.value)}
           />
-          <p className="text-right text-xs text-muted-foreground">
-            {motivo.length} / {MAX_MOTIVO}
-          </p>
-          {intentado && vacio && (
-            <p role="alert" className="text-xs text-red">
-              Escribe el motivo de la anulación.
-            </p>
-          )}
-        </div>
+          <CharacterCounter value={motivo} max={MAX_MOTIVO} />
+          {intentado && vacio && <FieldError>Escribe el motivo de la anulación.</FieldError>}
+        </Field>
         <DialogFooter>
           <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
             Cancelar

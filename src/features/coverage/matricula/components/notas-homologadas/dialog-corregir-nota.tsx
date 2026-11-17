@@ -114,20 +114,18 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
         <NoticeBanner notice={error} onClose={() => setError(null)} variant="error" />
 
         <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="nota-original" className="text-sm font-medium">
-              Nota original
-            </label>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="nota-original">Nota original</FieldLabel>
             <div className="relative">
               <Input id="nota-original" size="sm" variant="outlined" disabled value={`${formatNota(actual)} · ${nota.valoracion ?? ""}`} />
               <LockIcon className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             </div>
-          </div>
+          </Field>
           <ArrowRightIcon className="mt-9 size-4 text-muted-foreground" aria-hidden />
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="nota-corregida" className="text-sm font-medium">
-              <span className="text-red">*</span> Nota corregida
-            </label>
+          <Field variant="outlined" data-invalid={intentado && !notaValida ? true : undefined}>
+            <FieldLabel htmlFor="nota-corregida">
+              Nota corregida<span className="text-red"> *</span>
+            </FieldLabel>
             <Input
               id="nota-corregida"
               size="sm"
@@ -139,13 +137,10 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
               aria-describedby="nota-corregida-ayuda"
               onChange={(e) => setTexto(e.target.value.replace(/[^\d.,]/g, ""))}
             />
-            <span
-              id="nota-corregida-ayuda"
-              className={cn("text-xs text-muted-foreground", intentado && !notaValida && "text-red")}
-            >
+            <FieldDescription id="nota-corregida-ayuda" className={cn(intentado && !notaValida && "text-red")}>
               {ayudaNota}
-            </span>
-          </div>
+            </FieldDescription>
+          </Field>
         </div>
 
         <Field variant="outlined" data-invalid={intentado && !motivoValido}>

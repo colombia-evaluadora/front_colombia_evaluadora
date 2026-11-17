@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { DotsThreeVerticalIcon, FileDownloadOutlinedIcon, PushPinIcon } from "@/components/ui/icons"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -193,12 +194,13 @@ export function ParticipacionItem({
             <FieldLabel htmlFor={`valor-${p.id}`}>{dialogo === "editar" ? "Texto" : "Motivo"}</FieldLabel>
             <Textarea
               id={`valor-${p.id}`}
+              className={TEXTAREA_OUTLINED}
               value={valor}
               maxLength={dialogo === "editar" ? 4000 : 500}
               onChange={(e) => setValor(e.target.value)}
             />
             {dialogo !== "editar" && (
-              <p className="text-right text-xs text-muted-foreground">{valor.length} / 500</p>
+              <CharacterCounter value={valor} max={500} />
             )}
           </Field>
           <DialogFooter>
