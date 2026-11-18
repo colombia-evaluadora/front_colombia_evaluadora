@@ -64,12 +64,16 @@ export function useCambiarRolMiembro(conversacionId: number) {
   })
 }
 
-// Abre (o crea) el mensaje directo con una persona.
-export function useAbrirDirecto() {
+/**
+ * Crea un mensaje directo con una persona y un asunto (SSO #1006). Siempre es una conversación nueva
+ * (un hilo por asunto): ya no se reutiliza el directo existente. 403 si la política no lo permite
+ * (matriz de directos o estudiante menor sin permiso para iniciar).
+ */
+export function useCrearDirecto() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (personaId: number) =>
-      evalCol.postRow<Conversacion>("/comunicaciones/directos", { FK_PERSONA: personaId }),
+    mutationFn: ({ personaId, asunto }: { personaId: number; asunto: string }) =>
+      evalCol.postRow<Conversacion>("/comunicaciones/directos", { FK_PERSONA: personaId, ASUNTO: asunto }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
   })
 }

@@ -19,6 +19,9 @@ export type EstadoComunicado = "PROGRAMADO" | "PUBLICADO" | "VENCIDO" | "ANULADO
 export interface Conversacion {
   id: number
   nombre: string
+  // Asunto del hilo (SSO #1006): obligatorio al crear un directo o un grupo; null en foros,
+  // actividades y el asistente. La bandeja y el encabezado lo muestran como título (fallback al nombre).
+  asunto?: string | null
   tipo: TipoConversacion
   categoria: CategoriaCanal
   noLeidos: number
@@ -606,6 +609,8 @@ export interface Miembro {
   enLinea: boolean
   bloqueado: boolean
   esAdmin?: boolean
+  // Quien creó el grupo (SSO #1006): marca ‹Creador› en el panel de participantes.
+  esCreador?: boolean
   // INVITADO / RECHAZADO: invitaciones que solo ve quien gestiona el grupo (no son miembros).
   estado?: EstadoMiembro
   // Disponibilidad tal como la ve quien pide la lista (comms-service con V560).

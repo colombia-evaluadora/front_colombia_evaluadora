@@ -6,6 +6,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { WarningIcon } from "@/components/ui/icons"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { getErrorMessage } from "@/lib/api-client"
@@ -294,6 +295,13 @@ function Suspensiones({ activo }: { activo: boolean }) {
   )
 }
 
+interface ValoresConfiguracion {
+  horaInicio: string
+  horaFin: string
+  incluyeSabado: boolean
+  permitirMenoresIniciar: boolean
+}
+
 function Configuracion({ activo }: { activo: boolean }) {
   const config = useConfiguracionQuery(activo)
   if (config.isPending) return <p className="p-3 text-sm text-muted-foreground">Cargando…</p>
@@ -301,23 +309,28 @@ function Configuracion({ activo }: { activo: boolean }) {
   return (
     <FormConfiguracion
       inicial={{
-        horaInicio: config.data?.horaInicio?.slice(0, 5) ?? "06:00",
-        horaFin: config.data?.horaFin?.slice(0, 5) ?? "18:00",
+        // Sin horario (SSO #1006): ambas horas vacías = sin restricción de correo.
+        horaInicio: config.data?.horaInicio?.slice(0, 5) ?? "",
+        horaFin: config.data?.horaFin?.slice(0, 5) ?? "",
         incluyeSabado: config.data?.incluyeSabado ?? false,
+        permitirMenoresIniciar: config.data?.permitirMenoresIniciar ?? false,
       }}
     />
   )
 }
 
-function FormConfiguracion({ inicial }: { inicial: { horaInicio: string; horaFin: string; incluyeSabado: boolean } }) {
+function FormConfiguracion({ inicial }: { inicial: ValoresConfiguracion }) {
   const [valores, setValores] = useState(inicial)
   const guardar = useGuardarConfiguracion()
+  // Horario opcional: las dos horas vacías (sin horario) o las dos llenas; nunca una sola.
+  const horarioIncompleto = !valores.horaInicio !== !valores.horaFin
+  const idMenores = useId()
   return (
     <div className="space-y-3 p-1 text-sm">
       {guardar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(guardar.error)}</p>}
       {guardar.isSuccess && <p role="status" className="text-sm text-green">Configuración guardada.</p>}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium">Horario de atención<span className="text-red">*</span></span>
+        <span className="font-medium">Horario de atención</span>
         <Input aria-label="Desde" type="time" className="w-32" value={valores.horaInicio} onChange={(e) => setValores({ ...valores, horaInicio: e.target.value })} />
         <span>a</span>
         <Input aria-label="Hasta" type="time" className="w-32" value={valores.horaFin} onChange={(e) => setValores({ ...valores, horaFin: e.target.value })} />
@@ -326,8 +339,27 @@ function FormConfiguracion({ inicial }: { inicial: { horaInicio: string; horaFin
         <input type="checkbox" checked={valores.incluyeSabado} onChange={(e) => setValores({ ...valores, incluyeSabado: e.target.checked })} />
         Incluir sábados
       </label>
-      <p className="text-muted-foreground">Fuera del horario no se envían avisos por correo; la campana sí.</p>
-      <Button disabled={guardar.isPending || !valores.horaInicio || !valores.horaFin} onClick={() => guardar.mutate(valores)}>
+      <p className="text-muted-foreground">
+        Fuera del horario no se envían avisos por correo; la campana sí. Deje ambas horas vacías para no limitar el horario.
+      </p>
+      {horarioIncompleto && (
+        <p role="alert" className="text-red">Indique la hora de inicio y la de fin, o deje ambas vacías.</p>
+      )}
+      {/* M.2.CFG.1 / W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
+      <div className="flex items-start gap-3 rounded-lg border p-3">
+        <Switch
+          id={idMenores}
+          checked={valores.permitirMenoresIniciar}
+          onCheckedChange={(v) => setValores({ ...valores, permitirMenoresIniciar: v })}
+        />
+        <label htmlFor={idMenores} className="leading-tight">
+          <span className="block font-medium">Permitir que estudiantes menores inicien conversaciones</span>
+          <span className="block text-muted-foreground">
+            Apagado: los estudiantes menores de edad solo responden en las conversaciones donde los incluyeron.
+          </span>
+        </label>
+      </div>
+      <Button disabled={guardar.isPending || horarioIncompleto} onClick={() => guardar.mutate(valores)}>
         Guardar
       </Button>
     </div>

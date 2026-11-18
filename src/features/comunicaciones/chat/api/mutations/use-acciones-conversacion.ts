@@ -16,7 +16,7 @@ import { leerNotificacionesConversacion } from "@/features/notificaciones/api/mu
 
 const base = (id: number) => `/comunicaciones/conversaciones/${id}`
 
-function useInvalidarConversaciones() {
+export function useInvalidarConversaciones() {
   const queryClient = useQueryClient()
   return () => queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
 }
@@ -199,8 +199,11 @@ export function useCrearCanal() {
       tipo,
       grupal,
       opciones,
+      asunto,
     }: {
       nombre: string
+      // Solo GRUPO (SSO #1006): asunto obligatorio del hilo; un foro lo ignora.
+      asunto?: string
       categoria: CategoriaCanal
       miembros?: number[]
       // GRUPO: conversación de un grupo de personas; sin tipo, un foro (CANAL).
@@ -215,6 +218,7 @@ export function useCrearCanal() {
         CATEGORIA: categoria,
         MIEMBROS: miembros,
         ...(tipo ? { TIPO: tipo } : {}),
+        ...(tipo === "GRUPO" && asunto !== undefined ? { ASUNTO: asunto } : {}),
         ...(grupal ?? {}),
         ...(opciones
           ? { DESCRIPCION: opciones.descripcion.trim() || null, ...cuerpoModo(opciones.modo, opciones.rolesEscritura) }

@@ -5,6 +5,7 @@ import { filtrarGrupos } from "@/mocks/handlers/comunicaciones-grupos"
 
 import type {
   AdjuntoMensaje,
+  Conversacion,
   Mensaje,
   CategoriaCanal,
   AjustesChat,
@@ -23,6 +24,8 @@ import {
   nuevaVotacionRapida,
   contenidoDocumentos,
   politicaChat,
+  permisoMenores,
+  MENOR_NO_INICIA,
   USUARIO_ACTUAL,
   conVistaPrevia,
 } from "@/mocks/db/comunicaciones"
@@ -112,6 +115,39 @@ function buscar(id: string | readonly string[] | undefined) {
 
 function noEncontrada() {
   return HttpResponse.json({ message: "La conversación no existe." }, { status: 404 })
+}
+
+/** Estudiante (menor en el mock) sin el permiso de la institución: solo responde. */
+function puedeIniciar(request: Request) {
+  return perfilDe(request) !== "ESTUDIANTE" || permisoMenores.permitirMenoresIniciar
+}
+
+/** Mismos 400 que comms-service para el asunto de un directo o grupo. */
+function validarAsunto(asunto: string) {
+  if (!asunto) return HttpResponse.json({ message: "Escriba el asunto de la conversación." }, { status: 400 })
+  if (asunto.length > 120) {
+    return HttpResponse.json({ message: "El asunto admite hasta 120 caracteres." }, { status: 400 })
+  }
+  return null
+}
+
+function nuevoDirecto(p: { nombre: string }, asunto: string): Conversacion {
+  const directo: Conversacion = {
+    id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
+    nombre: p.nombre,
+    asunto,
+    tipo: "DIRECTO",
+    categoria: "GENERAL",
+    noLeidos: 0,
+    actividadAbierta: false,
+    esBot: false,
+    totalMiembros: 2,
+    miembrosDestacados: [p.nombre],
+    silenciadoHasta: null,
+    archivada: false,
+  }
+  conversaciones.push(directo)
+  return directo
 }
 
 /** Perfil del usuario de la request; sin token se asume docente (prototipo). */
@@ -260,9 +296,44 @@ export const comunicacionesHandlers = [
   }),
 
   // Política de DMs y menciones masivas de la institución (pendiente de aprobación).
-  http.get(URL("politica"), async () => {
+  http.get(URL("politica"), async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({ rows: [politicaChat] })
+    return HttpResponse.json({ rows: [{ ...politicaChat, puedeIniciarConversaciones: puedeIniciar(request) }] })
+  }),
+
+  // "Enviar por separado" (SSO #1006): un directo nuevo por destinatario, sin adjuntos.
+  http.post(URL("mensajes/por-separado"), async ({ request }) => {
+    await delay(300)
+    if (!puedeIniciar(request)) return HttpResponse.json({ message: MENOR_NO_INICIA }, { status: 403 })
+    const body = (await request.json()) as { DESTINATARIOS?: number[]; ASUNTO?: string; MENSAJE?: string }
+    const asunto = body.ASUNTO?.trim() ?? ""
+    const invalido = validarAsunto(asunto)
+    if (invalido) return invalido
+    const texto = body.MENSAJE?.trim() ?? ""
+    if (!texto || texto.length > 5000) {
+      return HttpResponse.json({ message: "Escriba el mensaje (hasta 5000 caracteres)." }, { status: 400 })
+    }
+    const destinatarios = body.DESTINATARIOS ?? []
+    if (destinatarios.length === 0 || destinatarios.length > 200) {
+      return HttpResponse.json({ message: "Elija entre 1 y 200 destinatarios." }, { status: 400 })
+    }
+    const creadas: { destinatario: number; conversacion: number }[] = []
+    const rechazados: { destinatario: number; motivo: string }[] = []
+    for (const id of destinatarios) {
+      const p = personas.find((x) => x.id === id)
+      if (!p) {
+        rechazados.push({ destinatario: id, motivo: "La persona no existe." })
+        continue
+      }
+      if (reglaDirecto(politicaChat, perfilDe(request), p.perfil ?? "DOCENTE") === "PROHIBIDO") {
+        rechazados.push({ destinatario: id, motivo: "La política de la institución no permite este mensaje directo." })
+        continue
+      }
+      const directo = nuevoDirecto(p, asunto)
+      nuevoMensaje(directo.id, texto)
+      creadas.push({ destinatario: id, conversacion: directo.id })
+    }
+    return HttpResponse.json({ rows: [{ conversaciones: creadas, rechazados }] })
   }),
 
   // El buscador de un grupo también ofrece acudientes: entran por invitación. Un e2e puede tratar
@@ -374,7 +445,11 @@ export const comunicacionesHandlers = [
 
   http.post(URL("directos"), async ({ request }) => {
     await delay(200)
-    const body = (await request.json()) as { FK_PERSONA?: number }
+    if (!puedeIniciar(request)) return HttpResponse.json({ message: MENOR_NO_INICIA }, { status: 403 })
+    const body = (await request.json()) as { FK_PERSONA?: number; ASUNTO?: string }
+    const asunto = body.ASUNTO?.trim() ?? ""
+    const invalido = validarAsunto(asunto)
+    if (invalido) return invalido
     const p = personas.find((x) => x.id === body.FK_PERSONA)
     if (!p) return HttpResponse.json({ message: "La persona no existe." }, { status: 404 })
     // La UI ya oculta a quien no se puede escribir; el backend igual lo rechaza.
@@ -384,23 +459,8 @@ export const comunicacionesHandlers = [
         { status: 403 },
       )
     }
-    const existente = conversaciones.find((c) => c.tipo === "DIRECTO" && c.nombre === p.nombre)
-    if (existente) return HttpResponse.json({ rows: [existente] })
-    const directo = {
-      id: Math.max(0, ...conversaciones.map((c) => c.id)) + 1,
-      nombre: p.nombre,
-      tipo: "DIRECTO" as const,
-      categoria: "GENERAL" as const,
-      noLeidos: 0,
-      actividadAbierta: false,
-      esBot: false,
-      totalMiembros: 2,
-      miembrosDestacados: [p.nombre],
-      silenciadoHasta: null,
-      archivada: false,
-    }
-    conversaciones.push(directo)
-    return HttpResponse.json({ rows: [directo] })
+    // Un hilo por asunto (SSO #1006): siempre se crea una conversación nueva.
+    return HttpResponse.json({ rows: [nuevoDirecto(p, asunto)] })
   }),
 
   // Igual que comms-service: sin parámetros, los últimos 200 en orden
@@ -438,8 +498,8 @@ export const comunicacionesHandlers = [
     const clientId = form.get("CLIENT_MESSAGE_ID")
     const confirmacion = form.get("SOLICITA_CONFIRMACION_LECTURA")
     const subidos = form.getAll("ADJUNTO").filter((x): x is File => x instanceof File)
-    if (subidos.length > 10) {
-      return HttpResponse.json({ message: "Puedes adjuntar hasta 10 archivos por mensaje." }, { status: 400 })
+    if (subidos.length > 3) {
+      return HttpResponse.json({ message: "Puede adjuntar hasta 3 archivos por mensaje." }, { status: 400 })
     }
     const adjuntos: AdjuntoMensaje[] = subidos.map((archivo) => ({
       nombre: archivo.name,

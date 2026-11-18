@@ -1,3 +1,4 @@
+import { eventoMembresia, textoEventoMembresia } from "@/features/comunicaciones/chat/lib/asunto"
 import { CHAT_FUNCIONES } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
@@ -371,6 +372,15 @@ function MensajeItem({
   const tactil = useAccionesTactiles()
 
   if (m.sistema) {
+    // Membresía de un grupo (SSO #1006): "— J. Ramírez agregó a M. López · 10:48 —".
+    const membresia = eventoMembresia(m.texto)
+    if (membresia) {
+      return (
+        <p className="text-center text-xs text-muted-foreground">
+          — {textoEventoMembresia(m.autor?.nombre ?? "", membresia)} · <time dateTime={m.fecha}>{horaMensaje(m.fecha)}</time> —
+        </p>
+      )
+    }
     // Los avisos viejos traen el nombre dentro del texto ("Ana Ana se ha unido…"):
     // se quita para no repetirlo. Los nuevos ya llegan sin él (comms-service).
     const nombre = m.autor?.nombre ?? ""

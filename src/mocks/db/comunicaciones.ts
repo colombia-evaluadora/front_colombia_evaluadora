@@ -374,6 +374,16 @@ export function nuevoMensaje(
  */
 export const politicaChat: PoliticaChat = structuredClone(POLITICA_CHAT_SUGERIDA)
 
+/**
+ * "Permitir que estudiantes menores inicien conversaciones" (M.2.CFG.1, SSO #1006). La comparten
+ * la configuración de moderación y `/politica` (`puedeIniciarConversaciones`). En el mock todo
+ * estudiante cuenta como menor.
+ */
+export const permisoMenores = { permitirMenoresIniciar: false }
+
+export const MENOR_NO_INICIA =
+  "Los estudiantes menores de edad no pueden iniciar conversaciones nuevas; pueden responder en las conversaciones donde los incluyeron."
+
 /** Autor de mensaje a partir de una persona o miembro (para la simulación en vivo). */
 export function autorDe(id: number, nombre: string, enLinea = true): AutorMensaje {
   return { id, nombre, enLinea }

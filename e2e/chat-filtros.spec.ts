@@ -28,7 +28,7 @@ test("buscar en el historial, filtrar y abrir el resultado", async ({ page }) =>
   await login(page)
   const lista = page.getByRole("navigation", { name: "Conversaciones" })
 
-  await page.getByPlaceholder("Buscar conversaciones, personas y mensajes").fill("FRACCIONES")
+  await page.getByPlaceholder("Buscar en mis mensajes").fill("FRACCIONES")
   const resultado = lista.getByRole("button", { name: /planeación de fracciones/ })
   await expect(resultado).toBeVisible()
   // Resaltado sin distinguir mayúsculas ni tildes.
@@ -58,7 +58,7 @@ test("buscar en el historial, filtrar y abrir el resultado", async ({ page }) =>
   await page.reload()
   await lista.waitFor()
   await expect(page.getByRole("status").filter({ hasText: "Institucional · Docentes" })).toBeVisible()
-  await expect(page.getByPlaceholder("Buscar conversaciones, personas y mensajes")).toHaveValue("FRACCIONES")
+  await expect(page.getByPlaceholder("Buscar en mis mensajes")).toHaveValue("FRACCIONES")
 
   // Abrir el resultado lleva a la conversación y resalta el mensaje.
   await lista.getByRole("button", { name: /planeación de fracciones/ }).click()
@@ -82,7 +82,7 @@ test("guardar, aplicar, renombrar y eliminar filtros favoritos", async ({ page }
   await page.keyboard.press("Escape")
 
   // Palabras + tipo Institucional, y se guardan con nombre.
-  await page.getByPlaceholder("Buscar conversaciones, personas y mensajes").fill("fracciones")
+  await page.getByPlaceholder("Buscar en mis mensajes").fill("fracciones")
   await page.getByRole("button", { name: "Filtros", exact: true }).click()
   await page.getByRole("checkbox", { name: "Institucional" }).click()
   await page.keyboard.press("Escape")
@@ -103,7 +103,7 @@ test("guardar, aplicar, renombrar y eliminar filtros favoritos", async ({ page }
   await page.getByRole("button", { name: "Limpiar búsqueda" }).click()
   await page.getByRole("button", { name: "Filtros favoritos" }).click()
   await favoritos().getByRole("button", { name: /^Fracciones en foros/ }).click()
-  await expect(page.getByPlaceholder("Buscar conversaciones, personas y mensajes")).toHaveValue("fracciones")
+  await expect(page.getByPlaceholder("Buscar en mis mensajes")).toHaveValue("fracciones")
   await expect(page.getByRole("status").filter({ hasText: "Filtrando: Institucional" })).toBeVisible()
   await expect(lista.getByRole("button", { name: /planeación de fracciones/ })).toBeVisible()
 
