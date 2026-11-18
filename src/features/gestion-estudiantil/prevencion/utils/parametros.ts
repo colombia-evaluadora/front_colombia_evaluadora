@@ -20,6 +20,7 @@ export type CampoParametro = CampoEntero | "caidaRa"
 
 export interface ValoresParametros extends Record<CampoParametro, string> {
   condiciones: string[]
+  avisoSm: string
 }
 
 export type ErroresParametros = Partial<Record<CampoParametro, string>>
@@ -41,7 +42,7 @@ export const CAMPOS_ENTEROS: DefCampoEntero[] = [
   { campo: "intervencion", label: "Inasistencias consecutivas de intervención", min: 3, max: 60, predeterminado: 5, ayuda: "Mayor que las inasistencias para alerta." },
   { campo: "reintConsec", label: "Inasistencias consecutivas de reintegración", min: 3, max: 60, predeterminado: 10, ayuda: "Mayor que las de intervención." },
   { campo: "reintAlt", label: "Inasistencias alternadas de reintegración", min: 2, max: 100, predeterminado: 15, ayuda: "En el Período de Evaluación." },
-  { campo: "plazoContacto", label: "Plazo del contacto con el acudiente (días hábiles)", min: 1, max: 10, predeterminado: 2 },
+  { campo: "plazoContacto", label: "Plazo de contacto (días hábiles)", min: 1, max: 10, predeterminado: 2 },
   { campo: "plazoIntervencion", label: "Plazo de intervención (días hábiles)", min: 1, max: 15, predeterminado: 3 },
   { campo: "plazoIncumplimiento", label: "Plazo de incumplimiento del plan (semanas)", min: 1, max: 12, predeterminado: 2 },
   { campo: "anotaciones", label: "Anotaciones negativas para alerta", min: 1, max: 20, predeterminado: 3, ayuda: "En el Período de Evaluación." },
@@ -51,7 +52,10 @@ export const CAMPOS_ENTEROS: DefCampoEntero[] = [
 export const CAIDA_RA_MIN = 0.1
 export const CAIDA_RA_LABEL = "Caída del RA para alerta"
 
-/** Condiciones de la matrícula que acepta el backend (casillas, §9.5). */
+/**
+ * Condiciones de la matrícula que acepta el backend (casillas, §9.5). No hay lista de valores: el backend las fija
+ * en el CHECK de TPREVENCION_PARAMETRO (V638), así que son la única opción fija de la pantalla.
+ */
 export const CONDICIONES: Opcion[] = [
   { value: "VICTIMA_CONFLICTO", label: "Población víctima del conflicto" },
   { value: "CONDICIONES_ESPECIALES", label: "Condiciones especiales" },
@@ -74,6 +78,7 @@ export function valoresIniciales(p: ParametrosRiesgo): ValoresParametros {
     anotaciones: texto(p.anotaciones_negativas_alerta),
     compromisos: texto(p.compromisos_incumplidos_alerta),
     condiciones: [...p.condiciones_alerta],
+    avisoSm: p.aviso_sm_seguimiento ?? "",
   }
 }
 
@@ -139,6 +144,7 @@ export function parametrosParaBackend(establecimiento: number, v: ValoresParamet
     ANOTACIONES_NEGATIVAS_ALERTA: Number(v.anotaciones),
     COMPROMISOS_INCUMPLIDOS_ALERTA: Number(v.compromisos),
     CONDICIONES_ALERTA: v.condiciones,
+    AVISO_SM_SEGUIMIENTO: v.avisoSm,
   }
 }
 

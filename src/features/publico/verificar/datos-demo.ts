@@ -1,3 +1,5 @@
+import { env } from "@/config/env"
+
 /**
  * Datos de la VISTA PREVIA de Verificar un documento (U.4).
  *
@@ -8,6 +10,10 @@
  * contenido con el documento completo e intentos restantes. Mientras tanto,
  * los códigos de esta lista se resuelven aquí; cualquier otro código sigue
  * yendo a la verificación real del boletín.
+ *
+ * Como en Inscribir y Consultar (#1058): la vista previa solo existe con mocks.
+ * Con el backend real (test/producción) no se simula nada y todo código va a la
+ * verificación real.
  */
 
 export type EstadoDocumento = "VIGENTE" | "REEMPLAZADO" | "ANULADO"
@@ -40,9 +46,10 @@ export interface InformePeriodo {
 export const MAX_INTENTOS_CONTENIDO = 5
 export const HORAS_BLOQUEO_CONTENIDO = 24
 
-/** Prefijos de la vista previa: un código con ellos nunca va al servicio real. */
+/** Prefijos de la vista previa: con mocks, un código con ellos no va al servicio real. */
 const PREFIJOS_DEMO = ["K7QM-", "C4RN-"]
-export const esCodigoDemo = (codigo: string) => PREFIJOS_DEMO.some((p) => codigo.trim().toUpperCase().startsWith(p))
+export const esCodigoDemo = (codigo: string) =>
+  env.ENABLE_API_MOCKING && PREFIJOS_DEMO.some((p) => codigo.trim().toUpperCase().startsWith(p))
 
 const INFORME: InformePeriodo = {
   institucion: "Institución Educativa IE Central",

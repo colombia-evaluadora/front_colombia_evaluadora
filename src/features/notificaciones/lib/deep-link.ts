@@ -17,7 +17,20 @@ export function safeDeepLink(link: string | null | undefined): string {
   if (trimmed.startsWith("//") || trimmed.includes("\\")) return DEEP_LINK_FALLBACK
   const pathname = trimmed.split(/[?#]/)[0]
   if (pathname.split("/").some((segment) => segment === ".." || segment === ".")) return DEEP_LINK_FALLBACK
-  return trimmed
+  return conAlias(trimmed, pathname)
+}
+
+/**
+ * Rutas que el backend arma con otro nombre que el del router. `AUTORIZACION_PENDIENTE`
+ * (sso #1004) lleva a `/app/cuenta?seccion=autorizaciones`; Mi cuenta vive en `/app/mi-cuenta`.
+ */
+const DEEP_LINK_ALIAS: Record<string, string> = {
+  "/app/cuenta": "/app/mi-cuenta",
+}
+
+function conAlias(link: string, pathname: string): string {
+  const destino = DEEP_LINK_ALIAS[pathname.endsWith("/") ? pathname.slice(0, -1) : pathname]
+  return destino ? destino + link.slice(pathname.length) : link
 }
 
 /** Etiqueta del contador de la campana: tope `9+` (requerimiento: el badge no crece a dos cifras). */

@@ -443,6 +443,10 @@ export const paths = {
       path: "gestion-estudiantil/catalogo-anotaciones",
       getHref: () => "/app/gestion-estudiantil/catalogo-anotaciones",
     },
+    configuracionGe: {
+      path: "gestion-estudiantil/configuracion",
+      getHref: () => "/app/gestion-estudiantil/configuracion",
+    },
     convivenciaProcesoNuevo: {
       path: "gestion-estudiantil/convivencia/procesos/nuevo",
       getHref: () => "/app/gestion-estudiantil/convivencia/procesos/nuevo",

@@ -6,8 +6,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { ArrowLeftIcon, InfoIcon, MagnifyingGlassIcon, ShieldCheckIcon, XCircleIcon } from "@/components/ui/icons"
+import {
+  ArrowLeftIcon,
+  InfoIcon,
+  MagnifyingGlassIcon,
+  ShieldCheckIcon,
+  XCircleIcon,
+} from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
+import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 
 import { ComprobarArchivo } from "@/features/publico/verificar/components/comprobar-archivo"
@@ -83,7 +90,8 @@ export function VerificarPage() {
         <div className="flex flex-col gap-5">
           <div className="-mx-6 -mt-6 flex flex-wrap items-center justify-between gap-2 border-b px-6 py-3">
             <p className="text-muted-foreground text-sm">
-              Código <span className="text-foreground font-mono font-semibold">{documento.codigo}</span>
+              Código{" "}
+              <span className="text-foreground font-mono font-semibold">{documento.codigo}</span>
             </p>
             {vista.tipo === "resultado" ? (
               <Button
@@ -100,7 +108,11 @@ export function VerificarPage() {
                 Verificar otro código
               </Button>
             ) : (
-              <Button variant="outline" color="neutral" onClick={() => ir({ tipo: "resultado", documento })}>
+              <Button
+                variant="outline"
+                color="neutral"
+                onClick={() => ir({ tipo: "resultado", documento })}
+              >
                 <ArrowLeftIcon data-icon="inline-start" />
                 Volver al resultado
               </Button>
@@ -138,7 +150,11 @@ export function VerificarPage() {
       icon={ShieldCheckIcon}
       title="Verificar un documento"
       subtitle="Compruebe que un documento lo emitió la plataforma."
-      points={["Autenticidad en segundos", "Sin mostrar datos personales", "Con el código o el código QR"]}
+      points={[
+        "Autenticidad en segundos",
+        "Sin mostrar datos personales",
+        "Con el código o el código QR",
+      ]}
       breadcrumb={BREADCRUMB}
       width="md"
       backToHome
@@ -154,15 +170,22 @@ export function VerificarPage() {
             </AlertDescription>
           </Alert>
         ) : (
-          <Alert variant="info">
-            <InfoIcon />
-            <AlertDescription>Vista previa con códigos de ejemplo: {EJEMPLOS_DEMO.join(" · ")}.</AlertDescription>
-          </Alert>
+          env.ENABLE_API_MOCKING && (
+            <Alert variant="info">
+              <InfoIcon />
+              <AlertDescription>
+                Vista previa con códigos de ejemplo: {EJEMPLOS_DEMO.join(" · ")}.
+              </AlertDescription>
+            </Alert>
+          )
         )}
 
         <Field variant="outlined" data-invalid={(intentado && !limpio) || undefined}>
           <FieldLabel htmlFor="codigo-verificacion">
-            Código de verificación <span aria-hidden="true" data-required-mark="">*</span>
+            Código de verificación{" "}
+            <span aria-hidden="true" data-required-mark="">
+              *
+            </span>
           </FieldLabel>
           <Input
             id="codigo-verificacion"
@@ -184,7 +207,11 @@ export function VerificarPage() {
         <div className="flex flex-col gap-1.5">
           {/* Lugar del captcha del sitio público (pendiente de conectar). */}
           <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
-            <Checkbox checked={robot} onCheckedChange={(c) => setRobot(Boolean(c))} aria-invalid={intentado && !robot} />
+            <Checkbox
+              checked={robot}
+              onCheckedChange={(c) => setRobot(Boolean(c))}
+              aria-invalid={intentado && !robot}
+            />
             No soy un robot
           </label>
           {intentado && !robot && <p className="text-red text-xs">Confirme que no es un robot.</p>}

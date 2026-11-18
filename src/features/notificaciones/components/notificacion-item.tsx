@@ -1,7 +1,12 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Notificacion } from "@/features/notificaciones/api/types"
-import { CATEGORIA_ICONS, ENLACE_POR_TIPO } from "@/features/notificaciones/api/ui-mappings"
+import {
+  CATEGORIA_ICONS,
+  CUERPO_ES_ENLACE,
+  ENLACE_POR_TIPO,
+  ETIQUETA_POR_TIPO,
+} from "@/features/notificaciones/api/ui-mappings"
 import { fechaCorta, horaDelDia } from "@/features/notificaciones/lib/agrupar-por-dia"
 import { TIPO_INVITACION_GRUPO, tituloNotificacion } from "@/features/notificaciones/lib/deep-link"
 import { InvitacionAcciones } from "@/features/notificaciones/components/invitacion-acciones"
@@ -28,6 +33,9 @@ export function NotificacionItem({
 }: NotificacionItemProps) {
   const Icono = CATEGORIA_ICONS[n.categoria] ?? CATEGORIA_ICONS.SISTEMA
   const titulo = tituloNotificacion(n)
+  const etiqueta = ETIQUETA_POR_TIPO[n.tipo]
+  // AUTORIZACION_PENDIENTE: el cuerpo ("Abrir Mi cuenta · Autorizar ahora") es el enlace.
+  const cuerpoEnlace = CUERPO_ES_ENLACE.has(n.tipo)
 
   if (!compact) {
     // Fila de la página (Figma "Notificaciones/Bandeja"): ícono 32px, título
@@ -49,6 +57,7 @@ export function NotificacionItem({
             <Icono aria-hidden className="size-4.5" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            {etiqueta && <span className="text-xs text-muted-foreground">{etiqueta}</span>}
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className={cn("min-w-0 text-sm text-foreground", !n.leida && "font-medium")}>{titulo}</span>
               {n.leida ? (
@@ -65,7 +74,14 @@ export function NotificacionItem({
               )}
             </span>
             {n.cuerpo && (
-              <span className="line-clamp-2 text-sm whitespace-normal text-muted-foreground">{n.cuerpo}</span>
+              <span
+                className={cn(
+                  "line-clamp-2 text-sm whitespace-normal",
+                  cuerpoEnlace ? "font-medium text-primary" : "text-muted-foreground",
+                )}
+              >
+                {n.cuerpo}
+              </span>
             )}
             {ENLACE_POR_TIPO[n.tipo] && (
               <span className="text-sm font-medium text-primary underline-offset-2 hover:underline">
@@ -86,7 +102,7 @@ export function NotificacionItem({
   // al título (siempre en peso medio), fecha corta a la derecha, cuerpo y enlace
   // en 12px. El fondo (leída = gris) lo pone el `<li>` de la campana. El enlace solo dice a dónde
   // lleva: toda la entrada abre el `deepLink`.
-  const enlace = ENLACE_POR_TIPO[n.tipo] ?? (n.deepLink ? "Abrir" : null)
+  const enlace = cuerpoEnlace ? null : (ENLACE_POR_TIPO[n.tipo] ?? (n.deepLink ? "Abrir" : null))
   return (
     <>
       <button
@@ -94,16 +110,27 @@ export function NotificacionItem({
         onClick={() => onOpen(n)}
         className="flex w-full min-w-0 flex-col gap-1 p-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-inset"
       >
+        {etiqueta && (
+          <span className="text-xs text-muted-foreground">
+            {etiqueta} · <time dateTime={n.creadaEn}>{horaDelDia(n.creadaEn)}</time>
+          </span>
+        )}
         <span className="flex w-full min-w-0 items-center gap-1.5">
           <Icono aria-hidden className="size-4 shrink-0 text-orange" />
-          <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+          <span
+            className={cn("min-w-0 flex-1 truncate text-xs text-foreground", etiqueta ? "font-semibold" : "font-medium")}
+          >
             {titulo}
           </span>
-          <time dateTime={n.creadaEn} className="shrink-0 text-xs text-muted-foreground tabular-nums">
-            {fechaCorta(n.creadaEn)}
-          </time>
+          {!etiqueta && (
+            <time dateTime={n.creadaEn} className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {fechaCorta(n.creadaEn)}
+            </time>
+          )}
         </span>
-        {n.cuerpo && <span className="line-clamp-2 text-xs text-foreground">{n.cuerpo}</span>}
+        {n.cuerpo && (
+          <span className={cn("line-clamp-2 text-xs", cuerpoEnlace ? "text-primary" : "text-foreground")}>{n.cuerpo}</span>
+        )}
         {enlace && <span className="text-xs text-primary underline-offset-2 hover:underline">{enlace}</span>}
         <span className="sr-only">{n.leida ? "Leída" : "Sin leer"}</span>
       </button>

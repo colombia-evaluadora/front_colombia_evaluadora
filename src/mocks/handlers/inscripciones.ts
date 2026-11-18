@@ -7,6 +7,12 @@ import type {
 import type { EstadoOpcion, SituacionEdad } from "@/features/coverage/inscripcion-reservas/api/types/inscripcion"
 import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
 import { gruposDb, nombreGrupoMock } from "@/mocks/handlers/inscripciones-configuracion"
+import type { AutorizacionEstablecimiento } from "@/features/autorizacion-datos/api/types"
+import {
+  autorizacionesInscripcionDb,
+  autorizarEn,
+  idEstablecimientoMock,
+} from "@/mocks/db/autorizacion-datos"
 
 // Inscripciones con la forma de sso V426: rutas `/eval-col/cobertura-academica/inscripciones`,
 // cuerpos en MAYÚSCULAS, listado en snake_case con `total_count` y el resto en `{ rows: [{ datos }] }`.
@@ -17,7 +23,14 @@ const PRIORIDADES = ["Hermano verificado", "Víctima del conflicto armado", "Dis
 const EDADES: SituacionEdad[] = ["EN_EDAD", "EN_EDAD", "EXTRAEDAD", "EN_EDAD", "PREEXTRAEDAD", "EN_EDAD", "BAJA_EDAD", "SIN_CALCULAR"]
 const ESTADOS: EstadoOpcion[] = ["PENDIENTE", "PENDIENTE", "PENDIENTE", "EN_LISTA_ESPERA", "PENDIENTE", "PENDIENTE", "ADMITIDA", "NO_ADMITIDA", "PENDIENTE", "DESCARTADA"]
 
-type OpcionMock = Omit<OpcionInscripcionRow, "posicion" | "cupos_disponibles" | "total_count"> & {
+// En la "base" el mock guarda todo; la lista oculta lo sensible al responder (Regla 81).
+type OpcionMock = Omit<
+  OpcionInscripcionRow,
+  "posicion" | "cupos_disponibles" | "total_count" | "aspirante" | "documento" | "situacion_edad"
+> & {
+  aspirante: string
+  documento: string
+  situacion_edad: SituacionEdad
   grado: string
   jornada: string
 }
@@ -111,6 +124,38 @@ const JORNADAS = ["Mañana", "Tarde"]
 const cuposDb = new Map<string, number>()
 const cuposDe = (grado: string, jornada: string) => cuposDb.get(`${grado}|${jornada}`) ?? 12
 
+/**
+ * Regla 81: autorizaciones de la inscripción por establecimiento. La 5.ª y la 10.ª de cada
+ * grado no autorizaron a nadie; las demás, a todos los establecimientos de sus opciones.
+ */
+function autorizacionesDe(base: OpcionMock): AutorizacionEstablecimiento[] {
+  let lista = autorizacionesInscripcionDb.get(base.inscripcion_id)
+  if (!lista) {
+    const indice = NOMBRES.indexOf(base.aspirante)
+    const autorizado = indice !== 4 && indice !== 9
+    const nombres = [...new Set(opcionesDeInscripcion(base).map((o) => o.establecimiento))]
+    lista = nombres.map((establecimiento) => ({
+      establecimientoId: idEstablecimientoMock(establecimiento),
+      establecimiento,
+      autorizado,
+    }))
+    autorizacionesInscripcionDb.set(base.inscripcion_id, lista)
+  }
+  return lista
+}
+
+/** El mock consulta siempre como IE Central. */
+const ESTE_ESTABLECIMIENTO = idEstablecimientoMock("IE Central")
+const sinAutorizacion = (base: OpcionMock) =>
+  !autorizacionesDe(base).some((a) => a.establecimientoId === ESTE_ESTABLECIMIENTO && a.autorizado)
+
+/** Sin autorización la búsqueda solo matchea por número (sso V424.1). */
+function coincideBusqueda(o: OpcionMock, q: string | undefined) {
+  if (!q || o.numero_inscripcion.includes(q)) return true
+  if (sinAutorizacion(o)) return false
+  return o.aspirante.toLowerCase().includes(q) || o.documento.includes(q)
+}
+
 const conDatos = (datos: unknown) => HttpResponse.json({ rows: [{ datos }] })
 const error = (status: number, message: string) => HttpResponse.json({ message }, { status })
 
@@ -161,15 +206,24 @@ export const inscripcionesHandlers = [
       .map((o, i) => ({ ...o, posicion: i + 1 }))
       .filter(
         (o) =>
-          estados.includes(o.estado_opcion) &&
-          (!q || o.aspirante.toLowerCase().includes(q) || o.numero_inscripcion.includes(q) || o.documento.includes(q)),
+          estados.includes(o.estado_opcion) && coincideBusqueda(o, q),
       )
     const start = b.PAGEINDEX * b.PAGESIZE
-    const rows = filtradas.slice(start, start + b.PAGESIZE).map(({ grado: _g, jornada: _j, ...o }) => ({
-      ...o,
-      cupos_disponibles: cupos,
-      total_count: filtradas.length,
-    }))
+    const rows = filtradas.slice(start, start + b.PAGESIZE).map(({ grado: _g, jornada: _j, ...o }, i) =>
+      // Regla 81: sin autorización, lo sensible viaja en null.
+      sinAutorizacion(filtradas[start + i])
+        ? {
+            ...o,
+            aspirante: null,
+            documento: null,
+            documentos_faltantes: null,
+            situacion_edad: null,
+            sin_autorizacion: true,
+            cupos_disponibles: cupos,
+            total_count: filtradas.length,
+          }
+        : { ...o, sin_autorizacion: false, cupos_disponibles: cupos, total_count: filtradas.length },
+    )
     return HttpResponse.json({ rows })
   }),
 
@@ -300,7 +354,24 @@ export const inscripcionesHandlers = [
         { tipoId: 13, nombre: "Certificado médico del estudiante", archivo: null, revision: "SIN_ARCHIVO" },
       ],
     }
-    return conDatos(detalle)
+    const autorizaciones = structuredClone(autorizacionesDe(base))
+    // Regla 81 (sso V425): sin autorización quedan id, número, estado, grupo y opciones.
+    if (sinAutorizacion(base)) {
+      return conDatos({
+        ...detalle,
+        datos_restringidos: true,
+        autorizaciones,
+        documentoHermano: null,
+        paisOrigen: null,
+        lenguaMaterna: null,
+        condicionMigratoria: null,
+        opciones: detalle.opciones.map((o) => ({ ...o, hermanoVerificado: null })),
+        estudiante: null,
+        acudiente: null,
+        soportes: null,
+      } satisfies InscripcionDetalleRow)
+    }
+    return conDatos({ ...detalle, datos_restringidos: false, autorizaciones })
   }),
 
   // Ampliar (Regla 27): una opción Pendiente más, al final. El mock no conoce el período: la nombra por su id.
@@ -364,15 +435,27 @@ export const inscripcionesHandlers = [
   http.post(`*/api/files/eval-col/cobertura-academica/inscripciones`, async ({ request }) => {
     await delay(500)
     const body = await request.formData()
-    // Mismas reglas que el back: autorización obligatoria (Ley 1581) y documento del hermano de 5 a 20.
-    if (body.get("AUTORIZA_DATOS") !== "true") {
-      return error(400, "Para guardar la inscripción hay que autorizar el tratamiento de datos (Ley 1581 de 2012).")
-    }
+    // Mismas reglas que el back: autorización opcional (Regla 81) y documento del hermano de 5 a 20.
+    const autoriza = body.get("AUTORIZA_DATOS") === "true"
     const hermano = body.get("DOCUMENTO_HERMANO")
     if (typeof hermano === "string" && !/^[A-Za-z0-9]{5,20}$/.test(hermano)) {
       return error(400, "El Documento del hermano debe tener entre 5 y 20 letras o dígitos, sin puntos ni espacios.")
     }
     const numero = String(500 + Math.floor(Math.random() * 400)).padStart(5, "0")
-    return conDatos({ id: Number(numero), numeroInscripcion: numero })
+    return conDatos({ id: Number(numero), numeroInscripcion: numero, autorizacionPendiente: !autoriza })
+  }),
+
+  // Regla 81: el acudiente autoriza establecimientos de una inscripción del listado
+  // (las de Mi cuenta las atiende `autorizacion-datos.ts`, registrado antes).
+  http.post(`${BASE}/:id/autorizar`, async ({ params, request }) => {
+    await delay(300)
+    const base = todas().find((o) => o.inscripcion_id === Number(params.id))
+    if (!base) return error(404, "No se encontró la inscripción.")
+    const { ESTABLECIMIENTOS } = (await request.json()) as { ESTABLECIMIENTOS: number[] }
+    const lista = autorizacionesDe(base)
+    if (!ESTABLECIMIENTOS?.length || ESTABLECIMIENTOS.some((id) => !lista.some((a) => a.establecimientoId === Number(id)))) {
+      return error(400, "Hay establecimientos que no son de la inscripción.")
+    }
+    return conDatos(structuredClone(autorizarEn(lista, ESTABLECIMIENTOS.map(Number))))
   }),
 ]

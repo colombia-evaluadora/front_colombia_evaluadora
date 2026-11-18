@@ -81,7 +81,7 @@ export function useNotificacionesTiempoReal() {
           document.visibilityState === "visible"
             ? avisoEmergente(e.data, window.location.pathname + window.location.search)
             : null
-        const canal = aviso ? /[?&]canal=(d+)/.exec(aviso.href)?.[1] : undefined
+        const canal = aviso ? /[?&]canal=(\d+)/.exec(aviso.href)?.[1] : undefined
         if (aviso && !(canal && archivadas.has(Number(canal)))) {
           toast(aviso.titulo, {
             // El id evita duplicar el aviso si el evento llega dos veces (reconexión del socket).
@@ -89,6 +89,8 @@ export function useNotificacionesTiempoReal() {
             description: aviso.cuerpo,
             duration: AVISO_EMERGENTE_MS,
             position: "top-right",
+            // Prototipo M.1.CAM.3: [Abrir] [×]; cerrarlo no quita el aviso de la campana.
+            closeButton: true,
             action: {
               label: "Abrir",
               onClick: () => {

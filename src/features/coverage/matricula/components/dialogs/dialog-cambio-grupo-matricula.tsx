@@ -159,7 +159,7 @@ export function CambioGrupoMatriculaDialog(props: CambioGrupoMatriculaDialogProp
           </div>
         )}
 
-        <DialogFooter className={masivo ? "sm:justify-end" : "shrink-0 px-6 pb-6 sm:justify-end"}>
+        <DialogFooter className={masivo ? "sm:justify-end" : "m-0 shrink-0 px-6 pb-6 sm:justify-end"}>
           {props.modo === "masivo" && props.onBack && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={props.onBack}>
               <ArrowLeftIcon data-icon="inline-start" />

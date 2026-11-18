@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import { useForm } from "@tanstack/react-form"
 import * as z from "zod"
 
@@ -14,6 +15,9 @@ import { useSolicitarCambioCorreo } from "@/features/cuenta/api/cambio-correo"
 import { SeguridadSegundoFactor } from "@/features/cuenta/components/seguridad-segundo-factor"
 import { CambiarContrasena } from "@/features/cuenta/components/cambiar-contrasena"
 import { SesionesActivas } from "@/features/cuenta/components/sesiones-activas"
+import { AutorizacionesDatos } from "@/features/cuenta/components/autorizaciones-datos"
+import type { SeccionCuenta } from "@/features/cuenta/api/schema"
+import { miCuentaRoute } from "@/router"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PERFIL_LABEL, perfilesDeRoles } from "@/features/navigation/lib/perfil"
 
@@ -146,11 +150,23 @@ function MisDatos() {
 
 /**
  * Mi cuenta (Administración del Sistema §13.5): pestañas Mis datos,
- * Seguridad (contraseña y, para el funcionario, la verificación en dos pasos)
- * y Sesiones activas. La tiene todo usuario, sin depender de los permisos.
+ * Seguridad (contraseña y, para el funcionario, la verificación en dos pasos),
+ * Sesiones activas y Autorizaciones de tratamiento de datos (`?seccion=`). La tiene todo usuario, sin depender de los permisos.
  */
 export function MiCuentaPage() {
   const { data: user } = useUser()
+  const { seccion = "datos" } = miCuentaRoute.useSearch()
+  const navigate = miCuentaRoute.useNavigate()
+  const autorizacionesRef = useRef<HTMLDivElement>(null)
+
+  // Deep link de la notificación AUTORIZACION_PENDIENTE: abre la pestaña y la lleva a la vista.
+  useEffect(() => {
+    if (seccion !== "autorizaciones") return
+    const t = window.requestAnimationFrame(() =>
+      autorizacionesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    )
+    return () => window.cancelAnimationFrame(t)
+  }, [seccion])
   const perfiles = perfilesDeRoles(user?.roles)
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 sm:p-6">
@@ -162,11 +178,15 @@ export function MiCuentaPage() {
             : "Los datos con los que ingresa a la plataforma."}
         </p>
       </div>
-      <Tabs defaultValue="datos">
+      <Tabs
+        value={seccion}
+        onValueChange={(v) => void navigate({ search: { seccion: v as SeccionCuenta }, replace: true })}
+      >
         <TabsList>
           <TabsTrigger value="datos">Mis datos</TabsTrigger>
           <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
           <TabsTrigger value="sesiones">Sesiones activas</TabsTrigger>
+          <TabsTrigger value="autorizaciones">Autorizaciones</TabsTrigger>
         </TabsList>
         <TabsContent value="datos" className="pt-4">
           <MisDatos />
@@ -177,6 +197,9 @@ export function MiCuentaPage() {
         </TabsContent>
         <TabsContent value="sesiones" className="pt-4">
           <SesionesActivas />
+        </TabsContent>
+        <TabsContent value="autorizaciones" className="scroll-mt-20 pt-4" ref={autorizacionesRef}>
+          <AutorizacionesDatos />
         </TabsContent>
       </Tabs>
     </div>

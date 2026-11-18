@@ -40,35 +40,33 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
  * es lo que prende la sombra del pie (`DialogFooter`). Se escribe directo en el DOM para no
  * re-renderizar el modal en cada scroll. Se re-evalúa al hacer scroll y cuando cambia el alto del
  * modal o de alguno de sus hijos (p. ej. al abrir una sección plegable).
+ *
+ * Es un ref callback de módulo (estable, sin hooks): React 19 llama a la función que devuelve como
+ * limpieza al desmontar.
  */
-function useMarcaDesborde() {
-  const limpiar = React.useRef<(() => void) | null>(null)
-  return React.useCallback((el: HTMLElement | null) => {
-    limpiar.current?.()
-    limpiar.current = null
-    if (!el) return
-    const evaluar = () => {
-      const desborda = el.scrollHeight - el.clientHeight > 1
-      const alFinal = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
-      el.dataset.desborde = String(desborda && !alFinal)
-    }
-    const ro = new ResizeObserver(evaluar)
-    const observarHijos = () => {
-      ro.disconnect()
-      ro.observe(el)
-      for (const hijo of Array.from(el.children)) ro.observe(hijo)
-      evaluar()
-    }
-    const mo = new MutationObserver(observarHijos)
-    mo.observe(el, { childList: true })
-    el.addEventListener("scroll", evaluar, { passive: true })
-    observarHijos()
-    limpiar.current = () => {
-      ro.disconnect()
-      mo.disconnect()
-      el.removeEventListener("scroll", evaluar)
-    }
-  }, [])
+function marcarDesborde(el: HTMLElement | null) {
+  if (!el) return
+  const evaluar = () => {
+    const desborda = el.scrollHeight - el.clientHeight > 1
+    const alFinal = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
+    el.dataset.desborde = String(desborda && !alFinal)
+  }
+  const ro = new ResizeObserver(evaluar)
+  const observarHijos = () => {
+    ro.disconnect()
+    ro.observe(el)
+    for (const hijo of Array.from(el.children)) ro.observe(hijo)
+    evaluar()
+  }
+  const mo = new MutationObserver(observarHijos)
+  mo.observe(el, { childList: true })
+  el.addEventListener("scroll", evaluar, { passive: true })
+  observarHijos()
+  return () => {
+    ro.disconnect()
+    mo.disconnect()
+    el.removeEventListener("scroll", evaluar)
+  }
 }
 
 function DialogContent({
@@ -79,7 +77,6 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
-  const marcaDesborde = useMarcaDesborde()
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -93,7 +90,7 @@ function DialogContent({
           className,
         )}
         {...props}
-        ref={marcaDesborde}
+        ref={marcarDesborde}
       >
         {children}
         {showCloseButton && (

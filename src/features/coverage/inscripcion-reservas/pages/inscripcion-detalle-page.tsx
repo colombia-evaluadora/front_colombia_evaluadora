@@ -44,6 +44,7 @@ import {
   ElegirOpcionDialog,
   type InscripcionObjetivo,
 } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-ampliar-elegir"
+import { AvisoAutorizacionPendiente } from "@/features/autorizacion-datos/components/aviso-autorizacion-pendiente"
 import { Marca } from "@/features/coverage/inscripcion-reservas/components/table/columns-inscripciones"
 import {
   CampoLectura,
@@ -84,6 +85,8 @@ export function InscripcionDetallePage() {
     .join(" ")
   // Una inscripción anulada o ya admitida no se edita ni se anula.
   const editable = data.estado !== "ANULADA" && data.estado !== "ADMITIDA"
+  // Regla 81: sin autorización el back no devuelve personas ni soportes (nada que editar).
+  const restringido = data.datosRestringidos
   const vivas = data.opciones.filter((o) => o.estado !== "DESCARTADA")
   // Regla 27: Inscrita o En lista de espera y menos de tres opciones (el back valida cierre y sorteo).
   const ampliable =
@@ -108,7 +111,7 @@ export function InscripcionDetallePage() {
                 {editable && (
                   <AnularBoton id={data.id} numeroInscripcion={data.numeroInscripcion} />
                 )}
-                {editable && (
+                {editable && !restringido && (
                   <Button
                     nativeButton={false}
                     render={<Link to={paths.app.coberturaInscripcionEditar.getHref(data.id)} />}
@@ -121,11 +124,21 @@ export function InscripcionDetallePage() {
             ) : null
           }
         >
-          Inscripción {data.numeroInscripcion} · {nombre}
+          Inscripción {data.numeroInscripcion}
+          {nombre ? ` · ${nombre}` : ""}
         </TableScreenTitle>
       </TableScreenHeader>
 
       <TableScreenBody>
+        {restringido && (
+          <div className="mb-4">
+            <AvisoAutorizacionPendiente>
+              El acudiente no ha autorizado el tratamiento de datos a este establecimiento: solo se
+              ven número, grado y opciones. Los datos del estudiante, del acudiente y los soportes
+              aparecen cuando lo autorice (desde Consultar inscripción o Mi cuenta).
+            </AvisoAutorizacionPendiente>
+          </div>
+        )}
         <Secciones abiertas={["opciones", "datos", "personas", "soportes"]}>
           <Seccion value="opciones" titulo="Opciones de cupo" tabla>
             <Opciones d={data} />
@@ -150,12 +163,16 @@ export function InscripcionDetallePage() {
               />
             </Rejilla>
           </Seccion>
-          <Seccion value="personas" titulo="Información del estudiante y del acudiente">
-            <Personas d={data} />
-          </Seccion>
-          <Seccion value="soportes" titulo="Archivo de soporte" tabla>
-            <Soportes d={data} />
-          </Seccion>
+          {!restringido && (
+            <Seccion value="personas" titulo="Información del estudiante y del acudiente">
+              <Personas d={data} />
+            </Seccion>
+          )}
+          {!restringido && (
+            <Seccion value="soportes" titulo="Archivo de soporte" tabla>
+              <Soportes d={data} />
+            </Seccion>
+          )}
         </Secciones>
       </TableScreenBody>
     </TableScreen>
@@ -233,7 +250,11 @@ function Opciones({ d }: { d: InscripcionDetalle }) {
                 <Marca {...ESTADO_OPCION_UI[o.estado]} />
               </TableCell>
               <TableCell>
-                <Marca label={o.hermanoVerificado ? "Sí" : "No"} color="neutral" punto={false} />
+                {o.hermanoVerificado == null ? (
+                  "—"
+                ) : (
+                  <Marca label={o.hermanoVerificado ? "Sí" : "No"} color="neutral" punto={false} />
+                )}
               </TableCell>
             </TableRow>
           ))}
@@ -270,7 +291,7 @@ function Personas({ d }: { d: InscripcionDetalle }) {
       <CampoLectura
         id="est-nac"
         label="Fecha de nacimiento"
-        value={format(parseISO(e.fechaNacimiento), "dd/MM/yyyy")}
+        value={e.fechaNacimiento ? format(parseISO(e.fechaNacimiento), "dd/MM/yyyy") : ""}
       />
       <CampoLectura id="est-pais" label="País de origen" value={e.paisOrigen} />
       <div className="md:col-span-2">

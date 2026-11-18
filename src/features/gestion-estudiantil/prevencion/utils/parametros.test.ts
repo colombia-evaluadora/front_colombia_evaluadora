@@ -25,9 +25,16 @@ const base: ParametrosRiesgo = {
   compromisos_incumplidos_alerta: 1,
   condiciones_alerta: ["VICTIMA_CONFLICTO"],
   es_predeterminado: true,
+  aviso_sm_seguimiento: "SIEMPRE",
+  aviso_sm_seguimiento_nombre: "Siempre",
+  puede_editar: true,
 }
 
 describe("parámetros de riesgo", () => {
+  it("el aviso en salud mental viaja por VALOR", () => {
+    expect(parametrosParaBackend(1, valoresIniciales(base)).AVISO_SM_SEGUIMIENTO).toBe("SIEMPRE")
+  })
+
   it("los predeterminados son válidos y la caída vacía viaja null", () => {
     const v = valoresIniciales(base)
     expect(hayErroresParametros(validarParametros(v))).toBe(false)

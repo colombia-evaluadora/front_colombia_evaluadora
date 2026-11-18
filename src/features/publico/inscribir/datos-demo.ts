@@ -1,5 +1,3 @@
-import { z } from "zod"
-
 import type { CatalogosFijos } from "@/features/coverage/matricula/api/query/catalogos-fijos"
 import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 
@@ -13,10 +11,6 @@ import type { DepartmentOption } from "@/features/coverage/matricula/components/
  * query (y `catalogos` por los catálogos públicos del backend).
  */
 
-/** `?vista=formulario` muestra el asistente; sin él, el estado real: sin inscripciones abiertas. */
-export const inscribirSearchSchema = z.object({
-  vista: z.enum(["formulario"]).optional().catch(undefined),
-})
 
 export const ANIO_INSCRIPCION = 2028
 export const MAX_OPCIONES = 3
