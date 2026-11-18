@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 
-import { BackToHomeLink } from "@/components/public/public-page"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -154,7 +153,6 @@ export function FormularioConsulta({ onEncontrada }: { onEncontrada: (i: Inscrip
         Consultar
       </Button>
 
-      <BackToHomeLink />
     </form>
   )
 }
