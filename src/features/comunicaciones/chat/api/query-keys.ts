@@ -53,4 +53,9 @@ export const chatKeys = {
     [...conversacion(conversacionId), "eleccion"] as const,
   encuesta: (conversacionId: number | "none") =>
     [...conversacion(conversacionId), "encuesta"] as const,
+  // Hilo con acudientes: lista (bandeja), opciones del docente y encabezado del hilo.
+  hilosAcudientes: [...all, "hilos-acudientes"] as const,
+  hilosAcudientesOpciones: [...all, "hilos-acudientes", "opciones"] as const,
+  hiloAcudientes: (conversacionId: number | "none") =>
+    [...conversacion(conversacionId), "hilo-acudientes"] as const,
 } as const

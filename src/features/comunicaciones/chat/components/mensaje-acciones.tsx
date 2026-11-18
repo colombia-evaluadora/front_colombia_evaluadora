@@ -46,6 +46,11 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { adjuntosVigentes } from "@/features/comunicaciones/chat/lib/archivo-adjunto"
 import { restanteRetiro } from "@/features/comunicaciones/chat/lib/limites-mensaje"
 import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/components/eliminar-de-bandeja-dialog"
+import {
+  useHiloAcudientesQuery,
+  useResumenHilo,
+} from "@/features/comunicaciones/chat/api/query/use-hilos-acudientes-query"
+import { useOcultarMensajeHilo } from "@/features/comunicaciones/chat/api/mutations/use-hilo-acudientes"
 
 /**
  * "Eliminar de mi bandeja" de un mensaje, propio o ajeno (M.2.RET.2): botón de la barra de acciones
@@ -286,5 +291,68 @@ function Accion({
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Menú ⁞ de un mensaje ajeno en un hilo con acudientes, solo para su moderador (M.2.HIL.3): "Ocultar
+ * mensaje". Queda "Mensaje oculto por el moderador" para todos; el original se conserva para auditoría.
+ */
+export function MenuModeradorHilo({ mensaje: m }: { mensaje: Mensaje }) {
+  const resumen = useResumenHilo(m.conversacionId)
+  const hilo = useHiloAcudientesQuery(resumen ? m.conversacionId : undefined).data
+  const { notify } = useNotify()
+  const ocultar = useOcultarMensajeHilo()
+  const [confirmando, setConfirmando] = useState(false)
+  if (!hilo?.esModerador || m.ocultoPorModerador) return null
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          aria-label="Opciones del mensaje"
+          title="Opciones del mensaje"
+          className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/60"
+        >
+          <DotsThreeVerticalIcon className="size-4.5" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem className={`${ITEM} text-red`} onClick={() => setConfirmando(true)}>
+            <EyeSlashIcon />
+            Ocultar mensaje
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog open={confirmando} onOpenChange={(o) => !ocultar.isPending && setConfirmando(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Ocultar este mensaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Los participantes verán «Mensaje oculto por el moderador». El original se conserva para auditoría.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={ocultar.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              color="destructive"
+              disabled={ocultar.isPending}
+              onClick={() =>
+                ocultar.mutate(
+                  { conversacionId: m.conversacionId, mensajeId: m.id },
+                  {
+                    onSuccess: () => {
+                      notify("El mensaje quedó oculto.")
+                      setConfirmando(false)
+                    },
+                    onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+                  },
+                )
+              }
+            >
+              Ocultar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
