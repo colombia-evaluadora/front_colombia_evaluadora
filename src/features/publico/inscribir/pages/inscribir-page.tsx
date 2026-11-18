@@ -85,6 +85,7 @@ export function InscribirPage() {
         subtitle="Aún no hay inscripciones abiertas"
         breadcrumb={BREADCRUMB}
         width="xl"
+        backToHome
       >
         <InscripcionesCerradas />
       </PublicBand>
@@ -247,6 +248,7 @@ function AsistenteInscripcion() {
       subtitle={`Paso ${paso + 1} de ${PASOS.length} · ${SUBTITULOS[paso]}`}
       breadcrumb={BREADCRUMB}
       width="xl"
+      backToHome
       actions={acciones}
     >
       <div className="flex flex-col gap-6">
