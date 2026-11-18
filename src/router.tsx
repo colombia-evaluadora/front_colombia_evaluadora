@@ -2424,7 +2424,7 @@ export const chatRoute = createRoute({
   staticData: {
     breadcrumb: [
       { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
-      { label: "Chat" },
+      { label: "Mensajería interna", to: paths.app.comunicacionesChat.getHref() },
     ],
   },
   component: ChatPage,

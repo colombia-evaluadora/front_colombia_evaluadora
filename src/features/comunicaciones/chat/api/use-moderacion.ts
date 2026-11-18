@@ -28,6 +28,8 @@ export interface ConfiguracionMensajeria {
   horaInicio: string | null
   horaFin: string | null
   incluyeSabado: boolean
+  // SSO #1006: estudiantes menores pueden iniciar conversaciones (off por defecto).
+  permitirMenoresIniciar?: boolean | null
 }
 
 const keys = {
@@ -112,12 +114,18 @@ export function useConfiguracionQuery(enabled: boolean) {
 export function useGuardarConfiguracion() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (c: { horaInicio: string; horaFin: string; incluyeSabado: boolean }) =>
+    mutationFn: (c: { horaInicio: string; horaFin: string; incluyeSabado: boolean; permitirMenoresIniciar: boolean }) =>
       evalCol.putRow<ConfiguracionMensajeria>("/comunicaciones/moderacion/configuracion", {
+        // "" en ambas = sin horario (SSO #1006).
         HORA_INICIO: c.horaInicio,
         HORA_FIN: c.horaFin,
         INCLUYE_SABADO: c.incluyeSabado ? "S" : "N",
+        PERMITIR_MENORES_INICIAR: c.permitirMenoresIniciar ? "S" : "N",
       }),
-    onSuccess: (c) => queryClient.setQueryData(keys.configuracion, c),
+    onSuccess: (c) => {
+      queryClient.setQueryData(keys.configuracion, c)
+      // La política (`puedeIniciarConversaciones`) depende de este interruptor.
+      return queryClient.invalidateQueries({ queryKey: chatKeys.politica })
+    },
   })
 }
