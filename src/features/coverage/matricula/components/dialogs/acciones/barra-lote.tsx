@@ -7,6 +7,7 @@ import {
   ArrowsLeftRightIcon,
   FilePdfIcon,
   FileTextIcon,
+  IdentificationCardIcon,
   PersonAddIcon,
   PersonRemoveIcon,
   SpinnerIcon,
@@ -27,10 +28,10 @@ import { DialogReactivarMatricula } from "@/features/coverage/matricula/componen
 import { DialogCambiarGrupo } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grupo"
 import { DialogCambiarGrado } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grado"
 import { DialogReactivarLote } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-reactivar-lote"
-import { DialogGenerarConstancias } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
+import { DialogGenerarCarnes, DialogGenerarConstancias } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
 import { ExportSelectedMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-export-selected-matricula"
 
-type Accion = "retirar" | "reingresar" | "reactivar" | "cambiar-grupo" | "cambiar-grado" | "constancias"
+type Accion = "retirar" | "reingresar" | "reactivar" | "cambiar-grupo" | "cambiar-grado" | "constancias" | "carnes"
 
 /** Sin solicitud de retiro ni anulación pendiente (Regla 71): admite cambios académicos. */
 const libre = (m: Matricula) => !m.retiroSolicitado && !m.anulacionPendiente
@@ -112,6 +113,12 @@ const ACCIONES: Definicion[] = [
     label: (n) => (n === 1 ? "Generar constancia" : "Generar constancias"),
     Icon: FilePdfIcon,
     bloqueo: (sel) => (sel.every(cursando) ? null : "La constancia de estudio solo se genera para matrículas Cursando."),
+  },
+  {
+    accion: "carnes",
+    label: (n) => (n === 1 ? "Generar carné" : "Generar carnés"),
+    Icon: IdentificationCardIcon,
+    bloqueo: (sel) => (sel.every(cursando) ? null : "El carné estudiantil solo se genera para matrículas Cursando."),
   },
 ]
 
@@ -213,6 +220,7 @@ export function BarraLote({ selected, resetSelection }: { selected: Matricula[];
       {abierta === "cambiar-grupo" ? <DialogCambiarGrupo {...props} /> : null}
       {abierta === "cambiar-grado" ? <DialogCambiarGrado {...props} /> : null}
       {abierta === "constancias" ? <DialogGenerarConstancias {...props} /> : null}
+      {abierta === "carnes" ? <DialogGenerarCarnes {...props} /> : null}
       {abierta === "reactivar" ? (
         count === 1 ? (
           <DialogReactivarMatricula

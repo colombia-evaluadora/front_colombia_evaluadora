@@ -77,7 +77,6 @@ export function MatriculaStudentSection({
         value={value.firstName}
         maxLength={50}
           transform={aNombre}
-        masked={identityDisabled}
           disabled={bloqueado}
         onChange={(firstName) => onChange({ ...value, firstName })}
       />
@@ -90,7 +89,6 @@ export function MatriculaStudentSection({
           value={value.secondName}
           maxLength={50}
           transform={aNombre}
-          masked={identityDisabled}
           disabled={bloqueado}
           onChange={(secondName) => onChange({ ...value, secondName })}
         />
@@ -103,7 +101,6 @@ export function MatriculaStudentSection({
         value={value.lastName}
         maxLength={50}
           transform={aNombre}
-        masked={identityDisabled}
           disabled={bloqueado}
         onChange={(lastName) => onChange({ ...value, lastName })}
       />
@@ -116,7 +113,6 @@ export function MatriculaStudentSection({
           value={value.secondLastName}
           maxLength={50}
           transform={aNombre}
-          masked={identityDisabled}
           disabled={bloqueado}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
         />

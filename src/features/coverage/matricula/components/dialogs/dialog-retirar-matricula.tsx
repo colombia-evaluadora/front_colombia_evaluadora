@@ -163,6 +163,12 @@ export function DialogRetirar({
               : `${plural(conComplementaria.length, "estudiante tiene", "estudiantes tienen")} matrícula complementaria: también pasará a Retirado.`
             : null}
         </Aviso>
+        {/* Regla 12: retirar la complementaria no toca la principal. */}
+        {matriculas.some((m) => m.tipo === "COMPLEMENTARIA") ? (
+          <Aviso tono="info" titulo={uno ? "Es una matrícula complementaria: la principal sigue Cursando." : "Las matrículas complementarias se retiran solas: sus principales siguen Cursando."}>
+            Se avisa al Administrador y al Gestor administrativo del establecimiento de la principal.
+          </Aviso>
+        ) : null}
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>

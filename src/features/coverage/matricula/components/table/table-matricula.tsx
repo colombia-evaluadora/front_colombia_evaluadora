@@ -68,7 +68,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     sorting,
     setSorting,
     // Clave nueva: la vista guardada con el diseño anterior mostraba todas las columnas.
-    columnVisibilityStorageKey: "table-matricula-column-visibility-v2",
+    columnVisibilityStorageKey: "table-matricula-column-visibility-v3",
     initialColumnVisibility: MATRICULA_INITIAL_VISIBILITY,
   })
   const gradeLabel = useMatriculaGradeLabel()
@@ -110,6 +110,11 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
       key: "metodologia",
       label: metodologias?.find((m) => String(m.id) === filters.metodologia)?.nombre ?? "Metodología",
       clear: () => applyFilters({ ...filters, metodologia: "" }),
+    },
+    filters.nuevo && {
+      key: "nuevo",
+      label: filters.nuevo === "S" ? "Nuevos" : "No nuevos",
+      clear: () => applyFilters({ ...filters, nuevo: "" }),
     },
     filters.solicitud && {
       key: "solicitud",

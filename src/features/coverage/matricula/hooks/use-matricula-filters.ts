@@ -30,6 +30,7 @@ export function useMatriculaFilters(): MatriculaFilters {
           tipo: values.tipo === "PRINCIPAL" || values.tipo === "COMPLEMENTARIA" ? values.tipo : undefined,
           metodologia: values.metodologia ? Number(values.metodologia) : undefined,
           solicitud: values.solicitud === "CON_SOLICITUD" ? "CON_SOLICITUD" : undefined,
+          nuevo: values.nuevo === "S" || values.nuevo === "N" ? values.nuevo : undefined,
           page: 0,
         }),
         replace: true,
@@ -50,6 +51,7 @@ export function useMatriculaFilters(): MatriculaFilters {
         tipo: undefined,
         metodologia: undefined,
         solicitud: undefined,
+        nuevo: undefined,
         page: 0,
       }),
       replace: true,
@@ -67,6 +69,7 @@ export function useMatriculaFilters(): MatriculaFilters {
       tipo: search.tipo,
       metodologia: search.metodologia,
       solicitud: search.solicitud,
+      nuevo: search.nuevo,
     }
 
   const activeFilterCount = (() => {
@@ -81,6 +84,7 @@ export function useMatriculaFilters(): MatriculaFilters {
     if (search.tipo) count += 1
     if (search.metodologia != null) count += 1
     if (search.solicitud) count += 1
+    if (search.nuevo) count += 1
     return count
   })()
 
@@ -95,6 +99,7 @@ export function useMatriculaFilters(): MatriculaFilters {
     tipo: search.tipo ?? "",
     metodologia: search.metodologia != null ? String(search.metodologia) : "",
     solicitud: search.solicitud ?? "",
+    nuevo: search.nuevo ?? "",
   }
   // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
   useFiltrosDeListado(filtrosForm, applyFilters)

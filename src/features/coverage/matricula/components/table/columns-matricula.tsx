@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon } from "@/components/ui/icons"
+import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon, ShieldCheckIcon, StackIcon } from "@/components/ui/icons"
 import { useEffect, useState } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 import { DialogUnificarEstudiantes } from "@/features/coverage/matricula/components/dialogs/dialog-unificar-estudiantes"
@@ -23,11 +23,14 @@ import { paths } from "@/config/paths"
 import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 import { EDUCATION_LEVEL_LABELS } from "@/features/coverage/shared/api/ui-mappings"
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
-import type { AgeSituation, Matricula, MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
-import { DeleteMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-delete-matricula"
+import type { AgeSituation, Matricula } from "@/features/coverage/matricula/api/types/matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
 import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
+import { BadgeComplementaria } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
+import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/components/dialogs/dialog-registrar-autorizacion"
+import { DialogAgregarComplementaria } from "@/features/coverage/matricula/components/dialogs/dialog-agregar-complementaria"
+import { DialogCambiarEspecialidad } from "@/features/coverage/matricula-complementaria/components/dialogs-postulacion"
 import { DialogCambiarGrupo } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grupo"
 import { DialogCambiarGrado } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grado"
 import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
@@ -43,7 +46,7 @@ function MatriculaGradeCell({ grade }: { grade: number }) {
   return <span className="tabular-nums">{gradeLabel(grade)}</span>
 }
 
-const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
+// Editar solo con la matrícula Cursando (tabla de acciones de la lista).
 
 type BadgeColor = "info" | "muted" | "success" | "destructive" | "orange" | "warning"
 
@@ -87,11 +90,15 @@ export const MATRICULA_INITIAL_VISIBILITY = {
   grade: false,
   enrollmentDate: false,
   guardian: false,
+  metodologiaGrupo: false,
+  nuevo: false,
 }
 
 export const MATRICULA_EXPORT_COLUMN_KEYS: Partial<Record<string, string | string[]>> = {
   documentNumber: "document_number",
   student: ["first_name", "last_name"],
+  metodologiaGrupo: "metodologia_grupo",
+  nuevo: "nuevo",
   firstName: "first_name",
   lastName: "last_name",
   institution: "institution",
@@ -152,7 +159,18 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     meta: { label: "Estudiante" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estudiante" />,
     cell: ({ row }) => (
-      <span className="font-medium">{`${row.original.firstName} ${row.original.lastName}`}</span>
+      <div className="grid justify-items-start gap-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium">{`${row.original.firstName} ${row.original.lastName}`}</span>
+          <MarcaComplementaria matricula={row.original} />
+        </div>
+        {/* Regla 81: sin la autorización de datos del acudiente, la marca va debajo del nombre. */}
+        {row.original.sinAutorizacion ? (
+          <Badge variant="soft" color="warning" className="rounded-full text-xs font-medium tracking-normal">
+            Sin autorización
+          </Badge>
+        ) : null}
+      </div>
     ),
     enableHiding: false,
   },
@@ -253,14 +271,31 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
   {
     id: "ageSituation",
     accessorKey: "ageSituation",
-    meta: { label: "Edad" },
+    meta: { label: "Situación de edad" },
     // El backend la calcula por fila; no tiene orden propio.
-    header: () => <span>Edad</span>,
+    header: () => <span>Situación de edad</span>,
     cell: ({ row }) => (
       <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
         {AGE_SITUATION_LABELS[row.original.ageSituation ?? "SIN_CALCULAR"]}
       </Badge>
     ),
+    enableSorting: false,
+  },
+  {
+    id: "metodologiaGrupo",
+    accessorKey: "metodologiaGrupo",
+    meta: { label: "Metodología del grupo" },
+    header: () => <span>Metodología del grupo</span>,
+    cell: ({ row }) => row.original.metodologiaGrupo || "—",
+    enableSorting: false,
+  },
+  {
+    id: "nuevo",
+    accessorKey: "nuevo",
+    // Sin matrícula el año anterior en la entidad territorial.
+    meta: { label: "Nuevo" },
+    header: () => <span>Nuevo</span>,
+    cell: ({ row }) => (row.original.nuevo ? "Sí" : "No"),
     enableSorting: false,
   },
   {
@@ -280,7 +315,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
  * deshabilitan.
  */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
-  const { puedeEditar, puedeEliminar } = useMenuPermission("MATRICULA")
+  const { puedeEditar } = useMenuPermission("MATRICULA")
   const row = { original: matricula }
 
   return (
@@ -303,7 +338,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
           </TooltipTrigger>
           <TooltipContent>{`Ver ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
         </Tooltip>
-        {puedeEditar && !NOT_EDITABLE_STATUSES.includes(row.original.status) && (
+        {puedeEditar && row.original.status === "Cursando" && (
           <OnlineOnlyAction>
           <Tooltip>
             <TooltipTrigger
@@ -344,15 +379,109 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
             <ReingresarMatriculaDialog matricula={row.original} />
           </OnlineOnlyAction>
         ) : null}
-        {puedeEliminar ? (
-          <OnlineOnlyAction>
-            <DeleteMatriculaDialog matricula={row.original} />
-          </OnlineOnlyAction>
-        ) : null}
+        <RegistrarAutorizacionAccion matricula={row.original} />
+        <AgregarComplementariaAccion matricula={row.original} />
+        <CambiarEspecialidadAccion matricula={row.original} />
         <AccionesDocumentos matricula={row.original} />
         <AccionesEditar matricula={row.original} />
         <UnificarAccion matricula={row.original} />
       </div>
+  )
+}
+
+/**
+ * Marca de la matrícula complementaria (Sección 2.16): la principal muestra
+ * «Con matrícula complementaria»; la complementaria, «Complementaria» o, por
+ * adscripción, «Complementaria de [Establecimiento de origen]».
+ */
+function MarcaComplementaria({ matricula }: { matricula: Matricula }) {
+  if (matricula.tipo === "COMPLEMENTARIA")
+    return (
+      <Badge variant="soft" color="secondary" className="rounded-full text-xs font-medium tracking-normal">
+        {matricula.origenAdscripcion ? `Complementaria de ${matricula.origenAdscripcion}` : "Complementaria"}
+      </Badge>
+    )
+  return matricula.tieneComplementaria ? <BadgeComplementaria /> : null
+}
+
+/**
+ * Registrar autorización de datos (Sección 2.1, Regla 81): Cursando y sin la
+ * autorización del acudiente. El rol (Administrador o Gestor administrativo
+ * del establecimiento) lo valida el back.
+ */
+function RegistrarAutorizacionAccion({ matricula }: { matricula: Matricula }) {
+  const { puedeEditar } = useMenuPermission("MATRICULA")
+  const [abierto, setAbierto] = useState(false)
+  if (!puedeEditar || matricula.status !== "Cursando" || !matricula.sinAutorizacion) return null
+  return (
+    <OnlineOnlyAction>
+      <BotonAccion
+        modo="icon"
+        label="Registrar autorización de datos"
+        ariaLabel={`Registrar autorización de datos de ${matricula.firstName} ${matricula.lastName}`}
+        Icon={ShieldCheckIcon}
+        onClick={() => setAbierto(true)}
+      />
+      {abierto ? <DialogRegistrarAutorizacion matricula={matricula} onOpenChange={setAbierto} /> : null}
+    </OnlineOnlyAction>
+  )
+}
+
+/**
+ * Cambiar de especialidad (Sección 2.16, Regla 80): solo desde la complementaria
+ * Cursando, nunca desde la principal; la principal toma la nueva sola.
+ */
+function CambiarEspecialidadAccion({ matricula }: { matricula: Matricula }) {
+  const { puedeEditar } = useMenuPermission("MATRICULA")
+  const [abierto, setAbierto] = useState(false)
+  if (!puedeEditar || matricula.status !== "Cursando" || matricula.tipo !== "COMPLEMENTARIA") return null
+  const nombre = `${matricula.firstName} ${matricula.lastName}`
+  return (
+    <OnlineOnlyAction>
+      <BotonAccion
+        modo="icon"
+        label="Cambiar de especialidad"
+        ariaLabel={`Cambiar de especialidad a ${nombre}`}
+        Icon={StackIcon}
+        onClick={() => setAbierto(true)}
+      />
+      {abierto ? (
+        <DialogCambiarEspecialidad matriculaId={Number(matricula.id)} estudiante={nombre} onOpenChange={setAbierto} />
+      ) : null}
+    </OnlineOnlyAction>
+  )
+}
+
+/**
+ * Agregar matrícula complementaria (C.1.COM.1): principal Cursando, sin
+ * complementaria, sin retiro solicitado (Regla 71) y con alguna sede que ofrezca
+ * su grado y especialidad en otra jornada. El rol (Administrador, Gestor o
+ * Supervisor con Guardar en la sede y jornada destino) lo valida el back.
+ */
+function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
+  const { puedeEditar } = useMenuPermission("MATRICULA")
+  const [abierto, setAbierto] = useState(false)
+  if (
+    !puedeEditar ||
+    matricula.status !== "Cursando" ||
+    matricula.tipo === "COMPLEMENTARIA" ||
+    matricula.tieneComplementaria ||
+    !matricula.puedeAgregarComplementaria ||
+    matricula.retiroSolicitado ||
+    matricula.anulacionPendiente
+  )
+    return null
+  return (
+    <OnlineOnlyAction>
+      <BotonAccion
+        modo="icon"
+        label="Agregar matrícula complementaria"
+        ariaLabel={`Agregar matrícula complementaria a ${matricula.firstName} ${matricula.lastName}`}
+        Icon={StackIcon}
+        onClick={() => setAbierto(true)}
+      />
+      {abierto ? <DialogAgregarComplementaria matricula={matricula} onOpenChange={setAbierto} /> : null}
+    </OnlineOnlyAction>
   )
 }
 

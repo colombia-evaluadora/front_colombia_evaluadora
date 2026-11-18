@@ -51,6 +51,16 @@ export const navigationMenu: MockMenu[] = [
     roleIds: [1, 2],
   },
   {
+    id: 70,
+    name: "Matrícula complementaria",
+    icon: "",
+    path: "/app/cobertura/matricula-complementaria",
+    menuOrder: 3,
+    type: "ITEM",
+    idParent: 12,
+    roleIds: [1, 2],
+  },
+  {
     id: 9,
     name: "Administración",
     icon: "Admin-Panel-Settings-Icon",

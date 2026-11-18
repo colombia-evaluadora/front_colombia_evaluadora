@@ -132,6 +132,9 @@ function MatriculaDetailPageContent() {
                   departments={departments}
                   disabled
                   fieldSettings={fieldSettings}
+                  datosProtegidos={
+                    Boolean(data.matricula.sinAutorizacion) || Boolean(data.details?.restricciones?.origenAdscripcion)
+                  }
                 />
               </div>
             </TabsContent>

@@ -13,6 +13,8 @@ export function metodologiaDe(pk: number): number {
   return pk % 10 === 0 ? 2 + ((pk / 10) % 5) : 1
 }
 
+export const metodologiaNombre = (pk: number) => METODOLOGIAS.find((m) => m.pk_lista_valor === pk)?.nombre ?? ""
+
 // Listas nuevas de los bloques 2.1, 2.2, 2.5 y 2.8 (pendientes en el back).
 const lista = (nombres: string[]) => nombres.map((nombre, i) => ({ pk_lista_valor: i + 1, nombre }))
 
@@ -27,4 +29,6 @@ export const CATALOGOS_MATRICULA_NUEVOS: Record<string, { pk_lista_valor: number
   INSTITUCION_BIENESTAR: lista(["Ninguna", "Hogar comunitario ICBF", "CDI", "Jardín infantil privado"]),
   // Retirar (C.1.LOT.1).
   MOTIVO_RETIRO: lista(["Cambio de domicilio", "Traslado a otro establecimiento", "Situación económica", "Deserción", "Enfermedad", "Otro"]),
+  // Anular postulación de matrícula complementaria (Sección 2.16.2).
+  MOTIVO_ANULACION_POSTULACION: lista(["Solicitud del acudiente", "Cambio de establecimiento", "Error en el registro", "El estudiante desiste", "Otro"]),
 }
