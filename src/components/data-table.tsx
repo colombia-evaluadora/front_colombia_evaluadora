@@ -95,10 +95,9 @@ interface DataTableProps {
   footerRow?: (parts: FooterRowParts) => ReactNode
   cellClassName?: string
   /**
-   * Id de la columna que absorbe el espacio sobrante (`width: 100%`). Sirve
-   * para empaquetar a la izquierda las columnas angostas (expandir,
-   * seleccionar) en tablas con pocas columnas, donde el ancho se reparte y
-   * agranda la separación entre celdas.
+   * Columna a la que se le aplican `growColumnClassName` (p. ej. texto que se
+   * parte en varias líneas). El espacio sobrante ya no lo absorbe esta columna:
+   * siempre va a la última columna con datos (ver `lastDataColumnId`).
    */
   growColumnId?: string
   /** Clases extra para `growColumnId`, a nivel de th/td. */
@@ -200,8 +199,14 @@ export function DataTable({
   // la columna dejaba un hueco grande entre los encabezados y el sobrante se
   // reparte entre todas las columnas.
   const hayFilas = table.getRowModel().rows.length > 0
+  // El sobrante lo absorbe SIEMPRE la última columna con datos (antes de las
+  // acciones): así el espacio libre queda al final de la fila y no como un
+  // hueco en medio de la tabla (p. ej. una «Manifestación» con «—» que se
+  // estiraba entre Tipo y Estudiantes). Las columnas angostas de expandir o
+  // seleccionar siguen empaquetadas a la izquierda.
+  const lastDataColumnId = [...visibleColumns].reverse().find((c) => !isActionsColumn(c.id))?.id
   const growCellStyle = (columnId: string) =>
-    hayFilas && columnId === growColumnId ? { width: "100%" } : undefined
+    hayFilas && columnId === lastDataColumnId ? { width: "100%" } : undefined
 
   // Columna de respiro, JUSTO ANTES de la de acciones: el overlay está anclado
   // al borde derecho de su celda y crece hacia la IZQUIERDA, así que el hueco

@@ -3,7 +3,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -22,6 +22,7 @@ function ActividadFormContent({ actividad }: { actividad?: ActividadDetalle }) {
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" type="button" disabled={f.pending} onClick={f.guardar}>

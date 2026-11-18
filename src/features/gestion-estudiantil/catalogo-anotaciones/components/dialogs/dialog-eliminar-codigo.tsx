@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { TrashIcon } from "@/components/ui/icons"
+import { TrashIcon, XIcon } from "@/components/ui/icons"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
@@ -35,7 +35,7 @@ export function DialogEliminarCodigo({ codigo, onClose }: { codigo: CodigoRow; o
         </DialogHeader>
         <ErrorNoticeBanner error={error} />
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button
             size="sm"
             type="button"

@@ -27,6 +27,9 @@ interface ColumnasOpciones {
   puedeEditar: boolean
   puedeAnular: boolean
   puedeRemitir: boolean
+  /** Supervisor de sede y Administrador del establecimiento (Convivencia). */
+  puedeAbrirProceso: boolean
+  onAbrirProceso: (row: AnotacionRow) => void
   onRemitir: (row: AnotacionRow) => void
   /** Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. */
   onReportarSaludMental: (row: AnotacionRow) => void
@@ -39,6 +42,8 @@ export function buildColumnsAnotaciones({
   puedeEditar,
   puedeAnular,
   puedeRemitir,
+  puedeAbrirProceso,
+  onAbrirProceso,
   onRemitir,
   onReportarSaludMental,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
@@ -150,10 +155,17 @@ export function buildColumnsAnotaciones({
                 onSelect: () => onModificar(a),
               },
               { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
-              // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario: aún sin backend.
+              // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario:
+              // solo en una anotación Negativa vigente (G.1.LIS.3); abre el formulario con el estudiante y la anotación.
               { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, onSelect: () => onReportarSaludMental(a) },
               { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
-              { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
+              {
+                id: "disciplinario",
+                label: "Abrir proceso disciplinario",
+                icon: <GavelIcon />,
+                disabled: !(puedeAbrirProceso && vigente && colorDeTipo(a.tipo_nombre) === "destructive"),
+                onSelect: () => onAbrirProceso(a),
+              },
             ]}
           />
         )

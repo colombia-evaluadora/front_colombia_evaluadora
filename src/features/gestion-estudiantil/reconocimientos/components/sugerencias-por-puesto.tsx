@@ -42,7 +42,7 @@ export function SugerenciasPorPuesto({ sugerencias, onOtorgar, puedeOtorgar }: P
                 <span className="font-medium">{s.estudiante_nombre}</span>
                 <span className="text-muted-foreground"> · Puesto 1 en {s.grado_grupo}</span>
               </span>
-              <Button variant="outline" size="sm" disabled={!puedeOtorgar} onClick={() => onOtorgar(s)}>
+              <Button variant="outline" color="neutral" size="sm" disabled={!puedeOtorgar} onClick={() => onOtorgar(s)}>
                 <MedalIcon data-icon="inline-start" />
                 Otorgar
               </Button>

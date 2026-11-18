@@ -4,7 +4,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
@@ -27,6 +27,7 @@ function ValorarContent({ matricula: matriculaInicial }: { matricula?: number })
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={volver}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" type="button" disabled={f.pending} onClick={f.enviar}>

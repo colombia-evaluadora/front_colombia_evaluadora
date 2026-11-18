@@ -115,8 +115,12 @@ function TableScreenTitle({
           con "…" en vez de desbordar la fila. */}
       <div className="min-w-0">
         <h1 className="font-heading truncate text-2xl font-bold">{children}</h1>
-        {description ? (
+        {/* Texto: una línea truncada. Un nodo (p. ej. el botón «Volver a …», de 40px)
+            va sin truncar: el overflow oculto del texto lo recortaba por arriba y abajo. */}
+        {typeof description === "string" ? (
           <p className="mt-1 truncate text-sm text-muted-foreground">{description}</p>
+        ) : description ? (
+          <div className="mt-1 text-sm text-muted-foreground">{description}</div>
         ) : null}
       </div>
       {action}

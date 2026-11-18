@@ -43,7 +43,7 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
       <TableScreenHeader>
         <TableScreenTitle
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={volver}>
+            <Button variant="ghost" color="neutral" size="sm" onClick={volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Convivencia
             </Button>

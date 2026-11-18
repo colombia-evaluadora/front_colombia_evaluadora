@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ControlPointIcon, FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { ControlPointIcon, FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
@@ -61,6 +61,7 @@ export function PantallaPlan({ modo, titulo, matricula, establecimiento, origen,
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={form.pending} onClick={onClose}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" type="button" disabled={form.pending} onClick={form.enviar}>
@@ -130,7 +131,7 @@ export function PantallaPlan({ modo, titulo, matricula, establecimiento, origen,
               forzarAbierta={hayErroresAcciones}
               contentClassName="flex flex-col gap-3 p-4"
               accion={
-                <Button type="button" size="sm" variant="outline" onClick={form.agregarAccion}>
+                <Button type="button" size="sm" variant="outline" color="neutral" onClick={form.agregarAccion}>
                   <ControlPointIcon data-icon="inline-start" />
                   Agregar acción
                 </Button>

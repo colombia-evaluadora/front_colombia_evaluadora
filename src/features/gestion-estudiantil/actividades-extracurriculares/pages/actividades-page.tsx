@@ -34,7 +34,7 @@ function ActividadesContent() {
               {/* Brecha B1: no hay endpoint de exportación. */}
               <Tooltip>
                 <TooltipTrigger render={<span tabIndex={0} />}>
-                  <Button size="sm" type="button" variant="outline" disabled>
+                  <Button size="sm" type="button" variant="outline" color="neutral" disabled>
                     <FileDownloadOutlinedIcon data-icon="inline-start" />
                     Exportar
                   </Button>
