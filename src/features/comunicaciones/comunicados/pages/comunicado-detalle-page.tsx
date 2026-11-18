@@ -26,6 +26,7 @@ import {
   XCircleIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { exportarCsv, nombreArchivoSeguro } from "@/lib/csv"
 import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
@@ -325,19 +326,11 @@ function SinCanal({ personas, titulo }: { personas: PersonaSinCanal[]; titulo: s
   // Exporta todas las personas (no solo la página) con las columnas visibles, en el orden actual.
   const exportar = () => {
     const columnas = table.getVisibleLeafColumns()
-    const celda = (v: string) => (/[;"\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v)
-    const lineas = [
+    exportarCsv(
+      nombreArchivoSeguro(`sin canal - ${titulo}.csv`),
       columnas.map((col) => col.columnDef.meta?.label ?? col.id),
-      ...ordenadas.map((p) => columnas.map((col) => valorCelda(p, col.id))),
-    ].map((f) => f.map(celda).join(";"))
-    // BOM + `;`: Excel lo abre sin mezclar tildes ni columnas.
-    const blob = new Blob([`﻿${lineas.join("\r\n")}`], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `sin canal - ${titulo}.csv`.replace(/[\\/:*?"<>|]+/g, "-")
-    a.click()
-    URL.revokeObjectURL(url)
+      ordenadas.map((p) => columnas.map((col) => valorCelda(p, col.id))),
+    )
   }
 
   return (
