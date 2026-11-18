@@ -18,6 +18,7 @@ import { isFieldInvalid, toFieldErrors } from "@/lib/forms/field-state"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
+import { SELECT_VACIO } from "@/components/select-opciones"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -346,8 +347,8 @@ export function NumberField({
 // ---------------------------------------------------------------------------
 // SelectField
 
-/** Valor interno de "sin elegir": Base UI no distingue `""` de un ítem real. */
-const NONE = "__none__"
+/** Valor interno de "sin elegir": Base UI no distingue `""` de un ítem real (mismo que `SelectOpciones`). */
+const NONE = SELECT_VACIO
 
 type SelectValueType = string | number
 

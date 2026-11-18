@@ -37,6 +37,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { toSelectItemsMap } from "@/lib/catalog-options"
+import { exportarCsv as descargarCsv, nombreArchivoSeguro } from "@/lib/csv"
 import { cn } from "@/lib/utils"
 
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
@@ -751,18 +752,11 @@ function armarReporte(
 
 /** Excel abre el CSV con `;` y BOM sin mezclar tildes ni columnas. */
 export function exportarCsv(reporte: ReportePorGrupo) {
-  const celda = (v: string) => (/[;"\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v)
-  const lineas = [reporte.columnas, ...reporte.filas].map((f) => f.map(celda).join(";"))
-  const blob = new Blob([`﻿${lineas.join("\r\n")}`], { type: "text/csv;charset=utf-8" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `asistencia ${reporte.titulo} ${reporte.subtitulo}.csv`.replace(
-    /[\\/:*?"<>|·]+/g,
-    "-",
+  descargarCsv(
+    nombreArchivoSeguro(`asistencia ${reporte.titulo} ${reporte.subtitulo}.csv`, "·"),
+    reporte.columnas,
+    reporte.filas,
   )
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 /** Hoja de impresión: se monta en `body` y, al imprimir, es lo único visible. */

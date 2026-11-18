@@ -39,9 +39,9 @@ import {
   type Conjunto,
   type PrevisualizacionDocumento,
 } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
-import { AdjuntosCarga } from "@/features/comunicaciones/comunicados/components/adjuntos-carga"
+import { AdjuntosComunicadoCampo } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
 import { ConjuntoDestinatarios, Etiqueta } from "@/features/comunicaciones/comunicados/components/conjunto-destinatarios"
-import { Panel } from "@/features/comunicaciones/comunicados/components/panel-plegable"
+import { SeccionPlegable } from "@/components/seccion-plegable"
 import {
   enfocarPrimerError,
   erroresConjunto,
@@ -142,7 +142,7 @@ function NuevoComunicadoContent() {
 
           <div className="overflow-hidden rounded-lg border">
             {conjuntos.map((c, i) => (
-              <Panel
+              <SeccionPlegable
                 // El orden no cambia salvo al quitar; el índice basta como clave junto con el total.
                 key={`${i}-${conjuntos.length}`}
                 titulo={`Destinatarios · conjunto ${i + 1}`}
@@ -176,10 +176,10 @@ function NuevoComunicadoContent() {
                     refrescar((n) => n + 1)
                   }}
                 />
-              </Panel>
+              </SeccionPlegable>
             ))}
 
-            <Panel titulo="Contenido">
+            <SeccionPlegable titulo="Contenido">
               <div className="space-y-4">
                 <Field variant="outlined" data-invalid={visibles[CAMPO.titulo] ? true : undefined}>
                   <FieldLabel htmlFor={CAMPO.titulo}>
@@ -216,11 +216,11 @@ function NuevoComunicadoContent() {
                   <CharacterCounter value={mensaje} max={MAX_MENSAJE} />
                   {visibles[CAMPO.mensaje] && <FieldError>{visibles[CAMPO.mensaje]}</FieldError>}
                 </Field>
-                <AdjuntosCarga archivos={archivos} onArchivos={setArchivos} deshabilitado={publicar.isPending} />
+                <AdjuntosComunicadoCampo variante="chips" archivos={archivos} onArchivos={setArchivos} deshabilitado={publicar.isPending} />
               </div>
-            </Panel>
+            </SeccionPlegable>
 
-            <Panel titulo="Publicación">
+            <SeccionPlegable titulo="Publicación">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="min-w-0 space-y-2">
                   <Etiqueta>Publicación</Etiqueta>
@@ -278,7 +278,7 @@ function NuevoComunicadoContent() {
                   {visibles[CAMPO.visibleHasta] && <FieldError>{visibles[CAMPO.visibleHasta]}</FieldError>}
                 </Field>
               </div>
-            </Panel>
+            </SeccionPlegable>
           </div>
 
           <div>
