@@ -74,7 +74,7 @@ import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
 import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planeador/validacion-coordinador"
 import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
-import { informesHandlers } from "@/mocks/handlers/informes"
+import { geOpcionesHandlers, informesHandlers } from "@/mocks/handlers/informes"
 import {
   comunicacionesArchivosHandlers,
   comunicacionesHandlers,
@@ -173,6 +173,7 @@ export const handlers = [
   ...curricularStatementsHandlers,
   ...asistenciaHandlers,
   ...informesHandlers,
+  ...geOpcionesHandlers,
   ...comunicacionesArchivosHandlers,
   ...comunicacionesFiltrosHandlers,
   ...comunicacionesModeracionHandlers,
