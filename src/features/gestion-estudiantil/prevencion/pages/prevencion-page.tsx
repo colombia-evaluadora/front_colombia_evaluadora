@@ -11,11 +11,10 @@ import { CaracterizacionesTab } from "@/features/gestion-estudiantil/prevencion/
 import { EstrategiasTab } from "@/features/gestion-estudiantil/prevencion/components/estrategias/estrategias-tab"
 import { IndicadoresTab } from "@/features/gestion-estudiantil/prevencion/components/indicadores/indicadores-tab"
 import { SaludMentalTab } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/salud-mental-tab"
-import { ParametrosTab } from "@/features/gestion-estudiantil/prevencion/components/parametros/parametros-tab"
 import { ValoracionesTab } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/valoraciones-tab"
 import { TableroTab } from "@/features/gestion-estudiantil/prevencion/components/tablero/tablero-tab"
 
-type Pestana = "tablero" | "valoraciones" | "salud-mental" | "estrategias" | "caracterizacion" | "indicadores" | "parametros"
+type Pestana = "tablero" | "valoraciones" | "salud-mental" | "estrategias" | "caracterizacion" | "indicadores"
 
 const PESTANAS: { value: Pestana; label: string }[] = [
   { value: "tablero", label: "Tablero de alertas" },
@@ -24,7 +23,6 @@ const PESTANAS: { value: Pestana; label: string }[] = [
   { value: "estrategias", label: "Estrategias" },
   { value: "caracterizacion", label: "Caracterización" },
   { value: "indicadores", label: "Indicadores" },
-  { value: "parametros", label: "Parámetros de riesgo" },
 ]
 
 const CLAVE_PESTANA = "prevencion-pestana"
@@ -50,7 +48,7 @@ function PrevencionContent() {
     }
   }
   const { establecimientoId } = useAmbitoPrevencion("")
-  // Las pestañas Indicadores, Parámetros, Salud mental, Estrategias y Caracterización salen del acceso que declara el backend.
+  // Las pestañas Indicadores, Salud mental, Estrategias y Caracterización salen del acceso que declara el backend.
   const acceso = useAccesoPrevencionQuery(establecimientoId).data
 
   const visibles = useMemo(
@@ -58,7 +56,6 @@ function PrevencionContent() {
       PESTANAS.filter(
         (p) =>
           (p.value !== "indicadores" || acceso?.puede_indicadores) &&
-          (p.value !== "parametros" || acceso?.puede_parametros) &&
           (p.value !== "salud-mental" || acceso?.puede_salud_mental) &&
           (p.value !== "estrategias" || acceso?.puede_estrategias) &&
           (p.value !== "caracterizacion" || acceso?.puede_caracterizacion),
@@ -85,11 +82,10 @@ function PrevencionContent() {
   if (actual === "salud-mental") return <SaludMentalTab tabs={tabs} />
   if (actual === "estrategias") return <EstrategiasTab tabs={tabs} />
   if (actual === "caracterizacion") return <CaracterizacionesTab tabs={tabs} />
-  if (actual === "indicadores") return <IndicadoresTab tabs={tabs} />
-  return <ParametrosTab tabs={tabs} />
+  return <IndicadoresTab tabs={tabs} />
 }
 
-/** Prevención y retención (Gestión Estudiantil §9): tablero, valoraciones y planes, indicadores y parámetros. */
+/** Prevención y retención (Gestión Estudiantil §9): tablero, valoraciones y planes, e indicadores (los parámetros de riesgo viven en Configuración). */
 export function PrevencionPage() {
   return (
     <NoticeProvider>

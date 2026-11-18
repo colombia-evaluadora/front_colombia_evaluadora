@@ -12,7 +12,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { EyeSlashIcon, PencilSimpleIcon, PushPinFillIcon, PushPinIcon, TrashIcon } from "@/components/ui/icons"
+import {
+  DotsThreeVerticalIcon,
+  EyeSlashIcon,
+  InfoIcon,
+  PencilSimpleIcon,
+  PushPinFillIcon,
+  PushPinIcon,
+  TrashIcon,
+} from "@/components/ui/icons"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import type { Mensaje } from "@/features/comunicaciones/chat/api/types"
@@ -37,34 +52,44 @@ import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/componen
  * y su diálogo. Sigue disponible pasados los 15 minutos del retiro.
  */
 export function BotonEliminarDeBandeja({ mensaje: m }: { mensaje: Mensaje }) {
-  const { notify } = useNotify()
   const [abierto, setAbierto] = useState(false)
-  const ocultar = useOcultarMensaje()
   return (
     <>
       <Accion etiqueta="Eliminar de mi bandeja" onClick={() => setAbierto(true)}>
         <EyeSlashIcon className="size-4.5" />
       </Accion>
-      <EliminarDeBandejaDialog
-        open={abierto}
-        pendiente={ocultar.isPending}
-        error={ocultar.isError ? ocultar.error : null}
-        onClose={() => {
-          ocultar.reset()
-          setAbierto(false)
-        }}
-        onConfirmar={() =>
-          ocultar.mutate(m.id, {
-            onSuccess: () => {
-              notify("El mensaje se eliminó de tu bandeja.")
-              setAbierto(false)
-            },
-          })
-        }
-      />
+      <EliminarMensajeDeBandeja mensaje={m} open={abierto} onClose={() => setAbierto(false)} />
     </>
   )
 }
+
+/** Diálogo "Eliminar de mi bandeja" de un mensaje (lo comparten la barra y el menú ⁞ del propio). */
+function EliminarMensajeDeBandeja({ mensaje: m, open, onClose }: { mensaje: Mensaje; open: boolean; onClose: () => void }) {
+  const { notify } = useNotify()
+  const ocultar = useOcultarMensaje()
+  return (
+    <EliminarDeBandejaDialog
+      open={open}
+      pendiente={ocultar.isPending}
+      error={ocultar.isError ? ocultar.error : null}
+      onClose={() => {
+        ocultar.reset()
+        onClose()
+      }}
+      onConfirmar={() =>
+        ocultar.mutate(m.id, {
+          onSuccess: () => {
+            notify("El mensaje se eliminó de tu bandeja.")
+            onClose()
+          },
+        })
+      }
+    />
+  )
+}
+
+// Ítems del menú ⁞ en oración (el menú base va en mayúsculas), como el de la conversación.
+const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
 /**
  * Barra flotante de acciones de un mensaje: con mouse sale al pasar por encima (`hover:` de
@@ -80,6 +105,7 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
   const { notify } = useNotify()
   const [editando, setEditando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
+  const [ocultando, setOcultando] = useState(false)
   const editar = useEditarMensaje()
   const fijar = useFijarMensaje()
   const eliminar = useEliminarMensaje()
@@ -101,33 +127,53 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
       <div className={BARRA_ACCIONES}>
         {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
         {extra}
-        <Accion etiqueta="Editar mensaje" onClick={() => setEditando(true)}>
-          <PencilSimpleIcon className="size-4.5" />
-        </Accion>
-        <Accion
-          etiqueta={m.fijado ? "Desfijar mensaje" : "Fijar mensaje"}
-          pulsado={m.fijado}
-          disabled={fijar.isPending}
-          onClick={() =>
-            fijar.mutate(
-              { id: m.id, fijado: !m.fijado },
-              { onSuccess: () => notify(m.fijado ? "Mensaje desfijado." : "Mensaje fijado."), onError },
-            )
-          }
-        >
-          {m.fijado ? <PushPinFillIcon className="size-4.5" /> : <PushPinIcon className="size-4.5" />}
-        </Accion>
-        {retirable && (
-          <Accion
-            etiqueta="Retirar para todos"
-            titulo="Retirar para todos solo en los primeros 15 minutos."
-            onClick={() => setEliminando(true)}
+        {/* Menú ⁞ del mensaje propio (M.2.BAN.3): primero retirar y eliminar (rojo) con la nota
+            fija de los 15 minutos; editar y fijar debajo de un separador. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label="Opciones del mensaje"
+            title="Opciones del mensaje"
+            className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/60"
           >
-            <TrashIcon className="size-4.5" />
-          </Accion>
-        )}
-        <BotonEliminarDeBandeja mensaje={m} />
+            <DotsThreeVerticalIcon className="size-4.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            {retirable && (
+              <DropdownMenuItem className={`${ITEM} text-red`} onClick={() => setEliminando(true)}>
+                <TrashIcon />
+                Retirar para todos
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem className={`${ITEM} text-red`} onClick={() => setOcultando(true)}>
+              <EyeSlashIcon />
+              Eliminar de mi bandeja
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className={ITEM} onClick={() => setEditando(true)}>
+              <PencilSimpleIcon />
+              Editar mensaje
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={ITEM}
+              disabled={fijar.isPending}
+              onClick={() =>
+                fijar.mutate(
+                  { id: m.id, fijado: !m.fijado },
+                  { onSuccess: () => notify(m.fijado ? "Mensaje desfijado." : "Mensaje fijado."), onError },
+                )
+              }
+            >
+              {m.fijado ? <PushPinFillIcon /> : <PushPinIcon />}
+              {m.fijado ? "Desfijar mensaje" : "Fijar mensaje"}
+            </DropdownMenuItem>
+            <p className="flex items-start gap-2 border-t px-3 pt-2 pb-1.5 text-xs text-muted-foreground">
+              <InfoIcon aria-hidden className="mt-px size-4 shrink-0" />
+              Retirar para todos solo en los primeros 15 minutos.
+            </p>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      <EliminarMensajeDeBandeja mensaje={m} open={ocultando} onClose={() => setOcultando(false)} />
 
       <Dialog open={editando} onOpenChange={(open) => !editar.isPending && setEditando(open)}>
         <DialogContent className="sm:max-w-xl">
@@ -176,8 +222,8 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
             <AlertDialogTitle>Retirar para todos</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <span className="block">
-                El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá Mensaje
-                retirado por el remitente.
+                El mensaje y sus adjuntos dejarán de verse para todos los participantes y el hilo dirá{" "}
+                <em>Mensaje retirado por el remitente</em>.
               </span>
               <span className="block">
                 Solo puede retirarlo durante los primeros 15 minutos desde su envío. Después solo podrá
@@ -188,10 +234,9 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
           </AlertDialogHeader>
           {/* Textos literales de M.2.RET.1. */}
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={eliminar.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              color="destructive"
               disabled={eliminar.isPending}
               aria-busy={eliminar.isPending}
               onClick={() =>

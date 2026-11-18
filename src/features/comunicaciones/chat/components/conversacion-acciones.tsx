@@ -14,6 +14,7 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { ReportarDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useCerrarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/components/eliminar-de-bandeja-dialog"
+import { MiembrosDialog } from "@/features/comunicaciones/chat/components/miembros-dialog"
 
 import {
   AlertDialog,
@@ -82,13 +83,15 @@ import {
   XSquareIcon,
   WarningIcon,
   EyeSlashIcon,
+  PersonAddIcon,
+  PersonRemoveIcon,
 } from "@/components/ui/icons"
 
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
 
-type Dialogo = "reportar" | "ocultar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
+type Dialogo = "participantes" | "reportar" | "ocultar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
 interface ConversacionAccionesProps {
   conversacion: Conversacion
@@ -130,6 +133,7 @@ export function ConversacionAcciones({
   const esCanal = c.tipo === "CANAL" || c.tipo === "GRUPO"
   const gestionaCanal =
     esCanal && (esCategoriaActividad(c.categoria) ? gestionaActividad(c, perfil) : (c.esAdmin ?? puedeGestionar))
+  const creadorGrupo = c.tipo === "GRUPO" && !!(c.esCreador || c.esAdmin)
   const destinoSalir = c.tipo === "GRUPO" ? "del grupo" : "del foro"
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
@@ -207,11 +211,26 @@ export function ConversacionAcciones({
           </DropdownMenuItem>
           {/* Solo mensajería (M.2.RET.2): comunicados, elecciones, encuestas y evaluaciones tienen su ciclo. */}
           {c.categoria === "GENERAL" && !c.esBot && (
-            <DropdownMenuItem className={ITEM} onClick={() => setDialogo("ocultar")}>
+            <DropdownMenuItem className={cn(ITEM, "text-red")} onClick={() => setDialogo("ocultar")}>
               <EyeSlashIcon />
               <span className="flex-1">Eliminar de mi bandeja</span>
             </DropdownMenuItem>
           )}
+          {/* M.2.BAN.2: en un grupo, quien lo creó agrega y retira participantes (abre el panel de
+              participantes existente, "Añadir personas a…"). */}
+          {creadorGrupo && (
+            <>
+              <DropdownMenuItem className={ITEM} onClick={() => setDialogo("participantes")}>
+                <PersonAddIcon />
+                Agregar participantes
+              </DropdownMenuItem>
+              <DropdownMenuItem className={ITEM} onClick={() => setDialogo("participantes")}>
+                <PersonRemoveIcon />
+                Retirar participante
+              </DropdownMenuItem>
+            </>
+          )}
+          <DropdownMenuSeparator />
           {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
@@ -442,6 +461,10 @@ export function ConversacionAcciones({
           })
         }
       />
+
+      {creadorGrupo && (
+        <MiembrosDialog conversacion={c} open={dialogo === "participantes"} onClose={cerrar} />
+      )}
 
       <EditarActividad conversacion={c} open={dialogo === "editarActividad"} onClose={cerrar} />
       <ReportarDialog

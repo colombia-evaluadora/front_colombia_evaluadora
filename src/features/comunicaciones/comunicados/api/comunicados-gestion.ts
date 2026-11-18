@@ -3,7 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
-import { subirAdjuntos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
+import { aplicarCambiosAdjuntos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 
 const RUTA = "/comunicaciones/comunicados/gestion"
 
@@ -153,19 +153,11 @@ export function useCorregirComunicado(conversacionId: number) {
   const base = `/comunicaciones/conversaciones/${conversacionId}/comunicado`
   return useMutation({
     mutationFn: async (v: CorregirComunicadoInput) => {
-      let c = await evalCol.patchRow<Comunicado>(`${base}/corregir`, {
+      const c = await evalCol.patchRow<Comunicado>(`${base}/corregir`, {
         TITULO: v.titulo.trim(),
         MENSAJE: v.mensaje.trim(),
       })
-      for (const id of v.quitarAdjuntos) {
-        c = await evalCol.patchRow<Comunicado>(`${base}/adjuntos/${id}/eliminar`, {})
-      }
-      const fallidos = await subirAdjuntos(conversacionId, v.archivos)
-      if (v.archivos.length > fallidos.length) {
-        const [fresco] = await evalCol.getRows<Comunicado>(base)
-        if (fresco) c = fresco
-      }
-      return { dato: c, fallidos }
+      return aplicarCambiosAdjuntos(conversacionId, c, v.quitarAdjuntos, v.archivos)
     },
     onSuccess: ({ dato }) => {
       queryClient.setQueryData(chatKeys.comunicado(conversacionId), dato)

@@ -1,3 +1,4 @@
+import { contextoBandeja, tituloConversacion } from "@/features/comunicaciones/chat/lib/asunto"
 import { CHAT_FUNCIONES, PROXIMAMENTE } from "@/features/comunicaciones/chat/lib/funciones-disponibles"
 import { useState, type ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
@@ -7,7 +8,7 @@ import { paths } from "@/config/paths"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
+import type { Conversacion, Persona } from "@/features/comunicaciones/chat/api/types"
 import { ICONO_CATEGORIA } from "@/features/comunicaciones/chat/api/ui-mappings"
 import { iniciales } from "@/features/comunicaciones/chat/lib/chat-format"
 import { horaVistaPrevia, lineaVistaPrevia } from "@/features/comunicaciones/chat/lib/vista-previa"
@@ -15,12 +16,13 @@ import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
-import { ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
+import { ConfiguracionMensajeriaDialog, ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { GearIcon } from "@/components/ui/icons"
-import { AgregarCompanero } from "@/features/comunicaciones/chat/components/agregar-companero"
-import { CrearChatDialog } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
+import { NuevoMensajeDialog } from "@/features/comunicaciones/chat/components/nuevo-mensaje-dialog"
+import type { ModoNuevoMensaje } from "@/features/comunicaciones/chat/lib/nuevo-mensaje"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
-import { useAbrirDirecto } from "@/features/comunicaciones/chat/api/mutations/use-acciones-miembro"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useBorradoresQuery } from "@/features/comunicaciones/chat/api/query/use-borradores-query"
@@ -121,13 +123,13 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
-  const { puedeGestionar, reglaDirectoCon } = useChatAccess()
+  const { puedeGestionar, reglaDirectoCon, puedeIniciarConversaciones } = useChatAccess()
   // PROVISIONAL: Supervisor de sede = coordinador, Administrador del establecimiento = rector.
   const roles = useAuth().user?.roles ?? []
   const esAdministrador = roles.includes("CEVAL-RECTOR")
   const puedeModerar = esAdministrador || roles.includes("CEVAL-COORDINADOR")
   const [moderacion, setModeracion] = useState(false)
-  const { notify } = useNotify()
+  const [configuracion, setConfiguracion] = useState(false)
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. El texto del buscador vive también en estado local para no perder el cursor.
   const filtrosUrl = chatRoute.useSearch()
@@ -153,7 +155,9 @@ export function ChatSidebar({
   const opcionesFiltro = useOpcionesFiltroQuery(hayFiltrosDeAutor(filtros))
   const nombreGrupo = (id: number) => opcionesFiltro.data?.grupos.find((g) => Number(g.valor) === id)?.etiqueta
   const resumenFiltros = conPanel ? describirFiltros(filtros, nombreGrupo) : ""
-  const [crearGrupo, setCrearGrupo] = useState(false)
+  // "Nuevo mensaje" (M.2.NUE.1): un solo diálogo para directo, por separado y grupo. Los "+" de
+  // las secciones y el buscador de personas lo abren con el modo o la persona ya elegidos.
+  const [nuevoMensaje, setNuevoMensaje] = useState<{ modo: ModoNuevoMensaje; para: Persona[] } | null>(null)
   // Búsquedas recientes (diseño 4501:66442): por navegador, solo una comodidad.
   const [recientes, setRecientes] = useState<string[]>(leerRecientes)
   const [enfocado, setEnfocado] = useState(false)
@@ -165,7 +169,8 @@ export function ChatSidebar({
   const verRecientes = enfocado && !texto && recientes.length > 0
   const t = texto.trim().toLowerCase()
   // El buscador (en lugar del nombre del establecimiento) filtra la lista en el lugar y,
-  // con 2+ letras, también busca personas: elegir una abre (o crea) el mensaje directo.
+  // con 2+ letras, también busca personas: elegir una abre "Nuevo mensaje" con ella en Para (cada
+  // directo es un hilo por asunto, SSO #1006: ya no se reutiliza el existente).
   // Con filtros del panel la lista es la que devuelve el servidor; con solo palabras, las que
   // coinciden por nombre más las que tienen mensajes con esas palabras.
   // "Solo no leídas" (M.2.BAN.1): comms-service no lo filtra, así que se aplica sobre lo ya cargado.
@@ -177,15 +182,13 @@ export function ChatSidebar({
       : conversaciones
   const visibles = soloNoLeidas ? coincidentes.filter((c) => c.noLeidos > 0) : coincidentes
   const personasQuery = usePersonasQuery(t.length >= 2, texto)
-  const conDirecto = new Set(conversaciones.filter((c) => c.tipo === "DIRECTO").map((c) => c.nombre))
   const personas =
-    t.length >= 2
+    t.length >= 2 && puedeIniciarConversaciones
       ? (personasQuery.data ?? [])
-          .filter((p) => reglaDirectoCon(p.perfil) !== "PROHIBIDO" && !conDirecto.has(p.nombre))
+          .filter((p) => reglaDirectoCon(p.perfil) !== "PROHIBIDO")
           .filter((p) => coincidePersona(p, texto, !personasQuery.isPlaceholderData))
           .slice(0, 8)
       : []
-  const abrirDirecto = useAbrirDirecto()
   // Disponibilidad de la otra persona de cada directo: la del socket gana sobre la de la carga.
   const { data: contactos = [] } = useDisponibilidadDirectosQuery(
     conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.esBot).map((c) => c.id),
@@ -223,16 +226,41 @@ export function ChatSidebar({
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
       <div className="relative flex h-16 shrink-0 items-center gap-2 border-b px-3">
-        {puedeModerar && (
-          <button
-            type="button"
-            aria-label="Moderación de la mensajería"
-            title="Moderación de la mensajería"
-            onClick={() => setModeracion(true)}
-            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-          >
-            <GearIcon className="size-5" />
-          </button>
+        {/* Administrador del establecimiento: menú con Moderación y "Configuración de la mensajería"
+            (M.2.CFG.1); coordinación solo modera. */}
+        {puedeModerar && esAdministrador ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="Opciones de la mensajería"
+              title="Opciones de la mensajería"
+              className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/60"
+            >
+              <GearIcon className="size-5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuItem className="py-2.5 text-sm font-normal tracking-normal normal-case" onClick={() => setModeracion(true)}>
+                Moderación de la mensajería
+              </DropdownMenuItem>
+              <DropdownMenuItem className="py-2.5 text-sm font-normal tracking-normal normal-case" onClick={() => setConfiguracion(true)}>
+                Configuración de la mensajería
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          puedeModerar && (
+            <button
+              type="button"
+              aria-label="Moderación de la mensajería"
+              title="Moderación de la mensajería"
+              onClick={() => setModeracion(true)}
+              className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <GearIcon className="size-5" />
+            </button>
+          )
+        )}
+        {esAdministrador && configuracion && (
+          <ConfiguracionMensajeriaDialog open onClose={() => setConfiguracion(false)} />
         )}
         {puedeModerar && (moderacion || reporteEnlazado != null) && (
           <ModeracionDialog
@@ -249,7 +277,7 @@ export function ChatSidebar({
         )}
         <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-card px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
           <MagnifyingGlassIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-          <span className="sr-only">Buscar conversaciones</span>
+          <span className="sr-only">Buscar en mis mensajes</span>
           <input
             type="search"
             value={texto}
@@ -260,7 +288,7 @@ export function ChatSidebar({
               if (e.key === "Escape") setTexto("")
               if (e.key === "Enter") recordar()
             }}
-            placeholder="Buscar conversaciones, personas y mensajes"
+            placeholder="Buscar en mis mensajes"
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
           {texto && (
@@ -313,11 +341,23 @@ export function ChatSidebar({
           </button>
         </div>
       )}
-      <div className="flex items-center border-b px-3 py-1.5">
+      <div className="flex items-center gap-2 border-b px-3 py-1.5">
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={soloNoLeidas} onChange={(e) => setSoloNoLeidas(e.target.checked)} />
           Solo no leídas
         </label>
+        {/* W.17.EST.1: el estudiante menor sin permiso solo responde (no ve "Nuevo mensaje"). */}
+        {puedeIniciarConversaciones && (
+          <Button
+            type="button"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setNuevoMensaje({ modo: "INDIVIDUAL", para: [] })}
+          >
+            <PlusIcon data-icon="inline-start" />
+            Nuevo mensaje
+          </Button>
+        )}
       </div>
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
           <InvitacionesSeccion destacada={invitacionDestacada} onAceptada={onSeleccionar} />
@@ -432,17 +472,10 @@ export function ChatSidebar({
                   <li key={p.id}>
                     <button
                       type="button"
-                      disabled={abrirDirecto.isPending}
-                      onClick={() =>
-                        abrirDirecto.mutate(p.id, {
-                          onSuccess: (c) => {
-                            recordar()
-                            setTexto("")
-                            onSeleccionar(c.id)
-                          },
-                          onError: (e) => notify(getErrorMessage(e), { variant: "error" }),
-                        })
-                      }
+                      onClick={() => {
+                        recordar()
+                        setNuevoMensaje({ modo: "INDIVIDUAL", para: [p] })
+                      }}
                       className="flex h-9 w-full items-center gap-3 rounded-lg px-2 text-left text-sm hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                     >
                       <UserIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />
@@ -457,23 +490,20 @@ export function ChatSidebar({
             )}
             <Seccion
               titulo="Mensajes directos"
-              accion={puedeGestionar && <AgregarCompanero onCreado={onSeleccionar} />}
+              accion={
+                puedeIniciarConversaciones && (
+                  <BotonSeccion etiqueta="Nuevo mensaje" onClick={() => setNuevoMensaje({ modo: "INDIVIDUAL", para: [] })} />
+                )
+              }
             >
               {directos.map(item)}
             </Seccion>
             <Seccion
               titulo="Grupos"
               accion={
-                puedeGestionar && (
-                  <button
-                    type="button"
-                    onClick={() => setCrearGrupo(true)}
-                    aria-label="Crear grupo"
-                    title="Crear grupo"
-                    className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-                  >
-                    <PlusIcon className="size-5" />
-                  </button>
+                puedeGestionar &&
+                puedeIniciarConversaciones && (
+                  <BotonSeccion etiqueta="Crear grupo" onClick={() => setNuevoMensaje({ modo: "GRUPAL", para: [] })} />
                 )
               }
             >
@@ -488,8 +518,32 @@ export function ChatSidebar({
           </>
         )}
       </nav>
-      <CrearChatDialog tipo="GRUPO" open={crearGrupo} onClose={() => setCrearGrupo(false)} onCreado={onSeleccionar} />
+      <NuevoMensajeDialog
+        open={nuevoMensaje != null}
+        modoInicial={nuevoMensaje?.modo}
+        paraInicial={nuevoMensaje?.para}
+        onClose={() => setNuevoMensaje(null)}
+        onCreado={(id) => {
+          setTexto("")
+          onSeleccionar(id)
+        }}
+      />
     </aside>
+  )
+}
+
+/** "+" junto al título de una sección: abre "Nuevo mensaje" con el modo de la sección. */
+function BotonSeccion({ etiqueta, onClick }: { etiqueta: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={etiqueta}
+      title={etiqueta}
+      className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+    >
+      <PlusIcon className="size-5" />
+    </button>
   )
 }
 
@@ -646,7 +700,7 @@ function ItemConversacion({
           // Vista previa del último mensaje y su hora (diseño 4516:68095).
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="flex min-w-0 items-baseline gap-2">
-              <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+              <span className="min-w-0 flex-1 truncate">{tituloConversacion(c)}</span>
               <time
                 dateTime={c.ultimoMensaje.enviadoEn}
                 className={cn(
@@ -664,11 +718,12 @@ function ItemConversacion({
                 !conPendientes && "font-normal",
               )}
             >
-              {lineaVistaPrevia(c)}
+              {/* Con asunto (M.2.BAN.1): "N. Silva · 10:42" / "Grupo · 3 · Ayer" y luego la vista previa. */}
+              {contextoBandeja(c) ? `${contextoBandeja(c)} · ${lineaVistaPrevia(c)}` : lineaVistaPrevia(c)}
             </span>
           </span>
         ) : (
-          <span className="min-w-0 flex-1 truncate">{c.nombre}</span>
+          <span className="min-w-0 flex-1 truncate">{tituloConversacion(c)}</span>
         )}
         {c.importante && (
           // Comunicado marcado como importante por quien lo publicó.

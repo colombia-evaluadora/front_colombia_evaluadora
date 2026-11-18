@@ -276,7 +276,7 @@ Rutas relativas a `src/features/gestion-estudiantil/prevencion/`. Total: 186 fic
   - `components/indicadores/resumen-indicadores.tsx`: tarjetas de resumen.
   - `components/indicadores/tabla-simple.tsx`: tabla de agrupamiento.
 - parametros/ (1)
-  - `components/parametros/parametros-tab.tsx`: pestaña Parámetros de riesgo.
+  - Parámetros de riesgo: viven en Configuración (`configuracion/components/riesgo/riesgo-tab.tsx`); aquí quedan su api y `utils/parametros.ts`.
 - plan/detalle/ (7)
   - `components/plan/detalle/plan-detalle-contenido.tsx`: contenido de la página de detalle de plan.
   - `components/plan/detalle/encabezado-plan.tsx`: encabezado del plan.

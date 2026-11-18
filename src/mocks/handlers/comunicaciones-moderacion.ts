@@ -5,7 +5,7 @@ import type {
   ReporteConversacion,
   SuspensionMensajeria,
 } from "@/features/comunicaciones/chat/api/use-moderacion"
-import { conversaciones, mensajes, personas } from "@/mocks/db/comunicaciones"
+import { conversaciones, mensajes, permisoMenores, personas } from "@/mocks/db/comunicaciones"
 import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
 
 // Mock de la moderación de comms-service: mismas reglas de rol y de motivo. El alcance por sede del
@@ -26,7 +26,12 @@ export const reportesMock: ReporteConversacion[] = [
   },
 ]
 export const suspensionesMock: SuspensionMensajeria[] = []
-let configuracion: ConfiguracionMensajeria = { horaInicio: "06:00", horaFin: "18:00", incluyeSabado: false }
+let configuracion: ConfiguracionMensajeria = {
+  horaInicio: "06:00",
+  horaFin: "18:00",
+  incluyeSabado: false,
+  permitirMenoresIniciar: false,
+}
 let siguiente = 100
 
 const roles = (request: Request) => usuarioDe(request)?.roles ?? []
@@ -103,11 +108,28 @@ export const comunicacionesModeracionHandlers = [
   ),
   http.put(URL("moderacion/configuracion"), async ({ request }) => {
     if (!esRector(request)) return prohibido()
-    const b = (await request.json()) as { HORA_INICIO: string; HORA_FIN: string; INCLUYE_SABADO: string }
-    if (b.HORA_INICIO >= b.HORA_FIN) {
+    const b = (await request.json()) as {
+      HORA_INICIO: string
+      HORA_FIN: string
+      INCLUYE_SABADO: string
+      PERMITIR_MENORES_INICIAR?: "S" | "N" | null
+    }
+    // SSO #1006: horario vacío (ambas horas "") = sin horario; una sola hora no.
+    const sinHorario = !b.HORA_INICIO && !b.HORA_FIN
+    if (!sinHorario && (!b.HORA_INICIO || !b.HORA_FIN)) {
+      return HttpResponse.json({ message: "Indique la hora de inicio y la de fin, o deje ambas vacías." }, { status: 400 })
+    }
+    if (!sinHorario && b.HORA_INICIO >= b.HORA_FIN) {
       return HttpResponse.json({ message: "La hora de inicio debe ser anterior a la de fin." }, { status: 400 })
     }
-    configuracion = { horaInicio: b.HORA_INICIO, horaFin: b.HORA_FIN, incluyeSabado: b.INCLUYE_SABADO === "S" }
+    // null conserva el valor actual.
+    if (b.PERMITIR_MENORES_INICIAR != null) permisoMenores.permitirMenoresIniciar = b.PERMITIR_MENORES_INICIAR === "S"
+    configuracion = {
+      horaInicio: sinHorario ? null : b.HORA_INICIO,
+      horaFin: sinHorario ? null : b.HORA_FIN,
+      incluyeSabado: b.INCLUYE_SABADO === "S",
+      permitirMenoresIniciar: permisoMenores.permitirMenoresIniciar,
+    }
     return HttpResponse.json({ rows: [configuracion] })
   }),
 ]

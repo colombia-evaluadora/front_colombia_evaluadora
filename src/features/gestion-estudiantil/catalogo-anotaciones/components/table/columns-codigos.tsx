@@ -1,12 +1,10 @@
-import type { ReactNode } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { CheckCircleIcon, PencilIcon, ProhibitIcon, TrashIcon } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
+import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
 
@@ -18,19 +16,6 @@ interface Opciones {
   onEliminar: (c: CodigoRow) => void
 }
 
-function Accion({ etiqueta, disabled, onClick, children }: { etiqueta: string; disabled?: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={<Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={etiqueta} disabled={disabled} onClick={onClick} />}
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent>{etiqueta}</TooltipContent>
-    </Tooltip>
-  )
-}
-
 /** Listado de 2.1: Código · Descripción · Tipo · Tipo de situación · Estado. */
 export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, onCambiarEstado, onEliminar }: Opciones): ColumnDef<CodigoRow>[] {
   return [
@@ -38,7 +23,6 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       id: "codigo",
       accessorKey: "codigo",
       enableSorting: false,
-      enableHiding: false,
       meta: { label: "Código" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
       cell: ({ row }) => <span className="font-semibold">{row.original.codigo}</span>,
@@ -47,7 +31,6 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       id: "descripcion",
       accessorKey: "descripcion",
       enableSorting: false,
-      enableHiding: false,
       meta: { label: "Descripción" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Descripción" />,
       cell: ({ row }) => <span className="whitespace-normal">{row.original.descripcion}</span>,
@@ -89,32 +72,31 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       header: () => <span className="sr-only">Acciones</span>,
       enableSorting: false,
       enableHiding: false,
-      // Tres botones al pasar el cursor, como en Referentes: modificar, activar/inactivar y eliminar.
+      // Tres acciones en el hover de la fila; sin permiso o con el código en uso quedan deshabilitadas, no ocultas.
       size: 120,
       cell: ({ row }) => {
         const c = row.original
         return (
-          <div className="flex items-center justify-end gap-1">
-            {puedeEditar && (
-              <Accion etiqueta={`Modificar ${c.codigo}`} onClick={() => onModificar(c)}>
-                <PencilIcon />
-              </Accion>
-            )}
-            {puedeEditar && (
-              <Accion etiqueta={`${c.habilitado ? "Inactivar" : "Activar"} ${c.codigo}`} onClick={() => onCambiarEstado(c)}>
-                {c.habilitado ? <ProhibitIcon /> : <CheckCircleIcon />}
-              </Accion>
-            )}
-            {puedeEliminar && (
-              <Accion
-                etiqueta={c.en_uso ? `${c.codigo} ya se usó en anotaciones: puede inactivarlo` : `Eliminar ${c.codigo}`}
-                disabled={c.en_uso}
-                onClick={() => onEliminar(c)}
-              >
-                <TrashIcon />
-              </Accion>
-            )}
-          </div>
+          <AccionesFila
+            etiqueta={`Acciones del código ${c.codigo}`}
+            acciones={[
+              { id: "modificar", label: `Modificar ${c.codigo}`, icon: <PencilIcon />, disabled: !puedeEditar, onSelect: () => onModificar(c) },
+              {
+                id: "estado",
+                label: `${c.habilitado ? "Inactivar" : "Activar"} ${c.codigo}`,
+                icon: c.habilitado ? <ProhibitIcon /> : <CheckCircleIcon />,
+                disabled: !puedeEditar,
+                onSelect: () => onCambiarEstado(c),
+              },
+              {
+                id: "eliminar",
+                label: c.en_uso ? `${c.codigo} ya se usó en anotaciones: puede inactivarlo` : `Eliminar ${c.codigo}`,
+                icon: <TrashIcon />,
+                disabled: !puedeEliminar || c.en_uso,
+                onSelect: () => onEliminar(c),
+              },
+            ]}
+          />
         )
       },
     },

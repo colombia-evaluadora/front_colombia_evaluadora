@@ -308,6 +308,10 @@ export interface ParametrosRiesgo {
   compromisos_incumplidos_alerta: number
   condiciones_alerta: string[]
   es_predeterminado: boolean
+  /** VALOR de la lista AVISO_ACUDIENTE_SM_SEGUIMIENTO (SIEMPRE o SOLO_ORIENTACION). */
+  aviso_sm_seguimiento: string
+  aviso_sm_seguimiento_nombre: string | null
+  puede_editar: boolean
 }
 
 /** Fila de `GET /indicadores` (RESUMEN, y una por grupo del agrupamiento pedido). */
@@ -579,6 +583,7 @@ export interface GuardarParametrosInput {
   ANOTACIONES_NEGATIVAS_ALERTA: number
   COMPROMISOS_INCUMPLIDOS_ALERTA: number
   CONDICIONES_ALERTA: string[]
+  AVISO_SM_SEGUIMIENTO: string
 }
 
 /** Respuesta de las escrituras: la pk del objeto escrito. */

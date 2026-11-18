@@ -354,7 +354,8 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 42,
-    name: "Chat",
+    // Ítem CHAT bajo COMUNICACIONES (SSO #1006).
+    name: "Mensajería interna",
     icon: "",
     path: "/app/comunicaciones/chat",
     menuOrder: 0,
