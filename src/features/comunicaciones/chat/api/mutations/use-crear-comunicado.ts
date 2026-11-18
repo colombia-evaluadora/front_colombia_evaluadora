@@ -174,7 +174,6 @@ export function useEditarComunicado(conversacionId: number) {
       queryClient.setQueryData(chatKeys.comunicado(conversacionId), dato)
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
-        queryClient.invalidateQueries({ queryKey: chatKeys.recepcion(conversacionId) }),
         // Guardar desde el borrador de la edición lo elimina (comms-service, ?borrador).
         queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
         // Listado "Comunicados institucionales" (literal para no importar en ciclo, como abajo).

@@ -39,6 +39,8 @@ export interface ComunicadoGestion {
   // Solo en Recibidos y Anteriores: el punto de no leído.
   leido: boolean | null
   actualizadoEn: string | null
+  // Establecimiento del comunicado: quien recibe (estudiante o acudiente) ve de dónde viene (3.1).
+  establecimiento?: string | null
 }
 
 export interface PaginaComunicados {
