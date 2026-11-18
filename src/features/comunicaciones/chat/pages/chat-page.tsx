@@ -21,6 +21,12 @@ import { puedeSolicitarConfirmacionLectura } from "@/features/comunicaciones/cha
 import { useMarcarLeido } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { ChatSidebar } from "@/features/comunicaciones/chat/components/chat-sidebar"
 import { ChatHeader } from "@/features/comunicaciones/chat/components/chat-header"
+import { HiloAcudientesBarra } from "@/features/comunicaciones/chat/components/hilo-acudientes-barra"
+import {
+  useHiloAcudientesQuery,
+  useResumenHilo,
+} from "@/features/comunicaciones/chat/api/query/use-hilos-acudientes-query"
+import { motivoSinEscrituraHilo } from "@/features/comunicaciones/chat/lib/hilo-acudientes"
 import { ChatMessages } from "@/features/comunicaciones/chat/components/chat-messages"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
 import { segundosDePausa } from "@/features/comunicaciones/chat/lib/limites-mensaje"
@@ -167,7 +173,10 @@ function ChatContent() {
       activa.esBot)
   // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
   // responde 403 igual si lo intenta).
-  const sinEscritura = activa ? motivoSinEscritura(activa, perfil) : null
+  // Hilo con acudientes (4.5): cerrado o silenciado no escribe.
+  const resumenHilo = useResumenHilo(activa?.id)
+  const hiloActivo = useHiloAcudientesQuery(resumenHilo ? activa?.id : undefined).data
+  const sinEscritura = activa ? (motivoSinEscrituraHilo(hiloActivo) ?? motivoSinEscritura(activa, perfil)) : null
 
   // Campana de una solicitud de aprobación (?colevabot=1): abre la conversación de Colevabot en
   // cuanto la sincronización la deja en la lista.
@@ -357,6 +366,7 @@ function ChatContent() {
                 onIrAMensaje={irAMensaje}
                 onVolver={() => seleccionar(undefined)}
               />
+              {resumenHilo && <HiloAcudientesBarra conversacionId={activa.id} />}
               {!esComunicado && <FijadosBarra mensajes={mensajesQuery.data ?? []} onIr={irAMensaje} />}
               {eleccion && <EleccionEstado eleccion={eleccion} />}
               {encuesta && <EncuestaEstado encuesta={encuesta} />}
