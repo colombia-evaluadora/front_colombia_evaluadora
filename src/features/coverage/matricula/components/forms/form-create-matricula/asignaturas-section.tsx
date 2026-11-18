@@ -21,6 +21,7 @@ import type {
   MatriculaAsignatura,
   MatriculaAsignaturasCambios,
 } from "@/features/coverage/matricula/api/types/matricula"
+import { useNotify } from "@/components/notice/notice-context"
 import { MatriculaFormSection } from "./fields"
 
 interface AsignaturasSectionProps {
@@ -66,6 +67,8 @@ export function MatriculaAsignaturasSection({
   disabled = false,
 }: AsignaturasSectionProps) {
   const [porDesmatricular, setPorDesmatricular] = useState<MatriculaAsignatura | null>(null)
+  const [conRegistros, setConRegistros] = useState<MatriculaAsignatura | null>(null)
+  const { notify } = useNotify()
 
   const filas = asignaturas.map((asignatura) => ({ ...asignatura, ...cambios[asignatura.id] }))
 
@@ -125,7 +128,8 @@ export function MatriculaAsignaturasSection({
               <TableBody>
                 {filas.map((fila) => {
                   const original = asignaturas.find((a) => a.id === fila.id) as MatriculaAsignatura
-                  const puedeDesmatricular = !fila.obligatoria && !fila.tieneRegistros
+                  // Con registros el botón sigue activo: abre el aviso de por qué no se puede (EDI.1f).
+                  const puedeDesmatricular = !fila.obligatoria
                   return (
                     <TableRow key={fila.id}>
                       <TableCell>{fila.nombre}</TableCell>
@@ -176,18 +180,16 @@ export function MatriculaAsignaturasSection({
                                   size="icon-sm"
                                   aria-label={`Desmatricular ${fila.nombre}`}
                                   disabled={disabled || !puedeDesmatricular}
-                                  onClick={() => setPorDesmatricular(original)}
+                                  onClick={() =>
+                                    fila.tieneRegistros ? setConRegistros(original) : setPorDesmatricular(original)
+                                  }
                                 />
                               }
                             >
                               <RemoveCircleOutlineIcon />
                             </TooltipTrigger>
                             <TooltipContent>
-                              {fila.obligatoria
-                                ? "Obligatoria: no se desmatricula"
-                                : fila.tieneRegistros
-                                  ? "Ya tiene notas: no se desmatricula"
-                                  : "Desmatricular"}
+                              {fila.obligatoria ? "Obligatoria: no se desmatricula" : "Desmatricular"}
                             </TooltipContent>
                           </Tooltip>
                         ) : (
@@ -201,7 +203,10 @@ export function MatriculaAsignaturasSection({
                                   size="icon-sm"
                                   aria-label={`Matricular ${fila.nombre}`}
                                   disabled={disabled}
-                                  onClick={() => cambiar(original, { matriculada: true })}
+                                  onClick={() => {
+                                    cambiar(original, { matriculada: true })
+                                    notify(`${fila.nombre} matriculada.`)
+                                  }}
                                 />
                               }
                             >
@@ -237,6 +242,30 @@ export function MatriculaAsignaturasSection({
             >
               Desmatricular
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* EDI.1f: con registros en Gestión Académica no se desmatricula; se explica por qué. */}
+      <AlertDialog open={conRegistros != null} onOpenChange={(open) => !open && setConRegistros(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No se puede desmatricular {conRegistros?.nombre}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conRegistros?.registros?.length
+                ? `No se puede desmatricular ${conRegistros.nombre} porque el estudiante tiene registros en Gestión Académica:`
+                : "Tiene registros en Gestión Académica."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {conRegistros?.registros?.length ? (
+            <ul className="list-disc space-y-1 pl-5 text-sm">
+              {conRegistros.registros.map((registro) => (
+                <li key={registro}>{registro}</li>
+              ))}
+            </ul>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setConRegistros(null)}>Entendido</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

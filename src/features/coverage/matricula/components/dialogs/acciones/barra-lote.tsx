@@ -110,7 +110,7 @@ const ACCIONES: Definicion[] = [
   },
   {
     accion: "constancias",
-    label: (n) => (n === 1 ? "Generar constancia" : "Generar constancias"),
+    label: (n) => (n === 1 ? "Generar constancia de estudio" : "Generar constancias de estudio"),
     Icon: FilePdfIcon,
     bloqueo: (sel) => (sel.every(cursando) ? null : "La constancia de estudio solo se genera para matrículas Cursando."),
   },

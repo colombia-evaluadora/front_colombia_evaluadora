@@ -94,6 +94,8 @@ interface RawMatriculaCore {
   origen_adscripcion?: string | null
   // Bloques 2.1, 2.2 y 2.8 nuevos (pendientes-back, tarea 8): solo los trae el mock.
   fk_tlv_internado?: number | null
+  fk_funcionario_digita_simat?: number | null
+  fecha_digitacion_simat?: string | null
   fk_tlv_pais_origen?: number | null
   fk_tlv_lengua_materna?: number | null
   fk_tlv_condicion_migratoria?: number | null
@@ -216,6 +218,8 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       status,
       specialty: toIdString(m.fk_enfasis),
       internado: toIdString(m.fk_tlv_internado),
+      funcionarioDigitaSimat: toIdString(m.fk_funcionario_digita_simat),
+      fechaDigitacionSimat: m.fecha_digitacion_simat?.slice(0, 10) ?? "",
     },
     student: {
       documentType: toIdString(est.fk_tlv_tipo_documento),

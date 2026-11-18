@@ -18,7 +18,11 @@ export interface EstudianteExistente {
   correoEnmascarado: string
   telefonoEnmascarado: string
   /** Acudiente de su última matrícula, para confirmar que es el estudiante correcto. */
-  ultimoAcudiente: { parentesco: string; nombre: string } | null
+  ultimoAcudiente: { parentesco: string; nombre: string; correoEnmascarado: string; telefonoEnmascarado: string } | null
+  /** Código del tipo de documento (TI, RC…). */
+  tipoDocumento: string
+  /** Viene de un traslado (AGR.2): matrícula Retirada por traslado en otro establecimiento en el período. */
+  traslado: { institucion: string; gradoValor: string; gradoNombre: string; periodo: string } | null
 }
 
 interface Row {
@@ -31,6 +35,13 @@ interface Row {
   telefono_enmascarado: string | null
   ultimo_acudiente_parentesco: string | null
   ultimo_acudiente_nombre: string | null
+  ultimo_acudiente_correo_enmascarado?: string | null
+  ultimo_acudiente_telefono_enmascarado?: string | null
+  tipo_documento?: string | null
+  traslado_institucion?: string | null
+  traslado_grado_valor?: number | null
+  traslado_grado_nombre?: string | null
+  traslado_periodo?: string | null
 }
 
 function useDebounced(valor: string, ms = 600) {
@@ -62,7 +73,21 @@ export function useEstudianteExistenteQuery(documento: string) {
         correoEnmascarado: r.correo_enmascarado ?? "",
         telefonoEnmascarado: r.telefono_enmascarado ?? "",
         ultimoAcudiente: r.ultimo_acudiente_nombre
-          ? { parentesco: r.ultimo_acudiente_parentesco ?? "", nombre: r.ultimo_acudiente_nombre }
+          ? {
+              parentesco: r.ultimo_acudiente_parentesco ?? "",
+              nombre: r.ultimo_acudiente_nombre,
+              correoEnmascarado: r.ultimo_acudiente_correo_enmascarado ?? "",
+              telefonoEnmascarado: r.ultimo_acudiente_telefono_enmascarado ?? "",
+            }
+          : null,
+        tipoDocumento: r.tipo_documento ?? "",
+        traslado: r.traslado_institucion
+          ? {
+              institucion: r.traslado_institucion,
+              gradoValor: String(r.traslado_grado_valor ?? ""),
+              gradoNombre: r.traslado_grado_nombre ?? "",
+              periodo: r.traslado_periodo ?? "",
+            }
           : null,
       }
     },

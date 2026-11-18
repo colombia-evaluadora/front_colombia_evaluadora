@@ -1,3 +1,4 @@
+import { MatriculaSoportesSection } from "@/features/coverage/matricula/components/forms/form-create-matricula/soportes-section"
 import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
 import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/hooks/use-matricula-validacion-opciones"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -715,6 +716,11 @@ function MatriculaEditPageContent() {
                 }
                 guardianIdentityDisabled={guardianSinCambio}
                 studentIdentityDisabled
+              />
+              <MatriculaSoportesSection
+                matriculaId={data.matricula.id}
+                editable={puedeEditar}
+                porAdscripcion={restricciones?.tipo === "COMPLEMENTARIA" && Boolean(restricciones?.origenAdscripcion)}
               />
               <MatriculaAsignaturasSection
                 asignaturas={asignaturasData?.asignaturas ?? []}

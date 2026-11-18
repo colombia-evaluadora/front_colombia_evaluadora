@@ -22,6 +22,8 @@ export const matriculaKeys = {
     [...all, "periodo-resolver", sedeId, jornadaId] as const,
   /** Cuelga del detalle: invalidar la matrícula también las refresca. */
   asignaturas: (id: number | string | undefined) => [...detalleAll, id, "asignaturas"] as const,
+  soportes: (id: number | string | undefined) => [...detalleAll, id, "soportes"] as const,
+  documentosConvenio: (id: number | string | undefined) => [...detalleAll, id, "documentos-convenio"] as const,
   notasHomologadas: (id: number | string | undefined) => [...detalleAll, id, "notas-homologadas"] as const,
   origenNota: (id: number | string | undefined, notaId: number | null) =>
     [...detalleAll, id, "notas-homologadas", "origen", notaId] as const,

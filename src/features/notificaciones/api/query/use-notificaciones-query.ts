@@ -27,6 +27,8 @@ export const toNotificacion = (row: NotificacionRow): Notificacion => ({
   leida: row.leida_en != null,
   actores: row.actores ?? [],
   conteo: row.conteo ?? 1,
+  contexto: row.contexto ?? "",
+  acciones: (row.acciones ?? []).map((a) => ({ etiqueta: a.etiqueta, deepLink: safeDeepLink(a.deep_link) })),
 })
 
 /** Normaliza filtros: claves vacías fuera, para que la key y el GET coincidan. */

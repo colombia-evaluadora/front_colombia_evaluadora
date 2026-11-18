@@ -1,16 +1,17 @@
-import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon, ShieldCheckIcon, StackIcon } from "@/components/ui/icons"
+import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon, ShieldCheckIcon, StackIcon, FilePdfIcon, ClipboardCheckIcon } from "@/components/ui/icons"
+import { downloadReport } from "@/lib/report-client"
+import { DialogMarcarSimpade } from "@/features/coverage/matricula/components/dialogs/dialog-marcar-simpade"
 import { useEffect, useState } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 import { DialogUnificarEstudiantes } from "@/features/coverage/matricula/components/dialogs/dialog-unificar-estudiantes"
 import {
+  DialogAccionBloqueada,
   DialogAnularMatricula,
   DialogResponderSolicitudRetiro,
 } from "@/features/coverage/matricula/components/dialogs/dialog-solicitud-retiro"
@@ -26,7 +27,7 @@ import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-
 import type { AgeSituation, Matricula } from "@/features/coverage/matricula/api/types/matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
-import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
+import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import { BadgeComplementaria } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
 import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/components/dialogs/dialog-registrar-autorizacion"
 import { DialogAgregarComplementaria } from "@/features/coverage/matricula/components/dialogs/dialog-agregar-complementaria"
@@ -92,6 +93,14 @@ export const MATRICULA_INITIAL_VISIBILITY = {
   guardian: false,
   metodologiaGrupo: false,
   nuevo: false,
+  tipoMatricula: false,
+  birthDate: false,
+  address: false,
+  phone: false,
+  guardianDetail: false,
+  guardianEmail: false,
+  asignaturas: false,
+  soportes: false,
 }
 
 export const MATRICULA_EXPORT_COLUMN_KEYS: Partial<Record<string, string | string[]>> = {
@@ -249,6 +258,54 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     cell: ({ row }) => <span className="max-w-xs truncate">{row.original.guardian}</span>,
   },
   {
+    id: "tipoMatricula",
+    accessorFn: (m) => (m.tipo === "COMPLEMENTARIA" ? "Complementaria" : "Principal"),
+    meta: { label: "Tipo de matrícula" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo de matrícula" />,
+  },
+  {
+    id: "birthDate",
+    accessorKey: "birthDate",
+    meta: { label: "Fecha de nacimiento" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha de nacimiento" />,
+  },
+  {
+    id: "address",
+    accessorKey: "address",
+    meta: { label: "Dirección" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Dirección" />,
+  },
+  {
+    id: "phone",
+    accessorKey: "phone",
+    meta: { label: "Teléfono" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Teléfono" />,
+  },
+  {
+    id: "guardianDetail",
+    accessorFn: (m) => [m.guardianRelationship, m.guardian].filter(Boolean).join(" · "),
+    meta: { label: "Acudiente (parentesco y nombre)" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Acudiente (parentesco y nombre)" />,
+  },
+  {
+    id: "guardianEmail",
+    accessorKey: "guardianEmail",
+    meta: { label: "Email acudiente" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email acudiente" />,
+  },
+  {
+    id: "asignaturas",
+    accessorKey: "asignaturas",
+    meta: { label: "Asignaturas matriculadas" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Asignaturas matriculadas" />,
+  },
+  {
+    id: "soportes",
+    accessorKey: "soportes",
+    meta: { label: "Soportes cargados" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Soportes cargados" />,
+  },
+  {
     id: "status",
     accessorKey: "status",
     meta: { label: "Estado" },
@@ -271,9 +328,9 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
   {
     id: "ageSituation",
     accessorKey: "ageSituation",
-    meta: { label: "Situación de edad" },
+    meta: { label: "Edad" },
     // El backend la calcula por fila; no tiene orden propio.
-    header: () => <span>Situación de edad</span>,
+    header: () => <span>Edad</span>,
     cell: ({ row }) => (
       <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
         {AGE_SITUATION_LABELS[row.original.ageSituation ?? "SIN_CALCULAR"]}
@@ -316,48 +373,32 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
  */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const navigate = useNavigate()
   const row = { original: matricula }
+  const nombre = `${row.original.firstName} ${row.original.lastName}`
 
   return (
-      <div className="flex items-center justify-end gap-1">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label={`Ver ${row.original.firstName} ${row.original.lastName}`}
-                render={<Link to={paths.app.coberturaMatriculaDetalle.getHref(row.original.id)} search={(prev) => ({ ...prev, accion: undefined })} />}
-                nativeButton={false}
-              />
-            }
-          >
-            <EyeIcon />
-          </TooltipTrigger>
-          <TooltipContent>{`Ver ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
-        </Tooltip>
+      <AccionesFila limite={4}>
+        <BotonAccion
+          modo="icon"
+          label="Ver"
+          ariaLabel={`Ver ${nombre}`}
+          Icon={EyeIcon}
+          onClick={() =>
+            void navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(row.original.id), search: (prev) => ({ ...prev, accion: undefined }) })
+          }
+        />
         {puedeEditar && row.original.status === "Cursando" && (
           <OnlineOnlyAction>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
-                  render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} search={(prev) => ({ ...prev, accion: undefined })} />}
-                  nativeButton={false}
-                />
+            <BotonAccion
+              modo="icon"
+              label="Editar"
+              ariaLabel={`Editar ${nombre}`}
+              Icon={PencilIcon}
+              onClick={() =>
+                void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(row.original.id), search: (prev) => ({ ...prev, accion: undefined }) })
               }
-            >
-              <PencilIcon />
-            </TooltipTrigger>
-            <TooltipContent>{`Editar ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
-          </Tooltip>
+            />
           </OnlineOnlyAction>
         )}
         <OnlineOnlyAction>
@@ -379,13 +420,61 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
             <ReingresarMatriculaDialog matricula={row.original} />
           </OnlineOnlyAction>
         ) : null}
+        <RetiroTrasladoAcciones matricula={row.original} />
         <RegistrarAutorizacionAccion matricula={row.original} />
         <AgregarComplementariaAccion matricula={row.original} />
         <CambiarEspecialidadAccion matricula={row.original} />
         <AccionesDocumentos matricula={row.original} />
         <AccionesEditar matricula={row.original} />
         <UnificarAccion matricula={row.original} />
-      </div>
+      </AccionesFila>
+  )
+}
+
+/**
+ * Retirado por traslado (C.1.LIS.3b / RET.5): generar el acta de retiro (PDF) y
+ * marcarla como ingresada al SIMPADE; esta última sale mientras no esté marcada.
+ */
+function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
+  const { puedeEditar } = useMenuPermission("MATRICULA")
+  const { notify } = useNotify()
+  const [abierto, setAbierto] = useState(false)
+  const [generando, setGenerando] = useState(false)
+  if (matricula.status !== "Retirado" || !matricula.retiroTraslado) return null
+  const nombre = `${matricula.firstName} ${matricula.lastName}`
+
+  async function generarActa() {
+    setGenerando(true)
+    const r = await downloadReport("matricula-acta-retiro", { format: "pdf", filters: { IDS: [Number(matricula.id)] } })
+    setGenerando(false)
+    if (r.status !== "ok") notify(r.message, { variant: "error" })
+  }
+
+  return (
+    <>
+      <OnlineOnlyAction>
+        <BotonAccion
+          modo="icon"
+          label="Generar acta de retiro"
+          ariaLabel={`Generar acta de retiro de ${nombre}`}
+          Icon={FilePdfIcon}
+          disabled={generando}
+          onClick={() => void generarActa()}
+        />
+      </OnlineOnlyAction>
+      {puedeEditar && !matricula.simpadeIngresado ? (
+        <OnlineOnlyAction>
+          <BotonAccion
+            modo="icon"
+            label="Marcar como ingresado al SIMPADE"
+            ariaLabel={`Marcar como ingresado al SIMPADE: ${nombre}`}
+            Icon={ClipboardCheckIcon}
+            onClick={() => setAbierto(true)}
+          />
+          {abierto ? <DialogMarcarSimpade matricula={matricula} onClose={() => setAbierto(false)} /> : null}
+        </OnlineOnlyAction>
+      ) : null}
+    </>
   )
 }
 
@@ -467,7 +556,6 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
     matricula.tipo === "COMPLEMENTARIA" ||
     matricula.tieneComplementaria ||
     !matricula.puedeAgregarComplementaria ||
-    matricula.retiroSolicitado ||
     matricula.anulacionPendiente
   )
     return null
@@ -480,7 +568,16 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
         Icon={StackIcon}
         onClick={() => setAbierto(true)}
       />
-      {abierto ? <DialogAgregarComplementaria matricula={matricula} onOpenChange={setAbierto} /> : null}
+      {/* Con retiro solicitado (Regla 71) abre el aviso de acción bloqueada (SOL.4b). */}
+      {abierto && matricula.retiroSolicitado ? (
+        <DialogAccionBloqueada
+          matricula={matricula}
+          accion="Agregar matrícula complementaria"
+          onClose={() => setAbierto(false)}
+        />
+      ) : abierto ? (
+        <DialogAgregarComplementaria matricula={matricula} onOpenChange={setAbierto} />
+      ) : null}
     </OnlineOnlyAction>
   )
 }
@@ -491,48 +588,40 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
  */
 function AccionesEditar({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const navigate = useNavigate()
   const [abierto, setAbierto] = useState<"grupo" | "grado" | null>(null)
+  const [bloqueada, setBloqueada] = useState<string | null>(null)
   if (!puedeEditar || matricula.status !== "Cursando") return null
-  // Con retiro solicitado (Regla 71) no se cambia de grupo ni de grado; corregir identidad sí.
-  const cambios = !matricula.retiroSolicitado && !matricula.anulacionPendiente
+  // Con retiro solicitado (Regla 71) los cambios se muestran pero abren el aviso de
+  // acción bloqueada (SOL.4b); con anulación pendiente no se ofrecen. Corregir identidad sí.
+  const cambios = !matricula.anulacionPendiente
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   const cerrar = (open: boolean) => !open && setAbierto(null)
+  const abrir = (accion: "grupo" | "grado", label: string) =>
+    matricula.retiroSolicitado ? setBloqueada(label) : setAbierto(accion)
   return (
     <>
       {cambios ? (
         <>
           <OnlineOnlyAction>
-            <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => setAbierto("grupo")} />
+            <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => abrir("grupo", "Cambiar de grupo")} />
           </OnlineOnlyAction>
           <OnlineOnlyAction>
-            <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => setAbierto("grado")} />
+            <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => abrir("grado", "Cambiar de grado")} />
           </OnlineOnlyAction>
         </>
       ) : null}
+      {bloqueada ? <DialogAccionBloqueada matricula={matricula} accion={bloqueada} onClose={() => setBloqueada(null)} /> : null}
       <OnlineOnlyAction>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label={`Corregir datos de identidad de ${nombre}`}
-                render={
-                  <Link
-                    to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)}
-                    search={(prev) => ({ ...prev, accion: "corregir-identidad" })}
-                  />
-                }
-                nativeButton={false}
-              />
-            }
-          >
-            <IdentificationCardIcon />
-          </TooltipTrigger>
-          <TooltipContent>Corregir datos de identidad</TooltipContent>
-        </Tooltip>
+        <BotonAccion
+          modo="icon"
+          label="Corregir datos de identidad"
+          ariaLabel={`Corregir datos de identidad de ${nombre}`}
+          Icon={IdentificationCardIcon}
+          onClick={() =>
+            void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(matricula.id), search: (prev) => ({ ...prev, accion: "corregir-identidad" }) })
+          }
+        />
       </OnlineOnlyAction>
       {abierto === "grupo" ? <DialogCambiarGrupo matriculas={[matricula]} onOpenChange={cerrar} /> : null}
       {abierto === "grado" ? <DialogCambiarGrado matriculas={[matricula]} onOpenChange={cerrar} /> : null}
@@ -553,23 +642,7 @@ function UnificarAccion({ matricula }: { matricula: Matricula }) {
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Unificar estudiantes: ${nombre}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <UserSwitchIcon />
-        </TooltipTrigger>
-        <TooltipContent>Unificar estudiantes</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={"Unificar estudiantes"} ariaLabel={`Unificar estudiantes: ${nombre}`} Icon={UserSwitchIcon} onClick={() => setAbierto(true)} />
       {abierto ? (
         <DialogUnificarEstudiantes
           open
@@ -601,23 +674,7 @@ function SolicitudRetiroAccion({ matricula }: { matricula: Matricula }) {
   const Dialogo = origen ? DialogResponderSolicitudRetiro : DialogAnularMatricula
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color={origen ? "neutral" : "destructive"}
-              size="icon-sm"
-              aria-label={`${label}: ${matricula.firstName} ${matricula.lastName}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          {origen ? <EnvelopeIcon /> : <ProhibitIcon />}
-        </TooltipTrigger>
-        <TooltipContent>{label}</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={label} ariaLabel={`${label}: ${matricula.firstName} ${matricula.lastName}`} Icon={origen ? EnvelopeIcon : ProhibitIcon} onClick={() => setAbierto(true)} destructivo={!origen} />
       {abierto ? (
         <Dialogo
           matricula={matricula}
@@ -643,23 +700,7 @@ function ReactivarAccion({ matricula }: { matricula: Matricula }) {
   if (!puedeEditar || !ESTADOS_REACTIVABLES.includes(matricula.status)) return null
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Reactivar la matrícula de ${matricula.firstName} ${matricula.lastName}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <ArrowCounterClockwiseIcon />
-        </TooltipTrigger>
-        <TooltipContent>Reactivar</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={"Reactivar"} ariaLabel={`Reactivar la matrícula de ${matricula.firstName} ${matricula.lastName}`} Icon={ArrowCounterClockwiseIcon} onClick={() => setAbierto(true)} />
       {abierto ? (
         <DialogReactivarMatricula
           matricula={matricula}
@@ -684,23 +725,7 @@ function HomologarSnapshotAccion({ matricula }: { matricula: Matricula }) {
   if (!puedeEditar || matricula.status !== "Cursando" || !matricula.snapshotPendiente) return null
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Homologar desde snapshot: ${matricula.firstName} ${matricula.lastName}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <CloudSyncIcon />
-        </TooltipTrigger>
-        <TooltipContent>Homologar desde snapshot</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={"Homologar desde snapshot"} ariaLabel={`Homologar desde snapshot: ${matricula.firstName} ${matricula.lastName}`} Icon={CloudSyncIcon} onClick={() => setAbierto(true)} />
       {abierto ? <HomologarSnapshotDialogo matricula={matricula} onClose={() => setAbierto(false)} /> : null}
     </OnlineOnlyAction>
   )

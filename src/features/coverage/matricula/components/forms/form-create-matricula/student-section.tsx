@@ -67,6 +67,7 @@ export function MatriculaStudentSection({
           transform={extranjero ? aDocumentoAlfanumerico : undefined}
         maxLength={20}
         disabled={identityDisabled}
+        description="Se busca al salir del campo."
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
       <MatriculaTextField

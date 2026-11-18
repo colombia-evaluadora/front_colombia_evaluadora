@@ -6,6 +6,7 @@ import { metodologiaDe, metodologiaNombre } from "@/mocks/db/metodologia"
 // Nuevo: sin matrícula el año anterior en la entidad territorial (variedad fija por pk).
 const esNuevo = (pk: number) => pk % 5 === 1
 import { tieneSnapshotPendiente } from "@/mocks/db/notas-homologadas"
+import { retirosTraslado } from "@/mocks/db/acciones-lote"
 import { http, HttpResponse, delay } from "msw"
 
 import {
@@ -124,10 +125,28 @@ function toRawMatriculaRow(row: Matricula, totalCount: number) {
     grupo: row.group,
     enrollment_date: row.enrollmentDate,
     guardian: row.guardian || null,
+    // Columnas de exportación (Regla 47); el back aún no las manda.
+    birth_date: "2011-02-03",
+    address: "Cl 45 # 12-30",
+    phone: "310 455 1020",
+    guardian_relationship: row.guardian ? "Madre" : null,
+    guardian_email: row.guardian ? "acudiente@correo.com" : null,
+    asignaturas: "11",
+    soportes: "Documento de identidad",
     status: row.status,
     has_grades: row.hasGrades,
     age_situation: row.ageSituation ?? "SIN_CALCULAR",
     retiro_solicitado: retiroSolicitadoPor(Number(row.id)) ? "S" : "N",
+    retiro_solicitado_por: retiroSolicitadoPor(Number(row.id)),
+    ...(() => {
+      const t = row.status === "Retirado" ? retirosTraslado.get(Number(row.id)) : undefined
+      return {
+        retiro_traslado: t ? ("S" as const) : ("N" as const),
+        acta_retiro: t?.acta ?? null,
+        fecha_retiro: t?.fecha ?? null,
+        simpade_ingresado: t?.simpade ? ("S" as const) : ("N" as const),
+      }
+    })(),
     anulacion_pendiente: anulacionPendiente(Number(row.id)) ? "S" : "N",
     snapshot_pendiente: tieneSnapshotPendiente(row.id) ? "S" : "N",
     tipo_matricula: tipoDe(Number(row.id)),
@@ -542,6 +561,9 @@ export const matriculaHandlers = [
     return HttpResponse.json<MatriculaDocumentCheckResult>({
       exists: matricula !== null,
       matricula,
+      // Pendiente en el back: período de esa matrícula y si es de otro establecimiento (SOL.1).
+      periodo: matricula ? { id: 1, label: "2026 · Anual · Ciclo 1" } : null,
+      otroEstablecimiento: matricula ? Number(matricula.id) % 3 === 0 : false,
     })
   }),
 
