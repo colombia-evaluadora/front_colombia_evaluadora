@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import {

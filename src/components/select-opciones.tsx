@@ -1,8 +1,11 @@
 import type { InputVariant } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toSelectItemsMap } from "@/lib/catalog-options"
 
 /**
- * Select estándar de la app (Base UI) para las pantallas de Comunicaciones, que antes usaban
+ * Select genérico de opciones string (Base UI), simple o múltiple, para filtros y formularios con
+ * `useState` (Comunicaciones, Conservación de datos). Con TanStack Form usá `SelectField` de
+ * `@/lib/forms`, que comparte el mismo centinela. Nació en Comunicaciones, que antes usaba
  * `NativeSelect`: el nativo no respeta `Field variant="outlined"` (quedaba con el texto pegado
  * a la izquierda y una línea abajo). Las opciones conservan el contrato del nativo: el valor
  * `""` sigue significando "Todos" / sin selección. Base UI trata `null` como "sin valor" y no
@@ -15,9 +18,18 @@ export interface OpcionSelect {
   disabled?: boolean
 }
 
-const VACIO = "__none__"
-const aSelect = (v: string) => (v === "" ? VACIO : v)
-const deSelect = (v: string) => (v === VACIO ? "" : v)
+/** Valor interno de "sin elegir": Base UI no admite un ítem con `""`. */
+export const SELECT_VACIO = "__none__"
+export const aSelect = (v: string) => (v === "" ? SELECT_VACIO : v)
+export const deSelect = (v: string) => (v === SELECT_VACIO ? "" : v)
+
+/** Mapa valor → etiqueta que necesita `SelectValue` (equivale a `toSelectItemsMap` con el centinela). */
+export const etiquetasSelect = (opciones: OpcionSelect[]): Record<string, string> =>
+  toSelectItemsMap(opciones.map((o) => ({ value: aSelect(o.value), label: o.label })))
+
+/** Valor del Select simple: sin opción que lo represente (p. ej. "" sin "Todos") → null (placeholder). */
+export const valorSelect = (value: string | null | undefined, etiquetas: Record<string, string>) =>
+  etiquetas[aSelect(value ?? "")] !== undefined ? aSelect(value ?? "") : null
 
 type Comunes = {
   id?: string
@@ -39,7 +51,7 @@ type Multiple = Comunes & { multiple: true; value: string[]; onValueChange: (val
 
 export function SelectOpciones(props: Simple | Multiple) {
   const { id, opciones, placeholder = "Seleccione", disabled, size, variant, className } = props
-  const etiquetas = Object.fromEntries(opciones.map((o) => [aSelect(o.value), o.label]))
+  const etiquetas = etiquetasSelect(opciones)
 
   const trigger = (
     <SelectTrigger
@@ -88,8 +100,7 @@ export function SelectOpciones(props: Simple | Multiple) {
   }
 
   const { value, onValueChange } = props
-  // Valor sin opción que lo represente (p. ej. "" sin opción "Todos") → null muestra el placeholder.
-  const actual = etiquetas[aSelect(value ?? "")] !== undefined ? aSelect(value ?? "") : null
+  const actual = valorSelect(value, etiquetas)
   return (
     <Select<string | null>
       items={etiquetas}
