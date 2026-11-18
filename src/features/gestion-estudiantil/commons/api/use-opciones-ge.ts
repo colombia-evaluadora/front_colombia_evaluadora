@@ -38,11 +38,45 @@ export const opcionesGeKeys = {
 
 const BASE = "/gestion-estudiantil/opciones"
 
+// Las fetch van sueltas para que la preparación sin conexión siembre las mismas keys.
+export async function fetchSedesGe() {
+  return (await evalCol.postRows<SedeRow>(`${BASE}/sedes`, {})).map(toSede)
+}
+
+export async function fetchAniosGe(sedeId: number | null) {
+  return (await evalCol.postRows<AnioRow>(`${BASE}/anos`, { FK_TSEDE: sedeId })).map(toAnio)
+}
+
+export async function fetchJornadasGe(sedeId: number | null, anio: number | null) {
+  return (await evalCol.postRows<JornadaRow>(`${BASE}/jornadas`, { FK_TSEDE: sedeId, ANIO: anio })).map(toJornada)
+}
+
+export async function fetchGruposPeriodoGe(params: GruposPeriodoParams) {
+  return (
+    await evalCol.postRows<GrupoPeriodoRow>(`${BASE}/grupos-periodo`, {
+      FK_TSEDE: params.sedeId,
+      ANIO: params.anio,
+      FK_TLV_JORNADA: params.jornadaId,
+      SEARCH: params.search?.trim() || null,
+    })
+  ).map(toGrupo)
+}
+
+export async function fetchPeriodosGe(params: PeriodosInformeParams) {
+  return (
+    await evalCol.postRows<PeriodoRow>(`${BASE}/periodos`, {
+      FK_TSEDE: params.sedeId,
+      ANIO: params.anio,
+      FK_TLV_JORNADA: params.jornadaId,
+    })
+  ).map(toPeriodo)
+}
+
 export function useSedesGeQuery() {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: opcionesGeKeys.sedes(),
-    queryFn: async () => (await evalCol.postRows<SedeRow>(`${BASE}/sedes`, {})).map(toSede),
+    queryFn: fetchSedesGe,
     staleTime: 1000 * 60 * 10,
   })
 }
@@ -51,7 +85,7 @@ export function useAniosGeQuery(sedeId: number | null) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: opcionesGeKeys.anios(sedeId),
-    queryFn: async () => (await evalCol.postRows<AnioRow>(`${BASE}/anos`, { FK_TSEDE: sedeId })).map(toAnio),
+    queryFn: () => fetchAniosGe(sedeId),
     enabled: sedeId != null,
     staleTime: 1000 * 60 * 10,
   })
@@ -61,8 +95,7 @@ export function useJornadasGeQuery(sedeId: number | null, anio: number | null) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: opcionesGeKeys.jornadas(sedeId, anio),
-    queryFn: async () =>
-      (await evalCol.postRows<JornadaRow>(`${BASE}/jornadas`, { FK_TSEDE: sedeId, ANIO: anio })).map(toJornada),
+    queryFn: () => fetchJornadasGe(sedeId, anio),
     enabled: sedeId != null && anio != null,
     staleTime: 1000 * 60 * 10,
   })
@@ -72,15 +105,7 @@ export function useGruposPeriodoGeQuery(params: GruposPeriodoParams) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: opcionesGeKeys.grupos(params),
-    queryFn: async () =>
-      (
-        await evalCol.postRows<GrupoPeriodoRow>(`${BASE}/grupos-periodo`, {
-          FK_TSEDE: params.sedeId,
-          ANIO: params.anio,
-          FK_TLV_JORNADA: params.jornadaId,
-          SEARCH: params.search?.trim() || null,
-        })
-      ).map(toGrupo),
+    queryFn: () => fetchGruposPeriodoGe(params),
     enabled: params.sedeId != null && params.anio != null && params.jornadaId != null,
     staleTime: 1000 * 60,
   })
@@ -90,14 +115,7 @@ export function usePeriodosGeQuery(params: PeriodosInformeParams) {
   return useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: opcionesGeKeys.periodos(params),
-    queryFn: async () =>
-      (
-        await evalCol.postRows<PeriodoRow>(`${BASE}/periodos`, {
-          FK_TSEDE: params.sedeId,
-          ANIO: params.anio,
-          FK_TLV_JORNADA: params.jornadaId,
-        })
-      ).map(toPeriodo),
+    queryFn: () => fetchPeriodosGe(params),
     enabled: params.sedeId != null && params.anio != null && params.jornadaId != null,
     staleTime: 1000 * 60 * 5,
   })
