@@ -1,7 +1,7 @@
-import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { Input } from "@/components/ui/input"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
@@ -10,6 +10,7 @@ import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/format
 import { CamposRazones } from "@/features/gestion-estudiantil/reintegracion/components/campos-razones"
 import type { useAbrirCasoForm } from "@/features/gestion-estudiantil/reintegracion/hooks/use-abrir-caso-form"
 import { MOTIVO_APERTURA_MAX } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
@@ -72,15 +73,16 @@ export function FormularioAbrirCaso({ f }: { f: ReturnType<typeof useAbrirCasoFo
           Con rol Profesional de trabajo social activo en la Sede y Jornada de la matrícula.
         </p>
       </div>
-      <Field orientation="vertical" variant="plain" className="gap-1 self-start">
-        <label className="flex h-11 items-center gap-3 text-sm">
+      <MarcoOpciones
+        id="reintegracion-abrir-alta"
+        className="self-start"
+        descripcion="Marcado, el caso pide la validación del Administrador del establecimiento al terminar el Diagnóstico."
+      >
+        <label className="flex items-center gap-3">
           <Switch round checked={f.alta} onCheckedChange={f.setAlta} />
           Alta complejidad
         </label>
-        <FieldDescription>
-          Marcado, el caso pide la validación del Administrador del establecimiento al terminar el Diagnóstico.
-        </FieldDescription>
-      </Field>
+      </MarcoOpciones>
       <div className="sm:col-span-2">
         <SeccionPlegable titulo="Razones del abandono" subtitulo="Opcionales" encuadrada comoSeccion contentClassName="p-4">
           <CamposRazones

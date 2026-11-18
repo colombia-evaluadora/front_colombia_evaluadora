@@ -1,14 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
-import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -33,6 +33,7 @@ import { colorDeTipo, MENSAJES } from "@/features/gestion-estudiantil/observador
 import type { AnotacionRow, CodigoAnotacion } from "@/features/gestion-estudiantil/observador/api/types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { observadorEditarRoute } from "@/router"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 const OBS_MIN = 10
 const OBS_MAX = 1000
@@ -300,30 +301,34 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             </div>
           </Field>
 
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-3 text-sm">
-              <Switch
-                round
-                checked={v.preocupa}
-                disabled={!permanenciaHabilitada}
-                onCheckedChange={(preocupa) => setV({ ...v, preocupa })}
-                aria-label="Preocupa la permanencia"
-              />
-              Preocupa la permanencia
-              <span className="text-xs text-muted-foreground">· solo con un estudiante</span>
-            </label>
-            <label className="flex items-center gap-3 text-sm">
-              <Switch
-                round
-                checked={v.mediacion}
-                disabled={!mediacionHabilitada}
-                onCheckedChange={(mediacion) => setV({ ...v, mediacion })}
-                aria-label="Requiere mediación"
-              />
-              Requiere mediación
-              <span className="text-xs text-muted-foreground">· solo con un código Tipo I y dos o más estudiantes</span>
-            </label>
-            {errores.mediacion && <FieldError>{errores.mediacion}</FieldError>}
+          {/* Las dos marcas en recuadros, una al lado de la otra (en pantallas angostas, una debajo de otra). */}
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
+            <MarcoOpciones id="anotacion-preocupa">
+              <label className="flex items-center gap-3">
+                <Switch
+                  round
+                  checked={v.preocupa}
+                  disabled={!permanenciaHabilitada}
+                  onCheckedChange={(preocupa) => setV({ ...v, preocupa })}
+                  aria-label="Preocupa la permanencia"
+                />
+                Preocupa la permanencia
+                <span className="text-xs text-muted-foreground">· solo con un estudiante</span>
+              </label>
+            </MarcoOpciones>
+            <MarcoOpciones id="anotacion-mediacion" error={errores.mediacion}>
+              <label className="flex items-center gap-3">
+                <Switch
+                  round
+                  checked={v.mediacion}
+                  disabled={!mediacionHabilitada}
+                  onCheckedChange={(mediacion) => setV({ ...v, mediacion })}
+                  aria-label="Requiere mediación"
+                />
+                Requiere mediación
+                <span className="text-xs text-muted-foreground">· solo con un código Tipo I y dos o más estudiantes</span>
+              </label>
+            </MarcoOpciones>
           </div>
 
           {esGrave && (

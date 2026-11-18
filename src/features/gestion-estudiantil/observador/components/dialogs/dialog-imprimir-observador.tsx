@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,9 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
 import { FilePdfIcon, PrinterIcon, XIcon } from "@/components/ui/icons"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
@@ -23,6 +22,7 @@ import { useImprimirObservador } from "@/features/gestion-estudiantil/observador
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import type { ObservadorFiltros, TipoImpresion } from "@/features/gestion-estudiantil/observador/api/types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 const TODO_EL_ANIO = "todo"
 
@@ -149,12 +149,11 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
             error={intento && !periodo ? "Elegí el período." : undefined}
             onChange={(p) => setSel({ ...sel, periodo: p })}
           />
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel>Tipo*</FieldLabel>
+          <MarcoOpciones id="imprimir-tipo" label="Tipo" required>
             <RadioGroup
+            aria-labelledby="imprimir-tipo-label"
               value={sel.tipo}
               onValueChange={(tipo) => setSel({ ...sel, tipo: tipo as TipoImpresion })}
-              className="flex h-10 flex-row items-center gap-6"
             >
               <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                 <RadioGroupItem value="COMPORTAMIENTOS" />
@@ -165,7 +164,7 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
                 Completo
               </label>
             </RadioGroup>
-          </Field>
+          </MarcoOpciones>
         </div>
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}

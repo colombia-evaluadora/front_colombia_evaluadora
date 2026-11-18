@@ -1,11 +1,11 @@
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { DatePicker } from "@/components/date-picker"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
@@ -14,6 +14,7 @@ import { DialogOfrecerPlan } from "@/features/gestion-estudiantil/prevencion/com
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
 import { useValorarForm } from "@/features/gestion-estudiantil/prevencion/hooks/use-valorar-form"
 import { ANALISIS_MAX } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 function ValorarContent({ matricula: matriculaInicial }: { matricula?: number }) {
   const { volver, irPlanNuevo } = useNavegacionPrevencion()
@@ -89,12 +90,10 @@ function ValorarContent({ matricula: matriculaInicial }: { matricula?: number })
             </p>
           )}
 
-          <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(f.error("nivel")) || undefined}>
-            <FieldLabel id="valoracion-nivel-label">Nivel de riesgo*</FieldLabel>
+          <MarcoOpciones id="valoracion-nivel" label="Nivel de riesgo" required error={f.error("nivel")}>
             <RadioGroup
               aria-labelledby="valoracion-nivel-label"
               aria-invalid={Boolean(f.error("nivel")) || undefined}
-              className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
               value={f.nivel}
               onValueChange={f.setNivel}
             >
@@ -105,8 +104,7 @@ function ValorarContent({ matricula: matriculaInicial }: { matricula?: number })
                 </label>
               ))}
             </RadioGroup>
-            {f.error("nivel") && <FieldError>{f.error("nivel")}</FieldError>}
-          </Field>
+          </MarcoOpciones>
 
           <TextoLargo
             id="valoracion-analisis"
