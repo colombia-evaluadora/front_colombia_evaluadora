@@ -2,7 +2,16 @@ import { useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
@@ -323,7 +332,7 @@ export function ConfiguracionMensajeriaDialog({ open, onClose }: { open: boolean
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Configuración de la mensajería{establecimiento ? ` — ${establecimiento}` : ""}</DialogTitle>
+          <DialogTitle className="text-balance break-words">Configuración de la mensajería{establecimiento ? ` — ${establecimiento}` : ""}</DialogTitle>
         </DialogHeader>
         <Configuracion activo={open} onCancelar={onClose} />
       </DialogContent>
@@ -331,8 +340,10 @@ export function ConfiguracionMensajeriaDialog({ open, onClose }: { open: boolean
   )
 }
 
-const ITEM_CONFIG = "flex items-center justify-between gap-3"
-
+/**
+ * Mismo patrón de interruptor que Preferencias de notificaciones: `Field orientation="horizontal"`
+ * con `Switch round` a la izquierda y el label (clickeable) con su descripción a la derecha.
+ */
 function FormConfiguracion({ inicial, onCancelar }: { inicial: ValoresConfiguracion; onCancelar?: () => void }) {
   const [valores, setValores] = useState(inicial)
   const guardar = useGuardarConfiguracion()
@@ -341,51 +352,64 @@ function FormConfiguracion({ inicial, onCancelar }: { inicial: ValoresConfigurac
   const idMenores = useId()
   const cambiar = (v: Partial<ValoresConfiguracion>) => setValores({ ...valores, ...v })
   return (
-    <div className="space-y-4 text-sm">
-      {guardar.isError && <p role="alert" className="text-red">{getErrorMessage(guardar.error)}</p>}
-      {guardar.isSuccess && <p role="status" className="text-green">Configuración guardada.</p>}
-      <fieldset className="space-y-3">
-        <legend className="mb-2 font-medium">
-          <span className="text-red">* </span>Horario de atención
-        </legend>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground">lun–vie</span>
-          <Field variant="outlined" className="w-36" data-invalid={!valores.horaInicio || undefined}>
-            <FieldLabel htmlFor="config-hora-inicio">Desde</FieldLabel>
-            <DatePicker id="config-hora-inicio" mode="time" value={valores.horaInicio} onChange={(v) => cambiar({ horaInicio: v })} />
+    <div className="flex flex-col gap-6">
+      {guardar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(guardar.error)}</p>}
+      {guardar.isSuccess && <p role="status" className="text-sm text-green">Configuración guardada.</p>}
+      <FieldGroup>
+        <FieldSet>
+          <FieldLegend variant="label">
+            Horario de atención<span className="text-red">*</span>
+          </FieldLegend>
+          <FieldDescription>lun–vie</FieldDescription>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field variant="outlined" data-invalid={!valores.horaInicio || undefined}>
+              <FieldLabel htmlFor="config-hora-inicio">Desde*</FieldLabel>
+              <DatePicker id="config-hora-inicio" mode="time" value={valores.horaInicio} onChange={(v) => cambiar({ horaInicio: v })} />
+            </Field>
+            <Field variant="outlined" data-invalid={!valores.horaFin || undefined}>
+              <FieldLabel htmlFor="config-hora-fin">Hasta*</FieldLabel>
+              <DatePicker id="config-hora-fin" mode="time" value={valores.horaFin} onChange={(v) => cambiar({ horaFin: v })} />
+            </Field>
+          </div>
+          {incompleto && <FieldError>Indique la hora de inicio y la de fin.</FieldError>}
+          <Field orientation="horizontal">
+            <Switch
+              id={idSabado}
+              round
+              checked={valores.incluyeSabado}
+              onCheckedChange={(v) => cambiar({ incluyeSabado: v })}
+            />
+            <FieldLabel htmlFor={idSabado}>Incluir sábado</FieldLabel>
           </Field>
-          <span>a</span>
-          <Field variant="outlined" className="w-36" data-invalid={!valores.horaFin || undefined}>
-            <FieldLabel htmlFor="config-hora-fin">Hasta</FieldLabel>
-            <DatePicker id="config-hora-fin" mode="time" value={valores.horaFin} onChange={(v) => cambiar({ horaFin: v })} />
-          </Field>
-        </div>
-        <div className={ITEM_CONFIG}>
-          <label htmlFor={idSabado}>sáb</label>
-          <Switch id={idSabado} checked={valores.incluyeSabado} onCheckedChange={(v) => cambiar({ incluyeSabado: v })} />
-        </div>
-        {incompleto && <p role="alert" className="text-red">Indique la hora de inicio y la de fin.</p>}
-      </fieldset>
-      <p className="flex items-start gap-2 text-muted-foreground">
-        <InfoIcon aria-hidden className="mt-px size-4 shrink-0" />
-        Fuera del horario no se envían avisos por correo; la campana sí.
-      </p>
-      {/* W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
-      <div className={ITEM_CONFIG}>
-        <label htmlFor={idMenores}>Permitir que estudiantes menores inicien conversaciones</label>
-        <Switch
-          id={idMenores}
-          checked={valores.permitirMenoresIniciar}
-          onCheckedChange={(v) => cambiar({ permitirMenoresIniciar: v })}
-        />
-      </div>
+          <FieldDescription className="flex items-start gap-2">
+            <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+            Fuera del horario no se envían avisos por correo; la campana sí.
+          </FieldDescription>
+        </FieldSet>
+        {/* W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
+        <Field orientation="horizontal" className="items-start">
+          <Switch
+            id={idMenores}
+            round
+            className="mt-0.5"
+            checked={valores.permitirMenoresIniciar}
+            onCheckedChange={(v) => cambiar({ permitirMenoresIniciar: v })}
+          />
+          <FieldContent>
+            <FieldLabel htmlFor={idMenores}>Permitir que estudiantes menores inicien conversaciones</FieldLabel>
+            <FieldDescription>Apagado: los menores solo responden en las conversaciones donde los incluyen.</FieldDescription>
+          </FieldContent>
+        </Field>
+      </FieldGroup>
       <DialogFooter>
         {onCancelar && (
-          <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCancelar}>
+          <Button size="sm" variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCancelar}>
             Cancelar
           </Button>
         )}
         <Button
+          size="sm"
+          color="primary"
           disabled={guardar.isPending || incompleto}
           aria-busy={guardar.isPending}
           onClick={() => guardar.mutate(valores, { onSuccess: () => onCancelar?.() })}
