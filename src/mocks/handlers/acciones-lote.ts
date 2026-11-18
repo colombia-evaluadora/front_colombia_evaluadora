@@ -1,6 +1,7 @@
 import { delay, http, HttpResponse } from "msw"
 
 import { matriculaDb } from "@/mocks/db/matricula"
+import { agregarComplementaria, previaComplementaria } from "@/mocks/db/complementaria"
 
 import {
   cambiarGradoLote,
@@ -22,6 +23,19 @@ const idsDe = async (request: Request) => ((await request.json()) as { IDS: numb
 const idsForm = (form: FormData) => JSON.parse(String(form.get("IDS") ?? "[]")) as number[]
 
 export const accionesLoteHandlers = [
+  http.get("*/api/eval-col/cobertura-academica/matricula/:id/complementaria/previa", async ({ params }) => {
+    await delay(250)
+    const r = previaComplementaria(Number(params.id))
+    if ("error" in r) return HttpResponse.json({ message: r.error }, { status: r.status })
+    return HttpResponse.json({ rows: [r.data] })
+  }),
+  http.post("*/api/eval-col/cobertura-academica/matricula/:id/complementaria", async ({ params, request }) => {
+    await delay(400)
+    const body = (await request.json()) as { FK_TSEDE: number; FK_TPERIODO_ACADEMICO: number; FK_TGRUPO: number }
+    const r = agregarComplementaria(Number(params.id), body.FK_TSEDE, body.FK_TPERIODO_ACADEMICO, body.FK_TGRUPO)
+    if ("error" in r) return HttpResponse.json({ message: r.error }, { status: r.status })
+    return HttpResponse.json({ rows: [r.data] })
+  }),
   http.post(`${BASE}/retirar/previa`, async ({ request }) => {
     await delay(200)
     const pks = await idsDe(request)
@@ -98,6 +112,12 @@ export const accionesLoteHandlers = [
   http.post(`${BASE}/hojas`, async ({ request }) => {
     await delay(500)
     return pdf(`Hojas de matrícula: ${(await idsDe(request)).join(", ")}`)
+  }),
+  // Carné (Sección 2.18): en el mock, una de cada tres matrículas no tiene foto.
+  http.post(`${BASE}/carnes/previa`, async ({ request }) => {
+    await delay(200)
+    const pks = await idsDe(request)
+    return HttpResponse.json({ rows: [{ sin_foto: pks.filter((pk) => pk % 3 === 0).length }] })
   }),
   http.get(`${BASE}/constancias/configuracion`, async () => {
     await delay(100)

@@ -13,8 +13,8 @@ const nombre = (pk: number) => {
   return m ? `${m.firstName} ${m.lastName}` : `Matrícula ${pk}`
 }
 
-export const complementariaDe = (pk: number) =>
-  pk % 3 === 0 ? { sede: "IE Central", jornada: "Mañana", especialidad: "Sistemas" } : null
+export { complementariaDe } from "@/mocks/db/complementaria"
+import { complementariaDe, tipoDe } from "@/mocks/db/complementaria"
 
 type Resultado = { pk_matricula: number; ok: boolean; mensaje: string | null }
 const ok = (pk: number): Resultado => ({ pk_matricula: pk, ok: true, mensaje: null })
@@ -60,20 +60,20 @@ export function previaReingreso(pk: number) {
     grupos_con_cupo: sinCupo ? gruposDe(m.grade, m.group) : [],
     periodos_durante_retiro: pk % 4 === 0 ? ["P2"] : [],
     caso_reintegracion: pk % 5 === 0 ? "Reingreso aprobado" : null,
-    complementaria_sin_cupo: pk % 7 === 0 && complementariaDe(pk) ? "Electricidad" : null,
+    complementaria_sin_cupo: pk % 7 === 0 && (complementariaDe(pk) || tipoDe(pk) === "COMPLEMENTARIA") ? "Electricidad" : null,
   }
 }
 
 export function reingresarLote(matriculas: { ID: number; FK_TGRUPO: number | null }[]): Resultado[] {
-  // En lote la complementaria sin cupo no bloquea: la principal reingresa y se avisa (C.1.LOT.2).
-  const lote = matriculas.length > 1
+  // La principal reingresa aunque su complementaria no tenga cupo: solo se avisa (Regla 12).
   return matriculas.map(({ ID: pk, FK_TGRUPO }) => {
     const m = byPk(pk)
     const previa = previaReingreso(pk)
     if (!m || !previa) return falla(pk, "la matrícula no existe.")
     if (m.status !== "Retirado") return falla(pk, `está ${m.status}; solo se reingresa una matrícula Retirada.`)
     if (!previa.periodo_abierto) return falla(pk, "su Período Académico ya está cerrado.")
-    if (previa.complementaria_sin_cupo && !lote)
+    // Solo se bloquea el reingreso de la propia complementaria (Regla 12).
+    if (previa.complementaria_sin_cupo && tipoDe(pk) === "COMPLEMENTARIA")
       return falla(pk, `no hay cupo libre en ${previa.complementaria_sin_cupo} para reingresar a la matrícula complementaria.`)
     if (previa.sin_cupo && !FK_TGRUPO) return falla(pk, "su grupo ya no tiene cupo: elija otro grupo.")
     m.status = "Cursando"

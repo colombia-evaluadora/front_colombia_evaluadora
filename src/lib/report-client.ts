@@ -30,6 +30,8 @@ export type ReportKey =
   | "asignaciones"
   | "asistencia"
   | "matricula"
+  | "matricula-complementaria-sorteo"
+  | "matricula-carne"
   | "informes"
   | "informes-tabla"
   | "boletin"
