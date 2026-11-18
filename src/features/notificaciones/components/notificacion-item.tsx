@@ -24,6 +24,38 @@ interface NotificacionItemProps {
   onAccion?: () => void
 }
 
+/**
+ * Contexto y enlaces extra ("Matrícula · 5-A · Abrir Retirar", AVI.1). Van fuera del
+ * botón de la fila: cada enlace marca leída y navega a su propio destino.
+ */
+function AccionesLinea({
+  notificacion: n,
+  onOpen,
+  compact = false,
+}: {
+  notificacion: Notificacion
+  onOpen: (notificacion: Notificacion) => void
+  compact?: boolean
+}) {
+  if (n.acciones.length === 0) return null
+  const enlaces = [{ etiqueta: "Abrir", deepLink: n.deepLink }, ...n.acciones]
+  return (
+    <span className={cn("flex flex-wrap items-center gap-x-2", compact ? "px-3 pb-3 text-xs" : "pl-11 text-sm")}>
+      {n.contexto && <span className="text-muted-foreground">{n.contexto} ·</span>}
+      {enlaces.map((a) => (
+        <button
+          key={a.etiqueta}
+          type="button"
+          onClick={() => onOpen({ ...n, deepLink: a.deepLink })}
+          className="font-medium text-primary underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/30"
+        >
+          {a.etiqueta}
+        </button>
+      ))}
+    </span>
+  )
+}
+
 /** Contenido clicable de una entrada de la bandeja: compartido por la campana y la página. */
 export function NotificacionItem({
   notificacion: n,
@@ -93,6 +125,7 @@ export function NotificacionItem({
             {horaDelDia(n.creadaEn)}
           </time>
         </button>
+        <AccionesLinea notificacion={n} onOpen={onOpen} />
         {n.tipo === TIPO_INVITACION_GRUPO && <InvitacionAcciones notificacion={n} onAbrir={onAccion} />}
       </>
     )
@@ -102,7 +135,8 @@ export function NotificacionItem({
   // al título (siempre en peso medio), fecha corta a la derecha, cuerpo y enlace
   // en 12px. El fondo (leída = gris) lo pone el `<li>` de la campana. El enlace solo dice a dónde
   // lleva: toda la entrada abre el `deepLink`.
-  const enlace = cuerpoEnlace ? null : (ENLACE_POR_TIPO[n.tipo] ?? (n.deepLink ? "Abrir" : null))
+  const enlace =
+    cuerpoEnlace || n.acciones.length > 0 ? null : (ENLACE_POR_TIPO[n.tipo] ?? (n.deepLink ? "Abrir" : null))
   return (
     <>
       <button
@@ -134,6 +168,7 @@ export function NotificacionItem({
         {enlace && <span className="text-xs text-primary underline-offset-2 hover:underline">{enlace}</span>}
         <span className="sr-only">{n.leida ? "Leída" : "Sin leer"}</span>
       </button>
+      <AccionesLinea notificacion={n} onOpen={onOpen} compact />
       {/* Invitación a un grupo: Aceptar / Rechazar sin salir de la bandeja (fuera del botón). */}
       {n.tipo === TIPO_INVITACION_GRUPO && <InvitacionAcciones notificacion={n} onAbrir={onAccion} />}
     </>

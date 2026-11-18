@@ -32,6 +32,8 @@ export interface SolicitudRetiro {
   /** yyyy-MM-dd */
   fecha: string
   diasSinRespuesta: number
+  /** yyyy-MM-dd: vence el plazo para responder. */
+  vence: string | null
   estado: EstadoSolicitudRetiro
   evidenciaNombre: string
   evidenciaArchivoId: number | null
@@ -47,6 +49,7 @@ interface SolicitudRow {
   establecimiento_origen: string
   fecha_solicitud: string
   dias_sin_respuesta: number
+  vence?: string | null
   estado: EstadoSolicitudRetiro
   evidencia_nombre: string
   fk_tarchivo_evidencia: number | null
@@ -61,6 +64,7 @@ const toSolicitud = (r: SolicitudRow): SolicitudRetiro => ({
   establecimientoOrigen: r.establecimiento_origen,
   fecha: r.fecha_solicitud,
   diasSinRespuesta: r.dias_sin_respuesta ?? 0,
+  vence: r.vence ?? null,
   estado: r.estado,
   evidenciaNombre: r.evidencia_nombre,
   evidenciaArchivoId: r.fk_tarchivo_evidencia,
@@ -126,4 +130,12 @@ export function useAnularMatricula() {
       queryClient.invalidateQueries({ queryKey: matriculaKeys.solicitudRetiro(matriculaId) })
     },
   })
+}
+
+/**
+ * SOL.1: el destino matricula y pide el retiro al establecimiento donde el
+ * estudiante sigue Cursando. La evidencia es obligatoria (PDF, JPG o PNG).
+ */
+export async function solicitarRetiro(matriculaId: string, evidencia: File) {
+  await postMultipart(`/eval-col/cobertura-academica/matricula/${matriculaId}/solicitud-retiro`, {}, { ARCHIVO: evidencia })
 }

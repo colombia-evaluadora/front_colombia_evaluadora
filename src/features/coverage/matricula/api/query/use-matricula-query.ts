@@ -83,11 +83,23 @@ interface MatriculaListRow {
   grupo: string
   enrollment_date: string
   guardian: string | null
+  birth_date?: string | null
+  address?: string | null
+  phone?: string | null
+  guardian_relationship?: string | null
+  guardian_email?: string | null
+  asignaturas?: string | null
+  soportes?: string | null
   status: MatriculaStatus
   has_grades: boolean
   age_situation?: AgeSituation | null
   // Pendiente en el back (pendientes-back.md): solo lo trae el mock.
   retiro_solicitado?: "S" | "N"
+  retiro_solicitado_por?: string | null
+  retiro_traslado?: "S" | "N"
+  acta_retiro?: string | null
+  fecha_retiro?: string | null
+  simpade_ingresado?: "S" | "N"
   tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
   tiene_complementaria?: "S" | "N"
   origen_adscripcion?: string | null
@@ -120,10 +132,21 @@ function toMatricula(row: MatriculaListRow): Matricula {
     // El backend no manda acudiente cuando FK_TPADRE es null (aún no migrado
     // para todos los registros) -- la tabla ya maneja el string vacío.
     guardian: row.guardian ?? "",
+    birthDate: row.birth_date ?? "",
+    address: row.address ?? "",
+    phone: row.phone ?? "",
+    guardianRelationship: row.guardian_relationship ?? "",
+    guardianEmail: row.guardian_email ?? "",
+    asignaturas: row.asignaturas ?? "",
+    soportes: row.soportes ?? "",
     status: row.status,
     hasGrades: row.has_grades,
     ageSituation: row.age_situation ?? "SIN_CALCULAR",
     retiroSolicitado: row.retiro_solicitado === "S",
+    retiroSolicitadoPor: row.retiro_solicitado_por?.trim() || null,
+    retiroTraslado:
+      row.retiro_traslado === "S" ? { acta: row.acta_retiro ?? "", fecha: row.fecha_retiro ?? "" } : null,
+    simpadeIngresado: row.simpade_ingresado === "S",
     anulacionPendiente: row.anulacion_pendiente === "S",
     snapshotPendiente: row.snapshot_pendiente === "S",
     tipo: row.tipo_matricula ?? "PRINCIPAL",

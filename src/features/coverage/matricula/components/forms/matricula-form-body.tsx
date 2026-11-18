@@ -39,6 +39,8 @@ interface MatriculaFormBodyProps {
    * Sin la autorización de datos (Regla 81) o, en el que recibe, por adscripción (Regla 8).
    */
   datosProtegidos?: boolean
+  /** Alta por traslado: grado de origen obligatorio (AGR.2). */
+  gradoTraslado?: { valor: string; nombre: string } | null
 }
 
 
@@ -58,6 +60,7 @@ export function MatriculaFormBody({
   tipoMatricula,
   especialidadBloqueo,
   datosProtegidos = false,
+  gradoTraslado,
 }: MatriculaFormBodyProps) {
   return (
     <MatriculaSectionDisabledContext.Provider value={disabled}>
@@ -71,6 +74,7 @@ export function MatriculaFormBody({
         academicDisabled={academicDisabled}
         tipoMatricula={tipoMatricula}
         especialidadBloqueo={especialidadBloqueo}
+        gradoTraslado={gradoTraslado}
       />
 
       <MatriculaMaskedContext.Provider value={datosProtegidos}>

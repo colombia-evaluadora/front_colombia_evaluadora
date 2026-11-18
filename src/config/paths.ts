@@ -667,6 +667,19 @@ export const paths = {
       path: "gestion-estudiantil/prevencion-retencion/salud-mental/$senalId",
       getHref: (senalId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/salud-mental/${senalId}`,
     },
+    prevencionAcompNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$tipo/nuevo",
+      getHref: (tipo: "embarazo" | "consumo") => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${tipo}/nuevo`,
+    },
+    prevencionAcompDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
+      getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
+    },
+    prevencionAcompEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",
+      getHref: (acompId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}/editar`,
+    },
     observacionesSugerencias: {
       path: "gestion-estudiantil/observaciones-sugerencias",
       getHref: () => "/app/gestion-estudiantil/observaciones-sugerencias",

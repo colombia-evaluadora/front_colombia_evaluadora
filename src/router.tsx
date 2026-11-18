@@ -2089,6 +2089,45 @@ export const prevencionSaludMentalNuevoRoute = createRoute({
   component: PrevencionReporteSaludMentalPage,
 })
 
+const PrevencionAcompFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/acompanamiento-form-page"),
+  "AcompanamientoFormPage",
+)
+const PrevencionAcompDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/acompanamiento-detalle-page"),
+  "AcompanamientoDetallePage",
+)
+
+export const prevencionAcompNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionAcompNuevo.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nuevo acompañamiento" }] },
+  component: function PrevencionAcompNuevoRoute() {
+    const { tipo } = prevencionAcompNuevoRoute.useParams()
+    return <PrevencionAcompFormPage tipo={tipo === "consumo" ? "CONSUMO" : "EMBARAZO"} />
+  },
+})
+
+export const prevencionAcompDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionAcompDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Acompañamiento" }] },
+  component: function PrevencionAcompDetalleRoute() {
+    const { acompId } = prevencionAcompDetalleRoute.useParams()
+    return <PrevencionAcompDetallePage acompId={Number(acompId)} />
+  },
+})
+
+export const prevencionAcompEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionAcompEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar acompañamiento" }] },
+  component: function PrevencionAcompEditarRoute() {
+    const { acompId } = prevencionAcompEditarRoute.useParams()
+    return <PrevencionAcompFormPage acompId={Number(acompId)} />
+  },
+})
+
 export const prevencionSenalSaludMentalRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.prevencionSenalSaludMental.path,
@@ -2870,6 +2909,9 @@ const routeTree = rootRoute.addChildren([
     prevencionPlanCasoRoute,
     prevencionSaludMentalNuevoRoute,
     prevencionSenalSaludMentalRoute,
+    prevencionAcompNuevoRoute,
+    prevencionAcompDetalleRoute,
+    prevencionAcompEditarRoute,
     prevencionEstrategiaNuevaRoute,
     prevencionEstrategiaEditarRoute,
     prevencionEstrategiaDetalleRoute,

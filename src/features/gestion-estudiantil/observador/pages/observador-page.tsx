@@ -41,6 +41,12 @@ import { DialogExportarAnotaciones } from "@/features/gestion-estudiantil/observ
 const DialogRemitir = lazy(() =>
   import("@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-remitir").then((m) => ({ default: m.DialogRemitir })),
 )
+// Reportar posible consumo (G.1.REP.4) vive en Prevención: se carga solo al abrirlo.
+const DialogReportarConsumo = lazy(() =>
+  import("@/features/gestion-estudiantil/prevencion/components/acompanamientos/dialogos/dialog-reportar-consumo").then((m) => ({
+    default: m.DialogReportarConsumo,
+  })),
+)
 const TabMisRemisiones = lazy(() =>
   import("@/features/gestion-estudiantil/inclusion/orientacion/components/tab-mis-remisiones").then((m) => ({ default: m.TabMisRemisiones })),
 )
@@ -65,6 +71,7 @@ function ObservadorContent() {
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
   const [anular, setAnular] = useState<AnotacionRow | null>(null)
   const [remitir, setRemitir] = useState<AnotacionRow | "nuevo" | null>(null)
+  const [reportarConsumo, setReportarConsumo] = useState<AnotacionRow | null>(null)
   const [pestana, setPestana] = useState("anotaciones")
   const { notify } = useNotify()
 
@@ -122,6 +129,7 @@ function ObservadorContent() {
         to: paths.app.convivenciaProcesoNuevo.getHref(),
         search: { matricula: a.fk_tmatricula, anotacion: a.id, nombre: a.estudiante_nombre },
       } as never),
+    onReportarConsumo: setReportarConsumo,
     onReportarSaludMental: (a) =>
       navigate({
         to: paths.app.prevencionSaludMentalNuevo.getHref(),
@@ -245,6 +253,15 @@ function ObservadorContent() {
               setRemitir(null)
               notify("Remisión registrada. Se avisó a orientación.", { variant: "success" })
             }}
+          />
+        </Suspense>
+      )}
+      {reportarConsumo && (
+        <Suspense fallback={null}>
+          <DialogReportarConsumo
+            matricula={reportarConsumo.fk_tmatricula}
+            estudiante={`${reportarConsumo.estudiante_nombre} · ${reportarConsumo.grado_grupo}`}
+            onClose={() => setReportarConsumo(null)}
           />
         </Suspense>
       )}

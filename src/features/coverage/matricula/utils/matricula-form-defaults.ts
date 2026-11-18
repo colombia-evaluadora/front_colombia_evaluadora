@@ -146,6 +146,7 @@ export const REQUIRED_MATRICULA_FIELD_LABELS: Record<string, string> = {
   "student-country": "País de origen",
   "complementary-srpa-start": "Fecha de inicio de la medida",
   "complementary-srpa-end": "Fecha de fin de la medida",
+  "matricula-fecha-digitacion-simat": "Fecha de digitación en el SIMAT",
 }
 
 // Getter por campo NO bloqueado (los bloqueados ya se validan a mano abajo,
@@ -247,6 +248,10 @@ export function validateMatricula(
   if (!values.academic.group) missing.push("matricula-group")
   if (values.academic.mediaTecnicaExterna && (values.academic.institucionExterna ?? "").trim().length < 3) {
     missing.push("matricula-institucion-externa")
+  }
+  // Quien digitó en el SIMAT exige la fecha.
+  if (values.academic.funcionarioDigitaSimat && !values.academic.fechaDigitacionSimat) {
+    missing.push("matricula-fecha-digitacion-simat")
   }
   if (!values.student.documentType) missing.push("student-document-type")
   const studentDocument = values.student.documentNumber.trim()

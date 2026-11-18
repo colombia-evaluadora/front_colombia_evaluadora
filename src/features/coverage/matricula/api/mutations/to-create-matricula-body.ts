@@ -96,6 +96,8 @@ export function camposNuevosBody(values: CreateMatriculaInput) {
   return {
     INTERNADO: toIntOrNull(academic.internado),
     AUTORIZACION_DATOS: academic.autorizacionDatos ? "S" : "N",
+    FK_FUNCIONARIO_DIGITA_SIMAT: toIntOrNull(academic.funcionarioDigitaSimat ?? ""),
+    FECHA_DIGITACION_SIMAT: toTextOrNull(academic.fechaDigitacionSimat ?? ""),
     PAIS_ORIGEN: toIntOrNull(student.paisOrigen),
     LENGUA_MATERNA: toIntOrNull(student.lenguaMaterna),
     CONDICION_MIGRATORIA: toIntOrNull(student.condicionMigratoria),

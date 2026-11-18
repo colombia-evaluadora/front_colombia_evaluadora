@@ -21,15 +21,28 @@ import { DialogRemitir } from "@/features/gestion-estudiantil/inclusion/orientac
 import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/tabla-orientacion"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
+import type { BadgeColor } from "@/features/gestion-estudiantil/commons/utils/badge-color"
+import {
+  ESTADO_REPORTE_CONSUMO_COLOR,
+  ESTADO_SM_COLOR,
+} from "@/features/gestion-estudiantil/prevencion/api/ui-mappings"
 
-const COLOR_ESTADO: Record<string, "warning" | "success"> = {
+/**
+ * Color por estado de cada tipo de fila (fn_orientacion_mis_remisiones_interno): remisión, señal de salud mental
+ * (§9.6) y reporte de posible consumo (§9.10). Los dos últimos reutilizan los colores de Prevención.
+ */
+const COLOR_ESTADO: Record<string, BadgeColor> = {
   RECIBIDA: "warning",
   ATENDIDA: "success",
+  ...ESTADO_SM_COLOR,
+  ...ESTADO_REPORTE_CONSUMO_COLOR,
 }
 
 const ETIQUETA_TIPO: Record<string, string> = {
   REMISION_ORIENTACION: "Remisión a orientación",
   SENAL_SALUD_MENTAL: "Señal de salud mental",
+  // Rótulo del prototipo G.1.REP.4.
+  REPORTE_CONSUMO: "Reporte de consumo",
 }
 
 interface FiltrosMis {

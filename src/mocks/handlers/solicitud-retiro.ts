@@ -49,6 +49,16 @@ export const solicitudRetiroHandlers = [
     return HttpResponse.json({ rows: [{ respuesta: { estado: "OBJETADA" } }] })
   }),
 
+  // SOL.1: el destino pide el retiro al matricular; la evidencia es obligatoria.
+  http.post(`*/api/files/eval-col/cobertura-academica/matricula/:id/solicitud-retiro`, async ({ request }) => {
+    await delay(400)
+    const form = await request.formData()
+    if (!(form.get("ARCHIVO") instanceof File)) {
+      return HttpResponse.json({ message: "La evidencia es obligatoria." }, { status: 400 })
+    }
+    return HttpResponse.json({ rows: [{ solicitud: { estado: "PENDIENTE" } }] })
+  }),
+
   http.post(`${BASE}/anular`, async ({ params }) => {
     await delay(400)
     const error = anularMatricula(Number(params.id))

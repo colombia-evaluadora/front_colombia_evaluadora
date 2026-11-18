@@ -30,6 +30,18 @@ export const estudianteExistenteHandlers = [
           telefono_enmascarado: `******${String(pk).slice(-4)}`,
           ultimo_acudiente_parentesco: acudiente?.[2] ?? null,
           ultimo_acudiente_nombre: acudiente?.[1] ?? null,
+          ultimo_acudiente_correo_enmascarado: acudiente ? enmascararCorreo("acudiente@gmail.com") : null,
+          ultimo_acudiente_telefono_enmascarado: acudiente ? `******${String(pk + 17).slice(-4)}` : null,
+          tipo_documento: m.grade >= 7 ? "TI" : "RC",
+          // Uno de cada cuatro viene de un traslado (AGR.2), de un grado abajo para forzar el aviso.
+          ...(pk % 4 === 0
+            ? {
+                traslado_institucion: "I.E. Antonio Nariño",
+                traslado_grado_valor: Math.max(m.grade - 1, 0),
+                traslado_grado_nombre: `Grado ${Math.max(m.grade - 1, 0)}`,
+                traslado_periodo: "2026 · Anual · Ciclo 1",
+              }
+            : {}),
         },
       ],
     })

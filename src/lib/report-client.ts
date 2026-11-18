@@ -32,6 +32,10 @@ export type ReportKey =
   | "matricula"
   | "matricula-complementaria-sorteo"
   | "matricula-carne"
+  | "matricula-hoja"
+  | "matricula-constancia"
+  | "matricula-paquete-soporte"
+  | "matricula-acta-retiro"
   | "informes"
   | "informes-tabla"
   | "boletin"
@@ -57,6 +61,8 @@ export type ReportKey =
   | "inscripcion-lista-sorteo"
   | "prevencion-indicadores"
   | "prevencion-indicadores"
+  | "prevencion-embarazo-siuce"
+  | "prevencion-consumo-siuce"
 
 interface ReportInput {
   format: ExportFormat

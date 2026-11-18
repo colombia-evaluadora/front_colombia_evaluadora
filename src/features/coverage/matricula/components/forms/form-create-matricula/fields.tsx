@@ -195,6 +195,8 @@ interface TextFieldProps {
   masked?: boolean
   /** Sanitizador de lo que se escribe (sustituye a `numeric`). */
   transform?: (value: string) => string
+  /** Ayuda debajo del campo. */
+  description?: string
 }
 
 export function MatriculaTextField({
@@ -210,6 +212,7 @@ export function MatriculaTextField({
   disabled,
   masked,
   transform,
+  description,
 }: TextFieldProps) {
   const oculto = useEnmascarado(id)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
@@ -239,6 +242,7 @@ export function MatriculaTextField({
           onChange(transform ? transform(raw) : numeric ? raw.replace(/\D/g, "") : raw)
         }}
       />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
     </Field>
   )
 }
@@ -299,6 +303,8 @@ interface DateFieldProps {
   maxDate?: Date
   minDate?: Date
   disabled?: boolean
+  /** Ayuda debajo del campo. */
+  description?: string
 }
 
 /** Mismo `DatePicker` que usa Establecimiento, con el label flotante del resto de campos del alta. */
@@ -312,6 +318,7 @@ export function MatriculaDateField({
   maxDate,
   minDate,
   disabled,
+  description,
 }: DateFieldProps) {
   const oculto = useEnmascarado(id)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
@@ -333,6 +340,7 @@ export function MatriculaDateField({
         disabled={disabled}
         onChange={(date) => onChange(formatDateValue(date) ?? "")}
       />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
     </Field>
   )
 }
@@ -350,6 +358,8 @@ interface SelectFieldProps {
   disabled?: boolean
   /** Ayuda debajo del campo, p. ej. por qué está en solo lectura. */
   description?: string
+  /** Opciones visibles pero no elegibles, con su texto secundario. */
+  disabledOptions?: Record<string, string>
 }
 
 export function MatriculaSelectField({
@@ -364,6 +374,7 @@ export function MatriculaSelectField({
   invalid,
   disabled,
   description,
+  disabledOptions,
 }: SelectFieldProps) {
   const oculto = useEnmascarado(id)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value ? labelFor(value) : ""} />
@@ -394,8 +405,15 @@ export function MatriculaSelectField({
             {placeholder}
           </ComboboxFieldItem>
           {options.map((option) => (
-            <ComboboxFieldItem key={option} value={option}>
-              {labelFor(option)}
+            <ComboboxFieldItem key={option} value={option} disabled={Boolean(disabledOptions?.[option])}>
+              {disabledOptions?.[option] ? (
+                <span className="flex flex-col">
+                  {labelFor(option)}
+                  <span className="text-xs text-muted-foreground">{disabledOptions[option]}</span>
+                </span>
+              ) : (
+                labelFor(option)
+              )}
             </ComboboxFieldItem>
           ))}
         </ComboboxFieldContent>

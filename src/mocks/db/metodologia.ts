@@ -28,7 +28,20 @@ export const CATALOGOS_MATRICULA_NUEVOS: Record<string, { pk_lista_valor: number
   SITUACION_SRPA: lista(["No aplica", "Con medida privativa de la libertad", "Con medida no privativa de la libertad"]),
   INSTITUCION_BIENESTAR: lista(["Ninguna", "Hogar comunitario ICBF", "CDI", "Jardín infantil privado"]),
   // Retirar (C.1.LOT.1).
-  MOTIVO_RETIRO: lista(["Cambio de domicilio", "Traslado a otro establecimiento", "Situación económica", "Deserción", "Enfermedad", "Otro"]),
+  // Valores de la Lista de Valores «Motivo de retiro» de la especificación.
+  MOTIVO_RETIRO: lista([
+    "Cambio de domicilio",
+    "Pérdida del año",
+    "Enfermedad",
+    "Fallecimiento",
+    "Situación económica",
+    "Embarazo",
+    "Necesidad de trabajar",
+    "Violencia",
+    "Traslado a otro establecimiento",
+    "Decisión disciplinaria",
+    "Otro",
+  ]),
   // Anular postulación de matrícula complementaria (Sección 2.16.2).
   MOTIVO_ANULACION_POSTULACION: lista(["Solicitud del acudiente", "Cambio de establecimiento", "Error en el registro", "El estudiante desiste", "Otro"]),
 }
