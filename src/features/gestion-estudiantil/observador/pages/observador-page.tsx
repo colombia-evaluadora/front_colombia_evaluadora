@@ -112,6 +112,7 @@ function ObservadorContent() {
     puedeEditar: access.puedeEditar,
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
+    puedeReportarSaludMental: access.puedeReportarSaludMental,
     onRemitir: setRemitir,
     onReportarSaludMental: (a) =>
       navigate({
@@ -175,8 +176,8 @@ function ObservadorContent() {
               proyecto (orden de la guía de diseño). «Remitir a orientación» se hace desde la acción
               de cada anotación. */}
           <TableScreenActions>
-            {access.puedeImprimir && <DialogImprimirObservador filtros={filtros} />}
-            {access.puedeCrear && <DialogCargarObservadorFirmado estudiantes={estudiantesFirmado} periodos={periodosFirmado} />}
+            <DialogImprimirObservador filtros={filtros} disabled={!access.puedeImprimir} />
+            <DialogCargarObservadorFirmado estudiantes={estudiantesFirmado} periodos={periodosFirmado} disabled={!access.puedeCargarFirmado} />
             <DialogExportarAnotaciones filters={queryFilters} />
             {access.puedeCrear && (
               <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>

@@ -11,6 +11,12 @@ const soporte = new Set<number>()
 const anexos = new Map<number, { id: number; fileId: number; name: string; description: string; fileName: string; size: number; createdAt: string }[]>()
 let siguienteAnexo = 1
 
+// Regla 116 (sso V579.4): el último funcionario del mock fue agregado al EE y aún no le autoriza sus
+// datos, así que el EE solo ve su nombre y roles. Exportado para los tests.
+export const sinAutorizacion = new Set<number>(employeesDb.length > 0 ? [employeesDb[employeesDb.length - 1].id as number] : [])
+const restringido = (e: Employee) => sinAutorizacion.has(e.id as number)
+const oculto = <T,>(e: Employee, valor: T): T | null => (restringido(e) ? null : valor)
+
 const nombreDe = (e: Employee) =>
   [e.person.firstName, e.person.middleName, e.person.lastName, e.person.secondLastName].filter(Boolean).join(" ")
 const estadoDe = (e: Employee) => (e.permissions.some((p) => p.status === "ACTIVE") ? "A" : "I")
@@ -22,14 +28,15 @@ const enmascarar = (correo: string) => {
 function filaListado(e: Employee, total: number) {
   return {
     pk_empleado: e.id,
-    tipo_documento: e.person.documentType?.code ?? "CC",
-    numero_documento: e.person.identification,
+    tipo_documento: oculto(e, e.person.documentType?.code ?? "CC"),
+    numero_documento: oculto(e, e.person.identification),
     nombre_completo: nombreDe(e),
     usuario_soporte: soporte.has(e.id as number),
     roles: [...new Map(e.permissions.map((p) => [p.role.id, { id: p.role.id, nombre: p.role.name }])).values()],
     designaciones: [],
     estado: estadoDe(e),
     estado_label: estadoDe(e) === "A" ? "Activo" : "Inactivo",
+    datos_restringidos: restringido(e),
     total_count: total,
   }
 }
@@ -37,22 +44,22 @@ function filaListado(e: Employee, total: number) {
 function fichaDe(e: Employee) {
   return {
     pk_empleado: e.id,
-    fk_tlv_tipo_documento: e.person.documentType?.id ?? null,
-    tipo_documento_nombre: e.person.documentType?.name ?? null,
-    tipo_documento: e.person.documentType?.code ?? null,
-    identificacion: e.person.identification,
+    fk_tlv_tipo_documento: oculto(e, e.person.documentType?.id ?? null),
+    tipo_documento_nombre: oculto(e, e.person.documentType?.name ?? null),
+    tipo_documento: oculto(e, e.person.documentType?.code ?? null),
+    identificacion: oculto(e, e.person.identification),
     primer_nombre: e.person.firstName,
     segundo_nombre: e.person.middleName ?? null,
     primer_apellido: e.person.lastName,
     segundo_apellido: e.person.secondLastName ?? null,
-    fecha_nacimiento: e.person.birthDate?.slice(0, 10) ?? null,
-    fk_tlv_genero: e.person.gender?.id ?? null,
-    genero_nombre: e.person.gender?.name ?? null,
-    correo_electronico: e.person.email,
-    telefono: e.person.phone,
-    contacto_protegido: false,
+    fecha_nacimiento: oculto(e, e.person.birthDate?.slice(0, 10) ?? null),
+    fk_tlv_genero: oculto(e, e.person.gender?.id ?? null),
+    genero_nombre: oculto(e, e.person.gender?.name ?? null),
+    correo_electronico: oculto(e, e.person.email),
+    telefono: oculto(e, e.person.phone),
+    contacto_protegido: restringido(e),
     usuario_soporte: soporte.has(e.id as number),
-    fk_tarchivo_foto: e.person.photoArchivoId ?? null,
+    fk_tarchivo_foto: oculto(e, e.person.photoArchivoId ?? null),
     estado: estadoDe(e),
     ee_oficial: true,
     fk_tlv_clase_funcionario: e.employeeClass?.id ?? null,
@@ -69,7 +76,7 @@ function fichaDe(e: Employee) {
     fuente_recurso_nombre: e.fundingSource?.name ?? null,
     fk_tlv_tipo_vinculacion: e.employmentType?.id ?? null,
     tipo_vinculacion_nombre: e.employmentType?.name ?? null,
-    direccion: e.address,
+    direccion: oculto(e, e.address),
     designaciones: [],
     permisos: e.permissions.map((p, i) => ({
       id: p.id ?? i + 1,
@@ -82,7 +89,8 @@ function fichaDe(e: Employee) {
     })),
     archivos: anexos.get(e.id as number) ?? [],
     puede_editar: true,
-    puede_corregir_identidad: true,
+    puede_corregir_identidad: !restringido(e),
+    datos_restringidos: restringido(e),
   }
 }
 
@@ -101,7 +109,7 @@ export const funcionariosHandlers = [
     const estados = body.filters?.statuses ?? []
     const filtrados = employeesDb.filter(
       (e) =>
-        (!texto || nombreDe(e).toLowerCase().includes(texto) || e.person.identification.includes(texto)) &&
+        (!texto || nombreDe(e).toLowerCase().includes(texto) || (!restringido(e) && e.person.identification.includes(texto))) &&
         (estados.length === 0 || estados.includes(estadoDe(e))),
     )
     const size = body.pageSize || 10
@@ -132,15 +140,16 @@ export const funcionariosHandlers = [
           segundo_nombre: e.person.middleName ?? null,
           primer_apellido: e.person.lastName,
           segundo_apellido: e.person.secondLastName ?? null,
-          fecha_nacimiento: e.person.birthDate?.slice(0, 10) ?? null,
-          fk_tlv_genero: e.person.gender?.id ?? null,
-          genero_nombre: e.person.gender?.name ?? null,
-          correo_protegido: enmascarar(e.person.email),
-          telefono_protegido: `${e.person.phone.slice(0, 3)}***${e.person.phone.slice(-4)}`,
+          fecha_nacimiento: oculto(e, e.person.birthDate?.slice(0, 10) ?? null),
+          fk_tlv_genero: oculto(e, e.person.gender?.id ?? null),
+          genero_nombre: oculto(e, e.person.gender?.name ?? null),
+          correo_protegido: oculto(e, enmascarar(e.person.email)),
+          telefono_protegido: oculto(e, `${e.person.phone.slice(0, 3)}***${e.person.phone.slice(-4)}`),
           // Ya es funcionario: no se le devuelve el correo de la cuenta (V579.4).
           correo_cuenta: null,
           fk_tarchivo_foto: null,
           vinculado: true,
+          datos_restringidos: restringido(e),
         },
       ],
     })
@@ -162,6 +171,12 @@ export const funcionariosHandlers = [
           ? ((await request.json()) as Record<string, unknown>)
           : Object.fromEntries((await request.formData()).entries())
         const anterior = e.person.email
+        if (restringido(e) && String(body.CON_CONTACTO) === "true") {
+          return HttpResponse.json(
+            { message: "El funcionario aún no autoriza el tratamiento de sus datos a este establecimiento: sus datos personales no se pueden consultar ni modificar." },
+            { status: 400 },
+          )
+        }
         if (String(body.CON_CONTACTO) === "true") {
           e.person.email = String(body.CORREO ?? e.person.email)
           e.person.phone = String(body.TELEFONO ?? "")
@@ -169,7 +184,7 @@ export const funcionariosHandlers = [
           if (body.FOTO instanceof File) e.person.photoArchivoId = registrarArchivoMaterial(body.FOTO)
           else if (String(body.LIMPIAR_FOTO) === "true") e.person.photoArchivoId = null
         }
-        if (String(body.CON_COMPLEMENTARIA) === "true") e.address = String(body.DIRECCION ?? "")
+        if (String(body.CON_COMPLEMENTARIA) === "true" && !restringido(e)) e.address = String(body.DIRECCION ?? "")
         const cambio = anterior.toLowerCase() !== e.person.email.toLowerCase()
         return HttpResponse.json({
           rows: [{ ficha: { pkFuncionario: e.id, correoCambio: cambio, correoAnterior: cambio ? anterior : null } }],

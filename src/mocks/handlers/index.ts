@@ -80,6 +80,7 @@ import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planead
 import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { geOpcionesHandlers, informesHandlers } from "@/mocks/handlers/informes"
+import { geCapacidadesHandlers } from "@/mocks/handlers/ge-capacidades"
 import {
   comunicacionesArchivosHandlers,
   comunicacionesHandlers,
@@ -184,6 +185,7 @@ export const handlers = [
   ...asistenciaHandlers,
   ...informesHandlers,
   ...geOpcionesHandlers,
+  ...geCapacidadesHandlers,
   ...comunicacionesArchivosHandlers,
   ...comunicacionesFiltrosHandlers,
   ...comunicacionesModeracionHandlers,

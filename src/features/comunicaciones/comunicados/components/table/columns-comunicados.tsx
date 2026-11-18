@@ -132,6 +132,15 @@ export function createBandejaColumns(): ColumnDef<ComunicadoGestion>[] {
         : col,
     )
     .concat({
+      // Quien recibe (estudiante o acudiente, 3.1) ve de qué establecimiento viene; el orden es del servidor.
+      id: "establecimiento",
+      accessorFn: (c) => c.establecimiento ?? "",
+      enableSorting: false,
+      meta: { label: "Establecimiento" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Establecimiento" />,
+      cell: ({ row }) => row.original.establecimiento || "—",
+    })
+    .concat({
       id: "actions",
       size: anchoAccionesFila(1),
       enableHiding: false,

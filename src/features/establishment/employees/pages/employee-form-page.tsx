@@ -82,6 +82,7 @@ import {
 } from "@/features/establishment/shared/person-field-rules"
 import { toDireccionInput } from "@/features/establishment/shared/text-field-rules"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { SinAutorizacionAviso, SinAutorizacionBadge } from "@/features/establishment/employees/components/sin-autorizacion"
 
 const FORM_ID = "funcionario-form"
 
@@ -144,6 +145,7 @@ function ExistingPersonNotice({ persona, documentTypeName }: { persona: PersonaP
               ? "Ya pertenece a este establecimiento: búsquelo en el listado para modificarlo."
               : "Sus datos están protegidos. Los de identidad los corrige el Rector o el Jefe de Sistemas, con motivo y soporte."}
           </p>
+          {persona.dataRestricted ? <SinAutorizacionBadge /> : null}
         </div>
       </div>
       <dl className="grid grid-cols-1 overflow-hidden rounded-md border border-border bg-card text-sm sm:grid-cols-3">
@@ -244,7 +246,10 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
   const personaProtegida = persona != null
 
   locks.current.identityLocked = mode !== "create" || persona != null
-  locks.current.contactLocked = mode === "detail" || personaProtegida || (mode === "edit" && ficha?.canEdit !== true)
+  // Regla 116: sin la autorización del funcionario sus datos personales no se ven ni se modifican aquí.
+  const restringido = ficha?.dataRestricted === true
+  locks.current.contactLocked =
+    mode === "detail" || personaProtegida || restringido || (mode === "edit" && ficha?.canEdit !== true)
 
   // Lo que se encontró se vuelca al formulario para que el resto del alta lo use.
   useEffect(() => {
@@ -260,7 +265,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
   const identityLocked = locks.current.identityLocked
   const contactLocked = locks.current.contactLocked
   const complementaryEditable = isOfficial && !readOnly && (mode === "create" || ficha?.canEdit === true)
-  const canEditPhoto = !readOnly && !personaProtegida && (mode === "create" || ficha?.canEdit === true)
+  const canEditPhoto = !readOnly && !personaProtegida && !restringido && (mode === "create" || ficha?.canEdit === true)
 
   function complementariaDe(value: FuncionarioFormValues): Complementaria | undefined {
     if (!isOfficial) return undefined
@@ -337,7 +342,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
 
   async function actualizarFuncionario(value: FuncionarioFormValues) {
     if (!ficha) return
-    const conContacto = ficha.canEdit && !ficha.contactProtected
+    const conContacto = ficha.canEdit && !ficha.contactProtected && !ficha.dataRestricted
     const result = await guardar.mutateAsync({
       funcionarioId: ficha.id,
       establishmentId,
@@ -410,7 +415,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
             { nombre: "fuenteRecursos", etiqueta: "Fuente de recursos", tipo: "select" as const, ...opcion(fundingSources), elemento: "fundingSourceId" },
             { nombre: "nivelEducativoAlcanzado", etiqueta: "Nivel educativo alcanzado", tipo: "select" as const, ...opcion(educationLevels), elemento: "educationLevelId" },
             { nombre: "nivelEnsenanza", etiqueta: "Nivel educativo de enseñanza", tipo: "select" as const, ...opcion(teachingLevels), elemento: "teachingLevelId" },
-            { nombre: "direccion", etiqueta: "Dirección", tipo: "text" as const, elemento: "address" },
+            ...(restringido ? [] : [{ nombre: "direccion", etiqueta: "Dirección", tipo: "text" as const, elemento: "address" }]),
           ]
         : []),
     ],
@@ -432,8 +437,9 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
     gradeOptions.push({ value: ficha.complementary.gradeId, label: ficha.complementaryNames.gradeId })
   }
 
+  // Un dato oculto por la Regla 116 se muestra como "—".
   const lockedValue = (id: string, label: string, value: string, required = false) => (
-    <ReadOnlyValue id={id} label={label} value={value} locked required={required} />
+    <ReadOnlyValue id={id} label={label} value={restringido ? "—" : value} locked required={required} />
   )
 
   return (
@@ -510,6 +516,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
             {ficha ? (
               <Badge {...ESTADO_FUNCIONARIO_BADGE[ficha.status]}>{ESTADO_FUNCIONARIO_LABELS[ficha.status]}</Badge>
             ) : null}
+            {restringido ? <SinAutorizacionBadge /> : null}
           </span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
@@ -528,6 +535,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
             <AccordionItem value="datos" className={accordionItemClassName}>
               <AccordionTrigger className={accordionTriggerClassName}>Datos personales</AccordionTrigger>
               <AccordionContent>
+                {restringido ? <SinAutorizacionAviso className="mb-4" /> : null}
                 <div className="-mx-4 grid grid-cols-1 gap-4 border-t border-border bg-card px-4 py-4 md:grid-cols-[11rem_1fr]">
                   <div className="flex flex-col gap-1.5">
                     <span className="text-xs text-muted-foreground">Foto del usuario</span>
@@ -731,11 +739,15 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
                         </form.AppField>
                       </div>
                       <div className="md:col-span-3">
-                        <form.AppField name="address">
-                          {(f) => (
-                            <f.TextField label="Dirección" maxLength={150} placeholder="Ej.: Carrera 27 # 45-18" transform={(v) => toDireccionInput(v, 150)} />
-                          )}
-                        </form.AppField>
+                        {restringido ? (
+                          lockedValue("address", "Dirección", "")
+                        ) : (
+                          <form.AppField name="address">
+                            {(f) => (
+                              <f.TextField label="Dirección" maxLength={150} placeholder="Ej.: Carrera 27 # 45-18" transform={(v) => toDireccionInput(v, 150)} />
+                            )}
+                          </form.AppField>
+                        )}
                       </div>
                     </div>
                   </FormDisabledProvider>
