@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, WarningCircleIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
+import { SelectOpciones } from "@/components/select-opciones"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import {

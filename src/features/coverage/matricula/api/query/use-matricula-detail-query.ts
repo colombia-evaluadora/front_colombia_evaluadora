@@ -90,6 +90,8 @@ interface RawMatriculaCore {
   postulacion_registrada?: "S" | "N"
   retiro_solicitado_por?: string | null
   anulacion_pendiente?: "S" | "N"
+  sin_autorizacion?: "S" | "N"
+  origen_adscripcion?: string | null
   // Bloques 2.1, 2.2 y 2.8 nuevos (pendientes-back, tarea 8): solo los trae el mock.
   fk_tlv_internado?: number | null
   fk_tlv_pais_origen?: number | null
@@ -187,6 +189,7 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       : "",
     status,
     hasGrades: false,
+    sinAutorizacion: m.sin_autorizacion === "S",
   }
 
   const details: MatriculaDetails = {
@@ -201,6 +204,8 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       postulacionRegistrada: m.postulacion_registrada === "S",
       retiroSolicitadoPor: m.retiro_solicitado_por?.trim() || null,
       anulacionPendiente: m.anulacion_pendiente === "S",
+      sinAutorizacion: m.sin_autorizacion === "S",
+      origenAdscripcion: m.origen_adscripcion?.trim() || null,
     },
     academic: {
       campus: m.sede_nombre,

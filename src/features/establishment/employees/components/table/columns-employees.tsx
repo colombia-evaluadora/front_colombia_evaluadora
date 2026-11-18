@@ -14,6 +14,7 @@ import { paths } from "@/config/paths"
 import { ESTADO_FUNCIONARIO_BADGE, ESTADO_FUNCIONARIO_LABELS } from "@/features/establishment/employees/api/ui-mappings"
 import type { FuncionarioListItem } from "@/features/establishment/employees/api/types/funcionario"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { SinAutorizacionBadge } from "@/features/establishment/employees/components/sin-autorizacion"
 
 interface EmployeeColumnsOptions {
   establishmentId: number | null
@@ -77,7 +78,9 @@ export function createColumns(options: EmployeeColumnsOptions): ColumnDef<Funcio
       header: ({ column }) => <DataTableColumnHeader column={column} title="Documento" />,
       cell: ({ row }) => (
         <span className="whitespace-nowrap tabular-nums">
-          {[row.original.documentType, row.original.documentNumber].filter(Boolean).join(" ")}
+          {row.original.dataRestricted
+            ? "—"
+            : [row.original.documentType, row.original.documentNumber].filter(Boolean).join(" ")}
         </span>
       ),
     },
@@ -94,6 +97,7 @@ export function createColumns(options: EmployeeColumnsOptions): ColumnDef<Funcio
               Usuario de soporte
             </Badge>
           ) : null}
+          {row.original.dataRestricted ? <SinAutorizacionBadge /> : null}
         </div>
       ),
     },

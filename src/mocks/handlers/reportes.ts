@@ -47,6 +47,8 @@ const PDF_MINIMO = [
 // contra este mismo handler aunque el botón existiera y el backend real
 // funcionara — bug de este catálogo, no del backend.
 const NOMBRE_POR_CLAVE: Record<string, string> = {
+  "matricula-complementaria-sorteo": "lista-sorteo",
+  "matricula-carne": "carnes-estudiantiles",
   funcionarios: "funcionarios",
   establecimientos: "establecimientos",
   sedes: "sedes",

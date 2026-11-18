@@ -312,7 +312,7 @@ function ChatContent() {
   return (
     <div className="flex h-[calc(100dvh-4.5rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border bg-card">
       <div className="flex h-16 shrink-0 items-center border-b bg-chat-panel px-5">
-        <h1 className="text-2xl font-bold">Chat</h1>
+        <h1 className="text-2xl font-bold">Mensajería interna</h1>
         {realtimeEnabled && <EstadoConexion />}
         <SelectorDisponibilidad className="ml-auto" />
       </div>

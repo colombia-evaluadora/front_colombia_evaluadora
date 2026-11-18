@@ -1,16 +1,15 @@
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 // BookOpenIcon -- solo el ícono del botón de Asignaturas, comentado abajo.
 import { PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
-import { DeleteMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
 import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
-import type { Matricula, MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
+import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface MatriculaToolbarProps {
@@ -19,15 +18,14 @@ interface MatriculaToolbarProps {
   filesEditable?: boolean
 }
 
-const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
+// Editar solo con la matrícula Cursando (tabla de acciones de la lista).
 
 export function MatriculaToolbar({ matricula, showModificar = true, filesEditable = false }: MatriculaToolbarProps) {
-  const navigate = useNavigate()
-  const { puedeEditar, puedeEliminar } = useMenuPermission("MATRICULA")
+  const { puedeEditar } = useMenuPermission("MATRICULA")
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {puedeEditar && showModificar && !NOT_EDITABLE_STATUSES.includes(matricula.status) && (
+      {puedeEditar && showModificar && matricula.status === "Cursando" && (
         <Button
           render={<Link to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)} search={(prev) => prev} />}
           variant="fill"
@@ -50,13 +48,6 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
       {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
       <AccionesDocumentos matricula={matricula} modo="button" />
       <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable && puedeEditar} />
-      {puedeEliminar ? (
-        <DeleteMatriculaDialog
-          matricula={matricula}
-          trigger="button"
-          onDeleted={() => navigate({ to: paths.app.coberturaMatricula.getHref() })}
-        />
-      ) : null}
     </div>
   )
 }

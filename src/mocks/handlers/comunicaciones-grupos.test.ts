@@ -40,9 +40,9 @@ async function llamar<T>(quien: string, method: string, path: string, body?: unk
 
 describe("grupos del chat (mock multiusuario)", () => {
   it("crear, permisos, quitar, salir con sucesión y aviso agrupado", async () => {
-    expect((await llamar(ADMIN, "POST", "/conversaciones", { NOMBRE: "Solo", TIPO: "GRUPO", MIEMBROS: [] })).status).toBe(400)
+    expect((await llamar(ADMIN, "POST", "/conversaciones", { NOMBRE: "Solo", TIPO: "GRUPO", ASUNTO: "Asunto", MIEMBROS: [] })).status).toBe(400)
     const g = (await llamar<Conversacion>(ADMIN, "POST", "/conversaciones", {
-      NOMBRE: "Proyecto feria", TIPO: "GRUPO", CATEGORIA: "GENERAL", MIEMBROS: [2, 3],
+      NOMBRE: "Proyecto feria", TIPO: "GRUPO", ASUNTO: "Asunto", CATEGORIA: "GENERAL", MIEMBROS: [2, 3],
     })).rows[0]
     expect(g.esAdmin).toBe(true)
     expect(g.totalMiembros).toBe(3)
@@ -102,7 +102,7 @@ describe("grupos del chat (mock multiusuario)", () => {
 
     // Crear con la misma selección: un solo mensaje de sistema agregado y un aviso por persona.
     const g = (await llamar<Conversacion>(ADMIN, "POST", "/conversaciones", {
-      NOMBRE: "Sexto 601 y profes", TIPO: "GRUPO", CATEGORIA: "GENERAL", MIEMBROS: [10, 9], GRUPOS: [601], ROLES: ["Docente"],
+      NOMBRE: "Sexto 601 y profes", TIPO: "GRUPO", ASUNTO: "Asunto", CATEGORIA: "GENERAL", MIEMBROS: [10, 9], GRUPOS: [601], ROLES: ["Docente"],
     })).rows[0]
     expect(g.totalMiembros).toBe(14)
     const historial = (await llamar<Mensaje>(ADMIN, "GET", `/conversaciones/${g.id}/mensajes`)).rows
@@ -152,7 +152,7 @@ describe("grupos del chat (mock multiusuario)", () => {
     forzarAcudientesMock([2])
     try {
       const g = (await llamar<Conversacion>(ADMIN, "POST", "/conversaciones", {
-        NOMBRE: "Padres 601", TIPO: "GRUPO", CATEGORIA: "GENERAL", MIEMBROS: [2, 3], MODO: "SOLO_LECTURA",
+        NOMBRE: "Padres 601", TIPO: "GRUPO", ASUNTO: "Asunto", CATEGORIA: "GENERAL", MIEMBROS: [2, 3], MODO: "SOLO_LECTURA",
       })).rows[0]
       expect(g.totalMiembros).toBe(2)
       expect(g.modo).toBe("SOLO_LECTURA")

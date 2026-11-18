@@ -22,6 +22,8 @@ export interface ChatAccess {
   puedeMencionarMasivo: boolean
   // Regla de DM hacia otro perfil; todo `PROHIBIDO` mientras carga la política.
   reglaDirectoCon: (perfil: PerfilChat | undefined) => ReglaDirecto
+  // "+ Nuevo mensaje" (SSO #1006): falso para el estudiante menor sin permiso y mientras carga.
+  puedeIniciarConversaciones: boolean
 }
 
 // Igual que `useAsistenciaAccess`: el alcance sale de los roles del token.
@@ -40,5 +42,6 @@ export function useChatAccess(): ChatAccess {
     politica,
     puedeMencionarMasivo: puedeMencionarMasivo(politica, perfil),
     reglaDirectoCon: (otro) => reglaDirecto(politica, perfil, otro ?? "DOCENTE"),
+    puedeIniciarConversaciones: politica.puedeIniciarConversaciones !== false,
   }
 }

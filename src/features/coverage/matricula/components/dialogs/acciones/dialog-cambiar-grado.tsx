@@ -115,8 +115,9 @@ export function DialogCambiarGrado({
   // En la corrección solo se empareja si se homologan los registros existentes.
   const empareja = !correccion || (Boolean(previa?.registros) && registros === "HOMOLOGAR")
   const { data: emparejamiento } = useEmparejamientoQuery(ids, empareja ? grupoId : null, periodo?.id ?? null)
-  const { data: complementarias } = useComplementariasQuery(lote ? ids : [])
-  const conComplementaria = lote ? matriculas.filter((m) => complementarias?.get(m.id)) : []
+  const { data: complementarias } = useComplementariasQuery(ids)
+  // Doc (Corregir grado): avisa cuáles tienen complementaria, que se resuelve después una por una.
+  const conComplementaria = matriculas.filter((m) => complementarias?.get(m.id))
   const [propuestaDe, setPropuestaDe] = useState<object | null>(null)
   if (emparejamiento && propuestaDe !== emparejamiento) {
     setPropuestaDe(emparejamiento)
@@ -128,7 +129,6 @@ export function DialogCambiarGrado({
   const actaRequerida = !correccion
   const gradoNombre = grado ? gradeLabel(Number(grado)) : ""
   const pideRegistros = correccion && Boolean(previa?.registros)
-  const complementariaSeRetira = !correccion && previa?.complementaria && !previa.complementaria.disponibleEnGradoSiguiente
 
   function cambiarTipo(t: TipoCambioGrado) {
     setTipo(t)
@@ -395,8 +395,9 @@ export function DialogCambiarGrado({
 
             {conComplementaria.length ? (
               <Aviso tono="advertencia">
-                Tienen matrícula complementaria: {conComplementaria.map(nombreDe).join(", ")}. Se resuelve después, una por
-                una.
+                {lote
+                  ? `Tienen matrícula complementaria: ${conComplementaria.map(nombreDe).join(", ")}. Se resuelve después, una por una.`
+                  : "Tiene matrícula complementaria: se resuelve después."}
               </Aviso>
             ) : null}
 
@@ -419,13 +420,6 @@ export function DialogCambiarGrado({
               </section>
             ) : null}
 
-            {complementariaSeRetira && grado ? (
-              <Aviso tono="advertencia">
-                La matrícula complementaria de {previa?.complementaria?.especialidad} pasará a Retirado porque {gradoNombre} no
-                tiene esa especialidad en jornada contraria.
-              </Aviso>
-            ) : null}
-
             {grupoId ? (
               <Resumen>
                 {correccion ? (
@@ -443,7 +437,6 @@ export function DialogCambiarGrado({
                     se crea una nueva matrícula <EstadoBadge color="success">Cursando</EstadoBadge> en {destinoTexto}; la actual pasa
                     a <EstadoBadge color="muted">{promocion ? "Promovido" : "Reubicado"}</EstadoBadge> y conserva sus notas
                     {emparejamiento ? ` · ${textoEmparejamiento(emparejamiento)}` : ""}
-                    {complementariaSeRetira ? ` · la complementaria de ${previa?.complementaria?.especialidad} pasa a Retirado` : ""}.
                   </>
                 )}
               </Resumen>

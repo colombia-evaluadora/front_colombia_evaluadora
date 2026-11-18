@@ -5,8 +5,8 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 import { cn } from "@/lib/utils"
 
@@ -70,18 +70,16 @@ export function SelectCampo({
           </ComboboxFieldContent>
         </ComboboxField>
       ) : (
-        <Select items={toSelectItemsMap(opciones)} value={actual} onValueChange={cambiar}>
-          <SelectTrigger id={id} disabled={disabled} aria-invalid={invalid || undefined} className="w-full">
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {opciones.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        // "Todos" es la opción "" de `SelectOpciones` (centinela `__none__` adentro).
+        <SelectOpciones
+          id={id}
+          opciones={todos ? [{ value: "", label: todos }, ...options] : options}
+          value={value}
+          onValueChange={onChange}
+          placeholder={placeholder}
+          disabled={disabled}
+          aria-invalid={invalid}
+        />
       )}
     </Field>
   )

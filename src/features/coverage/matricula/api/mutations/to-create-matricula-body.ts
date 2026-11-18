@@ -95,6 +95,7 @@ export function camposNuevosBody(values: CreateMatriculaInput) {
   const { academic, student, complementary } = values
   return {
     INTERNADO: toIntOrNull(academic.internado),
+    AUTORIZACION_DATOS: academic.autorizacionDatos ? "S" : "N",
     PAIS_ORIGEN: toIntOrNull(student.paisOrigen),
     LENGUA_MATERNA: toIntOrNull(student.lenguaMaterna),
     CONDICION_MIGRATORIA: toIntOrNull(student.condicionMigratoria),

@@ -27,6 +27,7 @@ interface ColumnasOpciones {
   puedeEditar: boolean
   puedeAnular: boolean
   puedeRemitir: boolean
+  puedeReportarSaludMental: boolean
   /** Supervisor de sede y Administrador del establecimiento (Convivencia). */
   puedeAbrirProceso: boolean
   onAbrirProceso: (row: AnotacionRow) => void
@@ -42,6 +43,7 @@ export function buildColumnsAnotaciones({
   puedeEditar,
   puedeAnular,
   puedeRemitir,
+  puedeReportarSaludMental,
   puedeAbrirProceso,
   onAbrirProceso,
   onRemitir,
@@ -157,7 +159,7 @@ export function buildColumnsAnotaciones({
               { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
               // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario:
               // solo en una anotación Negativa vigente (G.1.LIS.3); abre el formulario con el estudiante y la anotación.
-              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, onSelect: () => onReportarSaludMental(a) },
+              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: !puedeReportarSaludMental, onSelect: () => onReportarSaludMental(a) },
               { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
               {
                 id: "disciplinario",

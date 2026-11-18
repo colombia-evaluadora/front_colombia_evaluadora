@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { postMultipart } from "@/lib/files"
+import { downloadReport } from "@/lib/report-client"
 import { invalidarMatriculas, matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 
 // Acciones de la fila y de la barra de lote (C.1.LOT.1–8): la misma acción
@@ -441,6 +442,34 @@ export function useGenerarConstancias() {
         { IDS: ids(v.matriculaIds), DIRIGIDA_A: v.dirigidaA, BORRADOR: v.borrador ? "S" : "N" },
         v.matriculaIds.length === 1 ? "constancia-estudio.pdf" : "constancias-estudio.pdf",
       ),
+  })
+}
+
+/* Carné estudiantil (Sección 2.18, Regla 61): solo Cursando; individual o en lote. */
+
+/** Cuántas de la selección no tienen foto: su carné sale con una silueta. */
+export function usePreviaCarnesQuery(matriculaIds: string[]) {
+  return useQuery({
+    queryKey: [...matriculaKeys.all, "carnes-previa", matriculaIds],
+    queryFn: async () => {
+      const row = await evalCol.postRow<{ sin_foto: number }>(`${BASE}/carnes/previa`, { IDS: ids(matriculaIds) })
+      return { sinFoto: Number(row.sin_foto ?? 0) }
+    },
+    staleTime: 0,
+  })
+}
+
+/**
+ * Un solo PDF con los carnés (frente y reverso, varios por hoja carta con marcas
+ * de corte). Sale de reporting-service; deja Reemplazado el carné anterior de
+ * cada matrícula y lo registra como documento emitido (QR).
+ */
+export function useGenerarCarnes() {
+  return useMutation({
+    mutationFn: async (matriculaIds: string[]) => {
+      const r = await downloadReport("matricula-carne", { format: "pdf", filters: { IDS: ids(matriculaIds) } })
+      if (r.status !== "ok") throw new Error(r.message)
+    },
   })
 }
 

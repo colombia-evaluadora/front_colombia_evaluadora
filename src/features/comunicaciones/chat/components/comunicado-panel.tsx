@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { format } from "date-fns"
+import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,15 +20,16 @@ import {
   WarningIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { paths } from "@/config/paths"
 import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
 import {
   useAnularComunicado,
   useCancelarComunicado,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
-import { useRecepcionComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-recepcion-comunicado-query"
 import { AdjuntosComunicadoLista } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
+import { useSeguimientoComunicadoQuery } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 
 const ESTADOS: Record<
   EstadoComunicado,
@@ -100,7 +102,7 @@ export function ComunicadoPanel({
 
 /** Tarjeta "Comunicado oficial" (diseño 3883:57269); sola o encabezando la conversación de respuestas. */
 export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }) {
-  const [verRecepcion, setVerRecepcion] = useState(false)
+  const [verSeguimiento, setVerSeguimiento] = useState(false)
   const [dialogo, setDialogo] = useState<"anular" | "cancelar" | null>(null)
   const gestiona = c.gestiona ?? c.esCreador
   const programado = new Date(c.publicarEn) > new Date()
@@ -188,13 +190,14 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
             </div>
           )}
           {c.leidos != null && c.totalDestinatarios != null && (
-            // Confirmación de lectura: solo la recibe quien lo publicó; abre el registro por persona.
+            // Confirmación de lectura: solo la recibe quien lo gestiona; abre el seguimiento (mismo
+            // endpoint que el detalle del comunicado, así los números coinciden en ambas pantallas).
             <div>
               <dt className="inline">Leído por: </dt>
               <dd className="inline">
                 <button
                   type="button"
-                  onClick={() => setVerRecepcion(true)}
+                  onClick={() => setVerSeguimiento(true)}
                   className="font-medium text-primary tabular-nums underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 >
                   {c.leidos} de {c.totalDestinatarios}
@@ -230,8 +233,8 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
 
       {dialogo === "anular" && <AnularDialog comunicado={c} onClose={() => setDialogo(null)} />}
       {dialogo === "cancelar" && <CancelarDialog comunicado={c} onClose={() => setDialogo(null)} />}
-      {verRecepcion && (
-        <RecepcionDialog conversacionId={c.conversacionId} onClose={() => setVerRecepcion(false)} />
+      {verSeguimiento && (
+        <SeguimientoDialog comunicado={c} onClose={() => setVerSeguimiento(false)} />
       )}
     </article>
   )
@@ -362,55 +365,59 @@ export function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunic
   )
 }
 
-/** Registro de recepción: por destinatario, si lo leyó y a qué hora (solo quien lo publicó). */
-function RecepcionDialog({ conversacionId, onClose }: { conversacionId: number; onClose: () => void }) {
-  const q = useRecepcionComunicadoQuery(conversacionId, true)
-  const filas = q.data ?? []
-  const leidos = filas.filter((f) => f.estado === "LEIDO").length
+/**
+ * Seguimiento del comunicado desde el chat: los mismos contadores que el detalle
+ * (`/comunicado/seguimiento`, fuente única del "leído"). Por diseño (M.1.DET.1) nunca se muestra
+ * quién leyó, solo el total; el listado de personas sin canal queda en el detalle.
+ */
+function SeguimientoDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onClose: () => void }) {
+  const q = useSeguimientoComunicadoQuery(c.conversacionId, true)
+  const s = q.data
+  const n = (v: number | null | undefined) => (v == null ? "—" : v.toLocaleString("es-CO"))
+  const contadores = [
+    { etiqueta: "Destinatarios", valor: n(s?.destinatarios ?? c.totalDestinatarios) },
+    { etiqueta: "Leídos", valor: n(s?.leidos ?? c.leidos) },
+    { etiqueta: "Aviso en plataforma", valor: n(s?.conAviso) },
+    { etiqueta: "Correos enviados", valor: n(s?.correosEnviados) },
+    { etiqueta: "Correos fallidos", valor: n(s?.correosFallidos) },
+    { etiqueta: "Sin canal", valor: n(s?.sinCanal) },
+  ]
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Registro de recepción</DialogTitle>
+          <DialogTitle>Seguimiento</DialogTitle>
         </DialogHeader>
         {q.isPending ? (
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-32 w-full" />
         ) : q.isError ? (
           <p className="text-sm text-muted-foreground">
-            No se pudo cargar el registro.{" "}
+            No se pudo cargar el seguimiento.{" "}
             <button type="button" onClick={() => void q.refetch()} className="font-medium text-primary underline">
               Reintentar
             </button>
           </p>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground" aria-live="polite">
-              {leidos} de {filas.length} {filas.length === 1 ? "destinatario lo leyó" : "destinatarios lo leyeron"}.
-            </p>
-            <ul className="-mx-1 min-h-0 flex-1 divide-y overflow-y-auto px-1" aria-label="Destinatarios">
-              {filas.map((f) => (
-                <li key={f.usuarioId} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{f.nombre}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {f.vistoEn
-                        ? `Visto el ${format(new Date(f.vistoEn), "dd/MM/yyyy 'a las' H:mm")}`
-                        : f.estado === "LEIDO"
-                          ? "Leído (sin hora registrada)"
-                          : f.entregadoEn
-                            ? `Entregado el ${format(new Date(f.entregadoEn), "dd/MM/yyyy 'a las' H:mm")}`
-                            : "Aún no se publica"}
-                    </span>
-                  </span>
-                  <Badge variant="soft" color={f.estado === "LEIDO" ? "success" : "muted"}>
-                    {f.estado === "LEIDO" ? "Leído" : "No leído"}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </>
+          <dl className="grid grid-cols-2 gap-y-4 sm:grid-cols-3" aria-live="polite">
+            {contadores.map((x) => (
+              <div key={x.etiqueta} className="flex flex-col-reverse gap-0.5 px-3 text-center">
+                <dt className="text-xs text-muted-foreground">{x.etiqueta}</dt>
+                <dd className="text-2xl font-semibold tabular-nums">{x.valor}</dd>
+              </div>
+            ))}
+          </dl>
         )}
+        <DialogFooter>
+          <Button
+            variant="outline"
+            color="neutral"
+            nativeButton={false}
+            render={<Link to={paths.app.comunicacionesComunicadoDetalle.getHref(c.conversacionId)} />}
+          >
+            Ver detalle
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

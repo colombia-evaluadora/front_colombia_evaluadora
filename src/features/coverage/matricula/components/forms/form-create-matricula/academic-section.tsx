@@ -13,6 +13,7 @@ import { useEspecialidadesQuery } from "@/features/establishment/academic-period
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mappings"
 import type { MatriculaAcademicInfo, MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { MatriculaFormSection, MatriculaSelectField, MatriculaTextField } from "./fields"
 
@@ -196,6 +197,24 @@ export function MatriculaAcademicSection({
         disabled
         onChange={() => {}}
       />
+      {/* Regla 81: opcional; sin ella se matricula igual, con los datos del estudiante enmascarados. */}
+      {!showStatus ? (
+        <label className="flex items-start gap-2 text-sm md:col-span-3">
+          <Checkbox
+            id="matricula-autorizacion-datos"
+            checked={Boolean(value.autorizacionDatos)}
+            onCheckedChange={(checked) => onChange({ ...value, autorizacionDatos: checked === true })}
+            className="mt-0.5"
+          />
+          <span>
+            Autorización de tratamiento de datos (Ley 1581 de 2012)
+            <span className="block text-xs text-muted-foreground">
+              Márquela si el acudiente la da. Sin ella se matricula igual, pero los datos del estudiante se ven
+              enmascarados y no se pueden modificar.
+            </span>
+          </span>
+        </label>
+      ) : null}
       {/* Regla 41: con Sí, el bloque 15 deja marcar qué asignaturas se cursan afuera. */}
       <div className="flex flex-col gap-2 md:col-span-3">
         <span id="matricula-media-tecnica-label" className="text-sm font-medium">

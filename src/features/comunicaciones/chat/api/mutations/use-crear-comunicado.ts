@@ -86,6 +86,29 @@ export async function subirAdjuntos(conversacionId: number, archivos: File[]) {
 }
 
 /**
+ * Tras guardar el comunicado (crear la edición o la corrección): quita los adjuntos marcados, sube los
+ * nuevos y, si alguno subió, relee el comunicado para que la respuesta traiga la lista final.
+ * `comunicado` es lo que devolvió el guardado; se reemplaza por la respuesta más reciente.
+ */
+export async function aplicarCambiosAdjuntos(
+  conversacionId: number,
+  comunicado: Comunicado,
+  quitar: number[],
+  archivos: File[],
+): Promise<ResultadoComunicado<Comunicado>> {
+  let c = comunicado
+  for (const id of quitar) {
+    c = await evalCol.patchRow<Comunicado>(`${base(conversacionId)}/adjuntos/${id}/eliminar`, {})
+  }
+  const fallidos = await subirAdjuntos(conversacionId, archivos)
+  if (archivos.length > fallidos.length) {
+    const [fresco] = await evalCol.getRows<Comunicado>(base(conversacionId))
+    if (fresco) c = fresco
+  }
+  return { dato: c, fallidos }
+}
+
+/**
  * Previsualización de destinatarios: comms-service resuelve los mismos destinatarios que al publicar
  * (mismas reglas de alcance) y los cuenta por tipo. No crea nada, por eso no invalida ninguna query.
  */
@@ -144,22 +167,13 @@ export function useEditarComunicado(conversacionId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (v: CrearComunicadoInput): Promise<ResultadoComunicado<Comunicado>> => {
-      let c = await evalCol.patchRow<Comunicado>(base(conversacionId), cuerpoComunicado(v), conBorrador(v.borradorId))
-      for (const id of v.quitarAdjuntos ?? []) {
-        c = await evalCol.patchRow<Comunicado>(`${base(conversacionId)}/adjuntos/${id}/eliminar`, {})
-      }
-      const fallidos = await subirAdjuntos(conversacionId, v.archivos)
-      if (v.archivos.length > fallidos.length) {
-        const [fresco] = await evalCol.getRows<Comunicado>(base(conversacionId))
-        if (fresco) c = fresco
-      }
-      return { dato: c, fallidos }
+      const c = await evalCol.patchRow<Comunicado>(base(conversacionId), cuerpoComunicado(v), conBorrador(v.borradorId))
+      return aplicarCambiosAdjuntos(conversacionId, c, v.quitarAdjuntos ?? [], v.archivos)
     },
     onSuccess: ({ dato }) => {
       queryClient.setQueryData(chatKeys.comunicado(conversacionId), dato)
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones }),
-        queryClient.invalidateQueries({ queryKey: chatKeys.recepcion(conversacionId) }),
         // Guardar desde el borrador de la edición lo elimina (comms-service, ?borrador).
         queryClient.invalidateQueries({ queryKey: chatKeys.borradoresActividad }),
         // Listado "Comunicados institucionales" (literal para no importar en ciclo, como abajo).

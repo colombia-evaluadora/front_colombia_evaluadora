@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon, FunnelXIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
@@ -380,7 +380,8 @@ function TablaPublicados() {
                   <MenuAccionesComunicado c={c} onDialogo={setDialogo} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)} ·{" "}
+                  {fecha(c.publicarEn)} · {c.publicadoPor}
+                    {c.establecimiento ? ` · ${c.establecimiento}` : ""} · {tiposAbreviados(c.tipos)} ·{" "}
                   {c.destinatarios ?? 0} destinatarios
                 </p>
                 <div className="mt-1">

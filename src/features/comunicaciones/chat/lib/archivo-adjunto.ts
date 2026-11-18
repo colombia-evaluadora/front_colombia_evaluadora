@@ -145,7 +145,7 @@ export function agregarAdjuntos<T extends { name: string; size: number; type?: s
     }
     if (archivos.some((a) => a.name === archivo.name && a.size === archivo.size)) continue
     if (archivos.length >= MAX_ADJUNTOS) {
-      error ??= `Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos por mensaje.`
+      error ??= `Puede adjuntar hasta ${MAX_ADJUNTOS} archivos por mensaje.`
       break
     }
     archivos.push(archivo)

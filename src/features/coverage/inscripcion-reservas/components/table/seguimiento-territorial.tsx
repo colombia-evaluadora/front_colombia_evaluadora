@@ -42,6 +42,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { Paginas, usePaginado } from "./paginado-territorial"
 import { AccionFila as Accion, useBusquedaTerritorial } from "@/features/coverage/inscripcion-reservas/components/table/territorial-comunes"
 import { getErrorMessage } from "@/lib/api-client"
+import { exportarCsv } from "@/lib/csv"
 import { useAppForm } from "@/lib/forms"
 import { coberturaInscritosRoute } from "@/router"
 
@@ -131,9 +132,10 @@ function exportar(filas: SeguimientoEstablecimiento[]) {
     "Traslados pendientes",
     "Días del más antiguo",
   ]
-  const csv = [
+  exportarCsv(
+    "seguimiento-reservas-traslados.csv",
     cab,
-    ...filas.map((f) => [
+    filas.map((f) => [
       f.establecimiento,
       f.cursando,
       f.reservadas,
@@ -142,16 +144,7 @@ function exportar(filas: SeguimientoEstablecimiento[]) {
       f.trasladosPendientes,
       f.diasMasAntiguo ?? "",
     ]),
-  ]
-    .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(";"))
-    .join("\r\n")
-  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }))
-  const a = Object.assign(document.createElement("a"), {
-    href: url,
-    download: "seguimiento-reservas-traslados.csv",
-  })
-  a.click()
-  URL.revokeObjectURL(url)
+  )
 }
 
 // --- Lista ----------------------------------------------------------------------

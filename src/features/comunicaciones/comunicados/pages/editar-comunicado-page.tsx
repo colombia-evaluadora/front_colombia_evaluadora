@@ -29,8 +29,8 @@ import { useComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use
 import { EstadoComunicadoBadge } from "@/features/comunicaciones/chat/components/comunicado-panel"
 import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
 import { useCorregirComunicado } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
-import { AdjuntosCarga } from "@/features/comunicaciones/comunicados/components/adjuntos-carga"
-import { Panel } from "@/features/comunicaciones/comunicados/components/panel-plegable"
+import { AdjuntosComunicadoCampo } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
+import { SeccionPlegable } from "@/components/seccion-plegable"
 import {
   enfocarPrimerError,
   ERRORES_MENSAJE,
@@ -160,7 +160,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
       <ErrorNoticeBanner error={corregir.isError ? corregir.error : null} />
 
       <div className="overflow-hidden rounded-lg border">
-      <Panel titulo="Destinatarios (no se modifican después de publicar)">
+      <SeccionPlegable titulo="Destinatarios (no se modifican después de publicar)">
         <div className="space-y-3">
           <div className="grid gap-4 sm:grid-cols-3">
             <CampoBloqueado
@@ -185,7 +185,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
               .join(" · ") || "—"}
           </p>
         </div>
-      </Panel>
+      </SeccionPlegable>
 
       <form
         id={FORM_ID}
@@ -214,7 +214,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           )
         }}
       >
-        <Panel titulo="Contenido">
+        <SeccionPlegable titulo="Contenido">
         <div className="space-y-4">
         <Field variant="outlined" data-invalid={visibles[CAMPO.titulo] ? true : undefined}>
           <FieldLabel htmlFor={CAMPO.titulo}>
@@ -251,7 +251,8 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           <CharacterCounter value={mensaje} max={MAX_MENSAJE} />
           {visibles[CAMPO.mensaje] && <FieldError>{visibles[CAMPO.mensaje]}</FieldError>}
         </Field>
-        <AdjuntosCarga
+        <AdjuntosComunicadoCampo
+          variante="chips"
           archivos={archivos}
           onArchivos={setArchivos}
           guardados={c.adjuntos ?? []}
@@ -266,7 +267,7 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           valor={c.actualizadoEn ? fechaHora(c.actualizadoEn) : "Se registra al guardar"}
         />
         </div>
-        </Panel>
+        </SeccionPlegable>
       </form>
       </div>
       </TableScreenBody>

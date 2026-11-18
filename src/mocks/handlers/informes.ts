@@ -270,24 +270,26 @@ function observacionFinalDe(matriculaId: number): string | null {
   }).filter((parte): parte is string => parte !== null)
   return partes.length > 0 ? partes.join(" ") : null
 }
-export const informesHandlers = [
+/** La cascada sede -> año -> jornada -> grupo/período. Gestión Estudiantil expone la misma con
+ *  idéntico contrato en `/gestion-estudiantil/opciones/*` (V720). */
+const cascadaHandlers = (url: (path: string) => string) => [
   // --- Cascada del filtro: sede -> año -> jornada/período académico --------
-  http.post(URL("sedes"), async () => {
+  http.post(url("sedes"), async () => {
     await delay(120)
     return HttpResponse.json({ rows: [SEDE_INFORME] })
   }),
 
-  http.post(URL("anos"), async () => {
+  http.post(url("anos"), async () => {
     await delay(120)
     return HttpResponse.json({ rows: ANIOS_INFORME })
   }),
 
-  http.post(URL("jornadas"), async () => {
+  http.post(url("jornadas"), async () => {
     await delay(120)
     return HttpResponse.json({ rows: [JORNADA_INFORME] })
   }),
 
-  http.post(URL("periodos"), async () => {
+  http.post(url("periodos"), async () => {
     await delay(120)
     const rows = PERIODOS_INFORME.map((p) => ({
       fk_tperiodo_evaluacion: p.id,
@@ -313,7 +315,7 @@ export const informesHandlers = [
     return HttpResponse.json({ rows })
   }),
 
-  http.post(URL("grupos-periodo"), async ({ request }) => {
+  http.post(url("grupos-periodo"), async ({ request }) => {
     await delay(150)
     const body = (await request.json()) as { SEARCH?: string | null }
     const rows = GRUPOS_INFORME.filter((g) => coincide(g.grupoEtiqueta, body.SEARCH ?? null)).map(
@@ -338,6 +340,13 @@ export const informesHandlers = [
     )
     return HttpResponse.json({ rows })
   }),
+
+]
+
+export const geOpcionesHandlers = cascadaHandlers((path) => `/api/eval-col/gestion-estudiantil/opciones/${path}`)
+
+export const informesHandlers = [
+  ...cascadaHandlers(URL),
 
   // --- El informe del grupo: una fila por estudiante Y período ------------
   http.post(URL("grupo"), async ({ request }) => {

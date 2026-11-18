@@ -1,10 +1,10 @@
-import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { ArrowsDownUpIcon, ClipboardAddIcon, GavelIcon } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
 
-import { resumenDeDetalle, type CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { DialogElegirEstudianteProceso } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-elegir-estudiante-proceso"
+import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { MenuAccionesCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
 import type { useCasoDetalle } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-detalle"
 
@@ -16,20 +16,29 @@ interface Props {
 /** Botones de la cabecera del detalle: proceso disciplinario, cambiar tipo, registrar acción y menú ⋮. */
 export function AccionesDetalle({ caso, detalle }: Props) {
   const { access, puedeCitar, abierto, abrirTipo, abrirAccion, onAccionMenu } = detalle
-  const [elegirEstudiante, setElegirEstudiante] = useState(false)
   return (
     <div className="flex items-center gap-2">
-      {/* G.2.CAS.DIS.1: solo en el detalle, no en el menú de la fila; Supervisor de sede y Administrador.
-          Primero se elige el estudiante (G.2.CAS.DIS.2) y después se abre el formulario (G.2.CAS.DIS.3). */}
-      <Button
-        size="sm"
-        variant="outline" color="neutral"
-        disabled={!(abierto && access.puedeSupervisar)}
-        onClick={() => setElegirEstudiante(true)}
-      >
-        <GavelIcon data-icon="inline-start" />
-        Abrir proceso disciplinario
-      </Button>
+      {/*
+        G.2.CAS.DIS.1: solo en el detalle, no en el menú de la fila. El estudiante se elige entre los
+        involucrados en el formulario (`?caso=`). Pendiente de backend: el detalle no trae una bandera
+        propia; se usa el mismo permiso que «Abrir proceso» de la lista de procesos.
+      */}
+      {access.puedeSupervisar ? (
+        <Button
+          size="sm"
+          variant="outline" color="neutral"
+          nativeButton={false}
+          render={<Link to={paths.app.convivenciaProcesoNuevo.getHref()} search={{ caso: caso.id } as never} />}
+        >
+          <GavelIcon data-icon="inline-start" />
+          Abrir proceso disciplinario
+        </Button>
+      ) : (
+        <Button size="sm" variant="outline" color="neutral" disabled>
+          <GavelIcon data-icon="inline-start" />
+          Abrir proceso disciplinario
+        </Button>
+      )}
       <Button size="sm" variant="outline" color="neutral" disabled={!(abierto && access.puedeSupervisar)} onClick={abrirTipo}>
         <ArrowsDownUpIcon data-icon="inline-start" />
         Cambiar tipo
@@ -45,10 +54,6 @@ export function AccionesDetalle({ caso, detalle }: Props) {
         access={access}
         puedeCitar={puedeCitar}
         onAccion={onAccionMenu}
-      />
-      <DialogElegirEstudianteProceso
-        caso={elegirEstudiante ? resumenDeDetalle(caso) : null}
-        onClose={() => setElegirEstudiante(false)}
       />
     </div>
   )

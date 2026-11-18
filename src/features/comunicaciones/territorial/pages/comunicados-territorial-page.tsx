@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/pagination"
-import { SelectOpciones } from "@/features/comunicaciones/shared/components/select-opciones"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getErrorMessage } from "@/lib/api-client"

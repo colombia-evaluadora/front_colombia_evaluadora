@@ -17,7 +17,7 @@ interface FichaRow {
   fk_tlv_tipo_documento: number | null
   tipo_documento_nombre: string | null
   tipo_documento: string | null
-  identificacion: string
+  identificacion: string | null
   primer_nombre: string
   segundo_nombre: string | null
   primer_apellido: string
@@ -60,6 +60,8 @@ interface FichaRow {
   archivos: Anexo[] | null
   puede_editar: boolean
   puede_corregir_identidad: boolean
+  /** Regla 116: los datos personales llegan en `null` hasta que el funcionario autorice. */
+  datos_restringidos?: boolean | null
 }
 
 const toPermission = (row: NonNullable<FichaRow["permisos"]>[number]): Permission => ({
@@ -81,12 +83,12 @@ const toPermission = (row: NonNullable<FichaRow["permisos"]>[number]): Permissio
   principalDe: row.principalDe ?? null,
 })
 
-const toFicha = (row: FichaRow): FuncionarioFicha => ({
+export const toFicha = (row: FichaRow): FuncionarioFicha => ({
   id: row.pk_empleado,
   documentTypeId: row.fk_tlv_tipo_documento,
   documentTypeCode: row.tipo_documento ?? "",
   documentTypeName: row.tipo_documento_nombre ?? "",
-  identification: row.identificacion,
+  identification: row.identificacion ?? "",
   firstName: row.primer_nombre,
   middleName: row.segundo_nombre ?? "",
   lastName: row.primer_apellido,
@@ -125,6 +127,7 @@ const toFicha = (row: FichaRow): FuncionarioFicha => ({
   annexes: row.archivos ?? [],
   canEdit: row.puede_editar === true,
   canCorrectIdentity: row.puede_corregir_identidad === true,
+  dataRestricted: row.datos_restringidos === true,
 })
 
 export async function fetchFuncionarioFicha(id: number, establishmentId: number): Promise<FuncionarioFicha> {

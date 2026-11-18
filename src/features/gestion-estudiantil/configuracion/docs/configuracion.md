@@ -7,7 +7,7 @@ Ruta `/app/gestion-estudiantil/configuracion`, menú `CONFIGURACION_GE`. Todo es
 - Pestaña activa en `sessionStorage` (`configuracion-ge-pestana`). La URL vieja `/catalogo-anotaciones` redirige aquí
   con la pestaña Catálogo (alias en `navigation/lib/route-access.ts`).
 - Establecimiento y banderas: `hooks/use-configuracion-acceso.ts` (usa `hooks/use-establecimiento-configuracion.ts`; si
-  `/establecimientos/opciones` da 403, el establecimiento sale de las sedes de la cascada de Informes).
+  el establecimiento sale de las sedes de `/gestion-estudiantil/opciones/sedes`).
 - Campos: `components/campo-numerico.tsx` y `REJILLA_CAMPOS` (celdas de al menos 28rem, para que la etiqueta flotante
   del Field outlined quepa en una línea).
 - Selectores: las opciones salen del backend (`select/INSTANCIA_DISCIPLINARIA`, `GET /sanciones/efectos`,

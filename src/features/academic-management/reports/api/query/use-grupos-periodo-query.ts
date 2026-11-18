@@ -5,7 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { GrupoPeriodo } from "@/features/academic-management/reports/api/types"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
-interface GrupoPeriodoRow {
+export interface GrupoPeriodoRow {
   grupo_id: number
   grupo_codigo: string | null
   grupo_nombre: string
@@ -24,7 +24,7 @@ interface GrupoPeriodoRow {
   fk_tperiodo_academico: number
 }
 
-function toGrupo(row: GrupoPeriodoRow): GrupoPeriodo {
+export function toGrupo(row: GrupoPeriodoRow): GrupoPeriodo {
   return {
     grupoId: row.grupo_id,
     grupoCodigo: row.grupo_codigo,

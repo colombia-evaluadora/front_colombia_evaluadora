@@ -91,15 +91,8 @@ export function Ficha({
   )
 }
 
-/** CSV con BOM (Excel lee las tildes) de lo que se ve en la tabla. */
-export function exportarCsv(archivo: string, cabecera: string[], filas: (string | number)[][]) {
-  const csv = [cabecera, ...filas]
-    .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(";"))
-    .join("\r\n")
-  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }))
-  Object.assign(document.createElement("a"), { href: url, download: archivo }).click()
-  URL.revokeObjectURL(url)
-}
+/** CSV con BOM (Excel lee las tildes) de lo que se ve en la tabla: vive en `@/lib/csv`. */
+export { exportarCsv } from "@/lib/csv"
 
 export function BotonExportar({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
   return (

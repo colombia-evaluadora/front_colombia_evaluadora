@@ -65,6 +65,10 @@ import { unificarEstudiantesHandlers } from "@/mocks/handlers/unificar-estudiant
 import { solicitudRetiroHandlers } from "@/mocks/handlers/solicitud-retiro"
 import { reactivarHandlers } from "@/mocks/handlers/reactivar"
 import { accionesLoteHandlers } from "@/mocks/handlers/acciones-lote"
+import { convocatoriasHandlers } from "@/mocks/handlers/convocatorias"
+import { postulacionesHandlers } from "@/mocks/handlers/postulaciones"
+import { conveniosHandlers } from "@/mocks/handlers/convenios"
+import { continuidadHandlers } from "@/mocks/handlers/continuidad"
 import { estudianteExistenteHandlers } from "@/mocks/handlers/estudiante-existente"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
 import { curricularStatementsHandlers } from "@/mocks/handlers/academic-management/curricular-statements"
@@ -74,7 +78,8 @@ import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
 import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planeador/validacion-coordinador"
 import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
-import { informesHandlers } from "@/mocks/handlers/informes"
+import { geOpcionesHandlers, informesHandlers } from "@/mocks/handlers/informes"
+import { geCapacidadesHandlers } from "@/mocks/handlers/ge-capacidades"
 import {
   comunicacionesArchivosHandlers,
   comunicacionesHandlers,
@@ -96,6 +101,10 @@ import { agenteHandlers } from "@/mocks/handlers/agente"
 export const handlers = [
   // Antes que las rutas de matrícula con :id: «lote» no es un id.
   ...accionesLoteHandlers,
+  ...convocatoriasHandlers,
+  ...postulacionesHandlers,
+  ...conveniosHandlers,
+  ...continuidadHandlers,
   ...authHandlers,
   ...devicesHandlers,
   ...agenteHandlers,
@@ -173,6 +182,8 @@ export const handlers = [
   ...curricularStatementsHandlers,
   ...asistenciaHandlers,
   ...informesHandlers,
+  ...geOpcionesHandlers,
+  ...geCapacidadesHandlers,
   ...comunicacionesArchivosHandlers,
   ...comunicacionesFiltrosHandlers,
   ...comunicacionesModeracionHandlers,

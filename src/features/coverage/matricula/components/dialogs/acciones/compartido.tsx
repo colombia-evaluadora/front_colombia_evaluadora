@@ -127,6 +127,7 @@ export function EstadoBadge({ children, color }: { children: ReactNode; color: "
 export interface OpcionSelect {
   value: string
   label: string
+  disabled?: boolean
 }
 
 /** Select con etiqueta sobre el borde (estilo outlined de la app). */
@@ -173,7 +174,7 @@ export function CampoSelect({
             <p className="px-3 py-2 text-sm text-muted-foreground">No hay opciones.</p>
           ) : (
             opciones.map((o) => (
-              <ComboboxFieldItem key={o.value} value={o.value} title={o.label}>
+              <ComboboxFieldItem key={o.value} value={o.value} title={o.label} disabled={o.disabled}>
                 {o.label}
               </ComboboxFieldItem>
             ))
