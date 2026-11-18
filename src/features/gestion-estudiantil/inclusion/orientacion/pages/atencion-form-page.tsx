@@ -130,9 +130,7 @@ export function AtencionFormPage() {
                 </form.Subscribe>
               ))}
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <form.AppField name="proxima">{(f) => <f.DateField label="Próxima cita" />}</form.AppField>
-            </div>
+            <form.AppField name="proxima">{(f) => <f.DateField label="Próxima cita" />}</form.AppField>
             {a.id && (
               <section className="grid gap-2 text-sm">
                 <div className="flex items-center justify-between">

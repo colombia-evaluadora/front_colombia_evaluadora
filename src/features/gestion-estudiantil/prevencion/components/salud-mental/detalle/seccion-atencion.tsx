@@ -21,7 +21,7 @@ export function SeccionAtencion({ senal: s, d }: Props) {
       titulo={sinValorar ? "Atención (se registra después de valorar)" : "Atención"}
       accion={
         !sinValorar && (
-          <Button size="sm" type="button" variant="outline" disabled={!s.puede_atender} onClick={d.abrirAtencion}>
+          <Button size="sm" type="button" variant="outline" color="neutral" disabled={!s.puede_atender} onClick={d.abrirAtencion}>
             <ControlPointIcon data-icon="inline-start" />
             Registrar atención
           </Button>

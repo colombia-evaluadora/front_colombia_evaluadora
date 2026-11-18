@@ -2221,14 +2221,7 @@ export const observacionesSugerenciasRoute = createRoute({
 
 const CITACIONES_CRUMB = { label: "Citaciones y compromisos", to: paths.app.citacionesCompromisos.getHref() }
 
-const CitacionFormPage = lazyRouteComponent(
-  () => import("@/features/gestion-estudiantil/citaciones/pages/citacion-form-page"),
-  "CitacionFormPage",
-)
-const CompromisoFormPage = lazyRouteComponent(
-  () => import("@/features/gestion-estudiantil/citaciones/pages/compromiso-form-page"),
-  "CompromisoFormPage",
-)
+
 const CompromisoDetallePage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/citaciones/pages/compromiso-detalle-page"),
   "CompromisoDetallePage",
@@ -2241,7 +2234,12 @@ export const citacionNuevaRoute = createRoute({
   validateSearch: origenSearchSchema,
   component: function CitacionNuevaRoute() {
     const search = citacionNuevaRoute.useSearch()
-    return <CitacionFormPage origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+    // El listado con el modal de Nueva citación ya abierto (así llegan Convivencia y Observador con su origen).
+    return (
+      <CitacionesCompromisosPage
+        nuevaCitacion={{ origen: origenDeSearch(search), matricula: search.matricula, estudiante: search.estudiante }}
+      />
+    )
   },
 })
 
@@ -2256,7 +2254,17 @@ export const compromisoNuevoRoute = createRoute({
   }),
   component: function CompromisoNuevoRoute() {
     const search = compromisoNuevoRoute.useSearch()
-    return <CompromisoFormPage citacion={search.citacion} origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+    // El listado (pestaña Compromisos) con el modal de Nuevo compromiso ya abierto.
+    return (
+      <CitacionesCompromisosPage
+        nuevoCompromiso={{
+          citacion: search.citacion,
+          origen: origenDeSearch(search),
+          matricula: search.matricula,
+          estudiante: search.estudiante,
+        }}
+      />
+    )
   },
 })
 

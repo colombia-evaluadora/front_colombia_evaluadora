@@ -1,12 +1,11 @@
 import { memo, useMemo } from "react"
 
-import { Button } from "@/components/ui/button"
-import { TrashIcon } from "@/components/ui/icons"
 
 import type { LimitesSancion, OpcionSancion } from "@/features/gestion-estudiantil/convivencia/api/procesos-etapas-types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { CampoFecha } from "@/features/gestion-estudiantil/convivencia/components/procesos/dialogos/campo-fecha"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import type { Errores, SancionFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-etapas"
 
 interface Props {
@@ -81,9 +80,7 @@ function FilaSancionBase({ fila: f, numero, catalogo, usadas, limites, errores, 
           onChange={(detalle) => onChange(f.key, { detalle })}
         />
       </div>
-      <Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={`Quitar la sanción ${numero}`} onClick={() => onQuitar(f.key)}>
-        <TrashIcon />
-      </Button>
+      <BotonQuitar label={`Quitar la sanción ${numero}`} onClick={() => onQuitar(f.key)} className="mt-2" />
     </div>
   )
 }

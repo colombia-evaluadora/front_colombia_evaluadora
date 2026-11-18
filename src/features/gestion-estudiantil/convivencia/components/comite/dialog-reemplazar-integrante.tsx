@@ -2,7 +2,7 @@ import { DatePicker } from "@/components/date-picker"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ArrowsLeftRightIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon, XIcon } from "@/components/ui/icons"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -60,7 +60,7 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={r.pending} onClick={r.reemplazar}>
             <IconoCarga cargando={r.pending}><ArrowsLeftRightIcon data-icon="inline-start" /></IconoCarga>
             Reemplazar

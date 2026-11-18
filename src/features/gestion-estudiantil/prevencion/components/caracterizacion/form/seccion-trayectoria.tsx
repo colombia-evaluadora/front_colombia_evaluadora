@@ -206,7 +206,7 @@ export function SeccionTrayectoria({ f }: { f: FormularioCaracterizacion }) {
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="outline" color="neutral"
           disabled={!historialAcademico.habilitada || !f.vista}
           onClick={historialAcademico.abrir}
         >

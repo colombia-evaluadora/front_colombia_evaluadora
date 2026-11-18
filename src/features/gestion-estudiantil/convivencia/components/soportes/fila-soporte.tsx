@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowsLeftRightIcon, EyeIcon, TrashIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon, EyeIcon } from "@/components/ui/icons"
 
 import type { SoporteAccion } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { formatPeso } from "@/features/gestion-estudiantil/convivencia/utils/soportes"
 
 interface Props {
@@ -42,17 +43,7 @@ export function FilaSoporte({ soporte: s, soloLectura, onVer, onSustituir, onRet
         >
           <ArrowsLeftRightIcon />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={s.vinculado ? `Quitar la referencia a ${s.nombre}` : `Retirar ${s.nombre}`}
-          disabled={soloLectura}
-          onClick={onRetirar}
-        >
-          <TrashIcon />
-        </Button>
+        <BotonQuitar label={s.vinculado ? `Quitar la referencia a ${s.nombre}` : `Retirar ${s.nombre}`} onClick={onRetirar} disabled={soloLectura} />
       </div>
     </li>
   )

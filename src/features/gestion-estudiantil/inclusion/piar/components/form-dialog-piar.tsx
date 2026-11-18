@@ -10,6 +10,7 @@ import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils
 import { useAppForm } from "@/lib/forms"
 
 import { subirSoportePiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 
 export interface CampoPiar {
   name: string
@@ -193,16 +194,10 @@ export function FormDialogPiar({
                 <span className="truncate">
                   {f.name} <span className="text-muted-foreground">· {Math.max(1, Math.round(f.size / 1024))} KB</span>
                 </span>
-                <Button
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  aria-label={`Quitar ${f.name}`}
+                <BotonQuitar
+                  label={`Quitar ${f.name}`}
                   onClick={() => setFiles((prev) => prev.filter((x) => x !== f))}
-                >
-                  <XIcon />
-                </Button>
+                />
               </div>
             ))}
             <div className="flex items-center gap-3">
@@ -227,7 +222,7 @@ export function FormDialogPiar({
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="submit" form="form-piar" color={confirmarColor} disabled={pending}>
             <IconoCarga cargando={pending} />
             {confirmar}

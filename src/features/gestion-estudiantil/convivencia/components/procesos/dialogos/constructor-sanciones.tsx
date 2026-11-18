@@ -35,7 +35,7 @@ export function ConstructorSanciones({ filas, onChange, catalogo, limites, error
         forzarAbierta={intento && Object.keys(errores).some((k) => k.startsWith("sancion"))}
         contentClassName="flex flex-col gap-3 p-4"
         accion={
-          <Button type="button" size="sm" variant="outline" onClick={() => onChange([...filas, sancionVacia()])}>
+          <Button type="button" size="sm" variant="outline" color="neutral" onClick={() => onChange([...filas, sancionVacia()])}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar sanción
           </Button>

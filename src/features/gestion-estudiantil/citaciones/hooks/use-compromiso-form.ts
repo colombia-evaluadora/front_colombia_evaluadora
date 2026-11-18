@@ -1,8 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
-import { queueNotice, useNotify } from "@/components/notice/notice-context"
-import { getErrorMessage } from "@/lib/api-client"
+import { queueNotice } from "@/components/notice/notice-context"
 import { formatDateValue } from "@/lib/date-value"
 import { paths } from "@/config/paths"
 
@@ -26,7 +25,6 @@ import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils
  */
 export function useCompromisoForm(citacion: number | undefined, origenManual?: OrigenManual, matricula?: number, estudiante?: string) {
   const navigate = useNavigate()
-  const { notify } = useNotify()
   const [hoy] = useState(() => formatDateValue(new Date()))
   const [valores, setValores] = useState<ValoresCompromiso>(() => ({
     matricula: matricula ? String(matricula) : "",
@@ -40,6 +38,8 @@ export function useCompromisoForm(citacion: number | undefined, origenManual?: O
   const [nombreElegido, setNombreElegido] = useState(estudiante ?? "")
   const [intento, setIntento] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
+  // Error del backend (o de la subida del soporte): va en el banner del modal, con su texto.
+  const [error, setError] = useState<unknown>(null)
 
   const origen = useCitacionQuery(citacion).data
   const tipos = useCatalogo("TIPO_COMPROMISO")
@@ -55,9 +55,6 @@ export function useCompromisoForm(citacion: number | undefined, origenManual?: O
   const set = (patch: Partial<ValoresCompromiso>) => setValores((prev) => ({ ...prev, ...patch }))
   const errores = intento ? validarCompromiso(v, hoy) : { items: {} }
 
-  const volver = () =>
-    navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab: "compromisos" } } as never)
-
   const crear = useCrearCompromiso({
     mutationConfig: {
       onSuccess: (r) => {
@@ -67,18 +64,14 @@ export function useCompromisoForm(citacion: number | undefined, origenManual?: O
         )
         navigate({ to: paths.app.compromisoDetalle.getHref(r.id) } as never)
       },
-      onError: (error: Error) => {
-        notify(getErrorMessage(error), { variant: "error" })
-        enfocarPrimerError()
-      },
+      onError: (e: Error) => setError(e),
     },
   })
 
   async function guardar() {
     setIntento(true)
-    const e = validarCompromiso(v, hoy)
-    if (hayErroresCompromiso(e)) {
-      notify("Revise los campos marcados.", { variant: "error" })
+    setError(null)
+    if (hayErroresCompromiso(validarCompromiso(v, hoy))) {
       enfocarPrimerError()
       return
     }
@@ -88,8 +81,8 @@ export function useCompromisoForm(citacion: number | undefined, origenManual?: O
       setSubiendo(true)
       try {
         archivo = await subirSoporteCompromiso(v.soporte)
-      } catch (error) {
-        notify(getErrorMessage(error), { variant: "error" })
+      } catch (e) {
+        setError(e)
         return
       } finally {
         setSubiendo(false)
@@ -102,6 +95,7 @@ export function useCompromisoForm(citacion: number | undefined, origenManual?: O
     v,
     set,
     errores,
+    error,
     intento,
     origen,
     citacion,
@@ -113,7 +107,6 @@ export function useCompromisoForm(citacion: number | undefined, origenManual?: O
     },
     guardando: crear.isPending || subiendo,
     guardar,
-    volver,
   }
 }
 

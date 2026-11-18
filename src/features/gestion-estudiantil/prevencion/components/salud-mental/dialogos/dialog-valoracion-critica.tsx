@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
-import { CheckCircleIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, XIcon } from "@/components/ui/icons"
 
 interface Props {
   pending: boolean
@@ -31,6 +31,7 @@ export function DialogValoracionCritica({ pending, onCancelar, onConfirmar }: Pr
         </DialogHeader>
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" disabled={pending} onClick={onConfirmar}>
