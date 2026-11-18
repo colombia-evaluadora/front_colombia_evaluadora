@@ -70,6 +70,20 @@ export interface Matricula {
   anulacionPendiente?: boolean
   /** Traslado con snapshot sin homologar (Sección 4.5). */
   snapshotPendiente?: boolean
+  /** Principal o complementaria (Sección 2.16); el listado lo trae, el mock lo varía. */
+  tipo?: "PRINCIPAL" | "COMPLEMENTARIA"
+  /** Principal con su complementaria: badge «Con matrícula complementaria». */
+  tieneComplementaria?: boolean
+  /** Complementaria por adscripción: badge «Complementaria de [origen]». */
+  origenAdscripcion?: string | null
+  /** Alguna sede ofrece su grado y especialidad en otra jornada (C.1.COM.1). */
+  puedeAgregarComplementaria?: boolean
+  /** Sin la autorización de tratamiento de datos del acudiente (Regla 81): marca «Sin autorización». */
+  sinAutorizacion?: boolean
+  /** Sin matrícula el año anterior en la entidad territorial (columna y filtro Nuevo). */
+  nuevo?: boolean
+  /** Metodología del grupo (columna opcional). */
+  metodologiaGrupo?: string
 }
 
 /** VALOR de la lista SITUACION_EDAD. */
@@ -86,6 +100,7 @@ export interface MatriculaQueryFilters {
   tipo?: "PRINCIPAL" | "COMPLEMENTARIA"
   metodologia?: number
   solicitud?: "CON_SOLICITUD"
+  nuevo?: "S" | "N"
 }
 
 export interface MatriculaQueryRequest {
@@ -149,6 +164,10 @@ export interface MatriculaRestricciones {
   retiroSolicitadoPor: string | null
   /** Destino con la matrícula por anular tras «Cerrar sin retiro»: mismas restricciones. */
   anulacionPendiente: boolean
+  /** Sin la autorización de tratamiento de datos del acudiente (Regla 81). */
+  sinAutorizacion: boolean
+  /** Complementaria por adscripción: el que recibe ve los datos del estudiante protegidos (Regla 8). */
+  origenAdscripcion: string | null
 }
 
 export interface MatriculaFile {
@@ -206,6 +225,8 @@ export interface MatriculaAcademicInfo {
   periodoId?: string
   /** Lista INTERNADO (SIMAT): No, Semi interno o Residente. */
   internado?: string
+  /** Autorización de tratamiento de datos del acudiente (Regla 81): opcional. */
+  autorizacionDatos?: boolean
 }
 
 /** Fila del bloque 15: una asignatura del plan de estudio del grado. */

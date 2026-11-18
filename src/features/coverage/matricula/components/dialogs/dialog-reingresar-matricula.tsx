@@ -64,9 +64,12 @@ export function DialogReingresar({
   const porId = new Map((previas ?? []).map((p) => [p.matriculaId, p]))
   const matriculaDe = new Map(matriculas.map((m) => [m.id, m]))
   const uno = matriculas.length === 1
-  const bloqueadas = (previas ?? []).filter((p) => p.complementariaSinCupo)
-  // En lote la complementaria que no reingresa solo se avisa por fila: la principal sí reingresa (Regla 56).
-  const aplicables = uno ? (previas ?? []).filter((p) => !p.complementariaSinCupo) : (previas ?? [])
+  // Regla 12: se bloquea el reingreso de la complementaria sin cupo en su especialidad.
+  // Si reingresa la principal, la complementaria no se reactiva: solo se avisa.
+  const esComplementaria = (id: string) => matriculaDe.get(id)?.tipo === "COMPLEMENTARIA"
+  const bloqueadas = (previas ?? []).filter((p) => p.complementariaSinCupo && esComplementaria(p.matriculaId))
+  const sinComplementaria = (previas ?? []).filter((p) => p.complementariaSinCupo && !esComplementaria(p.matriculaId))
+  const aplicables = uno ? (previas ?? []).filter((p) => !bloqueadas.includes(p)) : (previas ?? [])
   const sinCupo = uno ? aplicables.filter((p) => p.sinCupo) : []
   // Lote: solo con el período Abierto y sin pasarse de los cupos de cada grupo.
   const cerradas = uno ? [] : aplicables.filter((p) => !p.periodoAbierto)
@@ -214,9 +217,9 @@ export function DialogReingresar({
                 Quite de la selección: {cerradas.map((p) => nombreDe(matriculaDe.get(p.matriculaId) as Matricula)).join(", ")}.
               </Aviso>
             ) : null}
-            {!uno && bloqueadas.length ? (
+            {sinComplementaria.length || (!uno && bloqueadas.length) ? (
               <Aviso tono="advertencia" titulo="La matrícula complementaria no reingresa">
-                {bloqueadas
+                {[...sinComplementaria, ...(uno ? [] : bloqueadas)]
                   .map((p) => `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaSinCupo})`)
                   .join(", ")}
                 : sin cupo o con el convenio finalizado. La matrícula principal sí reingresa.

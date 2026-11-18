@@ -31,6 +31,7 @@ interface MatriculaListRequest {
   TIPO: string | null
   METODOLOGIA: number | null
   SOLICITUD: "CON_SOLICITUD" | null
+  NUEVO: "S" | "N" | null
   PAGEINDEX: number
   PAGESIZE: number
   SORTBY: string | null
@@ -61,6 +62,7 @@ function toListRequest(params: UseMatriculaQueryParams): MatriculaListRequest {
     TIPO: filters.tipo ?? null,
     METODOLOGIA: filters.metodologia ?? null,
     SOLICITUD: filters.solicitud ?? null,
+    NUEVO: filters.nuevo ?? null,
     PAGEINDEX: pageIndex,
     PAGESIZE: pageSize,
     SORTBY: primary?.id ?? null,
@@ -86,6 +88,13 @@ interface MatriculaListRow {
   age_situation?: AgeSituation | null
   // Pendiente en el back (pendientes-back.md): solo lo trae el mock.
   retiro_solicitado?: "S" | "N"
+  tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
+  tiene_complementaria?: "S" | "N"
+  origen_adscripcion?: string | null
+  puede_agregar_complementaria?: "S" | "N"
+  sin_autorizacion?: "S" | "N"
+  nuevo?: "S" | "N"
+  metodologia_grupo?: string | null
   anulacion_pendiente?: "S" | "N"
   snapshot_pendiente?: "S" | "N"
   total_count: number
@@ -117,6 +126,13 @@ function toMatricula(row: MatriculaListRow): Matricula {
     retiroSolicitado: row.retiro_solicitado === "S",
     anulacionPendiente: row.anulacion_pendiente === "S",
     snapshotPendiente: row.snapshot_pendiente === "S",
+    tipo: row.tipo_matricula ?? "PRINCIPAL",
+    tieneComplementaria: row.tiene_complementaria === "S",
+    origenAdscripcion: row.origen_adscripcion?.trim() || null,
+    puedeAgregarComplementaria: row.puede_agregar_complementaria === "S",
+    sinAutorizacion: row.sin_autorizacion === "S",
+    nuevo: row.nuevo === "S",
+    metodologiaGrupo: row.metodologia_grupo ?? "",
   }
 }
 
