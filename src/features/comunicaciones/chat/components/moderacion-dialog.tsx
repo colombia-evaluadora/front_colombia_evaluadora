@@ -5,9 +5,10 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { WarningIcon } from "@/components/ui/icons"
+import { DatePicker } from "@/components/date-picker"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
+import { InfoIcon, WarningIcon } from "@/components/ui/icons"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -26,7 +27,7 @@ import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
 
 const MAX_MOTIVO = 500
 
-function Motivo({ valor, onCambiar }: { valor: string; onCambiar: (v: string) => void }) {
+function Motivo({ valor, onCambiar, placeholder }: { valor: string; onCambiar: (v: string) => void; placeholder: string }) {
   const id = useId()
   return (
     <Field variant="outlined">
@@ -38,6 +39,7 @@ function Motivo({ valor, onCambiar }: { valor: string; onCambiar: (v: string) =>
         value={valor}
         maxLength={MAX_MOTIVO}
         rows={3}
+        placeholder={placeholder}
         onChange={(e) => onCambiar(e.target.value)}
         className={TEXTAREA_OUTLINED}
       />
@@ -70,9 +72,9 @@ export function ReportarDialog({
           <DialogDescription>Avisaremos al Supervisor de sede, que podrá leer esta conversación.</DialogDescription>
         </DialogHeader>
         {reportar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(reportar.error)}</p>}
-        <Motivo valor={motivo} onCambiar={setMotivo} />
+        <Motivo valor={motivo} onCambiar={setMotivo} placeholder="Describa lo que ocurrió" />
         <DialogFooter>
-          <Button variant="ghost" color="neutral" disabled={reportar.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" disabled={reportar.isPending} onClick={onClose}>
             Cancelar
           </Button>
           <Button
@@ -226,28 +228,20 @@ export function SuspenderPersona({ persona }: { persona: { id: number; nombre: s
 // M.2.MOD.2: "Pedro Gil (acudiente) no podrá…"; el rol solo cuando se conoce (no viene en los autores del reporte).
 function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: number; nombre: string; rol?: string }; reporteId: number | null; onClose: () => void }) {
   const [motivo, setMotivo] = useState("")
-  const [vence, setVence] = useState("")
   const suspender = useSuspender()
   return (
     <Dialog open onOpenChange={(o) => !o && !suspender.isPending && onClose()}>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Suspender mensajería — {persona.nombre}</DialogTitle>
-          <DialogDescription>{persona.nombre}{persona.rol ? ` (${persona.rol.toLowerCase()})` : ""} no podrá enviar mensajes internos hasta que se levante la suspensión.</DialogDescription>
+          <DialogDescription>
+            <strong className="font-semibold text-foreground">{persona.nombre}</strong>
+            {persona.rol ? ` (${persona.rol.toLowerCase()})` : ""} no podrá enviar mensajes internos hasta que se levante la suspensión.</DialogDescription>
         </DialogHeader>
         {suspender.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(suspender.error)}</p>}
-        <Motivo valor={motivo} onCambiar={setMotivo} />
-        <Field variant="outlined">
-          <FieldLabel htmlFor={`suspender-vence-${persona.id}`}>Vigente hasta (opcional)</FieldLabel>
-          <Input
-            id={`suspender-vence-${persona.id}`}
-            type="datetime-local"
-            value={vence}
-            onChange={(e) => setVence(e.target.value)}
-          />
-        </Field>
+        <Motivo valor={motivo} onCambiar={setMotivo} placeholder="Describa el motivo" />
         <DialogFooter>
-          <Button variant="ghost" color="neutral" disabled={suspender.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" disabled={suspender.isPending} onClick={onClose}>
             Cancelar
           </Button>
           <Button
@@ -255,7 +249,7 @@ function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: numbe
             disabled={!motivo.trim() || suspender.isPending}
             onClick={() =>
               suspender.mutate(
-                { usuarioId: persona.id, motivo: motivo.trim(), reporteId, venceEn: vence ? new Date(vence).toISOString() : null },
+                { usuarioId: persona.id, motivo: motivo.trim(), reporteId, venceEn: null /* M.2.MOD.2: sin vigencia; se levanta con "Levantar suspensión". */ },
                 { onSuccess: onClose },
               )
             }
@@ -302,16 +296,16 @@ interface ValoresConfiguracion {
   permitirMenoresIniciar: boolean
 }
 
-function Configuracion({ activo }: { activo: boolean }) {
+function Configuracion({ activo, onCancelar }: { activo: boolean; onCancelar?: () => void }) {
   const config = useConfiguracionQuery(activo)
   if (config.isPending) return <p className="p-3 text-sm text-muted-foreground">Cargando…</p>
   if (config.isError) return <p role="alert" className="text-sm text-red">{getErrorMessage(config.error)}</p>
   return (
     <FormConfiguracion
+      onCancelar={onCancelar}
       inicial={{
-        // Sin horario (SSO #1006): ambas horas vacías = sin restricción de correo.
-        horaInicio: config.data?.horaInicio?.slice(0, 5) ?? "",
-        horaFin: config.data?.horaFin?.slice(0, 5) ?? "",
+        horaInicio: config.data?.horaInicio?.slice(0, 5) ?? "06:00",
+        horaFin: config.data?.horaFin?.slice(0, 5) ?? "18:00",
         incluyeSabado: config.data?.incluyeSabado ?? false,
         permitirMenoresIniciar: config.data?.permitirMenoresIniciar ?? false,
       }}
@@ -319,49 +313,86 @@ function Configuracion({ activo }: { activo: boolean }) {
   )
 }
 
-function FormConfiguracion({ inicial }: { inicial: ValoresConfiguracion }) {
+/**
+ * "Configuración de la mensajería — {Establecimiento}" (prototipo M.2.CFG.1): se abre desde la vista
+ * Mensajería interna (Administrador del establecimiento) y también es la pestaña de Moderación.
+ */
+export function ConfiguracionMensajeriaDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const establecimiento = useEstablishmentsOptionsQuery(open).data?.[0]?.name
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Configuración de la mensajería{establecimiento ? ` — ${establecimiento}` : ""}</DialogTitle>
+        </DialogHeader>
+        <Configuracion activo={open} onCancelar={onClose} />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const ITEM_CONFIG = "flex items-center justify-between gap-3"
+
+function FormConfiguracion({ inicial, onCancelar }: { inicial: ValoresConfiguracion; onCancelar?: () => void }) {
   const [valores, setValores] = useState(inicial)
   const guardar = useGuardarConfiguracion()
-  // Horario opcional: las dos horas vacías (sin horario) o las dos llenas; nunca una sola.
-  const horarioIncompleto = !valores.horaInicio !== !valores.horaFin
+  const incompleto = !valores.horaInicio || !valores.horaFin
+  const idSabado = useId()
   const idMenores = useId()
+  const cambiar = (v: Partial<ValoresConfiguracion>) => setValores({ ...valores, ...v })
   return (
-    <div className="space-y-3 p-1 text-sm">
-      {guardar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(guardar.error)}</p>}
-      {guardar.isSuccess && <p role="status" className="text-sm text-green">Configuración guardada.</p>}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium">Horario de atención</span>
-        <Input aria-label="Desde" type="time" className="w-32" value={valores.horaInicio} onChange={(e) => setValores({ ...valores, horaInicio: e.target.value })} />
-        <span>a</span>
-        <Input aria-label="Hasta" type="time" className="w-32" value={valores.horaFin} onChange={(e) => setValores({ ...valores, horaFin: e.target.value })} />
-      </div>
-      <label className="flex items-center gap-2">
-        <input type="checkbox" checked={valores.incluyeSabado} onChange={(e) => setValores({ ...valores, incluyeSabado: e.target.checked })} />
-        Incluir sábados
-      </label>
-      <p className="text-muted-foreground">
-        Fuera del horario no se envían avisos por correo; la campana sí. Deje ambas horas vacías para no limitar el horario.
+    <div className="space-y-4 text-sm">
+      {guardar.isError && <p role="alert" className="text-red">{getErrorMessage(guardar.error)}</p>}
+      {guardar.isSuccess && <p role="status" className="text-green">Configuración guardada.</p>}
+      <fieldset className="space-y-3">
+        <legend className="mb-2 font-medium">
+          <span className="text-red">* </span>Horario de atención
+        </legend>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground">lun–vie</span>
+          <Field variant="outlined" className="w-36" data-invalid={!valores.horaInicio || undefined}>
+            <FieldLabel htmlFor="config-hora-inicio">Desde</FieldLabel>
+            <DatePicker id="config-hora-inicio" mode="time" value={valores.horaInicio} onChange={(v) => cambiar({ horaInicio: v })} />
+          </Field>
+          <span>a</span>
+          <Field variant="outlined" className="w-36" data-invalid={!valores.horaFin || undefined}>
+            <FieldLabel htmlFor="config-hora-fin">Hasta</FieldLabel>
+            <DatePicker id="config-hora-fin" mode="time" value={valores.horaFin} onChange={(v) => cambiar({ horaFin: v })} />
+          </Field>
+        </div>
+        <div className={ITEM_CONFIG}>
+          <label htmlFor={idSabado}>sáb</label>
+          <Switch id={idSabado} checked={valores.incluyeSabado} onCheckedChange={(v) => cambiar({ incluyeSabado: v })} />
+        </div>
+        {incompleto && <p role="alert" className="text-red">Indique la hora de inicio y la de fin.</p>}
+      </fieldset>
+      <p className="flex items-start gap-2 text-muted-foreground">
+        <InfoIcon aria-hidden className="mt-px size-4 shrink-0" />
+        Fuera del horario no se envían avisos por correo; la campana sí.
       </p>
-      {horarioIncompleto && (
-        <p role="alert" className="text-red">Indique la hora de inicio y la de fin, o deje ambas vacías.</p>
-      )}
-      {/* M.2.CFG.1 / W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
-      <div className="flex items-start gap-3 rounded-lg border p-3">
+      {/* W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
+      <div className={ITEM_CONFIG}>
+        <label htmlFor={idMenores}>Permitir que estudiantes menores inicien conversaciones</label>
         <Switch
           id={idMenores}
           checked={valores.permitirMenoresIniciar}
-          onCheckedChange={(v) => setValores({ ...valores, permitirMenoresIniciar: v })}
+          onCheckedChange={(v) => cambiar({ permitirMenoresIniciar: v })}
         />
-        <label htmlFor={idMenores} className="leading-tight">
-          <span className="block font-medium">Permitir que estudiantes menores inicien conversaciones</span>
-          <span className="block text-muted-foreground">
-            Apagado: los estudiantes menores de edad solo responden en las conversaciones donde los incluyeron.
-          </span>
-        </label>
       </div>
-      <Button disabled={guardar.isPending || horarioIncompleto} onClick={() => guardar.mutate(valores)}>
-        Guardar
-      </Button>
+      <DialogFooter>
+        {onCancelar && (
+          <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCancelar}>
+            Cancelar
+          </Button>
+        )}
+        <Button
+          disabled={guardar.isPending || incompleto}
+          aria-busy={guardar.isPending}
+          onClick={() => guardar.mutate(valores, { onSuccess: () => onCancelar?.() })}
+        >
+          Guardar
+        </Button>
+      </DialogFooter>
     </div>
   )
 }

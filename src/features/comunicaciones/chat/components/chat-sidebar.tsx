@@ -16,11 +16,12 @@ import { ConversacionAcciones } from "@/features/comunicaciones/chat/components/
 import { AgregarCanal } from "@/features/comunicaciones/chat/components/agregar-canal"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
-import { ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
+import { ConfiguracionMensajeriaDialog, ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { GearIcon } from "@/components/ui/icons"
 import { NuevoMensajeDialog } from "@/features/comunicaciones/chat/components/nuevo-mensaje-dialog"
 import type { ModoNuevoMensaje } from "@/features/comunicaciones/chat/lib/nuevo-mensaje"
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { coincidePersona, usePersonasQuery } from "@/features/comunicaciones/chat/api/query/use-personas-query"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -128,6 +129,7 @@ export function ChatSidebar({
   const esAdministrador = roles.includes("CEVAL-RECTOR")
   const puedeModerar = esAdministrador || roles.includes("CEVAL-COORDINADOR")
   const [moderacion, setModeracion] = useState(false)
+  const [configuracion, setConfiguracion] = useState(false)
   // Historial y filtros (lib/filtros-chat.ts): en la URL para compartirlos o guardarlos como
   // marcador. El texto del buscador vive también en estado local para no perder el cursor.
   const filtrosUrl = chatRoute.useSearch()
@@ -224,16 +226,41 @@ export function ChatSidebar({
   return (
     <aside className={cn("flex min-h-0 flex-col border-r bg-chat-panel", className)}>
       <div className="relative flex h-16 shrink-0 items-center gap-2 border-b px-3">
-        {puedeModerar && (
-          <button
-            type="button"
-            aria-label="Moderación de la mensajería"
-            title="Moderación de la mensajería"
-            onClick={() => setModeracion(true)}
-            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-          >
-            <GearIcon className="size-5" />
-          </button>
+        {/* Administrador del establecimiento: menú con Moderación y "Configuración de la mensajería"
+            (M.2.CFG.1); coordinación solo modera. */}
+        {puedeModerar && esAdministrador ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="Opciones de la mensajería"
+              title="Opciones de la mensajería"
+              className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none data-popup-open:bg-muted/60"
+            >
+              <GearIcon className="size-5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuItem className="py-2.5 text-sm font-normal tracking-normal normal-case" onClick={() => setModeracion(true)}>
+                Moderación de la mensajería
+              </DropdownMenuItem>
+              <DropdownMenuItem className="py-2.5 text-sm font-normal tracking-normal normal-case" onClick={() => setConfiguracion(true)}>
+                Configuración de la mensajería
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          puedeModerar && (
+            <button
+              type="button"
+              aria-label="Moderación de la mensajería"
+              title="Moderación de la mensajería"
+              onClick={() => setModeracion(true)}
+              className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            >
+              <GearIcon className="size-5" />
+            </button>
+          )
+        )}
+        {esAdministrador && configuracion && (
+          <ConfiguracionMensajeriaDialog open onClose={() => setConfiguracion(false)} />
         )}
         {puedeModerar && (moderacion || reporteEnlazado != null) && (
           <ModeracionDialog
