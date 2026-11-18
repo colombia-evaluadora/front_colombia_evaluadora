@@ -306,7 +306,11 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 - Ver archivo: usa el `fk_tarchivo` con `POST /files/view-token/:id` (existente).
 - Errores: 400 con el mensaje del RAISE → el front lo muestra en el diálogo.
 - Mock: src/mocks/db/matricula-soportes.ts, src/mocks/handlers/matricula-soportes.ts.
-- Pendiente de decidir: si la Hoja de matrícula firmada sigue por `/hoja-firmada` o pasa a esta ruta con TIPO = HOJA_FIRMADA (el front usa esta).
+- **Hecho en el back (SSO V723–V727).** `pk_tdocumento` de documentos del convenio es la posición del documento en el convenio. La hoja firmada entra por esta ruta con TIPO = HOJA_FIRMADA; `/hoja-firmada` sigue funcionando.
+
+### 19b. Paquete de soporte (pendiente)
+- El front pide `downloadReport("matricula-paquete-soporte", { format: "pdf", filters: { IDS: [pk] } })`: un PDF con portada y anexos (documento de identidad, boletín o certificado del año anterior, hoja firmada); lo que falte se indica y no bloquea (Regla 73).
+- Falta en el back: la query `/matricula/paquete-soporte`, la clave en reporting-service y el anexado de PDF/imágenes. Hay un borrador apartado (stash del SSO «pendiente: paquete de soporte»); al retomarlo, renumerar sus migraciones sin decimales.
 
 ### 20. Digitado en el SIMAT (C.1.AGR.1, bloque 1)
 - Ruta: POST y PATCH /files/eval-col/cobertura-academica/matricula[/:ID]: sumar `FK_FUNCIONARIO_DIGITA_SIMAT` (int|null) y `FECHA_DIGITACION_SIMAT` (yyyy-MM-dd|null). El detalle devuelve `fk_funcionario_digita_simat` y `fecha_digitacion_simat`.

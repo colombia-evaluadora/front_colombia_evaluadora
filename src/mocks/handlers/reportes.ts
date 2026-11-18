@@ -49,6 +49,9 @@ const PDF_MINIMO = [
 const NOMBRE_POR_CLAVE: Record<string, string> = {
   "matricula-complementaria-sorteo": "lista-sorteo",
   "matricula-carne": "carnes-estudiantiles",
+  "matricula-hoja": "hoja-matricula",
+  "matricula-constancia": "constancia-estudio",
+  "matricula-paquete-soporte": "paquete-soporte",
   funcionarios: "funcionarios",
   establecimientos: "establecimientos",
   sedes: "sedes",
