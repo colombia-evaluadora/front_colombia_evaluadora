@@ -150,6 +150,8 @@ export const matriculaFiltersFormSchema = z.object({
   metodologia: z.string(),
   /** "" o CON_SOLICITUD: retiro solicitado (origen) o anulación pendiente (destino), Sección 2.2. */
   solicitud: z.string(),
+  /** "" | "S" | "N": sin matrícula el año anterior en la entidad territorial. */
+  nuevo: z.string(),
 })
 export type MatriculaFiltersFormInput = z.input<typeof matriculaFiltersFormSchema>
 export type MatriculaFiltersFormValues = z.infer<typeof matriculaFiltersFormSchema>
@@ -169,6 +171,7 @@ export const matriculaSearchSchema = z.object({
   tipo: z.enum(["PRINCIPAL", "COMPLEMENTARIA"]).optional().catch(undefined),
   metodologia: z.coerce.number().int().positive().optional().catch(undefined),
   solicitud: z.enum(["CON_SOLICITUD"]).optional().catch(undefined),
+  nuevo: z.enum(["S", "N"]).optional().catch(undefined),
   /** Acción de la fila de la lista que Editar abre al entrar. */
   accion: z.enum(["cambiar-grupo", "cambiar-grado", "corregir-identidad"]).optional().catch(undefined),
 })
