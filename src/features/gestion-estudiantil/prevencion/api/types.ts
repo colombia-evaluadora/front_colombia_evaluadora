@@ -244,6 +244,16 @@ export interface AccesoPrevencion {
   puede_caracterizacion?: boolean
   /** Consultar historial académico (§9.8): Supervisor de sede, Orientación, Trabajo social y Administrador. */
   puede_historial_academico?: boolean
+  /** Pestaña Embarazo y maternidad/paternidad (§9.9). */
+  ver_embarazo?: boolean
+  /** Pestaña Consumo de sustancias (§9.10). */
+  ver_consumo?: boolean
+  /** Vista Reportes recibidos de Consumo: solo orientación. */
+  ver_reportes_consumo?: boolean
+  /** «Nuevo acompañamiento» (embarazo y consumo): solo orientación. */
+  puede_crear_acomp?: boolean
+  /** «Exportar para el SIUCE» de los acompañamientos: Supervisor de sede y Administrador. */
+  puede_exportar_siuce_acomp?: boolean
 }
 
 /** `GET /estudiantes/:MATRICULA/historial` → columna `datos`. */
@@ -1246,4 +1256,336 @@ export interface HistorialAcademico {
     periodos: HistorialAcademicoObservacion[]
     final: { observacion: string | null; sin_registro: boolean } | null
   } | null
+}
+
+// --- Acompañamientos por embarazo y por consumo (§9.9, §9.10) ---
+
+export type TipoAcompanamiento = "EMBARAZO" | "CONSUMO"
+export type EstadoAcompanamiento = "ABIERTO" | "EN_SEGUIMIENTO" | "CERRADO" | "ANULADO"
+export type EstadoReporteConsumo = "PENDIENTE_REVISION" | "RECIBIDO" | "ATENDIDO"
+export type EstadoAccionAcomp = "REALIZADA" | "PENDIENTE" | "VENCIDA"
+
+/** Fila de `GET /acompanamientos` (`total_count` en cada fila). Las banderas puede_* ya miran el estado. */
+export interface AcompanamientoRow {
+  id: number
+  tipo: TipoAcompanamiento
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tsede: number
+  sede_nombre: string
+  jornada_nombre: string | null
+  grado_grupo: string
+  estado_matricula: string | null
+  estado_matricula_nombre: string | null
+  situacion_valor: string | null
+  situacion_nombre: string | null
+  sustancia_valor: string | null
+  /** Con Otra, el texto de la otra sustancia. */
+  sustancia_nombre: string | null
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  proxima_fk_accion: number | null
+  proxima_fecha: string | null
+  proxima_tipo_valor: string | null
+  proxima_tipo_nombre: string | null
+  proxima_vencida: boolean | null
+  puede_modificar: boolean
+  puede_registrar_accion: boolean
+  puede_cerrar: boolean
+  puede_anular: boolean
+  total_count: number
+}
+
+export interface AcompanamientosFiltros {
+  sede: string
+  jornada: string
+  responsable: string
+  estado: string
+}
+
+export const ACOMPANAMIENTOS_FILTROS_VACIOS: AcompanamientosFiltros = { sede: "", jornada: "", responsable: "", estado: "" }
+
+export interface AcompanamientosQueryFilters {
+  ESTABLECIMIENTO: number
+  TIPO: TipoAcompanamiento
+  SEDE: number | null
+  JORNADA: number | null
+  RESPONSABLE: number | null
+  ESTADO: string | null
+  SEARCH: string | null
+}
+
+/** Contexto de Cobertura (solo lectura) del detalle y de Ver reporte. */
+export type ContextoAcompanamiento = Record<string, unknown> & {
+  sede_nombre?: string
+  jornada_nombre?: string
+  grado_grupo?: string
+  estudiante_nombre?: string
+}
+
+export interface AcompRemision {
+  id: number
+  [k: string]: unknown
+}
+
+export interface AcompAccion {
+  id: number
+  fk_tlv_tipo: number
+  tipo_valor: string
+  tipo_nombre: string
+  fecha: string
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  descripcion: string | null
+  plazo: string | null
+  resultado: string | null
+  realizada_en: string | null
+  realizada_por: string | null
+  estado: EstadoAccionAcomp
+  remision: AcompRemision | null
+  soportes: { id: number; fk_tarchivo: number; nombre: string }[]
+  puede_registrar_resultado: boolean
+}
+
+export interface AcompDetalleEmbarazo {
+  fk_tlv_situacion: number
+  situacion_valor: string
+  situacion_nombre: string
+  fk_torientacion_atencion: number | null
+  semanas_gestacion: number | null
+  fecha_estimada_parto: string | null
+  fuente_gestacion: string | null
+  fecha_info_gestacion: string | null
+  fk_tlv_progenitor_conocido: number
+  progenitor_conocido: string
+  fk_tlv_acomp_progenitor: number
+  acompanamiento_progenitor: string
+  fk_tlv_apoyo_acudiente: number
+  apoyo_acudiente: string
+}
+
+export interface AcompDetalleConsumo {
+  fk_tlv_origen: number
+  origen_nombre: string
+  fuente_info: string | null
+  fecha_info: string | null
+  fk_tlv_sustancia: number
+  sustancia_valor: string
+  sustancia_nombre: string
+  otra_sustancia: string | null
+  fk_tlv_lugar: number
+  lugar_valor: string
+  lugar_nombre: string
+  otro_lugar: string | null
+  semanas_consumo: number | null
+  senales_riesgo: string | null
+  semanas_senales: number | null
+}
+
+export interface AcompReporteVinculado {
+  id: number
+  fecha_conocimiento: string
+  fuente: string
+  descripcion: string
+  estado: EstadoReporteConsumo
+  reportado_por: string | null
+  atendido_en: string | null
+}
+
+/** `GET /acompanamientos/:ID` → columna `datos`. */
+export interface AcompanamientoDetalle {
+  id: number
+  tipo: TipoAcompanamiento
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  descripcion: string | null
+  acuerdos: string | null
+  contexto: ContextoAcompanamiento
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  creado_en: string
+  antecedente: { id: number; fecha_conocimiento: string; cerrado_en: string | null } | null
+  cierre: { resumen: string; cerrado_en: string; cerrado_por: string | null } | null
+  anulacion: { motivo: string; anulado_en: string; anulado_por: string | null } | null
+  detalle: AcompDetalleEmbarazo | AcompDetalleConsumo | null
+  acciones: AcompAccion[]
+  reportes_vinculados: AcompReporteVinculado[]
+  puede_modificar: boolean
+  puede_registrar_accion: boolean
+  puede_cerrar: boolean
+  puede_anular: boolean
+}
+
+/** Fila de `GET /acompanamientos/estudiantes/:MATRICULA/historial` (aviso de duplicado «Ver historial»). */
+export interface AcompHistorialRow {
+  id: number
+  tipo: TipoAcompanamiento
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  situacion_nombre: string | null
+  fk_tmatricula: number
+  grado_grupo: string
+  responsable_nombre: string
+  cerrado_en: string | null
+  fk_antecedente: number | null
+}
+
+/** Selector Atención de origen. */
+export interface OpcionAtencionAcomp {
+  id: number
+  fecha: string
+  fk_tmatricula: number
+  motivo_nombre: string | null
+}
+
+/** Selector Acompañamiento abierto de Vincular reporte. */
+export interface OpcionAcompAbierto {
+  id: number
+  fecha_conocimiento: string
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  responsable_nombre: string
+}
+
+/** Fila de `GET /acompanamientos/consumo/reportes` (vista Reportes recibidos). */
+export interface ReporteConsumoRow {
+  id: number
+  fecha_conocimiento: string
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tsede: number
+  sede_nombre: string
+  jornada_nombre: string | null
+  grado_grupo: string
+  fk_tfuncionario_reporta: number | null
+  reportado_por: string | null
+  estado: EstadoReporteConsumo
+  estado_nombre: string
+  total_count: number
+}
+
+export interface ReportesConsumoFiltros {
+  sede: string
+  jornada: string
+  estado: string
+}
+
+export const REPORTES_CONSUMO_FILTROS_VACIOS: ReportesConsumoFiltros = { sede: "", jornada: "", estado: "" }
+
+export interface ReportesConsumoQueryFilters {
+  ESTABLECIMIENTO: number
+  SEDE: number | null
+  JORNADA: number | null
+  ESTADO: string | null
+  SEARCH: string | null
+}
+
+/** `GET /acompanamientos/consumo/reportes/:ID` → columna `datos`. Abrirlo lo pasa a Recibido. */
+export interface ReporteConsumoDetalle {
+  id: number
+  estado: EstadoReporteConsumo
+  estado_nombre: string
+  fecha_conocimiento: string
+  fuente: string
+  descripcion: string
+  fk_tfuncionario_reporta: number | null
+  reportado_por: string | null
+  recibido_en: string | null
+  fk_tprevencion_acompanamiento: number | null
+  atendido_en: string | null
+  contexto: ContextoAcompanamiento
+  puede_vincular: boolean
+}
+
+/** Lo que necesitan los diálogos de un acompañamiento; sale de la fila del listado o del detalle. */
+export interface ResumenAcomp {
+  id: number
+  tipo: TipoAcompanamiento
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  /** Situación (embarazo) o sustancia (consumo) para el resumen del modal. */
+  detalle_nombre: string | null
+}
+
+// Cuerpos de escritura: los nombres son los :BODY.* del endpoint (MAYÚSCULAS, sin conversión).
+
+interface AcompComunInput {
+  FECHA_CONOCIMIENTO: string
+  FK_RESPONSABLE: number
+  DESCRIPCION: string | null
+  ACUERDOS: string | null
+}
+
+export interface AcompEmbarazoInput extends AcompComunInput {
+  FK_ATENCION: number | null
+  FK_SITUACION: number
+  SEMANAS_GESTACION: number | null
+  FECHA_ESTIMADA_PARTO: string | null
+  FUENTE_GESTACION: string | null
+  FECHA_INFO_GESTACION: string | null
+  FK_PROGENITOR_CONOCIDO: number
+  FK_ACOMP_PROGENITOR: number
+  FK_APOYO_ACUDIENTE: number
+}
+
+export interface AcompConsumoInput extends AcompComunInput {
+  FK_ORIGEN: number
+  FUENTE_INFO: string | null
+  FECHA_INFO: string | null
+  FK_SUSTANCIA: number
+  OTRA_SUSTANCIA: string | null
+  FK_LUGAR: number
+  OTRO_LUGAR: string | null
+  SEMANAS_CONSUMO: number | null
+  SENALES_RIESGO: string | null
+  SEMANAS_SENALES: number | null
+}
+
+export type CrearAcompEmbarazoInput = AcompEmbarazoInput & { MATRICULA: number; CREAR_DE_TODOS_MODOS?: boolean }
+export type CrearAcompConsumoInput = AcompConsumoInput & { MATRICULA: number; CREAR_DE_TODOS_MODOS?: boolean }
+
+/** `POST /:ID/acciones`: sin ACCION crea; con ACCION edita esa acción. FK_ENTIDAD la vuelve remisión. */
+export interface AccionAcompInput {
+  id: number
+  ACCION?: number | null
+  FK_TIPO: number
+  FECHA: string
+  FK_RESPONSABLE: number
+  DESCRIPCION: string | null
+  PLAZO: string | null
+  RESULTADO: string | null
+  FK_ENTIDAD: number | null
+  MOTIVO_REMISION: string | null
+  FECHA_REMISION: string | null
+  RESPUESTA_REMISION: string | null
+  SOPORTES: number[] | null
+}
+
+export interface ResultadoAccionAcompInput {
+  accionId: number
+  RESULTADO: string
+  SOPORTES: number[] | null
+}
+
+/** `POST /consumo/reportes/:ID/vincular`: EXISTENTE con ACOMPANAMIENTO, o NUEVO con los datos de uno nuevo. */
+export type VincularReporteInput = { id: number; DESTINO: string; CREAR_DE_TODOS_MODOS?: boolean } & (
+  | { ACOMPANAMIENTO: number }
+  | Partial<AcompConsumoInput>
+)
+
+export interface ReportarConsumoInput {
+  MATRICULA: number
+  FECHA_CONOCIMIENTO: string
+  FUENTE: string
+  DESCRIPCION: string
 }
