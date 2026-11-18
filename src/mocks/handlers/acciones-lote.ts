@@ -1,6 +1,7 @@
 import { delay, http, HttpResponse } from "msw"
 
 import { matriculaDb } from "@/mocks/db/matricula"
+import { CATALOGOS_MATRICULA_NUEVOS } from "@/mocks/db/metodologia"
 import { agregarComplementaria, previaComplementaria } from "@/mocks/db/complementaria"
 
 import {
@@ -9,6 +10,7 @@ import {
   complementariaDe,
   emparejamiento,
   gruposDe,
+  marcarSimpade,
   previaCambioGrado,
   previaReingreso,
   reactivarLote,
@@ -48,10 +50,31 @@ export const accionesLoteHandlers = [
   }),
   http.post(`${BASE}/retirar`, async ({ request }) => {
     await delay(400)
-    const body = (await request.json()) as { IDS: number[]; FECHA_RETIRO: string; FK_TLV_MOTIVO_RETIRO: number }
+    const body = (await request.json()) as {
+      IDS: number[]
+      FECHA_RETIRO: string
+      FK_TLV_MOTIVO_RETIRO: number
+      INSTITUCION_DESTINO?: string | null
+    }
     if (!body.FECHA_RETIRO || !body.FK_TLV_MOTIVO_RETIRO)
       return HttpResponse.json({ message: "Indique la fecha y el motivo de retiro." }, { status: 400 })
-    return HttpResponse.json({ rows: retirarLote(body.IDS) })
+    const motivo = CATALOGOS_MATRICULA_NUEVOS.MOTIVO_RETIRO.find((m) => m.pk_lista_valor === body.FK_TLV_MOTIVO_RETIRO)
+    const traslado =
+      motivo?.nombre === "Traslado a otro establecimiento"
+        ? { fecha: body.FECHA_RETIRO, institucionDestino: body.INSTITUCION_DESTINO ?? null }
+        : undefined
+    return HttpResponse.json({ rows: retirarLote(body.IDS, traslado) })
+  }),
+  http.put("*/api/eval-col/cobertura-academica/matricula/:id/simpade", async ({ params, request }) => {
+    await delay(300)
+    const body = (await request.json()) as { FECHA_INGRESO: string; FK_FUNCIONARIO: number }
+    if (!body.FECHA_INGRESO || !body.FK_FUNCIONARIO)
+      return HttpResponse.json({ message: "Indique la fecha de ingreso y quién lo digitó." }, { status: 400 })
+    if (body.FECHA_INGRESO > new Date().toISOString().slice(0, 10))
+      return HttpResponse.json({ message: "La fecha de ingreso no puede ser posterior a hoy." }, { status: 400 })
+    const error = marcarSimpade(Number(params.id), body.FECHA_INGRESO, body.FK_FUNCIONARIO)
+    if (error) return HttpResponse.json({ message: error }, { status: 409 })
+    return HttpResponse.json({ rows: [{ pk_matricula: Number(params.id) }] })
   }),
 
   http.post(`${BASE}/reingresar/previa`, async ({ request }) => {

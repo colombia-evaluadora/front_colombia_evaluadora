@@ -11,6 +11,8 @@ interface AsignaturaRow {
   matriculada: string
   cursa_externa: string
   tiene_registros: boolean
+  /** Detalle legible de los registros de Gestión Académica (EDI.1f). */
+  registros?: string[] | null
   media_tecnica_externa?: string
   institucion_externa?: string | null
 }
@@ -22,6 +24,7 @@ const toAsignatura = (row: AsignaturaRow): MatriculaAsignatura => ({
   matriculada: row.matriculada === "S",
   externa: row.cursa_externa === "S",
   tieneRegistros: Boolean(row.tiene_registros),
+  registros: row.registros ?? [],
 })
 
 export interface MatriculaAsignaturasData {

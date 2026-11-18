@@ -22,13 +22,39 @@ const falla = (pk: number, mensaje: string): Resultado => ({ pk_matricula: pk, o
 
 /* Retirar */
 
-export function retirarLote(pks: number[]): Resultado[] {
+/** Retiros por traslado (C.1.LIS.3b): acta para el SIMPADE y si ya se ingresó. */
+export interface RetiroTraslado {
+  acta: string
+  fecha: string
+  institucionDestino: string | null
+  simpade: { fechaIngreso: string; funcionarioId: number } | null
+}
+export const retirosTraslado = new Map<number, RetiroTraslado>()
+
+// Una matrícula ya Retirada por traslado de entrada, para ver las acciones sin retirar.
+const sembrada = matriculaDb.find((m) => m.status === "Retirado")
+if (sembrada)
+  retirosTraslado.set(Number(sembrada.id), { acta: `AR-${sembrada.id}`, fecha: "2027-04-20", institucionDestino: "IE San José", simpade: null })
+
+export function marcarSimpade(pk: number, fechaIngreso: string, funcionarioId: number): string | null {
+  const r = retirosTraslado.get(pk)
+  if (!r) return "La matrícula no tiene un retiro por traslado."
+  if (r.simpade) return "El retiro ya está marcado como ingresado al SIMPADE."
+  r.simpade = { fechaIngreso, funcionarioId }
+  return null
+}
+
+export function retirarLote(
+  pks: number[],
+  traslado?: { fecha: string; institucionDestino: string | null },
+): Resultado[] {
   return pks.map((pk) => {
     const m = byPk(pk)
     if (!m) return falla(pk, "la matrícula no existe.")
     if (m.status !== "Cursando") return falla(pk, `está ${m.status}; solo se retira una matrícula Cursando.`)
     if (m.retiroSolicitado || m.anulacionPendiente) return falla(pk, "tiene una solicitud pendiente: respóndala primero.")
     m.status = "Retirado"
+    if (traslado) retirosTraslado.set(pk, { acta: `AR-${pk}`, ...traslado, simpade: null })
     return ok(pk)
   })
 }

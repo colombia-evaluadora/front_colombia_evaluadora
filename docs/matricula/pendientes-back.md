@@ -295,6 +295,61 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 - Roles: Cambiar de grado, Reactivar y Registrar autorización de datos son solo del Administrador o del Gestor administrativo del establecimiento. El front solo mira el permiso Guardar de la vista (`MATRICULA`), así que el back debe rechazar a otros roles (p. ej. el Supervisor de sede).
 - Exportar (Regla 47): los datos protegidos salen enmascarados igual que en pantalla: los de estudiantes de otros establecimientos (adscripción) y los de 2.2 a 2.9 sin autorización (tarea 16).
 
+### 19. Archivo de soporte con revisión (C.1.EDI.1–1j; Sección 2.14, Reglas 6, 23 y 73; Sección 2.16.1)
+- Pantalla: Editar matrícula, bloque 14. Cada operación se guarda al momento (no con Guardar de la matrícula).
+- Lista de valores nueva: «Resultado de la revisión del soporte» = Soportado, Soportado con observaciones, No soportado; Sin revisar es el estado inicial.
+- Ruta: GET /eval-col/cobertura-academica/matricula/:ID/soportes → filas `{ pk_tmatricula_archivo, tipo: "DOCUMENTO_IDENTIDAD"|"CERTIFICADO_ESTUDIOS"|"CERTIFICADO_MEDICO"|"HOJA_FIRMADA"|"OTRO", fk_tarchivo, archivo_nombre, archivo_tamano (bytes), subido_por, subido_at, revision: "SIN_REVISAR"|"SOPORTADO"|"SOPORTADO_OBSERVACIONES"|"NO_SOPORTADO", observacion, revisado_por, revisado_at }`. Solo los cargados; el front completa los fijos que falten.
+- Ruta: POST /files/eval-col/cobertura-academica/matricula/:ID/soportes (multipart) `{ TIPO, PK_TMATRICULA_ARCHIVO? }` + `ARCHIVO`. Sin PK: adjunta un fijo (si ya existía, lo reemplaza) o agrega uno a OTRO. Con PK: reemplaza. Siempre deja la revisión en SIN_REVISAR sin revisor ni fecha; la revisión, la observación y el nombre del archivo anteriores van a la Bitácora (Regla 73). PDF, JPG o PNG, máx. 10 MB.
+- Ruta: PUT /eval-col/cobertura-academica/matricula/:ID/soportes/:PK/revision `{ RESULTADO, OBSERVACION }`. OBSERVACION obligatoria (10–500) si RESULTADO ≠ SOPORTADO. Revisor y fecha automáticos. Va a la Bitácora.
+- Ruta: PUT /eval-col/cobertura-academica/matricula/:ID/soportes/:PK/quitar. Solo TIPO = OTRO («Los soportes fijos no se quitan: se reemplazan.»). El archivo y su revisión quedan en la Bitácora.
+- Documentos del convenio (complementaria por adscripción): GET /eval-col/cobertura-academica/matricula/:ID/documentos-convenio → `{ pk_tdocumento, nombre, entregado: "S"|"N" }` (vacío si no es adscripción); PUT .../documentos-convenio/:PK `{ ENTREGADO: "S"|"N" }`, solo el establecimiento que recibe. No bloquea la matrícula.
+- Ver archivo: usa el `fk_tarchivo` con `POST /files/view-token/:id` (existente).
+- Errores: 400 con el mensaje del RAISE → el front lo muestra en el diálogo.
+- Mock: src/mocks/db/matricula-soportes.ts, src/mocks/handlers/matricula-soportes.ts.
+- Pendiente de decidir: si la Hoja de matrícula firmada sigue por `/hoja-firmada` o pasa a esta ruta con TIPO = HOJA_FIRMADA (el front usa esta).
+
+### 20. Digitado en el SIMAT (C.1.AGR.1, bloque 1)
+- Ruta: POST y PATCH /files/eval-col/cobertura-academica/matricula[/:ID]: sumar `FK_FUNCIONARIO_DIGITA_SIMAT` (int|null) y `FECHA_DIGITACION_SIMAT` (yyyy-MM-dd|null). El detalle devuelve `fk_funcionario_digita_simat` y `fecha_digitacion_simat`.
+- Errores: 400 si hay funcionario sin fecha («La fecha de digitación en el SIMAT es obligatoria si indica quién digitó.»).
+- Front: hoy viaja solo con el mock (`camposNuevosBody` en to-create-matricula-body.ts).
+
+### 21. Estudiante existente: traslado y acudiente (C.1.AGR.1, C.1.AGR.2; Reglas 8)
+- Ruta: GET /eval-col/cobertura-academica/matricula/estudiante-existente?DOCUMENTO: sumar `tipo_documento`, `ultimo_acudiente_correo_enmascarado`, `ultimo_acudiente_telefono_enmascarado` y, si tiene una matrícula Retirada por traslado en otra IE en el período, `traslado_institucion`, `traslado_grado_valor`, `traslado_grado_nombre`, `traslado_periodo`.
+- El back debe rechazar el alta en un grado distinto al del traslado: «Por traslado, debe ser [Grado].».
+- Mock: src/mocks/handlers/estudiante-existente.ts.
+
+### 22. Ya matriculado y matrícula en otro establecimiento (C.1.AGR.6, C.1.SOL.1; Regla 71)
+- Ruta: la verificación del alta (`/coverage/matricula/check` en el mock) suma `periodo { id, label }` y `otroEstablecimiento` (boolean).
+- Mismo grado y período: el back rechaza el alta (AGR.6).
+- Cursando en otra IE: la matrícula se crea y luego POST /files/eval-col/cobertura-academica/matricula/:ID/solicitud-retiro (multipart `ARCHIVO`, PDF/JPG/PNG ≤ 10 MB) → `{ rows: [{ solicitud: { estado: "PENDIENTE" } }] }`. Errores: 400 sin evidencia o si la del origen no está Cursando.
+- Mock: src/mocks/handlers/matricula.ts, src/mocks/handlers/solicitud-retiro.ts.
+
+### 23. Retiro con institución de destino, acta y SIMPADE (C.1.RET.1a, C.1.LIS.3b, C.1.RET.5)
+- Retirar: POST /eval-col/cobertura-academica/matricula/lote/retirar suma `INSTITUCION_DESTINO` (string|null).
+- Listado `/matricula/query`: por fila `retiro_traslado` ("S"|"N"), `acta_retiro`, `fecha_retiro`, `simpade_ingresado` ("S"|"N").
+- Marcar SIMPADE: PUT /eval-col/cobertura-academica/matricula/:ID/simpade `{ FECHA_INGRESO, FK_FUNCIONARIO }` → `{ rows: [{ pk_matricula }] }`. Errores: 400 (faltan datos o fecha futura), 409 (sin retiro por traslado o ya marcado). Solo Administrador y Gestor administrativo; queda en la Bitácora.
+- Acta: reporte `matricula-acta-retiro` (`/reportes/matricula-acta-retiro`, `filters: { IDS: [pk] }`), PDF. Sin mock en reportes.
+- Mock: src/mocks/db/acciones-lote.ts, src/mocks/handlers/acciones-lote.ts, src/mocks/handlers/matricula.ts.
+
+### 24. Solicitud de retiro: vencimiento (C.1.SOL.2; Regla 71)
+- GET /eval-col/cobertura-academica/matricula/:ID/solicitud-retiro suma `vence` (yyyy-MM-dd).
+- Mock: src/mocks/db/solicitud-retiro.ts (a 5 días de la solicitud).
+
+### 25. Asignaturas: detalle de registros (C.1.EDI.1f)
+- GET /eval-col/cobertura-academica/matricula/:ID/asignaturas suma `registros: string[]` por fila (p. ej. «4 resultados en el Registro de Resultados», «La definitiva del Período 1»); vacío si `tiene_registros` es falso.
+- Mock: src/mocks/db/matricula-asignaturas.ts.
+
+### 26. Exportar con todos los datos de la matrícula (C.1.LIS.4–5; Regla 47)
+- Listado `/matricula/query` suma `birth_date`, `address`, `phone`, `guardian_relationship`, `guardian_email`, `asignaturas` (conteo y especialidad) y `soportes` (nombres de los cargados).
+- Reporte `matricula`: `columns` admite `tipo_matricula`, `birth_date`, `address`, `phone`, `guardian_relationship`, `guardian_email`, `asignaturas`, `soportes`. Pie: «Generado por… Los archivos de soporte no se exportan…».
+- Mock: src/mocks/handlers/matricula.ts (valores fijos).
+
+### 27. Aviso por inasistencia continua (C.1.AVI.1; Regla 74)
+- Proceso diario: con 30 días calendario sin asistir ni excusa válida (sin contar días inhábiles del Calendario Académico), notificación solo en la campana al Administrador y al Gestor administrativo del establecimiento. No retira solo.
+- Notificación: tipo `MATRICULA_INASISTENCIA` («Aviso del sistema»), `deep_link` al detalle de la matrícula, `contexto` «Matrícula · [grupo]», `acciones: [{ etiqueta: "Retirar", deep_link }]`.
+- Front: Retirar hoy abre la lista filtrada por el documento; falta abrir el retiro con el motivo de la novedad preseleccionado.
+- Mock: src/mocks/db/notificaciones.ts.
+
 ## Formato para nuevas tareas
 
 ```

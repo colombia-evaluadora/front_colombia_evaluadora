@@ -61,6 +61,7 @@ import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
 import { matriculaHandlers } from "@/mocks/handlers/matricula"
 import { notasHomologadasHandlers } from "@/mocks/handlers/notas-homologadas"
 import { matriculaAsignaturasHandlers } from "@/mocks/handlers/matricula-asignaturas"
+import { matriculaSoportesHandlers } from "@/mocks/handlers/matricula-soportes"
 import { unificarEstudiantesHandlers } from "@/mocks/handlers/unificar-estudiantes"
 import { solicitudRetiroHandlers } from "@/mocks/handlers/solicitud-retiro"
 import { reactivarHandlers } from "@/mocks/handlers/reactivar"
@@ -136,6 +137,7 @@ export const handlers = [
   ...relacionesAlumnoGrupoHandlers,
   // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
   ...conservacionDatosHandlers,
+  ...matriculaSoportesHandlers,
   ...citacionesCompromisosHandlers,
   ...reconocimientosHandlers,
   ...academicAssignmentListHandlers,

@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon, ShieldCheckIcon, StackIcon } from "@/components/ui/icons"
+import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon, ShieldCheckIcon, StackIcon, FilePdfIcon, ClipboardCheckIcon } from "@/components/ui/icons"
+import { downloadReport } from "@/lib/report-client"
+import { DialogMarcarSimpade } from "@/features/coverage/matricula/components/dialogs/dialog-marcar-simpade"
 import { useEffect, useState } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 import { DialogUnificarEstudiantes } from "@/features/coverage/matricula/components/dialogs/dialog-unificar-estudiantes"
 import {
+  DialogAccionBloqueada,
   DialogAnularMatricula,
   DialogResponderSolicitudRetiro,
 } from "@/features/coverage/matricula/components/dialogs/dialog-solicitud-retiro"
@@ -92,6 +95,14 @@ export const MATRICULA_INITIAL_VISIBILITY = {
   guardian: false,
   metodologiaGrupo: false,
   nuevo: false,
+  tipoMatricula: false,
+  birthDate: false,
+  address: false,
+  phone: false,
+  guardianDetail: false,
+  guardianEmail: false,
+  asignaturas: false,
+  soportes: false,
 }
 
 export const MATRICULA_EXPORT_COLUMN_KEYS: Partial<Record<string, string | string[]>> = {
@@ -249,6 +260,54 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     cell: ({ row }) => <span className="max-w-xs truncate">{row.original.guardian}</span>,
   },
   {
+    id: "tipoMatricula",
+    accessorFn: (m) => (m.tipo === "COMPLEMENTARIA" ? "Complementaria" : "Principal"),
+    meta: { label: "Tipo de matrícula" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo de matrícula" />,
+  },
+  {
+    id: "birthDate",
+    accessorKey: "birthDate",
+    meta: { label: "Fecha de nacimiento" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha de nacimiento" />,
+  },
+  {
+    id: "address",
+    accessorKey: "address",
+    meta: { label: "Dirección" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Dirección" />,
+  },
+  {
+    id: "phone",
+    accessorKey: "phone",
+    meta: { label: "Teléfono" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Teléfono" />,
+  },
+  {
+    id: "guardianDetail",
+    accessorFn: (m) => [m.guardianRelationship, m.guardian].filter(Boolean).join(" · "),
+    meta: { label: "Acudiente (parentesco y nombre)" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Acudiente (parentesco y nombre)" />,
+  },
+  {
+    id: "guardianEmail",
+    accessorKey: "guardianEmail",
+    meta: { label: "Email acudiente" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email acudiente" />,
+  },
+  {
+    id: "asignaturas",
+    accessorKey: "asignaturas",
+    meta: { label: "Asignaturas matriculadas" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Asignaturas matriculadas" />,
+  },
+  {
+    id: "soportes",
+    accessorKey: "soportes",
+    meta: { label: "Soportes cargados" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Soportes cargados" />,
+  },
+  {
     id: "status",
     accessorKey: "status",
     meta: { label: "Estado" },
@@ -271,9 +330,9 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
   {
     id: "ageSituation",
     accessorKey: "ageSituation",
-    meta: { label: "Situación de edad" },
+    meta: { label: "Edad" },
     // El backend la calcula por fila; no tiene orden propio.
-    header: () => <span>Situación de edad</span>,
+    header: () => <span>Edad</span>,
     cell: ({ row }) => (
       <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
         {AGE_SITUATION_LABELS[row.original.ageSituation ?? "SIN_CALCULAR"]}
@@ -379,6 +438,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
             <ReingresarMatriculaDialog matricula={row.original} />
           </OnlineOnlyAction>
         ) : null}
+        <RetiroTrasladoAcciones matricula={row.original} />
         <RegistrarAutorizacionAccion matricula={row.original} />
         <AgregarComplementariaAccion matricula={row.original} />
         <CambiarEspecialidadAccion matricula={row.original} />
@@ -386,6 +446,53 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
         <AccionesEditar matricula={row.original} />
         <UnificarAccion matricula={row.original} />
       </div>
+  )
+}
+
+/**
+ * Retirado por traslado (C.1.LIS.3b / RET.5): generar el acta de retiro (PDF) y
+ * marcarla como ingresada al SIMPADE; esta última sale mientras no esté marcada.
+ */
+function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
+  const { puedeEditar } = useMenuPermission("MATRICULA")
+  const { notify } = useNotify()
+  const [abierto, setAbierto] = useState(false)
+  const [generando, setGenerando] = useState(false)
+  if (matricula.status !== "Retirado" || !matricula.retiroTraslado) return null
+  const nombre = `${matricula.firstName} ${matricula.lastName}`
+
+  async function generarActa() {
+    setGenerando(true)
+    const r = await downloadReport("matricula-acta-retiro", { format: "pdf", filters: { IDS: [Number(matricula.id)] } })
+    setGenerando(false)
+    if (r.status !== "ok") notify(r.message, { variant: "error" })
+  }
+
+  return (
+    <>
+      <OnlineOnlyAction>
+        <BotonAccion
+          modo="icon"
+          label="Generar acta de retiro"
+          ariaLabel={`Generar acta de retiro de ${nombre}`}
+          Icon={FilePdfIcon}
+          disabled={generando}
+          onClick={() => void generarActa()}
+        />
+      </OnlineOnlyAction>
+      {puedeEditar && !matricula.simpadeIngresado ? (
+        <OnlineOnlyAction>
+          <BotonAccion
+            modo="icon"
+            label="Marcar como ingresado al SIMPADE"
+            ariaLabel={`Marcar como ingresado al SIMPADE: ${nombre}`}
+            Icon={ClipboardCheckIcon}
+            onClick={() => setAbierto(true)}
+          />
+          {abierto ? <DialogMarcarSimpade matricula={matricula} onClose={() => setAbierto(false)} /> : null}
+        </OnlineOnlyAction>
+      ) : null}
+    </>
   )
 }
 
@@ -467,7 +574,6 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
     matricula.tipo === "COMPLEMENTARIA" ||
     matricula.tieneComplementaria ||
     !matricula.puedeAgregarComplementaria ||
-    matricula.retiroSolicitado ||
     matricula.anulacionPendiente
   )
     return null
@@ -480,7 +586,16 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
         Icon={StackIcon}
         onClick={() => setAbierto(true)}
       />
-      {abierto ? <DialogAgregarComplementaria matricula={matricula} onOpenChange={setAbierto} /> : null}
+      {/* Con retiro solicitado (Regla 71) abre el aviso de acción bloqueada (SOL.4b). */}
+      {abierto && matricula.retiroSolicitado ? (
+        <DialogAccionBloqueada
+          matricula={matricula}
+          accion="Agregar matrícula complementaria"
+          onClose={() => setAbierto(false)}
+        />
+      ) : abierto ? (
+        <DialogAgregarComplementaria matricula={matricula} onOpenChange={setAbierto} />
+      ) : null}
     </OnlineOnlyAction>
   )
 }
@@ -492,23 +607,28 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
 function AccionesEditar({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const [abierto, setAbierto] = useState<"grupo" | "grado" | null>(null)
+  const [bloqueada, setBloqueada] = useState<string | null>(null)
   if (!puedeEditar || matricula.status !== "Cursando") return null
-  // Con retiro solicitado (Regla 71) no se cambia de grupo ni de grado; corregir identidad sí.
-  const cambios = !matricula.retiroSolicitado && !matricula.anulacionPendiente
+  // Con retiro solicitado (Regla 71) los cambios se muestran pero abren el aviso de
+  // acción bloqueada (SOL.4b); con anulación pendiente no se ofrecen. Corregir identidad sí.
+  const cambios = !matricula.anulacionPendiente
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   const cerrar = (open: boolean) => !open && setAbierto(null)
+  const abrir = (accion: "grupo" | "grado", label: string) =>
+    matricula.retiroSolicitado ? setBloqueada(label) : setAbierto(accion)
   return (
     <>
       {cambios ? (
         <>
           <OnlineOnlyAction>
-            <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => setAbierto("grupo")} />
+            <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => abrir("grupo", "Cambiar de grupo")} />
           </OnlineOnlyAction>
           <OnlineOnlyAction>
-            <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => setAbierto("grado")} />
+            <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => abrir("grado", "Cambiar de grado")} />
           </OnlineOnlyAction>
         </>
       ) : null}
+      {bloqueada ? <DialogAccionBloqueada matricula={matricula} accion={bloqueada} onClose={() => setBloqueada(null)} /> : null}
       <OnlineOnlyAction>
         <Tooltip>
           <TooltipTrigger

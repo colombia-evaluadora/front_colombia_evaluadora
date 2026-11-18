@@ -60,12 +60,26 @@ export interface Matricula {
   group: string
   enrollmentDate: string
   guardian: string
+  // Datos que solo se ven al exportar o al activar la columna (Regla 47).
+  birthDate?: string
+  address?: string
+  phone?: string
+  guardianRelationship?: string
+  guardianEmail?: string
+  asignaturas?: string
+  soportes?: string
   status: MatriculaStatus
   hasGrades: boolean
   /** Solo la trae el listado (fn_situacion_edad, sección 3.7.2). */
   ageSituation?: AgeSituation
   /** Retiro pedido por otro establecimiento (Regla 71): bloquea los cambios académicos. */
   retiroSolicitado?: boolean
+  /** Establecimiento que pidió el retiro (texto del bloqueo de acciones). */
+  retiroSolicitadoPor?: string | null
+  /** Retirado por traslado: acta para el SIMPADE (C.1.LIS.3b). `fecha` yyyy-MM-dd. */
+  retiroTraslado?: { acta: string; fecha: string } | null
+  /** El retiro por traslado ya se marcó como ingresado al SIMPADE. */
+  simpadeIngresado?: boolean
   /** Destino que debe anular tras «Cerrar sin retiro» (Regla 71): mismas restricciones. */
   anulacionPendiente?: boolean
   /** Traslado con snapshot sin homologar (Sección 4.5). */
@@ -227,6 +241,10 @@ export interface MatriculaAcademicInfo {
   internado?: string
   /** Autorización de tratamiento de datos del acudiente (Regla 81): opcional. */
   autorizacionDatos?: boolean
+  /** Funcionario que digitó la matrícula en el SIMAT (opcional). */
+  funcionarioDigitaSimat?: string
+  /** yyyy-MM-dd; obligatoria si hay funcionario. */
+  fechaDigitacionSimat?: string
 }
 
 /** Fila del bloque 15: una asignatura del plan de estudio del grado. */
@@ -238,6 +256,8 @@ export interface MatriculaAsignatura {
   externa: boolean
   /** Con notas o definitivas: no se desmatricula ni cambia "externa". */
   tieneRegistros: boolean
+  /** Qué registros impiden desmatricular (p. ej. "La definitiva del Período 1"). */
+  registros: string[]
 }
 
 /** Lo que la persona cambió sobre el plan, por id de asignatura. */
@@ -373,6 +393,10 @@ export interface MatriculaConfigCampoPatch {
 export interface MatriculaDocumentCheckResult {
   exists: boolean
   matricula: Matricula | null
+  /** Período de esa matrícula (pendiente en el back): para distinguir el duplicado (AGR.6). */
+  periodo?: { id: number; label: string } | null
+  /** Es de otro establecimiento: se matricula igual y se pide el retiro allá (SOL.1). */
+  otroEstablecimiento?: boolean
 }
 
 export type BulkGradeChangeSubKind = "promocion" | "correccion" | "reubicacion"

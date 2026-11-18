@@ -45,6 +45,8 @@ export function solicitudDe(pk: number) {
     establecimiento_origen: origen ? "IE Central" : "IE Norte",
     fecha_solicitud: fecha,
     dias_sin_respuesta: dias,
+    // Plazo de respuesta: 5 días desde la solicitud (vencida si ya pasó).
+    vence: new Date(Date.parse(fecha) + 5 * 86_400_000).toISOString().slice(0, 10),
     estado,
     evidencia_nombre: "certificado-estudios.pdf",
     fk_tarchivo_evidencia: 900000 + pk,

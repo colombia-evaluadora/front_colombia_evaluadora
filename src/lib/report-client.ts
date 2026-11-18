@@ -32,6 +32,7 @@ export type ReportKey =
   | "matricula"
   | "matricula-complementaria-sorteo"
   | "matricula-carne"
+  | "matricula-acta-retiro"
   | "informes"
   | "informes-tabla"
   | "boletin"

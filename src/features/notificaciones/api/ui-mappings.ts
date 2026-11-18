@@ -51,8 +51,15 @@ export const ENLACE_POR_TIPO: Record<string, string> = {
  */
 export const TIPO_AUTORIZACION_PENDIENTE = "AUTORIZACION_PENDIENTE"
 
+/**
+ * AVI.1 (Matrícula): el estudiante lleva 30 días calendario sin asistir. El deep link
+ * abre la matrícula; la acción "Retirar" lleva a la lista filtrada por el documento.
+ */
+export const TIPO_MATRICULA_INASISTENCIA = "MATRICULA_INASISTENCIA"
+
 export const ETIQUETA_POR_TIPO: Record<string, string> = {
   [TIPO_AUTORIZACION_PENDIENTE]: "Autorización pendiente",
+  [TIPO_MATRICULA_INASISTENCIA]: "Aviso del sistema",
 }
 
 /** Tipos cuyo cuerpo es el enlace (se pinta como tal en lugar de la bajada normal). */

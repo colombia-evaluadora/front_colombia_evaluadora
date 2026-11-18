@@ -9,6 +9,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, PaperclipIcon, SpinnerIcon, UploadSimpleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
+import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
@@ -92,6 +93,8 @@ const datosSolicitud = (s: SolicitudRetiro, matricula: Matricula): [string, Reac
 export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone }: Props) {
   const { data: solicitud, isPending, isError, error: errorCarga } = useSolicitudRetiroQuery(matricula.id)
   const responder = useResponderSolicitudRetiro()
+  // SOL.2: primero el resumen de la solicitud; Objetar y Retirar llevan a su paso.
+  const [paso, setPaso] = useState<"resumen" | "responder">("resumen")
   const [accion, setAccion] = useState<"retirar" | "objetar">("retirar")
   const [motivo, setMotivo] = useState("")
   const [evidencia, setEvidencia] = useState<File | null>(null)
@@ -132,6 +135,76 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
         ),
       onError: (err) => setError({ id: Date.now(), message: getErrorMessage(err) }),
     })
+  }
+
+  if (paso === "resumen") {
+    const ir = (a: "retirar" | "objetar") => {
+      setAccion(a)
+      setPaso("responder")
+    }
+    return (
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Retiro solicitado por otro establecimiento</DialogTitle>
+          </DialogHeader>
+          {isPending ? (
+            <Cargando />
+          ) : isError ? (
+            <p className="p-6 text-center text-sm text-red">{getErrorMessage(errorCarga)}</p>
+          ) : (
+            <>
+              <p className="text-sm">
+                {solicitud.establecimientoSolicitante} solicita el retiro de {nombre} ({matricula.group}). Evidencia:{" "}
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <PaperclipIcon className="size-4 text-muted-foreground" aria-hidden />
+                  {solicitud.evidenciaNombre}
+                </span>
+              </p>
+              <table className="w-full overflow-hidden rounded-md border border-border text-sm">
+                <thead className="bg-muted/40 text-left text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">Fecha de la solicitud</th>
+                    <th className="px-4 py-2 font-medium">Estado</th>
+                    <th className="px-4 py-2 font-medium">Vence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-border">
+                    <td className="px-4 py-2 tabular-nums">{formatFecha(solicitud.fecha)}</td>
+                    <td className="px-4 py-2">
+                      <Badge
+                        variant="soft"
+                        color={solicitud.estado === "VENCIDA" ? "destructive" : "warning"}
+                        className="rounded-full text-xs font-medium tracking-normal"
+                      >
+                        {ESTADO_SOLICITUD_LABEL[solicitud.estado]}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2 tabular-nums">{solicitud.vence ? formatFecha(solicitud.vence) : "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-sm text-muted-foreground">
+                Lleva {solicitud.diasSinRespuesta} {solicitud.diasSinRespuesta === 1 ? "día" : "días"} sin respuesta del
+                establecimiento.
+              </p>
+            </>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="outline" color="primary" size="sm" disabled={!solicitud} onClick={() => ir("objetar")}>
+              Objetar
+            </Button>
+            <Button type="button" variant="fill" color="destructive" size="sm" disabled={!solicitud} onClick={() => ir("retirar")}>
+              Retirar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
@@ -262,6 +335,56 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
           >
             {responder.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : null}
             {accion === "retirar" ? "Retirar" : "Objetar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * Acción bloqueada por retiro solicitado (SOL.4b, Regla 71): la acción se ve en la
+ * fila, pero al pulsarla se explica el bloqueo y se ofrece responder la solicitud.
+ */
+export function DialogAccionBloqueada({
+  matricula,
+  accion,
+  onClose,
+}: {
+  matricula: Matricula
+  accion: string
+  onClose: () => void
+}) {
+  const { notify } = useNotify()
+  const [verSolicitud, setVerSolicitud] = useState(false)
+  const nombre = `${matricula.firstName} ${matricula.lastName}`
+  if (verSolicitud)
+    return (
+      <DialogResponderSolicitudRetiro
+        matricula={matricula}
+        onOpenChange={(o) => !o && onClose()}
+        onDone={(mensaje) => {
+          onClose()
+          notify(mensaje, { variant: "success" })
+        }}
+      />
+    )
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{accion}</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm">
+          La matrícula de {nombre} tiene un retiro solicitado por {matricula.retiroSolicitadoPor || "otro establecimiento"}.
+          Responda la solicitud (Retirar u Objetar) para continuar.
+        </p>
+        <DialogFooter>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={onClose}>
+            Entendido
+          </Button>
+          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setVerSolicitud(true)}>
+            Ver solicitud
           </Button>
         </DialogFooter>
       </DialogContent>

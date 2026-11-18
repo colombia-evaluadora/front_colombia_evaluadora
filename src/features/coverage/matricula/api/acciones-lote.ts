@@ -76,6 +76,8 @@ export interface RetirarLoteInput {
   motivoRetiroId: number
   motivoNovedad: string
   observacion: string
+  /** Solo con motivo «Traslado a otro establecimiento»; opcional. */
+  institucionDestino?: string
 }
 
 export function useRetirarLote() {
@@ -87,6 +89,7 @@ export function useRetirarLote() {
         FK_TLV_MOTIVO_RETIRO: v.motivoRetiroId,
         MOTIVO_NOVEDAD: v.motivoNovedad,
         OBSERVACION: v.observacion || null,
+        INSTITUCION_DESTINO: v.institucionDestino?.trim() || null,
       }),
     ),
   )

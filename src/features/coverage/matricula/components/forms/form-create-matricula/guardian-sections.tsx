@@ -113,6 +113,7 @@ export function MatriculaGuardianSection({
           transform={extranjero ? aDocumentoAlfanumerico : undefined}
           maxLength={20}
           disabled={identityDisabled}
+          description="Se busca al salir del campo; si ya existe, carga sus datos protegidos."
           onChange={(documentNumber) => onChange({ ...value, documentNumber })}
         />
       )}
