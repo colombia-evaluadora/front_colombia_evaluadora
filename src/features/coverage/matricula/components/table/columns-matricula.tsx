@@ -1,9 +1,7 @@
-import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { ArrowsDownUpIcon, ArrowsLeftRightIcon, EyeIcon, IdentificationCardIcon, PencilIcon, UserSwitchIcon, EnvelopeIcon, ProhibitIcon, ArrowCounterClockwiseIcon, CloudSyncIcon, ShieldCheckIcon, StackIcon, FilePdfIcon, ClipboardCheckIcon } from "@/components/ui/icons"
@@ -29,7 +27,7 @@ import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-
 import type { AgeSituation, Matricula } from "@/features/coverage/matricula/api/types/matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
-import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
+import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import { BadgeComplementaria } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
 import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/components/dialogs/dialog-registrar-autorizacion"
 import { DialogAgregarComplementaria } from "@/features/coverage/matricula/components/dialogs/dialog-agregar-complementaria"
@@ -375,48 +373,32 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
  */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const navigate = useNavigate()
   const row = { original: matricula }
+  const nombre = `${row.original.firstName} ${row.original.lastName}`
 
   return (
-      <div className="flex items-center justify-end gap-1">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label={`Ver ${row.original.firstName} ${row.original.lastName}`}
-                render={<Link to={paths.app.coberturaMatriculaDetalle.getHref(row.original.id)} search={(prev) => ({ ...prev, accion: undefined })} />}
-                nativeButton={false}
-              />
-            }
-          >
-            <EyeIcon />
-          </TooltipTrigger>
-          <TooltipContent>{`Ver ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
-        </Tooltip>
+      <AccionesFila limite={4}>
+        <BotonAccion
+          modo="icon"
+          label="Ver"
+          ariaLabel={`Ver ${nombre}`}
+          Icon={EyeIcon}
+          onClick={() =>
+            void navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(row.original.id), search: (prev) => ({ ...prev, accion: undefined }) })
+          }
+        />
         {puedeEditar && row.original.status === "Cursando" && (
           <OnlineOnlyAction>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
-                  render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} search={(prev) => ({ ...prev, accion: undefined })} />}
-                  nativeButton={false}
-                />
+            <BotonAccion
+              modo="icon"
+              label="Editar"
+              ariaLabel={`Editar ${nombre}`}
+              Icon={PencilIcon}
+              onClick={() =>
+                void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(row.original.id), search: (prev) => ({ ...prev, accion: undefined }) })
               }
-            >
-              <PencilIcon />
-            </TooltipTrigger>
-            <TooltipContent>{`Editar ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
-          </Tooltip>
+            />
           </OnlineOnlyAction>
         )}
         <OnlineOnlyAction>
@@ -445,7 +427,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
         <AccionesDocumentos matricula={row.original} />
         <AccionesEditar matricula={row.original} />
         <UnificarAccion matricula={row.original} />
-      </div>
+      </AccionesFila>
   )
 }
 
@@ -606,6 +588,7 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
  */
 function AccionesEditar({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const navigate = useNavigate()
   const [abierto, setAbierto] = useState<"grupo" | "grado" | null>(null)
   const [bloqueada, setBloqueada] = useState<string | null>(null)
   if (!puedeEditar || matricula.status !== "Cursando") return null
@@ -630,29 +613,15 @@ function AccionesEditar({ matricula }: { matricula: Matricula }) {
       ) : null}
       {bloqueada ? <DialogAccionBloqueada matricula={matricula} accion={bloqueada} onClose={() => setBloqueada(null)} /> : null}
       <OnlineOnlyAction>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label={`Corregir datos de identidad de ${nombre}`}
-                render={
-                  <Link
-                    to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)}
-                    search={(prev) => ({ ...prev, accion: "corregir-identidad" })}
-                  />
-                }
-                nativeButton={false}
-              />
-            }
-          >
-            <IdentificationCardIcon />
-          </TooltipTrigger>
-          <TooltipContent>Corregir datos de identidad</TooltipContent>
-        </Tooltip>
+        <BotonAccion
+          modo="icon"
+          label="Corregir datos de identidad"
+          ariaLabel={`Corregir datos de identidad de ${nombre}`}
+          Icon={IdentificationCardIcon}
+          onClick={() =>
+            void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(matricula.id), search: (prev) => ({ ...prev, accion: "corregir-identidad" }) })
+          }
+        />
       </OnlineOnlyAction>
       {abierto === "grupo" ? <DialogCambiarGrupo matriculas={[matricula]} onOpenChange={cerrar} /> : null}
       {abierto === "grado" ? <DialogCambiarGrado matriculas={[matricula]} onOpenChange={cerrar} /> : null}
@@ -673,23 +642,7 @@ function UnificarAccion({ matricula }: { matricula: Matricula }) {
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Unificar estudiantes: ${nombre}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <UserSwitchIcon />
-        </TooltipTrigger>
-        <TooltipContent>Unificar estudiantes</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={"Unificar estudiantes"} ariaLabel={`Unificar estudiantes: ${nombre}`} Icon={UserSwitchIcon} onClick={() => setAbierto(true)} />
       {abierto ? (
         <DialogUnificarEstudiantes
           open
@@ -721,23 +674,7 @@ function SolicitudRetiroAccion({ matricula }: { matricula: Matricula }) {
   const Dialogo = origen ? DialogResponderSolicitudRetiro : DialogAnularMatricula
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color={origen ? "neutral" : "destructive"}
-              size="icon-sm"
-              aria-label={`${label}: ${matricula.firstName} ${matricula.lastName}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          {origen ? <EnvelopeIcon /> : <ProhibitIcon />}
-        </TooltipTrigger>
-        <TooltipContent>{label}</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={label} ariaLabel={`${label}: ${matricula.firstName} ${matricula.lastName}`} Icon={origen ? EnvelopeIcon : ProhibitIcon} onClick={() => setAbierto(true)} destructivo={!origen} />
       {abierto ? (
         <Dialogo
           matricula={matricula}
@@ -763,23 +700,7 @@ function ReactivarAccion({ matricula }: { matricula: Matricula }) {
   if (!puedeEditar || !ESTADOS_REACTIVABLES.includes(matricula.status)) return null
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Reactivar la matrícula de ${matricula.firstName} ${matricula.lastName}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <ArrowCounterClockwiseIcon />
-        </TooltipTrigger>
-        <TooltipContent>Reactivar</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={"Reactivar"} ariaLabel={`Reactivar la matrícula de ${matricula.firstName} ${matricula.lastName}`} Icon={ArrowCounterClockwiseIcon} onClick={() => setAbierto(true)} />
       {abierto ? (
         <DialogReactivarMatricula
           matricula={matricula}
@@ -804,23 +725,7 @@ function HomologarSnapshotAccion({ matricula }: { matricula: Matricula }) {
   if (!puedeEditar || matricula.status !== "Cursando" || !matricula.snapshotPendiente) return null
   return (
     <OnlineOnlyAction>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Homologar desde snapshot: ${matricula.firstName} ${matricula.lastName}`}
-              onClick={() => setAbierto(true)}
-            />
-          }
-        >
-          <CloudSyncIcon />
-        </TooltipTrigger>
-        <TooltipContent>Homologar desde snapshot</TooltipContent>
-      </Tooltip>
+      <BotonAccion modo="icon" label={"Homologar desde snapshot"} ariaLabel={`Homologar desde snapshot: ${matricula.firstName} ${matricula.lastName}`} Icon={CloudSyncIcon} onClick={() => setAbierto(true)} />
       {abierto ? <HomologarSnapshotDialogo matricula={matricula} onClose={() => setAbierto(false)} /> : null}
     </OnlineOnlyAction>
   )
