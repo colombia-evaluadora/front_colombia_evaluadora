@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { useSedesInformeQuery } from "@/features/academic-management/reports/api/query/use-cascada-query"
+import { useSedesGeQuery } from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import {
@@ -12,7 +12,7 @@ import {
 
 /**
  * Búsqueda, filtros aplicados y borrador del panel de Observaciones y sugerencias. Sede → Jornada →
- * Grado/Grupo y Período salen de la cascada de Informes (la misma del Observador, acotada al alcance);
+ * Grado/Grupo y Período salen de la cascada de GE (la misma del Observador, acotada al alcance);
  * «Dirigida a», de la lista `DESTINATARIOS_OBSERVACION`.
  *
  * El listado abre en el período en curso (G.7.LIS.1: «IE Central · Mañana» y «Período 1» ya aplicados):
@@ -24,7 +24,7 @@ export function useObservacionesFiltros(goToPage: (page: number) => void) {
   const [filtros, setFiltros] = useState<ObservacionesFiltros>(OBSERVACIONES_FILTROS_VACIOS)
   const [borrador, setBorrador] = useState<ObservacionesFiltros>(OBSERVACIONES_FILTROS_VACIOS)
 
-  const sedes = useSedesInformeQuery()
+  const sedes = useSedesGeQuery()
   const aplicadas = useOpcionesCascada(filtros.sede, filtros.jornada)
   const delBorrador = useOpcionesCascada(borrador.sede, borrador.jornada)
   const destinatarios = useCatalogo("DESTINATARIOS_OBSERVACION")

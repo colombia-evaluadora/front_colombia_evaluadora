@@ -69,7 +69,7 @@ Estado: **Cubierto** (el backend entrega lo que la pantalla necesita), **Parcial
 | Pantalla de parámetros del servicio social (menú Configuración) | — | Fuera (B5) |
 | Portal del acudiente (Regla 5) | — | Fuera (B6) |
 
-Selectores: Sede, Jornada y Grados desde `useOpcionesCascada`. Grados usa `gradoOpciones` (grados únicos por `gradoId`/`gradoNombre`) y `gradoCodigos` (código del catálogo GRADOS por `gradoId`). Período desde `usePeriodoAcademicoDeJornada`, que lee `/informes/jornadas`. Tipo desde `useCatalogo("TIPO_ACTIVIDAD_EXTRA")`.
+Selectores: Sede, Jornada y Grados desde `useOpcionesCascada`. Grados usa `gradoOpciones` (grados únicos por `gradoId`/`gradoNombre`) y `gradoCodigos` (código del catálogo GRADOS por `gradoId`). Período desde `usePeriodoAcademicoDeJornada`, que lee `/gestion-estudiantil/opciones/jornadas`. Tipo desde `useCatalogo("TIPO_ACTIVIDAD_EXTRA")`.
 
 **Brechas del backend**
 
@@ -98,7 +98,7 @@ Todos bajo `src/features/gestion-estudiantil/actividades-extracurriculares/`.
 - `api/mutations/use-actividades-mutation.ts`: wrapper genérico de `useMutation` del módulo y el tipo `MutationCfg`.
 - `api/query-keys.ts`: claves de React Query (`actividadesKeys`); toda escritura invalida la raíz.
 - `api/query/use-actividades-query.ts`: listado, detalle, responsables y participantes de actividad; `BASE_ACTIVIDADES` y `toActividadesFilters`.
-- `api/query/use-periodo-academico-query.ts`: `usePeriodoAcademicoDeJornada`, período de una sede y jornada desde `/informes/jornadas`.
+- `api/query/use-periodo-academico-query.ts`: `usePeriodoAcademicoDeJornada`, período de una sede y jornada desde `/gestion-estudiantil/opciones/jornadas`.
 - `api/query/use-servicio-social-query.ts`: listado de servicio social, detalle por estudiante, certificado y parámetros.
 - `api/types.ts`: contrato de backend (snake_case) de actividades y servicio social, binds y filtros.
 - `api/ui-mappings.ts`: opciones de filtro de estado y colores de badge de actividad y servicio social.
@@ -179,4 +179,4 @@ Como Rector, base local, 2026-11-13.
 - **B2 Activar o inactivar para el Responsable.** Decide el Responsable del módulo si la spec se aplica en backend (V622: role_query y gate). Suposición vigente: el front muestra la acción solo cuando `puede_editar` es verdadera, es decir, a Supervisor y Administrador.
 - **B3 Banderas para retirar, registrar sesión y certificado.** Suposición vigente: retirar y nueva sesión usan `puede_inscribir` más el estado del caso; el certificado se habilita con estado CUMPLIDO y el gate del backend decide el rol.
 - **Etiqueta de auditoría.** El servidor registra la etiqueta genérica «Actividades extracurriculares: modifica una actividad» en todas las operaciones. El front la sustituye con `utils/avisos.ts`. Pedir al backend una etiqueta por operación.
-- **Período académico.** Se resuelve desde `/informes/jornadas` (`use-periodo-academico-query.ts`). Confirmar que es la fuente correcta para el período de la actividad.
+- **Período académico.** Se resuelve desde `/gestion-estudiantil/opciones/jornadas` (`use-periodo-academico-query.ts`). Confirmar que es la fuente correcta para el período de la actividad.

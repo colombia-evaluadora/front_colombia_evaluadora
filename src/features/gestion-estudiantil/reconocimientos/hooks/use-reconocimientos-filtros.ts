@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 
-import { useSedesInformeQuery } from "@/features/academic-management/reports/api/query/use-cascada-query"
+import { useSedesGeQuery } from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import {
@@ -12,7 +12,7 @@ import {
 
 /**
  * Búsqueda, filtros aplicados y borrador del panel de Reconocimientos. Sede → Jornada → Período salen de
- * la cascada de Informes (la misma del Observador, acotada al alcance); el Tipo, de `TIPO_RECONOCIMIENTO`.
+ * la cascada de GE (la misma del Observador, acotada al alcance); el Tipo, de `TIPO_RECONOCIMIENTO`.
  * Del mismo contexto sale el ESTABLECIMIENTO que piden el listado, las sugerencias y los selectores.
  */
 export function useReconocimientosFiltros(goToPage: (page: number) => void) {
@@ -22,7 +22,7 @@ export function useReconocimientosFiltros(goToPage: (page: number) => void) {
 
   const aplicadas = useOpcionesCascada(filtros.sede, filtros.jornada)
   const delBorrador = useOpcionesCascada(borrador.sede, borrador.jornada)
-  const sedes = useSedesInformeQuery()
+  const sedes = useSedesGeQuery()
   const tipos = useCatalogo("TIPO_RECONOCIMIENTO")
 
   const tipoOpciones = useMemo(() => tipos.map((t) => ({ value: t.value, label: t.label })), [tipos])
