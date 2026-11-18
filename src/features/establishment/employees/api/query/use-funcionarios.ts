@@ -16,24 +16,27 @@ import type {
 interface FuncionarioRow {
   pk_empleado: number
   tipo_documento: string | null
-  numero_documento: string
+  /** `null` sin la autorización del funcionario (Regla 116). */
+  numero_documento: string | null
   nombre_completo: string
   usuario_soporte: boolean
   roles: { id: number; nombre: string }[] | null
   designaciones: string[] | null
   estado: EstadoFuncionario
+  datos_restringidos?: boolean | null
   total_count: number
 }
 
-const toFuncionario = (row: FuncionarioRow): FuncionarioListItem => ({
+export const toFuncionario = (row: FuncionarioRow): FuncionarioListItem => ({
   id: row.pk_empleado,
   documentType: row.tipo_documento ?? "",
-  documentNumber: row.numero_documento,
+  documentNumber: row.numero_documento ?? "",
   name: row.nombre_completo,
   isSupport: row.usuario_soporte === true,
   roles: (row.roles ?? []).map((role) => role.nombre).sort((a, b) => a.localeCompare(b, "es")),
   designations: row.designaciones ?? [],
   status: row.estado,
+  dataRestricted: row.datos_restringidos === true,
 })
 
 /** Exportado: la exportación manda los mismos filtros que el listado. Roles y jornadas viajan por código. */

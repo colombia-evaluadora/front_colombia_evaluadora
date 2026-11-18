@@ -15,6 +15,11 @@ export interface FuncionarioListItem {
   /** "Responsable de grupo · 6A" (Regla 18). */
   designations: string[]
   status: EstadoFuncionario
+  /**
+   * Regla 116: el establecimiento lo agregó y el funcionario aún no le autoriza el tratamiento de
+   * datos. El SSO manda documento, contacto, nacimiento, género, foto y dirección en `null`.
+   */
+  dataRestricted: boolean
 }
 
 export interface FuncionariosFilters {
@@ -87,10 +92,20 @@ export interface FuncionarioFicha {
   annexes: Anexo[]
   canEdit: boolean
   canCorrectIdentity: boolean
+  /**
+   * Regla 116: el establecimiento lo agregó y el funcionario aún no le autoriza el tratamiento de
+   * datos. El SSO manda documento, contacto, nacimiento, género, foto y dirección en `null`.
+   */
+  dataRestricted: boolean
 }
 
 /** Persona encontrada por Tipo + Número al agregar un funcionario (Regla 11). */
 export interface PersonaPorDocumento {
+  /**
+   * Regla 116: el establecimiento lo agregó y el funcionario aún no le autoriza el tratamiento de
+   * datos. El SSO manda documento, contacto, nacimiento, género, foto y dirección en `null`.
+   */
+  dataRestricted: boolean
   userId: number
   funcionarioId: number | null
   documentTypeId: number
