@@ -22,7 +22,9 @@ export function safeDeepLink(link: string | null | undefined): string {
 
 /**
  * Rutas que el backend arma con otro nombre que el del router. `AUTORIZACION_PENDIENTE`
- * (sso #1004) lleva a `/app/cuenta?seccion=autorizaciones`; Mi cuenta vive en `/app/mi-cuenta`.
+ * (sso #1004) llevaba a `/app/cuenta?seccion=autorizaciones`; Mi cuenta vive en `/app/mi-cuenta`.
+ * El SSO ya manda `/app/mi-cuenta`, pero los avisos entregados antes conservan el enlace viejo en
+ * la bandeja: este alias se queda por compatibilidad.
  */
 const DEEP_LINK_ALIAS: Record<string, string> = {
   "/app/cuenta": "/app/mi-cuenta",
