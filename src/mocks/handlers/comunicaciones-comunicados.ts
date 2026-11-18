@@ -82,17 +82,6 @@ function incompleto(body: CrearComunicadoBody) {
 
 const INCOMPLETO = { message: "Completa el título, los destinatarios, la fecha y el contenido." }
 
-// Registro de recepción simulado: en el mock solo hay quien publica, así que la lista sale del
-// directorio de personas (unas leídas, otras no).
-const recepcionMock = (c: Comunicado) =>
-  personas.slice(0, Math.max(1, Math.min(personas.length, c.totalDestinatarios ?? 4))).map((p, i) => ({
-    usuarioId: p.id,
-    nombre: p.nombre,
-    estado: i < (c.leidos ?? 0) ? ("LEIDO" as const) : ("NO_LEIDO" as const),
-    entregadoEn: new Date(c.publicarEn) <= new Date() ? c.publicarEn : null,
-    vistoEn: i < (c.leidos ?? 0) ? new Date(Date.now() - (i + 1) * 3_600_000).toISOString() : null,
-  }))
-
 function buscarComunicado(id: string | readonly string[] | undefined) {
   return comunicados.find((x) => x.conversacionId === Number(id))
 }
@@ -134,7 +123,16 @@ function estadoDe(c: Comunicado): EstadoComunicado {
   return c.visibleHasta && c.visibleHasta < hoy ? "VENCIDO" : "PUBLICADO"
 }
 
-const conEstado = (c: Comunicado): Comunicado => ({ ...c, estado: estadoDe(c) })
+// Como comms-service: el nombre del EE sale del canal; los creados en el mock no lo traen.
+const ESTABLECIMIENTO_MOCK = "I.E. Colombia Evaluadora"
+
+const conEstado = (c: Comunicado): Comunicado => ({
+  ...c,
+  estado: estadoDe(c),
+  establecimiento: c.establecimiento ?? ESTABLECIMIENTO_MOCK,
+  // "Por: {estudiante}" solo a quien recibe (comms-service lo deja vacío para quien gestiona).
+  paraEstudiantes: c.esCreador ? [] : (c.paraEstudiantes ?? []),
+})
 
 const filaTerritorial = (c: Comunicado) => ({
   id: c.conversacionId,
@@ -168,6 +166,7 @@ const filaGestion = (c: Comunicado, gestion: boolean) => ({
   importante: !!c.importante,
   leido: gestion ? null : leidosMock.has(c.conversacionId),
   actualizadoEn: c.actualizadoEn ?? null,
+  establecimiento: c.establecimiento ?? ESTABLECIMIENTO_MOCK,
 })
 
 const MENSAJE_MIN = 10
@@ -374,16 +373,6 @@ export const comunicacionesComunicadosHandlers = [
       return HttpResponse.json({ message: "Solo quien gestiona el comunicado ve su seguimiento." }, { status: 403 })
     }
     return HttpResponse.json({ rows: [seguimientoMock(c)] })
-  }),
-
-  http.get(URL("conversaciones/:id/comunicado/recepcion"), async ({ params }) => {
-    await delay(200)
-    const c = buscarComunicado(params.id)
-    if (!c) return sinComunicado()
-    if (!c.esCreador) {
-      return HttpResponse.json({ message: "Solo quien publicó el comunicado ve su recepción." }, { status: 403 })
-    }
-    return HttpResponse.json({ rows: recepcionMock(c) })
   }),
 
   http.get(URL("conversaciones/:id/comunicado"), async ({ params }) => {
