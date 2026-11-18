@@ -25,6 +25,8 @@ interface Props {
   /** Estudiantes elegibles («Nombre · Grado/Grupo»). */
   estudiantes: Opcion[]
   periodos: Opcion[]
+  /** Sin permiso o capacidad: el botón se deshabilita, no se oculta. */
+  disabled?: boolean
 }
 
 interface Valores {
@@ -45,7 +47,7 @@ const VACIO: Valores = { estudiante: "", periodo: "", fecha: undefined, archivos
  * el endpoint, se conecta aquí con una mutación en `api/mutations/` (multipart vía `postMultipart`)
  * y se agrega la validación por campo.
  */
-export function DialogCargarObservadorFirmado({ estudiantes, periodos }: Props) {
+export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled }: Props) {
   const { data: user } = useUser()
   const [open, setOpen] = useState(false)
   const [v, setV] = useState<Valores>(VACIO)
@@ -63,7 +65,7 @@ export function DialogCargarObservadorFirmado({ estudiantes, periodos }: Props) 
         }
       }}
     >
-      <DialogTrigger render={<Button size="sm" variant="outline" color="muted" />}>
+      <DialogTrigger disabled={disabled} render={<Button size="sm" variant="outline" color="muted" />}>
         <FileUploadOutlinedIcon data-icon="inline-start" />
         Cargar observador firmado
       </DialogTrigger>

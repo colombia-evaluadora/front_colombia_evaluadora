@@ -1,19 +1,17 @@
-import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-import { ROLES_REGISTRAN_OBSERVACION } from "@/features/gestion-estudiantil/observaciones/api/ui-mappings"
+import { useCapacidadesGe } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
 
 /**
- * Permisos del menú OBSERVACIONES_SUGERENCIAS más el rol: «Nueva observación» se deshabilita (no se
- * oculta) para quien solo consulta. Que el usuario dirija un grupo lo decide el backend: el selector
- * Grado/Grupo solo trae los de su designación y el gate vuelve a validar.
+ * Permisos del menú OBSERVACIONES_SUGERENCIAS más la capacidad `observaciones_puede_registrar` que
+ * decide el backend: «Nueva observación» se deshabilita (no se oculta) para quien solo consulta y
+ * mientras carga. El selector Grado/Grupo solo trae los de su designación y el gate vuelve a validar.
  */
 export function useObservacionesAccess() {
-  const { user } = useAuth()
-  const roles = user?.roles ?? []
   const { puedeCrear, puedeVer } = useMenuPermission("OBSERVACIONES_SUGERENCIAS")
+  const { data: cap } = useCapacidadesGe()
   return {
     puedeVer,
-    puedeCrear: puedeCrear && ROLES_REGISTRAN_OBSERVACION.some((r) => roles.includes(r)),
+    puedeCrear: puedeCrear && Boolean(cap?.observaciones_puede_registrar),
   }
 }
