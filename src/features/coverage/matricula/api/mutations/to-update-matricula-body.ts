@@ -104,6 +104,11 @@ export function toUpdateMatriculaBody(
     DIRECCION_DE_LA_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityAddress),
     TELEFONO_DE_LA_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityPhone),
     CARGO_ENTIDAD_ACUDIENTE: toTextOrNull(guardianEmployment.entityPosition),
-    ...camposNuevosBody(values),
+    // El PATCH no recibe AUTORIZACION_DATOS: en la edición se registra aparte (Regla 81).
+    ...sinAutorizacion(camposNuevosBody(values)),
   }
+}
+
+function sinAutorizacion({ AUTORIZACION_DATOS: _omitida, ...resto }: ReturnType<typeof camposNuevosBody>) {
+  return resto
 }

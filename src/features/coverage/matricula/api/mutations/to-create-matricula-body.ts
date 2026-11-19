@@ -1,4 +1,3 @@
-import { env } from "@/config/env"
 import type { CreateMatriculaInput } from "@/features/coverage/matricula/api/types/matricula"
 
 function toIntOrNull(value: string | undefined | null): number | null {
@@ -86,12 +85,11 @@ export function toCreateMatriculaBody(
 }
 
 /**
- * Bloques 2.1, 2.2 y 2.8 que el back aún no recibe (docs/matricula/pendientes-back.md,
- * tarea 8). El validador de placeholders rechaza claves no declaradas, así que solo
- * viajan con el mock; al implementarlas en el SSO se quita la condición.
+ * Bloques 2.1, 2.2 y 2.8 (internado, autorización, digitación SIMAT, país, lengua,
+ * migratoria, apoyo, trastorno y SRPA). El SSO los declara en los endpoints de crear
+ * y editar (V179); el núcleo es fn_matricula_datos_complementarios_guardar_interno.
  */
 export function camposNuevosBody(values: CreateMatriculaInput) {
-  if (!env.ENABLE_API_MOCKING) return {}
   const { academic, student, complementary } = values
   return {
     INTERNADO: toIntOrNull(academic.internado),

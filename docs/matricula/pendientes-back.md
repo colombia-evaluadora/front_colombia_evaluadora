@@ -315,7 +315,7 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 ### 20. Digitado en el SIMAT (C.1.AGR.1, bloque 1)
 - Ruta: POST y PATCH /files/eval-col/cobertura-academica/matricula[/:ID]: sumar `FK_FUNCIONARIO_DIGITA_SIMAT` (int|null) y `FECHA_DIGITACION_SIMAT` (yyyy-MM-dd|null). El detalle devuelve `fk_funcionario_digita_simat` y `fecha_digitacion_simat`.
 - Errores: 400 si hay funcionario sin fecha («La fecha de digitación en el SIMAT es obligatoria si indica quién digitó.»).
-- Front: hoy viaja solo con el mock (`camposNuevosBody` en to-create-matricula-body.ts).
+- Hecho en el SSO (V191.1 columnas, V191.3 validación, V192.1 guardado y detalle, V179 endpoints). El front ya manda estos campos, y el resto de los bloques 2.1, 2.2 y 2.8, también al back real (`camposNuevosBody`); la edición omite `AUTORIZACION_DATOS`, que el PATCH no declara.
 
 ### 21. Estudiante existente: traslado y acudiente (C.1.AGR.1, C.1.AGR.2; Reglas 8)
 - Ruta: GET /eval-col/cobertura-academica/matricula/estudiante-existente?DOCUMENTO: sumar `tipo_documento`, `ultimo_acudiente_correo_enmascarado`, `ultimo_acudiente_telefono_enmascarado` y, si tiene una matrícula Retirada por traslado en otra IE en el período, `traslado_institucion`, `traslado_grado_valor`, `traslado_grado_nombre`, `traslado_periodo`.
