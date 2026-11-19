@@ -213,7 +213,7 @@ export function DialogCalificarActividad({
         </TooltipTrigger>
         <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
       </Tooltip>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>Calificar {rotuloLabel.toLowerCase()}</DialogTitle>
           <p className="text-muted-foreground text-sm">
@@ -256,7 +256,7 @@ export function DialogCalificarActividad({
           )}
         </div>
 
-        <DialogFooter className="shrink-0 sm:justify-end">
+        <DialogFooter className="m-0 shrink-0 sm:justify-end">
           {soloEnLinea.disabled && (
             <p className="text-muted-foreground mr-auto self-center text-xs">{soloEnLinea.tooltip}</p>
           )}

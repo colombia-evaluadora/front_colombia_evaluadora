@@ -92,7 +92,7 @@ function DialogMotivo({
 
   return (
     <Dialog open onOpenChange={(open) => !open && !enviar.isPending && onOpenChange(false)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">{titulo}</DialogTitle>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

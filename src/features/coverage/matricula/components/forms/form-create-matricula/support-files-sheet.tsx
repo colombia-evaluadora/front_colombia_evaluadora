@@ -401,7 +401,7 @@ export function SupportFilesSheet({
           <SheetDescription>
             {viewOnly
               ? "Documentos cargados para este estudiante."
-              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante. Se aceptan archivos PDF, JPG o PNG (la foto, solo JPG o PNG) de hasta 25 MB."}
+              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante. Se aceptan archivos PDF, JPG o PNG (la foto, solo JPG o PNG) de hasta 10 MB."}
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">

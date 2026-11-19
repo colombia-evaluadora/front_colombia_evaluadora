@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
-import { useAniosInformeQuery, useSedesInformeQuery } from "@/features/academic-management/reports/api/query/use-cascada-query"
+import { useAniosGeQuery, useSedesGeQuery } from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { useInformeQuery, type InformeInclusion } from "@/features/gestion-estudiantil/inclusion/informe/api/use-informe-query"
@@ -66,7 +66,7 @@ export function TabInforme() {
   const [anio, setAnio] = useState("")
   const [grado, setGrado] = useState("")
   const [grados, setGrados] = useState<{ value: string; label: string }[]>([])
-  const sedes = useSedesInformeQuery()
+  const sedes = useSedesGeQuery()
   const { user } = useAuth()
   const roles = user?.roles ?? []
   // fn_piar_gate_informe: un rol de sede consulta su sede; sin ella responde 403.
@@ -75,7 +75,7 @@ export function TabInforme() {
   useEffect(() => {
     if (deSede && !sede && sedeInicial) setSede(String(sedeInicial))
   }, [deSede, sede, sedeInicial])
-  const anios = useAniosInformeQuery(sede ? Number(sede) : null)
+  const anios = useAniosGeQuery(sede ? Number(sede) : null)
   const establecimiento = sedes.data?.find((s) => String(s.id) === sede)?.establecimientoId ?? sedes.data?.[0]?.establecimientoId
   const { data, isPending, error } = useInformeQuery({ establecimiento: deSede && !sede ? null : establecimiento, sede, anio, grado })
   useEffect(() => {

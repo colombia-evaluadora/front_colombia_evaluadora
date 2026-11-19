@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -23,6 +23,8 @@ interface ComboOpcionesProps {
   todos?: string | false
   required?: boolean
   error?: string
+  /** Ayuda bajo el control; se oculta mientras hay error. */
+  description?: ReactNode
   size?: "sm" | "default"
   /** Etiqueta en línea a la izquierda del control (filas compactas), en vez de flotante encima. */
   inline?: boolean
@@ -43,6 +45,7 @@ export function ComboOpciones({
   todos = "Todos",
   required,
   error,
+  description,
   size = "sm",
   inline,
   className,
@@ -77,7 +80,7 @@ export function ComboOpciones({
           ))}
         </ComboboxFieldContent>
       </ComboboxField>
-      {error && <FieldError>{error}</FieldError>}
+      {error ? <FieldError>{error}</FieldError> : description && <FieldDescription>{description}</FieldDescription>}
     </Field>
   )
 }

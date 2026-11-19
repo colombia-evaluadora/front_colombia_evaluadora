@@ -178,8 +178,8 @@ export function CrearUnidadPopover({
                   aria-label={crearLabel}
                   // Deshabilitado sin Grado/Asignatura: adentro no se podría guardar nada.
                   disabled={disabled || !hasGradoAsignatura}
-                  // `size-11` iguala la altura del `SelectTrigger`; `className` va al final para ganar.
-                  className={cn("size-11 shrink-0 rounded-md", className)}
+                  // `size-10` iguala la altura del `SelectTrigger`; `className` va al final para ganar.
+                  className={cn("size-10 shrink-0 rounded-md", className)}
                 />
               }
             />

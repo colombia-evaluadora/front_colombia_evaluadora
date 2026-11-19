@@ -26,7 +26,7 @@ interface Props {
 /** «Códigos del reporte en el SIUCE»: un código por cada afectado reportado. */
 export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso, reportados, todosReportados, error }: Props) {
   return (
-    <Field orientation="vertical" className="gap-3" data-invalid={Boolean(error) || undefined}>
+    <Field variant="outlined" orientation="vertical" className="gap-3" data-invalid={Boolean(error) || undefined}>
       <FieldLabel>Códigos del reporte en el SIUCE*</FieldLabel>
       {afectadosCaso.length > 0 && (
         <p className="text-sm text-muted-foreground">Afectados: {afectadosCaso.map((a) => a.nombre).join(", ")}</p>
@@ -84,7 +84,7 @@ export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso,
         </ul>
       )}
       {todosReportados && (
-        <Alert>
+        <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
             Con este código todos los afectados quedan reportados y el caso sale de los pendientes de reporte al SIUCE.

@@ -3,7 +3,7 @@ import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components
 import type { CasoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-caso-form"
 
 /** Tipo de situación, manifestación y lugar. */
-export function SeccionDatosCaso({ form }: { form: CasoFormState }) {
+export function SeccionDatosCaso({ form }: { form: Pick<CasoFormState, "v" | "set" | "errores" | "editar" | "tipos" | "cambiarTipo"> }) {
   const { v, set, errores, editar, tipos, cambiarTipo } = form
   const manifestaciones = useCatalogo("MANIFESTACION_SITUACION")
   const lugares = useCatalogo("LUGAR_SITUACION")

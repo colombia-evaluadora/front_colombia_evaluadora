@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { CaretDownIcon, GearIcon, XIcon } from "@/components/ui/icons"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -183,7 +183,7 @@ function ConfigurarDisponibilidadDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !actualizar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Configurar disponibilidad</DialogTitle>
           <DialogDescription>
@@ -200,10 +200,11 @@ function ConfigurarDisponibilidadDialog({
             guardar()
           }}
         >
-          <Field data-invalid={largo || undefined}>
+          <Field variant="outlined" data-invalid={largo || undefined}>
             <FieldLabel htmlFor="respuesta-automatica">Respuesta automática (Ausente)</FieldLabel>
             <Textarea
               id="respuesta-automatica"
+              className={TEXTAREA_OUTLINED}
               value={respuesta}
               rows={3}
               onChange={(e) => setRespuesta(e.target.value)}

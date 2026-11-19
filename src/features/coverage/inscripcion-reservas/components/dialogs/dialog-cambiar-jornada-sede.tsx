@@ -91,7 +91,7 @@ function Contenido({ reserva, onOpenChange, onDone }: Props & { reserva: Reserva
 
   return (
     <Dialog open onOpenChange={(open) => !open && !cambiar.isPending && onOpenChange(false)}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Cambiar jornada o sede — {reserva.estudiante}</DialogTitle>
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

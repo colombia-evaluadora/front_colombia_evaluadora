@@ -295,7 +295,7 @@ export function CambioGradoMatriculaDialog(props: CambioGradoMatriculaDialogProp
               value={gradesAction}
               onValueChange={(value) => value && setGradesAction(value as BulkGradesAction)}
               className={cn(
-                "flex min-h-11 flex-row items-center gap-6 rounded-md border border-input px-3",
+                "flex min-h-10 flex-row items-center gap-6 rounded-sm border border-input px-3",
                 masivo && "flex-wrap",
               )}
             >
@@ -325,7 +325,7 @@ export function CambioGradoMatriculaDialog(props: CambioGradoMatriculaDialogProp
           )}
         </div>
 
-        <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
+        <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-end">
           {masivo && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={handleBack}>
               <ArrowLeftIcon data-icon="inline-start" />

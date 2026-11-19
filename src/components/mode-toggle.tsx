@@ -2,6 +2,7 @@ import { SunIcon, MoonIcon } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +11,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function ModeToggle() {
+/**
+ * `ghost`: sin borde ni fondo, para cabeceras de color (sitio público); hereda
+ * el color del texto de la cabecera.
+ */
+export function ModeToggle({ appearance = "outline" }: { appearance?: "outline" | "ghost" }) {
   const { theme, setTheme } = useTheme()
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="icon" color="muted" className="bg-background" />}>
+      <DropdownMenuTrigger
+        render={
+          appearance === "ghost" ? (
+            <Button variant="ghost" size="icon" className={cn("text-current hover:bg-white/10 hover:text-current")} />
+          ) : (
+            <Button variant="outline" size="icon" color="muted" className="bg-background" />
+          )
+        }
+      >
         <SunIcon className="size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
         <MoonIcon className="absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
         <span className="sr-only">Cambiar tema</span>

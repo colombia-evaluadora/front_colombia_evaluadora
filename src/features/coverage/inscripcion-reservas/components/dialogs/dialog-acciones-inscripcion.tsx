@@ -71,7 +71,7 @@ export function AdmitirDialog({
 
   return (
     <Dialog open={n > 0} onOpenChange={(o) => !o && !admitir.isPending && onOpenChange(false)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Admitir — {plural(n)}</DialogTitle>
         </DialogHeader>
@@ -183,7 +183,7 @@ function NoAdmitirContenido({ opciones, onOpenChange, onDone }: AccionProps) {
   })
 
   return (
-    <DialogContent className="sm:max-w-md">
+    <DialogContent showCloseButton={false} className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           {porDocumentos && <WarningIcon className="size-5 text-orange" aria-hidden />}
@@ -279,7 +279,7 @@ export function AnularInscripcionDialog({
 
   return (
     <Dialog open={inscripcion != null} onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Anular inscripción {inscripcion?.numeroInscripcion}</DialogTitle>
         </DialogHeader>

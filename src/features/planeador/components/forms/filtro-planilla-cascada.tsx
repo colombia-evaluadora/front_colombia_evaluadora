@@ -160,7 +160,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
         <span className="min-w-0 truncate">
           {label ?? "Grado, grupo, asignatura y rango de fechas"}
         </span>
-        <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
+        <CaretDownIcon className="text-muted-foreground size-5 shrink-0" />
       </PopoverTrigger>
 
       <PopoverContent align="start" className="w-auto flex-row gap-0 p-0">

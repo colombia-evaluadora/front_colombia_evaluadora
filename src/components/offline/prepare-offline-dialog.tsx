@@ -422,7 +422,7 @@ export function PrepareOfflineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90dvh] min-w-0 flex-col gap-4 overflow-hidden sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] min-w-0 flex-col gap-4 overflow-hidden sm:max-w-lg">
         <DialogHeader className="min-w-0 shrink-0 pr-8">
           <DialogTitle>Preparar para usar sin conexión</DialogTitle>
           <DialogDescription>

@@ -568,7 +568,7 @@ export function DetailPreMatriculaDialog({
           </Section>
         </div>
 
-        <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-center">
+        <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-center">
           <DialogClose render={<Button size="sm" variant="fill" color="neutral" />}>
             Cerrar
           </DialogClose>

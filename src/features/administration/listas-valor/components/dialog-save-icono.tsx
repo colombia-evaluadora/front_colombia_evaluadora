@@ -108,7 +108,7 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}>
-      <DialogContent className="sm:max-w-md" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-md" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Modificar ícono" : "Nuevo ícono"}</DialogTitle>
         </DialogHeader>
@@ -194,9 +194,9 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
             checked={habilitado}
             onChange={setHabilitado}
           />
-          <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         </form>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar

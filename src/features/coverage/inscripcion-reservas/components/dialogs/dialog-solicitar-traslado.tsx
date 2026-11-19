@@ -292,7 +292,7 @@ function Contenido({ reserva, onOpenChange, onDone }: Props & { reserva: Reserva
 
   return (
     <Dialog open onOpenChange={(open) => !open && !solicitar.isPending && onOpenChange(false)}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Solicitar traslado — {reserva.estudiante}</DialogTitle>
         </DialogHeader>

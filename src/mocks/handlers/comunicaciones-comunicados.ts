@@ -82,17 +82,6 @@ function incompleto(body: CrearComunicadoBody) {
 
 const INCOMPLETO = { message: "Completa el título, los destinatarios, la fecha y el contenido." }
 
-// Registro de recepción simulado: en el mock solo hay quien publica, así que la lista sale del
-// directorio de personas (unas leídas, otras no).
-const recepcionMock = (c: Comunicado) =>
-  personas.slice(0, Math.max(1, Math.min(personas.length, c.totalDestinatarios ?? 4))).map((p, i) => ({
-    usuarioId: p.id,
-    nombre: p.nombre,
-    estado: i < (c.leidos ?? 0) ? ("LEIDO" as const) : ("NO_LEIDO" as const),
-    entregadoEn: new Date(c.publicarEn) <= new Date() ? c.publicarEn : null,
-    vistoEn: i < (c.leidos ?? 0) ? new Date(Date.now() - (i + 1) * 3_600_000).toISOString() : null,
-  }))
-
 function buscarComunicado(id: string | readonly string[] | undefined) {
   return comunicados.find((x) => x.conversacionId === Number(id))
 }
@@ -134,7 +123,16 @@ function estadoDe(c: Comunicado): EstadoComunicado {
   return c.visibleHasta && c.visibleHasta < hoy ? "VENCIDO" : "PUBLICADO"
 }
 
-const conEstado = (c: Comunicado): Comunicado => ({ ...c, estado: estadoDe(c) })
+// Como comms-service: el nombre del EE sale del canal; los creados en el mock no lo traen.
+const ESTABLECIMIENTO_MOCK = "I.E. Colombia Evaluadora"
+
+const conEstado = (c: Comunicado): Comunicado => ({
+  ...c,
+  estado: estadoDe(c),
+  establecimiento: c.establecimiento ?? ESTABLECIMIENTO_MOCK,
+  // "Por: {estudiante}" solo a quien recibe (comms-service lo deja vacío para quien gestiona).
+  paraEstudiantes: c.esCreador ? [] : (c.paraEstudiantes ?? []),
+})
 
 const filaTerritorial = (c: Comunicado) => ({
   id: c.conversacionId,
@@ -168,9 +166,54 @@ const filaGestion = (c: Comunicado, gestion: boolean) => ({
   importante: !!c.importante,
   leido: gestion ? null : leidosMock.has(c.conversacionId),
   actualizadoEn: c.actualizadoEn ?? null,
+  establecimiento: c.establecimiento ?? ESTABLECIMIENTO_MOCK,
 })
 
 const MENSAJE_MIN = 10
+
+// Tipo de destinatario del filtro (Estudiantes / Acudientes / Funcionarios), igual que la columna "Tipos".
+const GRUPO_TIPO: Record<string, "ESTUDIANTES" | "ACUDIENTES" | "FUNCIONARIOS"> = {
+  ESTUDIANTES: "ESTUDIANTES",
+  PADRES: "ACUDIENTES",
+  ACUDIENTES: "ACUDIENTES",
+  DOCENTES: "FUNCIONARIOS",
+  DIRECTIVOS: "FUNCIONARIOS",
+  ADMINISTRATIVOS: "FUNCIONARIOS",
+  FUNCIONARIOS: "FUNCIONARIOS",
+}
+
+// Orden del listado (sortBy/sortDir de comms-service); por defecto, los más recientes primero.
+const ORDEN_GESTION: Record<string, (c: Comunicado) => string | number> = {
+  fecha: (c) => c.publicarEn,
+  titulo: (c) => c.titulo.toLowerCase(),
+  publicadoPor: (c) => c.publicadoPor.toLowerCase(),
+  destinatarios: (c) => c.totalDestinatarios ?? 0,
+  estado: (c) => estadoDe(c),
+}
+
+// Seguimiento (M.1.DET.1) simulado a partir de los totales del comunicado.
+function seguimientoMock(c: Comunicado) {
+  const destinatarios = c.totalDestinatarios ?? 0
+  const sinCanal = Math.min(destinatarios, Math.floor(destinatarios * 0.04))
+  const correosFallidos = Math.min(destinatarios - sinCanal, Math.floor(destinatarios * 0.02))
+  const motivos = ["Sin correo registrado", "Sin cuenta en la plataforma", "Correo rechazado"]
+  const tipos = ["Acudiente", "Estudiante", "Funcionario"]
+  const personasSinCanal = personas.slice(0, Math.min(personas.length, sinCanal + correosFallidos)).map((p, i) => ({
+    nombre: p.nombre,
+    tipo: tipos[i % tipos.length],
+    motivo: motivos[i % motivos.length],
+    grupo: i % 3 === 2 ? null : `${6 + (i % 5)}-0${1 + (i % 3)}`,
+  }))
+  return {
+    destinatarios,
+    conAviso: Math.max(0, destinatarios - sinCanal - Math.floor(destinatarios * 0.1)),
+    correosEnviados: Math.max(0, destinatarios - sinCanal - correosFallidos),
+    correosFallidos,
+    sinCanal,
+    leidos: c.leidos ?? 0,
+    personas: personasSinCanal,
+  }
+}
 
 export const comunicacionesComunicadosHandlers = [
   http.get(URL("comunicados/gestion"), async ({ request }) => {
@@ -180,6 +223,10 @@ export const comunicacionesComunicadosHandlers = [
     const estado = p.get("estado")
     const desde = p.get("desde")
     const q = p.get("q")?.trim().toLowerCase()
+    const emisor = p.get("emisor")?.trim().toLowerCase()
+    const tipo = p.get("tipo")
+    const orden = ORDEN_GESTION[p.get("sortBy") ?? ""] ?? ORDEN_GESTION.fecha
+    const dir = p.get("sortBy") ? (p.get("sortDir") === "asc" ? 1 : -1) : -1
     const page = Math.max(0, Number(p.get("page") ?? 0) || 0)
     const pageSize = Math.min(100, Math.max(1, Number(p.get("pageSize") ?? 10) || 10))
     const gestion = pestana === "PUBLICADOS"
@@ -192,7 +239,13 @@ export const comunicacionesComunicadosHandlers = [
       .filter((c) => !estado || estadoDe(c) === estado)
       .filter((c) => !desde || c.publicarEn.slice(0, 10) >= desde)
       .filter((c) => !q || c.titulo.toLowerCase().includes(q))
-      .sort((a, b) => b.publicarEn.localeCompare(a.publicarEn))
+      .filter((c) => !emisor || c.publicadoPor.toLowerCase().includes(emisor))
+      .filter((c) => !tipo || c.audiencia.some((a) => GRUPO_TIPO[a] === tipo))
+      .sort((a, b) => {
+        const x = orden(a)
+        const y = orden(b)
+        return (x < y ? -1 : x > y ? 1 : 0) * dir
+      })
     const totalCount = filas.length
     return HttpResponse.json({
       rows: [
@@ -312,14 +365,14 @@ export const comunicacionesComunicadosHandlers = [
     return HttpResponse.json({ rows: [c] })
   }),
 
-  http.get(URL("conversaciones/:id/comunicado/recepcion"), async ({ params }) => {
+  http.get(URL("conversaciones/:id/comunicado/seguimiento"), async ({ params }) => {
     await delay(200)
     const c = buscarComunicado(params.id)
     if (!c) return sinComunicado()
     if (!c.esCreador) {
-      return HttpResponse.json({ message: "Solo quien publicó el comunicado ve su recepción." }, { status: 403 })
+      return HttpResponse.json({ message: "Solo quien gestiona el comunicado ve su seguimiento." }, { status: 403 })
     }
-    return HttpResponse.json({ rows: recepcionMock(c) })
+    return HttpResponse.json({ rows: [seguimientoMock(c)] })
   }),
 
   http.get(URL("conversaciones/:id/comunicado"), async ({ params }) => {

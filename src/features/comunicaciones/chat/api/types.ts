@@ -19,6 +19,9 @@ export type EstadoComunicado = "PROGRAMADO" | "PUBLICADO" | "VENCIDO" | "ANULADO
 export interface Conversacion {
   id: number
   nombre: string
+  // Asunto del hilo (SSO #1006): obligatorio al crear un directo o un grupo; null en foros,
+  // actividades y el asistente. La bandeja y el encabezado lo muestran como título (fallback al nombre).
+  asunto?: string | null
   tipo: TipoConversacion
   categoria: CategoriaCanal
   noLeidos: number
@@ -522,6 +525,10 @@ export interface Comunicado {
   // HTML del editor; se sanea antes de mostrarlo.
   contenidoHtml: string
   publicadoPor: string
+  // Rol de quien lo publicó ("Rector", "Coordinador"...): lo muestra el detalle (M.1.DET.1). Opcional.
+  publicadoPorRol?: string | null
+  // Nombre del establecimiento del comunicado (bandeja de estudiantes y acudientes, 3.1). Opcional.
+  establecimiento?: string | null
   esCreador: boolean
   // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
   // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
@@ -581,17 +588,6 @@ export interface AdjuntoComunicado {
   peso: number
 }
 
-// Registro de recepción por destinatario (solo lo ve quien publicó el comunicado).
-export interface RecepcionComunicado {
-  usuarioId: number
-  nombre: string
-  estado: "LEIDO" | "NO_LEIDO"
-  // Cuándo salió el aviso; null mientras siga programado.
-  entregadoEn: string | null
-  // Cuándo lo abrió; null si no lo ha visto o si lo leyó antes de existir el registro.
-  vistoEn: string | null
-}
-
 // Miembro de un canal. Bloqueado = sigue en el canal pero no puede escribir.
 export interface Miembro {
   id: number
@@ -604,6 +600,8 @@ export interface Miembro {
   enLinea: boolean
   bloqueado: boolean
   esAdmin?: boolean
+  // Quien creó el grupo (SSO #1006): marca ‹Creador› en el panel de participantes.
+  esCreador?: boolean
   // INVITADO / RECHAZADO: invitaciones que solo ve quien gestiona el grupo (no son miembros).
   estado?: EstadoMiembro
   // Disponibilidad tal como la ve quien pide la lista (comms-service con V560).

@@ -2,45 +2,64 @@ import { useState, type ComponentType } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  CaretRightIcon,
   ClockCountdownIcon,
   EnvelopeIcon,
   ListChecksIcon,
   MagnifyingGlassIcon,
   PersonAddIcon,
+  QuestionFillIcon,
   ShieldCheckIcon,
   ShieldLockIcon,
+  SignInIcon,
   ChalkboardTeacherIcon,
   UsersIcon,
   EyeSlashIcon,
+  GlobeIcon,
+  LockIcon,
+  QuestionIcon,
+  UserCircleIcon,
 } from "@/components/ui/icons"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { paths } from "@/config/paths"
+import { cn } from "@/lib/utils"
 
 type Icon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>
 
-const SERVICIOS: { icon: Icon; title: string; text: string; cta: string; to: string }[] = [
+type Tono = "primary" | "green" | "purple"
+
+// Clases literales para que Tailwind las vea. Cada servicio tiene su color de
+// acento para distinguirlos de un vistazo: primary = inscribir, verde = consultar
+// el estado, morado = verificar documentos.
+const TONOS: Record<Tono, string> = {
+  primary: "bg-primary/10 text-primary",
+  green: "bg-green/15 text-green",
+  purple: "bg-purple/15 text-purple",
+}
+
+const SERVICIOS: { icon: Icon; tono: Tono; title: string; text: string; to: string }[] = [
   {
     icon: PersonAddIcon,
+    tono: "primary",
     title: "Inscribir",
     text: "Inscripciones abiertas, con hasta 3 opciones de cupo en orden de preferencia, de uno o de varios establecimientos.",
-    cta: "Inscribir",
     to: paths.publico.inscribir.getHref(),
   },
   {
     icon: MagnifyingGlassIcon,
+    tono: "green",
     title: "Consultar inscripción",
     text: "Vea el estado de cada opción, su posición en el orden de admisión y su número de sorteo. Elija una opción o anule la inscripción.",
-    cta: "Consultar mi inscripción",
     to: paths.publico.consultarInscripcion.getHref(),
   },
   {
     icon: ShieldCheckIcon,
+    tono: "purple",
     title: "Verificar un documento",
     text: "Compruebe con el código o el QR que un boletín, certificado, constancia o carné es auténtico, y si fue reemplazado o anulado.",
-    cta: "Verificar un documento",
     to: paths.publico.verificar.getHref(),
   },
 ]
@@ -89,38 +108,32 @@ export function InicioPage() {
   return (
     <>
       <Hero />
-      <Section title="Sin crear una cuenta" subtitle="Tres servicios abiertos a cualquier persona, protegidos con un código que llega al correo.">
+      <Section icon={GlobeIcon} title="Sin crear una cuenta" subtitle="Tres servicios abiertos a cualquier persona, protegidos con un código que llega al correo.">
         <div className="grid gap-4 md:grid-cols-3">
           {SERVICIOS.map((s) => (
-            <article key={s.title} className="bg-card flex flex-col gap-3 rounded-xl border p-6">
-              <IconTile icon={s.icon} />
-              <h3 className="text-lg leading-snug font-bold">{s.title}</h3>
-              <p className="text-muted-foreground flex-1 text-sm">{s.text}</p>
-              <Button variant="outline" color="primary" className="self-start" nativeButton={false} render={<Link to={s.to} />}>
-                {s.cta}
-              </Button>
-            </article>
+            // Toda la tarjeta es el enlace (área de toque grande en móvil).
+            <Link
+              key={s.title}
+              to={s.to}
+              className="group bg-card focus-visible:ring-ring flex flex-col gap-3 rounded-xl border p-6 transition-shadow outline-none hover:border-primary-stroke hover:shadow-md focus-visible:ring-2"
+            >
+              <div className="flex items-start justify-between">
+                <IconTile icon={s.icon} tono={s.tono} />
+                <CaretRightIcon
+                  className="text-muted-foreground group-hover:text-primary size-6 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden
+                />
+              </div>
+              <h3 className="text-navy dark:text-foreground text-lg leading-snug font-bold">{s.title}</h3>
+              <p className="text-muted-foreground text-sm">{s.text}</p>
+            </Link>
           ))}
         </div>
       </Section>
 
-      <Section title="Cómo se inscribe un aspirante" muted>
-        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PASOS.map((p, i) => (
-            <li key={p.title} className="flex gap-3">
-              <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
-                {i + 1}
-              </span>
-              <div>
-                <p className="font-semibold">{p.title}</p>
-                <p className="text-muted-foreground text-sm">{p.text}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </Section>
+      <PasosInscripcion />
 
-      <Section title="Si ya tiene cuenta" subtitle="El mismo ingreso para todos; la plataforma muestra lo que corresponde a cada perfil.">
+      <Section icon={UserCircleIcon} title="Si ya tiene cuenta" subtitle="El mismo ingreso para todos; la plataforma muestra lo que corresponde a cada perfil.">
         <div className="grid gap-4 md:grid-cols-2">
           <article className="bg-card flex gap-4 rounded-xl border p-6">
             <IconTile icon={UsersIcon} />
@@ -141,29 +154,30 @@ export function InicioPage() {
             </div>
           </article>
         </div>
-        <div className="mt-6 flex flex-wrap items-center gap-4">
+        {/* "¿Olvidó su contraseña?" ya está en el formulario de inicio de sesión. */}
+        <div className="mt-6">
           <Button color="primary" nativeButton={false} render={<Link to={paths.auth.login.getHref()} />}>
+            <SignInIcon data-icon="inline-start" />
             Iniciar sesión
           </Button>
-          <Link to={paths.auth.forgotPassword.getHref()} className="text-primary text-sm hover:underline">
-            ¿Olvidó su contraseña?
-          </Link>
         </div>
       </Section>
 
-      <Section title="Su información está protegida" muted>
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <Section icon={LockIcon} title="Su información está protegida" className="bg-[#f1f5fd] dark:bg-navy/25">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PROTECCION.map((p) => (
-            <li key={p.title} className="flex flex-col gap-2">
+            <li key={p.title} className="bg-card flex items-start gap-4 rounded-xl border p-5">
               <IconTile icon={p.icon} />
-              <p className="font-semibold">{p.title}</p>
-              <p className="text-muted-foreground text-sm">{p.text}</p>
+              <div>
+                <p className="text-navy dark:text-foreground font-semibold">{p.title}</p>
+                <p className="text-muted-foreground mt-1 text-sm">{p.text}</p>
+              </div>
             </li>
           ))}
         </ul>
       </Section>
 
-      <Section title="Preguntas frecuentes">
+      <Section icon={QuestionIcon} title="Preguntas frecuentes">
         <Accordion className="bg-card rounded-xl border px-4">
           {PREGUNTAS.map((p) => (
             <AccordionItem key={p.q} value={p.q}>
@@ -179,34 +193,95 @@ export function InicioPage() {
 
 function Hero() {
   return (
-    <section className="bg-primary/10">
+    // Fondo azul muy claro y plano (prototipo U.1.INI.1);
+    // en modo oscuro se apoya en el navy para no deslumbrar.
+    <section className="bg-[#f1f5fd] dark:bg-navy/25">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-8 lg:grid-cols-[1.3fr_1fr] lg:py-16">
         <div className="flex flex-col items-start gap-5">
-          <Badge variant="soft" color="info">Plataforma de control escolar</Badge>
-          <h1 className="text-navy dark:text-foreground text-4xl font-extrabold text-balance sm:text-5xl">
-            La vida escolar de su establecimiento, en un solo lugar
+          <span className="bg-primary-22 text-primary rounded-full px-4 py-1.5 text-sm">
+            Plataforma de control escolar
+          </span>
+          <h1 className="text-navy dark:text-foreground text-4xl leading-[1.1] font-extrabold tracking-tight sm:text-5xl">
+            La vida escolar de su <span className="sm:block">establecimiento,</span>
+            <span className="sm:block">en un solo lugar</span>
           </h1>
           <p className="text-muted-foreground text-lg">
-            Inscriba a un aspirante, consulte el estado de su inscripción y verifique documentos oficiales sin crear una cuenta.
+            Inscriba a un aspirante, consulte el estado de su inscripción y verifique documentos oficiales de manera fácil y segura.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button size="lg" color="primary" nativeButton={false} render={<Link to={paths.publico.inscribir.getHref()} />}>
+            <Button
+              color="primary"
+              nativeButton={false}
+              render={<Link to={paths.publico.inscribir.getHref()} />}
+            >
               <PersonAddIcon data-icon="inline-start" />
               Inscribir
             </Button>
-            <Button size="lg" variant="outline" color="neutral" className="bg-background" nativeButton={false} render={<Link to={paths.publico.consultarInscripcion.getHref()} />}>
+            <Button
+              variant="outline"
+              color="neutral"
+              nativeButton={false}
+              render={<Link to={paths.publico.consultarInscripcion.getHref()} />}
+            >
               <MagnifyingGlassIcon data-icon="inline-start" />
               Consultar mi inscripción
             </Button>
           </div>
-          <p className="text-sm">
-            ¿Ya tiene cuenta?{" "}
-            <Link to={paths.auth.login.getHref()} className="text-primary hover:underline">
+          <p className="flex items-center gap-2 text-sm">
+            <QuestionFillIcon className="text-primary size-5" aria-hidden="true" />
+            <span className="text-navy dark:text-foreground font-medium">¿Ya tiene cuenta?</span>
+            <Link to={paths.auth.login.getHref()} className="text-primary font-medium hover:underline">
               Iniciar sesión
             </Link>
           </p>
         </div>
         <VerificarCard />
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Pasos de la inscripción como línea de tiempo: horizontal desde md (círculos
+ * unidos por una línea, texto centrado debajo) y vertical en móvil.
+ */
+function PasosInscripcion() {
+  return (
+    <section>
+      <div className="mx-auto max-w-6xl px-4 sm:px-8">
+        {/* Mismo fondo que la sección principal (Hero). */}
+        <div className="rounded-xl border bg-[#f1f5fd] p-6 sm:p-8 dark:bg-navy/25">
+          <SectionHeader icon={ListChecksIcon} title="Cómo se inscribe un aspirante" />
+
+          <ol className="mt-8 grid md:grid-cols-4">
+            {PASOS.map((p, i) => (
+              <li
+                key={p.title}
+                className="relative flex gap-4 pb-6 last:pb-0 md:flex-col md:items-center md:gap-3 md:px-3 md:pb-0 md:text-center"
+              >
+                {/* Conector hacia el siguiente paso: vertical en móvil, horizontal desde md. */}
+                {i < PASOS.length - 1 && (
+                  <span
+                    aria-hidden
+                    className="bg-primary-stroke absolute top-9 bottom-1 left-4 w-px md:top-4 md:bottom-auto md:left-[calc(50%+1.25rem)] md:h-px md:w-[calc(100%-2.5rem)]"
+                  />
+                )}
+                <span
+                  className={cn(
+                    "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                    i === 0 ? "bg-primary text-primary-foreground" : "bg-card border-primary text-primary border-2",
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-navy dark:text-foreground font-semibold">{p.title}</p>
+                  <p className="text-muted-foreground mt-1 text-sm">{p.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   )
@@ -229,17 +304,18 @@ function VerificarCard() {
         <ShieldLockIcon className="text-primary size-5" aria-hidden="true" />
         Verificar un documento
       </h2>
-      <label htmlFor="inicio-codigo" className="text-muted-foreground text-sm">
-        Escriba el código que aparece junto al código QR del documento.
-      </label>
-      <Input
-        id="inicio-codigo"
-        value={codigo}
-        onChange={(e) => setCodigo(e.target.value)}
-        placeholder="K7QM-4XPA-9TRB"
-        autoComplete="off"
-        spellCheck={false}
-      />
+      <p className="text-muted-foreground text-sm">Escriba el código que aparece junto al código QR del documento.</p>
+      <Field variant="outlined">
+        <FieldLabel htmlFor="inicio-codigo">Código del documento</FieldLabel>
+        <Input
+          id="inicio-codigo"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          placeholder="K7QM-4XPA-9TRB"
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </Field>
       <Button type="submit" color="primary" disabled={!limpio}>
         Verificar
       </Button>
@@ -247,21 +323,45 @@ function VerificarCard() {
   )
 }
 
-function Section({ title, subtitle, muted, children }: { title: string; subtitle?: string; muted?: boolean; children: React.ReactNode }) {
+function Section({
+  icon,
+  title,
+  subtitle,
+  className,
+  children,
+}: {
+  icon: Icon
+  title: string
+  subtitle?: string
+  className?: string
+  children: React.ReactNode
+}) {
   return (
-    <section className={muted ? "bg-muted/40" : undefined}>
+    <section className={className}>
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-8">
-        <h2 className="text-navy dark:text-foreground text-2xl font-bold">{title}</h2>
-        {subtitle && <p className="text-muted-foreground mt-1">{subtitle}</p>}
+        <SectionHeader icon={icon} title={title} subtitle={subtitle} />
         <div className="mt-6">{children}</div>
       </div>
     </section>
   )
 }
 
-function IconTile({ icon: Icon }: { icon: Icon }) {
+/** Título de sección: ícono a la izquierda y título (+ subtítulo) al lado; igual en todas. */
+function SectionHeader({ icon, title, subtitle }: { icon: Icon; title: string; subtitle?: string }) {
   return (
-    <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-lg">
+    <div className="flex items-center gap-3">
+      <IconTile icon={icon} />
+      <div>
+        <h2 className="text-navy dark:text-foreground text-2xl font-bold">{title}</h2>
+        {subtitle && <p className="text-muted-foreground mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+  )
+}
+
+function IconTile({ icon: Icon, tono = "primary" }: { icon: Icon; tono?: Tono }) {
+  return (
+    <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-lg", TONOS[tono])}>
       <Icon className="size-5" aria-hidden />
     </span>
   )

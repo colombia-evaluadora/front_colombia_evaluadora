@@ -43,6 +43,28 @@ export const ENLACE_POR_TIPO: Record<string, string> = {
   ROL_VENCIDO: "Abrir Roles y permisos",
 }
 
+/**
+ * Etiqueta gris sobre el título ("Autorización pendiente · 08:30", prototipo M.1.CAM.4).
+ * `AUTORIZACION_PENDIENTE` (sso #1004, categoría ESTABLECIMIENTO): un establecimiento pide
+ * la autorización de tratamiento de datos; el cuerpo ya trae "Abrir Mi cuenta · Autorizar
+ * ahora" y el deep link abre Mi cuenta › Autorizaciones.
+ */
+export const TIPO_AUTORIZACION_PENDIENTE = "AUTORIZACION_PENDIENTE"
+
+/**
+ * AVI.1 (Matrícula): el estudiante lleva 30 días calendario sin asistir. El deep link
+ * abre la matrícula; la acción "Retirar" lleva a la lista filtrada por el documento.
+ */
+export const TIPO_MATRICULA_INASISTENCIA = "MATRICULA_INASISTENCIA"
+
+export const ETIQUETA_POR_TIPO: Record<string, string> = {
+  [TIPO_AUTORIZACION_PENDIENTE]: "Autorización pendiente",
+  [TIPO_MATRICULA_INASISTENCIA]: "Aviso del sistema",
+}
+
+/** Tipos cuyo cuerpo es el enlace (se pinta como tal en lugar de la bajada normal). */
+export const CUERPO_ES_ENLACE = new Set([TIPO_AUTORIZACION_PENDIENTE])
+
 export const ESTADO_LECTURA_LABELS: Record<EstadoLectura, string> = {
   "no-leidas": "No leídas",
   leidas: "Leídas",

@@ -28,7 +28,7 @@ export function FilaCompromiso({ fila: f, numero, error, responsables, desde, ha
   const id = `compromiso-${f.key}`
   return (
     <div className="flex items-start gap-2 border-b border-border pb-3 last:border-b-0">
-      <span className="flex h-11 w-5 shrink-0 items-center text-sm font-medium">{numero}</span>
+      <span className="flex h-10 w-5 shrink-0 items-center text-sm font-medium">{numero}</span>
       <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error?.descripcion) || undefined}>
           <FieldLabel htmlFor={`${id}-descripcion`}>Descripción*</FieldLabel>

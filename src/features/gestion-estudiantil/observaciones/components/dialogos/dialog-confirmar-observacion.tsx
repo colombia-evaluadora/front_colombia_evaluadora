@@ -33,7 +33,7 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
 
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onCancelar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Confirmar la observación</DialogTitle>
           <DialogDescription>

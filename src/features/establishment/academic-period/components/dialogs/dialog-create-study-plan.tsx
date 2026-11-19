@@ -236,7 +236,7 @@ export function CreateStudyPlanDialog({
           Agregar {subjectWord}
         </DialogTrigger>
       )}
-      <DialogContent
+      <DialogContent showCloseButton={false}
         className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl"
         inert={confirmDiscardOpen || createSubjectOpen}
       >
@@ -476,7 +476,7 @@ export function CreateStudyPlanDialog({
           </form>
         </div>
 
-        <DialogFooter className="shrink-0 px-6 pb-6">
+        <DialogFooter className="m-0 shrink-0 px-6 pb-6">
           <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar

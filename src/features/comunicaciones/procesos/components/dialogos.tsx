@@ -9,8 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { Textarea } from "@/components/ui/textarea"
+import { SelectOpciones } from "@/components/select-opciones"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import {
   FUNCION_LABEL,
@@ -35,7 +35,7 @@ function Marco({ titulo, abierto, onCerrar, error, pie, children }: {
 }) {
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
         </DialogHeader>
@@ -79,9 +79,9 @@ export function DialogoTexto({ titulo, etiqueta, descripcion, accion, metodo, on
     }>
       {descripcion && <p className="text-sm text-muted-foreground">{descripcion}</p>}
       {etiqueta && (
-        <Field>
+        <Field variant="outlined">
           <FieldLabel>{etiqueta}</FieldLabel>
-          <Textarea value={texto} maxLength={1000} onChange={(e) => setTexto(e.target.value)} />
+          <Textarea className={TEXTAREA_OUTLINED} value={texto} maxLength={1000} onChange={(e) => setTexto(e.target.value)} />
         </Field>
       )}
     </Marco>
@@ -119,10 +119,10 @@ export function DialogoProceso({ proceso, onCerrar, onHecho }: { proceso?: Proce
   const texto = (name: "NOMBRE" | "OBJETO" | "REGLAMENTO" | "MOTIVO", etiqueta: string, area = false) => (
     <form.Field name={name}>
       {(f) => (
-        <Field data-invalid={f.state.meta.errors.length > 0}>
+        <Field variant="outlined" data-invalid={f.state.meta.errors.length > 0}>
           <FieldLabel>{etiqueta}</FieldLabel>
           {area
-            ? <Textarea value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} />
+            ? <Textarea className={TEXTAREA_OUTLINED} value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} />
             : <Input value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} />}
           <FieldError errors={f.state.meta.errors} />
         </Field>
@@ -146,19 +146,17 @@ export function DialogoProceso({ proceso, onCerrar, onHecho }: { proceso?: Proce
         {FUNCIONES.map((funcion) => {
           const asignados = funciones.filter((f) => f.FUNCION === funcion).map((f) => f.USUARIO)
           return (
-            <Field key={funcion}>
+            <Field variant="outlined" key={funcion}>
               <FieldLabel>{FUNCION_LABEL[funcion]}</FieldLabel>
-              <NativeSelect
+              <SelectOpciones
                 multiple
-                className="h-24"
                 value={asignados.map(String)}
-                onChange={(e) => {
-                  const ids = Array.from(e.target.selectedOptions).map((o) => Number(o.value))
+                onValueChange={(valores) => {
+                  const ids = valores.map(Number)
                   setFunciones((prev) => [...prev.filter((f) => f.FUNCION !== funcion), ...ids.map((USUARIO) => ({ USUARIO, FUNCION: funcion }))])
                 }}
-              >
-                {(personas.data ?? []).map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.nombre}</NativeSelectOption>)}
-              </NativeSelect>
+                opciones={(personas.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre }))}
+              />
             </Field>
           )
         })}
@@ -259,7 +257,7 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
   }
 
   const fecha = (k: "POSTULACION_DESDE" | "POSTULACION_HASTA" | "VOTACION_INICIO" | "VOTACION_CIERRE", etiqueta: string) => (
-    <Field>
+    <Field variant="outlined">
       <FieldLabel>{etiqueta}</FieldLabel>
       <Input type="datetime-local" value={v[k]} onChange={(e) => set(k, e.target.value)} />
     </Field>
@@ -272,34 +270,42 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
         <Button disabled={m.isPending} onClick={guardar}>Guardar</Button>
       </>
     }>
-      <Field>
+      <Field variant="outlined">
         <FieldLabel>* Cargo, representación o cupo</FieldLabel>
         <Input value={v.NOMBRE} maxLength={100} onChange={(e) => set("NOMBRE", e.target.value)} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-4">
-        <Field><FieldLabel>Titulares</FieldLabel><Input inputMode="numeric" value={v.TITULARES} onChange={(e) => set("TITULARES", e.target.value.replace(/\D/g, ""))} /></Field>
-        <Field><FieldLabel>Suplentes</FieldLabel><Input inputMode="numeric" value={v.SUPLENTES} onChange={(e) => set("SUPLENTES", e.target.value.replace(/\D/g, ""))} /></Field>
-        <Field><FieldLabel>Ejercicio desde</FieldLabel><Input type="date" value={v.EJERCICIO_DESDE} onChange={(e) => set("EJERCICIO_DESDE", e.target.value)} /></Field>
-        <Field><FieldLabel>Ejercicio hasta</FieldLabel><Input type="date" value={v.EJERCICIO_HASTA} onChange={(e) => set("EJERCICIO_HASTA", e.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Titulares</FieldLabel><Input inputMode="numeric" value={v.TITULARES} onChange={(e) => set("TITULARES", e.target.value.replace(/\D/g, ""))} /></Field>
+        <Field variant="outlined"><FieldLabel>Suplentes</FieldLabel><Input inputMode="numeric" value={v.SUPLENTES} onChange={(e) => set("SUPLENTES", e.target.value.replace(/\D/g, ""))} /></Field>
+        <Field variant="outlined"><FieldLabel>Ejercicio desde</FieldLabel><Input type="date" value={v.EJERCICIO_DESDE} onChange={(e) => set("EJERCICIO_DESDE", e.target.value)} /></Field>
+        <Field variant="outlined"><FieldLabel>Ejercicio hasta</FieldLabel><Input type="date" value={v.EJERCICIO_HASTA} onChange={(e) => set("EJERCICIO_HASTA", e.target.value)} /></Field>
       </div>
-      <Field>
+      <Field variant="outlined">
         <FieldLabel>* Método</FieldLabel>
-        <NativeSelect disabled={publicada} value={v.METODO} onChange={(e) => set("METODO", e.target.value as typeof v.METODO)}>
-          <NativeSelectOption value="VOTACION">Votación (secreta, una opción, con voto en blanco)</NativeSelectOption>
-          <NativeSelectOption value="SELECCION_MOTIVADA">Selección motivada por responsable</NativeSelectOption>
-        </NativeSelect>
+        <SelectOpciones
+          disabled={publicada}
+          value={v.METODO}
+          onValueChange={(x) => set("METODO", x as typeof v.METODO)}
+          opciones={[
+            { value: "VOTACION", label: "Votación (secreta, una opción, con voto en blanco)" },
+            { value: "SELECCION_MOTIVADA", label: "Selección motivada por responsable" },
+          ]}
+        />
       </Field>
       <Field><FieldLabel>* Pueden postularse</FieldLabel><Poblaciones valor={v.POBLACION_POSTULA} onCambio={(x) => set("POBLACION_POSTULA", x)} /></Field>
       {votacion && <Field><FieldLabel>* Votan</FieldLabel><Poblaciones valor={v.POBLACION_VOTA} onCambio={(x) => set("POBLACION_VOTA", x)} /></Field>}
-      <Field>
+      <Field variant="outlined">
         <FieldLabel>Cursos (acotan a los estudiantes; sin marcar, todos)</FieldLabel>
-        <NativeSelect multiple className="h-24" value={v.CURSOS} onChange={(e) => set("CURSOS", Array.from(e.target.selectedOptions).map((o) => o.value))}>
-          {(cursos.data ?? []).map((c) => <NativeSelectOption key={c} value={c}>{c}</NativeSelectOption>)}
-        </NativeSelect>
+        <SelectOpciones
+          multiple
+          value={v.CURSOS}
+          onValueChange={(x) => set("CURSOS", x)}
+          opciones={(cursos.data ?? []).map((c) => ({ value: c, label: c }))}
+        />
       </Field>
-      <Field>
+      <Field variant="outlined">
         <FieldLabel>Requisitos (uno por línea)</FieldLabel>
-        <Textarea value={v.REQUISITOS} onChange={(e) => set("REQUISITOS", e.target.value)} />
+        <Textarea className={TEXTAREA_OUTLINED} value={v.REQUISITOS} onChange={(e) => set("REQUISITOS", e.target.value)} />
       </Field>
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 text-sm"><Checkbox checked={v.AUTOPOSTULACION} onCheckedChange={(c) => set("AUTOPOSTULACION", Boolean(c))} /> Autopostulación</label>
@@ -313,33 +319,41 @@ export function DialogoEleccion({ proceso, eleccion, onCerrar, onHecho }: {
       </div>
       {votacion && (
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field>
+          <Field variant="outlined">
             <FieldLabel>* Jornada</FieldLabel>
-            <NativeSelect value={v.FK_JORNADA} onChange={(e) => set("FK_JORNADA", e.target.value)}>
-              <NativeSelectOption value="">Elige</NativeSelectOption>
-              {(jornadas.data ?? []).map((j) => <NativeSelectOption key={j.id} value={String(j.id)}>{j.nombre}</NativeSelectOption>)}
-            </NativeSelect>
+            <SelectOpciones
+              value={v.FK_JORNADA}
+              onValueChange={(x) => set("FK_JORNADA", x)}
+              opciones={[
+                { value: "", label: "Elige" },
+                ...(jornadas.data ?? []).map((j) => ({ value: String(j.id), label: j.nombre })),
+              ]}
+            />
           </Field>
-          <Field><FieldLabel>Umbral (%)</FieldLabel><Input inputMode="decimal" value={v.UMBRAL_PCT} onChange={(e) => set("UMBRAL_PCT", e.target.value)} /></Field>
-          <Field><FieldLabel>Participación mínima (%)</FieldLabel><Input inputMode="decimal" value={v.PARTICIPACION_MINIMA_PCT} onChange={(e) => set("PARTICIPACION_MINIMA_PCT", e.target.value)} /></Field>
+          <Field variant="outlined"><FieldLabel>Umbral (%)</FieldLabel><Input inputMode="decimal" value={v.UMBRAL_PCT} onChange={(e) => set("UMBRAL_PCT", e.target.value)} /></Field>
+          <Field variant="outlined"><FieldLabel>Participación mínima (%)</FieldLabel><Input inputMode="decimal" value={v.PARTICIPACION_MINIMA_PCT} onChange={(e) => set("PARTICIPACION_MINIMA_PCT", e.target.value)} /></Field>
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field>
+        <Field variant="outlined">
           <FieldLabel>Mecanismo ante empate o umbral</FieldLabel>
-          <NativeSelect value={v.MECANISMO_EMPATE} onChange={(e) => set("MECANISMO_EMPATE", e.target.value)}>
-            <NativeSelectOption value="DECISION">Decisión documentada</NativeSelectOption>
-            <NativeSelectOption value="NUEVA_VOTACION">Nueva votación</NativeSelectOption>
-            <NativeSelectOption value="SEGUNDA_VUELTA">Segunda vuelta</NativeSelectOption>
-          </NativeSelect>
+          <SelectOpciones
+            value={v.MECANISMO_EMPATE}
+            onValueChange={(x) => set("MECANISMO_EMPATE", x)}
+            opciones={[
+              { value: "DECISION", label: "Decisión documentada" },
+              { value: "NUEVA_VOTACION", label: "Nueva votación" },
+              { value: "SEGUNDA_VUELTA", label: "Segunda vuelta" },
+            ]}
+          />
         </Field>
-        <Field>
+        <Field variant="outlined">
           <FieldLabel>Días para reclamar (vacío: sin reclamaciones)</FieldLabel>
           <Input inputMode="numeric" value={v.RECLAMACION_DIAS} onChange={(e) => set("RECLAMACION_DIAS", e.target.value.replace(/\D/g, ""))} />
         </Field>
       </div>
       {publicada && (
-        <Field>
+        <Field variant="outlined">
           <FieldLabel>* Motivo del cambio (crea una nueva versión de la convocatoria)</FieldLabel>
           <Input value={v.MOTIVO} onChange={(e) => set("MOTIVO", e.target.value)} />
         </Field>

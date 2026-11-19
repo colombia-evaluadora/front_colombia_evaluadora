@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import {
   errorProgramacion,
   instanteABogota,
@@ -69,7 +70,7 @@ export function ProgramarMensajeDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !guardando && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{titulo ?? (editaTexto ? "Editar mensaje programado" : "Programar envío")}</DialogTitle>
           <DialogDescription>
@@ -87,19 +88,19 @@ export function ProgramarMensajeDialog({
           className="space-y-4"
         >
           {editaTexto && (
-            <Field data-invalid={(intentado && !!errorTexto) || undefined}>
+            <Field variant="outlined" data-invalid={(intentado && !!errorTexto) || undefined}>
               <FieldLabel htmlFor="programado-texto">Mensaje</FieldLabel>
               <Textarea
                 id="programado-texto"
                 value={texto}
                 maxLength={MAX_TEXTO}
                 onChange={(e) => setTexto(e.target.value)}
-                className="max-h-48 min-h-24"
+                className={cn(TEXTAREA_OUTLINED, "max-h-48 min-h-24")}
               />
               {intentado && errorTexto && <FieldError>{errorTexto}</FieldError>}
             </Field>
           )}
-          <Field data-invalid={(intentado && !!errorFecha) || undefined}>
+          <Field variant="outlined" data-invalid={(intentado && !!errorFecha) || undefined}>
             <FieldLabel htmlFor="programado-cuando">Fecha y hora de envío</FieldLabel>
             <DatePicker
               id="programado-cuando"

@@ -547,7 +547,7 @@ export function ChatComposer({
               void enviar()
             }
           }}
-          placeholder={`Enviar un mensaje a ${destino}`}
+          placeholder="Escriba un mensaje"
           className="field-sizing-content max-h-40 min-h-11 w-full resize-none bg-transparent px-3 pt-3 pb-1 text-sm outline-none placeholder:text-muted-foreground"
         />
         <div className="flex items-center gap-0.5 px-2 pb-2">

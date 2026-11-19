@@ -24,7 +24,7 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
   const r = useComiteReemplazar(integrante, onClose)
   return (
     <Dialog open={integrante != null} onOpenChange={(open) => !open && !r.pending && r.cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Reemplazar — {integrante?.cargo_nombre}</DialogTitle>
         </DialogHeader>
@@ -57,8 +57,9 @@ export function DialogReemplazarIntegrante({ integrante, periodo, onClose }: Pro
         <p className="text-xs text-muted-foreground">
           El anterior queda con Hasta = la fecha; las actas anteriores conservan sus integrantes.
         </p>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={r.pending} onClick={r.reemplazar}>
             <IconoCarga cargando={r.pending}><ArrowsLeftRightIcon data-icon="inline-start" /></IconoCarga>

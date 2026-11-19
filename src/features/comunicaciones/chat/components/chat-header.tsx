@@ -17,6 +17,9 @@ import { ETIQUETA_PERFIL, rolVisible } from "@/features/comunicaciones/chat/lib/
 import { MiembrosDialog } from "@/features/comunicaciones/chat/components/miembros-dialog"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { resumenModo } from "@/features/comunicaciones/chat/lib/modo-grupo"
+import { lineaParticipantesGrupo, tituloConversacion } from "@/features/comunicaciones/chat/lib/asunto"
+import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 
 interface ChatHeaderProps {
   conversacion: Conversacion
@@ -52,7 +55,7 @@ export function ChatHeader({
 
       {directo ? (
         <EncabezadoDirecto conversacion={c} />
-      ) : c.tipo === "GRUPO" && (c.imagenArchivoId != null || c.descripcion || resumenModo(c)) ? (
+      ) : c.tipo === "GRUPO" && (c.asunto || c.imagenArchivoId != null || c.descripcion || resumenModo(c)) ? (
         <EncabezadoGrupo conversacion={c} />
       ) : (
         <h2 className="flex min-w-0 flex-1 items-center gap-2 text-lg font-semibold">
@@ -106,7 +109,10 @@ export function ChatHeader({
 function EncabezadoGrupo({ conversacion: c }: { conversacion: Conversacion }) {
   const Icono = ICONO_CATEGORIA[c.categoria]
   const modo = resumenModo(c)
-  const subtitulo = [c.descripcion, modo].filter(Boolean).join(" · ")
+  // Con asunto (diseño §4.2): "Grupal · J. Ramírez (creador), C. Medina…" bajo el asunto.
+  const miembros = useMiembrosQuery(c.asunto ? c.id : undefined).data
+  const participantes = c.asunto && miembros ? lineaParticipantesGrupo(miembros) : null
+  const subtitulo = [participantes, c.descripcion, modo].filter(Boolean).join(" · ")
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
       {c.imagenArchivoId != null ? (
@@ -121,7 +127,12 @@ function EncabezadoGrupo({ conversacion: c }: { conversacion: Conversacion }) {
       )}
       <div className="min-w-0 leading-tight">
         <h2 className="flex items-center gap-2 text-lg leading-tight font-semibold">
-          <span className="truncate">{c.nombre}</span>
+          <span className="truncate">{tituloConversacion(c)}</span>
+          {c.asunto && (
+            <Badge variant="soft" color="info" className="shrink-0">
+              Grupal
+            </Badge>
+          )}
           {c.silenciadoHasta && (
             <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 text-muted-foreground" />
           )}
@@ -142,10 +153,13 @@ function EncabezadoDirecto({ conversacion: c }: { conversacion: Conversacion }) 
   const otro = useMiembrosQuery(c.esBot ? undefined : c.id).data?.[0]
   const estado = useEstadoPersona(otro?.id, otro)
   const perfil = c.esBot ? "Asistente virtual" : otro?.perfil ? ETIQUETA_PERFIL[otro.perfil] : null
-  // "Docente · Ausente": el estado solo si se ve (desconectado no se anuncia, como antes).
-  const subtitulo = [perfil, !c.esBot && conPunto(estado) ? ETIQUETA_DISPONIBILIDAD[estado] : null]
-    .filter(Boolean)
-    .join(" · ") || null
+  const yo = useAuth().user?.name
+  // Con asunto (diseño §4.2): el asunto de título y "Nelly Silva (acudiente) · Javier Ramírez".
+  // Sin asunto, "Docente · Ausente": el estado solo si se ve (desconectado no se anuncia, como antes).
+  const subtitulo = c.asunto
+    ? [`${c.nombre}${perfil ? ` (${perfil.toLowerCase()})` : ""}`, yo].filter(Boolean).join(" · ")
+    : [perfil, !c.esBot && conPunto(estado) ? ETIQUETA_DISPONIBILIDAD[estado] : null].filter(Boolean).join(" · ") ||
+      null
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <Avatar size="lg">
@@ -154,7 +168,7 @@ function EncabezadoDirecto({ conversacion: c }: { conversacion: Conversacion }) 
       </Avatar>
       <div className="min-w-0 leading-tight">
         <h2 className="flex items-center gap-2 text-lg leading-tight font-semibold">
-          <span className="truncate">{c.nombre}</span>
+          <span className="truncate">{tituloConversacion(c)}</span>
           {c.silenciadoHasta && (
             <BellSlashIcon aria-label="Silenciado" className="size-4 shrink-0 text-muted-foreground" />
           )}

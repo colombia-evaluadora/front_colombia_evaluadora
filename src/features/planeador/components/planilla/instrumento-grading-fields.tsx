@@ -399,7 +399,7 @@ function ListaCotejoSelect({
               className={cn(
                 inputVariants({ variant: "outlined" }),
                 inputTriggerVariants({ variant: "outlined" }),
-                "flex h-auto min-h-11 items-center justify-between gap-2 py-2 text-left",
+                "flex h-auto min-h-10 items-center justify-between gap-2 py-2 text-left",
               )}
             />
           }
@@ -429,7 +429,7 @@ function ListaCotejoSelect({
               ))
             )}
           </div>
-          <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
+          <CaretDownIcon className="text-muted-foreground size-5 shrink-0" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="max-h-72 min-w-64 overflow-y-auto">
           <DropdownMenuCheckboxItem

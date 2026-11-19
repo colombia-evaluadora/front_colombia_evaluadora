@@ -141,7 +141,8 @@ function agregarAlGrupo(c: Conversacion, yo: { id: number; nombre: string }, ids
   for (const p of nuevos) lista.push({ id: p.id, nombre: p.nombre, admin: false, desde: ++reloj, silenciado: false })
   miembrosGrupo.set(c.id, lista)
   if (nuevos.length >= AVISO_AGREGADO_DESDE) sistema(c.id, yo, `agregó a ${nuevos.length} personas a ${c.nombre}.`)
-  else for (const p of nuevos) sistema(c.id, p, `se ha unido a ${c.nombre}.`)
+  // SSO #1006: "agregó a <Nombre>" con autor = quien agrega (el front antepone el autor).
+  else for (const p of nuevos) sistema(c.id, yo, `agregó a ${p.nombre}`)
   for (const p of nuevos) {
     publicarEnLista(c, p.id)
     avisoMembresia(p.id, "CHAT_GRUPO_AGREGADO", `Te agregaron a ${c.nombre}`, `${yo.nombre} te agregó al grupo ${c.nombre}.`, `/app/comunicaciones/chat?canal=${c.id}`, yo.nombre)
@@ -186,10 +187,12 @@ function puedeAgregar(c: Conversacion, personaId: number) {
   return !!yo && (yo.admin || politicaChat.grupos?.agregar === "TODOS")
 }
 
-function aMiembro(m: MiembroGrupo): Miembro {
+function aMiembro(m: MiembroGrupo, c?: Conversacion): Miembro {
   return {
     id: m.id,
     nombre: m.nombre,
+    // SSO #1006: marca ‹Creador› en el panel de participantes.
+    esCreador: !!c && c.creadoPor === m.nombre,
     rol: m.admin ? "Administrador" : "Miembro",
     enLinea: false,
     bloqueado: false,
@@ -207,7 +210,7 @@ function perfilDe(id: number): PerfilChat {
 /** Miembros y, para quien gestiona, las invitaciones con su estado (como comms-service). */
 function listaMiembros(c: Conversacion, personaId: number): Miembro[] {
   const lista = miembrosGrupo.get(c.id) ?? []
-  const filas = lista.map(aMiembro)
+  const filas = lista.map((m) => aMiembro(m, c))
   if (!lista.find((m) => m.id === personaId)?.admin) return filas
   for (const [id, inv] of invitacionesDe(c.id)) {
     filas.push({
@@ -319,6 +322,7 @@ export const comunicacionesGruposHandlers = [
     const body = (await request.clone().json()) as {
       NOMBRE?: string
       TIPO?: string
+      ASUNTO?: string
       MIEMBROS?: number[]
       DESCRIPCION?: string | null
       MODO?: ModoGrupo
@@ -328,6 +332,10 @@ export const comunicacionesGruposHandlers = [
     await delay(200)
     const nombre = body.NOMBRE?.trim()
     if (!nombre) return error("Escribe un nombre para el grupo.", 400)
+    // SSO #1006: asunto obligatorio en un grupo (1..120).
+    const asunto = body.ASUNTO?.trim() ?? ""
+    if (!asunto) return error("Escriba el asunto de la conversación.", 400)
+    if (asunto.length > 120) return error("El asunto admite hasta 120 caracteres.", 400)
     const yo = personaDe(request)
     const grupal = (body.GRADOS?.length ?? 0) + (body.GRUPOS?.length ?? 0) + (body.ROLES?.length ?? 0) > 0
     const invitados = resolverSeleccion({ ...body, USUARIOS: body.MIEMBROS }, yo.id)
@@ -337,6 +345,7 @@ export const comunicacionesGruposHandlers = [
     const c: Conversacion = {
       id: Math.max(0, ...conversaciones.map((x) => x.id)) + 1,
       nombre,
+      asunto,
       tipo: "GRUPO",
       categoria: "GENERAL",
       noLeidos: 0,
@@ -480,7 +489,7 @@ export const comunicacionesGruposHandlers = [
     const i = lista.findIndex((x) => x.id === Number(params.miembro))
     if (i < 0) return error("La persona ya no está en el grupo.", 404)
     const [m] = lista.splice(i, 1)
-    sistema(c.id, m, `ya no está en ${c.nombre}.`)
+    sistema(c.id, yo, `retiró a ${m.nombre}`)
     miembrosActualizados(c.id)
     // A quien quitaron: sale de su lista en vivo y le queda el aviso en la campana.
     const correo = correoDe(m.id)

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNotify } from "@/components/notice/notice-context"
 import type { Conversacion } from "@/features/comunicaciones/chat/api/types"
@@ -92,10 +93,16 @@ function Formulario({
       </DialogHeader>
       <ErrorNoticeBanner error={editar.error} />
       <div className="max-h-[60dvh] space-y-4 overflow-y-auto pr-1">
-        <label className="block space-y-1.5 text-sm">
-          <span className="font-medium">Nombre del grupo</span>
-          <Input autoFocus value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} />
-        </label>
+        <Field variant="outlined">
+          <FieldLabel htmlFor={`editar-grupo-${c.id}-nombre`}>Nombre del grupo*</FieldLabel>
+          <Input
+            id={`editar-grupo-${c.id}-nombre`}
+            autoFocus
+            value={nombre}
+            maxLength={80}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+        </Field>
         <OpcionesGrupoCampos
           value={opciones}
           onChange={setOpciones}

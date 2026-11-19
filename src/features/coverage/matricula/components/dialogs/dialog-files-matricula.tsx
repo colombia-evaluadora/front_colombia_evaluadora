@@ -1,8 +1,9 @@
 import { useState } from "react"
 
+import { useSubirHojaFirmada } from "@/features/coverage/matricula/api/mutations/subir-hoja-firmada"
+import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import { Button } from "@/components/ui/button"
 import { FolderOpenIcon } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -27,6 +28,7 @@ function createEmptySupportFiles(): MatriculaSupportFiles {
     medicalCertificate: [],
     studentPhoto: [],
     otherDocuments: [],
+    signedSheet: [],
   }
 }
 
@@ -69,6 +71,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
   )
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
+  const subirHoja = useSubirHojaFirmada()
   const updateFiles = useUpdateMatriculaFiles()
   const addDocumentos = useAddMatriculaDocumentos()
 
@@ -87,6 +90,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
     files.medicalCertificate.length > 0 ||
     files.studentPhoto.length > 0 ||
     files.otherDocuments.length > 0 ||
+    files.signedSheet.length > 0 ||
     removedIds.size > 0
 
   async function handleSave() {
@@ -118,6 +122,9 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
       }
       // Las bajas (`removedIds`) ya van en el PATCH de arriba, cuyo hook
       // invalida `["matricula"]`; el de documentos invalida al terminar.
+      if (files.signedSheet[0]) {
+        await subirHoja.mutateAsync({ matriculaId: matricula.id, archivo: files.signedSheet[0] })
+      }
       const pendingUploads = files.otherDocuments
       let failedUploads: File[] = []
       if (pendingUploads.length > 0) {
@@ -162,23 +169,13 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
           Archivos
         </Button>
       ) : (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label={`Archivos de ${fullName}`}
-                onClick={() => setOpen(true)}
-              />
-            }
-          >
-            <FolderOpenIcon />
-          </TooltipTrigger>
-          <TooltipContent>{`Archivos de ${fullName}`}</TooltipContent>
-        </Tooltip>
+        <BotonAccion
+          modo="icon"
+          label="Archivos"
+          ariaLabel={`Archivos de ${fullName}`}
+          Icon={FolderOpenIcon}
+          onClick={() => setOpen(true)}
+        />
       )}
       <SupportFilesSheet
         open={open}

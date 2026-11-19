@@ -1,10 +1,16 @@
 import { useState } from "react"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ControlPointIcon, DotsThreeVerticalIcon } from "@/components/ui/icons"
+import { ControlPointIcon, DotsThreeVerticalIcon, FunnelXIcon } from "@/components/ui/icons"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { usePaginaLocal } from "@/features/comunicaciones/procesos/components/paginar"
 import { Spinner } from "@/components/ui/spinner"
@@ -12,9 +18,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
@@ -51,16 +57,22 @@ function ProcesosContent() {
   const { notify } = useNotify()
   const [nuevo, setNuevo] = useState(false)
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Procesos de postulación y elección</h1>
-        {permiso.puedeCrear && (
-          <Button onClick={() => setNuevo(true)}>
-            <ControlPointIcon data-icon="inline-start" /> Nuevo proceso
-          </Button>
-        )}
-      </div>
-      <NoticeOutlet />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            permiso.puedeCrear ? (
+              <Button onClick={() => setNuevo(true)}>
+                <ControlPointIcon data-icon="inline-start" /> Nuevo proceso
+              </Button>
+            ) : undefined
+          }
+        >
+          Procesos de postulación y elección
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+      <TableScreenBody contentClassName="flex flex-col gap-4">
       <Tabs defaultValue="mios">
         <TabsList>
           <TabsTrigger value="mios">Mis procesos</TabsTrigger>
@@ -70,7 +82,8 @@ function ProcesosContent() {
         <TabsContent value="todos"><ListaProcesos /></TabsContent>
       </Tabs>
       {nuevo && <DialogoProceso onCerrar={() => setNuevo(false)} onHecho={(m) => { setNuevo(false); notify(m) }} />}
-    </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 
@@ -111,15 +124,24 @@ function ListaProcesos() {
     <div className="flex flex-col gap-3 pt-2">
       <div className="flex flex-wrap items-end gap-2">
         <Input className="w-64" placeholder="Buscar por nombre" value={texto} onChange={(e) => filtrar(() => setTexto(e.target.value))} />
-        <NativeSelect aria-label="Estado" value={estado} onChange={(e) => filtrar(() => setEstado(e.target.value))}>
-          <NativeSelectOption value="">Estado: Todos</NativeSelectOption>
-          {(Object.keys(ESTADO_LABEL) as ProcesoFila["estado"][]).map((k) => <NativeSelectOption key={k} value={k}>{ESTADO_LABEL[k]}</NativeSelectOption>)}
-        </NativeSelect>
-        <NativeSelect aria-label="Etapa" value={etapa} onChange={(e) => filtrar(() => setEtapa(e.target.value))}>
-          <NativeSelectOption value="">Etapa: Todas</NativeSelectOption>
-          {ETAPAS.map((k) => <NativeSelectOption key={k} value={k}>{ETAPA_LABEL[k]}</NativeSelectOption>)}
-        </NativeSelect>
-        {hayFiltros && <Button variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setEstado(""); setEtapa("") })}>Limpiar filtros</Button>}
+        <SelectOpciones
+          aria-label="Estado"
+          className="w-48"
+          value={estado}
+          onValueChange={(x) => filtrar(() => setEstado(x))}
+          opciones={[
+            { value: "", label: "Estado: Todos" },
+            ...(Object.keys(ESTADO_LABEL) as ProcesoFila["estado"][]).map((k) => ({ value: k, label: ESTADO_LABEL[k] })),
+          ]}
+        />
+        <SelectOpciones
+          aria-label="Etapa"
+          className="w-48"
+          value={etapa}
+          onValueChange={(x) => filtrar(() => setEtapa(x))}
+          opciones={[{ value: "", label: "Etapa: Todas" }, ...ETAPAS.map((k) => ({ value: k, label: ETAPA_LABEL[k] }))]}
+        />
+        {hayFiltros && <Button variant="ghost" color="neutral" onClick={() => filtrar(() => { setTexto(""); setEstado(""); setEtapa("") })}><FunnelXIcon data-icon="inline-start" />Limpiar filtros</Button>}
       </div>
       <Table>
         <TableHeader>
@@ -292,26 +314,35 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
   const personas = usePersonasQuery(tipo, eleccion.puedeProponer)
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader><DialogTitle>{eleccion.nombre} › Postular</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         {eleccion.puedeProponer && (
           <>
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Proponer a otra persona (opcional)</FieldLabel>
-              <NativeSelect value={tipo} onChange={(e) => { setTipo(e.target.value as typeof tipo); setTercero("") }}>
-                {TIPOS_POBLACION.map((t) => <NativeSelectOption key={t} value={t}>{t}</NativeSelectOption>)}
-              </NativeSelect>
+              <SelectOpciones
+                value={tipo}
+                onValueChange={(x) => { setTipo(x as typeof tipo); setTercero("") }}
+                opciones={TIPOS_POBLACION.map((t) => ({ value: t, label: t }))}
+              />
             </Field>
-            <NativeSelect value={tercero} onChange={(e) => setTercero(e.target.value)}>
-              <NativeSelectOption value="">Yo mismo</NativeSelectOption>
-              {(personas.data ?? []).map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.nombre}</NativeSelectOption>)}
-            </NativeSelect>
+            <Field variant="outlined">
+              <FieldLabel>Persona</FieldLabel>
+              <SelectOpciones
+                value={tercero}
+                onValueChange={setTercero}
+                opciones={[
+                  { value: "", label: "Yo mismo" },
+                  ...(personas.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre })),
+                ]}
+              />
+            </Field>
           </>
         )}
-        <Field>
+        <Field variant="outlined">
           <FieldLabel>* Propuesta o presentación</FieldLabel>
-          <Textarea maxLength={2000} value={propuesta} onChange={(e) => setPropuesta(e.target.value)} />
+          <Textarea className={TEXTAREA_OUTLINED} maxLength={2000} value={propuesta} onChange={(e) => setPropuesta(e.target.value)} />
         </Field>
         <DialogFooter>
           <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
@@ -361,7 +392,7 @@ function DialogoTramite({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
   }
   return (
     <Dialog open onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Completar postulación</DialogTitle></DialogHeader>
         {error && <NoticeBanner onClose={() => setError(null)} variant="error" notice={{ id: 0, message: error }} />}
         {!p ? <Spinner /> : (
@@ -370,15 +401,15 @@ function DialogoTramite({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
             {p.requisitos.filter((r) => r.resultado === "SUBSANAR").map((r) => (
               <p key={r.requisito} className="text-sm text-yellow">Subsanar: {r.requisito}{r.observacion ? ` — ${r.observacion}` : ""}</p>
             ))}
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>* Propuesta o presentación</FieldLabel>
-              <Textarea maxLength={2000} value={propuesta ?? p.propuesta} onChange={(e) => setPropuesta(e.target.value)} />
+              <Textarea className={TEXTAREA_OUTLINED} maxLength={2000} value={propuesta ?? p.propuesta} onChange={(e) => setPropuesta(e.target.value)} />
             </Field>
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Documentos exigidos (reservados; hasta 5 archivos de 10 MB)</FieldLabel>
               <Input type="file" accept={EXTENSIONES} onChange={(e) => { subir(e.target.files?.[0], "SOPORTE"); e.target.value = "" }} />
             </Field>
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Autorización del acudiente (obligatoria para estudiantes; reservada)</FieldLabel>
               <Input type="file" accept={EXTENSIONES} onChange={(e) => { subir(e.target.files?.[0], "AUTORIZACION"); e.target.value = "" }} />
             </Field>

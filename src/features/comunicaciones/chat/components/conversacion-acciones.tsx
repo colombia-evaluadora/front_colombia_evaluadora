@@ -14,6 +14,7 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { ReportarDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useCerrarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/components/eliminar-de-bandeja-dialog"
+import { MiembrosDialog } from "@/features/comunicaciones/chat/components/miembros-dialog"
 
 import {
   AlertDialog,
@@ -45,6 +46,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -81,13 +83,15 @@ import {
   XSquareIcon,
   WarningIcon,
   EyeSlashIcon,
+  PersonAddIcon,
+  PersonRemoveIcon,
 } from "@/components/ui/icons"
 
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
 
 
-type Dialogo = "reportar" | "ocultar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
+type Dialogo = "participantes" | "reportar" | "ocultar" | "renombrar" | "editarActividad" | "eliminar" | "salir" | "votacion" | "cerrarEleccion" | null
 
 interface ConversacionAccionesProps {
   conversacion: Conversacion
@@ -129,6 +133,7 @@ export function ConversacionAcciones({
   const esCanal = c.tipo === "CANAL" || c.tipo === "GRUPO"
   const gestionaCanal =
     esCanal && (esCategoriaActividad(c.categoria) ? gestionaActividad(c, perfil) : (c.esAdmin ?? puedeGestionar))
+  const creadorGrupo = c.tipo === "GRUPO" && !!(c.esCreador || c.esAdmin)
   const destinoSalir = c.tipo === "GRUPO" ? "del grupo" : "del foro"
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
@@ -206,11 +211,26 @@ export function ConversacionAcciones({
           </DropdownMenuItem>
           {/* Solo mensajería (M.2.RET.2): comunicados, elecciones, encuestas y evaluaciones tienen su ciclo. */}
           {c.categoria === "GENERAL" && !c.esBot && (
-            <DropdownMenuItem className={ITEM} onClick={() => setDialogo("ocultar")}>
+            <DropdownMenuItem className={cn(ITEM, "text-red")} onClick={() => setDialogo("ocultar")}>
               <EyeSlashIcon />
               <span className="flex-1">Eliminar de mi bandeja</span>
             </DropdownMenuItem>
           )}
+          {/* M.2.BAN.2: en un grupo, quien lo creó agrega y retira participantes (abre el panel de
+              participantes existente, "Añadir personas a…"). */}
+          {creadorGrupo && (
+            <>
+              <DropdownMenuItem className={ITEM} onClick={() => setDialogo("participantes")}>
+                <PersonAddIcon />
+                Agregar participantes
+              </DropdownMenuItem>
+              <DropdownMenuItem className={ITEM} onClick={() => setDialogo("participantes")}>
+                <PersonRemoveIcon />
+                Retirar participante
+              </DropdownMenuItem>
+            </>
+          )}
+          <DropdownMenuSeparator />
           {gestionaCanal && (
             <DropdownMenuItem
               className={ITEM}
@@ -442,6 +462,10 @@ export function ConversacionAcciones({
         }
       />
 
+      {creadorGrupo && (
+        <MiembrosDialog conversacion={c} open={dialogo === "participantes"} onClose={cerrar} />
+      )}
+
       <EditarActividad conversacion={c} open={dialogo === "editarActividad"} onClose={cerrar} />
       <ReportarDialog
         conversacionId={c.id}
@@ -460,7 +484,7 @@ export function ConversacionAcciones({
       )}
 
       <Dialog open={dialogo === "renombrar" && c.tipo !== "GRUPO"} onOpenChange={(open) => !open && cerrar()}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -483,15 +507,18 @@ export function ConversacionAcciones({
               <DialogTitle>{c.tipo === "GRUPO" ? "Editar grupo" : "Editar foro"}</DialogTitle>
               <DialogDescription>El nuevo nombre lo verán todos los miembros.</DialogDescription>
             </DialogHeader>
-            <label className="block space-y-1.5 text-sm">
-              <span className="font-medium">{c.tipo === "GRUPO" ? "Nombre del grupo" : "Nombre del foro"}</span>
+            <Field variant="outlined">
+              <FieldLabel htmlFor={`renombrar-${c.id}`}>
+                {c.tipo === "GRUPO" ? "Nombre del grupo" : "Nombre del foro"}*
+              </FieldLabel>
               <Input
+                id={`renombrar-${c.id}`}
                 autoFocus
                 value={nombre}
                 maxLength={80}
                 onChange={(e) => setNombre(e.target.value)}
               />
-            </label>
+            </Field>
             <DialogFooter>
               <Button
                 type="button"

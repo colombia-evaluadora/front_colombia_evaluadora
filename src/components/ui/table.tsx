@@ -87,7 +87,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
         // `px-4` y no `px-3`: el botón del encabezado ordenable va con `-ml-3`
         // para alinear su texto con el de las celdas, así que con `px-3` su
         // fondo quedaba a ras del borde de la tabla en la primera columna.
-        "h-12 px-4 text-left align-middle text-sm font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
+        "h-12 px-4 text-left align-middle text-sm font-medium whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

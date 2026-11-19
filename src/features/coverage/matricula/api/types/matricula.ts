@@ -60,9 +60,48 @@ export interface Matricula {
   group: string
   enrollmentDate: string
   guardian: string
+  // Datos que solo se ven al exportar o al activar la columna (Regla 47).
+  birthDate?: string
+  address?: string
+  phone?: string
+  guardianRelationship?: string
+  guardianEmail?: string
+  asignaturas?: string
+  soportes?: string
   status: MatriculaStatus
   hasGrades: boolean
+  /** Solo la trae el listado (fn_situacion_edad, sección 3.7.2). */
+  ageSituation?: AgeSituation
+  /** Retiro pedido por otro establecimiento (Regla 71): bloquea los cambios académicos. */
+  retiroSolicitado?: boolean
+  /** Establecimiento que pidió el retiro (texto del bloqueo de acciones). */
+  retiroSolicitadoPor?: string | null
+  /** Retirado por traslado: acta para el SIMPADE (C.1.LIS.3b). `fecha` yyyy-MM-dd. */
+  retiroTraslado?: { acta: string; fecha: string } | null
+  /** El retiro por traslado ya se marcó como ingresado al SIMPADE. */
+  simpadeIngresado?: boolean
+  /** Destino que debe anular tras «Cerrar sin retiro» (Regla 71): mismas restricciones. */
+  anulacionPendiente?: boolean
+  /** Traslado con snapshot sin homologar (Sección 4.5). */
+  snapshotPendiente?: boolean
+  /** Principal o complementaria (Sección 2.16); el listado lo trae, el mock lo varía. */
+  tipo?: "PRINCIPAL" | "COMPLEMENTARIA"
+  /** Principal con su complementaria: badge «Con matrícula complementaria». */
+  tieneComplementaria?: boolean
+  /** Complementaria por adscripción: badge «Complementaria de [origen]». */
+  origenAdscripcion?: string | null
+  /** Alguna sede ofrece su grado y especialidad en otra jornada (C.1.COM.1). */
+  puedeAgregarComplementaria?: boolean
+  /** Sin la autorización de tratamiento de datos del acudiente (Regla 81): marca «Sin autorización». */
+  sinAutorizacion?: boolean
+  /** Sin matrícula el año anterior en la entidad territorial (columna y filtro Nuevo). */
+  nuevo?: boolean
+  /** Metodología del grupo (columna opcional). */
+  metodologiaGrupo?: string
 }
+
+/** VALOR de la lista SITUACION_EDAD. */
+export type AgeSituation = "EN_EDAD" | "PREEXTRAEDAD" | "EXTRAEDAD" | "BAJA_EDAD" | "SIN_CALCULAR"
 
 export interface MatriculaQueryFilters {
   search?: string
@@ -71,6 +110,11 @@ export interface MatriculaQueryFilters {
   shift?: string
   grade?: number
   group?: string
+  periodo?: number
+  tipo?: "PRINCIPAL" | "COMPLEMENTARIA"
+  metodologia?: number
+  solicitud?: "CON_SOLICITUD"
+  nuevo?: "S" | "N"
 }
 
 export interface MatriculaQueryRequest {
@@ -102,6 +146,8 @@ export interface CreateMatriculaResult {
   matricula: Matricula
   homologation: MatriculaHomologationInfo | null
   failedOtherDocuments: File[]
+  /** El bloque 15 se guarda después del alta; si falla, la matrícula ya existe. */
+  asignaturasError?: string
 }
 
 export interface MatriculaMutationResult {
@@ -118,6 +164,24 @@ export interface MatriculaDetails extends CreateMatriculaInput {
   pkTpadre: number | null
   pkUsuarioEstudiante: number | null
   pkUsuarioAcudiente: number | null
+  /** Lo que deja un campo en solo lectura en Editar (C.1.EDI). */
+  restricciones?: MatriculaRestricciones
+}
+
+export interface MatriculaRestricciones {
+  tipo: "PRINCIPAL" | "COMPLEMENTARIA"
+  /** Con complementaria la especialidad se cambia desde ella (Sección 2.16). */
+  tieneComplementaria: boolean
+  /** Con una postulación Registrado se cambia con Cambiar cupo (Sección 2.16.2). */
+  postulacionRegistrada: boolean
+  /** Establecimiento que pidió el retiro (Regla 71); bloquea los cambios académicos. */
+  retiroSolicitadoPor: string | null
+  /** Destino con la matrícula por anular tras «Cerrar sin retiro»: mismas restricciones. */
+  anulacionPendiente: boolean
+  /** Sin la autorización de tratamiento de datos del acudiente (Regla 81). */
+  sinAutorizacion: boolean
+  /** Complementaria por adscripción: el que recibe ve los datos del estudiante protegidos (Regla 8). */
+  origenAdscripcion: string | null
 }
 
 export interface MatriculaFile {
@@ -145,6 +209,11 @@ export interface MatriculaDeptMunicipio {
 
 export interface MatriculaResidence extends MatriculaDeptMunicipio {
   address: string
+  /** Solo el domicilio del estudiante (prototipo C.1.AGR): BARRIO_DEL_ESTUDIANTE
+   *  va a TUSUARIO.BARRIO_RESIDENCIA y GEOREFERENCIACION a TESTUDIANTE. */
+  neighborhood?: string
+  /** "latitud,longitud", como la ubicación de una sede. */
+  location?: string
 }
 
 export interface MatriculaContact {
@@ -163,7 +232,36 @@ export interface MatriculaAcademicInfo {
   group: string
   status: MatriculaStatus | ""
   specialty: string
+  /** ¿Media técnica en institución externa? (Regla 41). */
+  mediaTecnicaExterna?: boolean
+  institucionExterna?: string
+  /** Periodo Académico elegido (modalidad y ciclo); sin él se resuelve el vigente. */
+  periodoId?: string
+  /** Lista INTERNADO (SIMAT): No, Semi interno o Residente. */
+  internado?: string
+  /** Autorización de tratamiento de datos del acudiente (Regla 81): opcional. */
+  autorizacionDatos?: boolean
+  /** Funcionario que digitó la matrícula en el SIMAT (opcional). */
+  funcionarioDigitaSimat?: string
+  /** yyyy-MM-dd; obligatoria si hay funcionario. */
+  fechaDigitacionSimat?: string
 }
+
+/** Fila del bloque 15: una asignatura del plan de estudio del grado. */
+export interface MatriculaAsignatura {
+  id: number
+  nombre: string
+  obligatoria: boolean
+  matriculada: boolean
+  externa: boolean
+  /** Con notas o definitivas: no se desmatricula ni cambia "externa". */
+  tieneRegistros: boolean
+  /** Qué registros impiden desmatricular (p. ej. "La definitiva del Período 1"). */
+  registros: string[]
+}
+
+/** Lo que la persona cambió sobre el plan, por id de asignatura. */
+export type MatriculaAsignaturasCambios = Record<number, { matriculada: boolean; externa: boolean }>
 
 export interface MatriculaStudentInfo {
   documentType: string
@@ -177,6 +275,11 @@ export interface MatriculaStudentInfo {
   birthPlace: MatriculaDeptMunicipio
   gender: string
   ethnicity: string
+  /** Lista PAIS; vacío = Colombia. Obligatorio con documento de extranjero. */
+  paisOrigen?: string
+  lenguaMaterna?: string
+  /** Solo si el país no es Colombia. */
+  condicionMigratoria?: string
 }
 
 export interface MatriculaPreviousYearInfo {
@@ -204,6 +307,14 @@ export interface MatriculaComplementaryInfo {
   ars: string
   specialConditions: string
   talent: string
+  apoyoAcademico?: string
+  /** Solo con diagnóstico del sector salud (soporte: certificado médico). */
+  trastorno?: string
+  /** Dato sensible (Regla 77). */
+  srpa?: string
+  /** yyyy-MM-dd; obligatoria si el SRPA no es «No aplica». */
+  srpaInicio?: string
+  srpaFin?: string
 }
 
 export interface MatriculaBenefitsInfo {
@@ -249,6 +360,8 @@ export interface CreateMatriculaInput {
   guardianAddress: MatriculaResidence
   guardianContact: MatriculaContact
   guardianEmployment: MatriculaGuardianEmploymentInfo
+  /** Bloque 15: cambios sobre el plan; se guardan con PUT /matricula/:ID/asignaturas. */
+  asignaturas?: MatriculaAsignaturasCambios
 }
 
 export interface MatriculaConfigCampo {
@@ -280,6 +393,10 @@ export interface MatriculaConfigCampoPatch {
 export interface MatriculaDocumentCheckResult {
   exists: boolean
   matricula: Matricula | null
+  /** Período de esa matrícula (pendiente en el back): para distinguir el duplicado (AGR.6). */
+  periodo?: { id: number; label: string } | null
+  /** Es de otro establecimiento: se matricula igual y se pide el retiro allá (SOL.1). */
+  otroEstablecimiento?: boolean
 }
 
 export type BulkGradeChangeSubKind = "promocion" | "correccion" | "reubicacion"

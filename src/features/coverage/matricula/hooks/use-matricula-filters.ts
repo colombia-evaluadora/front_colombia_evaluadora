@@ -26,6 +26,11 @@ export function useMatriculaFilters(): MatriculaFilters {
           shift: values.shift || undefined,
           grade: values.grade ? Number(values.grade) : undefined,
           group: values.group || undefined,
+          periodo: values.periodo ? Number(values.periodo) : undefined,
+          tipo: values.tipo === "PRINCIPAL" || values.tipo === "COMPLEMENTARIA" ? values.tipo : undefined,
+          metodologia: values.metodologia ? Number(values.metodologia) : undefined,
+          solicitud: values.solicitud === "CON_SOLICITUD" ? "CON_SOLICITUD" : undefined,
+          nuevo: values.nuevo === "S" || values.nuevo === "N" ? values.nuevo : undefined,
           page: 0,
         }),
         replace: true,
@@ -42,6 +47,11 @@ export function useMatriculaFilters(): MatriculaFilters {
         shift: undefined,
         grade: undefined,
         group: undefined,
+        periodo: undefined,
+        tipo: undefined,
+        metodologia: undefined,
+        solicitud: undefined,
+        nuevo: undefined,
         page: 0,
       }),
       replace: true,
@@ -55,6 +65,11 @@ export function useMatriculaFilters(): MatriculaFilters {
       shift: search.shift,
       grade: search.grade,
       group: search.group,
+      periodo: search.periodo,
+      tipo: search.tipo,
+      metodologia: search.metodologia,
+      solicitud: search.solicitud,
+      nuevo: search.nuevo,
     }
 
   const activeFilterCount = (() => {
@@ -65,6 +80,11 @@ export function useMatriculaFilters(): MatriculaFilters {
     if (search.shift) count += 1
     if (search.grade != null) count += 1
     if (search.group) count += 1
+    if (search.periodo != null) count += 1
+    if (search.tipo) count += 1
+    if (search.metodologia != null) count += 1
+    if (search.solicitud) count += 1
+    if (search.nuevo) count += 1
     return count
   })()
 
@@ -75,6 +95,11 @@ export function useMatriculaFilters(): MatriculaFilters {
     shift: search.shift ?? "",
     grade: search.grade != null ? String(search.grade) : "",
     group: search.group ?? "",
+    periodo: search.periodo != null ? String(search.periodo) : "",
+    tipo: search.tipo ?? "",
+    metodologia: search.metodologia != null ? String(search.metodologia) : "",
+    solicitud: search.solicitud ?? "",
+    nuevo: search.nuevo ?? "",
   }
   // UI asistida: `APLICAR_FILTROS` usa el mismo `applyFilters` que la persona.
   useFiltrosDeListado(filtrosForm, applyFilters)

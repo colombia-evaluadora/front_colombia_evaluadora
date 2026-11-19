@@ -27,6 +27,12 @@ import {
   matriculaSearchSchema,
 } from "@/features/coverage/shared/api/schema"
 import { inscripcionReservasSearchSchema } from "@/features/coverage/inscripcion-reservas/api/schema"
+import { inscribirSearchSchema } from "@/features/publico/inscribir/schema"
+import {
+  matriculaComplementariaSearchSchema,
+  seleccionarSearchSchema,
+} from "@/features/coverage/matricula-complementaria/api/schema"
+import { promocionNivelacionSearchSchema } from "@/features/coverage/promocion-nivelacion/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -56,6 +62,7 @@ import {
 } from "@/features/academic-management/asistencia/api/schema"
 import { listasValorSearchSchema } from "@/features/administration/listas-valor/api/schema"
 import { catalogoSearchSchema } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/schema"
+import { guardarPestanaConfiguracion } from "@/features/gestion-estudiantil/configuracion/utils/pestana"
 import { comitePeriodoSearchSchema, convivenciaSearchSchema } from "@/features/gestion-estudiantil/convivencia/api/schema"
 import { citacionesSearchSchema, origenDeSearch, origenSearchSchema } from "@/features/gestion-estudiantil/citaciones/api/schema"
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
@@ -79,6 +86,7 @@ import {
 import { connectivityStore } from "@/lib/offline/connectivity"
 import { debeElegirPerfil } from "@/features/navigation/lib/perfil"
 import { tokenSearchSchema } from "@/features/cuenta/api/cambio-correo"
+import { miCuentaSearchSchema } from "@/features/cuenta/api/schema"
 import { menuPermissionsQueryOptions } from "@/features/navigation/api/query/use-menu-permissions-query"
 import { sinAccesoSearchSchema } from "@/features/navigation/api/schema"
 import {
@@ -388,18 +396,19 @@ const verificarRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/publico/pages/verificar-page"), "VerificarPage"),
 })
 
-const inscribirRoute = createRoute({
+export const inscribirRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: paths.publico.inscribir.path,
   head: publicHead("Inscribir"),
-  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "InscribirProximamentePage"),
+  validateSearch: inscribirSearchSchema,
+  component: lazyRouteComponent(() => import("@/features/publico/inscribir/pages/inscribir-page"), "InscribirPage"),
 })
 
 const consultarInscripcionRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
   path: paths.publico.consultarInscripcion.path,
   head: publicHead("Consultar inscripción"),
-  component: lazyRouteComponent(() => import("@/features/publico/pages/proximamente-page"), "ConsultarProximamentePage"),
+  component: lazyRouteComponent(() => import("@/features/publico/consultar/pages/consultar-inscripcion-page"), "ConsultarInscripcionPage"),
 })
 
 // U.6.COR: enlaces de los correos de cambio de correo (sin sesión).
@@ -901,6 +910,105 @@ export const coberturaMatriculaDetalleRoute = createRoute({
     ],
   },
   component: MatriculaDetailPage,
+})
+
+const MatriculaComplementariaPage = lazyRouteComponent(
+  () => import("@/features/coverage/matricula-complementaria/pages/matricula-complementaria-page"),
+  "MatriculaComplementariaPage",
+)
+const ConvocatoriaFormPage = lazyRouteComponent(
+  () => import("@/features/coverage/matricula-complementaria/pages/convocatoria-form-page"),
+  "ConvocatoriaFormPage",
+)
+const ConvocatoriaDetallePage = lazyRouteComponent(
+  () => import("@/features/coverage/matricula-complementaria/pages/convocatoria-detalle-page"),
+  "ConvocatoriaDetallePage",
+)
+const ConvocatoriaSeleccionarPage = lazyRouteComponent(
+  () => import("@/features/coverage/matricula-complementaria/pages/convocatoria-seleccionar-page"),
+  "ConvocatoriaSeleccionarPage",
+)
+
+const COMPLEMENTARIA_CRUMB = { label: "Matrícula complementaria", to: paths.app.coberturaComplementaria.getHref() }
+
+export const coberturaComplementariaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaComplementaria.path,
+  validateSearch: matriculaComplementariaSearchSchema,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Matrícula complementaria" }] },
+  component: MatriculaComplementariaPage,
+})
+
+const PromocionNivelacionPage = lazyRouteComponent(
+  () => import("@/features/coverage/promocion-nivelacion/pages/promocion-nivelacion-page"),
+  "PromocionNivelacionPage",
+)
+
+export const coberturaPromocionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPromocion.path,
+  validateSearch: promocionNivelacionSearchSchema,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Promoción y nivelación", to: paths.app.coberturaPromocion.getHref() }] },
+  component: PromocionNivelacionPage,
+})
+
+export const coberturaConvocatoriaNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaConvocatoriaNueva.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Nueva convocatoria" }] },
+  component: ConvocatoriaFormPage,
+})
+
+export const coberturaConvocatoriaDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaConvocatoriaDetalle.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Convocatoria" }] },
+  component: ConvocatoriaDetallePage,
+})
+
+export const coberturaConvocatoriaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaConvocatoriaEditar.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Editar convocatoria" }] },
+  component: ConvocatoriaFormPage,
+})
+
+export const coberturaConvocatoriaSeleccionarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaConvocatoriaSeleccionar.path,
+  validateSearch: seleccionarSearchSchema,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Seleccionar" }] },
+  component: ConvocatoriaSeleccionarPage,
+})
+
+const PostulacionFormPage = lazyRouteComponent(
+  () => import("@/features/coverage/matricula-complementaria/pages/postulacion-form-page"),
+  "PostulacionFormPage",
+)
+const PostulacionDetallePage = lazyRouteComponent(
+  () => import("@/features/coverage/matricula-complementaria/pages/postulacion-detalle-page"),
+  "PostulacionDetallePage",
+)
+
+export const coberturaPostulacionNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPostulacionNueva.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Nueva postulación" }] },
+  component: PostulacionFormPage,
+})
+
+export const coberturaPostulacionDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPostulacionDetalle.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Postulación" }] },
+  component: PostulacionDetallePage,
+})
+
+export const coberturaPostulacionCambiarCupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPostulacionCambiarCupo.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Cambiar cupo" }] },
+  component: PostulacionFormPage,
 })
 
 // Un `NoticeProvider` para las cuatro vistas de auditoría.
@@ -1666,17 +1774,27 @@ export const convivenciaProcesoRoute = createRoute({
   },
 })
 
-const CatalogoAnotacionesPage = lazyRouteComponent(
-  () => import("@/features/gestion-estudiantil/catalogo-anotaciones/pages/catalogo-anotaciones-page"),
-  "CatalogoAnotacionesPage",
+const ConfiguracionGePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/configuracion/pages/configuracion-page"),
+  "ConfiguracionPage",
 )
 
+export const configuracionGeRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.configuracionGe.path,
+  validateSearch: catalogoSearchSchema,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Configuración" }] },
+  component: ConfiguracionGePage,
+})
+
+// El catálogo vive ahora en la pestaña "Catálogo de anotaciones" de Configuración; la URL vieja solo redirige.
 export const catalogoAnotacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.catalogoAnotaciones.path,
-  validateSearch: catalogoSearchSchema,
-  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Catálogo de anotaciones" }] },
-  component: CatalogoAnotacionesPage,
+  beforeLoad: () => {
+    guardarPestanaConfiguracion("catalogo")
+    throw redirect({ to: paths.app.configuracionGe.getHref(), replace: true })
+  },
 })
 
 const CitacionesCompromisosPage = lazyRouteComponent(
@@ -1702,6 +1820,430 @@ export const reconocimientosRoute = createRoute({
   path: paths.app.reconocimientos.path,
   staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Reconocimientos" }] },
   component: ReconocimientosPage,
+})
+
+const ActividadesPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/actividades-page"),
+  "ActividadesPage",
+)
+const ActividadFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/actividad-form-page"),
+  "ActividadFormPage",
+)
+const ActividadDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/actividad-detalle-page"),
+  "ActividadDetallePage",
+)
+const ServicioSocialEstudiantePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/actividades-extracurriculares/pages/servicio-social-estudiante-page"),
+  "ServicioSocialEstudiantePage",
+)
+
+export const actividadesExtracurricularesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadesExtracurriculares.path,
+  validateSearch: (search: Record<string, unknown>): { tab?: "servicio-social" } =>
+    search.tab === "servicio-social" ? { tab: "servicio-social" } : {},
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Actividades extracurriculares" }] },
+  component: ActividadesPage,
+})
+
+const ACTIVIDADES_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Actividades extracurriculares", to: paths.app.actividadesExtracurriculares.getHref() },
+]
+
+export const actividadNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadNueva.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Nueva actividad" }] },
+  component: function ActividadNuevaRoute() {
+    return <ActividadFormPage />
+  },
+})
+
+export const actividadDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadDetalle.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Actividad" }] },
+  component: function ActividadDetalleRoute() {
+    const { actividadId } = actividadDetalleRoute.useParams()
+    return <ActividadDetallePage actividadId={Number(actividadId)} />
+  },
+})
+
+export const actividadEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.actividadEditar.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Modificar actividad" }] },
+  component: function ActividadEditarRoute() {
+    const { actividadId } = actividadEditarRoute.useParams()
+    return <ActividadFormPage actividadId={Number(actividadId)} />
+  },
+})
+
+export const servicioSocialEstudianteRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.servicioSocialEstudiante.path,
+  staticData: { breadcrumb: [...ACTIVIDADES_CRUMBS, { label: "Servicio social" }] },
+  component: function ServicioSocialEstudianteRoute() {
+    const { matricula } = servicioSocialEstudianteRoute.useParams()
+    return <ServicioSocialEstudiantePage matricula={Number(matricula)} />
+  },
+})
+
+const ReintegracionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/reintegracion-page"),
+  "ReintegracionPage",
+)
+
+export const reintegracionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Reintegración" }] },
+  component: ReintegracionPage,
+})
+
+const REINTEGRACION_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Reintegración", to: paths.app.reintegracion.getHref() },
+]
+
+const ReintegracionAbrirCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/abrir-caso-page"),
+  "AbrirCasoPage",
+)
+
+export const reintegracionAbrirRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionAbrir.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Abrir caso" }] },
+  component: ReintegracionAbrirCasoPage,
+})
+
+const ReintegracionCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/caso-detalle-page"),
+  "CasoDetallePage",
+)
+
+export const reintegracionCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionCaso.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Caso" }] },
+  component: function ReintegracionCasoRoute() {
+    const { casoId } = reintegracionCasoRoute.useParams()
+    return <ReintegracionCasoPage casoId={Number(casoId)} />
+  },
+})
+
+const ReintegracionConvivenciaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/reintegracion/pages/abrir-convivencia-page"),
+  "AbrirConvivenciaPage",
+)
+
+export const reintegracionConvivenciaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.reintegracionConvivencia.path,
+  staticData: { breadcrumb: [...REINTEGRACION_CRUMBS, { label: "Abrir caso de convivencia" }] },
+  component: function ReintegracionConvivenciaRoute() {
+    const { casoId } = reintegracionConvivenciaRoute.useParams()
+    return <ReintegracionConvivenciaPage casoId={Number(casoId)} />
+  },
+})
+
+const PrevencionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/prevencion-page"),
+  "PrevencionPage",
+)
+
+export const prevencionRetencionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionRetencion.path,
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, { label: "Prevención y retención" }] },
+  component: PrevencionPage,
+})
+
+const PrevencionHistorialPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/historial-page"),
+  "HistorialPage",
+)
+
+export const prevencionHistorialRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionHistorial.path,
+  staticData: {
+    breadcrumb: [
+      GESTION_ESTUDIANTIL_CRUMB,
+      { label: "Prevención y retención", to: paths.app.prevencionRetencion.getHref() },
+      { label: "Historial" },
+    ],
+  },
+  // `grupo` (Grado/Grupo) lo manda el tablero: el historial no lo devuelve.
+  validateSearch: (search: Record<string, unknown>): { grupo?: string } => ({
+    grupo: typeof search.grupo === "string" ? search.grupo : undefined,
+  }),
+  component: function PrevencionHistorialRoute() {
+    const { matricula } = prevencionHistorialRoute.useParams()
+    const { grupo } = prevencionHistorialRoute.useSearch()
+    return <PrevencionHistorialPage matricula={Number(matricula)} gradoGrupo={grupo} />
+  },
+})
+
+const PrevencionValorarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/valorar-page"),
+  "ValorarPage",
+)
+const PrevencionPlanNuevoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/plan-form-page"),
+  "PlanNuevoPage",
+)
+const PrevencionPlanEditarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/plan-form-page"),
+  "PlanEditarPage",
+)
+
+const numeroDeSearch = (v: unknown): number | undefined => {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+const PREVENCION_CRUMBS = [
+  GESTION_ESTUDIANTIL_CRUMB,
+  { label: "Prevención y retención", to: paths.app.prevencionRetencion.getHref() },
+]
+
+export const prevencionValorarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionValorar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Valorar riesgo" }] },
+  validateSearch: (search: Record<string, unknown>): { matricula?: number } => ({
+    matricula: numeroDeSearch(search.matricula),
+  }),
+  component: function PrevencionValorarRoute() {
+    const { matricula } = prevencionValorarRoute.useSearch()
+    return <PrevencionValorarPage matricula={matricula} />
+  },
+})
+
+export const prevencionPlanNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanNuevo.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nuevo plan" }] },
+  validateSearch: (search: Record<string, unknown>): { matricula?: number; valoracion?: number } => ({
+    matricula: numeroDeSearch(search.matricula),
+    valoracion: numeroDeSearch(search.valoracion),
+  }),
+  component: function PrevencionPlanNuevoRoute() {
+    const { matricula, valoracion } = prevencionPlanNuevoRoute.useSearch()
+    return <PrevencionPlanNuevoPage matricula={matricula} valoracion={valoracion} />
+  },
+})
+
+const PrevencionPlanDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/plan-detalle-page"),
+  "PlanDetallePage",
+)
+const PrevencionValoracionDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/valoracion-detalle-page"),
+  "ValoracionDetallePage",
+)
+
+export const prevencionPlanDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Plan de acompañamiento" }] },
+  component: function PrevencionPlanDetalleRoute() {
+    const { planId } = prevencionPlanDetalleRoute.useParams()
+    return <PrevencionPlanDetallePage planId={Number(planId)} />
+  },
+})
+
+const PrevencionAbrirCasoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/abrir-caso-page"),
+  "AbrirCasoPage",
+)
+
+export const prevencionPlanCasoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanCaso.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Abrir caso de convivencia" }] },
+  component: function PrevencionPlanCasoRoute() {
+    const { planId } = prevencionPlanCasoRoute.useParams()
+    return <PrevencionAbrirCasoPage planId={Number(planId)} />
+  },
+})
+
+export const prevencionValoracionDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionValoracionDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Valoración" }] },
+  component: function PrevencionValoracionDetalleRoute() {
+    const { valoracionId } = prevencionValoracionDetalleRoute.useParams()
+    return <PrevencionValoracionDetallePage valoracionId={Number(valoracionId)} />
+  },
+})
+
+const PrevencionReporteSaludMentalPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/reporte-salud-mental-page"),
+  "ReporteSaludMentalPage",
+)
+const PrevencionSenalSaludMentalPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/senal-salud-mental-page"),
+  "SenalSaludMentalPage",
+)
+
+export const prevencionSaludMentalNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionSaludMentalNuevo.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nuevo reporte de salud mental" }] },
+  // Desde el Observador llega el estudiante elegido: `matricula` y su nombre para leer «Nombre · grado».
+  validateSearch: (search: Record<string, unknown>): { matricula?: number; estudiante?: string } => ({
+    matricula: Number.isFinite(Number(search.matricula)) && search.matricula != null ? Number(search.matricula) : undefined,
+    estudiante: typeof search.estudiante === "string" ? search.estudiante : undefined,
+  }),
+  component: PrevencionReporteSaludMentalPage,
+})
+
+const PrevencionAcompFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/acompanamiento-form-page"),
+  "AcompanamientoFormPage",
+)
+const PrevencionAcompDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/acompanamiento-detalle-page"),
+  "AcompanamientoDetallePage",
+)
+
+export const prevencionAcompNuevoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionAcompNuevo.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nuevo acompañamiento" }] },
+  component: function PrevencionAcompNuevoRoute() {
+    const { tipo } = prevencionAcompNuevoRoute.useParams()
+    return <PrevencionAcompFormPage tipo={tipo === "consumo" ? "CONSUMO" : "EMBARAZO"} />
+  },
+})
+
+export const prevencionAcompDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionAcompDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Acompañamiento" }] },
+  component: function PrevencionAcompDetalleRoute() {
+    const { acompId } = prevencionAcompDetalleRoute.useParams()
+    return <PrevencionAcompDetallePage acompId={Number(acompId)} />
+  },
+})
+
+export const prevencionAcompEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionAcompEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar acompañamiento" }] },
+  component: function PrevencionAcompEditarRoute() {
+    const { acompId } = prevencionAcompEditarRoute.useParams()
+    return <PrevencionAcompFormPage acompId={Number(acompId)} />
+  },
+})
+
+export const prevencionSenalSaludMentalRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionSenalSaludMental.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Señal de salud mental" }] },
+  component: function PrevencionSenalSaludMentalRoute() {
+    const { senalId } = prevencionSenalSaludMentalRoute.useParams()
+    return <PrevencionSenalSaludMentalPage senalId={Number(senalId)} />
+  },
+})
+
+export const prevencionPlanEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionPlanEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar plan" }] },
+  component: function PrevencionPlanEditarRoute() {
+    const { planId } = prevencionPlanEditarRoute.useParams()
+    return <PrevencionPlanEditarPage planId={Number(planId)} />
+  },
+})
+
+const PrevencionEstrategiaFormPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/estrategia-form-page"),
+  "EstrategiaNuevaPage",
+)
+const PrevencionEstrategiaEditarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/estrategia-form-page"),
+  "EstrategiaEditarPage",
+)
+const PrevencionEstrategiaDetallePage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/estrategia-detalle-page"),
+  "EstrategiaDetallePage",
+)
+
+export const prevencionEstrategiaNuevaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionEstrategiaNueva.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Nueva estrategia" }] },
+  component: PrevencionEstrategiaFormPage,
+})
+
+export const prevencionEstrategiaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionEstrategiaEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar estrategia" }] },
+  component: function PrevencionEstrategiaEditarRoute() {
+    const { estrategiaId } = prevencionEstrategiaEditarRoute.useParams()
+    return <PrevencionEstrategiaEditarPage estrategiaId={Number(estrategiaId)} />
+  },
+})
+
+export const prevencionEstrategiaDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionEstrategiaDetalle.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Estrategia" }] },
+  component: function PrevencionEstrategiaDetalleRoute() {
+    const { estrategiaId } = prevencionEstrategiaDetalleRoute.useParams()
+    return <PrevencionEstrategiaDetallePage estrategiaId={Number(estrategiaId)} />
+  },
+})
+
+const PrevencionCaracterizacionPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/caracterizacion-page"),
+  "CaracterizacionDetallePage",
+)
+const PrevencionCaracterizacionEditarPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/caracterizacion-page"),
+  "CaracterizacionEditarPage",
+)
+
+export const prevencionCaracterizacionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionCaracterizacion.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Caracterización familiar" }] },
+  component: function PrevencionCaracterizacionRoute() {
+    const { matricula } = prevencionCaracterizacionRoute.useParams()
+    return <PrevencionCaracterizacionPage matricula={Number(matricula)} />
+  },
+})
+
+export const prevencionCaracterizacionEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionCaracterizacionEditar.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Modificar caracterización" }] },
+  component: function PrevencionCaracterizacionEditarRoute() {
+    const { matricula } = prevencionCaracterizacionEditarRoute.useParams()
+    return <PrevencionCaracterizacionEditarPage matricula={Number(matricula)} />
+  },
+})
+
+const PrevencionHistorialAcademicoPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/historial-academico-page"),
+  "HistorialAcademicoPage",
+)
+
+export const prevencionHistorialAcademicoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionHistorialAcademico.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Historial académico" }] },
+  component: function PrevencionHistorialAcademicoRoute() {
+    const { matricula } = prevencionHistorialAcademicoRoute.useParams()
+    return <PrevencionHistorialAcademicoPage matricula={Number(matricula)} />
+  },
 })
 
 /** Enlace del aviso `RECONOCIMIENTO_NUEVO`: la misma página; la fase 2 abre el detalle con el id. */
@@ -2025,7 +2567,7 @@ export const chatRoute = createRoute({
   staticData: {
     breadcrumb: [
       { label: "Gestión comunicaciones", to: paths.app.comunicacionesChat.getHref() },
-      { label: "Chat" },
+      { label: "Mensajería interna", to: paths.app.comunicacionesChat.getHref() },
     ],
   },
   component: ChatPage,
@@ -2170,6 +2712,7 @@ const MisDispositivosPage = lazyRouteComponent(
 export const miCuentaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.miCuenta.path,
+  validateSearch: miCuentaSearchSchema,
   staticData: { breadcrumb: [{ label: "Mi cuenta", to: paths.app.miCuenta.getHref() }] },
   component: lazyRouteComponent(() => import("@/features/cuenta/pages/mi-cuenta-page"), "MiCuentaPage"),
 })
@@ -2253,6 +2796,15 @@ const routeTree = rootRoute.addChildren([
     coberturaMatriculaEditarRoute,
     coberturaMatriculaConfiguracionRoute,
     coberturaMatriculaDetalleRoute,
+    coberturaComplementariaRoute,
+    coberturaPromocionRoute,
+    coberturaConvocatoriaNuevaRoute,
+    coberturaConvocatoriaDetalleRoute,
+    coberturaConvocatoriaEditarRoute,
+    coberturaConvocatoriaSeleccionarRoute,
+    coberturaPostulacionNuevaRoute,
+    coberturaPostulacionDetalleRoute,
+    coberturaPostulacionCambiarCupoRoute,
     auditsLayoutRoute.addChildren([
       auditoriaSesionesRoute,
       auditoriaTablasRoute,
@@ -2318,6 +2870,7 @@ const routeTree = rootRoute.addChildren([
     planeadorPlanillaRoute,
     asistenciaRoute,
     catalogoAnotacionesRoute,
+    configuracionGeRoute,
     inclusionOrientacionRoute,
     atencionNuevaRoute,
     atencionFichaRoute,
@@ -2344,6 +2897,34 @@ const routeTree = rootRoute.addChildren([
     compromisoDetalleRoute,
     reconocimientosRoute,
     reconocimientoDetalleRoute,
+    actividadesExtracurricularesRoute,
+    actividadNuevaRoute,
+    actividadDetalleRoute,
+    actividadEditarRoute,
+    servicioSocialEstudianteRoute,
+    reintegracionRoute,
+    reintegracionAbrirRoute,
+    reintegracionCasoRoute,
+    reintegracionConvivenciaRoute,
+    prevencionRetencionRoute,
+    prevencionHistorialRoute,
+    prevencionValorarRoute,
+    prevencionPlanNuevoRoute,
+    prevencionPlanEditarRoute,
+    prevencionPlanDetalleRoute,
+    prevencionValoracionDetalleRoute,
+    prevencionPlanCasoRoute,
+    prevencionSaludMentalNuevoRoute,
+    prevencionSenalSaludMentalRoute,
+    prevencionAcompNuevoRoute,
+    prevencionAcompDetalleRoute,
+    prevencionAcompEditarRoute,
+    prevencionEstrategiaNuevaRoute,
+    prevencionEstrategiaEditarRoute,
+    prevencionEstrategiaDetalleRoute,
+    prevencionCaracterizacionRoute,
+    prevencionCaracterizacionEditarRoute,
+    prevencionHistorialAcademicoRoute,
     observacionesSugerenciasRoute,
     chatRoute,
     comunicadoNuevoRoute,

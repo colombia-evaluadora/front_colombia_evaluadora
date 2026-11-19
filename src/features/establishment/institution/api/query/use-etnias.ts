@@ -39,8 +39,10 @@ async function fetchEtnias(): Promise<CatalogItem[]> {
   }))
 }
 
-export function useEtniasQuery() {
+/** `enabled: false` cuando la pantalla trae su propio catálogo (inscripción pública, sin sesión). */
+export function useEtniasQuery({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
+    enabled,
     staleTime: Infinity,
     queryKey: ["catalogs", "etnias"],
     meta: catalogoMeta(),

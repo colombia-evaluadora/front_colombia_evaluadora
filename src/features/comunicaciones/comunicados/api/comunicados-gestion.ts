@@ -3,7 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
-import { subirAdjuntos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
+import { aplicarCambiosAdjuntos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 
 const RUTA = "/comunicaciones/comunicados/gestion"
 
@@ -39,6 +39,8 @@ export interface ComunicadoGestion {
   // Solo en Recibidos y Anteriores: el punto de no leído.
   leido: boolean | null
   actualizadoEn: string | null
+  // Establecimiento del comunicado: quien recibe (estudiante o acudiente) ve de dónde viene (3.1).
+  establecimiento?: string | null
 }
 
 export interface PaginaComunicados {
@@ -47,11 +49,21 @@ export interface PaginaComunicados {
   pageCount: number
 }
 
+/** Tipo de destinatario del filtro avanzado (M.1.LIS.1): los cargos cuentan como funcionarios. */
+export type TipoFiltroComunicado = "ESTUDIANTES" | "ACUDIENTES" | "FUNCIONARIOS"
+
+/** Columnas ordenables del listado; comms-service ordena en el servidor (la tabla pagina allá). */
+export type OrdenComunicados = "fecha" | "titulo" | "publicadoPor" | "destinatarios" | "estado"
+
 export interface FiltrosComunicados {
   pestana: PestanaComunicados
   q?: string
   estado?: EstadoComunicado
   desde?: string
+  emisor?: string
+  tipo?: TipoFiltroComunicado
+  sortBy?: OrdenComunicados
+  sortDir?: "asc" | "desc"
   page: number
   pageSize: number
 }
@@ -71,10 +83,56 @@ export function useComunicadosGestionQuery(filtros: FiltrosComunicados) {
       if (filtros.q?.trim()) params.set("q", filtros.q.trim())
       if (filtros.estado) params.set("estado", filtros.estado)
       if (filtros.desde) params.set("desde", filtros.desde)
+      // Solo con valor: el backend anterior no los conoce y los ignora si faltan.
+      if (filtros.emisor?.trim()) params.set("emisor", filtros.emisor.trim())
+      if (filtros.tipo) params.set("tipo", filtros.tipo)
+      if (filtros.sortBy) {
+        params.set("sortBy", filtros.sortBy)
+        params.set("sortDir", filtros.sortDir ?? "asc")
+      }
       const [pagina] = await evalCol.getRows<PaginaComunicados>(`${RUTA}?${params.toString()}`)
       return pagina ?? { items: [], totalCount: 0, pageCount: 0 }
     },
     placeholderData: keepPreviousData,
+  })
+}
+
+/** Persona sin canal o cuyo correo falló (M.1.DET.1). Nunca se expone quién leyó. */
+export interface PersonaSinCanal {
+  nombre: string
+  tipo: string
+  motivo: string
+  grupo: string | null
+}
+
+/** Seguimiento por canal del comunicado (M.1.DET.1): solo para quien lo gestiona. */
+export interface SeguimientoComunicado {
+  destinatarios: number
+  conAviso: number
+  correosEnviados: number
+  correosFallidos: number
+  sinCanal: number
+  leidos: number
+  personas: PersonaSinCanal[]
+}
+
+export const seguimientoComunicadoKey = (conversacionId: number) =>
+  [...comunicadosGestionKey, "seguimiento", conversacionId] as const
+
+/**
+ * GET /comunicaciones/conversaciones/{id}/comunicado/seguimiento. Mientras el backend no lo tenga
+ * desplegado responde 404: el detalle cae a los contadores del propio comunicado (sin romperse).
+ */
+export function useSeguimientoComunicadoQuery(conversacionId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: seguimientoComunicadoKey(conversacionId),
+    queryFn: async () => {
+      const [fila] = await evalCol.getRows<SeguimientoComunicado>(
+        `/comunicaciones/conversaciones/${conversacionId}/comunicado/seguimiento`,
+      )
+      return fila ? { ...fila, personas: fila.personas ?? [] } : null
+    },
+    enabled: enabled && Number.isFinite(conversacionId),
   })
 }
 
@@ -97,19 +155,11 @@ export function useCorregirComunicado(conversacionId: number) {
   const base = `/comunicaciones/conversaciones/${conversacionId}/comunicado`
   return useMutation({
     mutationFn: async (v: CorregirComunicadoInput) => {
-      let c = await evalCol.patchRow<Comunicado>(`${base}/corregir`, {
+      const c = await evalCol.patchRow<Comunicado>(`${base}/corregir`, {
         TITULO: v.titulo.trim(),
         MENSAJE: v.mensaje.trim(),
       })
-      for (const id of v.quitarAdjuntos) {
-        c = await evalCol.patchRow<Comunicado>(`${base}/adjuntos/${id}/eliminar`, {})
-      }
-      const fallidos = await subirAdjuntos(conversacionId, v.archivos)
-      if (v.archivos.length > fallidos.length) {
-        const [fresco] = await evalCol.getRows<Comunicado>(base)
-        if (fresco) c = fresco
-      }
-      return { dato: c, fallidos }
+      return aplicarCambiosAdjuntos(conversacionId, c, v.quitarAdjuntos, v.archivos)
     },
     onSuccess: ({ dato }) => {
       queryClient.setQueryData(chatKeys.comunicado(conversacionId), dato)

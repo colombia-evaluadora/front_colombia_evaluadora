@@ -12,7 +12,18 @@ import {
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CaretRightIcon, FloppyDiskIcon, XIcon } from "@/components/ui/icons"
+import { CaretRightIcon, CheckCircleIcon, FloppyDiskIcon, XIcon } from "@/components/ui/icons"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AvisoAutorizacionPendiente,
+  AvisoSinAutorizacion,
+} from "@/features/autorizacion-datos/components/aviso-autorizacion-pendiente"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
@@ -90,6 +101,19 @@ export function InscripcionEditarPage() {
       <TableScreen>
         <TableScreenBody>
           <p className="p-10 text-center text-sm text-red">{getErrorMessage(error)}</p>
+        </TableScreenBody>
+      </TableScreen>
+    )
+  }
+  // Sin autorización de datos (Regla 81) el back no devuelve a las personas: no hay qué editar.
+  if (data.datosRestringidos) {
+    return (
+      <TableScreen>
+        <TableScreenBody>
+          <AvisoAutorizacionPendiente>
+            El acudiente no ha autorizado el tratamiento de datos a este establecimiento: solo se ven
+            número, grado y opciones, y la inscripción no se puede editar hasta que lo autorice.
+          </AvisoAutorizacionPendiente>
         </TableScreenBody>
       </TableScreen>
     )
@@ -177,8 +201,10 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
     tiene: Boolean(inscripcion?.documentoHermano),
     documento: inscripcion?.documentoHermano ?? "",
   })
-  // La autorización ya dada al crear cubre la edición (Sección 3.3); al crear es obligatoria.
-  const [autoriza, setAutoriza] = useState(Boolean(inscripcion))
+  // Regla 81: la autorización es opcional y solo se pide al crear; después la da el acudiente
+  // (Consultar inscripción o Mi cuenta), por establecimiento.
+  const [autoriza, setAutoriza] = useState(false)
+  const [registrada, setRegistrada] = useState<{ numeroInscripcion: string; autorizacionPendiente: boolean } | null>(null)
   const [intentado, setIntentado] = useState(false)
   const documentoHermanoValido = !hermano.tiene || DOCUMENTO_HERMANO.test(hermano.documento)
 
@@ -207,7 +233,7 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
     acudiente: cuenta(g.relationship, g.documentType, g.documentNumber, g.firstName, g.lastName),
     "contacto-acudiente": cuenta(datos.guardianContact.phone),
     opciones:
-      cuenta(grado, documentoHermanoValido, autoriza) +
+      cuenta(grado, documentoHermanoValido) +
       opciones.reduce((n, o) => n + cuenta(o.establecimiento, o.sede, o.jornada), 0),
   }
   const totalPendientes = Object.values(pendientes).reduce((a, b) => a + b, 0)
@@ -236,29 +262,29 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
       verPendientes()
       return
     }
-    editar.mutate(
-      {
-        id: inscripcion?.id ?? "",
-        datos,
-        ...extra,
-        grado,
-        opciones,
-        foto,
-        documentoHermano: hermano.tiene ? hermano.documento.trim() : null,
-        autorizaDatos: autoriza,
-      },
-      {
+    const input = {
+      id: inscripcion?.id ?? "",
+      datos,
+      ...extra,
+      grado,
+      opciones,
+      foto,
+      documentoHermano: hermano.tiene ? hermano.documento.trim() : null,
+      autorizaDatos: autoriza,
+    }
+    const onError = (e: unknown) => toast.error(getErrorMessage(e))
+    if (inscripcion) {
+      editarMut.mutate(input, {
         onSuccess: () => {
-          toast.success(
-            inscripcion
-              ? `Se guardó la inscripción ${inscripcion.numeroInscripcion}.`
-              : "Se creó la inscripción.",
-          )
+          toast.success(`Se guardó la inscripción ${inscripcion.numeroInscripcion}.`)
           volver()
         },
-        onError: (e) => toast.error(getErrorMessage(e)),
-      },
-    )
+        onError,
+      })
+      return
+    }
+    // U.2.CON.1b: confirma el número y avisa si quedó sin autorización de datos.
+    crearMut.mutate(input, { onSuccess: setRegistrada, onError })
   }
 
   return (
@@ -303,8 +329,8 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
         <form
           id={FORM_ID}
           noValidate
-          // El * de obligatorio con el color de la marca de pendientes.
-          className="[&_[data-required-mark]]:text-orange"
+          // El * de obligatorio va en rojo, como en el resto de formularios
+          // (regla global de `[data-required-mark]` en index.css).
           onSubmit={(e) => {
             e.preventDefault()
             guardar()
@@ -582,34 +608,45 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
                   )}
                 </fieldset>
 
-                <div className="grid gap-1.5 border-t border-border pt-5">
-                  <label className="flex w-fit cursor-pointer items-start gap-2 text-sm">
-                    <Checkbox
-                      checked={autoriza}
-                      disabled={Boolean(inscripcion)}
-                      onCheckedChange={(c) => setAutoriza(Boolean(c))}
-                      aria-invalid={intentado && !autoriza}
-                    />
-                    <span>
-                      Autorizo el tratamiento de los datos personales del aspirante y su acudiente
-                      (Ley 1581 de 2012). <span data-required-mark="">*</span>
-                    </span>
-                  </label>
-                  <p
-                    className={
-                      intentado && !autoriza ? "text-xs text-red" : "text-xs text-muted-foreground"
-                    }
-                  >
-                    {inscripcion
-                      ? "La autorización se dio al registrar la inscripción."
-                      : "Con ella, los establecimientos de las opciones ven los datos para poder admitir."}
-                  </p>
-                </div>
+                {/* Solo al crear: después la autorización la da el acudiente, por establecimiento. */}
+                {!inscripcion && (
+                  <div className="grid gap-3 border-t border-border pt-5">
+                    <label className="flex w-fit cursor-pointer items-start gap-2 text-sm">
+                      <Checkbox checked={autoriza} onCheckedChange={(c) => setAutoriza(Boolean(c))} />
+                      <span>Autorizo el tratamiento de datos (Ley 1581 de 2012)</span>
+                    </label>
+                    {!autoriza && <AvisoSinAutorizacion />}
+                  </div>
+                )}
               </div>
             </Seccion>
           </Secciones>
         </form>
       </TableScreenBody>
+
+      <Dialog open={registrada != null} onOpenChange={(open) => !open && volver()}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircleIcon className="text-green size-5 shrink-0" aria-hidden />
+              Inscripción {registrada?.numeroInscripcion} registrada.
+            </DialogTitle>
+          </DialogHeader>
+          {registrada?.autorizacionPendiente && (
+            // El funcionario no autoriza en nombre del acudiente: el back le envía el
+            // recordatorio y el acudiente autoriza en Consultar inscripción o Mi cuenta.
+            <AvisoAutorizacionPendiente>
+              El acudiente puede autorizarla desde Consultar inscripción o Mi cuenta; le enviamos un
+              recordatorio. Mientras tanto, los establecimientos solo ven número, grado y opciones.
+            </AvisoAutorizacionPendiente>
+          )}
+          <DialogFooter>
+            <Button type="button" onClick={volver}>
+              Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TableScreen>
   )
 }

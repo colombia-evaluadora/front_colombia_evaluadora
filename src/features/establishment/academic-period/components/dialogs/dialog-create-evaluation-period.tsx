@@ -210,7 +210,7 @@ export function CreateEvaluationPeriodDialog({
           Agregar período de evaluación
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-lg" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-lg" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

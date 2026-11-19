@@ -234,12 +234,18 @@ export function MiembrosDialog({
             disabled={agregando}
             aria-busy={agregando}
             onClick={onAgregar}
-            className="size-11 shrink-0"
+            className="size-10 shrink-0"
           >
             <PlusIcon className="size-6" />
           </Button>
           )}
         </div>
+        )}
+
+        {esGrupo && (
+          <p className="text-xs text-muted-foreground">
+            Solo el creador agrega o retira participantes; cada cambio queda anotado.
+          </p>
         )}
 
         {puedeAgregar && esGrupo && <SelectorGrupal enabled={open} value={grupal} onChange={setGrupal} />}
@@ -499,7 +505,15 @@ function FilaMiembro({
       <span className={cn("flex min-w-0 flex-1 items-center gap-3", m.bloqueado && "opacity-45")}>
         <AvatarPersona miembro={m} />
         <span className="min-w-0 leading-tight">
-          <span className="block truncate">{m.nombre}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate">{m.nombre}</span>
+            {/* ‹Creador› (M.2.MOD.1): comms-service marca a quien creó el grupo con `esCreador`. */}
+            {m.esCreador && (
+              <Badge variant="soft" color="info" className="shrink-0">
+                Creador
+              </Badge>
+            )}
+          </span>
           <span className="block truncate text-sm text-muted-foreground">
             {[rolVisible(m), m.esAdmin && "Administrador", m.bloqueado && "No puede escribir"].filter(Boolean).join(" · ")}
           </span>

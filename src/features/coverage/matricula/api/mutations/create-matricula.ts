@@ -20,6 +20,11 @@ import type {
   Matricula,
 } from "@/features/coverage/matricula/api/types/matricula"
 import { invalidarMatriculas } from "@/features/coverage/matricula/api/query-keys"
+import {
+  hasAsignaturasParaGuardar,
+  saveMatriculaAsignaturas,
+} from "@/features/coverage/matricula/api/mutations/save-matricula-asignaturas"
+import { getErrorMessage } from "@/lib/api-client"
 
 export interface CreateMatriculaMutationInput {
   values: CreateMatriculaInput
@@ -137,7 +142,10 @@ async function createMatricula({
   }
 
   // Antes de la cuenta del estudiante: el `PK_TGRADO` decide si es usuario administrado.
-  const periodoId = await fetchPeriodoResolverMatricula(sede.pk_sede, jornada.id)
+  // El periodo elegido en el bloque 2.1 (modalidad y ciclo); sin él, el vigente.
+  const periodoId = values.academic.periodoId
+    ? Number(values.academic.periodoId)
+    : await fetchPeriodoResolverMatricula(sede.pk_sede, jornada.id)
   const gradoValor = Number(values.academic.grade)
   const grados = periodoId != null ? await fetchGrados(periodoId) : []
   const gradoId = grados.find((g) => g.valor === gradoValor)?.id ?? null
@@ -176,6 +184,17 @@ async function createMatricula({
   )
   const failedOtherDocuments = files.otherDocuments.filter((_, i) => subidas[i].status === "rejected")
 
+  // Bloque 15: el alta ya matriculó las obligatorias; acá van la media técnica y lo elegido.
+  let asignaturasError: string | undefined
+  const asignaturas = { academic: values.academic, cambios: values.asignaturas ?? {} }
+  if (hasAsignaturasParaGuardar(asignaturas)) {
+    try {
+      await saveMatriculaAsignaturas({ matriculaId, ...asignaturas })
+    } catch (error) {
+      asignaturasError = getErrorMessage(error)
+    }
+  }
+
   const matricula: Matricula = {
     id: matriculaId,
     documentNumber: values.student.documentNumber,
@@ -193,7 +212,7 @@ async function createMatricula({
     hasGrades: false,
   }
 
-  return { matricula, homologation: null, failedOtherDocuments }
+  return { matricula, homologation: null, failedOtherDocuments, asignaturasError }
 }
 
 interface UseCreateMatriculaOptions {

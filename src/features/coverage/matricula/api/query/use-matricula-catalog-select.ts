@@ -1,7 +1,9 @@
+import { useContext } from "react"
 import { useQuery } from "@tanstack/react-query"
 
 import { selectCategoryQueryOptions, type SelectCategoryRow } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
+import { CatalogosFijosContext } from "@/features/coverage/matricula/api/query/catalogos-fijos"
 
 export const MATRICULA_CATALOG_CATEGORIA = {
   talento: "TALENTO",
@@ -19,6 +21,16 @@ export const MATRICULA_CATALOG_CATEGORIA = {
   frecuenciaDomicilio: "FRECUENCIA_DOMICILIO",
   tipoDocumento: "TIPO_DOCUMENTO",
   genero: "GENERO",
+  metodologia: "METODOLOGIA",
+  internado: "INTERNADO",
+  pais: "PAIS",
+  lenguaMaterna: "LENGUA_MATERNA",
+  condicionMigratoria: "CONDICION_MIGRATORIA",
+  apoyoAcademico: "APOYO_ACADEMICO_ESPECIAL",
+  trastorno: "TRASTORNO_ESPECIFICO",
+  srpa: "SITUACION_SRPA",
+  institucionBienestar: "INSTITUCION_BIENESTAR",
+  motivoRetiro: "MOTIVO_RETIRO",
 } as const
 
 export type MatriculaCatalogKey = keyof typeof MATRICULA_CATALOG_CATEGORIA
@@ -32,8 +44,15 @@ function toMatriculaCatalog(rows: SelectCategoryRow[]): MatriculaCatalogOption[]
   return rows.map((row) => ({ id: row.pk_lista_valor, nombre: row.nombre }))
 }
 
+/** Con `CatalogosFijosContext` arriba no consulta: usa el catálogo que trae la pantalla. */
 export function useMatriculaCatalogQuery(key: MatriculaCatalogKey) {
-  return useQuery({ ...selectCategoryQueryOptions(MATRICULA_CATALOG_CATEGORIA[key]), select: toMatriculaCatalog })
+  const fijos = useContext(CatalogosFijosContext)
+  const query = useQuery({
+    ...selectCategoryQueryOptions(MATRICULA_CATALOG_CATEGORIA[key]),
+    select: toMatriculaCatalog,
+    enabled: !fijos,
+  })
+  return fijos ? { ...query, data: fijos[key] ?? [] } : query
 }
 
 export interface MatriculaStatusOption {

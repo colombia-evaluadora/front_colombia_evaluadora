@@ -1,9 +1,8 @@
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
-import { YES_NO_OPTIONS } from "@/features/coverage/matricula/api/ui-mappings"
 import type { MatriculaConflictVictimInfo, MatriculaOriginSectorInfo, MatriculaPreviousYearInfo } from "@/features/coverage/matricula/api/types/matricula"
 import { anySettingVisible, catalogLabelFor, catalogOptions } from "./catalog-utils"
-import { type DepartmentOption, MatriculaFormSection, MatriculaSelectField, MatriculaTextField } from "./fields"
+import { type DepartmentOption, MatriculaFormSection, MatriculaSelectField, MatriculaTextField, MatriculaYesNoField } from "./fields"
 
 interface PreviousYearSectionProps {
   value: MatriculaPreviousYearInfo
@@ -20,6 +19,7 @@ export function MatriculaPreviousYearSection({
 }: PreviousYearSectionProps) {
   const { data: situacionAnioAnterior } = useMatriculaCatalogQuery("situacionAnioAnterior")
   const { data: condicionAnioAnterior } = useMatriculaCatalogQuery("condicionAnioAnterior")
+  const { data: bienestar } = useMatriculaCatalogQuery("institucionBienestar")
   if (
     !anySettingVisible(fieldSettings, [
       "previous-year-situation",
@@ -69,13 +69,14 @@ export function MatriculaPreviousYearSection({
         />
       )}
       {isFieldVisible(fieldSettings, "welfare-institution") && (
-        <MatriculaTextField
+        <MatriculaSelectField
           id="welfare-institution"
           label="Institución bienestar de origen"
           required={isFieldRequired(fieldSettings, "welfare-institution")}
           invalid={invalidFields.includes("welfare-institution")}
           value={value.welfareInstitution}
-          maxLength={150}
+          options={catalogOptions(bienestar)}
+          labelFor={catalogLabelFor(bienestar)}
           onChange={(welfareInstitution) => onChange({ ...value, welfareInstitution })}
         />
       )}
@@ -109,37 +110,48 @@ export function MatriculaOriginSectorSection({
   return (
     <MatriculaFormSection title="Sector de origen">
       {isFieldVisible(fieldSettings, "origin-private-sector") && (
-        <MatriculaSelectField
+        <MatriculaYesNoField
           id="origin-private-sector"
           label="Proviene del sector privado"
           required={isFieldRequired(fieldSettings, "origin-private-sector")}
           invalid={invalidFields.includes("origin-private-sector")}
           value={value.fromPrivateSector}
-          options={YES_NO_OPTIONS}
           onChange={(fromPrivateSector) => onChange({ ...value, fromPrivateSector })}
         />
       )}
       {isFieldVisible(fieldSettings, "origin-another-municipality") && (
-        <MatriculaSelectField
+        <MatriculaYesNoField
           id="origin-another-municipality"
           label="Proviene de otro municipio"
           required={isFieldRequired(fieldSettings, "origin-another-municipality")}
           invalid={invalidFields.includes("origin-another-municipality")}
           value={value.fromAnotherMunicipality}
-          options={YES_NO_OPTIONS}
-          onChange={(fromAnotherMunicipality) => onChange({ ...value, fromAnotherMunicipality })}
+          // "¿Cuál?" solo aplica con Sí: al volver a No se borra lo escrito.
+          onChange={(fromAnotherMunicipality) =>
+            onChange({
+              ...value,
+              fromAnotherMunicipality,
+              whichMunicipality: fromAnotherMunicipality === "Sí" ? value.whichMunicipality : "",
+            })
+          }
         />
       )}
       {isFieldVisible(fieldSettings, "origin-which-municipality") && (
-        <MatriculaTextField
-          id="origin-which-municipality"
-          label="¿Cuál?"
-          required={isFieldRequired(fieldSettings, "origin-which-municipality")}
-          invalid={invalidFields.includes("origin-which-municipality")}
-          value={value.whichMunicipality}
-          maxLength={150}
-          onChange={(whichMunicipality) => onChange({ ...value, whichMunicipality })}
-        />
+        <div className="flex flex-col gap-1">
+          <MatriculaTextField
+            id="origin-which-municipality"
+            label="¿Cuál?"
+            required={value.fromAnotherMunicipality === "Sí"}
+            invalid={invalidFields.includes("origin-which-municipality")}
+            value={value.whichMunicipality}
+            maxLength={100}
+            disabled={value.fromAnotherMunicipality !== "Sí"}
+            onChange={(whichMunicipality) => onChange({ ...value, whichMunicipality })}
+          />
+          {value.fromAnotherMunicipality !== "Sí" ? (
+            <p className="text-xs text-muted-foreground">Se habilita con Sí.</p>
+          ) : null}
+        </div>
       )}
     </MatriculaFormSection>
   )
@@ -166,6 +178,10 @@ export function MatriculaConflictVictimSection({
   const allMunicipalities = departments.flatMap((d) => d.municipalities)
   const municipalityNameById = new Map(allMunicipalities.map((m) => [String(m.id), m.name]))
   const { data: poblacionVictima } = useMatriculaCatalogQuery("poblacionVictima")
+  // Regla 5: el municipio expulsor solo aplica a la población víctima.
+  const noVictima = (id: string) =>
+    /no aplica|ninguna|no es v/i.test(poblacionVictima?.find((p) => String(p.id) === id)?.nombre ?? "")
+  const victima = Boolean(value.population) && !noVictima(value.population)
   if (
     !anySettingVisible(fieldSettings, [
       "conflict-victim-population",
@@ -186,14 +202,23 @@ export function MatriculaConflictVictimSection({
           value={value.population}
           options={catalogOptions(poblacionVictima)}
           labelFor={catalogLabelFor(poblacionVictima)}
-          onChange={(population) => onChange({ ...value, population })}
+          onChange={(population) =>
+            onChange({
+              ...value,
+              population,
+              lastExpellingMunicipality:
+                population && !noVictima(population) ? value.lastExpellingMunicipality : "",
+            })
+          }
         />
       )}
       {isFieldVisible(fieldSettings, "conflict-last-expelling-municipality") && (
         <MatriculaSelectField
           id="conflict-last-expelling-municipality"
           label="Último municipio expulsor"
-          required={isFieldRequired(fieldSettings, "conflict-last-expelling-municipality")}
+          required={victima}
+          disabled={!victima}
+          description={victima ? undefined : "Se habilita si es población víctima."}
           invalid={invalidFields.includes("conflict-last-expelling-municipality")}
           value={value.lastExpellingMunicipality}
           options={allMunicipalities.map((m) => String(m.id))}

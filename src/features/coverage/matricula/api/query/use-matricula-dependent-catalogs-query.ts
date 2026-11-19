@@ -64,8 +64,13 @@ async function fetchGrupos(gradoId: number, jornadaName?: string): Promise<Matri
 }
 
 
-export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCatalogsRequest) {
-  const { campusId, campus, shift, grade } = params
+export function useMatriculaDependentCatalogsQuery(
+  params: MatriculaDependentCatalogsRequest & {
+    /** El filtro del listado elige el periodo; sin él se resuelve el vigente de sede y jornada. */
+    periodoId?: number | null
+  },
+) {
+  const { campusId, campus, shift, grade, periodoId: periodoElegido } = params
 
   const { data: sedes } = useSedeOptionsQuery()
   const sedeId = resolverSede(sedes, { campusId, campus }).sede?.pk_sede
@@ -75,10 +80,14 @@ export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCat
   const jornadaId = shift ? jornadasActivas?.find((j) => j.nombre === shift)?.id : undefined
 
   const {
-    data: periodoId,
+    data: periodoResuelto,
     isError: isPeriodoError,
     error: periodoError,
-  } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
+  } = usePeriodoResolverMatriculaQuery(
+    periodoElegido != null ? null : (sedeId ?? null),
+    periodoElegido != null ? null : (jornadaId ?? null),
+  )
+  const periodoId = periodoElegido ?? periodoResuelto
 
   const gradosQuery = useQuery({
     queryKey: matriculaKeys.gradosPorPeriodo(periodoId),
@@ -107,5 +116,7 @@ export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCat
     } as MatriculaDependentCatalogsResponse,
     isPeriodoError,
     periodoError,
+    sedeId: sedeId ?? null,
+    jornadaId: jornadaId ?? null,
   }
 }

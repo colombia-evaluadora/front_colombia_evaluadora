@@ -1,27 +1,27 @@
 import {
-  useAniosInformeQuery,
-  useJornadasInformeQuery,
-  useSedesInformeQuery,
-} from "@/features/academic-management/reports/api/query/use-cascada-query"
-import { useGruposPeriodoQuery } from "@/features/academic-management/reports/api/query/use-grupos-periodo-query"
+  useAniosGeQuery,
+  useGruposPeriodoGeQuery,
+  useJornadasGeQuery,
+  usePeriodosGeQuery,
+  useSedesGeQuery,
+} from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
-import { usePeriodosInformeQuery } from "@/features/academic-management/reports/api/query/use-periodos-informe-query"
 
 /**
  * Opciones de Sede → Jornada → Grado/Grupo y Período del año en curso, desde
- * la cascada de Informes: ya vienen acotadas al alcance de quien pregunta, como
+ * la cascada de GE: ya vienen acotadas al alcance de quien pregunta, como
  * el listado del Observador (fn_usuario_sedes_lectura).
  */
 export function useOpcionesCascada(sede: string, jornada: string) {
   const sedeId = sede ? Number(sede) : null
   const jornadaId = jornada ? Number(jornada) : null
 
-  const sedes = useSedesInformeQuery()
-  const anios = useAniosInformeQuery(sedeId)
+  const sedes = useSedesGeQuery()
+  const anios = useAniosGeQuery(sedeId)
   const anio = anios.data?.find((a) => a.esActual)?.anio ?? anios.data?.[0]?.anio ?? null
-  const jornadas = useJornadasInformeQuery(sedeId, anio)
-  const grupos = useGruposPeriodoQuery({ sedeId, anio, jornadaId })
-  const periodos = usePeriodosInformeQuery({ sedeId, anio, jornadaId })
+  const jornadas = useJornadasGeQuery(sedeId, anio)
+  const grupos = useGruposPeriodoGeQuery({ sedeId, anio, jornadaId })
+  const periodos = usePeriodosGeQuery({ sedeId, anio, jornadaId })
 
   const sedeOpciones: Opcion[] = (sedes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre }))
   // Una jornada puede llegar repetida si la sede tiene dos períodos académicos en el año.
@@ -32,6 +32,12 @@ export function useOpcionesCascada(sede: string, jornada: string) {
     value: String(g.grupoId),
     label: `${g.gradoNombre} · ${g.grupoEtiqueta}`,
   }))
+  // Grados únicos de los grupos del período (el filtro por grado de un listado es por PK_TGRADO, no por grupo).
+  const gradoOpciones: Opcion[] = [
+    ...new Map((grupos.data ?? []).map((g) => [g.gradoId, { value: String(g.gradoId), label: g.gradoNombre }])).values(),
+  ]
+  // VALOR del catálogo GRADOS de cada grado (TGRADO.CODIGO), por PK_TGRADO: así se cruza con listas por código.
+  const gradoCodigos = new Map((grupos.data ?? []).map((g) => [String(g.gradoId), g.gradoCodigo ?? ""]))
   const periodoOpciones: Opcion[] = (periodos.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre }))
 
   // Un rector de varios colegios: el catálogo de códigos es el del colegio de la sede elegida.
@@ -44,6 +50,8 @@ export function useOpcionesCascada(sede: string, jornada: string) {
     sedeOpciones,
     jornadaOpciones,
     grupoOpciones,
+    gradoOpciones,
+    gradoCodigos,
     periodoOpciones,
     periodos: periodos.data ?? [],
     establecimientoId,

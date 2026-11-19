@@ -129,6 +129,45 @@ export const paths = {
       path: "cobertura/matricula/detalle/$matriculaId/editar",
       getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}/editar`,
     },
+    // Matrícula complementaria por adscripción (Sección 2.16.2): mismo prefijo
+    // para que el ítem del menú quede marcado en todas sus pantallas.
+    coberturaComplementaria: {
+      path: "cobertura/matricula-complementaria",
+      getHref: () => "/app/cobertura/matricula-complementaria",
+    },
+    // Promoción y nivelación (Sección 4.7): pestañas Reprobados y Áreas pendientes.
+    coberturaPromocion: {
+      path: "cobertura/promocion-nivelacion",
+      getHref: () => "/app/cobertura/promocion-nivelacion",
+    },
+    coberturaConvocatoriaNueva: {
+      path: "cobertura/matricula-complementaria/convocatorias/nueva",
+      getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",
+    },
+    coberturaConvocatoriaDetalle: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}`,
+    },
+    coberturaConvocatoriaEditar: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/editar",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}/editar`,
+    },
+    coberturaConvocatoriaSeleccionar: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/seleccionar",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}/seleccionar`,
+    },
+    coberturaPostulacionNueva: {
+      path: "cobertura/matricula-complementaria/postulaciones/nueva",
+      getHref: () => "/app/cobertura/matricula-complementaria/postulaciones/nueva",
+    },
+    coberturaPostulacionDetalle: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}`,
+    },
+    coberturaPostulacionCambiarCupo: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/cambiar-cupo",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}/cambiar-cupo`,
+    },
     // Mismo prefijo para las dos vistas: el ítem del menú se marca en ambas.
     auditoriaSesiones: {
       path: "registro-de-actividad/sesiones",
@@ -443,6 +482,10 @@ export const paths = {
       path: "gestion-estudiantil/catalogo-anotaciones",
       getHref: () => "/app/gestion-estudiantil/catalogo-anotaciones",
     },
+    configuracionGe: {
+      path: "gestion-estudiantil/configuracion",
+      getHref: () => "/app/gestion-estudiantil/configuracion",
+    },
     convivenciaProcesoNuevo: {
       path: "gestion-estudiantil/convivencia/procesos/nuevo",
       getHref: () => "/app/gestion-estudiantil/convivencia/procesos/nuevo",
@@ -519,6 +562,128 @@ export const paths = {
     reconocimientoDetalle: {
       path: "gestion-estudiantil/reconocimientos/$reconocimientoId",
       getHref: (reconocimientoId: number | string) => `/app/gestion-estudiantil/reconocimientos/${reconocimientoId}`,
+    },
+    actividadesExtracurriculares: {
+      path: "gestion-estudiantil/actividades-extracurriculares",
+      getHref: () => "/app/gestion-estudiantil/actividades-extracurriculares",
+    },
+    actividadNueva: {
+      path: "gestion-estudiantil/actividades-extracurriculares/nueva",
+      getHref: () => "/app/gestion-estudiantil/actividades-extracurriculares/nueva",
+    },
+    actividadDetalle: {
+      path: "gestion-estudiantil/actividades-extracurriculares/$actividadId",
+      getHref: (actividadId: number | string) =>
+        `/app/gestion-estudiantil/actividades-extracurriculares/${actividadId}`,
+    },
+    actividadEditar: {
+      path: "gestion-estudiantil/actividades-extracurriculares/$actividadId/editar",
+      getHref: (actividadId: number | string) =>
+        `/app/gestion-estudiantil/actividades-extracurriculares/${actividadId}/editar`,
+    },
+    servicioSocialEstudiante: {
+      path: "gestion-estudiantil/actividades-extracurriculares/servicio-social/$matricula",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/actividades-extracurriculares/servicio-social/${matricula}`,
+    },
+    reintegracion: {
+      path: "gestion-estudiantil/reintegracion",
+      getHref: () => "/app/gestion-estudiantil/reintegracion",
+    },
+    reintegracionAbrir: {
+      path: "gestion-estudiantil/reintegracion/abrir",
+      getHref: () => "/app/gestion-estudiantil/reintegracion/abrir",
+    },
+    reintegracionCaso: {
+      path: "gestion-estudiantil/reintegracion/caso/$casoId",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/reintegracion/caso/${casoId}`,
+    },
+    reintegracionConvivencia: {
+      path: "gestion-estudiantil/reintegracion/caso/$casoId/convivencia",
+      getHref: (casoId: number | string) => `/app/gestion-estudiantil/reintegracion/caso/${casoId}/convivencia`,
+    },
+    prevencionRetencion: {
+      path: "gestion-estudiantil/prevencion-retencion",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion",
+    },
+    prevencionValorar: {
+      path: "gestion-estudiantil/prevencion-retencion/valorar",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/valorar",
+    },
+    prevencionPlanNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/nuevo",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/plan/nuevo",
+    },
+    prevencionPlanEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/$planId/editar",
+      getHref: (planId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/plan/${planId}/editar`,
+    },
+    prevencionPlanDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/$planId",
+      getHref: (planId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/plan/${planId}`,
+    },
+    prevencionPlanCaso: {
+      path: "gestion-estudiantil/prevencion-retencion/plan/$planId/caso-convivencia",
+      getHref: (planId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/plan/${planId}/caso-convivencia`,
+    },
+    prevencionValoracionDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/valoracion/$valoracionId",
+      getHref: (valoracionId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/valoracion/${valoracionId}`,
+    },
+    prevencionHistorial: {
+      path: "gestion-estudiantil/prevencion-retencion/historial/$matricula",
+      getHref: (matricula: number | string) => `/app/gestion-estudiantil/prevencion-retencion/historial/${matricula}`,
+    },
+    prevencionEstrategiaNueva: {
+      path: "gestion-estudiantil/prevencion-retencion/estrategias/nueva",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/estrategias/nueva",
+    },
+    prevencionEstrategiaEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/estrategias/$estrategiaId/editar",
+      getHref: (estrategiaId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/estrategias/${estrategiaId}/editar`,
+    },
+    prevencionEstrategiaDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/estrategias/$estrategiaId",
+      getHref: (estrategiaId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/estrategias/${estrategiaId}`,
+    },
+    prevencionCaracterizacion: {
+      path: "gestion-estudiantil/prevencion-retencion/caracterizacion/$matricula",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/caracterizacion/${matricula}`,
+    },
+    prevencionCaracterizacionEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/caracterizacion/$matricula/editar",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/caracterizacion/${matricula}/editar`,
+    },
+    prevencionHistorialAcademico: {
+      path: "gestion-estudiantil/prevencion-retencion/historial-academico/$matricula",
+      getHref: (matricula: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/historial-academico/${matricula}`,
+    },
+    prevencionSaludMentalNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/salud-mental/nuevo",
+      getHref: () => "/app/gestion-estudiantil/prevencion-retencion/salud-mental/nuevo",
+    },
+    prevencionSenalSaludMental: {
+      path: "gestion-estudiantil/prevencion-retencion/salud-mental/$senalId",
+      getHref: (senalId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/salud-mental/${senalId}`,
+    },
+    prevencionAcompNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$tipo/nuevo",
+      getHref: (tipo: "embarazo" | "consumo") => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${tipo}/nuevo`,
+    },
+    prevencionAcompDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
+      getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
+    },
+    prevencionAcompEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",
+      getHref: (acompId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}/editar`,
     },
     observacionesSugerencias: {
       path: "gestion-estudiantil/observaciones-sugerencias",

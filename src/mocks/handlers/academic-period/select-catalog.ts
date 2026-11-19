@@ -1,3 +1,4 @@
+import { CATALOGOS_MATRICULA_NUEVOS, METODOLOGIAS } from "@/mocks/db/metodologia"
 import { http, HttpResponse, delay } from "msw"
 
 import { jornadasDb } from "../../db/academic-period/jornadas"
@@ -33,6 +34,13 @@ const deMock = (lista: CatalogoMock[]): SelectCategoryRow[] =>
   lista.map((c) => ({ pk_lista_valor: c.pk, nombre: c.nombre, valor: c.valor, accion: null }))
 
 const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
+  METODOLOGIA: () => METODOLOGIAS.map((m) => ({ ...m, valor: m.nombre, accion: null })),
+  ...Object.fromEntries(
+    Object.entries(CATALOGOS_MATRICULA_NUEVOS).map(([k, filas]) => [
+      k,
+      () => filas.map((f) => ({ ...f, valor: f.nombre, accion: null })),
+    ]),
+  ),
   // Citaciones y compromisos (V609): pk estables para que los filtros por pk funcionen.
   ESTADO_CITACION: () => deMock(ESTADOS_CITACION_MOCK),
   MOTIVO_CITACION: () => deMock(MOTIVOS_CITACION_MOCK),

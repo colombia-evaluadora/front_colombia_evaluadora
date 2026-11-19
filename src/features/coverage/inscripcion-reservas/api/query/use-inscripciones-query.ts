@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
+import { toAutorizaciones } from "@/features/autorizacion-datos/lib/autorizaciones"
 import { fetchGrados } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
-import { fetchEstablishmentsOptions } from "@/features/establishment/institution/api/query/use-establishments-options"
+import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import type {
   EstadoInscripcion,
   EstadoOpcion,
@@ -33,10 +34,15 @@ export const inscripcionesKeys = {
   catalogos: [...all, "catalogos"] as const,
 }
 
-/** Establecimiento que consulta: el primero de los del usuario. */
+/**
+ * Establecimiento que consulta: el de la primera de sus sedes. Sale de las sedes
+ * asignadas y no de /establecimientos/opciones, que solo ve rector, secretaria y
+ * jefe de sistema (fn_est_listar_todos) y da 403 a los roles que reciben
+ * Inscritos desde Configuración de roles.
+ */
 export async function fetchEstablecimientoId(): Promise<number | null> {
-  const { rows } = await fetchEstablishmentsOptions()
-  return rows[0]?.id ?? null
+  const sedes = await fetchSedeOptions()
+  return sedes[0]?.fk_establecimiento ?? null
 }
 
 // --- Grupos de admisión ------------------------------------------------------
@@ -118,8 +124,9 @@ export interface OpcionInscripcionRow {
   inscripcion_id: number
   posicion: number
   numero_inscripcion: string
-  aspirante: string
-  documento: string
+  /** null con `sin_autorizacion` (Regla 81), igual que documento, faltantes y edad. */
+  aspirante: string | null
+  documento: string | null
   documentos_faltantes: string[] | null
   prioridad: string | null
   numero_sorteo: number | null
@@ -127,7 +134,9 @@ export interface OpcionInscripcionRow {
   estado_opcion: EstadoOpcion
   estado_inscripcion: EstadoInscripcion
   total_opciones: number
-  situacion_edad: SituacionEdad
+  situacion_edad: SituacionEdad | null
+  /** El acudiente no autorizó el tratamiento de datos al establecimiento del body (Regla 81). */
+  sin_autorizacion?: boolean | null
   cupos_disponibles: number
   total_count: number
 }
@@ -158,8 +167,9 @@ export async function fetchInscripciones(
       inscripcionId: String(r.inscripcion_id),
       posicion: Number(r.posicion),
       numeroInscripcion: r.numero_inscripcion,
-      aspirante: r.aspirante,
-      documento: r.documento,
+      // Sin autorización solo hay número: los diálogos nombran la inscripción por él.
+      aspirante: r.aspirante ?? `Inscripción ${r.numero_inscripcion}`,
+      documento: r.documento ?? "",
       documentosFaltantes: r.documentos_faltantes ?? [],
       documentosIncompletos: (r.documentos_faltantes ?? []).length > 0,
       prioridad: r.prioridad,
@@ -169,6 +179,7 @@ export async function fetchInscripciones(
       estadoInscripcion: r.estado_inscripcion,
       situacionEdad: r.situacion_edad ?? "SIN_CALCULAR",
       totalOpciones: Number(r.total_opciones),
+      sinAutorizacion: r.sin_autorizacion === true,
     })),
     pageCount: pageSize > 0 ? Math.ceil(total / pageSize) : 0,
     totalCount: total,
@@ -213,6 +224,12 @@ export interface InscripcionDetalleRow {
   numeroInscripcion: string
   estado: EstadoInscripcion
   documentoHermano: string | null
+  /**
+   * Regla 81 (sso V425): sin autorización para el establecimiento, personas, soportes,
+   * hermano, foto y datos sensibles llegan en null.
+   */
+  datos_restringidos?: boolean | null
+  autorizaciones?: unknown
   paisOrigen: string | null
   lenguaMaterna: string | null
   condicionMigratoria: string | null
@@ -225,19 +242,22 @@ export interface InscripcionDetalleRow {
     jornada: string
     numeroSorteo: number | null
     estado: EstadoOpcion
-    hermanoVerificado: boolean
+    hermanoVerificado: boolean | null
   }[]
-  estudiante: PersonaInscripcionRow
+  estudiante: PersonaInscripcionRow | null
   acudiente: PersonaInscripcionRow | null
-  soportes: { tipoId: number; nombre: string; archivo: string | null; revision: RevisionSoporte }[]
+  soportes: null | { tipoId: number; nombre: string; archivo: string | null; revision: RevisionSoporte }[]
 }
 
 export function toInscripcionDetalle(d: InscripcionDetalleRow): InscripcionDetalle {
-  const e = d.estudiante
+  // Con datos restringidos `estudiante` llega en null: campos vacíos en lugar de romper.
+  const e: Partial<PersonaInscripcionRow> = d.estudiante ?? {}
   const a = d.acudiente
   return {
     id: String(d.id),
     numeroInscripcion: d.numeroInscripcion,
+    datosRestringidos: d.datos_restringidos === true,
+    autorizaciones: toAutorizaciones(d.autorizaciones),
     grado: d.opciones[0]?.grado ?? "",
     estado: d.estado,
     documentoHermano: d.documentoHermano,
@@ -253,12 +273,12 @@ export function toInscripcionDetalle(d: InscripcionDetalleRow): InscripcionDetal
     })),
     estudiante: {
       tipoDocumento: e.tipoDocumento ?? "",
-      documento: e.documento,
+      documento: e.documento ?? "",
       genero: e.genero ?? "",
-      primerNombre: e.primerNombre,
-      segundoNombre: e.segundoNombre,
-      primerApellido: e.primerApellido,
-      segundoApellido: e.segundoApellido,
+      primerNombre: e.primerNombre ?? "",
+      segundoNombre: e.segundoNombre ?? null,
+      primerApellido: e.primerApellido ?? "",
+      segundoApellido: e.segundoApellido ?? null,
       fechaNacimiento: e.fechaNacimiento ?? "",
       paisOrigen: d.paisOrigen ?? "",
       // La inscripción todavía no los guarda.
@@ -278,7 +298,7 @@ export function toInscripcionDetalle(d: InscripcionDetalleRow): InscripcionDetal
       telefono: a?.telefono ?? "",
       email: a?.email ?? "",
     },
-    soportes: d.soportes.map((s) => ({
+    soportes: (d.soportes ?? []).map((s) => ({
       id: String(s.tipoId),
       nombre: s.nombre,
       archivo: s.archivo,

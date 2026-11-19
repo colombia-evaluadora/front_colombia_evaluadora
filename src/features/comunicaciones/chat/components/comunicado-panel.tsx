@@ -1,10 +1,13 @@
 import { useState } from "react"
 import { format } from "date-fns"
+import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,17 +17,19 @@ import {
   LockIcon,
   MegaphoneIcon,
   WarningCircleIcon,
+  WarningIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { paths } from "@/config/paths"
 import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
 import {
   useAnularComunicado,
   useCancelarComunicado,
 } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
-import { useRecepcionComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-recepcion-comunicado-query"
 import { AdjuntosComunicadoLista } from "@/features/comunicaciones/chat/components/adjuntos-comunicado"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
 import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
+import { useSeguimientoComunicadoQuery } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 
 const ESTADOS: Record<
   EstadoComunicado,
@@ -97,7 +102,7 @@ export function ComunicadoPanel({
 
 /** Tarjeta "Comunicado oficial" (diseño 3883:57269); sola o encabezando la conversación de respuestas. */
 export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }) {
-  const [verRecepcion, setVerRecepcion] = useState(false)
+  const [verSeguimiento, setVerSeguimiento] = useState(false)
   const [dialogo, setDialogo] = useState<"anular" | "cancelar" | null>(null)
   const gestiona = c.gestiona ?? c.esCreador
   const programado = new Date(c.publicarEn) > new Date()
@@ -185,13 +190,14 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
             </div>
           )}
           {c.leidos != null && c.totalDestinatarios != null && (
-            // Confirmación de lectura: solo la recibe quien lo publicó; abre el registro por persona.
+            // Confirmación de lectura: solo la recibe quien lo gestiona; abre el seguimiento (mismo
+            // endpoint que el detalle del comunicado, así los números coinciden en ambas pantallas).
             <div>
               <dt className="inline">Leído por: </dt>
               <dd className="inline">
                 <button
                   type="button"
-                  onClick={() => setVerRecepcion(true)}
+                  onClick={() => setVerSeguimiento(true)}
                   className="font-medium text-primary tabular-nums underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 >
                   {c.leidos} de {c.totalDestinatarios}
@@ -227,8 +233,8 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
 
       {dialogo === "anular" && <AnularDialog comunicado={c} onClose={() => setDialogo(null)} />}
       {dialogo === "cancelar" && <CancelarDialog comunicado={c} onClose={() => setDialogo(null)} />}
-      {verRecepcion && (
-        <RecepcionDialog conversacionId={c.conversacionId} onClose={() => setVerRecepcion(false)} />
+      {verSeguimiento && (
+        <SeguimientoDialog comunicado={c} onClose={() => setVerSeguimiento(false)} />
       )}
     </article>
   )
@@ -252,7 +258,7 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Anular comunicado</DialogTitle>
         </DialogHeader>
@@ -261,26 +267,22 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
           Se anulará {c.titulo}. Los destinatarios dejarán de verlo y su aviso dirá que el contenido ya no está
           disponible.
         </p>
-        <div className="space-y-1.5">
-          <label htmlFor="motivo-anulacion" className="text-sm font-medium">
+        <Field variant="outlined" data-invalid={intentado && vacio ? true : undefined}>
+          <FieldLabel htmlFor="motivo-anulacion">
             Motivo<span className="text-red"> *</span>
-          </label>
+          </FieldLabel>
           <Textarea
             id="motivo-anulacion"
+            placeholder="Agregar"
+            className={TEXTAREA_OUTLINED}
             value={motivo}
             maxLength={MAX_MOTIVO}
             aria-invalid={intentado && vacio}
             onChange={(e) => setMotivo(e.target.value)}
           />
-          <p className="text-right text-xs text-muted-foreground">
-            {motivo.length} / {MAX_MOTIVO}
-          </p>
-          {intentado && vacio && (
-            <p role="alert" className="text-xs text-red">
-              Escribe el motivo de la anulación.
-            </p>
-          )}
-        </div>
+          <CharacterCounter value={motivo} max={MAX_MOTIVO} />
+          {intentado && vacio && <FieldError>Escribe el motivo de la anulación.</FieldError>}
+        </Field>
         <DialogFooter>
           <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
             Cancelar
@@ -319,18 +321,26 @@ export function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunic
 
   return (
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cancelar comunicado programado</DialogTitle>
+          {/* Prototipo M.1.ANU.2: ícono de advertencia, título en negrita y el estado final como badge. */}
+          <DialogTitle className="flex items-center gap-2">
+            <WarningIcon aria-hidden className="size-5 shrink-0 text-orange" />
+            Cancelar comunicado programado
+          </DialogTitle>
         </DialogHeader>
         <ErrorNoticeBanner error={cancelar.isError ? cancelar.error : null} />
-        <p className="text-sm text-muted-foreground">
-          Se cancelará {c.titulo}, programado para el{" "}
-          {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' H:mm")}. Pasará a Cancelado (estado final) y no se
-          publicará.
-        </p>
+        <div className="space-y-2 text-sm">
+          <p>
+            Se cancelará <strong>{c.titulo}</strong>, programado para el{" "}
+            {format(new Date(c.publicarEn), "dd/MM/yyyy 'a las' H:mm")}.
+          </p>
+          <p className="flex flex-wrap items-center gap-1.5">
+            Pasará a <EstadoComunicadoBadge estado="CANCELADO" /> (estado final) y no se publicará.
+          </p>
+        </div>
         <DialogFooter>
-          <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={cancelar.isPending}>
+          <Button type="button" variant="outline" color="neutral" onClick={cerrar} disabled={cancelar.isPending}>
             Volver
           </Button>
           <Button
@@ -355,55 +365,59 @@ export function CancelarDialog({ comunicado: c, onClose }: { comunicado: Comunic
   )
 }
 
-/** Registro de recepción: por destinatario, si lo leyó y a qué hora (solo quien lo publicó). */
-function RecepcionDialog({ conversacionId, onClose }: { conversacionId: number; onClose: () => void }) {
-  const q = useRecepcionComunicadoQuery(conversacionId, true)
-  const filas = q.data ?? []
-  const leidos = filas.filter((f) => f.estado === "LEIDO").length
+/**
+ * Seguimiento del comunicado desde el chat: los mismos contadores que el detalle
+ * (`/comunicado/seguimiento`, fuente única del "leído"). Por diseño (M.1.DET.1) nunca se muestra
+ * quién leyó, solo el total; el listado de personas sin canal queda en el detalle.
+ */
+function SeguimientoDialog({ comunicado: c, onClose }: { comunicado: Comunicado; onClose: () => void }) {
+  const q = useSeguimientoComunicadoQuery(c.conversacionId, true)
+  const s = q.data
+  const n = (v: number | null | undefined) => (v == null ? "—" : v.toLocaleString("es-CO"))
+  const contadores = [
+    { etiqueta: "Destinatarios", valor: n(s?.destinatarios ?? c.totalDestinatarios) },
+    { etiqueta: "Leídos", valor: n(s?.leidos ?? c.leidos) },
+    { etiqueta: "Aviso en plataforma", valor: n(s?.conAviso) },
+    { etiqueta: "Correos enviados", valor: n(s?.correosEnviados) },
+    { etiqueta: "Correos fallidos", valor: n(s?.correosFallidos) },
+    { etiqueta: "Sin canal", valor: n(s?.sinCanal) },
+  ]
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Registro de recepción</DialogTitle>
+          <DialogTitle>Seguimiento</DialogTitle>
         </DialogHeader>
         {q.isPending ? (
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-32 w-full" />
         ) : q.isError ? (
           <p className="text-sm text-muted-foreground">
-            No se pudo cargar el registro.{" "}
+            No se pudo cargar el seguimiento.{" "}
             <button type="button" onClick={() => void q.refetch()} className="font-medium text-primary underline">
               Reintentar
             </button>
           </p>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground" aria-live="polite">
-              {leidos} de {filas.length} {filas.length === 1 ? "destinatario lo leyó" : "destinatarios lo leyeron"}.
-            </p>
-            <ul className="-mx-1 min-h-0 flex-1 divide-y overflow-y-auto px-1" aria-label="Destinatarios">
-              {filas.map((f) => (
-                <li key={f.usuarioId} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{f.nombre}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {f.vistoEn
-                        ? `Visto el ${format(new Date(f.vistoEn), "dd/MM/yyyy 'a las' H:mm")}`
-                        : f.estado === "LEIDO"
-                          ? "Leído (sin hora registrada)"
-                          : f.entregadoEn
-                            ? `Entregado el ${format(new Date(f.entregadoEn), "dd/MM/yyyy 'a las' H:mm")}`
-                            : "Aún no se publica"}
-                    </span>
-                  </span>
-                  <Badge variant="soft" color={f.estado === "LEIDO" ? "success" : "muted"}>
-                    {f.estado === "LEIDO" ? "Leído" : "No leído"}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </>
+          <dl className="grid grid-cols-2 gap-y-4 sm:grid-cols-3" aria-live="polite">
+            {contadores.map((x) => (
+              <div key={x.etiqueta} className="flex flex-col-reverse gap-0.5 px-3 text-center">
+                <dt className="text-xs text-muted-foreground">{x.etiqueta}</dt>
+                <dd className="text-2xl font-semibold tabular-nums">{x.valor}</dd>
+              </div>
+            ))}
+          </dl>
         )}
+        <DialogFooter>
+          <Button
+            variant="outline"
+            color="neutral"
+            nativeButton={false}
+            render={<Link to={paths.app.comunicacionesComunicadoDetalle.getHref(c.conversacionId)} />}
+          >
+            Ver detalle
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

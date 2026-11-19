@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { FilePdfIcon, PrinterIcon } from "@/components/ui/icons"
+import { FilePdfIcon, PrinterIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -36,7 +36,7 @@ interface Seleccion {
 }
 
 /** Imprimir observador (2.3): PDF para firmar de UN estudiante, del período o de todo el año. */
-export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltros }) {
+export function DialogImprimirObservador({ filtros, disabled }: { filtros: ObservadorFiltros; disabled?: boolean }) {
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -86,11 +86,11 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
 
   return (
     <Dialog open={open} onOpenChange={(next) => !imprimir.isPending && abrir(next)}>
-      <DialogTrigger render={<Button size="sm" variant="outline" color="muted" />}>
+      <DialogTrigger disabled={disabled} render={<Button size="sm" variant="outline" color="muted" />}>
         <PrinterIcon data-icon="inline-start" />
         Imprimir observador
       </DialogTrigger>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Imprimir observador</DialogTitle>
           <DialogDescription>Documento para imprimir y firmar a mano por el estudiante y su acudiente.</DialogDescription>
@@ -167,10 +167,11 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
             </RadioGroup>
           </Field>
         </div>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <Button size="sm" type="button" disabled={imprimir.isPending} onClick={generar}>

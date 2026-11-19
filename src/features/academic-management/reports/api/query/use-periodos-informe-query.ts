@@ -5,7 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { PeriodoInforme } from "@/features/academic-management/reports/api/types"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
-interface PeriodoRow {
+export interface PeriodoRow {
   fk_tperiodo_evaluacion: number
   codigo: string | null
   nombre: string
@@ -29,7 +29,7 @@ interface PeriodoRow {
   anio: number
 }
 
-function toPeriodo(row: PeriodoRow): PeriodoInforme {
+export function toPeriodo(row: PeriodoRow): PeriodoInforme {
   return {
     id: row.fk_tperiodo_evaluacion,
     nombre: row.nombre,

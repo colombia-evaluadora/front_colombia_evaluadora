@@ -22,7 +22,7 @@ import type {
 const MOTIVO_MAX = 1000
 
 const TEXTAREA_OUTLINED =
-  "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
+  "rounded-sm border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20"
 
 function formatFechaSesion(fecha: string | null): string {
   if (!fecha) return "Sin fecha"

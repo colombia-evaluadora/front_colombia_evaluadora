@@ -1,44 +1,58 @@
+"use no memo"
+
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
-import { useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 
-import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
-import { Button } from "@/components/ui/button"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { DatePicker } from "@/components/date-picker"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTabs,
+  TableScreenTitle,
+  TableScreenToolbar,
+} from "@/components/layout/table-screen"
+import { NoticeProvider } from "@/components/notice/notice-context"
+import { Pagination } from "@/components/pagination"
+import { SearchQueryBar } from "@/components/search/search-query-bar"
+import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { CaretLeftIcon, CaretRightIcon, ControlPointIcon, DotsThreeVerticalIcon } from "@/components/ui/icons"
+import { ControlPointIcon, FunnelXIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Spinner } from "@/components/ui/spinner"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
+import { useDataTable } from "@/hooks/use-data-table"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { cn } from "@/lib/utils"
 import { comunicadosRoute } from "@/router"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
-import { useComunicadoQuery } from "@/features/comunicaciones/chat/api/query/use-comunicado-query"
 import {
   AnularDialog,
   CancelarDialog,
-  ComunicadoArticulo,
   EstadoComunicadoBadge,
   type ComunicadoAccion,
 } from "@/features/comunicaciones/chat/components/comunicado-panel"
 import {
-  comunicadosGestionKey,
   useComunicadosGestionQuery,
   type ComunicadoGestion,
+  type OrdenComunicados,
   type PestanaComunicados,
+  type TipoFiltroComunicado,
 } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
-import { tiposAbreviados, tiposCompletos } from "@/features/comunicaciones/comunicados/lib/tipos-destinatario"
+import {
+  createBandejaColumns,
+  createComunicadosColumns,
+  MenuAccionesComunicado,
+  type DialogoComunicado,
+} from "@/features/comunicaciones/comunicados/components/table/columns-comunicados"
+import { tiposAbreviados } from "@/features/comunicaciones/comunicados/lib/tipos-destinatario"
 
 const ESTADOS: { valor: EstadoComunicado; etiqueta: string }[] = [
   { valor: "PUBLICADO", etiqueta: "Publicado" },
@@ -46,6 +60,12 @@ const ESTADOS: { valor: EstadoComunicado; etiqueta: string }[] = [
   { valor: "VENCIDO", etiqueta: "Vencido" },
   { valor: "CANCELADO", etiqueta: "Cancelado" },
   { valor: "ANULADO", etiqueta: "Anulado" },
+]
+
+const TIPOS_FILTRO: { valor: TipoFiltroComunicado; etiqueta: string }[] = [
+  { valor: "ESTUDIANTES", etiqueta: "Estudiantes" },
+  { valor: "ACUDIENTES", etiqueta: "Acudientes" },
+  { valor: "FUNCIONARIOS", etiqueta: "Funcionarios" },
 ]
 
 const fecha = (iso: string) => format(new Date(iso), "dd/MM")
@@ -73,109 +93,210 @@ function ComunicadosContent() {
   const pestana: PestanaComunicados = search.pestana ?? (publica ? "PUBLICADOS" : "RECIBIDOS")
   const gestion = pestana === "PUBLICADOS"
 
-  const cambiar = (cambios: Partial<typeof search>) =>
-    void navigate({ search: (prev) => ({ ...prev, ...cambios, page: 0 }), replace: true })
-
   return (
-    <div className="flex min-w-0 flex-col gap-4 p-4">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Comunicados institucionales</h1>
-        {publica && (
-          <Button render={<Link to={paths.app.comunicacionesComunicadoNuevo.getHref()} />} nativeButton={false}>
-            <ControlPointIcon data-icon="inline-start" aria-hidden />
-            Nuevo comunicado
-          </Button>
-        )}
-      </header>
-
-      <Tabs
-        value={pestana}
-        onValueChange={(v) =>
-          void navigate({ search: { pestana: v as PestanaComunicados, page: 0, pageSize: search.pageSize } })
-        }
-      >
-        <TabsList>
-          {publica && <TabsTrigger value="PUBLICADOS">Publicados</TabsTrigger>}
-          <TabsTrigger value="RECIBIDOS">Recibidos</TabsTrigger>
-          <TabsTrigger value="ANTERIORES">Anteriores</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <NoticeOutlet />
-
-      {gestion ? (
-        <Filtros
-          q={search.q ?? ""}
-          estado={search.estado}
-          desde={search.desde}
-          onCambiar={cambiar}
-          onLimpiar={() =>
-            void navigate({ search: { pestana, page: 0, pageSize: search.pageSize }, replace: true })
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            publica && (
+              <Button
+                size="sm"
+                render={<Link to={paths.app.comunicacionesComunicadoNuevo.getHref()} />}
+                nativeButton={false}
+              >
+                <ControlPointIcon data-icon="inline-start" aria-hidden />
+                Nuevo comunicado
+              </Button>
+            )
           }
-        />
-      ) : (
-        <Field className="max-w-sm">
-          <FieldLabel htmlFor="comunicados-q">Buscar por título</FieldLabel>
-          <Input
-            id="comunicados-q"
-            value={search.q ?? ""}
-            onChange={(e) => cambiar({ q: e.target.value || undefined })}
-          />
-        </Field>
-      )}
+        >
+          Comunicados institucionales
+        </TableScreenTitle>
+        <TableScreenTabs className="pt-2">
+          <Tabs
+            value={pestana}
+            onValueChange={(v) =>
+              void navigate({
+                search: { pestana: v as PestanaComunicados, page: 0, pageSize: search.pageSize },
+              })
+            }
+          >
+            <TabsList>
+              {publica && <TabsTrigger value="PUBLICADOS">Publicados</TabsTrigger>}
+              <TabsTrigger value="RECIBIDOS">Recibidos</TabsTrigger>
+              <TabsTrigger value="ANTERIORES">Anteriores</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </TableScreenTabs>
+        <TableScreenToolbar>
+          {/* Recibidos y Anteriores filtran igual, sin Estado: cada pestaña ya fija el suyo. */}
+          <FiltrosComunicados conEstado={gestion} />
+        </TableScreenToolbar>
+      </TableScreenHeader>
 
-      {gestion ? <TablaPublicados /> : <Bandeja pestana={pestana} />}
-    </div>
+      <TableScreenBody>
+        {gestion ? <TablaPublicados /> : <Bandeja pestana={pestana} />}
+      </TableScreenBody>
+    </TableScreen>
   )
 }
 
-function Filtros({
-  q,
-  estado,
-  desde,
-  onCambiar,
-  onLimpiar,
-}: {
-  q: string
-  estado?: EstadoComunicado
-  desde?: string
-  onCambiar: (c: { q?: string; estado?: EstadoComunicado; desde?: string }) => void
-  onLimpiar: () => void
-}) {
-  const hayFiltros = !!(q || estado || desde)
+const etiquetaEstado = (e: EstadoComunicado) => ESTADOS.find((x) => x.valor === e)?.etiqueta ?? e
+const etiquetaTipo = (t: TipoFiltroComunicado) =>
+  TIPOS_FILTRO.find((x) => x.valor === t)?.etiqueta ?? t
+
+/**
+ * Buscador de las tres pestañas (M.1.LIS.1): un solo campo "Buscar por título" con el embudo que abre
+ * los filtros avanzados (Estado solo en Publicados; Desde, Emisor y Tipo de destinatario en todas). Los aplicados se ven como chips
+ * removibles debajo, con "Limpiar filtros". Todo vive en la URL.
+ */
+function FiltrosComunicados({ conEstado }: { conEstado: boolean }) {
+  const search = comunicadosRoute.useSearch()
+  const navigate = comunicadosRoute.useNavigate()
+  const [abierto, setAbierto] = useState(false)
+  const [estado, setEstado] = useState<EstadoComunicado | "">(search.estado ?? "")
+  const [desde, setDesde] = useState(search.desde ?? "")
+  const [emisor, setEmisor] = useState(search.emisor ?? "")
+  const [tipo, setTipo] = useState<TipoFiltroComunicado | "">(search.tipo ?? "")
+
+  // Al abrir, el panel arranca con los filtros vigentes.
+  useEffect(() => {
+    if (!abierto) return
+    setEstado(search.estado ?? "")
+    setDesde(search.desde ?? "")
+    setEmisor(search.emisor ?? "")
+    setTipo(search.tipo ?? "")
+  }, [abierto, search.estado, search.desde, search.emisor, search.tipo])
+
+  const cambiar = (cambios: Partial<typeof search>) =>
+    void navigate({ search: (prev) => ({ ...prev, ...cambios, page: 0 }), replace: true })
+
+  const chips = [
+    conEstado &&
+      search.estado && {
+        clave: "estado" as const,
+        texto: `Estado: ${etiquetaEstado(search.estado)}`,
+      },
+    search.desde && {
+      clave: "desde" as const,
+      texto: `Desde ${format(new Date(`${search.desde}T00:00:00`), "dd/MM/yyyy")}`,
+    },
+    search.emisor && { clave: "emisor" as const, texto: `Emisor: ${search.emisor}` },
+    search.tipo && { clave: "tipo" as const, texto: `Destinatarios: ${etiquetaTipo(search.tipo)}` },
+  ].filter(Boolean) as { clave: "estado" | "desde" | "emisor" | "tipo"; texto: string }[]
+  const hayFiltros = chips.length > 0 || !!search.q
+
+  const limpiar = () =>
+    cambiar({
+      q: undefined,
+      estado: undefined,
+      desde: undefined,
+      emisor: undefined,
+      tipo: undefined,
+    })
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_auto] lg:items-end">
-      <Field>
-        <FieldLabel htmlFor="comunicados-q">Buscar por título</FieldLabel>
-        <Input id="comunicados-q" value={q} onChange={(e) => onCambiar({ q: e.target.value || undefined })} />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="comunicados-estado">Estado</FieldLabel>
-        <NativeSelect
-          id="comunicados-estado"
-          value={estado ?? ""}
-          onChange={(e) => onCambiar({ estado: (e.target.value || undefined) as EstadoComunicado | undefined })}
-        >
-          <NativeSelectOption value="">Todos</NativeSelectOption>
-          {ESTADOS.map((x) => (
-            <NativeSelectOption key={x.valor} value={x.valor}>
-              {x.etiqueta}
-            </NativeSelectOption>
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <SearchQueryBar
+        id="comunicados-q"
+        label="Buscar por título"
+        placeholder="Buscar por título"
+        value={search.q ?? ""}
+        onValueChange={(v) => cambiar({ q: v || undefined })}
+        onClearAll={() => {
+          limpiar()
+          setAbierto(false)
+        }}
+        activeFilterCount={chips.length + (search.q ? 1 : 0)}
+        badgeCount={chips.length}
+        open={abierto}
+        onOpenChange={setAbierto}
+        onApply={() => {
+          cambiar({
+            estado: conEstado ? estado || undefined : undefined,
+            desde: desde || undefined,
+            emisor: emisor.trim() || undefined,
+            tipo: tipo || undefined,
+          })
+          setAbierto(false)
+        }}
+        size="sm"
+      >
+        <div className="flex flex-col gap-3 px-4">
+          {conEstado && (
+            <Field variant="outlined">
+              <FieldLabel htmlFor="comunicados-estado">Estado</FieldLabel>
+              <SelectOpciones
+                id="comunicados-estado"
+                value={estado}
+                onValueChange={(x) => setEstado(x as EstadoComunicado | "")}
+                opciones={[
+                  { value: "", label: "Todos" },
+                  ...ESTADOS.map((x) => ({ value: x.valor, label: x.etiqueta })),
+                ]}
+              />
+            </Field>
+          )}
+          <Field variant="outlined">
+            <FieldLabel htmlFor="comunicados-desde">Desde</FieldLabel>
+            <DatePicker
+              id="comunicados-desde"
+              value={parseDateValue(desde)}
+              onChange={(d) => setDesde(formatDateValue(d))}
+            />
+          </Field>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="comunicados-emisor">Emisor</FieldLabel>
+            <Input
+              id="comunicados-emisor"
+              maxLength={100}
+              placeholder="Nombre de quien publicó"
+              value={emisor}
+              onChange={(e) => setEmisor(e.target.value)}
+            />
+          </Field>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="comunicados-tipo">Tipo de destinatario</FieldLabel>
+            <SelectOpciones
+              id="comunicados-tipo"
+              value={tipo}
+              onValueChange={(x) => setTipo(x as TipoFiltroComunicado | "")}
+              opciones={[
+                { value: "", label: "Todos" },
+                ...TIPOS_FILTRO.map((x) => ({ value: x.valor, label: x.etiqueta })),
+              ]}
+            />
+          </Field>
+        </div>
+      </SearchQueryBar>
+      {hayFiltros && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {chips.map((c) => (
+            <span
+              key={c.clave}
+              className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted px-2.5 py-0.5"
+            >
+              <span className="truncate">{c.texto}</span>
+              <button
+                type="button"
+                aria-label={`Quitar filtro ${c.texto}`}
+                onClick={() => cambiar({ [c.clave]: undefined })}
+                className="grid size-4 place-items-center rounded-full text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              >
+                <XIcon aria-hidden className="size-3.5" />
+              </button>
+            </span>
           ))}
-        </NativeSelect>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="comunicados-desde">Desde</FieldLabel>
-        <Input
-          id="comunicados-desde"
-          type="date"
-          value={desde ?? ""}
-          onChange={(e) => onCambiar({ desde: e.target.value || undefined })}
-        />
-      </Field>
-      <Button variant="ghost" color="neutral" disabled={!hayFiltros} onClick={onLimpiar}>
-        Limpiar filtros
-      </Button>
+          <button
+            type="button"
+            onClick={limpiar}
+            className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+          >
+            <FunnelXIcon aria-hidden className="size-3.5" />
+            Limpiar filtros
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -186,26 +307,28 @@ function useLista(pestana: PestanaComunicados) {
     pestana,
     q: search.q,
     estado: pestana === "PUBLICADOS" ? search.estado : undefined,
-    desde: pestana === "PUBLICADOS" ? search.desde : undefined,
+    desde: search.desde,
+    emisor: search.emisor,
+    tipo: search.tipo,
+    sortBy: search.sortBy as OrdenComunicados | undefined,
+    sortDir: search.sortDir,
     page: search.page,
     pageSize: search.pageSize,
   })
 }
 
 /** Cargando, error o vacío; null cuando hay filas que mostrar. */
-function estadoLista({
-  lista,
-  vacio,
-}: {
-  lista: ReturnType<typeof useLista>
-  vacio: string
-}) {
+function estadoLista({ lista, vacio }: { lista: ReturnType<typeof useLista>; vacio: string }) {
   if (lista.isPending) return <Spinner className="m-6" />
   if (lista.isError) {
     return (
       <p className="text-sm text-muted-foreground">
         {getErrorMessage(lista.error)}{" "}
-        <button type="button" onClick={() => void lista.refetch()} className="font-medium text-primary underline">
+        <button
+          type="button"
+          onClick={() => void lista.refetch()}
+          className="font-medium text-primary underline"
+        >
           Reintentar
         </button>
       </p>
@@ -217,74 +340,49 @@ function estadoLista({
   return null
 }
 
-function Paginacion({ total, paginas }: { total: number; paginas: number }) {
-  const search = comunicadosRoute.useSearch()
-  const navigate = comunicadosRoute.useNavigate()
-  const ir = (page: number) => void navigate({ search: (prev) => ({ ...prev, page }), replace: true })
-  return (
-    <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-      <span>
-        {total} {total === 1 ? "comunicado" : "comunicados"}
-      </span>
-      {paginas > 1 && (
-        <div className="flex items-center gap-1">
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            color="neutral"
-            aria-label="Página anterior"
-            disabled={search.page <= 0}
-            onClick={() => ir(search.page - 1)}
-          >
-            <CaretLeftIcon aria-hidden />
-          </Button>
-          <span className="tabular-nums">
-            {search.page + 1} / {paginas}
-          </span>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            color="neutral"
-            aria-label="Página siguiente"
-            disabled={search.page + 1 >= paginas}
-            onClick={() => ir(search.page + 1)}
-          >
-            <CaretRightIcon aria-hidden />
-          </Button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 const accion = (c: ComunicadoGestion): ComunicadoAccion => ({
   conversacionId: c.id,
   titulo: c.titulo,
   publicarEn: c.publicarEn,
 })
 
-/** Publicados: la gestión del emisor (M.1.LIS.1), con el menú ⁞ de M.1.LIS.2 y M.1.LIS.3. */
+/**
+ * Publicados: la gestión del emisor (M.1.LIS.1), con el menú ⁞ de M.1.LIS.2 y M.1.LIS.3. Orden y
+ * paginación en la URL (`sortBy`/`sortDir`/`page`/`pageSize`), resueltos por comms-service.
+ */
 function TablaPublicados() {
   const lista = useLista("PUBLICADOS")
-  const [dialogo, setDialogo] = useState<{ tipo: "anular" | "cancelar"; c: ComunicadoGestion } | null>(null)
+  const paginacion = useTablePagination()
+  const [dialogo, setDialogo] = useState<DialogoComunicado | null>(null)
   const filas = lista.data?.items ?? []
-  const estado = estadoLista({ lista, vacio: "No hay comunicados para mostrar." })
+  const pageCount = lista.data?.pageCount ?? 0
+  const totalCount = lista.data?.totalCount ?? 0
+
+  const { table } = useDataTable({
+    columns: createComunicadosColumns({ onDialogo: setDialogo }),
+    data: filas,
+    pageCount,
+    getRowId: (c) => String(c.id),
+    ...paginacion,
+    columnVisibilityStorageKey: "comunicados-publicados-column-visibility",
+  })
 
   return (
     <>
-      {estado ?? (
-        <>
-          {/* Móvil: tarjetas, para no desbordar con todas las columnas. */}
-          <ul className="flex flex-col gap-2 md:hidden">
+      {/* Móvil: tarjetas, para no desbordar con todas las columnas. */}
+      <div className="md:hidden">
+        {estadoLista({ lista, vacio: "No hay comunicados para mostrar." }) ?? (
+          <ul className="flex flex-col gap-2">
             {filas.map((c) => (
               <li key={c.id} className="rounded-lg border p-3 text-sm">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 font-medium break-words">{c.titulo}</p>
-                  <MenuAcciones c={c} onDialogo={setDialogo} />
+                  <span className="min-w-0 font-medium break-words">{c.titulo}</span>
+                  <MenuAccionesComunicado c={c} onDialogo={setDialogo} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)} · {c.destinatarios ?? 0}{" "}
-                  destinatarios
+                  {fecha(c.publicarEn)} · {c.publicadoPor}
+                    {c.establecimiento ? ` · ${c.establecimiento}` : ""} · {tiposAbreviados(c.tipos)} ·{" "}
+                  {c.destinatarios ?? 0} destinatarios
                 </p>
                 <div className="mt-1">
                   <EstadoComunicadoBadge estado={c.estado} />
@@ -292,49 +390,34 @@ function TablaPublicados() {
               </li>
             ))}
           </ul>
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Publicado por</TableHead>
-                  <TableHead>Tipos</TableHead>
-                  <TableHead className="text-right">Destinatarios</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-10">
-                    <span className="sr-only">Acciones</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filas.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>{fecha(c.publicarEn)}</TableCell>
-                    <TableCell className="max-w-72 truncate" title={c.titulo}>
-                      {c.titulo}
-                    </TableCell>
-                    <TableCell>{c.publicadoPor}</TableCell>
-                    <TableCell title={tiposCompletos(c.tipos)}>{tiposAbreviados(c.tipos)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {(c.destinatarios ?? 0).toLocaleString("es-CO")}
-                    </TableCell>
-                    <TableCell>
-                      <EstadoComunicadoBadge estado={c.estado} />
-                    </TableCell>
-                    <TableCell>
-                      <MenuAcciones c={c} onDialogo={setDialogo} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </>
-      )}
-      {lista.data && <Paginacion total={lista.data.totalCount} paginas={lista.data.pageCount} />}
+        )}
+      </div>
+      <div className="hidden md:block">
+        <DataTable
+          table={table}
+          isPending={lista.isPending}
+          isError={lista.isError}
+          onRetry={() => void lista.refetch()}
+          errorMessage={lista.error ? getErrorMessage(lista.error) : undefined}
+          emptyMessage="No hay comunicados para mostrar."
+          growColumnId="titulo"
+        />
+      </div>
+      <Pagination
+        viewOptions={<DataTableViewOptions table={table} />}
+        pageIndex={paginacion.pageIndex}
+        pageCount={Math.max(pageCount, 1)}
+        canPrev={paginacion.pageIndex > 0}
+        canNext={paginacion.pageIndex + 1 < pageCount}
+        onPageChange={paginacion.goToPage}
+        totalCount={totalCount}
+        pageSize={paginacion.pageSize}
+        onPageSizeChange={paginacion.setPageSize}
+      />
 
-      {dialogo?.tipo === "anular" && <AnularDialog comunicado={accion(dialogo.c)} onClose={() => setDialogo(null)} />}
+      {dialogo?.tipo === "anular" && (
+        <AnularDialog comunicado={accion(dialogo.c)} onClose={() => setDialogo(null)} />
+      )}
       {dialogo?.tipo === "cancelar" && (
         <CancelarDialog comunicado={accion(dialogo.c)} onClose={() => setDialogo(null)} />
       )}
@@ -342,111 +425,87 @@ function TablaPublicados() {
   )
 }
 
-function MenuAcciones({
-  c,
-  onDialogo,
-}: {
-  c: ComunicadoGestion
-  onDialogo: (d: { tipo: "anular" | "cancelar"; c: ComunicadoGestion }) => void
-}) {
-  const vigente = c.estado === "PUBLICADO" || c.estado === "PROGRAMADO"
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={`Opciones de ${c.titulo}`}
-        className="grid size-8 place-items-center rounded-md hover:bg-muted"
-      >
-        <DotsThreeVerticalIcon className="size-4.5" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          render={<Link to={paths.app.comunicacionesComunicadoDetalle.getHref(c.id)} />}
-          nativeButton={false}
-        >
-          Ver detalle
-        </DropdownMenuItem>
-        {/* Modificar solo lo ofrece al autor (M.1.LIS.2). */}
-        {c.esAutor && vigente && (
-          <DropdownMenuItem
-            render={<Link to={paths.app.comunicacionesComunicadoEditar.getHref(c.id)} />}
-            nativeButton={false}
-          >
-            Modificar
-          </DropdownMenuItem>
-        )}
-        {c.estado === "PROGRAMADO" && (
-          <DropdownMenuItem onClick={() => onDialogo({ tipo: "cancelar", c })}>Cancelar comunicado</DropdownMenuItem>
-        )}
-        {c.estado === "PUBLICADO" && (
-          <DropdownMenuItem variant="destructive" onClick={() => onDialogo({ tipo: "anular", c })}>
-            Anular
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-/** Recibidos y Anteriores (M.1.REC.1): lista con punto de no leído y el comunicado al lado. */
+/**
+ * Recibidos y Anteriores (M.1.REC.1): misma tabla que Publicados (orden, columnas visibles y
+ * paginación en la URL) con el punto de no leído junto al título; "Ver detalle" abre el comunicado y
+ * lo marca leído. En móvil, tarjetas como Publicados.
+ */
 function Bandeja({ pestana }: { pestana: PestanaComunicados }) {
   const lista = useLista(pestana)
-  const [abierto, setAbierto] = useState<number | null>(null)
+  const paginacion = useTablePagination()
   const filas = lista.data?.items ?? []
-  const estado = estadoLista({
-    lista,
-    vacio: pestana === "RECIBIDOS" ? "No tienes comunicados recibidos." : "No hay comunicados anteriores.",
+  const pageCount = lista.data?.pageCount ?? 0
+  const totalCount = lista.data?.totalCount ?? 0
+  const vacio =
+    pestana === "RECIBIDOS" ? "No tienes comunicados recibidos." : "No hay comunicados anteriores."
+
+  const { table } = useDataTable({
+    columns: createBandejaColumns(),
+    data: filas,
+    pageCount,
+    getRowId: (c) => String(c.id),
+    ...paginacion,
+    columnVisibilityStorageKey: "comunicados-bandeja-column-visibility",
   })
-  const seleccionado = abierto ?? filas[0]?.id ?? null
 
   return (
-    <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-      <div className="flex min-w-0 flex-col gap-2">
-        {estado ?? (
-          <ul className="flex flex-col divide-y rounded-lg border" aria-label="Comunicados">
+    <>
+      <div className="md:hidden">
+        {estadoLista({ lista, vacio }) ?? (
+          <ul className="flex flex-col gap-2" aria-label="Comunicados">
             {filas.map((c) => (
               <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => setAbierto(c.id)}
-                  aria-current={seleccionado === c.id}
-                  className={cn(
-                    "grid w-full grid-cols-[0.75rem_1fr_auto] items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted",
-                    seleccionado === c.id && "bg-muted",
-                  )}
+                <Link
+                  to={paths.app.comunicacionesComunicadoDetalle.getHref(c.id)}
+                  className="block rounded-lg border p-3 text-sm hover:bg-muted"
                 >
-                  <span
-                    aria-label={c.leido ? undefined : "No leído"}
-                    className={cn("size-2 rounded-full", !c.leido && "bg-primary")}
-                  />
-                  <span className="min-w-0">
-                    <span className={cn("block truncate", !c.leido && "font-semibold")}>{c.titulo}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{c.publicadoPor}</span>
+                  <span className="flex items-start gap-2">
+                    <span
+                      aria-label={c.leido ? undefined : "No leído"}
+                      role={c.leido ? undefined : "img"}
+                      className={cn(
+                        "mt-1.5 size-2 shrink-0 rounded-full",
+                        !c.leido && "bg-primary",
+                      )}
+                    />
+                    <span className={cn("min-w-0 break-words", !c.leido && "font-semibold")}>
+                      {c.titulo}
+                    </span>
                   </span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{fecha(c.publicarEn)}</span>
-                </button>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)}
+                  </span>
+                  <span className="mt-1 block">
+                    <EstadoComunicadoBadge estado={c.estado} />
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
         )}
-        {lista.data && <Paginacion total={lista.data.totalCount} paginas={lista.data.pageCount} />}
       </div>
-      {seleccionado != null && <Lectura id={seleccionado} />}
-    </div>
+      <div className="hidden md:block">
+        <DataTable
+          table={table}
+          isPending={lista.isPending}
+          isError={lista.isError}
+          onRetry={() => void lista.refetch()}
+          errorMessage={lista.error ? getErrorMessage(lista.error) : undefined}
+          emptyMessage={vacio}
+          growColumnId="titulo"
+        />
+      </div>
+      <Pagination
+        viewOptions={<DataTableViewOptions table={table} />}
+        pageIndex={paginacion.pageIndex}
+        pageCount={Math.max(pageCount, 1)}
+        canPrev={paginacion.pageIndex > 0}
+        canNext={paginacion.pageIndex + 1 < pageCount}
+        onPageChange={paginacion.goToPage}
+        totalCount={totalCount}
+        pageSize={paginacion.pageSize}
+        onPageSizeChange={paginacion.setPageSize}
+      />
+    </>
   )
-}
-
-/** Abrir el comunicado lo marca leído en comms-service: se refresca la lista para quitar el punto. */
-function Lectura({ id }: { id: number }) {
-  const queryClient = useQueryClient()
-  const q = useComunicadoQuery(id)
-  const cargado = q.isSuccess
-  useEffect(() => {
-    if (cargado) void queryClient.invalidateQueries({ queryKey: comunicadosGestionKey })
-  }, [cargado, id, queryClient])
-
-  if (q.isPending) return <Spinner className="m-6" />
-  if (q.isError || !q.data) {
-    return <p className="text-sm text-muted-foreground">{q.isError ? getErrorMessage(q.error) : "El comunicado no existe."}</p>
-  }
-  return <ComunicadoArticulo comunicado={q.data} />
 }

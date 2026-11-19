@@ -33,6 +33,12 @@ export interface PoliticaChat {
   grupos?: PoliticaGrupos
   /** `true` mientras la institución no haya confirmado la política. */
   pendienteDeAprobacion: boolean
+  /**
+   * SSO #1006 (W.17.EST.1): `false` para un estudiante menor sin permiso de la institución
+   * ("Permitir que estudiantes menores inicien conversaciones"). Solo responde donde lo incluyeron:
+   * no ve "Nuevo mensaje". Sin campo (backend anterior) = puede.
+   */
+  puedeIniciarConversaciones?: boolean
 }
 
 export interface PoliticaGrupos {
@@ -96,6 +102,7 @@ export const POLITICA_CHAT_DENEGADA: PoliticaChat = {
   },
   mencionesMasivas: [],
   pendienteDeAprobacion: true,
+  puedeIniciarConversaciones: false,
 }
 
 const ROLES_DIRECTIVOS = [

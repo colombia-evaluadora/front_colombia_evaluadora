@@ -53,7 +53,7 @@ export function DialogAnexo({ open, onOpenChange, onAdd }: DialogAnexoProps) {
         onOpenChange(next)
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Documento anexo</DialogTitle>
         </DialogHeader>

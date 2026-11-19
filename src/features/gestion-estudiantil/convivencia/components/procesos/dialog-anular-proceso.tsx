@@ -54,7 +54,7 @@ export function DialogAnularProceso({ proceso, onClose }: Props) {
 
   return (
     <Dialog open={proceso != null} onOpenChange={(open) => !open && !mut.isPending && cerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Anular el proceso — {proceso?.estudiante_nombre}</DialogTitle>
           {proceso && (
@@ -79,8 +79,9 @@ export function DialogAnularProceso({ proceso, onClose }: Props) {
           onChange={setTexto}
           error={errorMotivo}
         />
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
           <Button
             size="sm"

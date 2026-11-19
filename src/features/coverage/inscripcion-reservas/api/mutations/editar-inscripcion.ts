@@ -127,7 +127,9 @@ async function crearInscripcion(input: EditarInscripcionInput) {
   const opciones = await resolverOpciones(input)
   const estudiante = await resolverUsuarioAspirante(input, opciones[0].grado)
   const acudiente = await usuarioAcudiente(input)
-  const r = await postMultipart<{ rows: { datos: { id: number; numeroInscripcion: string } }[] }>(
+  const r = await postMultipart<{
+    rows: { datos: { id: number; numeroInscripcion: string; autorizacionPendiente?: boolean } }[]
+  }>(
     `/eval-col${INSCRIPCIONES_BASE}`,
     {
       FK_TUSUARIO_ESTUDIANTE: estudiante,
@@ -137,7 +139,13 @@ async function crearInscripcion(input: EditarInscripcionInput) {
     },
     { FK_ARCHIVO_FOTO: input.foto },
   )
-  return { numeroInscripcion: r.rows[0]?.datos.numeroInscripcion ?? "" }
+  const d = r.rows[0]?.datos
+  return {
+    id: d?.id ?? null,
+    numeroInscripcion: d?.numeroInscripcion ?? "",
+    // Regla 81: true si quedó algún establecimiento de las opciones sin autorización.
+    autorizacionPendiente: d?.autorizacionPendiente === true,
+  }
 }
 
 export function useCrearInscripcion() {

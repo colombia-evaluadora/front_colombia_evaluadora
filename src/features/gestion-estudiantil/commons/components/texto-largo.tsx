@@ -12,10 +12,11 @@ interface TextoLargoProps {
   rows?: number
   placeholder?: string
   error?: string
+  disabled?: boolean
 }
 
 /** Texto largo con contador (patrón del Observador): `maxLength` corta y el error va a la izquierda del contador. */
-export function TextoLargo({ id, label, value, onChange, max, required, rows = 3, placeholder, error }: TextoLargoProps) {
+export function TextoLargo({ id, label, value, onChange, max, required, rows = 3, placeholder, error, disabled }: TextoLargoProps) {
   return (
     <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error) || undefined}>
       <FieldLabel htmlFor={id}>
@@ -27,6 +28,7 @@ export function TextoLargo({ id, label, value, onChange, max, required, rows = 3
         rows={rows}
         className={TEXTAREA_OUTLINED}
         maxLength={max}
+        disabled={disabled}
         placeholder={placeholder}
         value={value}
         aria-invalid={Boolean(error) || undefined}

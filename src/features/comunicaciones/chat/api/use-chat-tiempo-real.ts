@@ -6,6 +6,7 @@ import { topicoUsuario } from "@/lib/auth-mapper"
 import { realtime } from "@/lib/realtime"
 import { useRealtimeStatus, useRealtimeTopic } from "@/lib/realtime/use-realtime"
 import type { RealtimeEvent } from "@/lib/realtime/protocol"
+import { seguimientoComunicadoKey } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { SALIR_MUTATION_KEY } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import type { MapaPresencia } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
@@ -295,6 +296,8 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         for (const k of [chatKeys.eleccion(id), chatKeys.encuesta(id), chatKeys.comunicado(id), chatKeys.evaluacion(id)]) {
           void queryClient.invalidateQueries({ queryKey: k })
         }
+        // El "leído" del seguimiento (chat y detalle) también cambia cuando alguien lo abre.
+        if (conversacionId) void queryClient.invalidateQueries({ queryKey: seguimientoComunicadoKey(conversacionId) })
         return
       }
       case "escribiendo": {
