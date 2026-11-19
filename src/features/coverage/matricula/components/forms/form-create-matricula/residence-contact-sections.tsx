@@ -130,6 +130,7 @@ export function MatriculaResidenceSection({
               placeLabel="el domicilio"
             />
           </div>
+          <p className="text-xs text-muted-foreground">Puede arrastrar el punto para corregirlo.</p>
           {locateMessage ? (
             <p role="status" className="text-xs text-muted-foreground">
               {locateMessage}
