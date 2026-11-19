@@ -135,6 +135,11 @@ export const paths = {
       path: "cobertura/matricula-complementaria",
       getHref: () => "/app/cobertura/matricula-complementaria",
     },
+    // Promoción y nivelación (Sección 4.7): pestañas Reprobados y Áreas pendientes.
+    coberturaPromocion: {
+      path: "cobertura/promocion-nivelacion",
+      getHref: () => "/app/cobertura/promocion-nivelacion",
+    },
     coberturaConvocatoriaNueva: {
       path: "cobertura/matricula-complementaria/convocatorias/nueva",
       getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",
