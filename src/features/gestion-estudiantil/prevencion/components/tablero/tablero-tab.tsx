@@ -52,8 +52,8 @@ export function TableroTab({ tabs }: Props) {
   const { data, isPending, isError, error, refetch } = useTableroQuery({ filters, pageIndex, pageSize })
 
   const queryClient = useQueryClient()
-  const { irValorar, irPlanNuevo, irHistorial } = useNavegacionPrevencion()
-  // Valorar, Crear plan y Ver historial son pantallas. «Gestionar» (9.11) no tiene backend: llega deshabilitado.
+  const { irValorar, irPlanNuevo, irHistorial, irGestionAlerta } = useNavegacionPrevencion()
+  // Valorar, Crear plan, Ver historial y Gestionar (la gestión abierta de la alerta de inasistencia, §9.11) son pantallas.
   const onAccion = useCallback(
     (fila: TableroRow, accion: AccionTablero) => {
       if (accion === "valorar") irValorar(fila.fk_tmatricula)
@@ -66,8 +66,9 @@ export function TableroTab({ tabs }: Props) {
           .then((valoracion) => irPlanNuevo(fila.fk_tmatricula, valoracion))
       }
       else if (accion === "historial") irHistorial(fila.fk_tmatricula, fila.grado_grupo)
+      else if (accion === "gestionar" && fila.fk_gestion_alerta != null) irGestionAlerta(fila.fk_gestion_alerta)
     },
-    [queryClient, irValorar, irPlanNuevo, irHistorial],
+    [queryClient, irValorar, irPlanNuevo, irHistorial, irGestionAlerta],
   )
 
   // Sede y Jornada por grupo: la fila trae el pk del grupo y de la sede, no sus nombres.
