@@ -36,6 +36,8 @@ export type ReportKey =
   | "matricula-constancia"
   | "matricula-paquete-soporte"
   | "matricula-acta-retiro"
+  | "promocion-reprobados"
+  | "promocion-areas-pendientes"
   | "informes"
   | "informes-tabla"
   | "boletin"
