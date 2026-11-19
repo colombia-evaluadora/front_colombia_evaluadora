@@ -118,7 +118,7 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
         columns={[
           { id: "asignatura", header: "Asignatura", cell: ({ row }) => <span className="font-medium">{row.original.asignatura_nombre}</span> },
           { id: "cobertura", header: "Cobertura", cell: ({ row }) => <Badge variant="soft" color={COLOR_COBERTURA[row.original.cobertura]}><span>{row.original.cobertura_nombre}</span></Badge> },
-          { id: "ajustes", header: "Ajustes", cell: ({ row }) => <span className="block text-right tabular-nums">{piar.ajustes.filter((a) => a.fk_tasignatura === row.original.fk_tasignatura).length}</span> },
+          { id: "ajustes", header: () => <span className="block text-center">Ajustes</span>, cell: ({ row }) => <span className="block text-center tabular-nums">{piar.ajustes.filter((a) => a.fk_tasignatura === row.original.fk_tasignatura).length}</span> },
           { id: "justificacion", header: "Justificación", cell: ({ row }) => row.original.justificacion ?? "—" },
           {
             id: "revisado",

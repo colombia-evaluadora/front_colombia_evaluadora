@@ -154,13 +154,13 @@ export function TablaRelaciones({
       meta: { label: "Máximo de estudiantes por grupo" },
       enableSorting: false,
       enableHiding: false,
-      header: () => <span className="block text-right">Máximo de estudiantes por grupo</span>,
+      header: () => <span className="block text-center">Máximo de estudiantes por grupo</span>,
       cell: ({ row }) => {
         if (row.id !== editandoId) {
-          return <span className="block text-right tabular-nums">{row.original.relacion?.maximo}</span>
+          return <span className="block text-center tabular-nums">{row.original.relacion?.maximo}</span>
         }
         return (
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-center gap-1">
             <Input
               inputMode="numeric"
               autoFocus={edicion?.pkRelacion != null}
@@ -169,7 +169,7 @@ export function TablaRelaciones({
               variant="outlined"
               size="sm"
               placeholder="Máximo"
-              className="h-8 w-20 text-right tabular-nums"
+              className="h-8 w-20 text-center tabular-nums"
               value={edicion?.maximo ?? ""}
               onChange={(e) => cambiar({ maximo: toDigitsOnly(e.target.value, 2) })}
             />

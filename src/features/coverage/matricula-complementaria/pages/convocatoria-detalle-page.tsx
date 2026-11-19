@@ -16,7 +16,7 @@ import {
 } from "@/features/coverage/matricula-complementaria/api/ui-mappings"
 import { CampoLectura, Rejilla, Seccion, Secciones } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
 
-const num = "text-right tabular-nums"
+const num = "text-center tabular-nums"
 
 /** Ver detalle: la convocatoria y sus cupos en solo lectura (Sección 2.16.2), con el estilo de Ver inscripción. */
 export function ConvocatoriaDetallePage() {

@@ -36,7 +36,7 @@ export function DialogoCertificado({ matricula, onClose }: { matricula: number; 
               <TableRow>
                 <TableHead>Actividad o entidad</TableHead>
                 <TableHead>Año</TableHead>
-                <TableHead className="text-right">Horas</TableHead>
+                <TableHead className="text-center">Horas</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -47,7 +47,7 @@ export function DialogoCertificado({ matricula, onClose }: { matricula: number; 
                     {x.entidad_externa ? ` · ${x.entidad_externa}` : ""}
                   </TableCell>
                   <TableCell>{x.anio}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatHoras(x.horas)}</TableCell>
+                  <TableCell className="text-center tabular-nums">{formatHoras(x.horas)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

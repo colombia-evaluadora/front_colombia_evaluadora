@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
-import { TablaDatos } from "@/features/gestion-estudiantil/commons/components/tabla-datos"
+import { TablaDatos } from "@/components/tabla-datos"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useReconocimientoQuery } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-reconocimientos-query"
 import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"

@@ -98,8 +98,8 @@ export function AmpliacionesTab({
       id: "plazoMinimo",
       accessorKey: "plazoMinimo",
       meta: { label: "Plazo mínimo" },
-      header: () => <span className="block text-right">Plazo mínimo</span>,
-      cell: ({ row }) => <span className="block text-right tabular-nums">{anios(row.original.plazoMinimo)}</span>,
+      header: () => <span className="block text-center">Plazo mínimo</span>,
+      cell: ({ row }) => <span className="block text-center tabular-nums">{anios(row.original.plazoMinimo)}</span>,
       enableSorting: false,
       size: 140,
     },
@@ -107,12 +107,12 @@ export function AmpliacionesTab({
       id: "plazoEstablecimiento",
       accessorKey: "plazoEstablecimiento",
       meta: { label: "Plazo del establecimiento" },
-      header: () => <span className="block text-right">Plazo del establecimiento</span>,
+      header: () => <span className="block text-center">Plazo del establecimiento</span>,
       cell: ({ row }) => {
         const fila = row.original
         if (edicion?.pkPolitica === fila.pkPolitica) {
           return (
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-center gap-1">
               <div className="flex items-center gap-2">
                 <Input
                   autoFocus
@@ -121,7 +121,7 @@ export function AmpliacionesTab({
                   size="sm"
                   aria-label={`Plazo de ${fila.tipoRegistro} en años`}
                   aria-invalid={Boolean(edicion.error)}
-                  className="h-8 w-14 text-right tabular-nums"
+                  className="h-8 w-14 text-center tabular-nums"
                   value={edicion.valor}
                   onChange={(e) => setEdicion({ pkPolitica: fila.pkPolitica, valor: toDigitsOnly(e.target.value, 2) })}
                   onKeyDown={(e) => e.key === "Escape" && setEdicion(null)}
@@ -133,9 +133,9 @@ export function AmpliacionesTab({
           )
         }
         return fila.plazoEstablecimiento != null && fila.plazoEstablecimiento > fila.plazoMinimo ? (
-          <span className="block text-right font-medium tabular-nums">{anios(fila.plazoEstablecimiento)}</span>
+          <span className="block text-center font-medium tabular-nums">{anios(fila.plazoEstablecimiento)}</span>
         ) : (
-          <span className="block text-right text-muted-foreground tabular-nums">
+          <span className="block text-center text-muted-foreground tabular-nums">
             {anios(fila.plazoMinimo)} (sin ampliar)
           </span>
         )
