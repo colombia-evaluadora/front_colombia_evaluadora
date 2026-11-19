@@ -14,6 +14,12 @@ export const paths = {
     noFuiYo: { path: "/no-fui-yo", getHref: () => "/no-fui-yo" },
   },
 
+  // Ruta común del QR de los documentos (Adm. §12.4); el boletín redirige a la suya.
+  verificarDocumento: {
+    path: "/verificar/$codigo",
+    getHref: (codigo: string) => `/verificar/${encodeURIComponent(codigo)}`,
+  },
+
   verificarBoletin: {
     path: "/verificar/b/$codigo",
     getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,

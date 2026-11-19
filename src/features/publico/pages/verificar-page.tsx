@@ -10,8 +10,8 @@ import { paths } from "@/config/paths"
 
 /**
  * U.4.COD.1 Verificación — escribir el código, para quien no puede escanear el QR.
- * Por ahora solo hay verificación de boletines (sso V559): el código lleva a
- * su página. Los demás documentos llegan con "Documentos emitidos" (Adm. §12.4).
+ * El código lleva a la ruta común /verificar/<código> (Adm. §12.4): carné y
+ * boletín (que redirige a su página); los demás llegan con "Documentos emitidos".
  */
 export function VerificarPage() {
   const navigate = useNavigate()
@@ -30,7 +30,7 @@ export function VerificarPage() {
         className="flex flex-col gap-5"
         onSubmit={(e) => {
           e.preventDefault()
-          if (limpio) navigate({ to: paths.verificarBoletin.getHref(limpio) })
+          if (limpio) navigate({ to: paths.verificarDocumento.getHref(limpio) })
         }}
       >
         <Field variant="outlined">
