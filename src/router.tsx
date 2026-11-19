@@ -2118,6 +2118,21 @@ export const prevencionAcompDetalleRoute = createRoute({
   },
 })
 
+const PrevencionGestionAlertaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/gestion-alerta-detalle-page"),
+  "GestionAlertaDetallePage",
+)
+
+export const prevencionGestionAlertaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionGestionAlerta.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Gestión de la alerta" }] },
+  component: function PrevencionGestionAlertaRoute() {
+    const { gestionId } = prevencionGestionAlertaRoute.useParams()
+    return <PrevencionGestionAlertaPage gestionId={Number(gestionId)} />
+  },
+})
+
 export const prevencionAcompEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.prevencionAcompEditar.path,
@@ -2904,6 +2919,7 @@ const routeTree = rootRoute.addChildren([
     prevencionAcompNuevoRoute,
     prevencionAcompDetalleRoute,
     prevencionAcompEditarRoute,
+    prevencionGestionAlertaRoute,
     prevencionEstrategiaNuevaRoute,
     prevencionEstrategiaEditarRoute,
     prevencionEstrategiaDetalleRoute,

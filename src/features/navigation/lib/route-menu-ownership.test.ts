@@ -201,6 +201,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/gestion-estudiantil/prevencion-retencion/acompanamientos/$tipo/nuevo": MENU.prevencionRetencion,
   "/app/gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId": MENU.prevencionRetencion,
   "/app/gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar": MENU.prevencionRetencion,
+  "/app/gestion-estudiantil/prevencion-retencion/gestion-alertas/$gestionId": MENU.prevencionRetencion,
   "/app/gestion-estudiantil/prevencion-retencion/estrategias/nueva": MENU.prevencionRetencion,
   "/app/gestion-estudiantil/prevencion-retencion/estrategias/$estrategiaId/editar": MENU.prevencionRetencion,
   "/app/gestion-estudiantil/prevencion-retencion/estrategias/$estrategiaId": MENU.prevencionRetencion,
