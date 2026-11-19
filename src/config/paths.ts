@@ -14,6 +14,12 @@ export const paths = {
     noFuiYo: { path: "/no-fui-yo", getHref: () => "/no-fui-yo" },
   },
 
+  // Ruta común del QR de los documentos (Adm. §12.4); el boletín redirige a la suya.
+  verificarDocumento: {
+    path: "/verificar/$codigo",
+    getHref: (codigo: string) => `/verificar/${encodeURIComponent(codigo)}`,
+  },
+
   verificarBoletin: {
     path: "/verificar/b/$codigo",
     getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
@@ -689,6 +695,10 @@ export const paths = {
     prevencionAcompDetalle: {
       path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
       getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
+    },
+    prevencionGestionAlerta: {
+      path: "gestion-estudiantil/prevencion-retencion/gestion-alertas/$gestionId",
+      getHref: (gestionId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/gestion-alertas/${gestionId}`,
     },
     prevencionAcompEditar: {
       path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",

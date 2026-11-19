@@ -429,6 +429,23 @@ export const noFuiYoRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/cuenta/pages/cambio-correo-pages"), "NoFuiYoPage"),
 })
 
+// Pública (Adm. §12.4): la ruta común del QR; el carné se verifica aquí y el boletín
+// redirige a /verificar/b/<código>.
+export const verificarDocumentoRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.verificarDocumento.path,
+  head: () => ({
+    meta: [
+      { title: `Verificación de documento · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(
+    () => import("@/features/verificacion/pages/verificar-documento-page"),
+    "VerificarDocumentoPage",
+  ),
+})
+
 // Pública (QR del boletín, U.4): sin sesión, dentro del marco del sitio público.
 export const verificarBoletinRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
@@ -2173,6 +2190,21 @@ export const prevencionAcompDetalleRoute = createRoute({
   },
 })
 
+const PrevencionGestionAlertaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/gestion-alerta-detalle-page"),
+  "GestionAlertaDetallePage",
+)
+
+export const prevencionGestionAlertaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionGestionAlerta.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Gestión de la alerta" }] },
+  component: function PrevencionGestionAlertaRoute() {
+    const { gestionId } = prevencionGestionAlertaRoute.useParams()
+    return <PrevencionGestionAlertaPage gestionId={Number(gestionId)} />
+  },
+})
+
 export const prevencionAcompEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.prevencionAcompEditar.path,
@@ -2809,6 +2841,7 @@ const routeTree = rootRoute.addChildren([
   publicLayoutRoute.addChildren([
     homeRoute,
     verificarRoute,
+    verificarDocumentoRoute,
     verificarBoletinRoute,
     inscribirRoute,
     consultarInscripcionRoute,
@@ -2970,6 +3003,7 @@ const routeTree = rootRoute.addChildren([
     prevencionAcompNuevoRoute,
     prevencionAcompDetalleRoute,
     prevencionAcompEditarRoute,
+    prevencionGestionAlertaRoute,
     prevencionEstrategiaNuevaRoute,
     prevencionEstrategiaEditarRoute,
     prevencionEstrategiaDetalleRoute,
