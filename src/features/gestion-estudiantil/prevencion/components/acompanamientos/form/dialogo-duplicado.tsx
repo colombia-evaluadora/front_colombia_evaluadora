@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { WarningIcon } from "@/components/ui/icons"
+import { ClockCounterClockwiseIcon, ControlPointIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
@@ -67,15 +67,19 @@ export function DialogoDuplicado({ mensaje, tipo, matricula, pending, onClose, o
             </ul>
           ))}
 
+        {/* La acción recomendada (Ver historial) va en azul a la derecha; Crear de todos modos queda secundaria. */}
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" disabled={pending} onClick={onClose}>
+          <Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
-          <Button type="button" disabled={verHistorial} onClick={() => setVerHistorial(true)}>
-            Ver historial
-          </Button>
-          <Button type="button" variant="outline" disabled={pending} onClick={onCrear}>
+          <Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} onClick={onCrear}>
+            <ControlPointIcon data-icon="inline-start" />
             Crear de todos modos
+          </Button>
+          <Button size="sm" type="button" disabled={verHistorial} onClick={() => setVerHistorial(true)}>
+            <ClockCounterClockwiseIcon data-icon="inline-start" />
+            Ver historial
           </Button>
         </DialogFooter>
       </DialogContent>

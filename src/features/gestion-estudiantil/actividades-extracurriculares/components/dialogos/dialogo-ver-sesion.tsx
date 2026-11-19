@@ -3,7 +3,7 @@ import { useState } from "react"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { PaperclipIcon } from "@/components/ui/icons"
+import { PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getErrorMessage } from "@/lib/api-client"
@@ -91,7 +91,10 @@ export function DialogoVerSesion({ sesionId, onClose }: { sesionId: number; onCl
           </div>
         ) : null}
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
