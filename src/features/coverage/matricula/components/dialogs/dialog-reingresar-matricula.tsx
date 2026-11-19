@@ -202,7 +202,11 @@ export function DialogReingresar({
                 onChange={(d) => setFecha(formatDateValue(d))}
               />
               <FieldDescription className={cn(intentado && !fechaValida && "text-red")}>
-                {desde ? `Entre el ${fechaTexto(desde)} y hoy.` : "No admite fechas futuras."}
+                {desde
+                  ? uno
+                    ? `Entre el ${fechaTexto(desde)} y hoy.`
+                    : `No anterior al ${fechaTexto(desde)}, el retiro más reciente de las marcadas.`
+                  : "No admite fechas futuras."}
               </FieldDescription>
             </Field>
 
@@ -253,7 +257,11 @@ export function DialogReingresar({
               </div>
             </Field>
 
-            {periodosRetiro.length ? (
+            {!uno ? (
+              <Aviso tono="info">
+                Los períodos de evaluación transcurridos durante el retiro quedan Pendientes por nivelación en cada asignatura.
+              </Aviso>
+            ) : periodosRetiro.length ? (
               <Aviso tono="info">
                 {periodosRetiro.join(", ")} {periodosRetiro.length === 1 ? "transcurrió" : "transcurrieron"} durante el retiro:
                 queda Pendiente por nivelación en cada asignatura.

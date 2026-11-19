@@ -15,6 +15,9 @@ import {
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
 import { WarningIcon, CheckIcon, InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/components/dialogs/dialog-registrar-autorizacion"
+import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
 import { DialogCorregirIdentidadEstudiante } from "@/features/coverage/matricula/components/dialogs/dialog-corregir-identidad-estudiante"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
@@ -133,6 +136,8 @@ function MatriculaEditPageContent() {
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
   const { accion } = coberturaMatriculaEditarRoute.useSearch()
   const [corrigiendo, setCorrigiendo] = useState(accion === "corregir-identidad")
+  const [autorizando, setAutorizando] = useState(false)
+  const queryClient = useQueryClient()
   const valoresListos = values != null
   // Ícono de la fila en la lista: cambiar de grupo o de grado se hace en su campo; se abre su sección y se enfoca.
   useEffect(() => {
@@ -676,10 +681,28 @@ function MatriculaEditPageContent() {
               {restricciones?.sinAutorizacion ? (
                 <div role="status" className="flex items-start gap-3 rounded-md border border-yellow-stroke bg-yellow-22 px-4 py-3 text-sm">
                   <WarningIcon className="size-5 shrink-0 text-yellow" aria-hidden />
-                  <p>
-                    Falta la autorización de tratamiento de datos del acudiente. Los datos del estudiante quedan en solo
-                    lectura hasta que se registre (Registrar autorización de datos, en la lista de Matrícula).
-                  </p>
+                  <div className="flex flex-1 flex-col gap-1">
+                    <p className="font-semibold">Falta la autorización de tratamiento de datos del acudiente.</p>
+                    <p>
+                      Los datos del estudiante (bloques 2 a 9) están en solo lectura y enmascarados. Puede editar los datos de
+                      la matrícula, los del acudiente, los soportes y las asignaturas matriculadas.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => setAutorizando(true)}>
+                    Registrar autorización
+                  </Button>
+                  {autorizando ? (
+                    <DialogRegistrarAutorizacion
+                      matricula={data.matricula}
+                      onOpenChange={setAutorizando}
+                      onDone={async () => {
+                        // Se resiembra el formulario con los datos ya sin enmascarar.
+                        await queryClient.refetchQueries({ queryKey: matriculaKeys.detalle(matriculaId) })
+                        setValues(null)
+                        setInicial(null)
+                      }}
+                    />
+                  ) : null}
                 </div>
               ) : restricciones?.origenAdscripcion ? (
                 <div role="status" className="flex items-start gap-3 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm">
