@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DotsThreeVerticalIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ONLINE_ONLY_TOOLTIP } from "@/lib/offline/use-online-only"
 
 type Icono = typeof PersonRemoveIcon
 
@@ -28,6 +29,8 @@ interface Registro {
   onClick: () => void
   disabled?: boolean
   destructivo?: boolean
+  /** Texto emergente de la acción inactiva (p. ej. «No hay un registro duplicado…»). */
+  motivoInactiva?: string
 }
 
 interface Entrada {
@@ -43,9 +46,18 @@ const AccionesFilaContext = createContext<{
 /**
  * Acciones de una fila: muestra como ícono las primeras `limite` (en el orden
  * en que aparecen) y lleva el resto al menú ⁞. Cada acción sigue montada con su
- * diálogo; desde el menú solo se dispara su onClick.
+ * diálogo; desde el menú solo se dispara su onClick. `limite` 0 lleva todas al
+ * menú; `ocultar` saca acciones por etiqueta (siguen montadas, no se ofrecen).
  */
-export function AccionesFila({ limite = 4, children }: { limite?: number; children: ReactNode }) {
+export function AccionesFila({
+  limite = 4,
+  ocultar,
+  children,
+}: {
+  limite?: number
+  ocultar?: readonly string[]
+  children: ReactNode
+}) {
   const entradas = useRef(new Map<string, Entrada>())
   const [version, setVersion] = useState(0)
   const [orden, setOrden] = useState<string[]>([])
@@ -71,9 +83,12 @@ export function AccionesFila({ limite = 4, children }: { limite?: number; childr
     setOrden((prev) => (prev.length === ids.length && prev.every((x, i) => x === ids[i]) ? prev : ids))
   }, [version])
 
-  const sobran = orden.length > limite
-  const visibles = new Set(sobran ? orden.slice(0, limite) : orden)
-  const enMenu = sobran ? orden.slice(limite) : []
+  const ofrecidas = ocultar?.length
+    ? orden.filter((id) => !ocultar.includes(entradas.current.get(id)?.datos.current.label ?? ""))
+    : orden
+  const sobran = ofrecidas.length > limite
+  const visibles = new Set(sobran ? ofrecidas.slice(0, limite) : ofrecidas)
+  const enMenu = sobran ? ofrecidas.slice(limite) : []
 
   return (
     <AccionesFilaContext.Provider value={{ registrar, visibles }}>
@@ -88,8 +103,24 @@ export function AccionesFila({ limite = 4, children }: { limite?: number; childr
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56">
               {enMenu.map((id) => {
-                const r = entradas.current.get(id)?.datos.current
-                if (!r) return null
+                const e = entradas.current.get(id)
+                const datos = e?.datos.current
+                if (!datos) return null
+                // Envuelta en OnlineOnlyAction sin red: inactiva en el menú con el aviso estándar.
+                const sinRed = Boolean(e.ancla.current?.closest("[data-online-only]"))
+                const r = sinRed ? { ...datos, disabled: true, motivoInactiva: ONLINE_ONLY_TOOLTIP } : datos
+                if (r.disabled && r.motivoInactiva)
+                  return (
+                    <Tooltip key={id}>
+                      {/* El ítem inactivo no recibe el puntero: el tooltip va en un envoltorio. */}
+                      <TooltipTrigger render={<span className="block" />}>
+                        <DropdownMenuItem disabled>
+                          <r.Icon /> {r.label}
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">{r.motivoInactiva}</TooltipContent>
+                    </Tooltip>
+                  )
                 return (
                   <DropdownMenuItem
                     key={id}
@@ -118,6 +149,7 @@ export function BotonAccion({
   onClick,
   disabled,
   destructivo,
+  motivoInactiva,
 }: {
   modo: "icon" | "button"
   label: string
@@ -126,14 +158,15 @@ export function BotonAccion({
   onClick: () => void
   disabled?: boolean
   destructivo?: boolean
+  motivoInactiva?: string
 }) {
   const fila = useContext(AccionesFilaContext)
   const id = useId()
   const ancla = useRef<HTMLSpanElement | null>(null)
-  const datos = useRef<Registro>({ label, Icon, onClick, disabled, destructivo })
+  const datos = useRef<Registro>({ label, Icon, onClick, disabled, destructivo, motivoInactiva })
   // Se actualiza en cada render: el menú lee siempre el onClick vigente.
   useLayoutEffect(() => {
-    datos.current = { label, Icon, onClick, disabled, destructivo }
+    datos.current = { label, Icon, onClick, disabled, destructivo, motivoInactiva }
   })
   const enFila = fila != null && modo === "icon"
   const registrar = fila?.registrar
@@ -162,12 +195,14 @@ export function BotonAccion({
             aria-label={ariaLabel ?? label}
             onClick={onClick}
             disabled={disabled}
+            // Inactiva con motivo: sigue enfocable para mostrar el texto emergente.
+            {...(disabled && motivoInactiva ? { disabled: false, "aria-disabled": true, onClick: undefined, className: "opacity-50" } : {})}
           />
         }
       >
         <Icon />
       </TooltipTrigger>
-      <TooltipContent>{ariaLabel ?? label}</TooltipContent>
+      <TooltipContent>{disabled && motivoInactiva ? motivoInactiva : (ariaLabel ?? label)}</TooltipContent>
     </Tooltip>
   )
   if (!enFila) return icono

@@ -25,7 +25,6 @@ import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 import { EDUCATION_LEVEL_LABELS } from "@/features/coverage/shared/api/ui-mappings"
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import type { AgeSituation, Matricula } from "@/features/coverage/matricula/api/types/matricula"
-import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
 import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import { BadgeComplementaria } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
@@ -361,86 +360,104 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     cell: ({ row }) => <ActionsCell matricula={row.original} />,
     enableSorting: false,
     enableHiding: false,
-    size: 320,
+    // Solo el ⁞: todas las acciones van al menú.
+    size: 48,
   },
 ]
 
+/** Acciones de la fila que el menú ⁞ del prototipo no ofrece (siguen en el detalle). */
+const FUERA_DEL_MENU = ["Generar paquete de soporte"]
+
 /**
- * Ver documentos es de solo lectura acá: va con Acceso. Sin conexión (P6:
- * lista de solo consulta) "Ver" queda activo y lleva al aviso estándar de
- * vista solo en línea; editar, documentos, retirar, reingresar y eliminar se
- * deshabilitan.
+ * Menú ⁞ de la fila (C.1.LIS.3/3a-3d, SOL.4a/8a): todas las acciones van al
+ * menú, en el orden del prototipo. Sin conexión (P6) «Ver detalle» queda activo
+ * y las demás salen inactivas con el aviso estándar.
  */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const navigate = useNavigate()
-  const row = { original: matricula }
-  const nombre = `${row.original.firstName} ${row.original.lastName}`
+  const nombre = `${matricula.firstName} ${matricula.lastName}`
+  const retiroTraslado = matricula.status === "Retirado" && Boolean(matricula.retiroTraslado)
+  // Con solicitud pendiente, Responder o Anular encabeza y Ver detalle cierra (SOL.4a/8a).
+  const conSolicitud = matricula.status === "Cursando" && Boolean(matricula.retiroSolicitado || matricula.anulacionPendiente)
+  const verDetalle = (
+    <BotonAccion
+      modo="icon"
+      label="Ver detalle"
+      ariaLabel={`Ver detalle de ${nombre}`}
+      Icon={EyeIcon}
+      onClick={() =>
+        void navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matricula.id), search: (prev) => ({ ...prev, accion: undefined }) })
+      }
+    />
+  )
+
+  // Retirada por traslado (C.1.LIS.3b): solo Ver detalle, Reingresar, Generar acta y Marcar SIMPADE.
+  if (retiroTraslado)
+    return (
+      <AccionesFila limite={0}>
+        {verDetalle}
+        {puedeEditar ? (
+          <OnlineOnlyAction>
+            <ReingresarMatriculaDialog matricula={matricula} />
+          </OnlineOnlyAction>
+        ) : null}
+        <RetiroTrasladoAcciones matricula={matricula} />
+      </AccionesFila>
+    )
 
   return (
-      <AccionesFila limite={4}>
-        <BotonAccion
-          modo="icon"
-          label="Ver"
-          ariaLabel={`Ver ${nombre}`}
-          Icon={EyeIcon}
-          onClick={() =>
-            void navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(row.original.id), search: (prev) => ({ ...prev, accion: undefined }) })
-          }
-        />
-        {puedeEditar && row.original.status === "Cursando" && (
-          <OnlineOnlyAction>
-            <BotonAccion
-              modo="icon"
-              label="Editar"
-              ariaLabel={`Editar ${nombre}`}
-              Icon={PencilIcon}
-              onClick={() =>
-                void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(row.original.id), search: (prev) => ({ ...prev, accion: undefined }) })
-              }
-            />
-          </OnlineOnlyAction>
-        )}
+    <AccionesFila limite={0} ocultar={FUERA_DEL_MENU}>
+      <SolicitudRetiroAccion matricula={matricula} />
+      {conSolicitud ? null : verDetalle}
+      {puedeEditar && matricula.status === "Cursando" && (
         <OnlineOnlyAction>
-          <FilesMatriculaDialog matricula={row.original} />
+          <BotonAccion
+            modo="icon"
+            label="Editar"
+            ariaLabel={`Editar ${nombre}`}
+            Icon={PencilIcon}
+            onClick={() =>
+              void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(matricula.id), search: (prev) => ({ ...prev, accion: undefined }) })
+            }
+          />
         </OnlineOnlyAction>
-        {/* El estado se repite acá (el diálogo también lo filtra) para no dejar
-            sin red un envoltorio vacío con tooltip. */}
-        {/* Con solicitud pendiente, Retirar libre no se ofrece: va Responder o Anular (Sección 2.2). */}
-        <SolicitudRetiroAccion matricula={row.original} />
-        <ReactivarAccion matricula={row.original} />
-        <HomologarSnapshotAccion matricula={row.original} />
-        {puedeEditar && row.original.status === "Cursando" && !row.original.retiroSolicitado && !row.original.anulacionPendiente ? (
-          <OnlineOnlyAction>
-            <RetirarMatriculaDialog matricula={row.original} />
-          </OnlineOnlyAction>
-        ) : null}
-        {puedeEditar && row.original.status === "Retirado" ? (
-          <OnlineOnlyAction>
-            <ReingresarMatriculaDialog matricula={row.original} />
-          </OnlineOnlyAction>
-        ) : null}
-        <RetiroTrasladoAcciones matricula={row.original} />
-        <RegistrarAutorizacionAccion matricula={row.original} />
-        <AgregarComplementariaAccion matricula={row.original} />
-        <CambiarEspecialidadAccion matricula={row.original} />
-        <AccionesDocumentos matricula={row.original} />
-        <AccionesEditar matricula={row.original} />
-        <UnificarAccion matricula={row.original} />
-      </AccionesFila>
+      )}
+      <RegistrarAutorizacionAccion matricula={matricula} />
+      {puedeEditar && matricula.status === "Cursando" && !matricula.retiroSolicitado && !matricula.anulacionPendiente ? (
+        <OnlineOnlyAction>
+          <RetirarMatriculaDialog matricula={matricula} />
+        </OnlineOnlyAction>
+      ) : null}
+      {puedeEditar && matricula.status === "Retirado" ? (
+        <OnlineOnlyAction>
+          <ReingresarMatriculaDialog matricula={matricula} />
+        </OnlineOnlyAction>
+      ) : null}
+      <ReactivarAccion matricula={matricula} />
+      <AccionesEditar matricula={matricula} parte="cambios" />
+      <AgregarComplementariaAccion matricula={matricula} />
+      <AccionesEditar matricula={matricula} parte="identidad" />
+      <UnificarAccion matricula={matricula} />
+      <HomologarSnapshotAccion matricula={matricula} />
+      <AccionesDocumentos matricula={matricula} />
+      <CambiarEspecialidadAccion matricula={matricula} />
+      {conSolicitud ? verDetalle : null}
+    </AccionesFila>
   )
 }
 
 /**
  * Retirado por traslado (C.1.LIS.3b / RET.5): generar el acta de retiro (PDF) y
- * marcarla como ingresada al SIMPADE; esta última sale mientras no esté marcada.
+ * marcarla como ingresada al SIMPADE; ya marcada, la misma acción la corrige (RET.5).
  */
 function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const { notify } = useNotify()
   const [abierto, setAbierto] = useState(false)
   const [generando, setGenerando] = useState(false)
-  if (matricula.status !== "Retirado" || !matricula.retiroTraslado) return null
+  // El acta es opcional y solo para el Administrador o el Gestor administrativo (Sección 4.1).
+  if (!puedeEditar || matricula.status !== "Retirado" || !matricula.retiroTraslado) return null
   const nombre = `${matricula.firstName} ${matricula.lastName}`
 
   async function generarActa() {
@@ -462,8 +479,7 @@ function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
           onClick={() => void generarActa()}
         />
       </OnlineOnlyAction>
-      {puedeEditar && !matricula.simpadeIngresado ? (
-        <OnlineOnlyAction>
+      <OnlineOnlyAction>
           <BotonAccion
             modo="icon"
             label="Marcar como ingresado al SIMPADE"
@@ -472,8 +488,7 @@ function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
             onClick={() => setAbierto(true)}
           />
           {abierto ? <DialogMarcarSimpade matricula={matricula} onClose={() => setAbierto(false)} /> : null}
-        </OnlineOnlyAction>
-      ) : null}
+      </OnlineOnlyAction>
     </>
   )
 }
@@ -586,7 +601,7 @@ function AgregarComplementariaAccion({ matricula }: { matricula: Matricula }) {
  * Cambiar de grupo y de grado abren su modal (el mismo de la barra de lote);
  * corregir identidad se resuelve en Editar con `accion`.
  */
-function AccionesEditar({ matricula }: { matricula: Matricula }) {
+function AccionesEditar({ matricula, parte }: { matricula: Matricula; parte: "cambios" | "identidad" }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const navigate = useNavigate()
   const [abierto, setAbierto] = useState<"grupo" | "grado" | null>(null)
@@ -599,6 +614,21 @@ function AccionesEditar({ matricula }: { matricula: Matricula }) {
   const cerrar = (open: boolean) => !open && setAbierto(null)
   const abrir = (accion: "grupo" | "grado", label: string) =>
     matricula.retiroSolicitado ? setBloqueada(label) : setAbierto(accion)
+  // Partido en dos: Agregar complementaria va entre los cambios y Corregir identidad (C.1.LIS.3).
+  if (parte === "identidad")
+    return (
+      <OnlineOnlyAction>
+        <BotonAccion
+          modo="icon"
+          label="Corregir datos de identidad"
+          ariaLabel={`Corregir datos de identidad de ${nombre}`}
+          Icon={IdentificationCardIcon}
+          onClick={() =>
+            void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(matricula.id), search: (prev) => ({ ...prev, accion: "corregir-identidad" }) })
+          }
+        />
+      </OnlineOnlyAction>
+    )
   return (
     <>
       {cambios ? (
@@ -612,17 +642,6 @@ function AccionesEditar({ matricula }: { matricula: Matricula }) {
         </>
       ) : null}
       {bloqueada ? <DialogAccionBloqueada matricula={matricula} accion={bloqueada} onClose={() => setBloqueada(null)} /> : null}
-      <OnlineOnlyAction>
-        <BotonAccion
-          modo="icon"
-          label="Corregir datos de identidad"
-          ariaLabel={`Corregir datos de identidad de ${nombre}`}
-          Icon={IdentificationCardIcon}
-          onClick={() =>
-            void navigate({ to: paths.app.coberturaMatriculaEditar.getHref(matricula.id), search: (prev) => ({ ...prev, accion: "corregir-identidad" }) })
-          }
-        />
-      </OnlineOnlyAction>
       {abierto === "grupo" ? <DialogCambiarGrupo matriculas={[matricula]} onOpenChange={cerrar} /> : null}
       {abierto === "grado" ? <DialogCambiarGrado matriculas={[matricula]} onOpenChange={cerrar} /> : null}
     </>
@@ -638,11 +657,20 @@ function UnificarAccion({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const { notify } = useNotify()
   const [abierto, setAbierto] = useState(false)
-  if (!puedeEditar || matricula.status !== "Cursando") return null
+  // Principal Cursando (C.1.LIS.3a); con duplicado del informe de calidad se activa. El alcance (Regla 72) lo valida el back.
+  if (!puedeEditar || matricula.status !== "Cursando" || matricula.tipo === "COMPLEMENTARIA") return null
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   return (
     <OnlineOnlyAction>
-      <BotonAccion modo="icon" label={"Unificar estudiantes"} ariaLabel={`Unificar estudiantes: ${nombre}`} Icon={UserSwitchIcon} onClick={() => setAbierto(true)} />
+      <BotonAccion
+        modo="icon"
+        label={"Unificar estudiantes"}
+        ariaLabel={`Unificar estudiantes: ${nombre}`}
+        Icon={UserSwitchIcon}
+        onClick={() => setAbierto(true)}
+        disabled={!matricula.posibleDuplicado}
+        motivoInactiva="No hay un registro duplicado de este estudiante"
+      />
       {abierto ? (
         <DialogUnificarEstudiantes
           open
@@ -722,7 +750,9 @@ function ReactivarAccion({ matricula }: { matricula: Matricula }) {
 function HomologarSnapshotAccion({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const [abierto, setAbierto] = useState(false)
-  if (!puedeEditar || matricula.status !== "Cursando" || !matricula.snapshotPendiente) return null
+  // Solo la principal llega por traslado con snapshot (C.1.LIS.3c); el rol lo valida el back (Regla 45).
+  if (!puedeEditar || matricula.status !== "Cursando" || matricula.tipo === "COMPLEMENTARIA" || !matricula.snapshotPendiente)
+    return null
   return (
     <OnlineOnlyAction>
       <BotonAccion modo="icon" label={"Homologar desde snapshot"} ariaLabel={`Homologar desde snapshot: ${matricula.firstName} ${matricula.lastName}`} Icon={CloudSyncIcon} onClick={() => setAbierto(true)} />
