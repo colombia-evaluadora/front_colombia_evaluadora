@@ -20,7 +20,7 @@ interface Props {
 
 /**
  * Acciones del estudiante del tablero (G.8.TAB.3): todas a la vista; las que la bandera del backend no
- * permite van deshabilitadas. «Gestionar» (9.11) no tiene backend: `puede_gestionar` llega siempre en false.
+ * permite van deshabilitadas. «Gestionar» abre la gestión de la alerta de inasistencia (§9.11) si la hay y el usuario la ve.
  */
 export function MenuAccionesTablero({ fila, onAccion }: Props) {
   return (
@@ -51,7 +51,7 @@ export function MenuAccionesTablero({ fila, onAccion }: Props) {
           id: "gestionar",
           label: "Gestionar",
           icon: <GearIcon />,
-          disabled: !fila.puede_gestionar,
+          disabled: !fila.puede_gestionar || fila.fk_gestion_alerta == null,
           onSelect: () => onAccion("gestionar"),
         },
       ]}

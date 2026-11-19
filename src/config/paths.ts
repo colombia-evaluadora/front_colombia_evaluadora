@@ -680,6 +680,10 @@ export const paths = {
       path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
       getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
     },
+    prevencionGestionAlerta: {
+      path: "gestion-estudiantil/prevencion-retencion/gestion-alertas/$gestionId",
+      getHref: (gestionId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/gestion-alertas/${gestionId}`,
+    },
     prevencionAcompEditar: {
       path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",
       getHref: (acompId: number | string) =>
