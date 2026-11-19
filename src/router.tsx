@@ -428,6 +428,23 @@ export const noFuiYoRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/cuenta/pages/cambio-correo-pages"), "NoFuiYoPage"),
 })
 
+// Pública (Adm. §12.4): la ruta común del QR; el carné se verifica aquí y el boletín
+// redirige a /verificar/b/<código>.
+export const verificarDocumentoRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.verificarDocumento.path,
+  head: () => ({
+    meta: [
+      { title: `Verificación de documento · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(
+    () => import("@/features/verificacion/pages/verificar-documento-page"),
+    "VerificarDocumentoPage",
+  ),
+})
+
 // Pública (QR del boletín, U.4): sin sesión, dentro del marco del sitio público.
 export const verificarBoletinRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
@@ -2760,6 +2777,7 @@ const routeTree = rootRoute.addChildren([
   publicLayoutRoute.addChildren([
     homeRoute,
     verificarRoute,
+    verificarDocumentoRoute,
     verificarBoletinRoute,
     inscribirRoute,
     consultarInscripcionRoute,
