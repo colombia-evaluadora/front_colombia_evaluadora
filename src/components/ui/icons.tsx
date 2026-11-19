@@ -151,6 +151,7 @@ import {
   MdOutlinePeople,
   MdOutlinePermMedia,
   MdOutlinePersonAddAlt,
+  MdPlaylistAdd,
   MdOutlinePersonRemove,
   MdOutlinePhotoLibrary,
   MdOutlinePictureAsPdf,
@@ -370,6 +371,7 @@ export const TrophyIcon = makeIcon(MdOutlineEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const PersonAddIcon = makeIcon(MdOutlinePersonAddAlt)
+export const ListPlusIcon = makeIcon(MdPlaylistAdd)
 export const PersonRemoveIcon = makeIcon(MdOutlinePersonRemove)
 export const PersonWalkIcon = makeIcon(MdOutlineDirectionsWalk)
 export const ArmchairIcon = makeIcon(MdOutlineEventSeat)

@@ -32,12 +32,19 @@ const EMPTY_FILTERS: MatriculaFiltersFormInput = {
   tipo: "",
   metodologia: "",
   solicitud: "",
+  nuevo: "",
 }
 
 // Aún no hay matrículas complementarias (informe 2.16): el back las devuelve vacías.
 const SOLICITUD_ITEMS = [
   { value: "", label: "Todas" },
   { value: "CON_SOLICITUD", label: "Con solicitud pendiente" },
+]
+
+const NUEVO_ITEMS = [
+  { value: "", label: "Todos" },
+  { value: "S", label: "Sí" },
+  { value: "N", label: "No" },
 ]
 
 const TIPO_ITEMS = [
@@ -237,6 +244,13 @@ export function SearchMatricula({ filters, applyFilters, clearAllFilters, active
             items={metodologiaItems}
             value={draft.metodologia}
             onChange={(v) => setDraft((prev) => ({ ...prev, metodologia: v }))}
+          />
+          <FilterSelect
+            id="matricula-nuevo"
+            label="Nuevo"
+            items={NUEVO_ITEMS}
+            value={draft.nuevo}
+            onChange={(v) => setDraft((prev) => ({ ...prev, nuevo: v }))}
           />
           <FilterSelect
             id="matricula-solicitud"

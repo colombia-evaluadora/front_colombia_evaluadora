@@ -9,19 +9,19 @@ import type {
 } from "@/features/academic-management/reports/api/types"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 
-interface SedeRow {
+export interface SedeRow {
   fk_tsede: number
   sede_nombre: string
   fk_testablecimiento: number
   establecimiento_nombre: string
 }
 
-interface AnioRow {
+export interface AnioRow {
   anio: number
   es_actual: boolean
 }
 
-interface JornadaRow {
+export interface JornadaRow {
   fk_tlv_jornada: number
   jornada_nombre: string
   fk_tperiodo_academico: number
@@ -40,17 +40,31 @@ export const jornadasInformeQueryKey = (sedeId: number | null, anio: number | nu
 
 export async function fetchSedesInforme(): Promise<SedeInforme[]> {
   const rows = await evalCol.postRows<SedeRow>("/informes/sedes", {})
-  return rows.map((row) => ({
-    id: row.fk_tsede,
-    nombre: row.sede_nombre,
-    establecimientoId: row.fk_testablecimiento,
-    establecimientoNombre: row.establecimiento_nombre,
-  }))
+  return rows.map(toSede)
 }
+
+export const toSede = (row: SedeRow): SedeInforme => ({
+  id: row.fk_tsede,
+  nombre: row.sede_nombre,
+  establecimientoId: row.fk_testablecimiento,
+  establecimientoNombre: row.establecimiento_nombre,
+})
+
+export const toAnio = (row: AnioRow): AnioInforme => ({ anio: row.anio, esActual: row.es_actual })
+
+export const toJornada = (row: JornadaRow): JornadaInforme => ({
+  id: row.fk_tlv_jornada,
+  nombre: row.jornada_nombre,
+  periodoAcademicoId: row.fk_tperiodo_academico,
+  periodoAcademicoNombre: row.periodo_nombre,
+  fechaInicio: row.fecha_inicio,
+  fechaFin: row.fecha_fin,
+  enCurso: row.en_curso,
+})
 
 export async function fetchAniosInforme(sedeId: number | null): Promise<AnioInforme[]> {
   const rows = await evalCol.postRows<AnioRow>("/informes/anos", { FK_TSEDE: sedeId })
-  return rows.map((row) => ({ anio: row.anio, esActual: row.es_actual }))
+  return rows.map(toAnio)
 }
 
 export async function fetchJornadasInforme(sedeId: number | null, anio: number | null): Promise<JornadaInforme[]> {
@@ -58,15 +72,7 @@ export async function fetchJornadasInforme(sedeId: number | null, anio: number |
     FK_TSEDE: sedeId,
     ANIO: anio,
   })
-  return rows.map((row) => ({
-    id: row.fk_tlv_jornada,
-    nombre: row.jornada_nombre,
-    periodoAcademicoId: row.fk_tperiodo_academico,
-    periodoAcademicoNombre: row.periodo_nombre,
-    fechaInicio: row.fecha_inicio,
-    fechaFin: row.fecha_fin,
-    enCurso: row.en_curso,
-  }))
+  return rows.map(toJornada)
 }
 
 /** `POST /informes/sedes`. Sin cuerpo a propósito: el alcance sale de quien

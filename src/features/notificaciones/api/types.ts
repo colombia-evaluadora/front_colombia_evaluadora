@@ -45,6 +45,10 @@ export interface NotificacionRow {
   /** Agrupación en escritura (D-2.4): actores y conteo de la entrada agrupada. */
   actores: string[] | null
   conteo: number | null
+  /** Línea de contexto bajo el cuerpo ("Matrícula · 5-A"); opcional. */
+  contexto?: string | null
+  /** Enlaces extra además del deep link (p. ej. "Retirar" en MATRICULA_INASISTENCIA). */
+  acciones?: { etiqueta: string; deep_link: string }[] | null
 }
 
 /** `GET /notificaciones?cursor&limit&tipo&categoria&estado` (D-2.3). */
@@ -114,6 +118,9 @@ export interface Notificacion {
   leida: boolean
   actores: string[]
   conteo: number
+  contexto: string
+  /** Deep links ya validados (`safeDeepLink`). */
+  acciones: { etiqueta: string; deepLink: string }[]
 }
 
 export interface NotificacionesPage {

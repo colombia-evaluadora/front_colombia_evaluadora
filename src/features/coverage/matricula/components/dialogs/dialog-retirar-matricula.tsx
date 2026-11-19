@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { DatePicker } from "@/components/date-picker"
@@ -29,6 +30,7 @@ import {
 import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 
 const OBSERVACION_MAX = 500
+const MOTIVO_TRASLADO = "Traslado a otro establecimiento"
 
 /** Quién originó el retiro: sale en el acta de retiro para el SIMPADE. */
 const MOTIVOS_NOVEDAD = [
@@ -57,19 +59,28 @@ export function DialogRetirar({
   const [motivoRetiro, setMotivoRetiro] = useState("")
   const [motivoNovedad, setMotivoNovedad] = useState("")
   const [observacion, setObservacion] = useState("")
+  const [institucionDestino, setInstitucionDestino] = useState("")
   const [intentado, setIntentado] = useState(false)
   const [error, setError] = useState<{ id: number; message: string } | null>(null)
 
   const uno = matriculas.length === 1
   const conComplementaria = (previa ?? []).filter((p) => p.complementaria)
   const hoy = new Date()
-  const fechaValida = Boolean(fecha) && (parseDateValue(fecha) ?? hoy) <= hoy
+  const esTraslado = motivos.find((m) => String(m.id) === motivoRetiro)?.nombre === MOTIVO_TRASLADO
+  const fechaValida =Boolean(fecha) && (parseDateValue(fecha) ?? hoy) <= hoy
 
   function confirmar() {
     setIntentado(true)
     if (!fechaValida || !motivoRetiro || !motivoNovedad) return
     retirar.mutate(
-      { matriculaIds: ids, fecha, motivoRetiroId: Number(motivoRetiro), motivoNovedad, observacion: observacion.trim() },
+      {
+        matriculaIds: ids,
+        fecha,
+        motivoRetiroId: Number(motivoRetiro),
+        motivoNovedad,
+        observacion: observacion.trim(),
+        institucionDestino: esTraslado ? institucionDestino.trim() : undefined,
+      },
       {
         onSuccess: (resultados) => {
           const { variant, texto } = mensajeLote(resultados, (n) =>
@@ -123,6 +134,20 @@ export function DialogRetirar({
           />
         </div>
 
+        {esTraslado ? (
+          <Field variant="outlined" className="gap-1.5">
+            <FieldLabel htmlFor="retiro-destino">Institución de destino</FieldLabel>
+            <Input
+              id="retiro-destino"
+              maxLength={200}
+              value={institucionDestino}
+              placeholder="Opcional"
+              onChange={(e) => setInstitucionDestino(e.target.value)}
+            />
+            <FieldDescription>A qué institución se traslada el estudiante, si se sabe.</FieldDescription>
+          </Field>
+        ) : null}
+
         <CampoSelect
           id="retiro-novedad"
           label="Motivo de la novedad"
@@ -163,6 +188,12 @@ export function DialogRetirar({
               : `${plural(conComplementaria.length, "estudiante tiene", "estudiantes tienen")} matrícula complementaria: también pasará a Retirado.`
             : null}
         </Aviso>
+        {/* Regla 12: retirar la complementaria no toca la principal. */}
+        {matriculas.some((m) => m.tipo === "COMPLEMENTARIA") ? (
+          <Aviso tono="info" titulo={uno ? "Es una matrícula complementaria: la principal sigue Cursando." : "Las matrículas complementarias se retiran solas: sus principales siguen Cursando."}>
+            Se avisa al Administrador y al Gestor administrativo del establecimiento de la principal.
+          </Aviso>
+        ) : null}
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>

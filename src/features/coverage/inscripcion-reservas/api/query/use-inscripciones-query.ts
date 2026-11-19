@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toAutorizaciones } from "@/features/autorizacion-datos/lib/autorizaciones"
 import { fetchGrados } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
-import { fetchEstablishmentsOptions } from "@/features/establishment/institution/api/query/use-establishments-options"
+import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import type {
   EstadoInscripcion,
   EstadoOpcion,
@@ -34,10 +34,15 @@ export const inscripcionesKeys = {
   catalogos: [...all, "catalogos"] as const,
 }
 
-/** Establecimiento que consulta: el primero de los del usuario. */
+/**
+ * Establecimiento que consulta: el de la primera de sus sedes. Sale de las sedes
+ * asignadas y no de /establecimientos/opciones, que solo ve rector, secretaria y
+ * jefe de sistema (fn_est_listar_todos) y da 403 a los roles que reciben
+ * Inscritos desde Configuración de roles.
+ */
 export async function fetchEstablecimientoId(): Promise<number | null> {
-  const { rows } = await fetchEstablishmentsOptions()
-  return rows[0]?.id ?? null
+  const sedes = await fetchSedeOptions()
+  return sedes[0]?.fk_establecimiento ?? null
 }
 
 // --- Grupos de admisión ------------------------------------------------------

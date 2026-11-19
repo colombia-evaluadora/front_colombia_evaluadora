@@ -129,6 +129,45 @@ export const paths = {
       path: "cobertura/matricula/detalle/$matriculaId/editar",
       getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}/editar`,
     },
+    // Matrícula complementaria por adscripción (Sección 2.16.2): mismo prefijo
+    // para que el ítem del menú quede marcado en todas sus pantallas.
+    coberturaComplementaria: {
+      path: "cobertura/matricula-complementaria",
+      getHref: () => "/app/cobertura/matricula-complementaria",
+    },
+    // Promoción y nivelación (Sección 4.7): pestañas Reprobados y Áreas pendientes.
+    coberturaPromocion: {
+      path: "cobertura/promocion-nivelacion",
+      getHref: () => "/app/cobertura/promocion-nivelacion",
+    },
+    coberturaConvocatoriaNueva: {
+      path: "cobertura/matricula-complementaria/convocatorias/nueva",
+      getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",
+    },
+    coberturaConvocatoriaDetalle: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}`,
+    },
+    coberturaConvocatoriaEditar: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/editar",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}/editar`,
+    },
+    coberturaConvocatoriaSeleccionar: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/seleccionar",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}/seleccionar`,
+    },
+    coberturaPostulacionNueva: {
+      path: "cobertura/matricula-complementaria/postulaciones/nueva",
+      getHref: () => "/app/cobertura/matricula-complementaria/postulaciones/nueva",
+    },
+    coberturaPostulacionDetalle: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}`,
+    },
+    coberturaPostulacionCambiarCupo: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/cambiar-cupo",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}/cambiar-cupo`,
+    },
     // Mismo prefijo para las dos vistas: el ítem del menú se marca en ambas.
     auditoriaSesiones: {
       path: "registro-de-actividad/sesiones",
@@ -632,6 +671,19 @@ export const paths = {
     prevencionSenalSaludMental: {
       path: "gestion-estudiantil/prevencion-retencion/salud-mental/$senalId",
       getHref: (senalId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/salud-mental/${senalId}`,
+    },
+    prevencionAcompNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$tipo/nuevo",
+      getHref: (tipo: "embarazo" | "consumo") => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${tipo}/nuevo`,
+    },
+    prevencionAcompDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
+      getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
+    },
+    prevencionAcompEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",
+      getHref: (acompId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}/editar`,
     },
     observacionesSugerencias: {
       path: "gestion-estudiantil/observaciones-sugerencias",

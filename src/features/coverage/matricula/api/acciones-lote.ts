@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { postMultipart } from "@/lib/files"
+import { downloadReport } from "@/lib/report-client"
 import { invalidarMatriculas, matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 
 // Acciones de la fila y de la barra de lote (C.1.LOT.1–8): la misma acción
@@ -75,6 +75,8 @@ export interface RetirarLoteInput {
   motivoRetiroId: number
   motivoNovedad: string
   observacion: string
+  /** Solo con motivo «Traslado a otro establecimiento»; opcional. */
+  institucionDestino?: string
 }
 
 export function useRetirarLote() {
@@ -86,6 +88,7 @@ export function useRetirarLote() {
         FK_TLV_MOTIVO_RETIRO: v.motivoRetiroId,
         MOTIVO_NOVEDAD: v.motivoNovedad,
         OBSERVACION: v.observacion || null,
+        INSTITUCION_DESTINO: v.institucionDestino?.trim() || null,
       }),
     ),
   )
@@ -392,25 +395,17 @@ export function useReactivarLote() {
 
 /* ───────────── Documentos PDF (C.1.LOT.7 y 8, Secciones 2.14, 2.17 y 3.6) ───────────── */
 
-async function descargarPdf(path: string, body: unknown, archivo: string) {
-  const blob = await api.post<Blob>(`/eval-col${path}`, body, { responseType: "blob" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = archivo
-  a.click()
-  URL.revokeObjectURL(url)
+async function reporte(key: "matricula-hoja" | "matricula-constancia" | "matricula-paquete-soporte", filters: Record<string, unknown>) {
+  const r = await downloadReport(key, { format: "pdf", filters })
+  if (r.status !== "ok") throw new Error(r.message)
 }
 
 /** Hoja de matrícula (Sección 3.6): un solo PDF con la hoja de cada estudiante. */
 export function useGenerarHojas() {
   return useMutation({
     mutationFn: (matriculaIds: string[]) =>
-      descargarPdf(
-        `${BASE}/hojas`,
-        { IDS: ids(matriculaIds) },
-        matriculaIds.length === 1 ? "hoja-matricula.pdf" : "hojas-matricula.pdf",
-      ),
+      // Sale de reporting-service (V282: /matricula/hojas bajo FILTERS), como el carné.
+      reporte("matricula-hoja", { IDS: ids(matriculaIds) }),
   })
 }
 
@@ -436,11 +431,39 @@ export interface GenerarConstanciasInput {
 export function useGenerarConstancias() {
   return useMutation({
     mutationFn: (v: GenerarConstanciasInput) =>
-      descargarPdf(
-        `${BASE}/constancias`,
-        { IDS: ids(v.matriculaIds), DIRIGIDA_A: v.dirigidaA, BORRADOR: v.borrador ? "S" : "N" },
-        v.matriculaIds.length === 1 ? "constancia-estudio.pdf" : "constancias-estudio.pdf",
-      ),
+      reporte("matricula-constancia", {
+        IDS: ids(v.matriculaIds),
+        DIRIGIDA_A: v.dirigidaA,
+        BORRADOR: v.borrador ? "S" : "N",
+      }),
+  })
+}
+
+/* Carné estudiantil (Sección 2.18, Regla 61): solo Cursando; individual o en lote. */
+
+/** Cuántas de la selección no tienen foto: su carné sale con una silueta. */
+export function usePreviaCarnesQuery(matriculaIds: string[]) {
+  return useQuery({
+    queryKey: [...matriculaKeys.all, "carnes-previa", matriculaIds],
+    queryFn: async () => {
+      const row = await evalCol.postRow<{ sin_foto: number }>(`${BASE}/carnes/previa`, { IDS: ids(matriculaIds) })
+      return { sinFoto: Number(row.sin_foto ?? 0) }
+    },
+    staleTime: 0,
+  })
+}
+
+/**
+ * Un solo PDF con los carnés (frente y reverso, varios por hoja carta con marcas
+ * de corte). Sale de reporting-service; deja Reemplazado el carné anterior de
+ * cada matrícula y lo registra como documento emitido (QR).
+ */
+export function useGenerarCarnes() {
+  return useMutation({
+    mutationFn: async (matriculaIds: string[]) => {
+      const r = await downloadReport("matricula-carne", { format: "pdf", filters: { IDS: ids(matriculaIds) } })
+      if (r.status !== "ok") throw new Error(r.message)
+    },
   })
 }
 
@@ -469,6 +492,7 @@ export function usePreviaPaqueteQuery(matriculaId: string) {
 export function useGenerarPaquete() {
   return useMutation({
     mutationFn: (matriculaId: string) =>
-      descargarPdf(`/cobertura-academica/matricula/${matriculaId}/paquete-soporte`, {}, "paquete-soporte.pdf"),
+      // reporting-service (V724.3): un solo PDF con portada y los soportes anexados.
+      reporte("matricula-paquete-soporte", { IDS: [Number(matriculaId)] }),
   })
 }

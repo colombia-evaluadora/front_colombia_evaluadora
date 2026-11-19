@@ -26,7 +26,13 @@ import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/matricula/
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
-import type { CreateMatriculaInput, Matricula } from "@/features/coverage/matricula/api/types/matricula"
+import type {
+  CreateMatriculaInput,
+  Matricula,
+  MatriculaDocumentCheckResult,
+} from "@/features/coverage/matricula/api/types/matricula"
+import { DialogMatricularYSolicitar } from "@/features/coverage/matricula/components/dialogs/dialog-matricular-y-solicitar"
+import { solicitarRetiro } from "@/features/coverage/matricula/api/solicitud-retiro"
 import type { SnapshotPendiente } from "@/features/coverage/matricula/api/types/notas-homologadas"
 import { fetchSnapshotPendiente } from "@/features/coverage/matricula/api/query/use-snapshot-pendiente"
 import { HomologationMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-homologation-matricula"
@@ -128,8 +134,10 @@ function AddMatriculaPageContent() {
   const [showHomologar, setShowHomologar] = useState(false)
   const gradeLabel = useMatriculaGradeLabel()
 
-  const [existingMatricula, setExistingMatricula] = useState<Matricula | null>(null)
-  const [duplicateDialogDismissed, setDuplicateDialogDismissed] = useState(false)
+  const [existingCheck, setExistingCheck] = useState<MatriculaDocumentCheckResult | null>(null)
+  const existingMatricula = existingCheck?.matricula ?? null
+  // AGR.6 (duplicado) o SOL.1 (sigue Cursando en otra IE): se abren al guardar.
+  const [dialogoExistente, setDialogoExistente] = useState<{ tipo: "duplicado" | "solicitar"; mode: "again" | "close" } | null>(null)
 
   // Cuenta ya existente de estudiante/acudiente que va en el create.
   const pkUsuarioEstudianteRef = useRef<number | null>(null)
@@ -182,6 +190,11 @@ function AddMatriculaPageContent() {
   // Reglas 3 y 8: el documento identifica al estudiante; si ya existe, se cargan sus
   // datos de identidad (en solo lectura) y se muestra la verificación.
   const { data: estudianteExistente } = useEstudianteExistenteQuery(values.student.documentNumber)
+  // AGR.2: viene de un traslado y el grado elegido es otro.
+  const traslado = estudianteExistente?.traslado ?? null
+  const gradoDistintoTraslado = Boolean(
+    traslado && values.academic.grade && values.academic.grade !== traslado.gradoValor,
+  )
   const docPrecargado = useRef("")
   useEffect(() => {
     if (!estudianteExistente) return
@@ -198,9 +211,7 @@ function AddMatriculaPageContent() {
   // Matrícula activa duplicada: se consulta 600 ms después de la última tecla.
   const { documentType, documentNumber } = values.student
   useEffect(() => {
-    setExistingMatricula(null)
-    setDuplicateDialogDismissed(false)
-
+    setExistingCheck(null)
     const trimmed = documentNumber.trim()
     if (!documentType || trimmed.length < 6) return
 
@@ -208,7 +219,7 @@ function AddMatriculaPageContent() {
     const timeout = setTimeout(() => {
       checkMatriculaByDocument(trimmed)
         .then((result) => {
-          if (!cancelled) setExistingMatricula(result.matricula)
+          if (!cancelled) setExistingCheck(result.matricula ? result : null)
         })
         .catch(() => {
           // Si falla no se bloquea: el backend rechaza el duplicado al guardar.
@@ -380,7 +391,7 @@ function AddMatriculaPageContent() {
     if (failedOtherDocumentsCount > 0) {
       notify(
         `${message} ${failedOtherDocumentsCount} archivo(s) de "otros documentos" no se pudieron subir; ` +
-          `podés reintentarlos desde "Archivos" en el detalle del estudiante.`,
+          `puede reintentarlos desde "Archivos" en el detalle del estudiante.`,
         { variant: "error" },
       )
     } else {
@@ -396,12 +407,32 @@ function AddMatriculaPageContent() {
   }
 
   function handleSave(mode: "again" | "close") {
-    if (existingMatricula) return
     setHasSubmitted(true)
     const missing = validateMatricula(values, undefined, fieldSettings, accountsFound, validacion)
     setMissingFields(missing)
     if (missing.length > 0) return
+    if (gradoDistintoTraslado) {
+      notify(`Por traslado, debe ser ${traslado?.gradoNombre}.`, { variant: "error" })
+      return
+    }
+    if (existingMatricula) {
+      const periodoElegido = values.academic.periodoId
+      const mismoPeriodo =
+        !periodoElegido || !existingCheck?.periodo || String(existingCheck.periodo.id) === periodoElegido
+      // AGR.6: mismo grado y período no se puede; si sigue Cursando en otra IE, se matricula y se pide el retiro (SOL.1).
+      if (String(existingMatricula.grade) === values.academic.grade && mismoPeriodo) {
+        setDialogoExistente({ tipo: "duplicado", mode })
+        return
+      }
+      if (existingCheck?.otroEstablecimiento && existingMatricula.status === "Cursando") {
+        setDialogoExistente({ tipo: "solicitar", mode })
+        return
+      }
+    }
+    crear(mode)
+  }
 
+  function crear(mode: "again" | "close", evidenciaRetiro?: File) {
     createMatricula.mutate(
       {
         values,
@@ -411,6 +442,19 @@ function AddMatriculaPageContent() {
       },
       {
         onSuccess: async ({ matricula, failedOtherDocuments, asignaturasError }) => {
+          setDialogoExistente(null)
+          if (evidenciaRetiro) {
+            // La matrícula ya existe: si falla la solicitud, se avisa y se sigue.
+            const errorSolicitud = await solicitarRetiro(matricula.id, evidenciaRetiro).then(
+              () => null,
+              (error) => getErrorMessage(error),
+            )
+            if (errorSolicitud) {
+              notify(`Estudiante matriculado, pero no se envió la solicitud de retiro: ${errorSolicitud}`, {
+                variant: "error",
+              })
+            }
+          }
           if (asignaturasError) {
             // La matrícula ya existe: el resto se corrige desde Editar matrícula.
             notify(
@@ -480,6 +524,7 @@ function AddMatriculaPageContent() {
   }
 
   const saving = createMatricula.isPending
+  const nombreEstudiante = [values.student.firstName, values.student.lastName].filter(Boolean).join(" ")
 
   return (
     <TableScreen>
@@ -508,7 +553,7 @@ function AddMatriculaPageContent() {
                 variant="fill"
                 color="primary"
                 size="sm"
-                disabled={saving || Boolean(existingMatricula)}
+                disabled={saving}
                 aria-busy={saving}
                 onClick={() => handleSave("close")}
               >
@@ -530,7 +575,16 @@ function AddMatriculaPageContent() {
       <TableScreenBody>
         <MatriculaPendingContext value={pendingFields}>
         <div id={ADD_MATRICULA_FORM_ID} className="flex flex-col gap-4 [counter-reset:seccion]">
-          {estudianteExistente ? <VerificacionEstudianteExistente estudiante={estudianteExistente} /> : null}
+          {estudianteExistente ? (
+            <VerificacionEstudianteExistente
+              estudiante={estudianteExistente}
+              documento={values.student.documentNumber.trim()}
+              gradoDistintoTraslado={gradoDistintoTraslado}
+              onUsarGradoTraslado={() =>
+                setValues((prev) => ({ ...prev, academic: { ...prev.academic, grade: traslado?.gradoValor ?? "", group: "" } }))
+              }
+            />
+          ) : null}
           <MatriculaFormBody
             values={values}
             onChange={setValues}
@@ -541,6 +595,7 @@ function AddMatriculaPageContent() {
             showStatus={false}
             fieldSettings={fieldSettings}
             studentIdentidadExistente={Boolean(estudianteExistente)}
+            gradoTraslado={traslado ? { valor: traslado.gradoValor, nombre: traslado.gradoNombre } : null}
           />
 
           {/* Regla 23: los bloques 14 y 15 se habilitan al guardar; se completan en Editar. */}
@@ -560,6 +615,15 @@ function AddMatriculaPageContent() {
 
       {pendingHomologation && !showHomologar && (
         <HomologationMatriculaDialog
+          resumen={[
+            `${pendingHomologation.matricula.firstName} ${pendingHomologation.matricula.lastName}`,
+            gradeLabel(pendingHomologation.matricula.grade),
+            pendingHomologation.matricula.group,
+            pendingHomologation.matricula.institution,
+            pendingHomologation.matricula.shift,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           institucionOrigen={pendingHomologation.snapshot.institucionOrigen}
           onChoice={handleHomologationChoice}
         />
@@ -587,17 +651,22 @@ function AddMatriculaPageContent() {
         />
       )}
 
-      {existingMatricula && !duplicateDialogDismissed && (
+      {existingMatricula && dialogoExistente?.tipo === "duplicado" && (
         <StudentAlreadyMatriculatedDialog
           matricula={existingMatricula}
-          onClose={() => {
-            setDuplicateDialogDismissed(true)
-            // Se limpia el documento del estudiante ya matriculado.
-            setValues((prev) => ({
-              ...prev,
-              student: { ...prev.student, documentType: "", documentNumber: "" },
-            }))
-          }}
+          nombre={nombreEstudiante}
+          periodo={existingCheck?.periodo?.label ?? ""}
+          onClose={() => setDialogoExistente(null)}
+        />
+      )}
+
+      {existingMatricula && dialogoExistente?.tipo === "solicitar" && (
+        <DialogMatricularYSolicitar
+          nombre={nombreEstudiante}
+          institucion={existingMatricula.institution}
+          saving={saving}
+          onCancel={() => setDialogoExistente(null)}
+          onConfirm={(evidencia) => crear(dialogoExistente.mode, evidencia)}
         />
       )}
     </TableScreen>

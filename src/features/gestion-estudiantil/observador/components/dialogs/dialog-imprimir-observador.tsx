@@ -36,7 +36,7 @@ interface Seleccion {
 }
 
 /** Imprimir observador (2.3): PDF para firmar de UN estudiante, del período o de todo el año. */
-export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltros }) {
+export function DialogImprimirObservador({ filtros, disabled }: { filtros: ObservadorFiltros; disabled?: boolean }) {
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -86,7 +86,7 @@ export function DialogImprimirObservador({ filtros }: { filtros: ObservadorFiltr
 
   return (
     <Dialog open={open} onOpenChange={(next) => !imprimir.isPending && abrir(next)}>
-      <DialogTrigger render={<Button size="sm" variant="outline" color="muted" />}>
+      <DialogTrigger disabled={disabled} render={<Button size="sm" variant="outline" color="muted" />}>
         <PrinterIcon data-icon="inline-start" />
         Imprimir observador
       </DialogTrigger>

@@ -74,6 +74,37 @@ function EtiquetaFlotante({ id, label, required }: { id: string; label: string; 
 /** Si la sección arranca abierta (por defecto sí); la inscripción pública abre solo la primera de cada paso. */
 export const MatriculaSectionDefaultOpenContext = createContext(true)
 
+/**
+ * Sin la autorización de tratamiento de datos (Regla 81), los datos del
+ * estudiante (2.2 a 2.9) se ven parcialmente enmascarados y en solo lectura,
+ * salvo los de verificación de identidad.
+ */
+export const MatriculaMaskedContext = createContext(false)
+
+const VERIFICACION_IDENTIDAD = new Set([
+  "student-document-type",
+  "student-document-number",
+  "student-first-name",
+  "student-second-name",
+  "student-last-name",
+  "student-second-last-name",
+  "student-birth-date",
+])
+
+function useEnmascarado(id: string) {
+  return useContext(MatriculaMaskedContext) && !VERIFICACION_IDENTIDAD.has(id)
+}
+
+/** Campo de solo lectura con el valor parcialmente enmascarado (Guía UX §5). */
+function CampoEnmascarado({ id, label, value }: { id: string; label: string; value: string }) {
+  return (
+    <Field orientation="vertical" variant="outlined" className="w-full gap-2">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Input id={id} size="sm" value={value ? enmascarar(value) : ""} readOnly disabled />
+    </Field>
+  )
+}
+
 // Plegable (prototipo C.1.AGR): el número sale de un contador CSS del
 // contenedor (`[counter-reset:seccion]`), porque las secciones se ocultan
 // según la configuración de campos y la numeración tiene que seguir corrida.
@@ -146,7 +177,7 @@ export function MatriculaFormSection({ title, columns = 3, children }: SectionPr
 
 /** «DERRICK JORDAN» → «D****** J*****»: la primera letra de cada palabra. */
 export function enmascarar(value: string) {
-  return value.replace(/\p{L}+/gu, (palabra) => palabra[0] + "*".repeat(palabra.length - 1))
+  return value.replace(/[\p{L}\p{N}]+/gu, (palabra) => palabra[0] + "*".repeat(palabra.length - 1))
 }
 
 interface TextFieldProps {
@@ -164,6 +195,8 @@ interface TextFieldProps {
   masked?: boolean
   /** Sanitizador de lo que se escribe (sustituye a `numeric`). */
   transform?: (value: string) => string
+  /** Ayuda debajo del campo. */
+  description?: string
 }
 
 export function MatriculaTextField({
@@ -179,7 +212,10 @@ export function MatriculaTextField({
   disabled,
   masked,
   transform,
+  description,
 }: TextFieldProps) {
+  const oculto = useEnmascarado(id)
+  if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
   return (
     <Field
       orientation="vertical"
@@ -206,6 +242,7 @@ export function MatriculaTextField({
           onChange(transform ? transform(raw) : numeric ? raw.replace(/\D/g, "") : raw)
         }}
       />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
     </Field>
   )
 }
@@ -225,6 +262,8 @@ interface YesNoFieldProps {
 // sin abrir una lista. El `id` va en el primer radio para que "Ver pendientes"
 // y el conteo por sección lo encuentren igual que a un input.
 export function MatriculaYesNoField({ id, label, value, onChange, required, invalid, disabled }: YesNoFieldProps) {
+  const oculto = useEnmascarado(id)
+  if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
   const labelId = `${id}-label`
   return (
     <div className="flex flex-col gap-2" data-invalid={invalid ? "true" : undefined}>
@@ -264,6 +303,8 @@ interface DateFieldProps {
   maxDate?: Date
   minDate?: Date
   disabled?: boolean
+  /** Ayuda debajo del campo. */
+  description?: string
 }
 
 /** Mismo `DatePicker` que usa Establecimiento, con el label flotante del resto de campos del alta. */
@@ -277,7 +318,10 @@ export function MatriculaDateField({
   maxDate,
   minDate,
   disabled,
+  description,
 }: DateFieldProps) {
+  const oculto = useEnmascarado(id)
+  if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
   return (
     <Field
       orientation="vertical"
@@ -296,6 +340,7 @@ export function MatriculaDateField({
         disabled={disabled}
         onChange={(date) => onChange(formatDateValue(date) ?? "")}
       />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
     </Field>
   )
 }
@@ -313,6 +358,8 @@ interface SelectFieldProps {
   disabled?: boolean
   /** Ayuda debajo del campo, p. ej. por qué está en solo lectura. */
   description?: string
+  /** Opciones visibles pero no elegibles, con su texto secundario. */
+  disabledOptions?: Record<string, string>
 }
 
 export function MatriculaSelectField({
@@ -327,7 +374,10 @@ export function MatriculaSelectField({
   invalid,
   disabled,
   description,
+  disabledOptions,
 }: SelectFieldProps) {
+  const oculto = useEnmascarado(id)
+  if (oculto) return <CampoEnmascarado id={id} label={label} value={value ? labelFor(value) : ""} />
   const items = Object.fromEntries([
     ["", placeholder],
     ...options.map((option) => [option, labelFor(option)]),
@@ -355,8 +405,15 @@ export function MatriculaSelectField({
             {placeholder}
           </ComboboxFieldItem>
           {options.map((option) => (
-            <ComboboxFieldItem key={option} value={option}>
-              {labelFor(option)}
+            <ComboboxFieldItem key={option} value={option} disabled={Boolean(disabledOptions?.[option])}>
+              {disabledOptions?.[option] ? (
+                <span className="flex flex-col">
+                  {labelFor(option)}
+                  <span className="text-xs text-muted-foreground">{disabledOptions[option]}</span>
+                </span>
+              ) : (
+                labelFor(option)
+              )}
             </ComboboxFieldItem>
           ))}
         </ComboboxFieldContent>

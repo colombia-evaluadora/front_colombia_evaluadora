@@ -64,11 +64,21 @@ export function useNavegacionPrevencion() {
     (matricula: number) => ir(paths.app.prevencionHistorialAcademico.getHref(matricula)),
     [ir],
   )
+  const irAcompNuevo = useCallback(
+    (tipo: "EMBARAZO" | "CONSUMO") =>
+      ir(paths.app.prevencionAcompNuevo.getHref(tipo === "EMBARAZO" ? "embarazo" : "consumo")),
+    [ir],
+  )
+  const irAcomp = useCallback(
+    (acompId: number, reemplazar = false) => ir(paths.app.prevencionAcompDetalle.getHref(acompId), undefined, reemplazar),
+    [ir],
+  )
+  const irAcompEditar = useCallback((acompId: number) => ir(paths.app.prevencionAcompEditar.getHref(acompId)), [ir])
   /** Atrás en el historial del navegador; sin historial, al tablero. */
   const volver = useCallback(() => {
     if (puedeVolver) router.history.back()
     else ir(paths.app.prevencionRetencion.getHref())
   }, [puedeVolver, router, ir])
 
-  return { irValorar, irPlanNuevo, irHistorial, irPlan, irPlanEditar, irValoracion, irAbrirCaso, irCaso, irReporteSaludMental, irSenalSaludMental, irEstrategiaNueva, irEstrategiaEditar, irEstrategia, irCaracterizacion, irCaracterizacionEditar, irHistorialAcademico, volver }
+  return { irValorar, irPlanNuevo, irHistorial, irPlan, irPlanEditar, irValoracion, irAbrirCaso, irCaso, irReporteSaludMental, irSenalSaludMental, irEstrategiaNueva, irEstrategiaEditar, irEstrategia, irCaracterizacion, irCaracterizacionEditar, irHistorialAcademico, irAcompNuevo, irAcomp, irAcompEditar, volver }
 }

@@ -24,6 +24,8 @@ interface PersonaRow {
   correo_cuenta: string | null
   fk_tarchivo_foto: number | null
   vinculado: boolean
+  /** Ya es del establecimiento y aún no le autoriza sus datos (Regla 116). */
+  datos_restringidos?: boolean | null
 }
 
 const toPersona = (row: PersonaRow): PersonaPorDocumento => ({
@@ -43,6 +45,7 @@ const toPersona = (row: PersonaRow): PersonaPorDocumento => ({
   accountEmail: row.correo_cuenta || null,
   photoArchivoId: row.fk_tarchivo_foto,
   linked: row.vinculado === true,
+  dataRestricted: row.datos_restringidos === true,
 })
 
 async function fetchPersonaPorDocumento(

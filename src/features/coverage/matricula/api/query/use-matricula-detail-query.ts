@@ -90,8 +90,12 @@ interface RawMatriculaCore {
   postulacion_registrada?: "S" | "N"
   retiro_solicitado_por?: string | null
   anulacion_pendiente?: "S" | "N"
+  sin_autorizacion?: "S" | "N"
+  origen_adscripcion?: string | null
   // Bloques 2.1, 2.2 y 2.8 nuevos (pendientes-back, tarea 8): solo los trae el mock.
   fk_tlv_internado?: number | null
+  fk_funcionario_digita_simat?: number | null
+  fecha_digitacion_simat?: string | null
   fk_tlv_pais_origen?: number | null
   fk_tlv_lengua_materna?: number | null
   fk_tlv_condicion_migratoria?: number | null
@@ -187,6 +191,7 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       : "",
     status,
     hasGrades: false,
+    sinAutorizacion: m.sin_autorizacion === "S",
   }
 
   const details: MatriculaDetails = {
@@ -201,6 +206,8 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       postulacionRegistrada: m.postulacion_registrada === "S",
       retiroSolicitadoPor: m.retiro_solicitado_por?.trim() || null,
       anulacionPendiente: m.anulacion_pendiente === "S",
+      sinAutorizacion: m.sin_autorizacion === "S",
+      origenAdscripcion: m.origen_adscripcion?.trim() || null,
     },
     academic: {
       campus: m.sede_nombre,
@@ -211,6 +218,8 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
       status,
       specialty: toIdString(m.fk_enfasis),
       internado: toIdString(m.fk_tlv_internado),
+      funcionarioDigitaSimat: toIdString(m.fk_funcionario_digita_simat),
+      fechaDigitacionSimat: m.fecha_digitacion_simat?.slice(0, 10) ?? "",
     },
     student: {
       documentType: toIdString(est.fk_tlv_tipo_documento),

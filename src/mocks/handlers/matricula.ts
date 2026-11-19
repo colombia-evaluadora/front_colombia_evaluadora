@@ -1,6 +1,12 @@
 import { anulacionPendiente, retiroSolicitadoPor } from "@/mocks/db/solicitud-retiro"
-import { metodologiaDe } from "@/mocks/db/metodologia"
+import { registrarAutorizacion, sinAutorizacion } from "@/mocks/db/autorizacion-datos"
+import { complementariaDe, origenAdscripcionDe, puedeAgregarComplementaria, tipoDe } from "@/mocks/db/complementaria"
+import { metodologiaDe, metodologiaNombre } from "@/mocks/db/metodologia"
+
+// Nuevo: sin matrícula el año anterior en la entidad territorial (variedad fija por pk).
+const esNuevo = (pk: number) => pk % 5 === 1
 import { tieneSnapshotPendiente } from "@/mocks/db/notas-homologadas"
+import { retirosTraslado } from "@/mocks/db/acciones-lote"
 import { http, HttpResponse, delay } from "msw"
 
 import {
@@ -87,6 +93,7 @@ function matches(value: string, needle: string): boolean {
 // Body plano que manda `toListRequest` en `use-matricula-query.ts`.
 interface MatriculaListRequestBody {
   SEARCH: string | null
+  TIPO?: string | null
   STATUSES: Matricula["status"][] | null
   CAMPUS: string | null
   SHIFT: string | null
@@ -94,6 +101,7 @@ interface MatriculaListRequestBody {
   GROUP: string | null
   METODOLOGIA?: number | null
   SOLICITUD?: "CON_SOLICITUD" | null
+  NUEVO?: "S" | "N" | null
   PAGEINDEX: number
   PAGESIZE: number
   SORTBY: string | null
@@ -117,12 +125,37 @@ function toRawMatriculaRow(row: Matricula, totalCount: number) {
     grupo: row.group,
     enrollment_date: row.enrollmentDate,
     guardian: row.guardian || null,
+    // Columnas de exportación (Regla 47); el back aún no las manda.
+    birth_date: "2011-02-03",
+    address: "Cl 45 # 12-30",
+    phone: "310 455 1020",
+    guardian_relationship: row.guardian ? "Madre" : null,
+    guardian_email: row.guardian ? "acudiente@correo.com" : null,
+    asignaturas: "11",
+    soportes: "Documento de identidad",
     status: row.status,
     has_grades: row.hasGrades,
     age_situation: row.ageSituation ?? "SIN_CALCULAR",
     retiro_solicitado: retiroSolicitadoPor(Number(row.id)) ? "S" : "N",
+    retiro_solicitado_por: retiroSolicitadoPor(Number(row.id)),
+    ...(() => {
+      const t = row.status === "Retirado" ? retirosTraslado.get(Number(row.id)) : undefined
+      return {
+        retiro_traslado: t ? ("S" as const) : ("N" as const),
+        acta_retiro: t?.acta ?? null,
+        fecha_retiro: t?.fecha ?? null,
+        simpade_ingresado: t?.simpade ? ("S" as const) : ("N" as const),
+      }
+    })(),
     anulacion_pendiente: anulacionPendiente(Number(row.id)) ? "S" : "N",
     snapshot_pendiente: tieneSnapshotPendiente(row.id) ? "S" : "N",
+    tipo_matricula: tipoDe(Number(row.id)),
+    tiene_complementaria: complementariaDe(Number(row.id)) ? "S" : "N",
+    origen_adscripcion: origenAdscripcionDe(Number(row.id)),
+    puede_agregar_complementaria: puedeAgregarComplementaria(row) ? "S" : "N",
+    sin_autorizacion: sinAutorizacion(Number(row.id)) ? "S" : "N",
+    nuevo: esNuevo(Number(row.id)) ? "S" : "N",
+    metodologia_grupo: metodologiaNombre(metodologiaDe(Number(row.id))),
     total_count: totalCount,
   }
 }
@@ -148,7 +181,9 @@ function applyFilters(rows: Matricula[], filters: MatriculaQueryFilters): Matric
     if (filters.shift && row.shift !== filters.shift) return false
     if (filters.grade != null && row.grade !== filters.grade) return false
     if (filters.group && row.group !== filters.group) return false
+    if (filters.tipo && tipoDe(Number(row.id)) !== filters.tipo) return false
     if (filters.metodologia != null && metodologiaDe(Number(row.id)) !== filters.metodologia) return false
+    if (filters.nuevo && (esNuevo(Number(row.id)) ? "S" : "N") !== filters.nuevo) return false
     if (
       filters.solicitud === "CON_SOLICITUD" &&
       !retiroSolicitadoPor(Number(row.id)) &&
@@ -209,11 +244,13 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
         created_at: matricula.enrollmentDate,
         estado_matricula_nombre: matricula.status,
         // Variedad fija por pk para ver cada bloqueo de Editar.
-        tipo_matricula: "PRINCIPAL" as const,
-        tiene_complementaria: pk % 3 === 0 ? ("S" as const) : ("N" as const),
+        tipo_matricula: tipoDe(pk),
+        tiene_complementaria: complementariaDe(pk) ? ("S" as const) : ("N" as const),
         postulacion_registrada: pk % 3 === 1 ? ("S" as const) : ("N" as const),
         retiro_solicitado_por: retiroSolicitadoPor(pk),
         anulacion_pendiente: anulacionPendiente(pk) ? ("S" as const) : ("N" as const),
+        sin_autorizacion: sinAutorizacion(pk) ? ("S" as const) : ("N" as const),
+        origen_adscripcion: origenAdscripcionDe(pk),
         fk_tlv_internado: toNum(details.academic.internado ?? ""),
         fk_tlv_pais_origen: toNum(details.student.paisOrigen ?? ""),
         fk_tlv_lengua_materna: toNum(details.student.lenguaMaterna ?? ""),
@@ -297,6 +334,15 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
 }
 
 export const matriculaHandlers = [
+  http.post("*/api/eval-col/cobertura-academica/matricula/:id/autorizacion-datos", async ({ params, request }) => {
+    await delay(300)
+    const pk = Number(params.id)
+    const { ACUDIENTE } = (await request.json()) as { ACUDIENTE: string }
+    if (!sinAutorizacion(pk)) return HttpResponse.json({ message: "La matrícula ya tiene la autorización de datos." }, { status: 409 })
+    registrarAutorizacion(pk, ACUDIENTE)
+    return HttpResponse.json({ rows: [{ pk_tmatricula: pk }] })
+  }),
+
   http.get("*/api/eval-col/cobertura-academica/matricula/:id", async ({ params }) => {
     await delay(250)
 
@@ -383,6 +429,8 @@ export const matriculaHandlers = [
       group: body.GROUP ?? undefined,
       metodologia: body.METODOLOGIA ?? undefined,
       solicitud: body.SOLICITUD ?? undefined,
+      nuevo: body.NUEVO ?? undefined,
+      tipo: (body.TIPO as MatriculaQueryFilters["tipo"]) ?? undefined,
     }
     const sorting: MatriculaQueryRequest["sorting"] = body.SORTBY
       ? [{ id: body.SORTBY, desc: body.SORTDIR === "desc" }]
@@ -513,6 +561,9 @@ export const matriculaHandlers = [
     return HttpResponse.json<MatriculaDocumentCheckResult>({
       exists: matricula !== null,
       matricula,
+      // Pendiente en el back: período de esa matrícula y si es de otro establecimiento (SOL.1).
+      periodo: matricula ? { id: 1, label: "2026 · Anual · Ciclo 1" } : null,
+      otroEstablecimiento: matricula ? Number(matricula.id) % 3 === 0 : false,
     })
   }),
 
