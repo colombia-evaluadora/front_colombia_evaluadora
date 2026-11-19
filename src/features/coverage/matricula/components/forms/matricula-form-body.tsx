@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { MatriculaMaskedContext, MatriculaSectionDisabledContext } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
 import type { CreateMatriculaInput, MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
 import {
@@ -41,6 +43,9 @@ interface MatriculaFormBodyProps {
   datosProtegidos?: boolean
   /** Alta por traslado: grado de origen obligatorio (AGR.2). */
   gradoTraslado?: { valor: string; nombre: string } | null
+  /** Avisos dentro de los bloques 1 (matrícula) y 2 (estudiante). */
+  avisoMatricula?: ReactNode
+  avisoEstudiante?: ReactNode
 }
 
 
@@ -61,6 +66,8 @@ export function MatriculaFormBody({
   especialidadBloqueo,
   datosProtegidos = false,
   gradoTraslado,
+  avisoMatricula,
+  avisoEstudiante,
 }: MatriculaFormBodyProps) {
   return (
     <MatriculaSectionDisabledContext.Provider value={disabled}>
@@ -75,6 +82,7 @@ export function MatriculaFormBody({
         tipoMatricula={tipoMatricula}
         especialidadBloqueo={especialidadBloqueo}
         gradoTraslado={gradoTraslado}
+        aviso={avisoMatricula}
       />
 
       <MatriculaMaskedContext.Provider value={datosProtegidos}>
@@ -87,6 +95,7 @@ export function MatriculaFormBody({
         fieldSettings={fieldSettings}
         identityDisabled={studentIdentityDisabled}
         identidadExistente={studentIdentidadExistente}
+        aviso={avisoEstudiante}
       />
 
       <MatriculaResidenceSection

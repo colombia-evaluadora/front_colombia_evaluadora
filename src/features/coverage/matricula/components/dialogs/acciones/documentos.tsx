@@ -103,7 +103,7 @@ export function DialogGenerarConstancias({
             onChange={(e) => setDirigidaA(e.target.value)}
           />
           <FieldDescription className={cn(!valido && "text-red")}>
-            {uno ? "" : "La misma para todas. "}Entre {DIRIGIDA_MIN} y {DIRIGIDA_MAX} caracteres; p. ej. «Caja de Compensación Familiar».
+            {valido ? "Se puede cambiar; p. ej. el nombre de la entidad que la pide." : `Entre ${DIRIGIDA_MIN} y ${DIRIGIDA_MAX} caracteres.`}
           </FieldDescription>
         </Field>
 

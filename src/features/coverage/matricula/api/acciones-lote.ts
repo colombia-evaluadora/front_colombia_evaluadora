@@ -311,8 +311,8 @@ export interface PreviaCambioGrado {
   registros: { actividades: number; definitivas: string[]; clases: number } | null
   /** Cuántas de la selección tienen registros (lote: «[N] de [M] estudiantes tienen registros»). */
   conRegistros: number
-  /** La complementaria pasa a Retirado si el grado destino no tiene su especialidad. */
-  complementaria: (Complementaria & { disponibleEnGradoSiguiente: boolean }) | null
+  /** La complementaria pasa a Retirado si el grado destino no tiene su especialidad en jornada contraria. */
+  complementaria: (Complementaria & { gradosConEspecialidad: number[] }) | null
 }
 
 interface PreviaCambioGradoRow {
@@ -321,7 +321,9 @@ interface PreviaCambioGradoRow {
   grado_siguiente: number | null
   registros: { actividades: number; definitivas: string[]; clases: number } | null
   con_registros: number
-  complementaria: (Complementaria & { disponible_en_grado_siguiente: boolean }) | null
+  complementaria:
+    | (Complementaria & { grados_con_especialidad?: number[]; disponible_en_grado_siguiente?: boolean })
+    | null
 }
 
 export function usePreviaCambioGradoQuery(matriculaIds: string[]) {
@@ -339,7 +341,13 @@ export function usePreviaCambioGradoQuery(matriculaIds: string[]) {
         registros: p.registros,
         conRegistros: p.con_registros ?? 0,
         complementaria: p.complementaria
-          ? { ...p.complementaria, disponibleEnGradoSiguiente: p.complementaria.disponible_en_grado_siguiente }
+          ? {
+              ...p.complementaria,
+              // Mientras el back no mande grados_con_especialidad (V411 trae solo disponible_en_grado_siguiente).
+              gradosConEspecialidad:
+                p.complementaria.grados_con_especialidad ??
+                (p.complementaria.disponible_en_grado_siguiente && p.grado_siguiente != null ? [p.grado_siguiente] : []),
+            }
           : null,
       }
     },

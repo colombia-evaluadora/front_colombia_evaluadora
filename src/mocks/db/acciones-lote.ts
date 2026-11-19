@@ -39,7 +39,6 @@ if (sembrada)
 export function marcarSimpade(pk: number, fechaIngreso: string, funcionarioId: number): string | null {
   const r = retirosTraslado.get(pk)
   if (!r) return "La matrícula no tiene un retiro por traslado."
-  if (r.simpade) return "El retiro ya está marcado como ingresado al SIMPADE."
   r.simpade = { fechaIngreso, funcionarioId }
   return null
 }
@@ -169,7 +168,8 @@ export function previaCambioGrado(pks: number[]) {
     grado_siguiente: grado < 11 ? grado + 1 : null,
     registros: pks.some((pk) => pk % 2 === 1) ? { actividades: 14, definitivas: ["P1"], clases: 32 } : null,
     con_registros: pks.filter((pk) => pk % 2 === 1).length,
-    complementaria: comp ? { ...comp, disponible_en_grado_siguiente: false } : null,
+    // Mock: la especialidad solo existe en el grado actual en jornada contraria
+    complementaria: comp ? { ...comp, grados_con_especialidad: [grado] } : null,
   }
 }
 
