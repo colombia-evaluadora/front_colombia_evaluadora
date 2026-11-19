@@ -354,6 +354,32 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 - Front: Retirar hoy abre la lista filtrada por el documento; falta abrir el retiro con el motivo de la novedad preseleccionado.
 - Mock: src/mocks/db/notificaciones.ts.
 
+### 28. Promoción y nivelación (Sección 4.7; Reglas 64 y 65)
+- Pantalla: vista nueva `/app/cobertura/promocion-nivelacion`, pestañas Reprobados y Áreas pendientes. Menú TMENU con código `PROMOCION_NIVELACION` bajo Cobertura; Guardar para Administrador del establecimiento y Gestor administrativo del establecimiento (Supervisor de sede si se le da, solo para nivelaciones); Eliminar (Anular promoción) solo para el Administrador del establecimiento.
+- Base: `/eval-col/cobertura-academica/promocion-nivelacion`. Respuestas en snake_case, con `total_count` repetido en los listados.
+- `GET /opciones` → `{ anios: number[], periodos: [{ value, label, anio }], sedes, jornadas, grados, grupos: [{ value, label, grado }] }`, dentro de las Sedes y Jornadas del usuario.
+- `POST /reprobados/query` `{ SEARCH, ANIO, PERIODO, SEDE, JORNADA, GRADO, GRUPO, PAGE_INDEX, PAGE_SIZE }`. Solo devuelve matrículas principales Reprobado de grados con Tiene grado siguiente, de períodos Abiertos y Cerrados. El orden lo da el back: menos [Áreas] reprobadas, mayor rendimiento y menor inasistencia. Filas: `{ matricula_id, documento, estudiante, grado, grupo, areas_reprobadas: [{ abreviatura, nombre }], rendimiento, mayor_inasistencia }`.
+- `GET /reprobados/:ID/areas` → `[{ area, ih, nota_final, aprobo, inasistencia }]`.
+- `POST /promover/previa` `{ IDS }` → `[{ matricula_id, estudiante, grupo, areas: [{ abreviatura, nombre }], fecha_cierre, bloqueo }]`. Si el estudiante ya tiene matrícula en el período siguiente, `bloqueo` = «[Estudiante] ya tiene matrícula en [Período]; corrija su grado allí antes de promoverlo.».
+- `POST /promover` `{ IDS, ACTA (1–30), FECHA_ACTA, PLAZO, OBSERVACION }` → `[{ matricula_id, ok, mensaje }]`, uno por estudiante, sin cortar el lote. Valida: FECHA_ACTA no posterior a hoy ni anterior al cierre académico; PLAZO posterior a FECHA_ACTA. Efecto: Reprobado → Aprobado con la marca «Promovido con áreas pendientes», todas las [Áreas] reprobadas quedan pendientes, la reserva de cupo se recalcula al grado siguiente y queda en la bitácora.
+- `POST /pendientes/query` `{ SEARCH, ANIO, SEDE, JORNADA, SEGUIMIENTO, PAGE_INDEX, PAGE_SIZE }` → `{ promocion_id, documento, estudiante, promovido_de ("Noveno · 2027"), grado ("Noveno"), anio, grupo_actual ("10°A"; null si no tiene matrícula en el período siguiente), areas_pendientes (nombres de las que siguen Pendiente), niveladas, total, plazo, seguimiento }`. `seguimiento`: `CON_PENDIENTES`, `VENCIDO` (plazo pasado con alguna pendiente) o `NIVELADO` (todas niveladas).
+- `GET /pendientes/:ID` → `{ promocion_id, estudiante, acta, fecha_acta, plazo, fin_periodo, nota_minima, nota_maxima (Nota Máxima de Recuperación), areas: [{ id, area, nota_final, estado: PENDIENTE|NIVELADA, intentos: [{ id, fecha, nota, responsable, soporte_id, observacion, corregido_por }] }] }`.
+- `PUT /pendientes/:ID/anular` `{ MOTIVO (10–500) }`. Solo el Administrador del establecimiento, y solo si el estudiante no tiene matrícula en el período siguiente ni áreas niveladas. Si no se puede: 400 «No se puede anular la promoción de [Estudiante] porque ya tiene matrícula en el período siguiente o áreas niveladas.». El front ya lo bloquea con `niveladas > 0 || grupo_actual != null`. Vuelve a Reprobado y la reserva al mismo grado.
+- `PUT /pendientes/:ID/plazo` `{ PLAZO, MOTIVO (10–500) }`: la fecha va después del plazo actual y dentro del Período Académico de la matrícula promovida; queda en la bitácora.
+- `POST /files/eval-col/.../pendientes/:ID/areas/:AREA/nivelacion` (multipart) `{ FECHA, NOTA, FK_TFUNCIONARIO, OBSERVACION }` + `SOPORTE` opcional (PDF, JPG o PNG, hasta 10 MB).
+  - Validación: FECHA no posterior a hoy ni anterior a la fecha del acta; NOTA entre el mínimo del Formato de calificación y la Nota Máxima de Recuperación, con 1 decimal.
+  - Gestión Académica: crea la [Ejecución] de Recuperación con modalidad «Nivelación de área pendiente» sobre el [Área] del año reprobado.
+  - Resultado: aplica el Modo de Cálculo de recuperación; si el resultado aprueba, el área queda NIVELADA.
+  - Rechaza las áreas ya NIVELADA.
+- `PUT /pendientes/:ID/areas/:AREA/nivelacion` `{ FECHA, NOTA, MOTIVO (10–500) }`: corrige el último intento con las mismas validaciones. El responsable no cambia; queda como `corregido_por` el usuario que corrige. Actualiza la actividad de Gestión Académica.
+- Fuera del front:
+  - Aviso el día que vence el plazo: campana al Administrador y al Supervisor de la Sede y Jornada.
+  - La reactivación de una Aprobada promovida debe bloquearse (Regla 15).
+  - La graduación exige no tener áreas pendientes (Regla 63).
+  - Certificado y libro muestran «5,2 → 7,0» (Regla 70 de Gestión Académica).
+- Exportar (C.5.REP.1, C.5.PEN.1; Regla 47): reportes `promocion-reprobados` y `promocion-areas-pendientes` en reporting-service, formato `excel`/`pdf`, con `filters` = el mismo cuerpo del `query` de cada pestaña, sin paginación.
+- Mock: src/mocks/db/promocion-nivelacion.ts, src/mocks/handlers/promocion-nivelacion.ts.
+
 ## Formato para nuevas tareas
 
 ```

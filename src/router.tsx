@@ -32,6 +32,7 @@ import {
   matriculaComplementariaSearchSchema,
   seleccionarSearchSchema,
 } from "@/features/coverage/matricula-complementaria/api/schema"
+import { promocionNivelacionSearchSchema } from "@/features/coverage/promocion-nivelacion/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -936,6 +937,19 @@ export const coberturaComplementariaRoute = createRoute({
   validateSearch: matriculaComplementariaSearchSchema,
   staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Matrícula complementaria" }] },
   component: MatriculaComplementariaPage,
+})
+
+const PromocionNivelacionPage = lazyRouteComponent(
+  () => import("@/features/coverage/promocion-nivelacion/pages/promocion-nivelacion-page"),
+  "PromocionNivelacionPage",
+)
+
+export const coberturaPromocionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPromocion.path,
+  validateSearch: promocionNivelacionSearchSchema,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Promoción y nivelación", to: paths.app.coberturaPromocion.getHref() }] },
+  component: PromocionNivelacionPage,
 })
 
 export const coberturaConvocatoriaNuevaRoute = createRoute({
@@ -2791,6 +2805,7 @@ const routeTree = rootRoute.addChildren([
     coberturaMatriculaConfiguracionRoute,
     coberturaMatriculaDetalleRoute,
     coberturaComplementariaRoute,
+    coberturaPromocionRoute,
     coberturaConvocatoriaNuevaRoute,
     coberturaConvocatoriaDetalleRoute,
     coberturaConvocatoriaEditarRoute,

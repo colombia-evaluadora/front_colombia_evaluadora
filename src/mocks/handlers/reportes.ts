@@ -52,6 +52,8 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   "matricula-hoja": "hoja-matricula",
   "matricula-constancia": "constancia-estudio",
   "matricula-paquete-soporte": "paquete-soporte",
+  "promocion-reprobados": "reprobados",
+  "promocion-areas-pendientes": "areas-pendientes",
   funcionarios: "funcionarios",
   establecimientos: "establecimientos",
   sedes: "sedes",
