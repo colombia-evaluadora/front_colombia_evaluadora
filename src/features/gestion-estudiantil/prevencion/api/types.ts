@@ -51,7 +51,7 @@ export interface TableroRow {
   faltan_datos: boolean
   severidad_salud_mental: SeveridadSaludMental | null
   fk_gestion_alerta: number | null
-  /** Sin backend hasta 9.11: siempre false. */
+  /** Hay gestión abierta de la alerta de inasistencia (§9.11) y el usuario la ve. */
   puede_gestionar: boolean
   total_count: number
 }
@@ -254,6 +254,12 @@ export interface AccesoPrevencion {
   puede_crear_acomp?: boolean
   /** «Exportar para el SIUCE» de los acompañamientos: Supervisor de sede y Administrador. */
   puede_exportar_siuce_acomp?: boolean
+  /** Pestaña Gestión de alertas (§9.11). */
+  ver_gestion_alertas?: boolean
+  /** Gestiones del usuario como Responsable, Pendientes o vencidas (número de la pestaña). */
+  gestion_alertas_contador?: number
+  /** El Administrador del establecimiento abre la pestaña en «Ver todas». */
+  gestion_alertas_ver_todas_defecto?: boolean
 }
 
 /** `GET /estudiantes/:MATRICULA/historial` → columna `datos`. */
@@ -1589,3 +1595,268 @@ export interface ReportarConsumoInput {
   FUENTE: string
   DESCRIPCION: string
 }
+
+// --- Gestión de la alerta de inasistencia (§9.11) ---
+
+export type UmbralGestion = "ALERTA" | "INTERVENCION"
+export type EstadoGestion = "PENDIENTE" | "EN_GESTION" | "RESUELTA" | "ESCALADA"
+
+/** Fila de `GET /gestion-alertas` (`total_count` en cada fila). Marcas separadas y banderas por fila. */
+export interface GestionAlertaRow {
+  id: number
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tgrupo: number
+  grado_grupo: string
+  umbral: UmbralGestion
+  umbral_nombre: string
+  fk_responsable: number | null
+  responsable_nombre: string | null
+  responsable_rol: string | null
+  responsable_rol_nombre: string | null
+  sin_responsable: boolean
+  plazo: string | null
+  estado: EstadoGestion
+  estado_nombre: string
+  reincidente: boolean
+  vencida: boolean
+  seguimiento_reforzado: boolean
+  motivos_seguimiento: string[]
+  /** Indicador al borde de la fila: Responsable con la gestión Pendiente o vencida, o Sin responsable de su sede. */
+  resaltar: boolean
+  puede_tomar: boolean
+  puede_registrar_contacto: boolean
+  puede_editar_causas: boolean
+  puede_editar_medidas: boolean
+  puede_resolver: boolean
+  puede_apoyo_orientacion: boolean
+  puede_ruta_proteccion: boolean
+  puede_escalar: boolean
+  total_count: number
+}
+
+/** Opción de lista TLV de `GET /gestion-alertas/opciones` (`id` = pk de TLISTA_VALOR). */
+export interface OpcionGestionTlv {
+  id: number
+  valor: string
+  nombre: string
+}
+
+/** `GET /gestion-alertas/opciones` → `datos`: todas las listas del módulo con su etiqueta. */
+export interface OpcionesGestionAlertas {
+  causas: (OpcionGestionTlv & { reservada: boolean })[]
+  estados_causa: OpcionGestionTlv[]
+  medios: OpcionGestionTlv[]
+  con_quien: OpcionGestionTlv[]
+  resultados_contacto: OpcionGestionTlv[]
+  entidades: OpcionGestionTlv[]
+  actuaciones: OpcionGestionTlv[]
+  estados: { valor: EstadoGestion; nombre: string }[]
+  umbrales: { valor: UmbralGestion; nombre: string }[]
+  grupos: { fk_tgrupo: number; grado_grupo: string }[]
+  responsables: {
+    yo: { id: number; nombre: string } | null
+    funcionarios: { id: number; nombre: string }[]
+    sin_responsable: boolean
+  }
+}
+
+export interface GestionAlertasFiltros {
+  estado: string
+  umbral: string
+  grupo: string
+  /** Id del responsable o `SIN` (Sin responsable). */
+  responsable: string
+}
+
+export const GESTION_ALERTAS_FILTROS_VACIOS: GestionAlertasFiltros = { estado: "", umbral: "", grupo: "", responsable: "" }
+
+export interface GestionAlertasQueryFilters {
+  ESTABLECIMIENTO: number
+  ESTADO: string | null
+  UMBRAL: string | null
+  GRUPO: number | null
+  RESPONSABLE: number | null
+  SIN_RESPONSABLE: boolean | null
+  VER_TODAS: boolean
+  SEARCH: string | null
+}
+
+export interface GuardarGestionInput {
+  id: number
+  /** NULL no toca; vacío vacía. ESTADOS va en paralelo a CAUSAS. */
+  CAUSAS: number[] | null
+  ESTADOS: number[] | null
+  MEDIDAS: string | null
+  FECHA_PREVISTA: string | null
+}
+
+export interface ContactoGestionInput {
+  id: number
+  FECHA: string
+  FK_MEDIO: number
+  FK_CON_QUIEN: number
+  FK_RESULTADO: number
+  RAZON: string | null
+}
+
+export interface ResolverGestionInput {
+  id: number
+  FECHA_VERIFICACION: string
+  RESULTADO: string | null
+}
+
+export interface RutaProteccionInput {
+  id: number
+  FK_ENTIDAD: number
+  FECHA: string
+  MOTIVO: string
+  DESCRIPCION: string
+  ENTORNO_FAMILIAR: string | null
+  SITUACION_RESIDENCIA: string | null
+  ACTUACIONES: number[] | null
+  FECHA_ESPERADA: string
+  MOTIVO_AJUSTE: string | null
+  RECORDATORIOS: string[] | null
+}
+
+export interface GestionCausa {
+  fk_tlv_causa: number | null
+  valor: string
+  etiqueta: string
+  /** Enmascarada («Información reservada») para quien no ve lo sensible. */
+  reservada: boolean
+  fk_tlv_estado_causa: number | null
+  estado_causa_valor: string | null
+  estado_causa: string | null
+}
+
+export interface GestionContacto {
+  id: number
+  fecha: string
+  medio: string
+  con_quien: string
+  resultado: string
+  resultado_valor: string
+  razon: string | null
+  registrado_por: string | null
+}
+
+export type EventoGestion =
+  | "ACTIVADA"
+  | "INTERVENCION"
+  | "TOMADA"
+  | "ESCALADA"
+  | "ORIENTACION"
+  | "EN_GESTION"
+  | "APOYO_ORIENTACION"
+  | "RUTA_PROTECCION"
+  | "RESUELTA"
+
+export interface GestionEvento {
+  fecha: string
+  evento: EventoGestion
+  detalle: string | null
+  desde_nombre: string | null
+  desde_rol_nombre: string | null
+  hacia_nombre: string | null
+  hacia_rol_nombre: string | null
+  quien_nombre: string | null
+  quien_rol_nombre: string | null
+  sin_responsable_hacia: boolean
+}
+
+/** Orientación de la entidad territorial vinculada a una gestión Escalada. */
+export interface GestionOrientacion {
+  id: number
+  tema: string
+  estado: "ENVIADA" | "ATENDIDA"
+  enviada_en: string
+  orientacion: string
+  respuesta: string | null
+  respuesta_en: string | null
+  puede_ver_orientacion: boolean
+}
+
+/** Ruta de protección activada (remisión externa de origen PROTECCION); todo su texto es sensible. */
+export interface GestionRuta {
+  id_remision: number
+  estado: "ENVIADA" | "RESPONDIDA"
+  entidad_nombre: string
+  fecha_activacion: string
+  fecha_esperada: string | null
+  activada_por_nombre: string | null
+  activada_por_rol: string | null
+  motivo: string | null
+  descripcion: string | null
+  entorno_familiar: string | null
+  situacion_residencia: string | null
+  actuaciones: (string | { id?: number; nombre?: string })[]
+  recordatorios: (string | { fecha: string; estado?: string })[]
+  gestiones: { id?: number; fecha: string; descripcion: string; registrada_por: string | null }[]
+  respuesta: string | null
+  fecha_respuesta: string | null
+  respuesta_vencida: boolean
+  puede_descargar: boolean
+  puede_registrar_gestion: boolean
+  puede_registrar_respuesta: boolean
+}
+
+export interface GestionBanderas {
+  puede_tomar: boolean
+  puede_escalar: boolean
+  puede_resolver: boolean
+  puede_ver_sensible: boolean
+  puede_editar_causas: boolean
+  puede_editar_medidas: boolean
+  puede_ruta_proteccion: boolean
+  puede_apoyo_orientacion: boolean
+  puede_descargar_reporte: boolean
+  puede_registrar_contacto: boolean
+}
+
+/** `GET /gestion-alertas/:ID` → `datos`. */
+export interface GestionAlertaDetalle {
+  id: number
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tgrupo: number
+  fk_tsede: number
+  grado_grupo: string
+  umbral: UmbralGestion
+  umbral_nombre: string
+  estado: EstadoGestion
+  estado_nombre: string
+  plazo: string | null
+  fecha_activacion: string
+  fecha_intervencion: string | null
+  fk_responsable: number | null
+  responsable_nombre: string | null
+  responsable_rol: string | null
+  responsable_rol_nombre: string | null
+  sin_responsable: boolean
+  vencida: boolean
+  reincidente: boolean
+  seguimiento_reforzado: boolean
+  motivos_seguimiento: string[]
+  gestion_anterior: { id: number; fecha_activacion: string; resultado: string | null } | null
+  causas: GestionCausa[]
+  medidas: string | null
+  fecha_prevista: string | null
+  contactos: GestionContacto[]
+  historial: GestionEvento[]
+  orientaciones: GestionOrientacion[]
+  verificacion: { fecha: string; resultado: string; resuelta_en: string | null; resuelta_por: string | null } | null
+  ruta: GestionRuta | null
+  ruta_activada: boolean
+  ruta_defaults: { plazo_dias_habiles: number; fecha_esperada_propuesta: string } | null
+  banderas: GestionBanderas
+}
+
+/** Lo que necesitan los modales de la gestión: lo traen la fila del listado y el detalle. */
+export type ResumenGestion = Pick<
+  GestionAlertaRow,
+  "id" | "estudiante_nombre" | "grado_grupo" | "umbral" | "umbral_nombre" | "estado" | "estado_nombre"
+>

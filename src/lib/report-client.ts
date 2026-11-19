@@ -48,6 +48,7 @@ export type ReportKey =
   | "bitacora"
   | "observador"
   | "orientacion-remision"
+  | "remision-externa"
   | "orientacion-ficha"
   | "piar-plan"
   | "piar-acta"
