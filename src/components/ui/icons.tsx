@@ -106,6 +106,7 @@ import {
   MdPictureAsPdf,
   MdPersonOutline,
   MdOutlinePersonAddAlt,
+  MdOutlineHowToReg,
   MdOutlineDirectionsWalk,
   MdOutlineEventSeat,
   MdShuffle,
@@ -363,6 +364,8 @@ export const TrophyIcon = makeIcon(MdEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const PersonAddIcon = makeIcon(MdOutlinePersonAddAlt)
+/** Persona con visto: "Por confirmar" de Reservas de cupo. */
+export const PersonCheckIcon = makeIcon(MdOutlineHowToReg)
 export const PersonRemoveIcon = makeIcon(MdOutlinePersonRemove)
 export const PersonWalkIcon = makeIcon(MdOutlineDirectionsWalk)
 export const ArmchairIcon = makeIcon(MdOutlineEventSeat)

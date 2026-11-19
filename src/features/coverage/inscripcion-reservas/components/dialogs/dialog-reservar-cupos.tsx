@@ -18,15 +18,12 @@ import {
   WarningIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { getErrorMessage } from "@/lib/api-client"
 
 import { useReservarCupos } from "@/features/coverage/inscripcion-reservas/api/mutations/reservar-cupos"
-import {
-  formatPeriodo,
-  usePeriodosInscripcionesQuery,
-} from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
+import { usePeriodosInscripcionesQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import { Aviso } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
 import type { ReservarCuposResumen } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 
@@ -41,12 +38,11 @@ function textoOmitidos(o: ReservarCuposResumen["omitidos"]) {
 }
 
 /** Botón y modal de "Reservar cupos" (Cobertura, Sección 3.2, Regla 35). */
-export function ReservarCuposDialog() {
+export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => void }) {
   const [open, setOpen] = useState(false)
   // `null` = todavía no se tocó: por defecto van todos los períodos.
   const [elegidos, setElegidos] = useState<string[] | null>(null)
   const [resumen, setResumen] = useState<ReservarCuposResumen | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   const { data: periodos, isPending } = usePeriodosInscripcionesQuery()
   const reservar = useReservarCupos()
@@ -61,7 +57,7 @@ export function ReservarCuposDialog() {
     if (!next) {
       setElegidos(null)
       setResumen(null)
-      setError(null)
+      reservar.reset()
     }
   }
 
@@ -70,10 +66,16 @@ export function ReservarCuposDialog() {
   }
 
   function handleSubmit() {
-    setError(null)
     reservar.mutate(
       { periodoIds: seleccion },
-      { onSuccess: setResumen, onError: (e) => setError(getErrorMessage(e)) },
+      {
+        onSuccess: (r) => {
+          setResumen(r)
+          onDone?.(
+            `Reservar cupos: ${r.creadas} reservas creadas, ${r.sinContinuidad} Sin continuidad.`,
+          )
+        },
+      },
     )
   }
 
@@ -152,7 +154,7 @@ export function ReservarCuposDialog() {
                             checked={seleccion.includes(p.id)}
                             onCheckedChange={(v) => toggle(p.id, !!v)}
                           />
-                          {p.sede} · {p.jornada} · {formatPeriodo(p)}
+                          {p.sede} · {p.jornada} · {p.ciclo}
                         </label>
                       ))}
                     </div>
@@ -166,7 +168,7 @@ export function ReservarCuposDialog() {
                 continuidad.
               </Aviso>
 
-              {error && <p className="text-sm text-red">{error}</p>}
+              <ErrorNoticeBanner error={reservar.error} />
 
               <p className="text-xs text-muted-foreground">
                 Los campos marcados con * son obligatorios

@@ -1,20 +1,10 @@
 "use no memo"
 
 import { useState, type ReactNode } from "react"
-import { toast } from "sonner"
 
 import { paths } from "@/config/paths"
-import { CambiarJornadaSedeDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-cambiar-jornada-sede"
-import {
-  LiberarReservaDialog,
-  RegistrarRetiroDialog,
-} from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-motivo-reserva"
-import { SolicitarTrasladoDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-solicitar-traslado"
-import type { AccionReserva } from "@/features/coverage/inscripcion-reservas/components/table/columns-reservas-cupo"
-import type { ReservaCupo } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
-
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
-import { ExportDialog } from "@/components/export-dialog"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
 import {
   TableScreen,
@@ -24,9 +14,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, PersonAddIcon, XIcon } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { AsignarGrupoLoteDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-asignar-grupo-lote"
+import { PersonCheckIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
@@ -35,37 +23,109 @@ import { coberturaInscritosRoute } from "@/router"
 
 import { useReservasCupoQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import type {
-  FiltroRapido,
+  ReservaCupo,
+  ReservasCupoContadores,
   ReservasCupoFilters,
 } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
-import { FILTRO_RAPIDO_UI } from "@/features/coverage/inscripcion-reservas/api/ui-mappings"
+import { CONTADORES_UI } from "@/features/coverage/inscripcion-reservas/api/ui-mappings"
+import { CambiarJornadaSedeDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-cambiar-jornada-sede"
+import {
+  LiberarReservaDialog,
+  RegistrarRetiroDialog,
+} from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-motivo-reserva"
 import { ReservarCuposDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-reservar-cupos"
+import { SolicitarTrasladoDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-solicitar-traslado"
 import { SearchReservasCupo } from "@/features/coverage/inscripcion-reservas/components/search/search-reservas-cupo"
 import {
   ACCIONES,
   createColumns,
+  type AccionReserva,
 } from "@/features/coverage/inscripcion-reservas/components/table/columns-reservas-cupo"
 
-const EMPTY_MESSAGES: Partial<Record<FiltroRapido, string>> = {
-  TRASLADOS_POR_RESPONDER: "No hay traslados por responder.",
+/** Los filtros que vacía "Limpiar" (todos menos la página y el orden). */
+const SIN_FILTROS: Record<keyof ReservasCupoFilters, undefined> = {
+  q: undefined,
+  ciclo: undefined,
+  sede: undefined,
+  jornada: undefined,
+  grado: undefined,
+  estado: undefined,
+  estadoTraslado: undefined,
+  porConfirmar: undefined,
+  entrantes: undefined,
 }
 
-/** Pestaña "Reservas de cupo" (Cobertura Educativa, Sección 3.2). */
+/**
+ * Pestaña "Reservas de cupo" (Cobertura Educativa, Sección 3.2). Con su propio
+ * `NoticeProvider`: los errores de las acciones los muestra cada modal y el
+ * éxito, el aviso de la pestaña (el toast global de axios queda suprimido).
+ */
 export function ReservasCupoTable({ encabezado }: { encabezado: ReactNode }) {
+  return (
+    <NoticeProvider>
+      <ReservasCupoContent encabezado={encabezado} />
+    </NoticeProvider>
+  )
+}
+
+function Contadores({
+  contadores,
+  filters,
+  onToggle,
+}: {
+  contadores: ReservasCupoContadores | undefined
+  filters: ReservasCupoFilters
+  onToggle: (filtro: Partial<ReservasCupoFilters>, activo: boolean) => void
+}) {
+  return (
+    <div
+      className="grid grid-cols-2 gap-3 px-(--screen-spacing) pt-4 lg:grid-cols-4"
+      role="group"
+      aria-label="Contadores y filtros rápidos"
+    >
+      {CONTADORES_UI.map((c) => {
+        const activo = Object.entries(c.filtro).every(
+          ([k, v]) => filters[k as keyof ReservasCupoFilters] === v,
+        )
+        return (
+          <button
+            key={c.count}
+            type="button"
+            aria-pressed={activo}
+            onClick={() => onToggle(c.filtro, activo)}
+            className={cn(
+              "flex flex-col items-start gap-1 rounded-lg border bg-background px-4 py-3 text-left transition-colors outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/40",
+              activo ? "border-primary ring-1 ring-primary" : "border-border",
+            )}
+          >
+            <span className={cn("text-2xl font-semibold tabular-nums", c.numero)}>
+              {contadores ? contadores[c.count] : "…"}
+            </span>
+            <span className="text-sm text-muted-foreground">{c.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ReservasCupoContent({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaInscritosRoute.useSearch()
   const navigate = coberturaInscritosRoute.useNavigate()
   const pagination = useTablePagination()
+  const { notify } = useNotify()
 
   const filters: ReservasCupoFilters = {
     q: search.q,
-    rapido: search.rapido,
+    ciclo: search.ciclo,
     sede: search.sede,
     jornada: search.jornada,
     grado: search.grado,
     estado: search.estado,
     estadoTraslado: search.estadoTraslado,
+    porConfirmar: search.porConfirmar,
+    entrantes: search.entrantes,
   }
-  const rapido = filters.rapido ?? "TODAS"
 
   const { data, isPending, isError, error, refetch } = useReservasCupoQuery({
     filters,
@@ -77,10 +137,19 @@ export function ReservasCupoTable({ encabezado }: { encabezado: ReactNode }) {
   const setFilters = (patch: Partial<ReservasCupoFilters>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch, page: 0 }), replace: true })
 
+  // Una tarjeta activa se apaga con otro clic; las de estado se excluyen entre sí.
+  const toggleContador = (filtro: Partial<ReservasCupoFilters>, activo: boolean) =>
+    setFilters(
+      activo
+        ? Object.fromEntries(Object.keys(filtro).map((k) => [k, undefined]))
+        : { estado: undefined, porConfirmar: undefined, entrantes: undefined, ...filtro },
+    )
+
   // Un solo modal abierto a la vez: la acción y la reserva sobre la que se abrió.
   const [modal, setModal] = useState<{ accion: AccionReserva; reserva: ReservaCupo } | null>(null)
   const reservaDe = (accion: AccionReserva) => (modal?.accion === accion ? modal.reserva : null)
   const cerrarModal = (open: boolean) => !open && setModal(null)
+  const exito = (mensaje: string) => notify(mensaje, { variant: "success" })
 
   const columns = createColumns({
     onAction: (accion, r) => {
@@ -96,12 +165,12 @@ export function ReservasCupoTable({ encabezado }: { encabezado: ReactNode }) {
           return setModal({ accion, reserva: r })
         default:
           // Las demás acciones llegan en las siguientes entregas.
-          return toast.info(`${ACCIONES[accion].label} — ${r.estudiante}: próximamente.`)
+          return notify(`${ACCIONES[accion].label}: disponible próximamente.`, { variant: "info" })
       }
     },
   })
 
-  const { table, selectedRows, hasSelection, resetSelection } = useDataTable({
+  const { table } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -110,113 +179,37 @@ export function ReservasCupoTable({ encabezado }: { encabezado: ReactNode }) {
     columnVisibilityStorageKey: "reservas-cupo-table-column-visibility",
   })
 
-  // Asignar grupo por lote (Sección 3.6): solo reservas Reservadas propias, de
-  // un mismo grado, sede y jornada, porque un grupo es de uno solo (Regla 30).
-  const [loteAbierto, setLoteAbierto] = useState(false)
-  const motivoLoteNoValido = (() => {
-    if (selectedRows.some((r) => r.estado !== "RESERVADA" || r.trasladoEntrante)) {
-      return "Solo se asigna grupo a reservas Reservadas. Quite de la selección las demás."
-    }
-    const combinaciones = new Set(selectedRows.map((r) => `${r.grado}|${r.sede}|${r.jornada}`))
-    if (combinaciones.size > 1) return "Marque reservas de un mismo grado, sede y jornada."
-    return null
-  })()
-
-  const hasFilters = Boolean(
-    filters.q ||
-    filters.sede ||
-    filters.jornada ||
-    filters.grado ||
-    filters.estado ||
-    filters.estadoTraslado,
-  )
-  const emptyMessage = hasFilters
-    ? "No hay reservas que coincidan con la búsqueda y los filtros aplicados."
-    : (EMPTY_MESSAGES[rapido] ??
-      "Aún no hay reservas. Use Reservar cupos para crear las de los estudiantes antiguos.")
+  const hasFilters = Object.values(filters).some((v) => v !== undefined && v !== "")
+  const emptyMessage = filters.entrantes
+    ? "No hay traslados por responder."
+    : hasFilters
+      ? "No hay reservas que coincidan con la búsqueda y los filtros aplicados."
+      : "Aún no hay reservas. Use Reservar cupos para crear las de los estudiantes antiguos."
 
   return (
     <TableScreen>
       <TableScreenHeader>
         {encabezado}
-        <div
-          className="flex flex-wrap gap-2 px-(--screen-spacing) pt-4"
-          role="group"
-          aria-label="Filtros rápidos"
-        >
-          {FILTRO_RAPIDO_UI.map((f) => {
-            const active = rapido === f.value
-            return (
-              <Button
-                key={f.value}
-                size="sm"
-                variant={active ? "fill" : "outline"}
-                color={active ? "primary" : "neutral"}
-                aria-pressed={active}
-                className={cn(!active && "font-normal")}
-                onClick={() => setFilters({ rapido: f.value === "TODAS" ? undefined : f.value })}
-              >
-                {active && <CheckIcon data-icon="inline-start" />}
-                {f.label} ({data?.contadores[f.count] ?? "…"})
-              </Button>
-            )
-          })}
-        </div>
+        <Contadores contadores={data?.contadores} filters={filters} onToggle={toggleContador} />
 
         <TableScreenToolbar>
           <SearchReservasCupo
             filters={filters}
             onSearch={(q) => setFilters({ q: q || undefined })}
             onApply={(values) => setFilters(values)}
-            onClearAll={() =>
-              setFilters({
-                q: undefined,
-                sede: undefined,
-                jornada: undefined,
-                grado: undefined,
-                estado: undefined,
-                estadoTraslado: undefined,
-              })
-            }
+            onClearAll={() => setFilters(SIN_FILTROS)}
           />
           <TableScreenActions>
-            {hasSelection ? (
-              <>
-                <span className="text-sm text-muted-foreground">
-                  {selectedRows.length} seleccionadas
-                </span>
-                <Button variant="outline" color="neutral" onClick={resetSelection}>
-                  <XIcon data-icon="inline-start" />
-                  Quitar selección
-                </Button>
-                <Tooltip>
-                  <TooltipTrigger render={<span className="w-fit" />}>
-                    <Button
-                      disabled={motivoLoteNoValido != null}
-                      onClick={() => setLoteAbierto(true)}
-                    >
-                      <PersonAddIcon data-icon="inline-start" />
-                      Asignar grupo
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {motivoLoteNoValido ?? "Asignar un grupo a las reservas marcadas"}
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            ) : (
-              <>
-                <ExportDialog
-                  label="Exportar reservas"
-                  description="Elige un formato para exportar las reservas que coinciden con los filtros aplicados."
-                  onExport={async (format) => ({
-                    status: "ok",
-                    message: `Se exportaron las reservas en ${format === "pdf" ? "PDF" : "Excel"}.`,
-                  })}
-                />
-                <ReservarCuposDialog />
-              </>
-            )}
+            <Button
+              variant={filters.porConfirmar ? "soft" : "outline"}
+              color={filters.porConfirmar ? "primary" : "neutral"}
+              aria-pressed={Boolean(filters.porConfirmar)}
+              onClick={() => setFilters({ porConfirmar: filters.porConfirmar ? undefined : true })}
+            >
+              <PersonCheckIcon data-icon="inline-start" />
+              Por confirmar
+            </Button>
+            <ReservarCuposDialog onDone={exito} />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -248,18 +241,22 @@ export function ReservasCupoTable({ encabezado }: { encabezado: ReactNode }) {
       <CambiarJornadaSedeDialog
         reserva={reservaDe("CAMBIAR_JORNADA_SEDE")}
         onOpenChange={cerrarModal}
+        onDone={exito}
       />
       <SolicitarTrasladoDialog
         reserva={reservaDe("SOLICITAR_TRASLADO")}
         onOpenChange={cerrarModal}
+        onDone={exito}
       />
-      <LiberarReservaDialog reserva={reservaDe("LIBERAR")} onOpenChange={cerrarModal} />
-      <RegistrarRetiroDialog reserva={reservaDe("REGISTRAR_RETIRO")} onOpenChange={cerrarModal} />
-      <AsignarGrupoLoteDialog
-        open={loteAbierto}
-        reservas={selectedRows}
-        onOpenChange={setLoteAbierto}
-        onDone={resetSelection}
+      <LiberarReservaDialog
+        reserva={reservaDe("LIBERAR")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
+      />
+      <RegistrarRetiroDialog
+        reserva={reservaDe("REGISTRAR_RETIRO")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
       />
     </TableScreen>
   )

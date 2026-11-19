@@ -1,6 +1,6 @@
-import { toast } from "sonner"
 import { z } from "zod"
 
+import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -9,15 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowsLeftRightIcon, XIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
-import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
 import { required } from "@/lib/forms/messages"
 
 import { useCambiarJornadaSede } from "@/features/coverage/inscripcion-reservas/api/mutations/acciones-reserva"
-import { useOpcionesCupoQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reserva-detalle-query"
-import type { ReservaCupo } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
+import { useUbicacionesReservaQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reserva-detalle-query"
+import type {
+  ReservaCupo,
+  UbicacionReserva,
+} from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 import {
   Aviso,
   CampoLectura,
@@ -34,47 +36,68 @@ const schema = z.object({
 interface Props {
   reserva: ReservaCupo | null
   onOpenChange: (open: boolean) => void
+  onDone: (mensaje: string) => void
 }
 
-/** Cambiar jornada o sede (Sección 3.2): mismo grado, otra jornada o sede con cupo. */
-export function CambiarJornadaSedeDialog({ reserva, onOpenChange }: Props) {
-  const { data: opciones = [] } = useOpcionesCupoQuery(reserva?.id ?? null)
+/**
+ * Cambiar jornada o sede (Regla 33): mismo grado, otra jornada o sede del
+ * establecimiento con cupo. El back recibe el grado de esa sede y jornada.
+ */
+export function CambiarJornadaSedeDialog({ reserva, onOpenChange, onDone }: Props) {
+  // `key`: cada reserva abre el formulario limpio, con su jornada actual.
+  return reserva ? (
+    <Contenido key={reserva.id} reserva={reserva} onOpenChange={onOpenChange} onDone={onDone} />
+  ) : null
+}
+
+function Contenido({ reserva, onOpenChange, onDone }: Props & { reserva: ReservaCupo }) {
+  const ubicaciones = useUbicacionesReservaQuery(reserva.id)
   const cambiar = useCambiarJornadaSede()
 
+  // Las que tienen cupo, sin la ubicación actual.
+  const destinos = (ubicaciones.data ?? []).filter(
+    (u) =>
+      u.cupoDisponible > 0 &&
+      !(u.fkTsede === reserva.fkTsede && u.fkTlvJornada === reserva.fkTlvJornada),
+  )
+  const buscar = (jornada: string, sede: string): UbicacionReserva | undefined =>
+    destinos.find((u) => String(u.fkTlvJornada) === jornada && String(u.fkTsede) === sede)
+
   const form = useAppForm({
-    defaultValues: { jornada: "", sede: "" },
+    defaultValues: {
+      jornada: reserva.fkTlvJornada != null ? String(reserva.fkTlvJornada) : "",
+      sede: "",
+    },
     validators: { onSubmit: schema },
     onSubmit: async ({ value }) => {
+      const destino = buscar(value.jornada, value.sede)
+      if (!destino) return
       try {
-        await cambiar.mutateAsync({ id: reserva?.id ?? "", ...value })
-        toast.success(
-          `Se cambió la reserva de ${reserva?.estudiante} a ${value.jornada} · ${value.sede}.`,
-        )
-        cerrar()
-      } catch (e) {
-        toast.error(getErrorMessage(e))
+        await cambiar.mutateAsync({ id: reserva.id, fkTgrado: destino.fkTgrado })
+      } catch {
+        return // El banner del modal muestra el error.
       }
+      onDone(
+        `Se cambió la reserva de ${reserva.estudiante} a ${destino.jornada} · ${destino.sede}.`,
+      )
+      onOpenChange(false)
     },
   })
 
-  function cerrar() {
-    form.reset()
-    onOpenChange(false)
-  }
-
-  const jornadas = [...new Set(opciones.map((o) => o.jornada))]
+  const jornadas = [...new Map(destinos.map((u) => [String(u.fkTlvJornada), u.jornada]))].map(
+    ([value, label]) => ({ value, label }),
+  )
+  const sinOpciones = ubicaciones.isSuccess && destinos.length === 0
 
   return (
-    <Dialog open={reserva != null} onOpenChange={(open) => !open && !cambiar.isPending && cerrar()}>
+    <Dialog open onOpenChange={(open) => !open && !cambiar.isPending && onOpenChange(false)}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Cambiar jornada o sede — {reserva?.estudiante}</DialogTitle>
-          {reserva && (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              Hoy: {reserva.grado} · {reserva.jornada} · {reserva.sede}
-              <EstadoReservaBadge estado={reserva.estado} />
-            </p>
-          )}
+          <DialogTitle>Cambiar jornada o sede — {reserva.estudiante}</DialogTitle>
+          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            Hoy: {reserva.grado} · {reserva.jornada} · {reserva.sede}
+            <EstadoReservaBadge estado={reserva.estado} />
+          </p>
         </DialogHeader>
 
         <form
@@ -86,8 +109,9 @@ export function CambiarJornadaSedeDialog({ reserva, onOpenChange }: Props) {
             form.handleSubmit()
           }}
         >
-          <CampoLectura id="cambio-grado" label="Grado" required value={reserva?.grado} />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <ErrorNoticeBanner error={cambiar.error ?? ubicaciones.error} />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CampoLectura id="cambio-grado" label="Grado" value={reserva.grado} />
             <form.AppField
               name="jornada"
               listeners={{ onChange: () => form.setFieldValue("sede", "") }}
@@ -96,8 +120,8 @@ export function CambiarJornadaSedeDialog({ reserva, onOpenChange }: Props) {
                 <f.SelectField
                   label="Jornada"
                   required
-                  placeholder="Seleccionar"
-                  options={jornadas.map((j) => ({ value: j, label: j }))}
+                  disabled={ubicaciones.isPending}
+                  options={jornadas}
                 />
               )}
             </form.AppField>
@@ -108,34 +132,40 @@ export function CambiarJornadaSedeDialog({ reserva, onOpenChange }: Props) {
                     <f.SelectField
                       label="Sede"
                       required
-                      placeholder={jornada ? "Seleccionar" : "Elija la jornada primero"}
-                      disabled={!jornada}
-                      options={opciones
-                        .filter((o) => o.jornada === jornada)
-                        .map((o) => ({ value: o.sede, label: o.sede }))}
+                      disabled={!jornada || ubicaciones.isPending}
+                      options={destinos
+                        .filter((u) => String(u.fkTlvJornada) === jornada)
+                        .map((u) => ({ value: String(u.fkTsede), label: u.sede }))}
                     />
                   )}
                 </form.AppField>
               )}
             </form.Subscribe>
           </div>
-          <Aviso tono="info">
-            Solo se ofrecen jornadas y sedes del establecimiento con cupo en {reserva?.grado}.
-          </Aviso>
-          <Aviso tono="warning">
-            La constancia de reserva vigente quedará Anulada; genere una nueva para el acudiente.
-          </Aviso>
+          {sinOpciones ? (
+            <Aviso tono="info">
+              No hay otra jornada ni sede con cupo en {reserva.grado} en este momento.
+            </Aviso>
+          ) : (
+            <Aviso tono="warning">
+              La constancia de reserva vigente quedará Anulada; genere una nueva para el acudiente.
+            </Aviso>
+          )}
           <p className="text-xs text-muted-foreground">
             Los campos marcados con * son obligatorios
           </p>
         </form>
 
         <DialogFooter>
-          <Button variant="outline" color="neutral" disabled={cambiar.isPending} onClick={cerrar}>
-            <XIcon data-icon="inline-start" />
+          <Button
+            variant="outline"
+            color="neutral"
+            disabled={cambiar.isPending}
+            onClick={() => onOpenChange(false)}
+          >
             Cancelar
           </Button>
-          <Button type="submit" form={FORM_ID} disabled={cambiar.isPending}>
+          <Button type="submit" form={FORM_ID} disabled={cambiar.isPending || sinOpciones}>
             {cambiar.isPending ? (
               <Spinner data-icon="inline-start" />
             ) : (

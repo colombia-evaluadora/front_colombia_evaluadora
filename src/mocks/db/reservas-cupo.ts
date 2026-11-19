@@ -1,14 +1,4 @@
-import type {
-  PeriodoInscripciones,
-  ReservaCupo,
-} from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
-
-export const PERIODOS_INSCRIPCIONES: PeriodoInscripciones[] = [
-  { id: "1", sede: "IE Central", jornada: "Mañana", anio: 2028, modalidad: "Anual", ciclo: 1 },
-  { id: "2", sede: "IE Central", jornada: "Tarde", anio: 2028, modalidad: "Anual", ciclo: 1 },
-  { id: "3", sede: "Sede Norte", jornada: "Mañana", anio: 2028, modalidad: "Anual", ciclo: 1 },
-  { id: "4", sede: "IE Central", jornada: "Nocturna", anio: 2028, modalidad: "Semestral", ciclo: 1 },
-]
+import type { ReservaCupo } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 
 export const SEDES = ["IE Central", "Sede Norte"]
 export const JORNADAS = ["Mañana", "Tarde", "Nocturna"]
@@ -25,8 +15,12 @@ function base(i: number): ReservaCupo {
     documento: String(1_020_000_000 + i * 7919),
     establecimientoOrigen: null,
     grado: GRADOS[1 + (i % 11)],
+    codigoGrado: String(1 + (i % 11)),
     sede,
+    fkTsede: (i % 2) + 1,
     jornada: JORNADAS[i % 2],
+    fkTlvJornada: (i % 2) + 1,
+    periodoId: 1,
     periodo: "2028 · Anual · Ciclo 1",
     estado: "RESERVADA",
     origen: "RESERVAR_CUPOS",
@@ -65,6 +59,3 @@ function seed(): ReservaCupo[] {
 }
 
 export const reservasCupoDb: ReservaCupo[] = seed()
-
-// Estudiantes Cursando aún sin reserva que "Reservar cupos" procesaría.
-export const pendientesReservarDb = { porPeriodo: { "1": 70, "2": 52, "3": 30, "4": 18 } as Record<string, number> }
