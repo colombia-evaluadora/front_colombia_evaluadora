@@ -151,64 +151,6 @@ export interface UbicacionDestino {
 }
 
 // ---------------------------------------------------------------------------
-// Detalle y Asignar grupo: todavía contra MSW (se conectan en la siguiente entrega).
-
-export type TipoCupo = "OFICIAL" | "CONTRATADO"
-
-export interface DatosTraslado {
-  establecimientoDestino: string
-  motivo: string
-  jornadaSedePreferida: string | null
-  hermanoVerificado: boolean | null
-  compartirSoportes: boolean
-  observacion: string | null
-  estado: EstadoTraslado
-  respondidoPor: string | null
-  fechaRespuesta: string | null
-  motivoRechazo: string | null
-}
-
-export interface CambioReserva {
-  id: string
-  fecha: string
-  usuario: string
-  cambio: string
-  valorAnterior: string | null
-  valorNuevo: string | null
-}
-
-export interface ReservaCupoDetalle extends ReservaCupo {
-  tipoDocumento: string
-  matriculaOrigen: string
-  decisionPrematricula: string
-  periodoAcademico: string
-  tipoCupo: TipoCupo
-  fechaReserva: string
-  asignadaPor: string
-  traslado: DatosTraslado | null
-  historial: CambioReserva[]
-}
-
-export interface GrupoConCupo {
-  id: string
-  codigo: string
-  cuposDisponibles: number
-}
-
-export interface AsignarGrupoInput {
-  id: string
-  grupoId: string
-  especialidad: string | null
-  mediaTecnicaExterna: boolean
-}
-
-/** Asignar grupo por lote (Sección 3.6): mismas reservas de un grado y jornada. */
-export interface AsignarGrupoLoteInput {
-  ids: string[]
-  grupoId: string
-}
-
-// ---------------------------------------------------------------------------
 // Acciones conectadas al back real.
 
 export interface CambiarJornadaSedeInput {

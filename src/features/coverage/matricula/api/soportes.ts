@@ -40,7 +40,7 @@ export const SOPORTES_FIJOS: TipoSoporte[] = [
 export const SOPORTE_MAX_BYTES = 10 * 1024 * 1024
 export const SOPORTE_ACCEPT = "application/pdf,image/jpeg,image/png"
 
-interface SoporteRow {
+export interface SoporteRow {
   pk_tmatricula_archivo: number | null
   tipo: TipoSoporte
   fk_tarchivo: number | null
@@ -68,7 +68,7 @@ export interface Soporte {
   revisadoAt: string | null
 }
 
-const toSoporte = (r: SoporteRow): Soporte => ({
+export const toSoporte = (r: SoporteRow): Soporte => ({
   id: r.pk_tmatricula_archivo,
   tipo: r.tipo,
   archivoId: r.fk_tarchivo,
@@ -129,11 +129,13 @@ export interface CargarSoporteInput {
 }
 
 /** Adjuntar, reemplazar o agregar: el back deja la revisión en Sin revisar (Regla 73). */
+export const cargarSoporte = (matriculaId: string, { tipo, id, archivo }: CargarSoporteInput) =>
+  postMultipart(`/eval-col${base(matriculaId)}/soportes`, { TIPO: tipo, PK_TMATRICULA_ARCHIVO: id }, { ARCHIVO: archivo })
+
 export function useCargarSoporte(matriculaId: string) {
   const invalidar = useInvalidarSoportes(matriculaId)
   return useMutation({
-    mutationFn: ({ tipo, id, archivo }: CargarSoporteInput) =>
-      postMultipart(`/eval-col${base(matriculaId)}/soportes`, { TIPO: tipo, PK_TMATRICULA_ARCHIVO: id }, { ARCHIVO: archivo }),
+    mutationFn: (input: CargarSoporteInput) => cargarSoporte(matriculaId, input),
     onSuccess: invalidar,
   })
 }
@@ -144,14 +146,20 @@ export interface RevisarSoporteInput {
   observacion: string
 }
 
+export const revisarSoporte = (matriculaId: string, { id, resultado, observacion }: RevisarSoporteInput) =>
+  evalCol.put(`${base(matriculaId)}/soportes/${id}/revision`, {
+    RESULTADO: resultado,
+    OBSERVACION: observacion.trim() || null,
+  })
+
+/** Soportes vigentes de una matrícula, sin caché (Asignar grupo los relee al crearla). */
+export const fetchSoportes = async (matriculaId: string) =>
+  (await evalCol.getRows<SoporteRow>(`${base(matriculaId)}/soportes`)).map(toSoporte)
+
 export function useRevisarSoporte(matriculaId: string) {
   const invalidar = useInvalidarSoportes(matriculaId)
   return useMutation({
-    mutationFn: ({ id, resultado, observacion }: RevisarSoporteInput) =>
-      evalCol.put(`${base(matriculaId)}/soportes/${id}/revision`, {
-        RESULTADO: resultado,
-        OBSERVACION: observacion.trim() || null,
-      }),
+    mutationFn: (input: RevisarSoporteInput) => revisarSoporte(matriculaId, input),
     onSuccess: invalidar,
   })
 }

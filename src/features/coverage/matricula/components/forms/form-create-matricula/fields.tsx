@@ -105,6 +105,12 @@ function CampoEnmascarado({ id, label, value }: { id: string; label: string; val
   )
 }
 
+/**
+ * Asignar grupo de una reserva de cupo: las secciones vienen de la matrícula anterior y se marcan
+ * «Precargado» (solo lectura) o «Precargado · revisar» (editables, para que se confirmen).
+ */
+export const MatriculaPrecargaContext = createContext(false)
+
 // Plegable (prototipo C.1.AGR): el número sale de un contador CSS del
 // contenedor (`[counter-reset:seccion]`), porque las secciones se ocultan
 // según la configuración de campos y la numeración tiene que seguir corrida.
@@ -112,6 +118,7 @@ function CampoEnmascarado({ id, label, value }: { id: string; label: string; val
 export function MatriculaFormSection({ title, columns = 3, children }: SectionProps) {
   const pending = useContext(MatriculaPendingContext)
   const disabled = useContext(MatriculaSectionDisabledContext)
+  const precarga = useContext(MatriculaPrecargaContext)
   const [open, setOpen] = useState(useContext(MatriculaSectionDefaultOpenContext))
   const [pendingCount, setPendingCount] = useState(0)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -149,6 +156,11 @@ export function MatriculaFormSection({ title, columns = 3, children }: SectionPr
             className={cn("size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", !open && "-rotate-90")}
           />
           <span className="before:content-[counter(seccion)_'._']">{title}</span>
+          {precarga ? (
+            <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
+              {disabled ? "Precargado" : "Precargado · revisar"}
+            </Badge>
+          ) : null}
           {pendingCount > 0 ? (
             <Badge variant="outline" color="orange" className="rounded-full bg-orange-22 text-xs font-medium tracking-normal">
               <span aria-hidden className="size-1.5 rounded-full bg-orange" />

@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import {
   RESERVAS_BASE,
@@ -8,8 +7,6 @@ import {
 } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import type {
   DestinoTraslado,
-  GrupoConCupo,
-  ReservaCupoDetalle,
   UbicacionDestino,
   UbicacionReserva,
 } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
@@ -23,6 +20,7 @@ export const reservaKeys = {
   destinoUbicaciones: (id: string, destino: number | "none") =>
     [...detalle(id), "destino-ubicaciones", destino] as const,
   grupos: (id: string) => [...detalle(id), "grupos"] as const,
+  ficha: (id: string) => [...detalle(id), "ficha"] as const,
 }
 
 const datos = <T>(rows: { datos: T | null }[]): T | null => rows[0]?.datos ?? null
@@ -95,42 +93,5 @@ export function useUbicacionesDestinoQuery(id: string | null, destino: number | 
         ),
       ) ?? [],
     enabled: Boolean(id) && destino != null,
-  })
-}
-
-// --- Todavía contra MSW (Ver detalle y Asignar grupo) -----------------------
-
-export function useReservaDetalleQuery(id: string | null) {
-  return useQuery({
-    queryKey: reservaKeys.detalle(id ?? "none"),
-    queryFn: () => api.get<ReservaCupoDetalle>(`/coverage/reservas-cupo/${id}`),
-    enabled: Boolean(id),
-  })
-}
-
-export function useGruposConCupoQuery(id: string | null) {
-  return useQuery({
-    queryKey: reservaKeys.grupos(id ?? "none"),
-    queryFn: () => api.get<GrupoConCupo[]>(`/coverage/reservas-cupo/${id}/grupos`),
-    enabled: Boolean(id),
-  })
-}
-
-/** Especialidades de Asignar grupo (el resto de catálogos de acciones ya viene del back real). */
-export function useCatalogosAccionesQuery() {
-  return useQuery({
-    queryKey: [...reservasCupoKeys.all, "catalogos-acciones"] as const,
-    queryFn: () =>
-      api.get<{ especialidades: string[] }>("/coverage/reservas-cupo/catalogos-acciones"),
-    staleTime: Infinity,
-  })
-}
-
-/** Grupos con cupo para TODAS las reservas marcadas (incluido el cupo contratado). */
-export function useGruposConCupoLoteQuery(ids: string[], enabled: boolean) {
-  return useQuery({
-    queryKey: [...reservasCupoKeys.all, "grupos-lote", ids] as const,
-    queryFn: () => api.query<GrupoConCupo[]>("/coverage/reservas-cupo/grupos-lote", { ids }),
-    enabled: enabled && ids.length > 0,
   })
 }

@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { postMultipart } from "@/lib/files"
 import {
@@ -8,8 +7,6 @@ import {
   reservasCupoKeys,
 } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import type {
-  AsignarGrupoInput,
-  AsignarGrupoLoteInput,
   CambiarJornadaSedeInput,
   LiberarReservaInput,
   RegistrarRetiroInput,
@@ -73,15 +70,3 @@ export const useSolicitarTraslado = () =>
       { SOPORTE_TRASLADO: soporte },
     )
   })
-
-// --- Todavía contra MSW (Asignar grupo, siguiente entrega) -------------------
-
-export const useAsignarGrupo = () =>
-  useAccionReserva(({ id, ...body }: AsignarGrupoInput) =>
-    api.post<void>(`/coverage/reservas-cupo/${id}/asignar-grupo`, body),
-  )
-
-export const useAsignarGrupoLote = () =>
-  useAccionReserva((input: AsignarGrupoLoteInput) =>
-    api.post<{ matriculadas: number }>("/coverage/reservas-cupo/asignar-grupo-lote", input),
-  )

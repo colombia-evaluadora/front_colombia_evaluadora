@@ -45,7 +45,6 @@ import { funcionariosRolesHandlers } from "@/mocks/handlers/funcionarios-roles"
 import { selectCatalogHandlers } from "./academic-period/select-catalog"
 import { catalogHandlers } from "@/mocks/handlers/catalog"
 import { reservationsHandlers } from "@/mocks/handlers/reservations"
-import { reservaCupoAccionesHandlers } from "@/mocks/handlers/reservas-cupo-acciones"
 import { inscripcionesConfiguracionHandlers } from "@/mocks/handlers/inscripciones-configuracion"
 import { autorizacionDatosHandlers } from "@/mocks/handlers/autorizacion-datos"
 import { inscripcionPublicaHandlers } from "@/mocks/handlers/inscripcion-publica"
@@ -149,7 +148,6 @@ export const handlers = [
   ...curriculumNodesHandlers,
   ...especialidadesHandlers,
   ...selectCatalogHandlers,
-  ...reservaCupoAccionesHandlers,
   ...inscripcionesConfiguracionHandlers,
   // Antes que inscripciones: `autorizaciones-pendientes` no debe tomarse como un `:id`.
   ...autorizacionDatosHandlers,
