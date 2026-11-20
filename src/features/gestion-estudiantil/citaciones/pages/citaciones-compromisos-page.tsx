@@ -57,7 +57,6 @@ interface PestanaProps {
 
 function PestanaCitaciones({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const permisos = useCitacionesAccess()
   const f = useCitacionesFiltros(goToPage)
 
   const { data, isPending, isError, error, refetch } = useCitacionesQuery({
@@ -70,7 +69,6 @@ function PestanaCitaciones({ cabecera }: PestanaProps) {
   const dialogosCitacion = useDialogosCitacion()
 
   const columns = buildColumnsCitaciones({
-    permisos,
     onAccion: (citacion, accion) => {
       if (accion === "compromiso")
         navigate({ to: paths.app.compromisoNuevo.getHref(), search: { citacion: citacion.id } })
@@ -139,7 +137,6 @@ function PestanaCitaciones({ cabecera }: PestanaProps) {
 
 function PestanaCompromisos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const permisos = useCitacionesAccess()
   const f = useCompromisosFiltros(goToPage)
 
   const { data, isPending, isError, error, refetch } = useCompromisosQuery({
@@ -152,7 +149,6 @@ function PestanaCompromisos({ cabecera }: PestanaProps) {
   const dialogosCompromiso = useDialogosCompromiso()
 
   const columns = buildColumnsCompromisos({
-    permisos,
     onAccion: (compromiso, accion) => {
       if (accion === "ver") navigate({ to: paths.app.compromisoDetalle.getHref(compromiso.id), search: {} })
       else dialogosCompromiso.abrir(accion, compromiso)
@@ -220,7 +216,7 @@ function PestanaCompromisos({ cabecera }: PestanaProps) {
 type Navegar = (opts: { to: string; search: Record<string, unknown>; replace?: boolean }) => void
 
 function CitacionesCompromisosContent() {
-  const permisos = useCitacionesAccess()
+  const acceso = useCitacionesAccess()
   const search = useSearch({ strict: false }) as { tab?: Pestana }
   const navigate = useNavigate() as unknown as Navegar
   const pestana: Pestana = search.tab === "compromisos" ? "compromisos" : "citaciones"
@@ -234,7 +230,7 @@ function CitacionesCompromisosContent() {
         action={
           <Button
             size="sm"
-            disabled={!permisos.puedeCrear}
+            disabled={!(pestana === "citaciones" ? acceso.puedeCrearCitacion : acceso.puedeCrearCompromiso)}
             onClick={() =>
               navigate({
                 to:
