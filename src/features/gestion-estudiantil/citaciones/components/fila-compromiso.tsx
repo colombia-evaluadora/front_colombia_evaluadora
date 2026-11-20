@@ -1,12 +1,11 @@
 import { DatePicker } from "@/components/date-picker"
-import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { TrashIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 
 import type { ErroresItem, ItemFila } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 interface Props {
@@ -27,8 +26,10 @@ interface Props {
 export function FilaCompromiso({ fila: f, numero, error, responsables, desde, hasta, puedeQuitar, onChange, onQuitar }: Props) {
   const id = `compromiso-${f.key}`
   return (
-    <div className="flex items-start gap-2 border-b border-border pb-3 last:border-b-0">
-      <span className="flex h-10 w-5 shrink-0 items-center text-sm font-medium">{numero}</span>
+    // Los campos outlined bajan 8px (pt-2 del label flotante): el número y la papelera llevan mt-2 para
+    // quedar centrados con ellos. La última fila no deja relleno de más sobre el borde de la sección.
+    <div className="flex items-start gap-2 border-b border-border pb-3 last:border-b-0 last:pb-0">
+      <span className="mt-2 flex h-10 w-5 shrink-0 items-center text-sm font-medium">{numero}</span>
       <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error?.descripcion) || undefined}>
           <FieldLabel htmlFor={`${id}-descripcion`}>Descripción*</FieldLabel>
@@ -66,18 +67,12 @@ export function FilaCompromiso({ fila: f, numero, error, responsables, desde, ha
           {error?.plazo && <FieldError>{error.plazo}</FieldError>}
         </Field>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
-        className="mt-1.5"
+      <BotonQuitar
+        label={`Quitar el compromiso ${numero}`}
+        className="mt-2"
         disabled={!puedeQuitar}
-        aria-label={`Quitar el compromiso ${numero}`}
         onClick={onQuitar}
-      >
-        <TrashIcon />
-      </Button>
+      />
     </div>
   )
 }

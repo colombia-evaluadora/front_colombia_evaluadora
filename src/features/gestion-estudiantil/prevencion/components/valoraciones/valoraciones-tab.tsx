@@ -91,7 +91,7 @@ export function ValoracionesTab({ tabs }: Props) {
         <TableScreenTitle
           action={
             // G.8.VAL.4: la exportación para el SIMPADE aún no tiene backend.
-            <Button size="sm" type="button" variant="outline" disabled>
+            <Button size="sm" type="button" variant="outline" color="neutral" disabled>
               <FileXlsIcon data-icon="inline-start" />
               Exportar para el SIMPADE
             </Button>

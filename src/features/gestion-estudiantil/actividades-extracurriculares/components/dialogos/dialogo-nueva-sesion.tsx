@@ -197,7 +197,7 @@ export function DialogoNuevaSesion({ actividad: a, servicioSocial, onClose }: Pr
                   {marcados.length === 1 ? "marcado" : "marcados"}
                 </span>
               </legend>
-              <Button type="button" size="sm" variant="outline" disabled={inscritos.length === 0} onClick={alternarTodos}>
+              <Button type="button" size="sm" variant="outline" color="neutral" disabled={inscritos.length === 0} onClick={alternarTodos}>
                 <ListChecksIcon data-icon="inline-start" />
                 {todosMarcados ? "Quitar todos" : "Marcar todos"}
               </Button>

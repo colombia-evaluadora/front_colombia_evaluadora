@@ -1,6 +1,4 @@
-import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
 import { codigoDe, type OpcionCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
@@ -8,6 +6,7 @@ import { COD } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { erroresInvolucrado, esTipoFuncionario } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import {
   useFuncionarioInvolucrado,
   type ContextoFuncionarios,
@@ -125,17 +124,7 @@ export function FilaOtroInvolucrado({ fila: v, todas, mostrarErrores, roles, tip
           onChange={(rol) => onChange({ rol })}
         />
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
-        className="mt-5"
-        aria-label="Quitar involucrado"
-        onClick={onQuitar}
-      >
-        <XIcon />
-      </Button>
+      <BotonQuitar label="Quitar involucrado" onClick={onQuitar} className="mt-2" />
     </div>
   )
 }

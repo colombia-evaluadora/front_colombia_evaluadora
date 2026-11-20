@@ -26,8 +26,6 @@ interface ComboOpcionesProps {
   /** Ayuda bajo el control; se oculta mientras hay error. */
   description?: ReactNode
   size?: "sm" | "default"
-  /** Etiqueta en línea a la izquierda del control (filas compactas), en vez de flotante encima. */
-  inline?: boolean
   className?: string
   /** Lo tecleado en el buscador, para combos que consultan al servidor. */
   onInputChange?: (texto: string) => void
@@ -47,15 +45,14 @@ export function ComboOpciones({
   error,
   description,
   size = "sm",
-  inline,
   className,
   onInputChange,
 }: ComboOpcionesProps) {
   const items = todos ? [{ value: "", label: todos }, ...options] : options
   return (
     <Field
-      orientation={inline ? "horizontal" : "vertical"}
-      variant={inline ? "plain" : "outlined"}
+      orientation="vertical"
+      variant="outlined"
       className={className ?? "gap-2"}
       data-invalid={Boolean(error) || undefined}>
       <FieldLabel htmlFor={id}>

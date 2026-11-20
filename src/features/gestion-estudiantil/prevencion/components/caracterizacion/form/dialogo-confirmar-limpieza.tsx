@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { XIcon } from "@/components/ui/icons"
 
 import type { FormularioCaracterizacion } from "@/features/gestion-estudiantil/prevencion/hooks/use-caracterizacion-form"
 
@@ -29,7 +30,7 @@ export function DialogoConfirmarLimpieza({ f }: { f: FormularioCaracterizacion }
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={f.confirmarLimpieza}>Cambiar y quitar</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -22,7 +22,7 @@ export function SoporteAceptacion({ archivo }: { archivo: number }) {
     }
   }
   return (
-    <Button type="button" size="sm" variant="outline" disabled={abriendo} onClick={abrir}>
+    <Button type="button" size="sm" variant="outline" color="neutral" disabled={abriendo} onClick={abrir}>
       <PaperclipIcon data-icon="inline-start" />
       Ver soporte firmado
     </Button>
