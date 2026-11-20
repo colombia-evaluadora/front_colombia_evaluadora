@@ -9,13 +9,11 @@ import type { CompromisoRow } from "@/features/gestion-estudiantil/citaciones/ap
 import {
   accionesCompromiso,
   COLOR_ESTADO_COMPROMISO,
-  type PermisosCitaciones,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_COMPROMISO, MenuAccionesCompromiso, type AccionCompromiso } from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-compromiso"
 
 interface ColumnasOpciones {
-  permisos: PermisosCitaciones & { puedeVer: boolean }
   onAccion: (compromiso: CompromisoRow, accion: AccionCompromiso) => void
 }
 
@@ -31,7 +29,7 @@ const columna = (id: string, titulo: string) => ({
 })
 
 /** Columnas del listado de compromisos (G.3.CMP.1). */
-export function buildColumnsCompromisos({ permisos, onAccion }: ColumnasOpciones): ColumnDef<CompromisoRow>[] {
+export function buildColumnsCompromisos({ onAccion }: ColumnasOpciones): ColumnDef<CompromisoRow>[] {
   return [
     { ...columna("fecha", "Fecha"), accessorKey: "fecha", cell: ({ row }) => formatFecha(row.original.fecha) },
     {
@@ -81,7 +79,7 @@ export function buildColumnsCompromisos({ permisos, onAccion }: ColumnasOpciones
       cell: ({ row }) => (
         <MenuAccionesCompromiso
           estudiante={row.original.estudiante_nombre}
-          acciones={accionesCompromiso(row.original, permisos)}
+          acciones={accionesCompromiso(row.original)}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),
