@@ -42,8 +42,29 @@ trailer<</Root 1 0 R>>
  */
 const CARNE = /^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/
 
+/**
+ * Gestión Estudiantil: tres bloques de cuatro con alguna letra G-Z. Primera letra:
+ * "S" → certificado de servicio social, "M" → mención de honor; segunda letra:
+ * V vigente, A actualizado, R reemplazado, N anulado; otra → NO_VALIDO.
+ */
+function documentoGe(c: string) {
+  const tipo = c[0] === "S" ? "SERVICIO_SOCIAL_CERTIFICADO" : c[0] === "M" ? "MENCION_HONOR" : null
+  const estado = { V: "VIGENTE", A: "ACTUALIZADO", R: "REEMPLAZADO", N: "ANULADO" }[c[1]]
+  if (!tipo || !estado) return { tipo: null, estado: "NO_VALIDO" }
+  return {
+    tipo,
+    estado,
+    emitidoEn: "2027-03-15",
+    ...(estado === "REEMPLAZADO" ? { reemplazadoEn: "2027-06-01" } : {}),
+    institucion: "Institución Educativa de Prueba",
+    dane: "105001000123",
+    titular: "Ana S. P. G.",
+  }
+}
+
 function documentoPorCodigo(codigo: string) {
   const c = codigo.trim().toUpperCase()
+  if (/^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(c) && !CARNE.test(c)) return documentoGe(c)
   if (!CARNE.test(c)) return { tipo: estadoPorCodigo(c) === "NO_VALIDO" ? null : "BOLETIN", estado: estadoPorCodigo(c) }
   const estado = { A: "VIGENTE", B: "REEMPLAZADO", C: "ANULADO", D: "VIGENTE" }[c[0]] ?? "NO_VALIDO"
   if (estado === "NO_VALIDO") return { tipo: "CARNE", estado }

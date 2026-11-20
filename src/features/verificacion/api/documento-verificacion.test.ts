@@ -30,6 +30,28 @@ describe("toDocumentoVerificacion", () => {
     expect(r.carne.sede).toBeNull()
   })
 
+  it("el certificado de servicio social y la mención de honor traen estado y datos básicos", () => {
+    const r = toDocumentoVerificacion({
+      tipo: "MENCION_HONOR",
+      estado: "reemplazado",
+      emitidoEn: "2027-03-15",
+      reemplazadoEn: "2027-06-01",
+      institucion: "IE Prueba",
+      dane: "105001000123",
+      titular: "Ana S. P. G.",
+    })
+    expect(r.tipo).toBe("MENCION_HONOR")
+    if (r.tipo !== "MENCION_HONOR") return
+    expect(r.ge).toMatchObject({ estado: "REEMPLAZADO", reemplazadoEn: "2027-06-01", dane: "105001000123" })
+  })
+
+  it("ACTUALIZADO se conserva y un estado raro de un documento GE cae en NO_VALIDO", () => {
+    const a = toDocumentoVerificacion({ tipo: "SERVICIO_SOCIAL_CERTIFICADO", estado: "ACTUALIZADO" })
+    expect(a.tipo === "SERVICIO_SOCIAL_CERTIFICADO" && a.ge.estado).toBe("ACTUALIZADO")
+    const b = toDocumentoVerificacion({ tipo: "SERVICIO_SOCIAL_CERTIFICADO", estado: "RARO" })
+    expect(b.tipo === "SERVICIO_SOCIAL_CERTIFICADO" && b.ge.estado).toBe("NO_VALIDO")
+  })
+
   it("un estado que no conoce cae en NO_VALIDO", () => {
     const r = toDocumentoVerificacion({ tipo: "CARNE", estado: "RARO" })
     expect(r.tipo === "CARNE" && r.carne.estado).toBe("NO_VALIDO")
