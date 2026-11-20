@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react"
 
 import { Checkbox } from "@/components/ui/checkbox"
-import { FieldError, FieldLegend, FieldSet } from "@/components/ui/field"
 import { GavelIcon } from "@/components/ui/icons"
 import { formatDateValue } from "@/lib/date-value"
 
@@ -28,6 +27,7 @@ import {
   type SancionFila,
   type ValoresDecision,
 } from "@/features/gestion-estudiantil/convivencia/utils/proceso-etapas"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface Props {
   proceso: ProcesoDetalle
@@ -112,8 +112,7 @@ export function DialogRegistrarDecision({ proceso: p, onClose }: Props) {
         <CampoOpcionUnica id="decision-resultado" label="Resultado" value={v.resultado} options={resultados} error={e.resultado} onChange={(resultado) => set({ resultado })} />
       </div>
       {sanciona && (
-        <FieldSet data-invalid={Boolean(e.cargos) || undefined}>
-          <FieldLegend variant="label">Cargos probados*</FieldLegend>
+        <MarcoOpciones id="decision-cargos" label="Cargos probados" required error={e.cargos} contentClassName="py-3">
           <ul className="flex flex-col gap-2">
             {cargos.map((c) => (
               <li key={c.id}>
@@ -129,8 +128,7 @@ export function DialogRegistrarDecision({ proceso: p, onClose }: Props) {
               </li>
             ))}
           </ul>
-          {e.cargos && <FieldError>{e.cargos}</FieldError>}
-        </FieldSet>
+        </MarcoOpciones>
       )}
       <TextoLargo id="decision-motivacion" label="Motivación" required max={5000} rows={4} value={v.motivacion} error={e.motivacion} onChange={(motivacion) => set({ motivacion })} />
       {sanciona && (

@@ -43,7 +43,7 @@ export function DialogoOperacionShell({
   pending,
   confirmar,
   cancelarLabel = "Cancelar",
-  className = "sm:max-w-lg",
+  className = "sm:max-w-xl",
   children,
 }: Props) {
   return (

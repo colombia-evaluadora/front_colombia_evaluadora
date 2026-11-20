@@ -1,8 +1,8 @@
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { ClipboardAddIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 
@@ -14,6 +14,7 @@ import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/comp
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useRegistrarAccion } from "@/features/gestion-estudiantil/convivencia/hooks/use-registrar-accion"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface Props {
   caso: CasoResumen | null
@@ -109,11 +110,13 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
           />
         )}
         {f.condicional && (
-          <label className="flex items-center gap-3 text-sm">
-            <Switch round checked={f.noAplica} onCheckedChange={f.setNoAplica} aria-label="No aplica" />
-            No aplica
-            <span className="text-xs text-muted-foreground">· justifíquelo en la descripción</span>
-          </label>
+          <MarcoOpciones id="accion-no-aplica">
+            <label className="flex items-center gap-3">
+              <Switch round checked={f.noAplica} onCheckedChange={f.setNoAplica} aria-label="No aplica" />
+              No aplica
+              <span className="text-xs text-muted-foreground">· justifíquelo en la descripción</span>
+            </label>
+          </MarcoOpciones>
         )}
 
         <TextoLargo

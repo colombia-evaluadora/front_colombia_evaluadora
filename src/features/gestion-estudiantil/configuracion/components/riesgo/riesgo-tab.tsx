@@ -1,11 +1,11 @@
 import { useMemo, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Checkbox } from "@/components/ui/checkbox"
 import { TableScreenBody } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { InfoIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
@@ -28,6 +28,7 @@ import {
   CONDICIONES,
   limpiarDecimal,
 } from "@/features/gestion-estudiantil/prevencion/utils/parametros"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 /** La X de los chips del selector múltiple sigue activa aunque esté deshabilitado: sin permiso no cambia nada. */
 const ignorar = () => {}
@@ -105,9 +106,11 @@ function FormParametros({ parametros, causas, establecimiento, puedeEditar, tabs
             {CAMPOS_ENTEROS.slice(1).map(campoEntero)}
           </div>
 
-          <fieldset className="flex flex-col gap-2" disabled={deshabilitado}>
-            <legend className="text-sm">Condiciones de la matrícula para alerta</legend>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
+          <MarcoOpciones
+            id="parametros-condiciones"
+            label="Condiciones de la matrícula para alerta"
+            descripcion="Señal de contexto: sale en el tablero, pero no genera aviso por sí sola."
+          >
               {CONDICIONES.map((c) => (
                 <label key={c.value} className="flex items-center gap-2 text-sm">
                   <Checkbox
@@ -118,9 +121,7 @@ function FormParametros({ parametros, causas, establecimiento, puedeEditar, tabs
                   {c.label}
                 </label>
               ))}
-            </div>
-            <p className="text-sm text-muted-foreground">Señal de contexto: sale en el tablero, pero no genera aviso por sí sola.</p>
-          </fieldset>
+          </MarcoOpciones>
 
           <div className={REJILLA_CAMPOS}>
             <Field orientation="vertical" variant="outlined" className="gap-2">

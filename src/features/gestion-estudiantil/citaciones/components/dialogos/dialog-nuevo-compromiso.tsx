@@ -1,11 +1,11 @@
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon, FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 import type { OrigenManual } from "@/features/gestion-estudiantil/citaciones/api/types"
@@ -26,6 +26,7 @@ import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-cata
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 function CampoFecha({
   id,
@@ -168,18 +169,14 @@ export function DialogNuevoCompromiso({
             onChange={elegirEstudiante}
           />
           <CampoAcudiente id="compromiso-acudiente" matricula={v.matricula} />
-          <Field
-            orientation="vertical"
-            variant="outlined"
-            className="gap-2"
-            role="group"
-            aria-labelledby="compromiso-tipo-label"
-            data-invalid={Boolean(errores.tipo) || undefined}
+          <MarcoOpciones
+            id="compromiso-tipo"
+            label="Tipo de compromiso"
+            required
+            error={errores.tipo}
           >
-            <FieldLabel id="compromiso-tipo-label">Tipo de compromiso*</FieldLabel>
             <RadioGroup
               aria-labelledby="compromiso-tipo-label"
-              className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
               value={v.tipo}
               onValueChange={(tipo) => set({ tipo })}
             >
@@ -190,8 +187,7 @@ export function DialogNuevoCompromiso({
                 </label>
               ))}
             </RadioGroup>
-            {errores.tipo && <FieldError>{errores.tipo}</FieldError>}
-          </Field>
+          </MarcoOpciones>
         </div>
 
         {citacion != null && (
@@ -238,16 +234,18 @@ export function DialogNuevoCompromiso({
         {/* G.3.CMP.4: el interruptor y, debajo y solo si se aceptó presencialmente, el soporte firmado
             a todo el ancho (sin aceptación no hay soporte que adjuntar). */}
         <div className="flex flex-col gap-4">
-          <label className="flex h-10 w-fit items-center gap-3 text-sm">
-            <Switch
-              round
-              checked={v.aceptado}
-              onCheckedChange={(aceptado) =>
-                set({ aceptado, soporte: aceptado ? v.soporte : null })
-              }
-            />
-            Aceptado presencialmente
-          </label>
+          <MarcoOpciones id="compromiso-aceptado">
+            <label className="flex items-center gap-3">
+              <Switch
+                round
+                checked={v.aceptado}
+                onCheckedChange={(aceptado) =>
+                  set({ aceptado, soporte: aceptado ? v.soporte : null })
+                }
+              />
+              Aceptado presencialmente
+            </label>
+          </MarcoOpciones>
           {v.aceptado && (
             <div
               className="flex flex-col gap-1"

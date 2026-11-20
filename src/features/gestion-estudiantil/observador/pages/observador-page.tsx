@@ -123,13 +123,13 @@ function ObservadorContent() {
     puedeRemitir: access.puedeRemitir,
     puedeReportarSaludMental: access.puedeReportarSaludMental,
     onRemitir: setRemitir,
-    onReportarConsumo: setReportarConsumo,
     puedeAbrirProceso: accesoConvivencia.puedeSupervisar,
     onAbrirProceso: (a) =>
       navigate({
         to: paths.app.convivenciaProcesoNuevo.getHref(),
         search: { matricula: a.fk_tmatricula, anotacion: a.id, nombre: a.estudiante_nombre },
       } as never),
+    onReportarConsumo: setReportarConsumo,
     onReportarSaludMental: (a) =>
       navigate({
         to: paths.app.prevencionSaludMentalNuevo.getHref(),
