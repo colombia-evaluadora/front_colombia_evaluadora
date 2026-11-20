@@ -7,7 +7,6 @@ import { desenvolver, queryString } from "@/features/gestion-estudiantil/commons
 import { actividadesKeys } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query-keys"
 import type { PaginaParams } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query/use-actividades-query"
 import type {
-  CertificadoServicioSocial,
   ParametrosServicioSocial,
   ServicioSocialDetalle,
   ServicioSocialFiltros,
@@ -62,21 +61,6 @@ export function useServicioSocialEstudianteQuery(matricula: number | undefined) 
         .then((r) => datosOFila<ServicioSocialDetalle>(r[0], "No se encontró el estudiante.")),
     enabled: matricula != null,
     retry: false,
-  })
-}
-
-/** `GET /servicio-social/certificado/:MATRICULA`: solo se pide al abrir el certificado. */
-export function useCertificadoServicioSocialQuery(matricula: number | undefined, enabled = true) {
-  return useQuery({
-    queryKey: actividadesKeys.servicioSocial.certificado(matricula ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_SERVICIO_SOCIAL}/certificado/${matricula}`)
-        .then((r) => datosOFila<CertificadoServicioSocial>(r[0], "No se encontró el certificado.")),
-    enabled: enabled && matricula != null,
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
   })
 }
 
