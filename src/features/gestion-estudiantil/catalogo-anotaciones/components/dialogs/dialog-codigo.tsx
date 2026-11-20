@@ -22,7 +22,7 @@ import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
 import { useCodigoForm } from "@/features/gestion-estudiantil/catalogo-anotaciones/hooks/use-codigo-form"
 import { LIM } from "@/features/gestion-estudiantil/catalogo-anotaciones/utils/codigo-form"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   establecimiento: number | null

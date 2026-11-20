@@ -12,7 +12,7 @@ import {
   CARACTERIZACIONES_FILTROS_VACIOS,
   type CaracterizacionesFiltros,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 export interface OpcionesFiltrosCaracterizaciones {
   sedes: Opcion[]

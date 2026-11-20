@@ -206,7 +206,7 @@ export const navigationMenu: MockMenu[] = [
   // V101: solo el Superadministrador. Código LISTAS_VALOR (mapeado en roles.ts).
   {
     id: 49,
-    name: "Lista de Valores",
+    name: "Lista de valores",
     icon: "",
     path: "/app/administracion/listas-valor",
     menuOrder: 9,
@@ -300,7 +300,7 @@ export const navigationMenu: MockMenu[] = [
   // },
   {
     id: 17,
-    name: "Establecimiento Educativo",
+    name: "Establecimiento educativo",
     icon: "Bank-Icon",
     path: "/app/establecimiento-educativo",
     menuOrder: 2,
@@ -325,7 +325,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 20,
-    name: "Sedes Educativas",
+    name: "Sedes educativas",
     icon: "",
     path: "/app/establecimiento-educativo/sedes",
     menuOrder: 1,
@@ -345,7 +345,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 22,
-    name: "Periodos Académicos",
+    name: "Periodos académicos",
     icon: "",
     path: "/app/establecimiento-educativo/periodos",
     menuOrder: 3,
@@ -355,7 +355,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 23,
-    name: "Gestión Académica",
+    name: "Gestión académica",
     icon: "GraduationCap-Icon",
     path: "/app/planeador/actividades",
     menuOrder: 3,
@@ -439,7 +439,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 60,
-    name: "Gestión Estudiantil",
+    name: "Gestión estudiantil",
     icon: "Users-Three-Icon",
     path: "/app/gestion-estudiantil/citaciones-compromisos",
     menuOrder: 5,

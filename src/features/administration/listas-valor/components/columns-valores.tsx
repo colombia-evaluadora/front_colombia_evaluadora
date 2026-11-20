@@ -2,36 +2,44 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { TituloConAyuda } from "@/components/titulo-con-ayuda"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
+  CheckCircleIcon,
   DotsSixVerticalIcon,
   LockIcon,
+  PencilIcon,
+  ProhibitIcon,
   StarFillIcon,
   StarIcon,
   TrashIcon,
 } from "@/components/ui/icons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import type {
-  Categoria,
-  ListaValor,
+import {
+  MARCAS_LISTA,
+  type Categoria,
+  type ListaValor,
 } from "@/features/administration/listas-valor/api/types/lista-valor"
-import { DialogSaveValor } from "@/features/administration/listas-valor/components/dialog-save-valor"
+import { AccionFila } from "@/features/administration/listas-valor/components/accion-fila"
+import { AVISO_VALOR_SISTEMA } from "@/features/administration/listas-valor/components/dialog-save-valor"
 
 interface CreateColumnsOptions {
   categoria: Categoria
+  /** Algún valor de la lista tiene etiqueta: si ninguno, la columna no se muestra. */
+  conEtiqueta: boolean
   puedeEditar: boolean
   puedeEliminar: boolean
-  /** Devuelve false si falló, para dejar abierta la confirmación. */
-  onEliminar: (valor: ListaValor) => Promise<boolean>
   /** pk del valor cuya acción (estado o predeterminado) está en curso. */
   pendiente: number | null
   onIrALista: (categoria: string) => void
+  onModificar: (valor: ListaValor) => void
   /** true = marcar, false = quitar (la lista queda sin predeterminado). */
   onPredeterminado: (valor: ListaValor, predeterminado: boolean) => void
+  onEstado: (valor: ListaValor, habilitado: boolean) => void
+  /** Abre la confirmación. */
+  onEliminar: (valor: ListaValor) => void
   /** Se arrastra solo sin búsqueda ni otro orden: así la tabla es la lista real. */
   ordenable: boolean
   /** Posición del primer valor de la página, para numerar mientras se arrastra. */
@@ -45,14 +53,23 @@ interface CreateColumnsOptions {
   onSoltar: () => void
 }
 
+const siNo = (si: boolean) => <span className="block text-center">{si ? "Sí" : "No"}</span>
+
+/**
+ * Valores de una lista (S.1.VAL.LST.1): Orden · Valor · Código · (Valor padre) · Etiqueta · Predet. ·
+ * Usado por el sistema · (marca de la lista) · Estado · menú ⁞ (LST.2 / LST.2a).
+ */
 export function createValoresColumns({
   categoria,
+  conEtiqueta,
   puedeEditar,
   puedeEliminar,
-  onEliminar,
   pendiente,
   onIrALista,
+  onModificar,
   onPredeterminado,
+  onEstado,
+  onEliminar,
   ordenable,
   offset,
   asa,
@@ -64,11 +81,17 @@ export function createValoresColumns({
       id: "orden",
       accessorKey: "orden",
       meta: { label: "Orden" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="#" />,
+      header: ({ column }) => (
+        <TituloConAyuda
+          titulo="Orden"
+          ayuda="Arrastre el ícono para cambiar el orden: es el de los selectores y el de las reglas, de menor a mayor."
+        >
+          <DataTableColumnHeader column={column} title="Orden" />
+        </TituloConAyuda>
+      ),
       cell: ({ row }) => {
         const v = row.original
-        if (!ordenable)
-          return <span className="pl-7 text-muted-foreground tabular-nums">{v.orden}</span>
+        if (!ordenable) return <span className="pl-7 tabular-nums">{v.orden}</span>
         const posicion = offset + row.index + 1
         return (
           <span className="flex items-center gap-1">
@@ -89,7 +112,7 @@ export function createValoresColumns({
             >
               <DotsSixVerticalIcon className="size-5" />
             </button>
-            <span className="text-muted-foreground tabular-nums">{posicion}</span>
+            <span className="tabular-nums">{posicion}</span>
           </span>
         )
       },
@@ -98,47 +121,26 @@ export function createValoresColumns({
     {
       id: "nombre",
       accessorKey: "nombre",
-      meta: { label: "Nombre" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
-      cell: ({ row }) => {
-        const v = row.original
-        return (
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className={v.habilitado ? undefined : "text-muted-foreground"}>{v.nombre}</span>
-            {v.esSistema && (
-              <Tooltip>
-                <TooltipTrigger render={<span className="inline-flex text-muted-foreground" />}>
-                  <LockIcon className="size-3.5" />
-                  <span className="sr-only">Valor del sistema</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Valor del sistema: se puede renombrar y reordenar, pero no inactivar.
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {v.predeterminado && (
-              <Badge variant="soft" color="primary">
-                Predeterminado
-              </Badge>
-            )}
-          </span>
-        )
-      },
-    },
-    {
-      id: "etiqueta",
-      accessorKey: "etiqueta",
-      meta: { label: "Etiqueta" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Etiqueta" />,
+      meta: { label: "Valor", className: "min-w-32 whitespace-normal" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Valor" />,
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.etiqueta ?? "—"}</span>
+        <span className="font-medium">
+          {row.original.nombre}
+        </span>
       ),
     },
     {
       id: "valor",
       accessorKey: "valor",
       meta: { label: "Código" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
+      header: ({ column }) => (
+        <TituloConAyuda
+          titulo="Código"
+          ayuda="Código interno: identifica el valor aunque cambie su nombre; no se modifica después de crearlo."
+        >
+          <DataTableColumnHeader column={column} title="Código" />
+        </TituloConAyuda>
+      ),
       cell: ({ row }) => <span className="font-mono text-[0.8125rem]">{row.original.valor}</span>,
     },
   ]
@@ -147,27 +149,75 @@ export function createValoresColumns({
     columns.push({
       id: "padre",
       accessorFn: (row) => row.padre?.nombre ?? "",
-      meta: { label: "Depende de" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Depende de" />,
+      meta: { label: "Valor padre", className: "whitespace-normal" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Valor padre" />,
       cell: ({ row }) => {
         const padre = row.original.padre
         if (!padre) return <span className="text-muted-foreground">—</span>
         return (
-          <Badge
-            variant="soft"
-            color="neutral"
-            render={
-              <button
-                type="button"
-                title={`Ir a ${padre.categoria}`}
-                onClick={() => onIrALista(padre.categoria)}
-              />
-            }
+          <button
+            type="button"
+            title={`Ir a la lista ${padre.categoria}`}
+            onClick={() => onIrALista(padre.categoria)}
+            className="rounded underline-offset-4 outline-none hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring/40"
           >
             {padre.nombre}
-          </Badge>
+          </button>
         )
       },
+    })
+  }
+
+  // Sin ninguna etiqueta en la lista la columna solo ocupa ancho: el nombre se partía en 3 líneas.
+  if (conEtiqueta) {
+    columns.push({
+      id: "etiqueta",
+      accessorKey: "etiqueta",
+      meta: { label: "Etiqueta" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Etiqueta" />,
+      cell: ({ row }) => row.original.etiqueta ?? "",
+    })
+  }
+
+  columns.push(
+    {
+      id: "predeterminado",
+      accessorFn: (row) => (row.predeterminado ? "Sí" : ""),
+      meta: { label: "Predeterminado" },
+      enableSorting: false,
+      header: () => <span className="block text-center">Predet.</span>,
+      cell: ({ row }) =>
+        row.original.predeterminado ? (
+          <span className="block text-center">Sí</span>
+        ) : null,
+    },
+    {
+      id: "sistema",
+      accessorFn: (row) => (row.esSistema ? "Sí" : "No"),
+      meta: { label: "Usado por el sistema", className: "min-w-20 whitespace-normal" },
+      enableSorting: false,
+      header: () => <span className="block text-center">Usado por el sistema</span>,
+      cell: ({ row }) => siNo(row.original.esSistema),
+    },
+  )
+
+  const marca = categoria.marca
+  if (marca) {
+    columns.push({
+      id: "marca",
+      accessorFn: (row) =>
+        marca === "ESTAMENTO" ? (row.estamento ?? "") : (marca === "SIMPADE" ? row.delSimpade : row.disparaPiar) ? "Sí" : "No",
+      meta: { label: MARCAS_LISTA[marca].columna, className: "min-w-24 whitespace-normal" },
+      enableSorting: false,
+      header: () => (
+        <div className={marca === "ESTAMENTO" ? undefined : "flex justify-center text-center"}>
+          <TituloConAyuda titulo={MARCAS_LISTA[marca].columna} ayuda={MARCAS_LISTA[marca].ayuda} />
+        </div>
+      ),
+      cell: ({ row }) =>
+        marca === "ESTAMENTO"
+          ? (row.original.estamento ?? "—")
+          : siNo(Boolean(marca === "SIMPADE" ? row.original.delSimpade : row.original.disparaPiar)),
     })
   }
 
@@ -176,14 +226,13 @@ export function createValoresColumns({
     accessorFn: (row) => (row.habilitado ? "Activo" : "Inactivo"),
     meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-    // Se cambia desde "Editar valor".
     cell: ({ row }) =>
       row.original.habilitado ? (
         <Badge variant="soft" color="success">
           Activo
         </Badge>
       ) : (
-        <Badge variant="outline" color="neutral">
+        <Badge variant="soft" color="neutral">
           Inactivo
         </Badge>
       ),
@@ -195,81 +244,65 @@ export function createValoresColumns({
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
         const v = row.original
+        const ocupado = pendiente === v.pkListaValor
+        // Usado por el sistema: solo Modificar y predeterminado (LST.2a); el candado explica por qué.
+        // Eliminar solo si ningún registro lo usa (LST.2); sin el dato (back real) se ofrece y el back responde 409.
+        const puedeInactivar = puedeEditar && !v.esSistema
+        const puedeBorrar = puedeEliminar && !v.esSistema && v.enUso !== true
         return (
           <div className="flex items-center justify-end gap-1">
-            {/* Inactivo no puede ser predeterminado (V101). */}
-            {puedeEditar && v.habilitado && !v.predeterminado && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      color="neutral"
-                      size="icon-sm"
-                      disabled={pendiente === v.pkListaValor}
-                      onClick={() => onPredeterminado(v, true)}
-                    />
-                  }
-                >
-                  <span className="sr-only">Marcar {v.nombre} como predeterminado</span>
-                  <StarIcon />
-                </TooltipTrigger>
-                <TooltipContent>Marcar como predeterminado</TooltipContent>
-              </Tooltip>
-            )}
-            {puedeEditar && v.predeterminado && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      color="primary"
-                      size="icon-sm"
-                      disabled={pendiente === v.pkListaValor}
-                      onClick={() => onPredeterminado(v, false)}
-                    />
-                  }
-                >
-                  <span className="sr-only">Quitar {v.nombre} como predeterminado</span>
-                  <StarFillIcon />
-                </TooltipTrigger>
-                <TooltipContent>Quitar predeterminado</TooltipContent>
-              </Tooltip>
-            )}
             {puedeEditar && (
-              <DialogSaveValor
-                key={`${v.pkListaValor}-${v.nombre}-${v.etiqueta}-${v.padre?.pkListaValor}`}
-                categoria={categoria}
-                valor={v}
-              />
+              <AccionFila label="Modificar" onClick={() => onModificar(v)} disabled={ocupado}>
+                <PencilIcon />
+              </AccionFila>
             )}
-            {/* Los del sistema no se eliminan (V101): el botón queda visible pero bloqueado,
-                para que se sepa que la opción existe. */}
-            {puedeEliminar && v.esSistema && (
+            {/* Un inactivo no puede ser predeterminado (V101). */}
+            {puedeEditar && v.habilitado && (
+              <AccionFila
+                label={v.predeterminado ? "Quitar predeterminado" : "Marcar como predeterminado"}
+                onClick={() => onPredeterminado(v, !v.predeterminado)}
+                disabled={ocupado}
+              >
+                {v.predeterminado ? <StarFillIcon className="text-primary" /> : <StarIcon />}
+              </AccionFila>
+            )}
+            {puedeInactivar && (
+              <AccionFila
+                label={v.habilitado ? "Inactivar" : "Activar"}
+                onClick={() => onEstado(v, !v.habilitado)}
+                disabled={ocupado}
+              >
+                {v.habilitado ? <ProhibitIcon /> : <CheckCircleIcon />}
+              </AccionFila>
+            )}
+            {puedeBorrar && (
+              <AccionFila label="Eliminar" destructivo onClick={() => onEliminar(v)} disabled={ocupado}>
+                <TrashIcon />
+              </AccionFila>
+            )}
+            {v.esSistema && (
               <Tooltip>
-                <TooltipTrigger render={<span className="inline-flex" tabIndex={0} />}>
-                  <Button variant="ghost" color="neutral" size="icon-sm" disabled>
-                    <span className="sr-only">Eliminar {v.nombre} (no disponible)</span>
-                    <TrashIcon />
-                  </Button>
+                <TooltipTrigger
+                  render={
+                    <span
+                      tabIndex={0}
+                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    />
+                  }
+                >
+                  <LockIcon className="size-4" />
+                  <span className="sr-only">Valor del sistema</span>
                 </TooltipTrigger>
-                <TooltipContent>Valor del sistema: no se puede eliminar</TooltipContent>
+                <TooltipContent className="max-w-64">{AVISO_VALOR_SISTEMA}</TooltipContent>
               </Tooltip>
-            )}
-            {puedeEliminar && !v.esSistema && (
-              <ConfirmRemoveButton
-                label={`Eliminar ${v.nombre}`}
-                title="Eliminar valor"
-                description={`Se eliminará «${v.nombre}» de la lista. No se puede si está en uso o si tiene valores hijos activos; en esos casos, inactívelo.`}
-                onConfirm={() => onEliminar(v)}
-              />
             )}
           </div>
         )
       },
       enableSorting: false,
       enableHiding: false,
-      size: 144,
+      // Hasta 4 botones de 32px + separación: el respiro de DataTable reserva este ancho.
+      size: 164,
     })
   }
 

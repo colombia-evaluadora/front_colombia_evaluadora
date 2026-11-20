@@ -11,7 +11,7 @@ import { enfocarPrimerError, errorLargo } from "@/features/gestion-estudiantil/c
 import { useValidarCaso } from "@/features/gestion-estudiantil/reintegracion/api/mutations/casos"
 import type { CasoDetalle, DecisionValidacion } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import { ResumenCasoDialogo } from "@/features/gestion-estudiantil/reintegracion/components/dialogos/resumen-caso-dialogo"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const OBSERVACION_MIN = 10
 const OBSERVACION_MAX = 500

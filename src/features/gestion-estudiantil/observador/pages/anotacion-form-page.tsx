@@ -33,7 +33,7 @@ import { colorDeTipo, MENSAJES } from "@/features/gestion-estudiantil/observador
 import type { AnotacionRow, CodigoAnotacion } from "@/features/gestion-estudiantil/observador/api/types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { observadorEditarRoute } from "@/router"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const OBS_MIN = 10
 const OBS_MAX = 1000

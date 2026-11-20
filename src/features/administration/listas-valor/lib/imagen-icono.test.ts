@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest"
 import {
   IMAGEN_MENSAJES,
   validarArchivoIcono,
-  validarPng,
   validarSvg,
 } from "@/features/administration/listas-valor/lib/imagen-icono"
 
@@ -43,21 +42,11 @@ describe("validarSvg", () => {
   })
 })
 
-describe("validarPng", () => {
-  it("acepta un PNG cuadrado y rechaza uno que no lo es", () => {
-    expect(validarPng(png(64, 64))).toBeNull()
-    expect(validarPng(png(64, 32))).toBe(IMAGEN_MENSAJES.noCuadrado)
-  })
-
-  it("rechaza bytes que no son PNG", () => {
-    expect(validarPng(new TextEncoder().encode("hola mundo, no soy un png"))).toBe(IMAGEN_MENSAJES.formato)
-  })
-})
-
 describe("validarArchivoIcono", () => {
-  it("decide por extensión y peso", async () => {
+  it("solo acepta SVG (S.1.ICO.3) y revisa el peso", async () => {
     expect(await validarArchivoIcono(new File([ok], "a.svg"))).toBeNull()
-    expect(await validarArchivoIcono(new File([png(8, 8)], "a.PNG"))).toBeNull()
+    expect(await validarArchivoIcono(new File([ok], "a.SVG"))).toBeNull()
+    expect(await validarArchivoIcono(new File([png(8, 8)], "a.png"))).toBe(IMAGEN_MENSAJES.formato)
     expect(await validarArchivoIcono(new File(["x"], "a.jpg"))).toBe(IMAGEN_MENSAJES.formato)
     expect(await validarArchivoIcono(new File([new Uint8Array(101 * 1024)], "a.png"))).toBe(
       IMAGEN_MENSAJES.pesado,

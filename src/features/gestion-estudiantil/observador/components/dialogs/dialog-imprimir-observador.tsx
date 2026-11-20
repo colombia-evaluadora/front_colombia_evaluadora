@@ -22,7 +22,7 @@ import { useImprimirObservador } from "@/features/gestion-estudiantil/observador
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import type { ObservadorFiltros, TipoImpresion } from "@/features/gestion-estudiantil/observador/api/types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const TODO_EL_ANIO = "todo"
 

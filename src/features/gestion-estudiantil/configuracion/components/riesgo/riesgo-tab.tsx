@@ -28,7 +28,7 @@ import {
   CONDICIONES,
   limpiarDecimal,
 } from "@/features/gestion-estudiantil/prevencion/utils/parametros"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /** La X de los chips del selector múltiple sigue activa aunque esté deshabilitado: sin permiso no cambia nada. */
 const ignorar = () => {}

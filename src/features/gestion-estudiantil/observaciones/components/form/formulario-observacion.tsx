@@ -21,7 +21,7 @@ import {
   TITULO_MAX,
   textoPeriodo,
 } from "@/features/gestion-estudiantil/observaciones/utils/formularios"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   form: ReturnType<typeof useObservacionForm>

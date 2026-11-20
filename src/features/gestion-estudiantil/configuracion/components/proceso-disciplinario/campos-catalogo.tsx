@@ -4,7 +4,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 interface TextoProps {

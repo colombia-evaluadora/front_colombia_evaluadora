@@ -18,7 +18,7 @@ import {
   type ActividadForm,
 } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-actividad-form"
 import type { EstadoActividad } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /** Campo de texto con etiqueta, contador opcional y ayuda (Field outlined). */
 function CampoTexto({

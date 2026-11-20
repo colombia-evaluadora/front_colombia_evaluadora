@@ -27,7 +27,7 @@ import {
   type SancionFila,
   type ValoresDecision,
 } from "@/features/gestion-estudiantil/convivencia/utils/proceso-etapas"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   proceso: ProcesoDetalle

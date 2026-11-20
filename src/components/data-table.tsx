@@ -403,7 +403,7 @@ export function DataTable({
                               cell.column.columnDef.meta?.className,
                             )}
                           >
-                            <div className={cn(isActions ? overlayClass(active) : muted && "opacity-50")}>
+                            <div className={cn(isActions ? overlayClass(active) : muted && "opacity-55")}>
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </div>
                           </TableCell>
