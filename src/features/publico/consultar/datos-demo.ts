@@ -19,6 +19,8 @@ export type EstadoInscripcionPublica =
   | "ANULADA"
 
 export interface OpcionConsulta {
+  /** pk de TINSCRIPCION_OPCION (lo usa Quedarme con esta opción). */
+  id?: number
   /** null = opción de redistribución (la propone el establecimiento, no la familia). */
   numero: number | null
   establecimiento: string
@@ -48,13 +50,15 @@ export interface InscripcionConsulta {
   /** Fecha del sorteo, mientras la inscripción sigue abierta. */
   sorteo?: { establecimiento: string; fecha: string }
   opciones: OpcionConsulta[]
+  /** Motivos de anulación (lista MOTIVO_ANULACION_INSCRIPCION) para Anular inscripción. */
+  motivosAnulacion?: { id: number; nombre: string }[]
 }
 
+/** Lista MOTIVO_ANULACION_INSCRIPCION de ejemplo (el backend la manda en la consulta). */
 export const MOTIVOS_ANULACION = [
-  "La familia desiste",
-  "Consiguió cupo en otro establecimiento",
-  "Cambio de municipio",
-  "Otro",
+  { id: 1, nombre: "La familia desiste" },
+  { id: 2, nombre: "Inscripción duplicada" },
+  { id: 3, nombre: "Error en el registro" },
 ]
 
 const INSCRIPCIONES: InscripcionConsulta[] = [
@@ -129,6 +133,9 @@ const INSCRIPCIONES: InscripcionConsulta[] = [
     ],
   },
 ]
+
+// Id de cada opción (pk de TINSCRIPCION_OPCION en el backend real).
+INSCRIPCIONES.forEach((i, a) => i.opciones.forEach((o, b) => (o.id = (a + 1) * 10 + b)))
 
 /** Las combinaciones de ejemplo, para mostrarlas en la vista previa. */
 export const EJEMPLOS_DEMO = INSCRIPCIONES.map((i) => ({ numero: i.numero, documento: i.documento, estado: i.estado }))
