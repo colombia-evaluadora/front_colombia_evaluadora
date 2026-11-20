@@ -93,6 +93,7 @@ export function InscribirPage() {
         subtitle={contexto.isPending ? "Consultando inscripciones abiertas" : "Aún no hay inscripciones abiertas"}
         breadcrumb={BREADCRUMB}
         width="xl"
+        backToHome
       >
         {contexto.isPending ? (
           <p className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -317,6 +318,7 @@ function AsistenteInscripcion({
       subtitle={`Paso ${paso + 1} de ${PASOS.length} · ${SUBTITULOS[paso]}`}
       breadcrumb={BREADCRUMB}
       width="xl"
+      backToHome
       actions={acciones}
     >
       <div className="flex flex-col gap-6">

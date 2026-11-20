@@ -16,6 +16,7 @@ import {
 import {
   CheckIcon,
   InfoIcon,
+  MagnifyingGlassIcon,
   PencilIcon,
   PlusIcon,
   ProhibitIcon,
@@ -74,11 +75,14 @@ export function ResultadoInscripcion({
   inicial,
   credenciales,
   onEstadoChange,
+  onNuevaConsulta,
 }: {
   inicial: InscripcionConsulta
   /** Número, documento y código con los que se consultó: autorizar los reusa. */
   credenciales: CredencialesConsulta | null
   onEstadoChange: (estado: EstadoInscripcionPublica) => void
+  /** Vuelve al formulario y olvida esta inscripción (computadores compartidos). */
+  onNuevaConsulta: () => void
 }) {
   const [insc, setInsc] = useState(inicial)
   const [elegir, setElegir] = useState<OpcionConsulta | null>(null)
@@ -154,28 +158,34 @@ export function ResultadoInscripcion({
 
   return (
     <div className="flex flex-col gap-5">
-      {abierta && (
-        <div className="-mx-6 -mt-6 flex flex-wrap justify-end gap-2 border-b px-6 py-3">
-          {insc.estado === "INSCRITA" && (
-            <>
-              {insc.opciones.length < 3 && (
+      <div className="-mx-6 -mt-6 flex flex-wrap items-center justify-between gap-2 border-b px-6 py-3">
+        <Button variant="outline" color="neutral" onClick={onNuevaConsulta}>
+          <MagnifyingGlassIcon data-icon="inline-start" />
+          Nueva consulta
+        </Button>
+        {abierta && (
+          <div className="flex flex-wrap justify-end gap-2">
+            {insc.estado === "INSCRITA" && (
+              <>
+                {insc.opciones.length < 3 && (
+                  <Button variant="outline" color="neutral" onClick={enPreparacion}>
+                    <PlusIcon data-icon="inline-start" />
+                    Ampliar inscripción
+                  </Button>
+                )}
                 <Button variant="outline" color="neutral" onClick={enPreparacion}>
-                  <PlusIcon data-icon="inline-start" />
-                  Ampliar inscripción
+                  <PencilIcon data-icon="inline-start" />
+                  Editar
                 </Button>
-              )}
-              <Button variant="outline" color="neutral" onClick={enPreparacion}>
-                <PencilIcon data-icon="inline-start" />
-                Editar
-              </Button>
-            </>
-          )}
-          <Button variant="outline" color="destructive" onClick={() => setAnular(true)}>
-            <ProhibitIcon data-icon="inline-start" />
-            Anular inscripción
-          </Button>
-        </div>
-      )}
+              </>
+            )}
+            <Button variant="outline" color="destructive" onClick={() => setAnular(true)}>
+              <ProhibitIcon data-icon="inline-start" />
+              Anular inscripción
+            </Button>
+          </div>
+        )}
+      </div>
 
       <div className="bg-card flex items-center gap-4 rounded-lg border px-4 py-3">
         <span className="bg-primary-22 text-primary flex size-10 shrink-0 items-center justify-center rounded-full">
