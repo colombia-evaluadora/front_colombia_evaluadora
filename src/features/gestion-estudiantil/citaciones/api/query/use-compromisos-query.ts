@@ -7,7 +7,6 @@ import { desenvolver } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import type {
   CompromisoDetalle,
-  CompromisoDocumento,
   CompromisoRow,
   CompromisosFiltros,
   CompromisosQueryFilters,
@@ -62,14 +61,3 @@ export function useCompromisoQuery(compromisoId: number | undefined) {
   })
 }
 
-/** `GET /compromisos/:ID/documento`: los datos del acta de compromiso. */
-export function useCompromisoDocumentoQuery(compromisoId: number | undefined, enabled = true) {
-  return useQuery({
-    queryKey: citacionesKeys.compromisos.documento(compromisoId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_COMPROMISOS}/${compromisoId}/documento`)
-        .then((r) => desenvolver<CompromisoDocumento>(r[0], "datos", "No se encontró el compromiso solicitado.")),
-    enabled: compromisoId != null && enabled,
-  })
-}
