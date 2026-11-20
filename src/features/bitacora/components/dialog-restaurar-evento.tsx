@@ -12,13 +12,15 @@ import {
   CheckCircleIcon,
   SpinnerIcon,
   XCircleIcon,
+  XIcon,
 } from "@/components/ui/icons"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TablaDatos } from "@/components/tabla-datos"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { bitacoraKeys } from "@/features/bitacora/api/query-keys"
 import { restaurarEvento, useRestaurarEvento } from "@/features/bitacora/api/mutations/restaurar-evento"
+import { TablaCambios } from "@/features/bitacora/components/tabla-cambios"
 import {
   BITACORA_ACCIONES,
   BITACORA_MODULOS,
@@ -97,37 +99,53 @@ function Contenido({
 
       <ErrorNoticeBanner error={restaurar.isError ? restaurar.error : null} />
 
-      <dl className="grid gap-x-4 gap-y-2 rounded-md border border-border px-3 py-2 text-sm sm:grid-cols-[10rem_1fr]">
-        <Dato label="Evento">
-          {format(evento.fecha, "dd/MM/yyyy HH:mm")}, {evento.usuario.nombre}
-          {evento.usuario.rol ? ` (${evento.usuario.rol})` : ""}
-          {evento.sede ? `, ${evento.sede}` : ""}, {BITACORA_ACCIONES[evento.accion]}
-        </Dato>
-        <Dato label="Tipo de restauración">
-          {evento.tipoRestauracion && TIPO_RESTAURACION_LABEL[evento.tipoRestauracion]}{" "}
-          <span className="text-muted-foreground">(lo determina el evento)</span>
-        </Dato>
-      </dl>
+      {/* Mismo formato que el detalle del reconocimiento: nombre del dato en gris claro y valor en blanco. */}
+      <TablaDatos
+        datos={[
+          {
+            etiqueta: "Evento",
+            ancho: true,
+            valor: [
+              format(evento.fecha, "dd/MM/yyyy HH:mm"),
+              evento.usuario.rol ? `${evento.usuario.nombre} (${evento.usuario.rol})` : evento.usuario.nombre,
+              evento.sede,
+              BITACORA_ACCIONES[evento.accion],
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          },
+          {
+            etiqueta: "Tipo de restauración",
+            ancho: true,
+            valor: (
+              <span>
+                {evento.tipoRestauracion && TIPO_RESTAURACION_LABEL[evento.tipoRestauracion]}{" "}
+                <span className="text-muted-foreground">(lo determina el evento)</span>
+              </span>
+            ),
+          },
+        ]}
+      />
 
       {!recuperar && estado && (
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Campo</TableHead>
-              <TableHead>Valor actual</TableHead>
-              <TableHead>Se restaurará a</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {estado.cambios.map((c) => (
-              <TableRow key={c.campo} className="hover:bg-transparent">
-                <TableCell className="text-muted-foreground">{c.campo}</TableCell>
-                <TableCell className={c.actual !== c.nuevo ? "text-red" : undefined}>{c.actual ?? "—"}</TableCell>
-                <TableCell>{c.anterior ?? "—"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <TablaCambios
+          columnas={["Valor actual", "Se restaurará a"]}
+          filas={estado.cambios.map((c) => ({
+            campo: c.campo,
+            valores: [c.actual ?? "—", c.anterior ?? "—"],
+            // En rojo el valor actual que ya no es el que dejó el evento (cambió después).
+            resaltar: [c.actual !== c.nuevo, false],
+          }))}
+        />
+      )}
+
+      {/* B.1.RES.3: al recuperar un eliminado se muestra la copia guardada que se volverá a crear. */}
+      {recuperar && estado && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-medium">Se volverá a crear con la copia guardada</p>
+          {/* Un par por fila: el modal es angosto y en dos columnas los valores se partían. */}
+          <TablaDatos datos={estado.cambios.map((c) => ({ etiqueta: c.campo, valor: c.anterior ?? "—", ancho: true }))} />
+        </div>
       )}
 
       <Field orientation="vertical" variant="outlined" data-invalid={(intento && errorMotivo) || undefined}>
@@ -185,6 +203,7 @@ function Contenido({
 
       <DialogFooter>
         <Button size="sm" variant="outline" color="neutral" onClick={onClose} disabled={restaurar.isPending}>
+          <XIcon data-icon="inline-start" />
           Cancelar
         </Button>
         <Button size="sm" color="primary" disabled={!puede || restaurar.isPending} onClick={handleRestaurar}>
@@ -206,14 +225,5 @@ function Validacion({ ok, children }: { ok: boolean; children: ReactNode }) {
       )}
       <span>{children}</span>
     </li>
-  )
-}
-
-function Dato({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0">{children}</dd>
-    </>
   )
 }

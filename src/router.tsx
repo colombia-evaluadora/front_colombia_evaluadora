@@ -70,6 +70,7 @@ import { areasOficialesSearchSchema } from "@/features/administration/areas-ofic
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
 import { conservacionSearchSchema } from "@/features/administration/conservacion-datos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
+import { BITACORA_MODULOS, BITACORA_MODULO_SLUG, moduloDeSlug } from "@/features/bitacora/api/types/bitacora"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
 import { administradoresSearchSchema } from "@/features/administration/administradores-territoriales/api/schema"
@@ -1078,12 +1079,52 @@ export const auditoriaTablaDetalleRoute = createRoute({
   component: TableOperationsPage,
 })
 
+/**
+ * Ruta anterior de la Bitácora (el módulo iba en `?modulo=`): redirige al submenú del módulo, con los
+ * mismos filtros. Se conserva para enlaces guardados.
+ */
 export const bitacoraRoute = createRoute({
   getParentRoute: () => auditsLayoutRoute,
   path: paths.app.bitacora.path,
   validateSearch: bitacoraSearchSchema,
+  beforeLoad: ({ search }) => {
+    const { modulo, ...resto } = search
+    throw redirect({
+      to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG[modulo ?? "ESTABLECIMIENTO"]),
+      search: resto,
+      replace: true,
+    } as never)
+  },
+})
+
+const DocumentosEmitidosPage = lazyRouteComponent(
+  () => import("@/features/bitacora/pages/documentos-emitidos-page"),
+  "DocumentosEmitidosPage",
+)
+
+/** Bitácora · Documentos emitidos (B.8.LIS.1). */
+export const bitacoraDocumentosRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
+  path: paths.app.bitacoraDocumentos.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, REGISTRO_ACTIVIDAD_CRUMB, { label: "Bitácora" }],
+    breadcrumb: [
+      { label: "Bitácora", to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG.ESTABLECIMIENTO) },
+      { label: "Documentos emitidos", to: paths.app.bitacoraDocumentos.getHref() },
+    ],
+  },
+  component: DocumentosEmitidosPage,
+})
+
+/** Bitácora de un módulo (B.1.LIS.1): cada módulo es un submenú; el módulo sale de la ruta. */
+export const bitacoraModuloRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
+  path: paths.app.bitacoraModulo.path,
+  validateSearch: bitacoraSearchSchema,
+  staticData: {
+    breadcrumb: (params: Record<string, string>) => [
+      { label: "Bitácora", to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG.ESTABLECIMIENTO) },
+      { label: BITACORA_MODULOS[moduloDeSlug(params.modulo)], to: paths.app.bitacoraModulo.getHref(params.modulo ?? "") },
+    ],
   },
   component: BitacoraPage,
 })
@@ -2852,6 +2893,8 @@ const routeTree = rootRoute.addChildren([
       auditoriaTablaDetalleRoute,
       auditoriaSesionOperacionesRoute,
       bitacoraRoute,
+      bitacoraModuloRoute,
+      bitacoraDocumentosRoute,
     ]),
     rolesMenusRoute,
     listasValorRoute,

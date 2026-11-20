@@ -67,7 +67,7 @@ export function DialogoVerSesion({ sesionId, onClose }: { sesionId: number; onCl
                 <TableRow>
                   <TableHead>Estudiante</TableHead>
                   <TableHead>Documento</TableHead>
-                  <TableHead className="text-right">Horas</TableHead>
+                  <TableHead className="text-center">Horas</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -82,7 +82,7 @@ export function DialogoVerSesion({ sesionId, onClose }: { sesionId: number; onCl
                     <TableRow key={x.participante}>
                       <TableCell>{x.estudiante}</TableCell>
                       <TableCell>{x.estudiante_documento ?? "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatHoras(x.horas)}</TableCell>
+                      <TableCell className="text-center tabular-nums">{formatHoras(x.horas)}</TableCell>
                     </TableRow>
                   ))
                 )}
