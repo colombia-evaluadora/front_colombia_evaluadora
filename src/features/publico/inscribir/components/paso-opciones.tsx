@@ -7,24 +7,25 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 import { MatriculaSelectField, MatriculaTextField } from "@/features/coverage/matricula/components/forms/form-create-matricula"
-import {
-  ESTABLECIMIENTOS_DEMO,
-  GRADOS_DEMO,
-  MAX_OPCIONES,
-  MODALIDADES_DEMO,
-  jornadasDe,
-  pideModalidad,
-  sedesDe,
-} from "@/features/publico/inscribir/datos-demo"
+import type { PeriodoOpcionCupo } from "@/features/coverage/inscripcion-reservas/api/query/use-inscripciones-query"
 import {
   DOCUMENTO_HERMANO,
+  establecimientosDe,
+  gradosDe,
   hermanoValido,
+  jornadasDe,
+  modalidadesDe,
+  pideModalidad,
+  sedesDe,
   opcionVacia,
   type Hermano,
   type OpcionCupo,
 } from "@/features/publico/inscribir/utils"
 
 interface PasoOpcionesProps {
+  /** Períodos que reciben inscripciones (cascada del backend). */
+  periodos: PeriodoOpcionCupo[]
+  maxOpciones: number
   grado: string
   onGradoChange: (grado: string) => void
   opciones: OpcionCupo[]
@@ -36,7 +37,7 @@ interface PasoOpcionesProps {
 }
 
 /** Paso 4 · Grado y opciones de cupo (hasta 3, en orden de preferencia; se reordenan arrastrando). */
-export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange, hermano, onHermanoChange, intentado }: PasoOpcionesProps) {
+export function PasoOpciones({ periodos, maxOpciones, grado, onGradoChange, opciones, onOpcionesChange, hermano, onHermanoChange, intentado }: PasoOpcionesProps) {
   const [arrastrando, setArrastrando] = useState<number | null>(null)
   const setOpcion = (i: number, patch: Partial<OpcionCupo>) =>
     onOpcionesChange(opciones.map((o, j) => (j === i ? { ...o, ...patch } : o)))
@@ -60,8 +61,12 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
           label="Grado"
           required
           value={grado}
-          options={GRADOS_DEMO}
-          onChange={onGradoChange}
+          options={gradosDe(periodos)}
+          onChange={(g) => {
+            onGradoChange(g)
+            // Otro grado cambia la cascada: las opciones se eligen de nuevo.
+            onOpcionesChange([opcionVacia()])
+          }}
           invalid={intentado && !grado}
         />
       </div>
@@ -74,13 +79,13 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
               <InfoIcon className="size-4" aria-label="Ayuda" />
             </TooltipTrigger>
             <TooltipContent>
-              Hasta {MAX_OPCIONES} opciones, de uno o de varios establecimientos. Arrástrelas para cambiar el orden de preferencia.
+              Hasta {maxOpciones} opciones, de uno o de varios establecimientos. Arrástrelas para cambiar el orden de preferencia.
             </TooltipContent>
           </Tooltip>
         </h3>
 
         {opciones.map((o, i) => {
-          const modalidad = pideModalidad(o.establecimiento, o.sede, o.jornada)
+          const modalidad = pideModalidad(periodos, grado, o)
           return (
             <div
               key={i}
@@ -111,7 +116,8 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
                   label="Establecimiento"
                   required
                   value={o.establecimiento}
-                  options={ESTABLECIMIENTOS_DEMO.map((e) => e.nombre)}
+                  options={establecimientosDe(periodos, grado)}
+                  disabled={!grado}
                   onChange={(establecimiento) => setOpcion(i, { establecimiento, sede: "", jornada: "", modalidad: "" })}
                   invalid={intentado && !o.establecimiento}
                 />
@@ -120,7 +126,7 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
                   label="Sede"
                   required
                   value={o.sede}
-                  options={sedesDe(o.establecimiento).map((s) => s.nombre)}
+                  options={sedesDe(periodos, grado, o.establecimiento)}
                   disabled={!o.establecimiento}
                   onChange={(sede) => setOpcion(i, { sede, jornada: "", modalidad: "" })}
                   invalid={intentado && !o.sede}
@@ -130,7 +136,7 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
                   label="Jornada"
                   required
                   value={o.jornada}
-                  options={jornadasDe(o.establecimiento, o.sede).map((j) => j.nombre)}
+                  options={jornadasDe(periodos, grado, o.establecimiento, o.sede)}
                   disabled={!o.sede}
                   onChange={(jornada) => setOpcion(i, { jornada, modalidad: "" })}
                   invalid={intentado && !o.jornada}
@@ -141,7 +147,7 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
                     label="Modalidad de matrícula"
                     required
                     value={o.modalidad}
-                    options={MODALIDADES_DEMO}
+                    options={modalidadesDe(periodos, grado, o)}
                     onChange={(m) => setOpcion(i, { modalidad: m })}
                     invalid={intentado && !o.modalidad}
                     description="Esta sede y jornada tienen el grado en dos períodos."
@@ -174,7 +180,7 @@ export function PasoOpciones({ grado, onGradoChange, opciones, onOpcionesChange,
           )
         })}
 
-        {opciones.length < MAX_OPCIONES && (
+        {opciones.length < maxOpciones && (
           <Button
             type="button"
             variant="outline"

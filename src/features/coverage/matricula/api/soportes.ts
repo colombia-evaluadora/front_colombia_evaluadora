@@ -7,6 +7,7 @@ import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 // Bloque 14 (informe 2.14, Regla 73): soportes con su revisión y documentos del convenio.
 
 export type TipoSoporte =
+  | "FOTO"
   | "DOCUMENTO_IDENTIDAD"
   | "CERTIFICADO_ESTUDIOS"
   | "CERTIFICADO_MEDICO"
@@ -16,6 +17,7 @@ export type TipoSoporte =
 export type RevisionSoporte = "SIN_REVISAR" | "SOPORTADO" | "SOPORTADO_OBSERVACIONES" | "NO_SOPORTADO"
 
 export const NOMBRE_SOPORTE: Record<TipoSoporte, string> = {
+  FOTO: "Foto del estudiante",
   DOCUMENTO_IDENTIDAD: "Documento de identidad del estudiante",
   CERTIFICADO_ESTUDIOS: "Certificado de estudios del año anterior",
   CERTIFICADO_MEDICO: "Certificado médico del estudiante",
@@ -31,6 +33,7 @@ export const REVISION_SOPORTE: Record<RevisionSoporte, string> = {
 }
 
 export const SOPORTES_FIJOS: TipoSoporte[] = [
+  "FOTO",
   "DOCUMENTO_IDENTIDAD",
   "CERTIFICADO_ESTUDIOS",
   "CERTIFICADO_MEDICO",
@@ -39,6 +42,10 @@ export const SOPORTES_FIJOS: TipoSoporte[] = [
 
 export const SOPORTE_MAX_BYTES = 10 * 1024 * 1024
 export const SOPORTE_ACCEPT = "application/pdf,image/jpeg,image/png"
+/** La foto sigue las reglas del bloque 2.2: JPG, PNG o SVG, hasta 2 MB. */
+export const FOTO_ACCEPT = "image/jpeg,image/png,image/svg+xml"
+export const FOTO_MAX_BYTES = 2 * 1024 * 1024
+export const acceptDe = (tipo: TipoSoporte) => (tipo === "FOTO" ? FOTO_ACCEPT : SOPORTE_ACCEPT)
 
 interface SoporteRow {
   pk_tmatricula_archivo: number | null
@@ -186,7 +193,12 @@ export function formatearFecha(iso: string | null): string {
   return `${d}/${m}/${y}`
 }
 
-export function validarArchivoSoporte(archivo: File): string | null {
+export function validarArchivoSoporte(archivo: File, tipo?: TipoSoporte): string | null {
+  if (tipo === "FOTO") {
+    if (!["image/jpeg", "image/png", "image/svg+xml"].includes(archivo.type)) return "La foto debe ser JPG, PNG o SVG."
+    if (archivo.size > FOTO_MAX_BYTES) return "La foto supera los 2 MB."
+    return null
+  }
   if (!["application/pdf", "image/jpeg", "image/png"].includes(archivo.type)) return "Solo PDF, JPG o PNG."
   if (archivo.size > SOPORTE_MAX_BYTES) return "El archivo supera los 10 MB."
   return null

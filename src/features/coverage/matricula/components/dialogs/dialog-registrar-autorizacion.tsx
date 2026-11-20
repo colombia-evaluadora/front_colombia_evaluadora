@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { NoticeBanner } from "@/components/notice/notice-banner"
@@ -22,9 +22,11 @@ import { nombreDe } from "@/features/coverage/matricula/components/dialogs/accio
 export function DialogRegistrarAutorizacion({
   matricula,
   onOpenChange,
+  onDone,
 }: {
   matricula: Matricula
   onOpenChange: (open: boolean) => void
+  onDone?: () => void
 }) {
   const { notify } = useNotify()
   const registrar = useRegistrarAutorizacionDatos()
@@ -42,6 +44,7 @@ export function DialogRegistrarAutorizacion({
       {
         onSuccess: () => {
           notify(`Se registró la autorización de datos de ${nombreDe(matricula)}.`, { variant: "success" })
+          onDone?.()
           onOpenChange(false)
         },
         onError: (err) => setError({ id: Date.now(), message: getErrorMessage(err) }),
@@ -57,10 +60,6 @@ export function DialogRegistrarAutorizacion({
         </DialogHeader>
         <NoticeBanner notice={error} onClose={() => setError(null)} variant="error" />
 
-        <p className="text-sm text-muted-foreground">
-          Al registrarla, los datos del estudiante dejan de verse enmascarados y vuelven a ser editables.
-        </p>
-
         <Field variant="outlined" className="gap-1.5" data-invalid={sinAcudiente || undefined}>
           <FieldLabel htmlFor="autorizacion-acudiente">
             Acudiente que autoriza<span data-required-mark="">*</span>
@@ -75,18 +74,24 @@ export function DialogRegistrarAutorizacion({
           />
         </Field>
 
-        <label className="flex items-start gap-2 text-sm">
-          <Checkbox
-            checked={confirmado}
-            aria-invalid={intentado && !confirmado}
-            onCheckedChange={(checked) => setConfirmado(checked === true)}
-            className="mt-0.5"
-          />
-          <span className={cn(intentado && !confirmado && "text-red")}>
-            El acudiente autorizó el tratamiento de los datos del estudiante (Ley 1581 de 2012){" "}
-            <span className="text-red">*</span>
-          </span>
-        </label>
+        <Field className="gap-1.5" data-invalid={(intentado && !confirmado) || undefined}>
+          <FieldLabel>
+            Autorización de tratamiento de datos<span data-required-mark="">*</span>
+          </FieldLabel>
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              checked={confirmado}
+              aria-invalid={intentado && !confirmado}
+              onCheckedChange={(checked) => setConfirmado(checked === true)}
+              className="mt-0.5"
+            />
+            <span className={cn(intentado && !confirmado && "text-red")}>
+              El acudiente autoriza al establecimiento a tratar los datos del estudiante
+            </span>
+          </label>
+          <FieldDescription>Al autorizar, los datos dejan de verse enmascarados y se podrán modificar.</FieldDescription>
+        </Field>
+        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
           <Button

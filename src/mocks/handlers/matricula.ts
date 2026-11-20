@@ -30,7 +30,6 @@ import type {
   BulkMatriculaChangeResult,
   CreateMatriculaInput,
   CreateMatriculaResult,
-  ExportFormat,
   ExportResult,
   Matricula,
   MatriculaDetailResult,
@@ -79,11 +78,6 @@ function mixHash(value: number): number {
   x = Math.imul(x ^ (x >>> 16), 0x45d9f3b)
   x = x ^ (x >>> 16)
   return Math.abs(x)
-}
-
-const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
-  pdf: "PDF",
-  excel: "Excel",
 }
 
 function matches(value: string, needle: string): boolean {
@@ -145,6 +139,8 @@ function toRawMatriculaRow(row: Matricula, totalCount: number) {
         acta_retiro: t?.acta ?? null,
         fecha_retiro: t?.fecha ?? null,
         simpade_ingresado: t?.simpade ? ("S" as const) : ("N" as const),
+        simpade_fecha_ingreso: t?.simpade?.fechaIngreso ?? null,
+        simpade_fk_funcionario: t?.simpade?.funcionarioId ?? null,
       }
     })(),
     anulacion_pendiente: anulacionPendiente(Number(row.id)) ? "S" : "N",
@@ -154,6 +150,8 @@ function toRawMatriculaRow(row: Matricula, totalCount: number) {
     origen_adscripcion: origenAdscripcionDe(Number(row.id)),
     puede_agregar_complementaria: puedeAgregarComplementaria(row) ? "S" : "N",
     sin_autorizacion: sinAutorizacion(Number(row.id)) ? "S" : "N",
+    // Mock: una de cada siete con posible duplicado (informe de calidad C1).
+    posible_duplicado: Number(row.id) % 7 === 0 ? "S" : "N",
     nuevo: esNuevo(Number(row.id)) ? "S" : "N",
     metodologia_grupo: metodologiaNombre(metodologiaDe(Number(row.id))),
     total_count: totalCount,
@@ -458,33 +456,6 @@ export const matriculaHandlers = [
     const result = applyBulkMatriculaChange(body)
 
     return HttpResponse.json<BulkMatriculaChangeResult>(result)
-  }),
-
-  http.post("*/api/coverage/matricula/export", async ({ request }) => {
-    await delay(600)
-
-    const { ids, format } = (await request.json()) as { ids: string[]; format: ExportFormat }
-
-    return HttpResponse.json<ExportResult>({
-      status: "ok",
-      message: `${ids.length} estudiante(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
-    })
-  }),
-
-  http.post("*/api/coverage/matricula/export-all", async ({ request }) => {
-    await delay(600)
-
-    const { filters, format } = (await request.json()) as {
-      filters: MatriculaQueryFilters
-      format: ExportFormat
-    }
-
-    const count = applyFilters(matriculaDb, filters).length
-
-    return HttpResponse.json<ExportResult>({
-      status: "ok",
-      message: `${count} estudiante(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
-    })
   }),
 
   http.post("*/api/coverage/matricula", async ({ request }) => {

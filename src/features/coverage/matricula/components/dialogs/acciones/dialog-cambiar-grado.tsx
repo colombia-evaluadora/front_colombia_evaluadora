@@ -129,6 +129,9 @@ export function DialogCambiarGrado({
   const actaRequerida = !correccion
   const gradoNombre = grado ? gradeLabel(Number(grado)) : ""
   const pideRegistros = correccion && Boolean(previa?.registros)
+  // C.1.CAM.6: la complementaria se retira si el grado destino no tiene su especialidad en jornada contraria.
+  const compPrevia = previa?.complementaria
+  const compRetirada = !correccion && grado && compPrevia && !compPrevia.gradosConEspecialidad.includes(Number(grado)) ? compPrevia : null
 
   function cambiarTipo(t: TipoCambioGrado) {
     setTipo(t)
@@ -282,7 +285,13 @@ export function DialogCambiarGrado({
                 }))}
                 disabled={!grado}
                 invalido={intentado && !grupo}
-                descripcion={intentado && !grupo ? "Elija el grupo destino." : undefined}
+                descripcion={
+                  intentado && !grupo
+                    ? "Elija el grupo destino."
+                    : lote
+                      ? `Solo grupos con cupo para los ${matriculas.length}.`
+                      : undefined
+                }
               />
             </div>
 
@@ -393,7 +402,12 @@ export function DialogCambiarGrado({
               </>
             ) : null}
 
-            {conComplementaria.length ? (
+            {compRetirada ? (
+              <Aviso tono="advertencia">
+                La matrícula complementaria de {compRetirada.especialidad} pasará a Retirado porque {gradoNombre} no tiene esa
+                especialidad en jornada contraria.
+              </Aviso>
+            ) : conComplementaria.length ? (
               <Aviso tono="advertencia">
                 {lote
                   ? `Tienen matrícula complementaria: ${conComplementaria.map(nombreDe).join(", ")}. Se resuelve después, una por una.`
@@ -437,6 +451,7 @@ export function DialogCambiarGrado({
                     se crea una nueva matrícula <EstadoBadge color="success">Cursando</EstadoBadge> en {destinoTexto}; la actual pasa
                     a <EstadoBadge color="muted">{promocion ? "Promovido" : "Reubicado"}</EstadoBadge> y conserva sus notas
                     {emparejamiento ? ` · ${textoEmparejamiento(emparejamiento)}` : ""}
+                    {compRetirada ? ` · la complementaria de ${compRetirada.especialidad} pasa a Retirado` : ""}
                   </>
                 )}
               </Resumen>

@@ -1,31 +1,31 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useRef, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { InfoIcon, PaperclipIcon, SpinnerIcon, UploadSimpleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
+import { PaperclipIcon, SpinnerIcon, UploadSimpleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { cn } from "@/lib/utils"
 
 import {
   ESTADO_SOLICITUD_LABEL,
   useAnularMatricula,
   useResponderSolicitudRetiro,
   useSolicitudRetiroQuery,
-  type SolicitudRetiro,
 } from "@/features/coverage/matricula/api/solicitud-retiro"
 import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
+import { Aviso, CampoSelect, MatriculasAfectadas } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
+import { DialogRetirar } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
 
 const MOTIVO_MIN = 10
 const MOTIVO_MAX = 500
 const EVIDENCIA_EXTENSIONES = ["pdf", "jpg", "jpeg", "png"]
 const EVIDENCIA_MAX_MB = 10
+const MOTIVO_ANULACION = "Matrícula duplicada por solicitud de retiro"
 
 const formatFecha = (iso: string) => iso.split("-").reverse().join("/")
 
@@ -33,21 +33,6 @@ interface Props {
   matricula: Matricula
   onOpenChange: (open: boolean) => void
   onDone: (mensaje: string) => void
-}
-
-function Datos({ filas }: { filas: [string, ReactNode][] }) {
-  return (
-    <dl className="grid grid-cols-1 overflow-hidden rounded-md border border-border text-sm sm:grid-cols-[auto_1fr]">
-      {filas.map(([label, value]) => (
-        <div key={label} className="contents">
-          <dt className="border-b border-border bg-muted/40 px-4 py-2 text-muted-foreground last-of-type:border-b-0">
-            {label}
-          </dt>
-          <dd className="border-b border-border px-4 py-2">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
 }
 
 function Cargando() {
@@ -58,37 +43,10 @@ function Cargando() {
   )
 }
 
-const datosSolicitud = (s: SolicitudRetiro, matricula: Matricula): [string, ReactNode][] => [
-  ["Matrícula en el origen", [matricula.group, matricula.campus, matricula.shift].filter(Boolean).join(" · ")],
-  ["Establecimiento solicitante", s.establecimientoSolicitante],
-  [
-    "Fecha de la solicitud",
-    `${formatFecha(s.fecha)} · ${s.diasSinRespuesta} ${s.diasSinRespuesta === 1 ? "día" : "días"} sin respuesta`,
-  ],
-  [
-    "Estado",
-    <Badge
-      key="estado"
-      variant="soft"
-      color={s.estado === "VENCIDA" ? "destructive" : "warning"}
-      className="rounded-full text-xs font-medium tracking-normal"
-    >
-      {ESTADO_SOLICITUD_LABEL[s.estado]}
-    </Badge>,
-  ],
-  [
-    "Evidencia",
-    <span key="evidencia" className="inline-flex items-center gap-1.5">
-      <PaperclipIcon className="size-4 text-muted-foreground" aria-hidden />
-      {s.evidenciaNombre}
-    </span>,
-  ],
-]
-
 /**
- * Responder solicitud de retiro (origen, Sección 2.2): Retirar con los motivos
- * fijos del traslado, u Objetar con motivo y evidencia opcional, que deja la
- * decisión al Administrador territorial. Las dos levantan la restricción.
+ * Responder solicitud de retiro (origen, Sección 2.2): Retirar abre el modal
+ * Retirar de siempre con los motivos fijos del traslado (SOL.6); Objetar pide
+ * motivo y evidencia opcional y deja la decisión al Administrador territorial (SOL.3).
  */
 export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone }: Props) {
   const { data: solicitud, isPending, isError, error: errorCarga } = useSolicitudRetiroQuery(matricula.id)
@@ -119,22 +77,16 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
     setEvidencia(file)
   }
 
-  function confirmar() {
+  function objetar() {
     setIntentado(true)
-    if (accion === "objetar" && !motivoValido) return
-    const input =
-      accion === "retirar"
-        ? { matriculaId: matricula.id, accion }
-        : { matriculaId: matricula.id, accion, motivo, evidencia }
-    responder.mutate(input, {
-      onSuccess: () =>
-        onDone(
-          accion === "retirar"
-            ? `${nombre} quedó retirado por traslado a ${solicitud?.establecimientoSolicitante}.`
-            : `Se objetó la solicitud de retiro de ${nombre}. Decide el Administrador territorial.`,
-        ),
-      onError: (err) => setError({ id: Date.now(), message: getErrorMessage(err) }),
-    })
+    if (!motivoValido) return
+    responder.mutate(
+      { matriculaId: matricula.id, accion: "objetar", motivo, evidencia },
+      {
+        onSuccess: () => onDone("Objeción enviada al Administrador territorial."),
+        onError: (err) => setError({ id: Date.now(), message: getErrorMessage(err) }),
+      },
+    )
   }
 
   if (paso === "resumen") {
@@ -207,134 +159,97 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
     )
   }
 
+  if (!solicitud) return null
+
+  // SOL.6: el modal Retirar de siempre, con los motivos elegidos y protegidos.
+  if (accion === "retirar")
+    return (
+      <DialogRetirar
+        matriculas={[matricula]}
+        onOpenChange={onOpenChange}
+        porSolicitud={{
+          establecimiento: solicitud.establecimientoSolicitante,
+          evidenciaNombre: solicitud.evidenciaNombre,
+          onRetirado: onDone,
+        }}
+      />
+    )
+
   return (
     <Dialog open onOpenChange={(o) => !responder.isPending && onOpenChange(o)}>
-      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Responder solicitud de retiro — {nombre}</DialogTitle>
+          <DialogTitle>Objetar el retiro de {nombre}</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {solicitud.establecimientoSolicitante} solicita el retiro de {nombre} ({matricula.group}).
+          </p>
         </DialogHeader>
         <NoticeBanner notice={error} onClose={() => setError(null)} variant="error" />
 
-        {isPending ? (
-          <Cargando />
-        ) : isError ? (
-          <p className="p-6 text-center text-sm text-red">{getErrorMessage(errorCarga)}</p>
-        ) : (
-          <>
-            <Datos filas={datosSolicitud(solicitud, matricula)} />
+        <Field variant="outlined" data-invalid={intentado && !motivoValido ? true : undefined}>
+          <FieldLabel htmlFor="objecion-motivo">
+            Motivo<span data-required-mark="">*</span>
+          </FieldLabel>
+          <Textarea
+            id="objecion-motivo"
+            rows={3}
+            maxLength={MOTIVO_MAX}
+            value={motivo}
+            aria-invalid={intentado && !motivoValido}
+            className={TEXTAREA_OUTLINED}
+            onChange={(e) => setMotivo(e.target.value)}
+          />
+          <span className="flex justify-between gap-2">
+            {intentado && !motivoValido ? <FieldError>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldError> : <span />}
+            <CharacterCounter value={motivo} max={MOTIVO_MAX} />
+          </span>
+        </Field>
+        <div className="flex flex-col items-start gap-1.5">
+          <span id="objecion-evidencia-label" className="text-sm">
+            Evidencia
+          </span>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="sr-only"
+            aria-labelledby="objecion-evidencia-label"
+            onChange={(e) => {
+              elegirEvidencia(e.target.files?.[0])
+              e.target.value = ""
+            }}
+          />
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => fileInput.current?.click()}>
+            <UploadSimpleIcon data-icon="inline-start" />
+            Adjuntar
+          </Button>
+          {evidencia ? (
+            <span className="inline-flex items-center gap-2 text-sm">
+              <PaperclipIcon className="size-4 text-muted-foreground" aria-hidden />
+              {evidencia.name}
+              <button
+                type="button"
+                aria-label={`Quitar ${evidencia.name}`}
+                className="rounded-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                onClick={() => setEvidencia(null)}
+              >
+                <XIcon className="size-4" />
+              </button>
+            </span>
+          ) : null}
+          <FieldDescription>PDF, JPG o PNG · máx. {EVIDENCIA_MAX_MB} MB.</FieldDescription>
+        </div>
 
-            <RadioGroup
-              value={accion}
-              onValueChange={(v) => v && setAccion(v as "retirar" | "objetar")}
-              className="grid grid-cols-1 gap-0 overflow-hidden rounded-md border border-border sm:grid-cols-2 sm:divide-x"
-              aria-label="Respuesta"
-            >
-              <label className={cn("flex cursor-pointer items-start gap-3 p-3", accion === "retirar" && "bg-primary/5")}>
-                <RadioGroupItem value="retirar" className="mt-0.5" />
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold">Retirar</span>
-                  <span className="text-sm text-muted-foreground">
-                    El estudiante se va a {solicitud.establecimientoSolicitante}. La solicitud queda Atendida.
-                  </span>
-                </span>
-              </label>
-              <label className={cn("flex cursor-pointer items-start gap-3 p-3", accion === "objetar" && "bg-primary/5")}>
-                <RadioGroupItem value="objetar" className="mt-0.5" />
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold">Objetar</span>
-                  <span className="text-sm text-muted-foreground">
-                    El estudiante sigue aquí. Decide el Administrador territorial.
-                  </span>
-                </span>
-              </label>
-            </RadioGroup>
-
-            {accion === "retirar" ? (
-              <Datos
-                filas={[
-                  ["Motivo de retiro", "Traslado a otro establecimiento"],
-                  ["Motivo de la novedad", "Requerimiento de otra entidad territorial o establecimiento"],
-                ]}
-              />
-            ) : (
-              <>
-                <Field variant="outlined" data-invalid={intentado && !motivoValido ? true : undefined}>
-                  <FieldLabel htmlFor="objecion-motivo">
-                    Motivo de la objeción<span className="text-red"> *</span>
-                  </FieldLabel>
-                  <Textarea
-                    id="objecion-motivo"
-                    rows={3}
-                    maxLength={MOTIVO_MAX}
-                    value={motivo}
-                    placeholder="Explique por qué el estudiante sigue en este establecimiento"
-                    aria-invalid={intentado && !motivoValido}
-                    className={TEXTAREA_OUTLINED}
-                    onChange={(e) => setMotivo(e.target.value)}
-                  />
-                  <span className="flex justify-between gap-2">
-                    {intentado && !motivoValido ? (
-                      <FieldError>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldError>
-                    ) : (
-                      <FieldDescription>De {MOTIVO_MIN} a {MOTIVO_MAX} caracteres.</FieldDescription>
-                    )}
-                    <CharacterCounter value={motivo} max={MOTIVO_MAX} />
-                  </span>
-                </Field>
-                <div className="flex flex-col items-start gap-1.5">
-                  <span id="objecion-evidencia-label" className="text-sm">
-                    Evidencia (opcional)
-                  </span>
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="sr-only"
-                    aria-labelledby="objecion-evidencia-label"
-                    onChange={(e) => {
-                      elegirEvidencia(e.target.files?.[0])
-                      e.target.value = ""
-                    }}
-                  />
-                  <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => fileInput.current?.click()}>
-                    <UploadSimpleIcon data-icon="inline-start" />
-                    Subir PDF, JPG o PNG
-                  </Button>
-                  {evidencia ? (
-                    <span className="inline-flex items-center gap-2 text-sm">
-                      <PaperclipIcon className="size-4 text-muted-foreground" aria-hidden />
-                      {evidencia.name}
-                      <button
-                        type="button"
-                        aria-label={`Quitar ${evidencia.name}`}
-                        className="rounded-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                        onClick={() => setEvidencia(null)}
-                      >
-                        <XIcon className="size-4" />
-                      </button>
-                    </span>
-                  ) : null}
-                  <span className="text-sm text-muted-foreground">PDF, JPG o PNG · máx. {EVIDENCIA_MAX_MB} MB.</span>
-                </div>
-              </>
-            )}
-          </>
-        )}
+        <Aviso tono="info" titulo="La solicitud pasará al Administrador territorial, que decidirá." />
+        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
           <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            type="button"
-            variant="fill"
-            color={accion === "retirar" ? "destructive" : "primary"}
-            size="sm"
-            disabled={!solicitud || responder.isPending}
-            onClick={confirmar}
-          >
+          <Button type="button" variant="fill" color="primary" size="sm" disabled={responder.isPending} onClick={objetar}>
             {responder.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : null}
-            {accion === "retirar" ? "Retirar" : "Objetar"}
+            Enviar objeción
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -392,16 +307,18 @@ export function DialogAccionBloqueada({
   )
 }
 
+
 /**
- * Anular matrícula (destino, Sección 2.2 y 4.1): tras «Cerrar sin retiro» del
- * Administrador territorial. Motivo fijo; lo registrado en la matrícula se anula
- * y no se restaura. Anular no es eliminar: queda Anulado con su historial.
+ * Anular matrícula (destino, SOL.7): tras «Cerrar sin retiro» del Administrador
+ * territorial. Motivo elegido y protegido; los registros se anulan y no se
+ * restauran. Anular no es eliminar: queda Anulado y se conserva en la Bitácora.
  */
 export function DialogAnularMatricula({ matricula, onOpenChange, onDone }: Props) {
   const { data: solicitud, isPending, isError, error: errorCarga } = useSolicitudRetiroQuery(matricula.id)
   const anular = useAnularMatricula()
   const [error, setError] = useState<{ id: number; message: string } | null>(null)
   const nombre = `${matricula.firstName} ${matricula.lastName}`
+  const dias = solicitud?.diasSinAnular
 
   const registros = solicitud?.registros
   const lista = registros
@@ -416,9 +333,17 @@ export function DialogAnularMatricula({ matricula, onOpenChange, onDone }: Props
 
   return (
     <Dialog open onOpenChange={(o) => !anular.isPending && onOpenChange(o)}>
-      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Anular matrícula — {nombre}</DialogTitle>
+          <MatriculasAfectadas
+            matriculas={[matricula]}
+            extra={
+              <Badge variant="soft" color="destructive" className="rounded-full text-xs font-medium tracking-normal">
+                Anulación pendiente
+              </Badge>
+            }
+          />
         </DialogHeader>
         <NoticeBanner notice={error} onClose={() => setError(null)} variant="error" />
 
@@ -428,33 +353,32 @@ export function DialogAnularMatricula({ matricula, onOpenChange, onDone }: Props
           <p className="p-6 text-center text-sm text-red">{getErrorMessage(errorCarga)}</p>
         ) : (
           <>
-            <Datos
-              filas={[
-                ["Matrícula", [matricula.group, matricula.campus, matricula.shift].filter(Boolean).join(" · ")],
-                ["Sigue en", solicitud.establecimientoOrigen],
-                ["Motivo del cierre sin retiro", solicitud.motivoCierre ?? "—"],
-                ["Motivo de anulación", "Matrícula duplicada por solicitud de retiro"],
-              ]}
+            <Aviso
+              tono="info"
+              titulo={`La entidad territorial cerró la solicitud sin retiro: ${nombre} sigue en ${solicitud.establecimientoOrigen}.${
+                dias != null ? ` Lleva ${dias} ${dias === 1 ? "día" : "días"} sin anular su matrícula.` : ""
+              }`}
             />
-
-            <div role="alert" className="flex gap-3 rounded-md border border-red-stroke bg-red-22 px-4 py-3 text-sm">
-              <WarningIcon className="mt-0.5 size-5 shrink-0 text-red" aria-hidden />
-              <p>
-                {lista.length > 0
-                  ? `Se anulan también los registros de esta matrícula: ${lista.join(", ").replace(/, ([^,]*)$/, " y $1")}. `
-                  : "Esta matrícula no tiene registros. "}
-                Dejan de listarse y de contar, quedan en la Bitácora marcados «Anulado por matrícula duplicada» y no se
-                restauran.
-              </p>
-            </div>
-
-            <div className="flex gap-3 rounded-md border border-primary/30 bg-primary-22 px-4 py-3 text-sm">
-              <InfoIcon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-              <p>
-                La matrícula no se elimina: queda Anulada con su historial y no cuenta para cupos ni informes. La
-                solicitud queda Cerrada sin retiro.
-              </p>
-            </div>
+            <CampoSelect
+              id="anular-motivo"
+              label="Motivo de anulación"
+              required
+              disabled
+              value={MOTIVO_ANULACION}
+              onChange={() => {}}
+              opciones={[{ value: MOTIVO_ANULACION, label: MOTIVO_ANULACION }]}
+            />
+            <Aviso
+              tono="advertencia"
+              titulo={
+                lista.length > 0
+                  ? `También se anularán los registros de esta matrícula: ${lista.join(", ")}.`
+                  : "Esta matrícula no tiene registros."
+              }
+            >
+              Dejarán de verse y no se podrán restaurar; quedan en la Bitácora con su copia completa.
+            </Aviso>
+            <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
           </>
         )}
 

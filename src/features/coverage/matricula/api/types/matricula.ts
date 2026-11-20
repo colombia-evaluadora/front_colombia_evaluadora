@@ -80,6 +80,8 @@ export interface Matricula {
   retiroTraslado?: { acta: string; fecha: string } | null
   /** El retiro por traslado ya se marcó como ingresado al SIMPADE. */
   simpadeIngresado?: boolean
+  /** Marca guardada (RET.5): precarga el modal al corregirla. `fechaIngreso` yyyy-MM-dd. */
+  simpade?: { fechaIngreso: string; funcionarioId: number | null } | null
   /** Destino que debe anular tras «Cerrar sin retiro» (Regla 71): mismas restricciones. */
   anulacionPendiente?: boolean
   /** Traslado con snapshot sin homologar (Sección 4.5). */
@@ -94,6 +96,8 @@ export interface Matricula {
   puedeAgregarComplementaria?: boolean
   /** Sin la autorización de tratamiento de datos del acudiente (Regla 81): marca «Sin autorización». */
   sinAutorizacion?: boolean
+  /** El estudiante tiene un posible registro duplicado (informe de calidad C1): activa Unificar (C.1.LIS.3a). */
+  posibleDuplicado?: boolean
   /** Sin matrícula el año anterior en la entidad territorial (columna y filtro Nuevo). */
   nuevo?: boolean
   /** Metodología del grupo (columna opcional). */

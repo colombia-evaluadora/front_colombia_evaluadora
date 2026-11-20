@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react"
+import { isAxiosError } from "axios"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -34,17 +35,22 @@ import {
 import { DialogAutorizarDatos } from "@/features/autorizacion-datos/components/dialog-autorizar-datos"
 import { AvisoAutorizacionPendiente } from "@/features/autorizacion-datos/components/aviso-autorizacion-pendiente"
 import { mensajeAutorizados, pendientesDe } from "@/features/autorizacion-datos/lib/autorizaciones"
-import { autorizarConsultaPublica, type CredencialesConsulta } from "@/features/publico/consultar/api/consulta-publica"
+import {
+  anularInscripcionPublica,
+  autorizarConsultaPublica,
+  conUbicacion,
+  elegirOpcionPublica,
+  responderUbicacion,
+  type CredencialesConsulta,
+} from "@/features/publico/consultar/api/consulta-publica"
 import { ESTADO_OPCION_UI } from "@/features/coverage/inscripcion-reservas/api/ui-mappings-inscripcion"
 import { MatriculaSelectField } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import {
-  MOTIVOS_ANULACION,
   type EstadoInscripcionPublica,
   type InscripcionConsulta,
   type OpcionConsulta,
 } from "@/features/publico/consultar/datos-demo"
 import { ESTADO_INSCRIPCION } from "@/features/publico/consultar/ui-mappings"
-import { env } from "@/config/env"
 
 const lugar = (o: OpcionConsulta) => `${o.establecimiento} · ${o.sede} · ${o.jornada}`
 
@@ -81,6 +87,7 @@ export function ResultadoInscripcion({
   const [motivoIntentado, setMotivoIntentado] = useState(false)
   const [notificacionConfirmada, setNotificacionConfirmada] = useState(false)
   const [autorizando, setAutorizando] = useState(false)
+  const [trabajando, setTrabajando] = useState(false)
   const [autorizados, setAutorizados] = useState<string | null>(null)
   const pendientes = pendientesDe(insc.autorizaciones)
 
@@ -93,8 +100,7 @@ export function ResultadoInscripcion({
     setAutorizando(false)
   }
 
-  function actualizar(cambio: Partial<InscripcionConsulta>) {
-    const nueva = { ...insc, ...cambio }
+  function actualizar(nueva: InscripcionConsulta) {
     setInsc(nueva)
     onEstadoChange(nueva.estado)
   }
@@ -102,61 +108,48 @@ export function ResultadoInscripcion({
   const conSorteo = insc.opciones.some((o) => o.sorteo != null || o.posicion != null)
   const admitidas = insc.opciones.filter((o) => o.estado === "ADMITIDA")
   const abierta = insc.estado !== "ANULADA"
+  // Ampliar y Editar desde el sitio público no tienen servicio todavía: solo se avisa.
   const enPreparacion = () => toast.info("Disponible cuando se conecte el servicio de inscripción.")
-  // Elegir, responder la propuesta, anular y confirmar la notificación todavía no
-  // tienen servicio: con el backend real no se simula el cambio (la familia creería
-  // que quedó hecho), solo se avisa. Con mocks se mantiene la vista previa.
-  const vistaPrevia = env.ENABLE_API_MOCKING
 
-  function quedarmeCon(opcion: OpcionConsulta) {
-    if (!vistaPrevia) {
-      setElegir(null)
-      return enPreparacion()
+  // Las acciones reusan el código de la consulta (sso eval-col-inscripcion-publica-*). Un error
+  // de axios ya lo muestra el toast global; el de código vencido lo lanzamos nosotros.
+  async function ejecutar(accion: (c: CredencialesConsulta) => Promise<InscripcionConsulta>) {
+    if (!credenciales) return toast.error("Vuelva a consultar la inscripción.")
+    setTrabajando(true)
+    try {
+      actualizar(await accion(credenciales))
+      return true
+    } catch (error) {
+      if (!isAxiosError(error)) toast.error(error instanceof Error ? error.message : String(error))
+      return false
+    } finally {
+      setTrabajando(false)
     }
-    actualizar({
-      estado: "ADMITIDA",
-      opciones: insc.opciones.map((o) =>
-        o === opcion ? { ...o, elegida: true } : { ...o, estado: "DESCARTADA", reservada: false },
-      ),
-    })
-    setElegir(null)
+  }
+
+  async function quedarmeCon(opcion: OpcionConsulta) {
+    if (opcion.id == null) return
+    // Regla 38: las demás opciones quedan Descartadas y liberan su cupo.
+    if (await ejecutar((c) => elegirOpcionPublica(c, opcion.id!))) setElegir(null)
   }
 
   function responderPropuesta(acepta: boolean) {
-    if (!vistaPrevia) return enPreparacion()
-    actualizar({
-      estado: acepta ? "UBICADO" : "SIN_CUPO",
-      opciones: insc.opciones.map((o) =>
-        o.numero == null
-          ? { ...o, estado: acepta ? "ADMITIDA" : "DESCARTADA", reservada: acepta }
-          : o,
-      ),
+    void ejecutar(async (c) => {
+      const r = await responderUbicacion(c, acepta)
+      return conUbicacion(r.inscripcion, r.ubicacion)
     })
   }
 
-  function confirmarAnulacion() {
+  async function confirmarAnulacion() {
     setMotivoIntentado(true)
     if (!motivo) return
-    if (!vistaPrevia) {
-      setAnular(false)
-      return enPreparacion()
-    }
-    actualizar({
-      estado: "ANULADA",
-      opciones: insc.opciones.map((o) => ({
-        ...o,
-        estado: "DESCARTADA",
-        reservada: false,
-        elegida: false,
-      })),
-    })
-    setAnular(false)
+    if (await ejecutar((c) => anularInscripcionPublica(c, Number(motivo)))) setAnular(false)
   }
 
   const estado = ESTADO_INSCRIPCION[insc.estado]
-  const aviso = avisoDe(insc, notificacionConfirmada, () =>
-    vistaPrevia ? setNotificacionConfirmada(true) : enPreparacion(),
-  )
+  // "Confirmar" del aviso de Ubicado solo acusa recibo en pantalla: el backend no registra esa
+  // confirmación (no existe en el dominio); la reserva ya quedó hecha.
+  const aviso = avisoDe(insc, notificacionConfirmada, () => setNotificacionConfirmada(true))
   const accionesFila = insc.estado === "POR_ELEGIR" || insc.estado === "UBICACION_PROPUESTA"
 
   return (
@@ -267,7 +260,7 @@ export function ResultadoInscripcion({
                     )}
                   {insc.estado === "UBICACION_PROPUESTA" && o.numero == null && (
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" onClick={() => responderPropuesta(true)}>
+                      <Button size="sm" disabled={trabajando} onClick={() => responderPropuesta(true)}>
                         <CheckIcon data-icon="inline-start" />
                         Confirmar
                       </Button>
@@ -311,7 +304,7 @@ export function ResultadoInscripcion({
               <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
-            <Button onClick={() => elegir && quedarmeCon(elegir)}>
+            <Button disabled={trabajando} onClick={() => elegir && quedarmeCon(elegir)}>
               <CheckIcon data-icon="inline-start" />
               Quedarme con esta opción
             </Button>
@@ -344,7 +337,8 @@ export function ResultadoInscripcion({
             label="Motivo de anulación"
             required
             value={motivo}
-            options={MOTIVOS_ANULACION}
+            options={(insc.motivosAnulacion ?? []).map((m) => String(m.id))}
+            labelFor={(id) => insc.motivosAnulacion?.find((m) => String(m.id) === id)?.nombre ?? id}
             onChange={setMotivo}
             invalid={motivoIntentado && !motivo}
           />
@@ -353,7 +347,7 @@ export function ResultadoInscripcion({
               <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
-            <Button color="destructive" onClick={confirmarAnulacion}>
+            <Button color="destructive" disabled={trabajando} onClick={confirmarAnulacion}>
               <ProhibitIcon data-icon="inline-start" />
               Anular inscripción
             </Button>

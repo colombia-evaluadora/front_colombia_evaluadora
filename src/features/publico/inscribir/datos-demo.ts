@@ -1,16 +1,13 @@
 import type { CatalogosFijos } from "@/features/coverage/matricula/api/query/catalogos-fijos"
 import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
+import type { PeriodoOpcionCupo } from "@/features/coverage/inscripcion-reservas/api/query/use-inscripciones-query"
 
 /**
- * Datos de la VISTA PREVIA de la inscripción pública (U.2).
- *
- * El backend todavía no expone la inscripción sin sesión (Cobertura §3.3): ni
- * el período abierto, ni los catálogos públicos, ni las opciones de cupo, ni el
- * envío y la validación del código. Mientras tanto la vista se arma con estos
- * datos fijos; cuando exista el servicio, cada constante se reemplaza por su
- * query (y `catalogos` por los catálogos públicos del backend).
+ * Datos de la inscripción pública (U.2) para el modo mock: los sirve el handler MSW de
+ * `/eval-col/public/service` con la forma del backend (sso V425/V426). Con el backend real
+ * la cascada, los catálogos y el código vienen de `api/inscripcion-publica.ts`; las
+ * constantes de límites reflejan las del backend (5 intentos, reenvío por minuto).
  */
-
 
 export const ANIO_INSCRIPCION = 2028
 export const MAX_OPCIONES = 3
@@ -88,7 +85,7 @@ export const DEPARTAMENTOS_DEMO: DepartmentOption[] = [
   },
 ]
 
-export const GRADOS_DEMO = [
+const GRADOS_DEMO = [
   "Transición",
   "Primero",
   "Segundo",
@@ -103,40 +100,31 @@ export const GRADOS_DEMO = [
   "Undécimo",
 ]
 
-export const MODALIDADES_DEMO = ["Anual", "Semestral"]
+const ANUAL = `${ANIO_INSCRIPCION} · Anual · Ciclo 1`
+const SEMESTRAL = `${ANIO_INSCRIPCION} · Semestral · Ciclo 1`
 
-interface JornadaDemo {
-  nombre: string
-  /** La sede ofrece el grado en dos períodos: hay que elegir la modalidad. */
-  dosPeriodos?: boolean
-}
-
-export const ESTABLECIMIENTOS_DEMO: { nombre: string; sedes: { nombre: string; jornadas: JornadaDemo[] }[] }[] = [
-  {
-    nombre: "IE Central",
-    sedes: [
-      { nombre: "IE Central", jornadas: [{ nombre: "Mañana" }, { nombre: "Tarde" }] },
-      { nombre: "Sede 2", jornadas: [{ nombre: "Mañana" }] },
-    ],
-  },
-  {
-    nombre: "IE Norte",
-    sedes: [
-      { nombre: "Sede principal", jornadas: [{ nombre: "Mañana" }] },
-      { nombre: "Sede 2", jornadas: [{ nombre: "Tarde", dosPeriodos: true }, { nombre: "Noche" }] },
-    ],
-  },
-  {
-    nombre: "IE Sur",
-    sedes: [{ nombre: "Sede principal", jornadas: [{ nombre: "Mañana" }, { nombre: "Única" }] }],
-  },
+// [establecimiento, sede, jornada, grupo de admisión]. IE Norte · Sede 2 · Tarde tiene el
+// grado en dos períodos (anual y semestral): ahí el asistente pide la modalidad.
+const OFERTA: [string, string, string, string][] = [
+  ["IE Central", "IE Central", "Mañana", ANUAL],
+  ["IE Central", "IE Central", "Tarde", ANUAL],
+  ["IE Central", "Sede 2", "Mañana", ANUAL],
+  ["IE Norte", "Sede principal", "Mañana", ANUAL],
+  ["IE Norte", "Sede 2", "Tarde", ANUAL],
+  ["IE Norte", "Sede 2", "Tarde", SEMESTRAL],
+  ["IE Norte", "Sede 2", "Noche", ANUAL],
+  ["IE Sur", "Sede principal", "Mañana", ANUAL],
+  ["IE Sur", "Sede principal", "Única", ANUAL],
 ]
 
-export const sedesDe = (establecimiento: string) =>
-  ESTABLECIMIENTOS_DEMO.find((e) => e.nombre === establecimiento)?.sedes ?? []
-
-export const jornadasDe = (establecimiento: string, sede: string) =>
-  sedesDe(establecimiento).find((s) => s.nombre === sede)?.jornadas ?? []
-
-export const pideModalidad = (establecimiento: string, sede: string, jornada: string) =>
-  Boolean(jornadasDe(establecimiento, sede).find((j) => j.nombre === jornada)?.dosPeriodos)
+/** Cascada de opciones de la vista previa, con la forma de `fn_inscripcion_opciones_cupo_publicas_interno`. */
+export const PERIODOS_DEMO: PeriodoOpcionCupo[] = OFERTA.map(([establecimiento, sede, jornada, grupo], i) => ({
+  periodoId: 100 + i,
+  establecimientoId: ["IE Central", "IE Norte", "IE Sur"].indexOf(establecimiento) + 1,
+  establecimiento,
+  sede,
+  jornada,
+  grupoAdmisionId: grupo === ANUAL ? 1 : 2,
+  grupoAdmision: grupo,
+  grados: GRADOS_DEMO.map((nombre, g) => ({ id: (100 + i) * 100 + g, nombre })),
+}))
