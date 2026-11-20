@@ -19,7 +19,7 @@ export function SeccionSocioeconomica({ f }: { f: FormularioCaracterizacion }) {
       forzarAbierta={f.seccionConError("socio")}
       contentClassName="flex flex-col gap-4 px-4 py-4"
     >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
         <CampoLista
           id="socio-ingresos"
           label="Ingresos mensuales del hogar"

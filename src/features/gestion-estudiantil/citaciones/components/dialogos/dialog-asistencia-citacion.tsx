@@ -1,9 +1,8 @@
 import { useState } from "react"
 
-import { useNotify } from "@/components/notice/notice-context"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { CheckIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useNotify } from "@/components/notice/notice-context"
+import { CheckIcon } from "@/components/ui/icons"
 
 import { useRegistrarAsistencia } from "@/features/gestion-estudiantil/citaciones/api/mutations/registrar-asistencia"
 import type { CitacionRow, RegistrarAsistenciaInput } from "@/features/gestion-estudiantil/citaciones/api/types"
@@ -12,6 +11,7 @@ import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/u
 import { ResumenCitacion } from "@/features/gestion-estudiantil/citaciones/components/dialogos/resumen-citacion"
 import { enfocarPrimerError, errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface Props {
   citacion: CitacionRow
@@ -64,11 +64,9 @@ export function DialogAsistenciaCitacion({ citacion: c, onClose }: Props) {
         },
       }}
     >
-      <Field orientation="vertical" variant="outlined" className="gap-2" role="group" aria-labelledby="asistencia-label">
-        <FieldLabel id="asistencia-label">Asistencia*</FieldLabel>
+      <MarcoOpciones id="asistencia" label="Asistencia" required>
         <RadioGroup
           aria-labelledby="asistencia-label"
-          className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
           value={asistencia}
           onValueChange={(v) => setAsistencia(v as RegistrarAsistenciaInput["ASISTENCIA"])}
         >
@@ -81,20 +79,18 @@ export function DialogAsistenciaCitacion({ citacion: c, onClose }: Props) {
             No asistió
           </label>
         </RadioGroup>
-      </Field>
-      <div className="flex flex-col gap-1">
-        <TextoLargo
-          id="asistencia-resumen"
-          label="Resumen de la reunión"
-          required
-          rows={4}
-          max={2000}
-          value={resumen}
-          error={s.intento ? error : undefined}
-          onChange={setResumen}
-        />
-        <p className="text-xs text-muted-foreground">El acudiente no ve este resumen.</p>
-      </div>
+      </MarcoOpciones>
+      <TextoLargo
+        id="asistencia-resumen"
+        label="Resumen de la reunión"
+        required
+        rows={4}
+        max={2000}
+        value={resumen}
+        error={s.intento ? error : undefined}
+        descripcion="El acudiente no ve este resumen."
+        onChange={setResumen}
+      />
     </DialogoOperacionShell>
   )
 }

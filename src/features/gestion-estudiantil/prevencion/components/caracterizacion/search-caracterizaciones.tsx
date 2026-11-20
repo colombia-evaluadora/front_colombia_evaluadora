@@ -1,5 +1,5 @@
-import { optionsTerm, optionTerm } from "@/components/search/query-syntax"
 import { Checkbox } from "@/components/ui/checkbox"
+import { optionsTerm, optionTerm } from "@/components/search/query-syntax"
 
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
@@ -12,6 +12,7 @@ import {
   CARACTERIZACIONES_FILTROS_VACIOS,
   type CaracterizacionesFiltros,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 export interface OpcionesFiltrosCaracterizaciones {
   sedes: Opcion[]
@@ -71,10 +72,9 @@ export function SearchCaracterizaciones(props: Props) {
           options={opciones.grupos}
           onChange={(grupo) => setDraft({ ...draft, grupo })}
         />
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm font-medium">Estado</legend>
+        <MarcoOpciones id="caracterizaciones-estado" label="Estado">
           {opciones.estados.map((o) => (
-            <label key={o.value} className="flex items-center gap-2 text-sm">
+            <label key={o.value} className="flex items-center gap-2">
               <Checkbox
                 checked={draft.estado.includes(o.value)}
                 onCheckedChange={(marcado) => alternarEstado(o.value, marcado)}
@@ -82,7 +82,7 @@ export function SearchCaracterizaciones(props: Props) {
               {o.label}
             </label>
           ))}
-        </fieldset>
+        </MarcoOpciones>
       </div>
     </BarraBusquedaFiltros>
   )

@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import type { PruebaFila } from "@/features/gestion-estudiantil/convivencia/utils/proceso-form"
 
 interface Props {
@@ -19,7 +18,8 @@ export function FilaPrueba({ fila: p, numero, error, onChange, onQuitar }: Props
   const id = `prueba-${p.key}`
   return (
     <div className="flex items-start gap-2 rounded-lg border border-border p-3">
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
+      {/* Descripción y archivo en una fila: los dos marcos arrancan 8px abajo (label flotante), igual que la papelera (mt-2). */}
+      <div className="grid min-w-0 flex-1 grid-cols-1 items-start gap-3 lg:grid-cols-2">
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error) || undefined}>
           <FieldLabel htmlFor={`${id}-descripcion`}>Descripción de la prueba {numero}*</FieldLabel>
           <Input
@@ -39,9 +39,7 @@ export function FilaPrueba({ fila: p, numero, error, onChange, onQuitar }: Props
           onChange={(archivos) => onChange({ archivo: archivos[0] ?? null })}
         />
       </div>
-      <Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={`Quitar la prueba ${numero}`} onClick={onQuitar}>
-        <XIcon />
-      </Button>
+      <BotonQuitar label={`Quitar la prueba ${numero}`} onClick={onQuitar} className="mt-2" />
     </div>
   )
 }

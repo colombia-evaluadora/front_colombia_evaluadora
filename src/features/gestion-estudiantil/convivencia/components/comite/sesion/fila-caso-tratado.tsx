@@ -1,7 +1,5 @@
 import { DatePicker } from "@/components/date-picker"
-import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { XIcon } from "@/components/ui/icons"
 import { addDays, parseISO } from "date-fns"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -11,6 +9,7 @@ import { ComboFuncionarioComite } from "@/features/gestion-estudiantil/convivenc
 import { useBusquedaDiferida } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-busqueda"
 import { soloSeguimiento, type CasoFila } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { LIM } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 interface Props {
@@ -105,9 +104,7 @@ export function FilaCasoTratado({ fila, elegidosEnOtras, comite, periodo, fechaS
           </Field>
         </div>
       </div>
-      <Button type="button" variant="ghost" color="neutral" size="icon-sm" className="mt-2 shrink-0" aria-label="Quitar caso" onClick={onQuitar}>
-        <XIcon />
-      </Button>
+      <BotonQuitar label="Quitar caso" onClick={onQuitar} className="mt-2 shrink-0" />
     </div>
   )
 }

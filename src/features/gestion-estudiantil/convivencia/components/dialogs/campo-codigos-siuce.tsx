@@ -1,13 +1,14 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { ControlPointIcon, InfoIcon, XIcon } from "@/components/ui/icons"
+import { ControlPointIcon, InfoIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
 import type { AfectadoSiuce } from "@/features/gestion-estudiantil/convivencia/api/types"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import type { CodigoSiuce } from "@/features/gestion-estudiantil/convivencia/utils/registrar-accion"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { textoReportado } from "@/features/gestion-estudiantil/convivencia/utils/siuce"
 
 interface Props {
@@ -52,23 +53,13 @@ export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso,
               onChange={(e) => onChange(codigos.map((x, j) => (j === i ? { ...x, codigo: e.target.value } : x)))}
             />
           </Field>
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            className="mt-5"
-            aria-label="Quitar código"
-            onClick={() => onChange(codigos.filter((_, j) => j !== i))}
-          >
-            <XIcon />
-          </Button>
+          <BotonQuitar label="Quitar código" onClick={() => onChange(codigos.filter((_, j) => j !== i))} className="mt-2" />
         </div>
       ))}
       <Button
         type="button"
         size="sm"
-        variant="outline"
+        variant="outline" color="neutral"
         className="w-fit"
         disabled={codigos.length >= afectados.length}
         onClick={() => onChange([...codigos, { afectado: "", codigo: "" }])}

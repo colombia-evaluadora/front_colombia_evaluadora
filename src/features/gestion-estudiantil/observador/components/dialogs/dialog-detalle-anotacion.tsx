@@ -1,6 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import {
   Dialog,
   DialogClose,
@@ -58,6 +59,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
         )}
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </DialogClose>
         </DialogFooter>

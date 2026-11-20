@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { PrinterIcon } from "@/components/ui/icons"
+import { PrinterIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useQuery, type QueryKey } from "@tanstack/react-query"
 import { fetchArchivoViewUrl } from "@/lib/files"
@@ -49,7 +49,10 @@ export function DialogoDocumento({ titulo, isPending, error, onClose, children }
           {isPending ? <Skeleton className="h-80" /> : error ? null : children}
         </div>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
           <Button size="sm" type="button" disabled={isPending || Boolean(error)} onClick={() => window.print()}>
             <PrinterIcon data-icon="inline-start" />
             Imprimir

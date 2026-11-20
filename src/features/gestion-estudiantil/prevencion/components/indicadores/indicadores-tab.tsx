@@ -63,7 +63,7 @@ export function IndicadoresTab({ tabs }: { tabs: ReactNode }) {
             <Button
               size="sm"
               type="button"
-              variant="outline"
+              variant="outline" color="neutral"
               disabled={f.queryFilters == null || exportar.isPending}
               onClick={onExportar}
             >

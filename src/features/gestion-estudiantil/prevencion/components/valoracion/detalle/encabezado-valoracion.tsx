@@ -23,7 +23,7 @@ export function EncabezadoValoracion({ valoracion: v, d }: Props) {
         action={
           <div className="flex shrink-0 items-center gap-2">
             {v.fk_tprevencion_plan != null && (
-              <Button size="sm" type="button" variant="outline" onClick={d.verPlan}>
+              <Button size="sm" type="button" variant="outline" color="neutral" onClick={d.verPlan}>
                 <EyeIcon data-icon="inline-start" />
                 Ver plan
               </Button>

@@ -21,11 +21,11 @@ export function EncabezadoEstrategia({ estrategia: e, d }: Props) {
       <TableScreenTitle
         action={
           <div className="flex shrink-0 items-center gap-2">
-            <Button size="sm" type="button" variant="outline" disabled={!e.puede_agregar_beneficiarios} onClick={d.abrirAgregar}>
+            <Button size="sm" type="button" variant="outline" color="neutral" disabled={!e.puede_agregar_beneficiarios} onClick={d.abrirAgregar}>
               <ControlPointIcon data-icon="inline-start" />
               Agregar beneficiarios
             </Button>
-            <Button size="sm" type="button" variant="outline" disabled={!e.puede_modificar} onClick={d.modificar}>
+            <Button size="sm" type="button" variant="outline" color="neutral" disabled={!e.puede_modificar} onClick={d.modificar}>
               <PencilIcon data-icon="inline-start" />
               Modificar
             </Button>

@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CheckCircleIcon, WarningCircleIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
@@ -114,7 +114,7 @@ function DialogEmitir({ piar, onClose }: { piar: PiarDetalle; onClose: () => voi
         </ul>
         <p className="text-xs text-muted-foreground">El PDF lleva la versión, la fecha y el responsable; es información sensible.</p>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button
             size="sm"
             disabled={pending || criterios.some((c) => !c.ok)}

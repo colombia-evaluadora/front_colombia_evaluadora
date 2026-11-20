@@ -1,9 +1,8 @@
 import { useState } from "react"
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useNotify } from "@/components/notice/notice-context"
 import { CheckIcon } from "@/components/ui/icons"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { useRegistrarResultado } from "@/features/gestion-estudiantil/citaciones/api/mutations/resultado-compromiso"
@@ -15,6 +14,7 @@ import { ResumenCompromiso } from "@/features/gestion-estudiantil/citaciones/com
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface Props {
   compromiso: CompromisoRow
@@ -82,11 +82,9 @@ export function DialogResultadoCompromiso({ compromiso: c, onClose }: Props) {
         </ol>
       )}
 
-      <Field orientation="vertical" variant="outlined" className="gap-2" role="group" aria-labelledby="resultado-label">
-        <FieldLabel id="resultado-label">Resultado*</FieldLabel>
+      <MarcoOpciones id="resultado" label="Resultado" required>
         <RadioGroup
           aria-labelledby="resultado-label"
-          className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
           value={resultado}
           onValueChange={(v) => setResultado(v as ResultadoCompromisoInput["RESULTADO"])}
         >
@@ -99,7 +97,7 @@ export function DialogResultadoCompromiso({ compromiso: c, onClose }: Props) {
             Incumplido
           </label>
         </RadioGroup>
-      </Field>
+      </MarcoOpciones>
 
       <TextoLargo
         id="resultado-observacion"

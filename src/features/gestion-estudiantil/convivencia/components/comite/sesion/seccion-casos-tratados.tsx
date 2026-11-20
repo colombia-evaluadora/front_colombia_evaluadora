@@ -16,7 +16,7 @@ export function SeccionCasosTratados({ form, comite, periodo }: { periodo: numbe
           titulo={`Casos tratados (${v.casos.length})`}
           forzarAbierta={Object.keys(errores.casos).length > 0 || Boolean(errores.contenido)}
           accion={
-            <Button type="button" size="sm" variant="outline" onClick={form.agregarCaso}>
+            <Button type="button" size="sm" variant="outline" color="neutral" onClick={form.agregarCaso}>
               <ControlPointIcon data-icon="inline-start" />
               Agregar caso
             </Button>

@@ -1,6 +1,5 @@
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
+import { FloppyDiskIcon } from "@/components/ui/icons"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
@@ -9,6 +8,7 @@ import type { EfectoSancion, SancionRow } from "@/features/gestion-estudiantil/c
 import { CampoDescripcion, CampoNombre, CampoRadios } from "@/features/gestion-estudiantil/configuracion/components/proceso-disciplinario/campos-catalogo"
 import { useSancionForm } from "@/features/gestion-estudiantil/configuracion/hooks/use-sancion-form"
 import { ESTADOS_PROCESO, LIM_PROCESO, type ValoresSancion } from "@/features/gestion-estudiantil/configuracion/utils/proceso"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface Props {
   establecimiento: number
@@ -59,9 +59,8 @@ export function DialogSancion({ establecimiento, sancion, instancias, efectos, o
           error={f.errores.instancia}
           onChange={(instancia) => f.set({ instancia })}
         />
-        <Field orientation="vertical" className="gap-2" data-invalid={Boolean(f.errores.duracion) || undefined}>
-          <FieldLabel htmlFor="sancion-duracion">Tiene duración</FieldLabel>
-          <label htmlFor="sancion-duracion" className="flex h-10 w-fit cursor-pointer items-center gap-2 text-sm">
+        <MarcoOpciones id="sancion-duracion-marco" label="Tiene duración" error={f.errores.duracion}>
+          <label htmlFor="sancion-duracion" className="flex w-fit cursor-pointer items-center gap-3">
             <Switch
               round
               id="sancion-duracion"
@@ -71,8 +70,7 @@ export function DialogSancion({ establecimiento, sancion, instancias, efectos, o
             />
             {f.valores.duracion ? "Sí" : "No"}
           </label>
-          {f.errores.duracion && <FieldError>{f.errores.duracion}</FieldError>}
-        </Field>
+        </MarcoOpciones>
       </div>
       <CampoRadios
         id="sancion-efecto"

@@ -1,7 +1,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FileDownloadOutlinedIcon, InfoIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
@@ -62,7 +62,7 @@ export function DialogExportarSiuce({ open, onOpenChange }: Props) {
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.exportar}>
             <IconoCarga cargando={f.pending}><FileDownloadOutlinedIcon data-icon="inline-start" /></IconoCarga>
             Exportar

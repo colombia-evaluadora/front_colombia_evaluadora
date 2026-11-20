@@ -43,7 +43,7 @@ export function FormularioIntegrantes({ form, comite, puedeEscribir }: Props) {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Integrantes ({form.filas.filter((f) => f.id != null || f.fk_tlv_cargo).length})</h2>
           {puedeEscribir && (
-            <Button size="sm" variant="outline" type="button" disabled={!form.puedeAgregar} onClick={form.agregarFila}>
+            <Button size="sm" variant="outline" color="neutral" type="button" disabled={!form.puedeAgregar} onClick={form.agregarFila}>
               <ControlPointIcon data-icon="inline-start" />
               Agregar integrante
             </Button>
