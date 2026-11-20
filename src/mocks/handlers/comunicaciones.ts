@@ -124,6 +124,11 @@ function puedeSuspender(request: Request) {
   return roles.includes("CEVAL-RECTOR") || roles.includes("CEVAL-COORDINADOR")
 }
 
+// Igual que puedeRevisarReportes de comms-service: solo el Supervisor de sede (coordinador).
+function puedeRevisarReportes(request: Request) {
+  return (usuarioDe(request)?.roles ?? []).includes("CEVAL-COORDINADOR")
+}
+
 function puedeIniciar(request: Request) {
   return perfilDe(request) !== "ESTUDIANTE" || permisoMenores.permitirMenoresIniciar
 }
@@ -304,7 +309,16 @@ export const comunicacionesHandlers = [
   // Política de DMs y menciones masivas de la institución (pendiente de aprobación).
   http.get(URL("politica"), async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({ rows: [{ ...politicaChat, puedeIniciarConversaciones: puedeIniciar(request), puedeSuspender: puedeSuspender(request) }] })
+    return HttpResponse.json({
+      rows: [
+        {
+          ...politicaChat,
+          puedeIniciarConversaciones: puedeIniciar(request),
+          puedeSuspender: puedeSuspender(request),
+          puedeRevisarReportes: puedeRevisarReportes(request),
+        },
+      ],
+    })
   }),
 
   // "Enviar por separado" (SSO #1006): un directo nuevo por destinatario, sin adjuntos.

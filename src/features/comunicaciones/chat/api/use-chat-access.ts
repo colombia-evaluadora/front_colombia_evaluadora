@@ -26,6 +26,8 @@ export interface ChatAccess {
   puedeIniciarConversaciones: boolean
   // Suspender mensajería (Administrador o Supervisor de sede); falso mientras carga.
   puedeSuspender: boolean
+  // Pestaña Reportes de Moderación (solo Supervisor de sede); falso mientras carga.
+  puedeRevisarReportes: boolean
 }
 
 // Igual que `useAsistenciaAccess`: el alcance sale de los roles del token.
@@ -46,5 +48,6 @@ export function useChatAccess(): ChatAccess {
     reglaDirectoCon: (otro) => reglaDirecto(politica, perfil, otro ?? "DOCENTE"),
     puedeIniciarConversaciones: politica.puedeIniciarConversaciones !== false,
     puedeSuspender: politica.puedeSuspender === true,
+    puedeRevisarReportes: politica.puedeRevisarReportes === true,
   }
 }
