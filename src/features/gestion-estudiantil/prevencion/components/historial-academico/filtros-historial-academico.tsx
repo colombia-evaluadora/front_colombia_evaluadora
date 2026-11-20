@@ -31,7 +31,7 @@ export function FiltrosHistorialAcademico({ h }: { h: ReturnType<typeof useHisto
         <ComboOpciones
           id="historial-academico-matricula"
           className="gap-2 lg:col-span-3 xl:col-span-3"
-          label="Matrícula / Período Académico"
+          label="Matrícula / Período académico"
           required
           size="default"
           todos={false}
@@ -61,7 +61,7 @@ export function FiltrosHistorialAcademico({ h }: { h: ReturnType<typeof useHisto
         <ComboOpciones
           id="historial-academico-periodos-vacio"
           className="gap-2 lg:w-1/3"
-          label="Períodos de Evaluación"
+          label="Períodos de evaluación"
           required
           size="default"
           todos={false}
@@ -74,7 +74,7 @@ export function FiltrosHistorialAcademico({ h }: { h: ReturnType<typeof useHisto
       ) : (
         <CampoCasillas
           id="historial-academico-periodos"
-          label="Períodos de Evaluación"
+          label="Períodos de evaluación"
           required
           opciones={h.opcionesPeriodo.map((o) => ({ ...o, codigo: o.value }))}
           value={h.periodos}

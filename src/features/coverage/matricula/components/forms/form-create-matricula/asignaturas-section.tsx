@@ -253,8 +253,8 @@ export function MatriculaAsignaturasSection({
             <AlertDialogTitle>No se puede desmatricular {conRegistros?.nombre}</AlertDialogTitle>
             <AlertDialogDescription>
               {conRegistros?.registros?.length
-                ? `No se puede desmatricular ${conRegistros.nombre} porque el estudiante tiene registros en Gestión Académica:`
-                : "Tiene registros en Gestión Académica."}
+                ? `No se puede desmatricular ${conRegistros.nombre} porque el estudiante tiene registros en Gestión académica:`
+                : "Tiene registros en Gestión académica."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {conRegistros?.registros?.length ? (

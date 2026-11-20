@@ -22,7 +22,7 @@ export function SeccionMatricula({ detalle }: { detalle: CaracterizacionDetalle 
       subtitulo={
         <span className="inline-flex items-center gap-1">
           <LockIcon aria-hidden="true" className="size-3.5" />
-          Se corrigen en Cobertura Educativa
+          Se corrigen en Cobertura educativa
         </span>
       }
       contentClassName="px-4 py-4"

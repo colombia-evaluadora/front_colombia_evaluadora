@@ -21,7 +21,7 @@ export function SeccionAvances({ avances, puedeRegistrar, onRegistrar }: Props) 
       titulo={`Avances (${avances.length})`}
       contentClassName="px-4 py-2"
       accion={
-        <Button size="sm" type="button" variant="outline" disabled={!puedeRegistrar} onClick={onRegistrar}>
+        <Button size="sm" type="button" variant="outline" color="neutral" disabled={!puedeRegistrar} onClick={onRegistrar}>
           <ControlPointIcon data-icon="inline-start" />
           Registrar avance
         </Button>

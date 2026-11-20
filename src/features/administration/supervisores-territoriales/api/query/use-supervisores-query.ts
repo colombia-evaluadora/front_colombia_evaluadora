@@ -21,7 +21,7 @@ export function useSupervisoresQuery() {
 
 async function fetchSupervisor(id: number) {
   const [row] = await evalCol.getRows<Resultado<SupervisorTerritorial>>(`/supervisores-territoriales/${id}`)
-  if (!row) throw new Error("No existe el Supervisor territorial solicitado.")
+  if (!row) throw new Error("No existe el supervisor territorial solicitado.")
   return row.resultado
 }
 

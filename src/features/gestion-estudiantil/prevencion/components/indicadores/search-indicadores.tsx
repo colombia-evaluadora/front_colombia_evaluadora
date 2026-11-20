@@ -50,7 +50,7 @@ export function SearchIndicadores(props: Props) {
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
         <Combo
           id="prevencion-indicadores-periodo-academico"
-          label="Período Académico"
+          label="Período académico"
           todos="Vigente"
           value={draft.periodoAcademico}
           options={opciones.periodosAcademicos}
@@ -58,7 +58,7 @@ export function SearchIndicadores(props: Props) {
         />
         <Combo
           id="prevencion-indicadores-periodo"
-          label="Período de Evaluación"
+          label="Período de evaluación"
           todos="Último consolidado"
           value={draft.periodo}
           options={opciones.periodos}

@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { PencilIcon, ProhibitIcon } from "@/components/ui/icons"
+import { PencilIcon, ProhibitIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -63,7 +63,7 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
         {o && (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
             <Dato etiqueta="Fecha">{formatFecha(o.fecha)}</Dato>
-            <Dato etiqueta="Período de Evaluación">{o.periodo_nombre}</Dato>
+            <Dato etiqueta="Período de evaluación">{o.periodo_nombre}</Dato>
             <Dato etiqueta="Grado/Grupo">{o.grado_grupo}</Dato>
             <Dato etiqueta="Dirigida a">
               {o.fk_tmatricula != null
@@ -89,20 +89,14 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
             )}
           </dl>
         )}
+        {/* Pie: Cerrar (secundario), Anular (destructivo) y la acción principal, Modificar, en azul a la derecha. */}
         <DialogFooter>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
           {fila && acciones && (
             <>
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                color="neutral"
-                disabled={!acciones.modificar}
-                onClick={() => onAccion("modificar", fila)}
-              >
-                <PencilIcon data-icon="inline-start" />
-                Modificar
-              </Button>
               <Button
                 size="sm"
                 type="button"
@@ -114,9 +108,12 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
                 <ProhibitIcon data-icon="inline-start" />
                 Anular
               </Button>
+              <Button size="sm" type="button" disabled={!acciones.modificar} onClick={() => onAccion("modificar", fila)}>
+                <PencilIcon data-icon="inline-start" />
+                Modificar
+              </Button>
             </>
           )}
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

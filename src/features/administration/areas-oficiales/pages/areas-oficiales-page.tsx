@@ -167,7 +167,7 @@ function AreasOficialesPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description="Catálogo global de áreas que usan los Planes de Estudio y los Referentes.">
+        <TableScreenTitle description="Catálogo global de áreas que usan los planes de estudio y los referentes.">
           Áreas oficiales
         </TableScreenTitle>
         <TableScreenToolbar>

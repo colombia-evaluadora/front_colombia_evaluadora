@@ -20,7 +20,9 @@ interface ColumnasOpciones {
 }
 
 /** Sede y Jornada siguen en «Columnas», pero arrancan ocultas (como en Procesos disciplinarios). */
-export const COLUMNAS_CITACIONES_OCULTAS = { sede: false, jornada: false }
+// G.3.CIT.1 muestra 6 columnas; Origen, Sede y Jornada quedan en «Columnas visibles». Con Origen visible
+// la tabla no cabía a 1440 px y el Estado se cortaba.
+export const COLUMNAS_CITACIONES_OCULTAS = { origen: false, sede: false, jornada: false }
 
 const columna = (id: string, titulo: string) => ({
   id,
@@ -44,9 +46,10 @@ export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones)
       ...columna("estudiante", "Estudiante"),
       accessorKey: "estudiante_nombre",
       cell: ({ row }) => (
-        <span className="flex flex-col gap-0.5">
+        // Nombre y grado en una línea, separados por «·» (igual que en Compromisos).
+        <span>
           <span className="font-medium">{row.original.estudiante_nombre}</span>
-          <span className="text-xs text-muted-foreground">{row.original.grado_grupo}</span>
+          {row.original.grado_grupo && <span className="text-muted-foreground"> · {row.original.grado_grupo}</span>}
         </span>
       ),
     },

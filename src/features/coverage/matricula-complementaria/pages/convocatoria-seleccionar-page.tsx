@@ -29,7 +29,7 @@ import {
 import { Cifras, DialogListaSorteo } from "@/features/coverage/matricula-complementaria/components/dialogs-convocatoria"
 import { CampoSelect } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
 
-const num = "text-right tabular-nums"
+const num = "text-center tabular-nums"
 
 /**
  * Seleccionar por cupo (Regla 53): Modo Manual de la forma Abierta en selección,

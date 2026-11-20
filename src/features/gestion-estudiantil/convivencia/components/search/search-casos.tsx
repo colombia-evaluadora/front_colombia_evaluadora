@@ -5,6 +5,7 @@ import type { ConvivenciaFiltros } from "@/features/gestion-estudiantil/conviven
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useSearchCasos } from "@/features/gestion-estudiantil/convivencia/hooks/use-search-casos"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 export interface OpcionesFiltros {
   sedes: Opcion[]
@@ -99,13 +100,15 @@ export function SearchCasos(props: SearchCasosProps) {
           options={opciones.gestores}
           onChange={(gestor) => setDraft({ ...draft, gestor })}
         />
-        <label className="flex items-center gap-2 self-end pb-2 text-sm sm:col-span-3">
-          <Checkbox
-            checked={Boolean(draft.pendienteSiuce)}
-            onCheckedChange={(c) => setDraft({ ...draft, pendienteSiuce: c ? "si" : "" })}
-          />
-          Con afectados pendientes de reporte al SIUCE
-        </label>
+        <MarcoOpciones id="casos-pendiente-siuce" className="sm:col-span-3">
+          <label className="flex items-center gap-2">
+            <Checkbox
+              checked={Boolean(draft.pendienteSiuce)}
+              onCheckedChange={(c) => setDraft({ ...draft, pendienteSiuce: c ? "si" : "" })}
+            />
+            Con afectados pendientes de reporte al SIUCE
+          </label>
+        </MarcoOpciones>
       </div>
     </SearchQueryBar>
   )

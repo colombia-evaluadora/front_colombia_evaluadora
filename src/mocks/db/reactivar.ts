@@ -35,7 +35,7 @@ export function previaReactivar(pk: number) {
 export function reactivar(pk: number, motivo: string, decision: string | null): string | null {
   const previa = previaReactivar(pk)
   if (!previa) return "La matrícula no existe."
-  if (!previa.periodo_abierto) return "Solo se reactiva con el Período Académico Abierto."
+  if (!previa.periodo_abierto) return "Solo se reactiva con el período académico Abierto."
   if (previa.promovido_areas_pendientes)
     return "La matrícula tiene la marca Promovido con áreas pendientes: primero anule la promoción."
   if (previa.tiene_matricula_siguiente)

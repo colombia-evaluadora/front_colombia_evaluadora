@@ -7,7 +7,7 @@ export const CALENDARS: CatalogItem[] = [
 
 export const SECTORES: CatalogItem[] = [
   { id: 95, code: "1", name: "Oficial" },
-  { id: 96, code: "2", name: "No Oficial" },
+  { id: 96, code: "2", name: "No oficial" },
 ]
 
 export const MODALIDADES_PRESTACION: CatalogItem[] = [
@@ -32,7 +32,7 @@ export const IDIOMAS: CatalogItem[] = [
 
 export const LEGAL_TYPES: (CatalogItem & { sector: string })[] = [
     { id: 9, code: "OFFICIAL", name: "Oficial", sector: "Oficial" },
-    { id: 10, code: "PRIVATE", name: "Privado", sector: "No Oficial" },
+    { id: 10, code: "PRIVATE", name: "Privado", sector: "No oficial" },
 ]
 
 export const ZONES: CatalogItem[] = [
@@ -41,8 +41,8 @@ export const ZONES: CatalogItem[] = [
 ]
 
 export const COST_REGIMEN: CatalogItem[] = [
-    {id: 13, code: "LIBERTAD_VIGILADA", name: "Libertad Vigilada"},
-    {id: 14, code: "OFERTA_PUBLICA", name: "Oferta Pública"},
+    {id: 13, code: "LIBERTAD_VIGILADA", name: "Libertad vigilada"},
+    {id: 14, code: "OFERTA_PUBLICA", name: "Oferta pública"},
 ]
 
 export const DISABILITIES: CatalogItem[] = [

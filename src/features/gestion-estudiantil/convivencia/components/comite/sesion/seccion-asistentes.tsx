@@ -15,7 +15,7 @@ export function SeccionAsistentes({ form }: { form: SesionFormState }) {
         {!v.fecha ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">Elija la fecha para ver los integrantes vigentes ese día.</p>
         ) : total === 0 ? (
-          <p className="px-4 py-3 text-sm text-muted-foreground">No hay integrantes vigentes del Comité en esa fecha.</p>
+          <p className="px-4 py-3 text-sm text-muted-foreground">No hay integrantes vigentes del comité en esa fecha.</p>
         ) : (
           <div className="flex flex-col gap-3 px-4 py-3">
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">

@@ -106,7 +106,7 @@ export function PreMatriculaPage() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>Pre-Matricula</TableScreenTitle>
+        <TableScreenTitle>Pre-matrícula</TableScreenTitle>
         <TableScreenToolbar>
           <SearchPreMatricula
             filters={filters}

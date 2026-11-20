@@ -78,7 +78,7 @@ export function DeletePreMatriculaDialog({ preMatricula }: DeletePreMatriculaDia
       <AlertDialogContent className="sm:max-w-sm">
         <AlertDialogHeader className="sm:text-center">
           <AlertDialogTitle>
-            ¿Deseas eliminar la Pre-Matricula de
+            ¿Deseas eliminar la pre-matrícula de
             <br />
             {fullName}?
           </AlertDialogTitle>

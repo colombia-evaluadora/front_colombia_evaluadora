@@ -83,7 +83,7 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
             </div>
           }
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={volver}>
+            <Button variant="ghost" color="neutral" size="sm" onClick={volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Prevención y retención
             </Button>

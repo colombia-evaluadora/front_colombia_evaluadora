@@ -217,7 +217,6 @@ export const listasValorHandlers = [
 
     const categoria = cat(codigo, nombre, body.DESCRIPCION ?? null, body.PADRE ?? null, Boolean(body.ORDINAL))
     const drafts = JSON.parse(body.VALORES || "[]") as ValorDraft[]
-    if (drafts.length === 0) return error(400, "La lista debe tener al menos un valor.")
     const nuevos: ListaValor[] = []
     for (const [i, d] of drafts.entries()) {
       if (!CODIGO_VALOR.test(d.valor)) return error(400, `El código «${d.valor}» no es válido.`)
@@ -241,6 +240,8 @@ export const listasValorHandlers = [
     const categoria = buscarCategoria(String(params.categoria))
     if (!categoria) return error(404, "No existe la lista.")
     const { HABILITADA } = (await request.json()) as { HABILITADA?: boolean }
+    if (!HABILITADA && categoria.camposQueUsan?.length)
+      return error(409, "No se puede inactivar la lista porque la usan campos del sistema.")
     if (
       !HABILITADA &&
       categoriasDb.some((c) => c.categoriaPadre === categoria.categoria && c.habilitada)
@@ -270,6 +271,7 @@ export const listasValorHandlers = [
     const categoria = buscarCategoria(String(params.categoria))
     if (!categoria) return error(404, "No existe la lista.")
     if (categoria.esSistema) return error(409, "Las listas del sistema no se eliminan.")
+    if (categoria.camposQueUsan?.length) return error(409, "La usan campos del sistema: no se puede eliminar.")
     if (categoriasDb.some((c) => c.categoriaPadre === categoria.categoria))
       return error(409, "Otra lista depende de esta.")
     vivos(categoria.categoria).forEach((v) => (v.active = false))
@@ -329,7 +331,7 @@ export const listasValorHandlers = [
       ACCION?: string | null
       PADRE?: number | null
       ORDEN?: number | null
-    }
+    } & Marcas
     const categoria = buscarCategoria(String(body.CATEGORIA))
     if (!categoria) return error(404, "No existe la lista.")
     const nombre = String(body.NOMBRE ?? "").trim()
@@ -353,6 +355,7 @@ export const listasValorHandlers = [
       p.padre ?? null,
       orden,
     )
+    Object.assign(v, marcasDe(body))
     valoresDb.push(v)
     return resultado(v)
   }),
@@ -386,6 +389,7 @@ export const listasValorHandlers = [
     const v = buscarValor(Number(params.id))
     if (!v) return error(404, "No existe el valor.")
     if (v.esSistema) return error(409, "Los valores del sistema no se eliminan.")
+    if (v.enUso) return error(409, "El valor está en registros: inactívelo en lugar de eliminarlo.")
     if (valoresDb.some((h) => h.active && h.padre?.pkListaValor === v.pkListaValor))
       return error(409, "El valor tiene valores hijos.")
     v.active = false
@@ -402,7 +406,7 @@ export const listasValorHandlers = [
       ETIQUETA?: string | null
       ACCION?: string | null
       PADRE?: number | null
-    }
+    } & Marcas
     const nombre = String(body.NOMBRE ?? "").trim()
     if (!nombre) return error(400, "El nombre es obligatorio.")
     if (nombreRepetido(v.categoria, nombre, v.pkListaValor))
@@ -411,10 +415,25 @@ export const listasValorHandlers = [
     if (!categoria) return error(404, "No existe la lista.")
     const p = resolverPadre(categoria, body.PADRE)
     if (p.error) return error(400, p.error)
-    Object.assign(v, { nombre, etiqueta: body.ETIQUETA ?? null, accion: body.ACCION ?? null, padre: p.padre })
+    Object.assign(
+      v,
+      { nombre, etiqueta: body.ETIQUETA ?? null, accion: body.ACCION ?? null, padre: p.padre },
+      marcasDe(body),
+    )
     return resultado(v)
   }),
 ]
+
+/** Marcas de prueba (pendientes de backend): solo llegan si la lista tiene marca. */
+type Marcas = { DEL_SIMPADE?: boolean; DISPARA_PIAR?: boolean; ESTAMENTO?: string | null }
+
+function marcasDe(body: Marcas): Partial<ListaValor> {
+  const m: Partial<ListaValor> = {}
+  if (body.DEL_SIMPADE !== undefined) m.delSimpade = Boolean(body.DEL_SIMPADE)
+  if (body.DISPARA_PIAR !== undefined) m.disparaPiar = Boolean(body.DISPARA_PIAR)
+  if (body.ESTAMENTO !== undefined) m.estamento = body.ESTAMENTO
+  return m
+}
 
 function cat(
   categoria: string,

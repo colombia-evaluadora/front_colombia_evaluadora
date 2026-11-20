@@ -80,7 +80,7 @@ export const conversaciones: Conversacion[] = [
   },
   {
     id: 5,
-    nombre: "Elección Personero 2026",
+    nombre: "Elección personero 2026",
     tipo: "CANAL",
     categoria: "VOTACION",
     noLeidos: 0,
@@ -95,7 +95,7 @@ export const conversaciones: Conversacion[] = [
   },
   {
     id: 6,
-    nombre: "Encuesta Satisfacción",
+    nombre: "Encuesta satisfacción",
     tipo: "CANAL",
     categoria: "ENCUESTA",
     noLeidos: 0,
@@ -108,7 +108,7 @@ export const conversaciones: Conversacion[] = [
   },
   {
     id: 7,
-    nombre: "Examen Matemáticas",
+    nombre: "Examen matemáticas",
     tipo: "CANAL",
     categoria: "EXAMEN",
     noLeidos: 0,

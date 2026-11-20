@@ -77,7 +77,7 @@ export function useSesionForm({ periodo, comite, sesion }: Params) {
       return
     }
     if (total === 0) {
-      notify("No hay integrantes vigentes del Comité en esa fecha.", { variant: "error" })
+      notify("No hay integrantes vigentes del comité en esa fecha.", { variant: "error" })
       return
     }
     setGuardando(true)

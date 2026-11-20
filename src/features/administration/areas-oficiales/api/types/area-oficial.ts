@@ -39,6 +39,6 @@ export interface AreaOficialOpcion {
 
 /** Texto del requerimiento: se muestra donde iría "Eliminar". */
 export const AREA_EN_USO_MENSAJE =
-  "En uso en [Áreas] de Planes de Estudio y en Referentes: no se puede eliminar."
+  "En uso en [Áreas] de Planes de estudio y en Referentes: no se puede eliminar."
 
 export const DIMENSION_TRANSVERSAL_LABEL = "Dimensión transversal de Preescolar"

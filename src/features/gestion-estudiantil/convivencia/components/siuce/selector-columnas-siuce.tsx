@@ -24,7 +24,7 @@ export function SelectorColumnasSiuce({ grupos, seleccionadas, onAlternar, onTod
         <span className="text-sm font-medium">Columnas*</span>
         <span className="text-xs text-muted-foreground">{seleccionadas.length} seleccionadas</span>
         <div className="ml-auto flex gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={onTodas}>
+          <Button type="button" size="sm" variant="outline" color="neutral" onClick={onTodas}>
             Seleccionar todas
           </Button>
           <Button type="button" size="sm" variant="outline" color="neutral" onClick={onLimpiar}>

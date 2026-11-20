@@ -56,7 +56,7 @@ function Contenido({ periodo, periodos, comite, onPeriodo }: ContenidoProps) {
         <div className="flex flex-col gap-5 pb-5">
           <ComboOpciones
             id="int-periodo"
-            label="Período Académico"
+            label="Período académico"
             size="default"
             todos={false}
             value={String(periodo.fk_periodo)}
@@ -90,7 +90,7 @@ export function ComiteIntegrantesPage({ periodo }: { periodo?: number }) {
         ) : periodos.isError || comite.isError || !actual || !comite.data ? (
           <ErrorNoticeBanner
             error={periodos.error ?? comite.error ?? true}
-            fallback={actual ? "No se pudo cargar el Comité." : "No hay períodos académicos para registrar el Comité."}
+            fallback={actual ? "No se pudo cargar el comité." : "No hay períodos académicos para registrar el comité."}
             className="m-6"
           />
         ) : (

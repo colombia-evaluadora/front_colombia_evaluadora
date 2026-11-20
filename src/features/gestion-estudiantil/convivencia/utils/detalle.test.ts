@@ -29,6 +29,6 @@ it("codigosReportados lista cada código con su afectado", () => {
 })
 
 it("etiquetaPasoCierre", () => {
-  expect(etiquetaPasoCierre(true)).toBe("Paso de cierre · después de la sesión del Comité")
+  expect(etiquetaPasoCierre(true)).toBe("Paso de cierre · después de la sesión del comité")
   expect(etiquetaPasoCierre(false)).toBe("de cierre")
 })

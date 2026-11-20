@@ -233,7 +233,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["level1"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-level1">Rótulo de Nivel 1 *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-level1">Rótulo de nivel 1 *</FieldLabel>
           <CountedInput
             id="curricular-reference-level1"
             size="sm"
@@ -252,7 +252,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["level2"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-level2">Rótulo de Nivel 2 *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-level2">Rótulo de nivel 2 *</FieldLabel>
           <CountedInput
             id="curricular-reference-level2"
             size="sm"
@@ -291,7 +291,7 @@ export function CurricularReferenceDetailsForm({
         </Field>
 
         <Field orientation="vertical" variant="outlined" className="w-full">
-          <FieldLabel htmlFor="curricular-reference-subject-label">Rótulo de Área</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-subject-label">Rótulo de área</FieldLabel>
           <SubjectLabelSelect
             id="curricular-reference-subject-label"
             value={value.subjectLabel}
@@ -306,7 +306,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["instrument"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-instrument">Rótulo de Secuencia de Actividades *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-instrument">Rótulo de secuencia de actividades *</FieldLabel>
           <CountedInput
             id="curricular-reference-instrument"
             size="sm"
@@ -325,7 +325,7 @@ export function CurricularReferenceDetailsForm({
           className="w-full"
           data-invalid={errors["executionLabel"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-execution-label">Rótulo de Ejecución *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-execution-label">Rótulo de ejecución *</FieldLabel>
           <CountedInput
             id="curricular-reference-execution-label"
             size="sm"
@@ -340,7 +340,7 @@ export function CurricularReferenceDetailsForm({
 
         <Field orientation="vertical" variant="outlined" className="w-full md:col-span-2">
           <FieldLabel htmlFor="curricular-reference-instrument-description">
-            Información adicional de la Secuencia de Actividades
+            Información adicional de la secuencia de actividades
           </FieldLabel>
           <CountedTextarea
             id="curricular-reference-instrument-description"

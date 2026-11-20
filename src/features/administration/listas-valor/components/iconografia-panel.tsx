@@ -25,14 +25,14 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CheckCircleIcon,
+  ControlPointIcon,
   DotsThreeVerticalIcon,
   InfoIcon,
-  MagnifyingGlassIcon,
   PencilIcon,
   ProhibitIcon,
   TrashIcon,
 } from "@/components/ui/icons"
-import { Input } from "@/components/ui/input"
+import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -53,19 +53,17 @@ const normalizar = (t: string) =>
 interface IconografiaPanelProps {
   puedeEditar: boolean
   puedeEliminar: boolean
-  /** "+ Nuevo ícono" vive en el encabezado de la página. */
-  nuevoAbierto: boolean
-  onNuevoChange: (open: boolean) => void
+  puedeCrear: boolean
 }
 
 /** Pestaña Iconografía: cuadrícula de íconos con menú ⁞ (Administración §2.3). */
 export function IconografiaPanel({
   puedeEditar,
   puedeEliminar,
-  nuevoAbierto,
-  onNuevoChange,
+  puedeCrear,
 }: IconografiaPanelProps) {
   const { notify } = useNotify()
+  const [nuevoAbierto, setNuevoAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState("")
   const [editando, setEditando] = useState<Icono | null>(null)
   const [eliminando, setEliminando] = useState<Icono | null>(null)
@@ -116,16 +114,22 @@ export function IconografiaPanel({
 
   return (
     <div className="flex flex-col gap-4 py-4">
-      <div className="relative max-w-60">
-        <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          aria-label="Buscar ícono"
+      {/* Como en las demás vistas: buscador a la izquierda y la acción principal a la derecha, en la misma línea. */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <SearchQueryBar
+          id="iconos-search"
           placeholder="Buscar ícono"
-          variant="outlined"
-          className="pl-9"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onValueChange={setBusqueda}
+          onClearAll={() => setBusqueda("")}
+          activeFilterCount={busqueda ? 1 : 0}
         />
+        {puedeCrear && (
+          <Button size="sm" color="primary" onClick={() => setNuevoAbierto(true)}>
+            <ControlPointIcon data-icon="inline-start" />
+            Nuevo ícono
+          </Button>
+        )}
       </div>
 
       {isError ? (
@@ -144,7 +148,7 @@ export function IconografiaPanel({
       ) : filtrados.length === 0 ? (
         <p className="py-6 text-sm text-muted-foreground">
           {iconos.length === 0
-            ? "Aún no hay íconos. Use Nuevo ícono para cargar el primero."
+            ? "Aún no hay íconos. Use «Nuevo ícono» para cargar el primero."
             : "Ningún ícono coincide con la búsqueda."}
         </p>
       ) : (
@@ -247,27 +251,14 @@ export function IconografiaPanel({
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <IconoGuardado
-                icono={icono}
-                className={cn("size-7 text-foreground", !icono.habilitado && "opacity-50")}
-              />
-              <span
-                className={cn(
-                  "max-w-full truncate text-sm",
-                  !icono.habilitado && "text-muted-foreground",
-                )}
-              >
-                {icono.nombre}
-              </span>
-              {icono.habilitado ? (
-                <Badge variant="soft" color="success">
-                  Activo
+              {/* Inactivo: la tarjeta al 55%; el menú ⁞ queda al 100%. */}
+              <div className={cn("flex w-full flex-col items-center gap-2", !icono.habilitado && "opacity-55")}>
+                <IconoGuardado icono={icono} className="size-7 text-foreground" />
+                <span className="max-w-full truncate text-sm">{icono.nombre}</span>
+                <Badge variant="soft" color={icono.habilitado ? "success" : "neutral"}>
+                  {icono.habilitado ? "Activo" : "Inactivo"}
                 </Badge>
-              ) : (
-                <Badge variant="outline" color="neutral">
-                  Inactivo
-                </Badge>
-              )}
+              </div>
             </li>
           ))}
         </ul>
@@ -275,7 +266,7 @@ export function IconografiaPanel({
       )}
 
       {/* Una instancia por apertura: el estado del formulario arranca limpio. */}
-      {nuevoAbierto && <DialogSaveIcono open onOpenChange={onNuevoChange} />}
+      {nuevoAbierto && <DialogSaveIcono open onOpenChange={setNuevoAbierto} />}
       {editando && (
         <DialogSaveIcono
           key={editando.pkIcono}

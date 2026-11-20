@@ -142,8 +142,8 @@ function DatosReserva({ r }: { r: ReservaCupoDetalle }) {
       <CampoLectura id="origen" label="Origen de la reserva" value={ORIGEN[r.origen]} />
       <CampoLectura id="decision" label="Decisión de prematrícula" value={r.decisionPrematricula} />
       <CampoLectura id="matricula-origen" label="Matrícula de origen" value={r.matriculaOrigen} />
-      <CampoLectura id="periodo" label="Período Académico" value={r.periodoAcademico} />
-      <CampoLectura id="sede-jornada" label="Sede y Jornada" value={`${r.sede} · ${r.jornada}`} />
+      <CampoLectura id="periodo" label="Período académico" value={r.periodoAcademico} />
+      <CampoLectura id="sede-jornada" label="Sede y jornada" value={`${r.sede} · ${r.jornada}`} />
       <CampoLectura id="grado" label="Grado" value={r.grado} />
       <CampoLectura
         id="tipo-cupo"

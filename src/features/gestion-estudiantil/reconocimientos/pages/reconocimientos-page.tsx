@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -85,6 +85,11 @@ function ReconocimientosContent() {
 
   const total = data?.totalCount ?? 0
   const filas = sugerencias.data ?? []
+  // Al otorgar la última sugerencia la sección no desaparece: dice que ya se otorgaron todas. Solo se
+  // muestra vacía si en esta visita hubo sugerencias (sin período cerrado no aparece).
+  const [periodoVisto, setPeriodoVisto] = useState<string | null>(null)
+  const periodoActual = filas[0]?.periodo_evaluacion_nombre ?? null
+  if (periodoActual && periodoActual !== periodoVisto) setPeriodoVisto(periodoActual)
 
   return (
     <>
@@ -99,8 +104,13 @@ function ReconocimientosContent() {
         >
           Reconocimientos
         </TableScreenTitle>
-        {acceso.veSugerencias && filas.length > 0 && (
-          <SugerenciasPorPuesto sugerencias={filas} onOtorgar={abrirOtorgar} puedeOtorgar={acceso.puedeCrear} />
+        {acceso.veSugerencias && (filas.length > 0 || periodoVisto) && (
+          <SugerenciasPorPuesto
+            sugerencias={filas}
+            periodo={periodoVisto ?? undefined}
+            onOtorgar={abrirOtorgar}
+            puedeOtorgar={acceso.puedeCrear}
+          />
         )}
         <TableScreenToolbar>
           <SearchReconocimientos

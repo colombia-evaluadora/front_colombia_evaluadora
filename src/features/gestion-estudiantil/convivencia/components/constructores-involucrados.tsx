@@ -50,7 +50,7 @@ export function ConstructoresInvolucrados({
           titulo={`Estudiantes involucrados (${estudiantes.length})*`}
           forzarAbierta={mostrarErrores && (Boolean(errorEstudiantes) || estudiantes.some((e) => !e.rol))}
           accion={
-            <Button type="button" size="sm" variant="outline" onClick={() => setAgregando(true)}>
+            <Button type="button" size="sm" variant="outline" color="neutral" onClick={() => setAgregando(true)}>
               <ControlPointIcon data-icon="inline-start" />
               Agregar estudiante
             </Button>
@@ -78,7 +78,7 @@ export function ConstructoresInvolucrados({
           titulo={`Otros involucrados (${involucrados.length})`}
           forzarAbierta={mostrarErrores && Boolean(errorInvolucrados)}
           accion={
-            <Button type="button" size="sm" variant="outline" onClick={() => onInvolucrados([...involucrados, involucradoVacio()])}>
+            <Button type="button" size="sm" variant="outline" color="neutral" onClick={() => onInvolucrados([...involucrados, involucradoVacio()])}>
               <ControlPointIcon data-icon="inline-start" />
               Agregar otro involucrado
             </Button>

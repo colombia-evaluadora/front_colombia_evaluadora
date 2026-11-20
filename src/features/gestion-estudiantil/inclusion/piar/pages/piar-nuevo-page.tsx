@@ -7,7 +7,7 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, LockIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, LockIcon, XIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
@@ -101,6 +101,7 @@ export function PiarNuevoPage() {
           action={
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={() => navigate({ to: paths.app.inclusionOrientacion.getHref() })}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" disabled={crear.isPending} onClick={() => form.handleSubmit()}>
@@ -136,7 +137,7 @@ export function PiarNuevoPage() {
         {elegido?.fk_tpiar_anterior && (
           <AvisoPiar tipo="info">
             <span className="flex flex-wrap items-center gap-3">
-              {anterior ? "Se trajo la caracterización y la valoración del plan anterior: revísalas antes de guardar." : "Este estudiante tiene un plan de otro Período en este establecimiento."}
+              {anterior ? "Se trajo la caracterización y la valoración del plan anterior: revísalas antes de guardar." : "Este estudiante tiene un plan de otro período en este establecimiento."}
               {!anterior && <Button size="xs" variant="outline" color="neutral" type="button" onClick={() => setAnterior(elegido.fk_tpiar_anterior)}>Reutilizar caracterización</Button>}
             </span>
           </AvisoPiar>

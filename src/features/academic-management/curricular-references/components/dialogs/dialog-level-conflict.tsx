@@ -38,7 +38,7 @@ export function LevelConflictDialog({
     <AlertDialog open={conflict != null} onOpenChange={(next) => !next && !isPending && onCancel()}>
       <AlertDialogContent className="data-[size=default]:sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>No se puede activar el Referente</AlertDialogTitle>
+          <AlertDialogTitle>No se puede activar el referente</AlertDialogTitle>
           <AlertDialogDescription render={<div />} className="flex flex-col gap-3 text-left">
             <p>
               No se puede guardar el Referente como Activo porque el nivel{" "}

@@ -1,12 +1,11 @@
 import { DatePicker } from "@/components/date-picker"
-import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { XIcon } from "@/components/ui/icons"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { DESCRIPCION_MAX, type ErroresAccion, type ValoresAccion } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 
 interface Props {
   numero: number
@@ -124,17 +123,12 @@ export function AccionPlanItem({
           )}
         </div>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
+      <BotonQuitar
+        label={`Quitar la acción ${numero}`}
+        className="mt-2"
         disabled={!puedeQuitar}
-        aria-label={`Quitar la acción ${numero}`}
         onClick={() => onQuitar(a.clave)}
-      >
-        <XIcon />
-      </Button>
+      />
     </div>
   )
 }

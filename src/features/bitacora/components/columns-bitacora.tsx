@@ -6,7 +6,7 @@ import { es } from "date-fns/locale"
 
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
-import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CaretRightIcon, LockIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type { BitacoraCambio, BitacoraEstado, BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
@@ -28,6 +28,8 @@ export function createBitacoraColumns({
   const columnas: ColumnDef<BitacoraEvento>[] = [
     {
       id: "expand",
+      // Solo la flecha: menos relleno para que la tabla quepa sin cortar Cambio.
+      meta: { className: "w-0 pr-0 pl-3" },
       header: () => <span className="sr-only">Ver detalle</span>,
       cell: ({ row }) => {
         const abierto = expandidoId === row.original.id
@@ -72,7 +74,7 @@ export function createBitacoraColumns({
     {
       id: "usuario",
       accessorFn: (e) => e.usuario.nombre,
-      meta: { label: "Usuario y rol" },
+      meta: { label: "Usuario y rol", className: "whitespace-normal" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Usuario y rol" />,
       cell: ({ row }) => (
         <span className="flex flex-col">
@@ -89,7 +91,7 @@ export function createBitacoraColumns({
     columnas.push({
       id: "sede",
       accessorFn: (e) => `${e.sede} ${e.jornada}`,
-      meta: { label: "Sede y jornada" },
+      meta: { label: "Sede y jornada", className: "whitespace-normal" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Sede y jornada" />,
       cell: ({ row }) => (
         <span className="flex flex-col">
@@ -103,7 +105,7 @@ export function createBitacoraColumns({
     {
       id: "entidad",
       accessorFn: (e) => e.entidad,
-      meta: { label: "Entidad y registro" },
+      meta: { label: "Entidad y registro", className: "whitespace-normal" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Entidad y registro" />,
       cell: ({ row }) => (
         <span className="flex flex-col">
@@ -121,7 +123,8 @@ export function createBitacoraColumns({
       cell: ({ row }) => (
         <span className="flex flex-col items-start gap-1">
           <AccionBadge accion={row.original.accion} />
-          {row.original.descripcion && (
+          {/* Sin campos (Consulta, Exportar) la descripción va en la columna Cambio, no aquí. */}
+          {row.original.descripcion && estados?.get(row.original.id)?.cambios.length !== 0 && !row.original.reservado && (
             <span className="max-w-64 text-xs whitespace-normal text-muted-foreground">{row.original.descripcion}</span>
           )}
         </span>
@@ -130,15 +133,24 @@ export function createBitacoraColumns({
     },
     {
       id: "cambio",
-      meta: { label: "Cambio" },
+      meta: { label: "Cambio", className: "min-w-52 whitespace-normal" },
       header: () => "Cambio",
       cell: ({ row }) => {
+        // Información reservada (B.4.LIS.1): la bitácora no guarda los valores.
+        if (row.original.reservado)
+          return (
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <LockIcon aria-hidden className="size-4" />
+              Información reservada
+            </span>
+          )
         const cambios = estados?.get(row.original.id)?.cambios
+        if (cambios && !cambios.length && row.original.descripcion) return row.original.descripcion
         if (!cambios) return <span className="text-muted-foreground">{row.original.campos.join(", ") || "—"}</span>
         const [primero, ...resto] = cambios
         if (!primero) return "—"
         return (
-          <span className="block max-w-80 whitespace-normal">
+          <span className="block break-words">
             {cambioTexto(primero, row.original)}
             {resto.length > 0 && (
               <span className="text-muted-foreground">

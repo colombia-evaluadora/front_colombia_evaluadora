@@ -189,7 +189,7 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
         }
         for (const id of quitados) await quitar.mutateAsync({ integranteId: id })
       }
-      queueNotice(existe ? "Integrantes del Comité actualizados." : "Comité registrado.", { variant: "success" })
+      queueNotice(existe ? "Integrantes del comité actualizados." : "Comité registrado.", { variant: "success" })
       nav.aPestana(periodo.fk_periodo)
     } catch (error) {
       // 409 si el integrante ya asistió a una sesión: el mensaje del backend lo explica.

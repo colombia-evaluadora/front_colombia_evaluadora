@@ -1,11 +1,11 @@
 import { useState } from "react"
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, PlusIcon } from "@/components/ui/icons"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FormDisabledProvider } from "@/lib/forms"
 
@@ -19,6 +19,7 @@ import { SECCIONES } from "@/features/gestion-estudiantil/inclusion/orientacion/
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { esOpcionElegida } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /** G.4.ORI.ATE.1: nueva atención, modificar y ver detalle. */
 export function AtencionFormPage() {
@@ -75,9 +76,8 @@ export function AtencionFormPage() {
               <form.AppField name="fecha">{(f) => <f.DateField label="Fecha" required />}</form.AppField>
               <form.AppField name="modalidad">
                 {(f) => (
-                  <fieldset className="grid gap-2">
-                    <legend className="text-sm font-medium">Modalidad*</legend>
-                    <RadioGroup className="flex flex-wrap gap-4" value={f.state.value} onValueChange={(v) => f.handleChange(v as string)} disabled={a.soloLectura}>
+                  <MarcoOpciones id="ate-modalidad" label="Modalidad" required>
+                    <RadioGroup aria-labelledby="ate-modalidad-label" value={f.state.value} onValueChange={(v) => f.handleChange(v as string)} disabled={a.soloLectura}>
                       {a.modalidades.map((m) => (
                         <label key={m.value} className="flex items-center gap-2 text-sm">
                           <RadioGroupItem value={m.value} />
@@ -85,7 +85,7 @@ export function AtencionFormPage() {
                         </label>
                       ))}
                     </RadioGroup>
-                  </fieldset>
+                  </MarcoOpciones>
                 )}
               </form.AppField>
               <form.AppField name="origen">{(f) => <f.SelectField label="Origen" required options={a.origenes} placeholder="Seleccione" />}</form.AppField>
@@ -130,9 +130,7 @@ export function AtencionFormPage() {
                 </form.Subscribe>
               ))}
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <form.AppField name="proxima">{(f) => <f.DateField label="Próxima cita" />}</form.AppField>
-            </div>
+            <form.AppField name="proxima">{(f) => <f.DateField label="Próxima cita" />}</form.AppField>
             {a.id && (
               <section className="grid gap-2 text-sm">
                 <div className="flex items-center justify-between">

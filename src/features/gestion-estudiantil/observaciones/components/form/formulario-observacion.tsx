@@ -1,10 +1,10 @@
 import { useMemo } from "react"
 
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { DatePicker } from "@/components/date-picker"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useOpcionesEstudiantesObservacionQuery } from "@/features/gestion-estudiantil/observaciones/api/query/use-opciones-observacion-query"
@@ -21,6 +21,7 @@ import {
   TITULO_MAX,
   textoPeriodo,
 } from "@/features/gestion-estudiantil/observaciones/utils/formularios"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   form: ReturnType<typeof useObservacionForm>
@@ -82,12 +83,9 @@ export function FormularioObservacion({ form, grupos, detalle, etiquetas }: Prop
       </div>
       <div className="sm:col-span-3">
         {esNuevo ? (
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1.5 text-sm">
-              Dirigida a<span className="text-red"> *</span>
-            </legend>
+          <MarcoOpciones id="observacion-destinatario" label="Dirigida a" required>
             <RadioGroup
-              className="flex flex-wrap gap-x-6 gap-y-2"
+              aria-labelledby="observacion-destinatario-label"
               value={v.destinatario}
               onValueChange={(valor) => set("destinatario", valor as DestinatarioObservacion)}
             >
@@ -100,7 +98,7 @@ export function FormularioObservacion({ form, grupos, detalle, etiquetas }: Prop
                 {etiquetas.ESTUDIANTES_ESPECIFICOS}
               </label>
             </RadioGroup>
-          </fieldset>
+          </MarcoOpciones>
         ) : (
           <SoloLectura id="observacion-dirigida" label="Dirigida a" valor={detalle.dirigida_a} />
         )}

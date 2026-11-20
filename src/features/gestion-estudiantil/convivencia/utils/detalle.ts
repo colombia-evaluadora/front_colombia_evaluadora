@@ -20,4 +20,4 @@ export function codigosReportados(caso: CasoDetalle, codigoAccion: string) {
 }
 
 /** Etiqueta del paso de cierre: en Tipo II/III se hace después de la sesión del Comité. */
-export const etiquetaPasoCierre = (grave: boolean) => (grave ? "Paso de cierre · después de la sesión del Comité" : "de cierre")
+export const etiquetaPasoCierre = (grave: boolean) => (grave ? "Paso de cierre · después de la sesión del comité" : "de cierre")

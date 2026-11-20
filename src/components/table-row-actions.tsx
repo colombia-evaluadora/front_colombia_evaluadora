@@ -15,9 +15,13 @@ export const ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
  *
  * Va por `button` y no por `[data-slot=button]`: cuando el botón es el `render`
  * de un `TooltipTrigger`, el `data-slot` que queda es `tooltip-trigger`.
+ *
+ * Los destructivos (Eliminar, `data-color="destructive"`) quedan en rojo: el hover azul los
+ * confundía con una acción más.
  */
 export const ACTIONS_BUTTON_HOVER_CLASS =
-  "[&_button:not(:disabled)]:hover:bg-primary-22 [&_button:not(:disabled)]:hover:text-primary"
+  "[&_button:not(:disabled):not([data-color=destructive])]:hover:bg-primary-22 [&_button:not(:disabled):not([data-color=destructive])]:hover:text-primary " +
+  "[&_button[data-color=destructive]:not(:disabled)]:hover:bg-red-22 [&_button[data-color=destructive]:not(:disabled)]:hover:text-red"
 
 const ACTIONS_SPACER_WIDTH = 96
 

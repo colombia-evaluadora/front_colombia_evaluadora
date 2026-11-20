@@ -122,7 +122,7 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       accion: null,
     })),
   TIPO_DOCUMENTO: () =>
-    ["Registro Civil", "Tarjeta de Identidad", "Cédula de Ciudadanía", "Cédula de Extranjería", "Pasaporte"].map(
+    ["Registro civil", "Tarjeta de identidad", "Cédula de ciudadanía", "Cédula de extranjería", "Pasaporte"].map(
       (nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null }),
     ),
   GENERO: () =>

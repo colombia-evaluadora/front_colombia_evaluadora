@@ -15,11 +15,11 @@ export function SeccionSesionesComite({ caso }: { caso: CasoDetalle }) {
       encuadrada
       comoSeccion
       defaultAbierta={sesiones.length > 0}
-      titulo={`Sesiones del Comité (${sesiones.length})`}
+      titulo={`Sesiones del comité (${sesiones.length})`}
       contentClassName="flex flex-col gap-3 px-4 py-4"
     >
       {sesiones.length === 0 ? (
-        <p className="text-sm text-muted-foreground">El caso aún no se ha tratado en una sesión del Comité.</p>
+        <p className="text-sm text-muted-foreground">El caso aún no se ha tratado en una sesión del comité.</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {sesiones.map((s) => (

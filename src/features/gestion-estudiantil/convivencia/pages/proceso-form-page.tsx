@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
@@ -21,6 +21,7 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" onClick={guardar} disabled={guardando}>

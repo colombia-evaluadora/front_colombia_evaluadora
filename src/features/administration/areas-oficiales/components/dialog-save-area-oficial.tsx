@@ -233,8 +233,8 @@ function EstadoSwitch({
         </span>
         <span className="text-xs text-muted-foreground">
           {checked
-            ? "Se ofrece en Planes de Estudio y Referentes. Si la inactiva, deja de ofrecerse, pero lo que ya la tiene asociada la conserva."
-            : "No se ofrece en Planes de Estudio ni Referentes. Lo que ya la tiene asociada la conserva."}
+            ? "Se ofrece en Planes de estudio y Referentes. Si la inactiva, deja de ofrecerse, pero lo que ya la tiene asociada la conserva."
+            : "No se ofrece en Planes de estudio ni Referentes. Lo que ya la tiene asociada la conserva."}
         </span>
       </span>
     </label>
