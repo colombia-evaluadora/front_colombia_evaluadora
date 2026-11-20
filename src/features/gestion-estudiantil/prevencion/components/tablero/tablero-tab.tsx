@@ -142,7 +142,7 @@ export function TableroTab({ tabs }: Props) {
             f.sinEstablecimiento
               ? "No tiene sedes asignadas."
               : filters == null && f.opciones.sedes.length > 1
-                ? "Elija una Sede en los filtros para ver el tablero."
+                ? "Elija una sede en los filtros para ver el tablero."
                 : f.hayFiltros
                   ? "No hay estudiantes para los filtros aplicados."
                   : "Ninguna señal activa con los datos registrados."

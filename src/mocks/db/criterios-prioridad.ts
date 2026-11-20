@@ -41,13 +41,13 @@ const siNo = (pkCampo: number, codigo: string, nombre: string, bloque: BloqueCri
 export const camposDb: CampoMock[] = [
   { pkCampo: 1, codigo: "TIPO_DOC_ESTUDIANTE", nombre: "Tipo de documento del estudiante", tipo: "SELECTOR", categoria: "TIPO_DOCUMENTO", esOrdinal: false, valores: valores("Registro civil", "Tarjeta de identidad", "Cédula de ciudadanía"), bloque: B.b22, orden: 1 },
   { pkCampo: 2, codigo: "GENERO_ESTUDIANTE", nombre: "Género del estudiante", tipo: "SELECTOR", categoria: "GENERO", esOrdinal: false, valores: valores("Femenino", "Masculino", "Otro"), bloque: B.b22, orden: 2 },
-  { pkCampo: 7, codigo: "VICTIMA_CONFLICTO", nombre: "Población víctima conflicto", tipo: "SELECTOR", categoria: "POB_VICT_CONF", esOrdinal: false, valores: valores("En situación de desplazamiento", "Desvinculados de grupos armados", "Hijos de adultos desmovilizados", "No Aplica"), bloque: B.b27, orden: 7 },
+  { pkCampo: 7, codigo: "VICTIMA_CONFLICTO", nombre: "Población víctima conflicto", tipo: "SELECTOR", categoria: "POB_VICT_CONF", esOrdinal: false, valores: valores("En situación de desplazamiento", "Desvinculados de grupos armados", "Hijos de adultos desmovilizados", "No aplica"), bloque: B.b27, orden: 7 },
   { pkCampo: 8, codigo: "ESTRATO", nombre: "Estrato socio económico del estudiante", tipo: "SELECTOR", categoria: "ESTRATO", esOrdinal: true, valores: valores("Estrato 0", "Estrato 1", "Estrato 2", "Estrato 3", "Estrato 4", "Estrato 5", "Estrato 6"), bloque: B.b28, orden: 8 },
-  { pkCampo: 9, codigo: "SISBEN", nombre: "Sisbén", tipo: "SELECTOR", categoria: "SISBEN", esOrdinal: true, valores: valores("Grupo A", "Grupo B", "Grupo C", "Grupo D", "No Aplica"), bloque: B.b28, orden: 9 },
+  { pkCampo: 9, codigo: "SISBEN", nombre: "Sisbén", tipo: "SELECTOR", categoria: "SISBEN", esOrdinal: true, valores: valores("Grupo A", "Grupo B", "Grupo C", "Grupo D", "No aplica"), bloque: B.b28, orden: 9 },
   { pkCampo: 10, codigo: "CONDICIONES_ESPECIALES", nombre: "Condiciones especiales del estudiante", tipo: "SELECTOR", categoria: null, esOrdinal: false, valores: [], bloque: B.b28, orden: 10 },
-  { pkCampo: 11, codigo: "TALENTO", nombre: "Talento del estudiante", tipo: "SELECTOR", categoria: "TALENTO", esOrdinal: false, valores: valores("Superdotado", "Con talento científico", "Con talento tecnológico", "No Aplica"), bloque: B.b28, orden: 11 },
+  { pkCampo: 11, codigo: "TALENTO", nombre: "Talento del estudiante", tipo: "SELECTOR", categoria: "TALENTO", esOrdinal: false, valores: valores("Superdotado", "Con talento científico", "Con talento tecnológico", "No aplica"), bloque: B.b28, orden: 11 },
   siNo(12, "SUBSIDIADO", "Subsidiado", B.b29, 12),
-  { pkCampo: 13, codigo: "FUENTE_RECURSOS", nombre: "Fuente de recursos", tipo: "SELECTOR", categoria: "FUENTE_DE_RECURSO", esOrdinal: false, valores: valores("SGP", "FNR", "Otros Recursos de la Nación"), bloque: B.b29, orden: 13 },
+  { pkCampo: 13, codigo: "FUENTE_RECURSOS", nombre: "Fuente de recursos", tipo: "SELECTOR", categoria: "FUENTE_DE_RECURSO", esOrdinal: false, valores: valores("SGP", "FNR", "Otros recursos de la Nación"), bloque: B.b29, orden: 13 },
   siNo(14, "MADRE_CABEZA_FAMILIA", "Alumnos madre cabeza de familia", B.b29, 14),
   siNo(15, "HIJO_MADRE_CABEZA", "Hijos de madre cabeza de familia", B.b29, 15),
   siNo(16, "VETERANO_FUERZA_PUBLICA", "Veteranos de la fuerza pública", B.b29, 16),
@@ -73,7 +73,7 @@ export const reglasDe = (campo: CampoMock): ReglaOpcion[] =>
 export const enUsoDb = new Set<number>([4])
 
 const inicial: [number, string, string, ReglaCodigo][] = [
-  [1, "Hermanos estudiando en el Establecimiento", "HERMANO_VERIFICADO", "ES_SI"],
+  [1, "Hermanos estudiando en el establecimiento", "HERMANO_VERIFICADO", "ES_SI"],
   [2, "Víctima del conflicto", "VICTIMA_CONFLICTO", "TIENE_VALOR"],
   [3, "Nivel de Sisbén", "SISBEN", "MENOR_A_MAYOR"],
   [4, "Estrato", "ESTRATO", "MENOR_A_MAYOR"],

@@ -331,7 +331,7 @@ function EstadoSwitch({
         </span>
         <span className="text-xs text-muted-foreground">
           {checked
-            ? "Cuenta como día inhábil en el Calendario Académico. Si lo inactiva, deja de contar en los períodos que aún no han comenzado."
+            ? "Cuenta como día inhábil en el Calendario académico. Si lo inactiva, deja de contar en los períodos que aún no han comenzado."
             : "No cuenta en los períodos que aún no han comenzado. Los que ya comenzaron conservan su día inhábil."}
         </span>
       </span>

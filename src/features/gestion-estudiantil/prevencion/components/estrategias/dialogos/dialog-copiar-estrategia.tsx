@@ -105,7 +105,7 @@ export function DialogCopiarEstrategia({ estrategia, onClose }: Props) {
         <div className="sm:col-span-2">
           <ComboOpciones
             id="copiar-periodo"
-            label="Período Académico"
+            label="Período académico"
             size="default"
             todos="El mismo de la estrategia"
             placeholder="El mismo de la estrategia"

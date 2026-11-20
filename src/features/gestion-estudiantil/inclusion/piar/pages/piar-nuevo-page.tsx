@@ -137,7 +137,7 @@ export function PiarNuevoPage() {
         {elegido?.fk_tpiar_anterior && (
           <AvisoPiar tipo="info">
             <span className="flex flex-wrap items-center gap-3">
-              {anterior ? "Se trajo la caracterización y la valoración del plan anterior: revísalas antes de guardar." : "Este estudiante tiene un plan de otro Período en este establecimiento."}
+              {anterior ? "Se trajo la caracterización y la valoración del plan anterior: revísalas antes de guardar." : "Este estudiante tiene un plan de otro período en este establecimiento."}
               {!anterior && <Button size="xs" variant="outline" color="neutral" type="button" onClick={() => setAnterior(elegido.fk_tpiar_anterior)}>Reutilizar caracterización</Button>}
             </span>
           </AvisoPiar>

@@ -160,7 +160,7 @@ function AdministradoresTerritorialesPageContent() {
             <TableScreenActions>
               <Button color="primary" size="sm" onClick={nuevo}>
                 <ControlPointIcon data-icon="inline-start" />
-                Nuevo Administrador territorial
+                Nuevo administrador territorial
               </Button>
             </TableScreenActions>
           )}
@@ -177,10 +177,10 @@ function AdministradoresTerritorialesPageContent() {
           emptyMessage={
             sinRegistros ? (
               // Estado vacío de la Sección 7.3.
-              <span>No hay Administradores territoriales.</span>
+              <span>No hay administradores territoriales.</span>
             ) : (
               <span className="flex flex-col items-center gap-3">
-                No hay Administradores territoriales que coincidan con la búsqueda y los filtros aplicados.
+                No hay administradores territoriales que coincidan con la búsqueda y los filtros aplicados.
                 <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
                   <FunnelXIcon data-icon="inline-start" />
                   Limpiar filtros

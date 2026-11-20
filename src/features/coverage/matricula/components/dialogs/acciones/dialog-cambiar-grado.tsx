@@ -243,7 +243,7 @@ export function DialogCambiarGrado({
             <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
               <CampoSelect
                 id="cambio-grado-periodo"
-                label="Período Académico destino"
+                label="Período académico destino"
                 required
                 value={periodoId}
                 onChange={(v) => {
@@ -306,7 +306,7 @@ export function DialogCambiarGrado({
                     rows={2}
                     maxLength={MOTIVO_MAX}
                     value={motivo}
-                    placeholder={correccion ? "Qué error de registro se corrige" : "Decisión del Consejo Académico"}
+                    placeholder={correccion ? "Qué error de registro se corrige" : "Decisión del Consejo académico"}
                     aria-invalid={intentado && !motivoValido}
                     className={cn(TEXTAREA_OUTLINED, "pr-16")}
                     onChange={(e) => setMotivo(e.target.value)}
@@ -346,7 +346,7 @@ export function DialogCambiarGrado({
                   </FileUploadList>
                 </FileUpload>
                 <FieldDescription className={cn(intentado && actaRequerida && !acta && "text-red")}>
-                  {actaRequerida ? "Acta del Consejo Académico · " : ""}PDF, JPG o PNG · máx. {SOPORTE_MAX_MB} MB
+                  {actaRequerida ? "Acta del Consejo académico · " : ""}PDF, JPG o PNG · máx. {SOPORTE_MAX_MB} MB
                 </FieldDescription>
               </Field>
             </div>
@@ -356,12 +356,12 @@ export function DialogCambiarGrado({
                 <Aviso tono="advertencia">
                   {lote ? (
                     <>
-                      {previa?.conRegistros} de {matriculas.length} estudiantes tienen registros en Gestión Académica de{" "}
+                      {previa?.conRegistros} de {matriculas.length} estudiantes tienen registros en Gestión académica de{" "}
                       {gradeLabel(origen.grade)}. La decisión y el emparejamiento son uno solo para todos.
                     </>
                   ) : (
                     <>
-                      En {gradeLabel(origen.grade)} ya hay registros en Gestión Académica: resultados de{" "}
+                      En {gradeLabel(origen.grade)} ya hay registros en Gestión académica: resultados de{" "}
                       {plural(r.actividades, "actividad", "actividades")}, definitivas de {r.definitivas.join(", ")} y
                       asistencia de {plural(r.clases, "clase", "clases")}.
                     </>

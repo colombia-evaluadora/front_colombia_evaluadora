@@ -144,7 +144,7 @@ export function CamposAcompanamiento({ f }: { f: Form }) {
             disabled={!f.matricula}
             value={v.responsable}
             options={f.responsableOpciones}
-            description="Profesional de orientación con rol activo en la Sede y Jornada."
+            description="Profesional de orientación con rol activo en la sede y jornada."
             error={error("responsable")}
             onInputChange={f.onBuscarResponsable}
             onChange={(responsable) => set({ responsable })}

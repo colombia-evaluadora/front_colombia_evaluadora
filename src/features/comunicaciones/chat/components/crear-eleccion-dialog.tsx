@@ -99,7 +99,7 @@ export function CrearEleccionDialog({
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
-  // "Editar Elección" (diseño 4058:62794): mismos pasos sin el de votantes (el censo no cambia).
+  // "Editar elección" (diseño 4058:62794): mismos pasos sin el de votantes (el censo no cambia).
   // Quien la abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Eleccion
   // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
@@ -256,7 +256,7 @@ export function CrearEleccionDialog({
             largo de cada paso (Natalia: antes scrolleaba todo el modal). */}
         <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editar ? "Editar Elección" : "Crear una Elección"}</DialogTitle>
+            <DialogTitle>{editar ? "Editar elección" : "Crear una elección"}</DialogTitle>
           </DialogHeader>
           <ErrorNoticeBanner
             error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
@@ -279,7 +279,7 @@ export function CrearEleccionDialog({
                     label="Nombre"
                     required
                     maxLength={80} showCounter
-                    placeholder="Por ejemplo, Elección Personero 2026"
+                    placeholder="Por ejemplo, Elección personero 2026"
                   />
                 )}
               </datos.AppField>

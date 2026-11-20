@@ -82,7 +82,7 @@ function validate(body: CalendarEntryBody, exceptId?: number) {
   if (body.FECHA_DESDE > body.FECHA_HASTA)
     return error("La Fecha hasta no puede ser anterior a la Fecha desde.")
   if (body.FECHA_DESDE < period.startDate || body.FECHA_HASTA > period.endDate) {
-    return error("Las fechas deben estar dentro del Período Académico.")
+    return error("Las fechas deben estar dentro del período académico.")
   }
   if (body.TIPO === "HABIL") {
     const nonWorking = getNonWorkingDays(calendarRows(period.id).map(toEntry), exceptId)

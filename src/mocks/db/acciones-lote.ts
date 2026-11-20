@@ -96,7 +96,7 @@ export function reingresarLote(matriculas: { ID: number; FK_TGRUPO: number | nul
     const previa = previaReingreso(pk)
     if (!m || !previa) return falla(pk, "la matrícula no existe.")
     if (m.status !== "Retirado") return falla(pk, `está ${m.status}; solo se reingresa una matrícula Retirada.`)
-    if (!previa.periodo_abierto) return falla(pk, "su Período Académico ya está cerrado.")
+    if (!previa.periodo_abierto) return falla(pk, "su período académico ya está cerrado.")
     // Solo se bloquea el reingreso de la propia complementaria (Regla 12).
     if (previa.complementaria_sin_cupo && tipoDe(pk) === "COMPLEMENTARIA")
       return falla(pk, `no hay cupo libre en ${previa.complementaria_sin_cupo} para reingresar a la matrícula complementaria.`)

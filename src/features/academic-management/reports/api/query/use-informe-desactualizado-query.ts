@@ -11,7 +11,7 @@ import { informeGrupoQueryKeyPrefix } from "@/features/academic-management/repor
  * para que el aviso no dependa de que llegue y no cambie por redacción.
  */
 export const MENSAJE_INFORME_DESACTUALIZADO =
-  "Este informe fue emitido antes de que se aprobara una actividad de Recuperación; los valores mostrados pueden no reflejar la Nota Final o el resultado más reciente del estudiante."
+  "Este informe fue emitido antes de que se aprobara una actividad de Recuperación; los valores mostrados pueden no reflejar la nota final o el resultado más reciente del estudiante."
 
 interface CambioDesactualizadoRow {
   pkSolicitud: number

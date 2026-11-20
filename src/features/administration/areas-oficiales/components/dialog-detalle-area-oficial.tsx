@@ -68,7 +68,7 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
             {area.especialidad && <Dato label="Especialidad">{area.especialidad}</Dato>}
             <Dato label="En uso">
               <span className="tabular-nums">
-                {area.usos.planesEstudio} en Planes de Estudio · {area.usos.referentes} en
+                {area.usos.planesEstudio} en Planes de estudio · {area.usos.referentes} en
                 Referentes
               </span>
             </Dato>

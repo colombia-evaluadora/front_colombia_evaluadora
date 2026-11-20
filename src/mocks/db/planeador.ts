@@ -137,7 +137,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
   },
   {
     id: 602,
-    nombre: "Académico Diseño de prototipo 2",
+    nombre: "Académico diseño de prototipo 2",
     tipo: "Práctica",
     esRecuperacion: false,
     unidad: { id: 1, nombre: "Unidad 1" },
@@ -215,7 +215,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
   },
   {
     id: 603,
-    nombre: "Plan de estudio Diseño de prototipo 3",
+    nombre: "Plan de estudio diseño de prototipo 3",
     tipo: "Proyecto",
     esRecuperacion: false,
     unidad: { id: 1, nombre: "Unidad 1" },
@@ -276,7 +276,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
   },
   {
     id: 604,
-    nombre: "Rendimiento Diseño de prototipo",
+    nombre: "Rendimiento diseño de prototipo",
     tipo: "Otro",
     // Única del seed marcada como recuperación: es sumativa
     // (`esEvaluativa: true`), así que el toggle "Es una recuperación"
@@ -642,7 +642,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     criteriosUnidadIds: [],
     matriculasIds: [],
     asignarTodoElGrupo: true,
-    asignatura: "Lengua Castellana",
+    asignatura: "Lengua castellana",
     grado: "3º",
     grupo: "A",
     fechaInicio: "2026-08-11",
@@ -662,7 +662,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     tipoEvidencia: "Documento",
     requiereValidacion: false,
     observaciones: "Comparte semana con la evaluación de rendimiento.",
-    contenidos: ["Lengua Castellana"],
+    contenidos: ["Lengua castellana"],
     objetivos: ["Cumplir con la actividad programada"],
     descripcionUnidad: ["Taller de comprensión lectora."],
     adaptaciones: [],
@@ -709,7 +709,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     criteriosUnidadIds: [],
     matriculasIds: [],
     asignarTodoElGrupo: true,
-    asignatura: "Ciencias Naturales",
+    asignatura: "Ciencias naturales",
     grado: "3º",
     grupo: "A",
     fechaInicio: "2026-08-18",
@@ -729,7 +729,7 @@ const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
     tipoEvidencia: "Documento",
     requiereValidacion: false,
     observaciones: "Salida al laboratorio.",
-    contenidos: ["Ciencias Naturales"],
+    contenidos: ["Ciencias naturales"],
     objetivos: ["Cumplir con la actividad programada"],
     descripcionUnidad: ["Laboratorio de ecosistemas."],
     adaptaciones: [],

@@ -67,7 +67,7 @@ export function FilaCargo({
             className="gap-2"
             data-invalid={Boolean(errores?.norma) || undefined}
           >
-            <FieldLabel htmlFor={`${id}-norma`}>Norma del Manual de Convivencia*</FieldLabel>
+            <FieldLabel htmlFor={`${id}-norma`}>Norma del manual de convivencia*</FieldLabel>
             <Input
               id={`${id}-norma`}
               maxLength={200}

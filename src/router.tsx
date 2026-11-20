@@ -710,7 +710,7 @@ export const coberturaPreMatriculaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaPreMatricula.path,
   validateSearch: preMatriculaSearchSchema,
-  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Pre-Matrícula" }] },
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Pre-matrícula" }] },
   component: PreMatriculaPage,
 })
 

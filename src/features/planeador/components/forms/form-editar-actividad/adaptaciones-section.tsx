@@ -496,9 +496,9 @@ function AdaptacionItem({
           <SelectContent>
             <SelectItem value="__none__">Seleccione</SelectItem>
             <SelectItem value="no">No</SelectItem>
-            <SelectItem value="archivo">Sí, Adjuntar plantilla (archivo)</SelectItem>
-            <SelectItem value="enlace">Sí, Adjuntar plantilla (enlace)</SelectItem>
-            <SelectItem value="biblioteca">Sí, Adjuntar plantilla (biblioteca)</SelectItem>
+            <SelectItem value="archivo">Sí, adjuntar plantilla (archivo)</SelectItem>
+            <SelectItem value="enlace">Sí, adjuntar plantilla (enlace)</SelectItem>
+            <SelectItem value="biblioteca">Sí, adjuntar plantilla (biblioteca)</SelectItem>
           </SelectContent>
         </Select>
       </Field>

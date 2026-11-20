@@ -22,7 +22,7 @@ const numero = (k: "con_ajustes" | "sin_ajustes" | "pendiente_revision") => ({ r
   <span className="block text-center tabular-nums">{row.original[k]}</span>
 )
 const COLUMNAS: ColumnDef<Fila>[] = [
-  { id: "asignatura", header: "Cobertura por Asignatura", enableSorting: false, cell: ({ row }) => <strong className="font-medium">{row.original.asignatura_nombre}</strong> },
+  { id: "asignatura", header: "Cobertura por asignatura", enableSorting: false, cell: ({ row }) => <strong className="font-medium">{row.original.asignatura_nombre}</strong> },
   { id: "con", header: () => <span className="block text-center">Con ajustes</span>, enableSorting: false, cell: numero("con_ajustes") },
   { id: "sin", header: () => <span className="block text-center">Sin ajustes adicionales</span>, enableSorting: false, cell: numero("sin_ajustes") },
   { id: "pend", header: () => <span className="block text-center">Pendiente</span>, enableSorting: false, cell: numero("pendiente_revision") },

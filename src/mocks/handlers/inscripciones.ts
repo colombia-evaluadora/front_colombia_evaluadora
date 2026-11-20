@@ -323,7 +323,7 @@ export const inscripcionesHandlers = [
       opciones: opcionesDeInscripcion(base),
       estudiante: {
         usuarioId: base.inscripcion_id + 5000,
-        tipoDocumento: "Registro Civil de Nacimiento",
+        tipoDocumento: "Registro civil de nacimiento",
         documento: base.documento,
         primerNombre,
         segundoNombre: null,

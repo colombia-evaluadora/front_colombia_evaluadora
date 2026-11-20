@@ -33,7 +33,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
       "Analizar flujos lógicos para simplificar procesos complejos.",
     ],
     contenidos: [
-      { descripcion: "¿Qué es el Diseño Centrado en el Usuario?" },
+      { descripcion: "¿Qué es el diseño centrado en el usuario?" },
       { descripcion: "Principios fundamentales del DCU" },
       { descripcion: "Historia y evolución de la usabilidad" },
       { descripcion: "El rol del operador educativo en el proceso" },
@@ -108,7 +108,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
       {
         id: 155,
         actividadId: 604,
-        nombre: "Rendimiento Diseño de prototipo",
+        nombre: "Rendimiento diseño de prototipo",
         tipo: "Sumativa",
         instrumento: "Lista de cotejo",
         grupo: "A",

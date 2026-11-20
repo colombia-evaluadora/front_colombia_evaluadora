@@ -149,7 +149,7 @@ export function SearchAnotaciones({
         />
         <Combo
           id="observador-periodo"
-          label="Período de Evaluación"
+          label="Período de evaluación"
           value={draft.periodo}
           options={opciones.periodos}
           disabled={sinJornada}

@@ -74,7 +74,7 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccio
               { etiqueta: "Grado/Grupo", valor: r.grado_grupo },
               { etiqueta: "Fecha", valor: formatFecha(r.fecha) },
               { etiqueta: "Tipo", valor: r.tipo_nombre },
-              { etiqueta: "Período de Evaluación", valor: r.periodo_evaluacion_nombre },
+              { etiqueta: "Período de evaluación", valor: r.periodo_evaluacion_nombre },
               { etiqueta: "Motivo", valor: r.motivo, ancho: true },
               { etiqueta: "Otorgado por", valor: r.otorgado_por },
               { etiqueta: "Registrado por", valor: r.registrado_por },

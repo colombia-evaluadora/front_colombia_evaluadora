@@ -335,7 +335,7 @@ export function PlaneadorPlanillaPage() {
           {!filtro && (
             <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
               <InboxIcon className="size-10 text-muted-foreground" />
-              <p className="text-muted-foreground text-sm">Seleccione Grado, Grupo o Asignatura</p>
+              <p className="text-muted-foreground text-sm">Seleccione grado, grupo o asignatura</p>
             </div>
           )}
 

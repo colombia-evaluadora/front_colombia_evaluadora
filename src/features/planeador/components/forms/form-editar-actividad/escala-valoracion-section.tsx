@@ -97,9 +97,9 @@ function numeroDesdeInput(raw: string): number | undefined {
  * Editor de la escala de valoración (Reglas 40-42). El modo (Numérica/Cualitativa) es
  * de toda la escala; cada criterio es un bloque independiente ("+ Agregar más") con su
  * nombre y:
- * - Numérica: "Valor Asignado (Escala)" — valor mínimo/máximo (precargados desde la
+ * - Numérica: "Valor asignado (escala)" — valor mínimo/máximo (precargados desde la
  *   escala de la institución y editables por criterio) e interpretación (texto libre).
- * - Cualitativa: "Escala de Niveles" ("+ Agregar Nivel") con Etiqueta, Descriptor y
+ * - Cualitativa: "Escala de niveles" ("+ Agregar nivel") con Etiqueta, Descriptor y
  *   Puntaje; el valor máximo del criterio es el puntaje más alto (solo lectura).
  * La nota del instrumento la calcula el backend: suma obtenida / suma de máximos.
  * "Otro (personalizado)" con método Escala monta este mismo componente (Regla 41) con las
@@ -222,7 +222,7 @@ export function EscalaValoracionSection({
   return (
     <Card className="gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-base font-semibold">Definición Escala de Valoración</h3>
+        <h3 className="text-base font-semibold">Definición escala de valoración</h3>
         <SoloEdicion>
           <AlertDialog
             open={confirmarRestaurar}
@@ -472,7 +472,7 @@ function CriterioEscalaCard({
         />
       ) : (
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold">Escala de Niveles</h4>
+          <h4 className="text-sm font-semibold">Escala de niveles</h4>
           {criterio.niveles.length === 0 && (
             <div data-invalid={intentoGuardar} tabIndex={-1}>
               {intentoGuardar ? (
@@ -590,7 +590,7 @@ function CriterioEscalaCard({
                 }
               >
                 <PlusCircleIcon data-icon="inline-start" />
-                Agregar Nivel
+                Agregar nivel
               </Button>
             </SoloEdicion>
             {/* Regla 42: solo lectura, el puntaje más alto de los niveles. */}
@@ -634,7 +634,7 @@ function ValorAsignado({
     criterio.valorMinimo >= criterio.valorMaximo
   return (
     <div className="flex flex-col gap-3">
-      <h4 className="text-sm font-semibold">Valor Asignado (Escala)</h4>
+      <h4 className="text-sm font-semibold">Valor asignado (escala)</h4>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field variant="outlined" data-invalid={minimoAusente || minimoLargo}>
           <FieldLabel htmlFor={`${idBase}-minimo`}>Valor mínimo *</FieldLabel>

@@ -36,7 +36,7 @@ export function ListaCotejoSection({
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Definición Lista de Cotejo</h3>
+        <h3 className="text-base font-semibold">Definición lista de cotejo</h3>
         <SoloEdicion>
         <Tooltip>
           <TooltipTrigger

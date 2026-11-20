@@ -88,7 +88,7 @@ export function CrearComunicadoDialog({
   open: boolean
   onClose: () => void
   onCreado: (conversacionId: number) => void
-  // "Editar Comunicado" (diseño 4062:67938). Ya publicado, los destinatarios y la fecha no cambian.
+  // "Editar comunicado" (diseño 4062:67938). Ya publicado, los destinatarios y la fecha no cambian.
   // Quien lo abre lo monta con `key` para que los valores iniciales se lean una vez.
   editar?: Comunicado
   // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
@@ -314,7 +314,7 @@ export function CrearComunicadoDialog({
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{editar ? "Editar Comunicado" : "Crear un Comunicado"}</DialogTitle>
+            <DialogTitle>{editar ? "Editar comunicado" : "Crear un comunicado"}</DialogTitle>
           </DialogHeader>
           <ErrorNoticeBanner
             error={

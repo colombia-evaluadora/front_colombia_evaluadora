@@ -76,7 +76,7 @@ export function SearchReconocimientos(props: Props) {
         />
         <Combo
           id="reconocimientos-periodo"
-          label="Período de Evaluación"
+          label="Período de evaluación"
           value={draft.periodo}
           options={opciones.periodos}
           disabled={sinSede || sinJornada}

@@ -398,7 +398,7 @@ export function DialogAmpliarPlazo({ promovido: p, detalle: d, onClose }: { prom
     : actual && fecha <= actual
       ? "La nueva fecha debe ser posterior al plazo actual."
       : fin && fecha > fin
-        ? "La nueva fecha debe estar dentro del Período Académico de la matrícula promovida."
+        ? "La nueva fecha debe estar dentro del período académico de la matrícula promovida."
         : undefined
   return (
     <DialogoOperacionShell
@@ -440,7 +440,7 @@ export function DialogAmpliarPlazo({ promovido: p, detalle: d, onClose }: { prom
           minDate={actual}
           maxDate={fin}
           error={intento ? errorFecha : undefined}
-          ayuda={`Posterior al ${formatoFecha(d.plazo)} y dentro del Período Académico.`}
+          ayuda={`Posterior al ${formatoFecha(d.plazo)} y dentro del período académico.`}
         />
         <Motivo id="ampliar-motivo" value={motivo} onChange={setMotivo} intento={intento} />
         <Requeridos />
@@ -624,7 +624,7 @@ export function DialogRegistrarNivelacion({ promovido: p, detalle: d, area, onCl
         </div>
         <Texto id="nivelacion-observacion" label="Observación" max={OBSERVACION_MAX} value={observacion} onChange={setObservacion} />
         <Aviso tono="info">
-          Se crea la actividad de nivelación en Gestión Académica. La nota final de {area.area} de {p.anio} se mostrará como{" "}
+          Se crea la actividad de nivelación en Gestión académica. La nota final de {area.area} de {p.anio} se mostrará como{" "}
           {formatoNota(area.notaFinal)} → {validarNota(nota, d.notaMinima, d.notaMaxima) ? "la nota de nivelación" : formatoNota(leerNota(nota))}, sin
           recalcular el año.
         </Aviso>
@@ -701,7 +701,7 @@ export function DialogCorregirNivelacion({ promovido: p, detalle: d, area, onClo
         </Field>
         <Motivo id="corregir-motivo" value={motivo} onChange={setMotivo} intento={intento} />
         <Aviso tono="info">
-          La corrección actualiza la actividad de Nivelación de área pendiente en Gestión Académica. Con la nueva nota, el área puede quedar Nivelada.
+          La corrección actualiza la actividad de Nivelación de área pendiente en Gestión académica. Con la nueva nota, el área puede quedar Nivelada.
         </Aviso>
         <Requeridos />
       </div>

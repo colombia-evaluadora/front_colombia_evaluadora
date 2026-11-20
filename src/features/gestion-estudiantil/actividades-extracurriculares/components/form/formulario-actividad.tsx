@@ -235,7 +235,7 @@ export function FormularioActividad({ f }: { f: ActividadForm }) {
           value={f.grados}
           disabled={sinSedeJornada}
           placeholder={sinSedeJornada ? "Elija sede y jornada primero" : "Seleccione"}
-          ayuda={f.esServicioSocial ? "Solo los Grados del servicio social." : "Grados del Período Académico."}
+          ayuda={f.esServicioSocial ? "Solo los grados del servicio social." : "Grados del período académico."}
           error={f.error("grados")}
           onChange={f.setGrados}
         />

@@ -17,7 +17,7 @@ import { dia, textoAsistentes } from "@/features/gestion-estudiantil/convivencia
 export function DatosSesion({ sesion, periodo }: { sesion: SesionDetalle; periodo: string }) {
   return (
     <dl className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
-      <Dato label="Período Académico">{periodo}</Dato>
+      <Dato label="Período académico">{periodo}</Dato>
       <Dato label="Tipo de sesión">{sesion.tipo_nombre}</Dato>
       <Dato label="Fecha">{formatFecha(dia(sesion.fecha))}</Dato>
     </dl>

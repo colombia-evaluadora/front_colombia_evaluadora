@@ -98,8 +98,8 @@ function FormParametros({ parametros, causas, establecimiento, puedeEditar, tabs
               error={f.errores.caidaRa}
               ayuda={
                 referencia == null
-                  ? "En puntos del Formato de calificación."
-                  : `En puntos del Formato de calificación. Vacío = proporcional al formato (${formatDecimal(referencia)}).`
+                  ? "En puntos del formato de calificación."
+                  : `En puntos del formato de calificación. Vacío = proporcional al formato (${formatDecimal(referencia)}).`
               }
               onChange={(v) => f.cambiar("caidaRa", limpiarDecimal(v))}
             />

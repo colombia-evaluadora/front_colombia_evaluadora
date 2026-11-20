@@ -238,7 +238,7 @@ export function QuickCreateSubjectDialog({
                       {invalid ? (
                         <FieldError errors={toFieldErrors(field.state.meta.errors)} />
                       ) : (
-                        <FieldDescription>Catálogo de Áreas oficiales.</FieldDescription>
+                        <FieldDescription>Catálogo de áreas oficiales.</FieldDescription>
                       )}
                     </Field>
                   )

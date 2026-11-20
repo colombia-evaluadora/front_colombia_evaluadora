@@ -82,7 +82,7 @@ export const supervisoresTerritorialesHandlers = [
   http.get("/api/eval-col/supervisores-territoriales/:id", async ({ params }) => {
     await delay(150)
     const s = buscar(params.id)
-    return s ? resultado(toSupervisor(s)) : error(404, "No existe el Supervisor territorial solicitado.")
+    return s ? resultado(toSupervisor(s)) : error(404, "No existe el supervisor territorial solicitado.")
   }),
 
   http.post("/api/eval-col/supervisores-territoriales", async ({ request }) => {
@@ -106,7 +106,7 @@ export const supervisoresTerritorialesHandlers = [
   http.put("/api/eval-col/supervisores-territoriales/:id/estado", async ({ params, request }) => {
     await delay(250)
     const s = buscar(params.id)
-    if (!s) return error(404, "No existe el Supervisor territorial solicitado.")
+    if (!s) return error(404, "No existe el supervisor territorial solicitado.")
     s.activo = Boolean(((await request.json()) as Body).ACTIVO)
     return resultado(toSupervisor(s))
   }),
@@ -114,7 +114,7 @@ export const supervisoresTerritorialesHandlers = [
   http.put("/api/eval-col/supervisores-territoriales/:id", async ({ params, request }) => {
     await delay(300)
     const s = buscar(params.id)
-    if (!s) return error(404, "No existe el Supervisor territorial solicitado.")
+    if (!s) return error(404, "No existe el supervisor territorial solicitado.")
     const body = (await request.json()) as Body
     const fallo = repetido(body, s.pkSupervisor) ?? alcanceInvalido(body, s)
     if (fallo) return error(fallo.startsWith("El ") ? 409 : 400, fallo)

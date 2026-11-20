@@ -76,7 +76,7 @@ export function SearchObservaciones(props: Props) {
         />
         <Combo
           id="observaciones-periodo"
-          label="Período de Evaluación"
+          label="Período de evaluación"
           value={draft.periodo}
           options={opciones.periodos}
           disabled={sinSede || sinJornada}

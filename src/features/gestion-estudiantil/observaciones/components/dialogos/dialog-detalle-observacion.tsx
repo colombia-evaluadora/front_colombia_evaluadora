@@ -63,7 +63,7 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
         {o && (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
             <Dato etiqueta="Fecha">{formatFecha(o.fecha)}</Dato>
-            <Dato etiqueta="Período de Evaluación">{o.periodo_nombre}</Dato>
+            <Dato etiqueta="Período de evaluación">{o.periodo_nombre}</Dato>
             <Dato etiqueta="Grado/Grupo">{o.grado_grupo}</Dato>
             <Dato etiqueta="Dirigida a">
               {o.fk_tmatricula != null

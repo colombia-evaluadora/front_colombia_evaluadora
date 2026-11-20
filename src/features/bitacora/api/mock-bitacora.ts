@@ -63,7 +63,7 @@ const DESCRIPCIONES_COMUNICACIONES = [
 
 const USUARIOS = [
   { nombre: "Marta Lucía Rojas", documento: "52341987", rol: "Rector" },
-  { nombre: "Andrés Felipe Gómez", documento: "1032456781", rol: "Jefe de Sistemas" },
+  { nombre: "Andrés Felipe Gómez", documento: "1032456781", rol: "Jefe de sistemas" },
   { nombre: "Claudia Patricia Díaz", documento: "39874512", rol: "Coordinador" },
   { nombre: "Sistema", documento: null, rol: null },
 ]
@@ -135,7 +135,7 @@ function generar(modulo: BitacoraModulo): EventoMock[] {
         motivo: null,
         tipoRestauracion: tipoDe(accion),
         motivoBloqueoEvento: esSistema
-          ? "Es un cambio hecho por el Sistema."
+          ? "Es un cambio hecho por el sistema."
           : accion === "CREAR"
             ? "Las creaciones no tienen un valor anterior al que volver."
             : null,
@@ -372,7 +372,7 @@ function especialesEvaluacion(): EventoMock[] {
       tipoRestauracion: "RESTAURAR_VALOR",
     }, {
       cambios: [{ campo: "Fin de la valoración", anterior: "12/11/2026", nuevo: "19/11/2026", actual: "19/11/2026" }],
-      vista: "Configuración de Evaluación del Desempeño",
+      vista: "Configuración de evaluación del desempeño",
       puede: true,
     }),
   ]

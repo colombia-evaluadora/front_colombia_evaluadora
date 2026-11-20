@@ -54,14 +54,14 @@ describe("errorPeriodo y textoPeriodo", () => {
     expect(errorPeriodo(resumen)).toBe(MSG_FECHA_SIN_PERIODO)
   })
   it("marca el período que no está Calificable", () => {
-    expect(errorPeriodo([fila({ periodo_calificable: false })])).toBe("El Período de Evaluación Período 1 no está Calificable.")
+    expect(errorPeriodo([fila({ periodo_calificable: false })])).toBe("El período de evaluación Período 1 no está Calificable.")
   })
   it("nombra el período una vez si es el mismo para todos los grupos", () => {
-    expect(textoPeriodo([fila(), fila({ fk_tgrupo: 2, grado_grupo: "6°B" })])).toBe("Período de Evaluación: Período 1.")
+    expect(textoPeriodo([fila(), fila({ fk_tgrupo: 2, grado_grupo: "6°B" })])).toBe("Período de evaluación: Período 1.")
   })
   it("con períodos distintos dice el de cada grupo", () => {
     expect(textoPeriodo([fila(), fila({ fk_tgrupo: 2, grado_grupo: "7°B", periodo_nombre: "Período 2" })])).toBe(
-      "Período de Evaluación: Período 1 (6°A), Período 2 (7°B).",
+      "Período de evaluación: Período 1 (6°A), Período 2 (7°B).",
     )
   })
 })

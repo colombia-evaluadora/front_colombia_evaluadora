@@ -46,7 +46,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
               </Dato>
             </div>
             <Dato label="Responsable de enseñanza">{a.responsable_nombre}</Dato>
-            <Dato label="Período de Evaluación">{a.periodo_evaluacion_nombre}</Dato>
+            <Dato label="Período de evaluación">{a.periodo_evaluacion_nombre}</Dato>
             <Dato label="Preocupa la permanencia">{a.preocupa_permanencia ? "Sí" : "No"}</Dato>
             <Dato label="Requiere mediación">{a.requiere_mediacion ? "Sí" : "No"}</Dato>
             {a.anulada && (
