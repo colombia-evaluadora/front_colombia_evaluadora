@@ -28,13 +28,22 @@ import type {
   ReservasCupoFilters,
 } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 import { CONTADORES_UI } from "@/features/coverage/inscripcion-reservas/api/ui-mappings"
-import { CambiarJornadaSedeDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-cambiar-jornada-sede"
+import {
+  CancelarTrasladoDialog,
+  RestituirReservaDialog,
+} from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-confirmar-reserva"
 import {
   LiberarReservaDialog,
+  RechazarTrasladoDialog,
   RegistrarRetiroDialog,
 } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-motivo-reserva"
 import { ReservarCuposDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-reservar-cupos"
 import { SolicitarTrasladoDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-solicitar-traslado"
+import {
+  AceptarTrasladoDialog,
+  CambiarJornadaSedeDialog,
+  ReservarCupoDialog,
+} from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-ubicacion-reserva"
 import { SearchReservasCupo } from "@/features/coverage/inscripcion-reservas/components/search/search-reservas-cupo"
 import {
   ACCIONES,
@@ -162,9 +171,14 @@ function ReservasCupoContent({ encabezado }: { encabezado: ReactNode }) {
         case "SOLICITAR_TRASLADO":
         case "LIBERAR":
         case "REGISTRAR_RETIRO":
+        case "RESERVAR_CUPO":
+        case "RESTITUIR":
+        case "ACEPTAR_TRASLADO":
+        case "RECHAZAR_TRASLADO":
+        case "CANCELAR_TRASLADO":
           return setModal({ accion, reserva: r })
         default:
-          // Las demás acciones llegan en las siguientes entregas.
+          // Generar constancia espera los Documentos emitidos (Administración 12.4).
           return notify(`${ACCIONES[accion].label}: disponible próximamente.`, { variant: "info" })
       }
     },
@@ -255,6 +269,31 @@ function ReservasCupoContent({ encabezado }: { encabezado: ReactNode }) {
       />
       <RegistrarRetiroDialog
         reserva={reservaDe("REGISTRAR_RETIRO")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
+      />
+      <ReservarCupoDialog
+        reserva={reservaDe("RESERVAR_CUPO")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
+      />
+      <RestituirReservaDialog
+        reserva={reservaDe("RESTITUIR")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
+      />
+      <AceptarTrasladoDialog
+        reserva={reservaDe("ACEPTAR_TRASLADO")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
+      />
+      <RechazarTrasladoDialog
+        reserva={reservaDe("RECHAZAR_TRASLADO")}
+        onOpenChange={cerrarModal}
+        onDone={exito}
+      />
+      <CancelarTrasladoDialog
+        reserva={reservaDe("CANCELAR_TRASLADO")}
         onOpenChange={cerrarModal}
         onDone={exito}
       />

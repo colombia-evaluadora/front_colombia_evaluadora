@@ -10,13 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { LockIcon, PersonRemoveIcon, WarningIcon } from "@/components/ui/icons"
+import { LockIcon, PersonRemoveIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { useAppForm } from "@/lib/forms"
 import { required } from "@/lib/forms/messages"
 
 import {
   useLiberarReserva,
+  useRechazarTraslado,
   useRegistrarRetiro,
 } from "@/features/coverage/inscripcion-reservas/api/mutations/acciones-reserva"
 import { useReservasCupoCatalogosQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
@@ -42,7 +43,7 @@ const ubicacion = (r: ReservaCupo, ...partes: string[]) =>
   [r.grado, ...partes].filter(Boolean).join(" · ")
 
 /**
- * Liberar manualmente y Registrar retiro comparten forma (prototipo): un
+ * Liberar manualmente, Registrar retiro y Rechazar traslado comparten forma (prototipo): un
  * motivo obligatorio, el efecto y un botón destructivo.
  */
 function DialogMotivo({
@@ -222,6 +223,44 @@ export function RegistrarRetiroDialog({ reserva, ...props }: DialogProps) {
         mutateAsync: (motivoId) => retiro.mutateAsync({ id: r.id, motivoId }),
         isPending: retiro.isPending,
         error: retiro.error,
+      }}
+    />
+  )
+}
+
+/**
+ * Rechazar traslado (Sección 3.2.1), en el destino: exige un motivo de rechazo; la fila sale de la
+ * lista, la reserva del origen sigue Reservada y se avisa al acudiente.
+ */
+export function RechazarTrasladoDialog({ reserva, ...props }: DialogProps) {
+  const { data: catalogos } = useReservasCupoCatalogosQuery()
+  const rechazar = useRechazarTraslado()
+  if (!reserva) return null
+  const r = reserva
+  return (
+    <DialogMotivo
+      key={r.id}
+      {...props}
+      // La mutación vive fuera del modal: al cerrar se limpia su error.
+      onOpenChange={(open) => {
+        if (!open) rechazar.reset()
+        props.onOpenChange(open)
+      }}
+      titulo={<>Rechazar traslado — {r.estudiante}</>}
+      subtitulo={
+        r.establecimientoOrigen
+          ? `El estudiante conserva su reserva en ${r.establecimientoOrigen}.`
+          : "El estudiante conserva su reserva en el establecimiento de origen."
+      }
+      campo="Motivo de rechazo"
+      motivos={catalogos?.motivosRechazoTraslado ?? []}
+      boton="Rechazar"
+      icono={<XIcon data-icon="inline-start" />}
+      exito={`Se rechazó el traslado de ${r.estudiante}.`}
+      enviar={{
+        mutateAsync: (motivoId) => rechazar.mutateAsync({ id: r.id, motivoId }),
+        isPending: rechazar.isPending,
+        error: rechazar.error,
       }}
     />
   )

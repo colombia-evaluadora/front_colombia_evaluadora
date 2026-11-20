@@ -31,6 +31,38 @@ export const useCambiarJornadaSede = () =>
     evalCol.postRow(`${RESERVAS_BASE}/${id}/cambiar-ubicacion`, { FK_TGRADO: fkTgrado }),
   )
 
+/** Reservar cupo de una Sin continuidad: pasa a Reservada en el grado (sede y jornada) con cupo. */
+export const useReservarCupo = () =>
+  useAccionReserva(({ id, fkTgrado }: CambiarJornadaSedeInput) =>
+    evalCol.postRow(`${RESERVAS_BASE}/${id}/reservar-cupo`, { FK_TGRADO: fkTgrado }),
+  )
+
+/**
+ * Restituir una Liberada a Reservada en su misma ubicación. El back responde 409 si ya no hay cupo,
+ * venció la fecha límite de matrícula, el estudiante tiene otra vigente o la liberó la entidad territorial.
+ */
+export const useRestituirReserva = () =>
+  useAccionReserva((id: string) => evalCol.postRow(`${RESERVAS_BASE}/${id}/restituir`, {}))
+
+/**
+ * Aceptar traslado (destino): crea la reserva aquí en el grado elegido y libera la del origen.
+ * `id` es la reserva del origen (la fila del traslado entrante).
+ */
+export const useAceptarTraslado = () =>
+  useAccionReserva(({ id, fkTgrado }: CambiarJornadaSedeInput) =>
+    evalCol.postRow(`${RESERVAS_BASE}/${id}/traslado/aceptar`, { FK_TGRADO: fkTgrado }),
+  )
+
+/** Rechazar traslado (destino) con un motivo de rechazo; la reserva del origen sigue Reservada. */
+export const useRechazarTraslado = () =>
+  useAccionReserva(({ id, motivoId }: LiberarReservaInput) =>
+    evalCol.postRow(`${RESERVAS_BASE}/${id}/traslado/rechazar`, { FK_TLV_MOTIVO: motivoId }),
+  )
+
+/** Cancelar un traslado Pendiente (origen); la reserva sigue Reservada. */
+export const useCancelarTraslado = () =>
+  useAccionReserva((id: string) => evalCol.postRow(`${RESERVAS_BASE}/${id}/traslado/cancelar`, {}))
+
 /** Liberar manualmente (solo La familia desiste, Matriculado en otro EE o Error de registro). */
 export const useLiberarReserva = () =>
   useAccionReserva(({ id, motivoId }: LiberarReservaInput) =>

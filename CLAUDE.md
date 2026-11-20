@@ -108,7 +108,7 @@ Los features reales se desvían (ver §6). **Al editar, seguí la convención de
 - `/` → siempre redirige a `/login` (no hay landing).
 - `_auth` (pathless, `AuthLayout`): `/login` (si ya hay sesión redirige a `redirectTo || /app`), `/forgot-password`, `/forgot-username`, `/check-email?token`, `/restore-password?token`, `/activate?token`.
 - `/app` (`ProtectedLayout`): `beforeLoad` → `hasSession(queryClient)`; sin sesión → `redirect({ to: "/login", search: { redirectTo } })`.
-  - `/app/` (index): carga el menú del usuario y redirige al **primer ítem del sidebar** (`getFirstNavUrl`); fallback `/app/cobertura/reserva-de-cupo`.
+  - `/app/` (index): carga el menú del usuario y redirige al **primer ítem del sidebar** (`getLandingNavUrl`); sin red y sin menú, fallback `/app/planeador/actividades`; sin ningún ítem, `/app/sin-acceso`. (`/app/cobertura/reserva-de-cupo` solo redirige a `/app/cobertura/inscritos`, para no romper enlaces viejos.)
   - `cobertura/*` → `features/coverage`
   - `_audits` (pathless + `NoticeProvider`) → `registro-de-actividad/*` → `features/administration/audits`
   - `administracion/roles-menus` → `features/administration/roles-menus`
