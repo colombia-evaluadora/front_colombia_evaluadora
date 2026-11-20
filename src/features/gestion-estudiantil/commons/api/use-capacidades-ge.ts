@@ -16,6 +16,8 @@ export interface CapacidadesGe {
   observador_puede_remitir: boolean
   observaciones_puede_registrar: boolean
   actividades_puede_crear: boolean
+  citaciones_puede_citar: boolean
+  citaciones_puede_crear_compromiso: boolean
 }
 
 export const capacidadesGeKeys = {

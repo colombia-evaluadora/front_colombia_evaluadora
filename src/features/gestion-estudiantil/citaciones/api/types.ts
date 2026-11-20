@@ -21,7 +21,7 @@ export type OrigenCitacionTipo =
 
 export type OrigenCompromisoTipo = "CITACION" | "ANOTACION" | "CASO_CONVIVENCIA"
 
-/** Fila de `POST /citaciones/query` (31 columnas; `total_count` se repite en cada fila). */
+/** Fila de `POST /citaciones/query` (37 columnas; `total_count` se repite en cada fila). */
 export interface CitacionRow {
   id: number
   fecha_programada: string | null
@@ -55,6 +55,13 @@ export interface CitacionRow {
   /** La citación es de quien atiende el usuario actual. */
   es_propia: boolean
   total_count: number
+  /** Banderas del back: cada una aplica el estado y el gate de su POST. */
+  puede_programar: boolean
+  puede_reprogramar: boolean
+  puede_cancelar: boolean
+  puede_registrar_asistencia: boolean
+  puede_crear_compromiso: boolean
+  puede_documento: boolean
 }
 
 export interface HistorialCitacion {
@@ -97,7 +104,7 @@ export interface AcudienteMatricula {
   acudiente_nombre: string | null
 }
 
-/** Fila de `POST /compromisos/query` (25 columnas). */
+/** Fila de `POST /compromisos/query` (28 columnas). */
 export interface CompromisoRow {
   id: number
   fecha: string
@@ -127,6 +134,9 @@ export interface CompromisoRow {
   /** Lo creó el usuario actual (en citaciones la columna es `es_propia`). */
   es_propio: boolean
   total_count: number
+  puede_aceptacion_presencial: boolean
+  puede_registrar_resultado: boolean
+  puede_documento: boolean
 }
 
 export interface ItemCompromiso {

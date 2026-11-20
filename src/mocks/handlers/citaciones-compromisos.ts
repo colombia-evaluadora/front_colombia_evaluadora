@@ -54,6 +54,31 @@ const ahoraColombia = () => {
 
 const ORIGEN_SISTEMA_REPROGRAMA = ["CASO_CONVIVENCIA", "SENAL_SALUD_MENTAL", "PROCESO_DISCIPLINARIO"]
 
+/** Banderas `puede_*` como las calcula el back (estado + gate): el actor del mock es el Supervisor de sede. */
+function banderasCitacion(c: CitacionRow) {
+  const e = c.estado_valor
+  return {
+    ...c,
+    puede_programar: e === "POR_PROGRAMAR",
+    puede_reprogramar:
+      e === "PROGRAMADA" || e === "CONFIRMADA" || (e === "NO_ASISTIO" && ORIGEN_SISTEMA_REPROGRAMA.includes(c.origen_tipo ?? "")),
+    puede_cancelar: e === "POR_PROGRAMAR" || e === "PROGRAMADA" || e === "CONFIRMADA",
+    puede_registrar_asistencia:
+      c.es_propia && (e === "PROGRAMADA" || e === "CONFIRMADA") && c.fecha_programada != null && new Date(c.fecha_programada).getTime() <= Date.now(),
+    puede_crear_compromiso: e === "ASISTIO",
+    puede_documento: true,
+  }
+}
+
+function banderasCompromiso(c: CompromisoRow) {
+  return {
+    ...c,
+    puede_aceptacion_presencial: c.estado_valor === "PENDIENTE_ACEPTACION",
+    puede_registrar_resultado: c.es_propio && c.estado_valor === "VIGENTE",
+    puede_documento: true,
+  }
+}
+
 function pagina<T extends { total_count: number }>(todas: T[], pageIndex: number, pageSize: number) {
   const size = pageSize > 0 ? pageSize : 20
   const total = todas.length
@@ -201,14 +226,14 @@ export const citacionesCompromisosHandlers = [
           return a.fecha_programada === b.fecha_programada ? b.id - a.id : a.fecha_programada ? 1 : -1
         return b.fecha_programada.localeCompare(a.fecha_programada) || b.id - a.id
       })
-    return rows(pagina(filtradas, body.PAGEINDEX ?? 0, body.PAGESIZE ?? 20))
+    return rows(pagina(filtradas, body.PAGEINDEX ?? 0, body.PAGESIZE ?? 20).map(banderasCitacion))
   }),
 
   http.get(`${BASE}/citaciones/:id`, async ({ params }) => {
     await delay(100)
     const c = citacionesDb.find((x) => x.id === Number(params.id))
     if (!c) return noExisteCitacion()
-    return datos({ ...c, total_count: 1, historial: historialDb[c.id] ?? [] })
+    return datos({ ...banderasCitacion(c), total_count: 1, historial: historialDb[c.id] ?? [] })
   }),
 
   http.get(`${BASE}/citaciones/:id/documento`, async ({ params }) => {
@@ -384,7 +409,7 @@ export const citacionesCompromisosHandlers = [
         return true
       })
       .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id)
-    return rows(pagina(filtrados, body.PAGEINDEX ?? 0, body.PAGESIZE ?? 20))
+    return rows(pagina(filtrados, body.PAGEINDEX ?? 0, body.PAGESIZE ?? 20).map(banderasCompromiso))
   }),
 
   // `soporte` va antes que `:id`: es el mismo prefijo.
@@ -397,7 +422,7 @@ export const citacionesCompromisosHandlers = [
     await delay(100)
     const c = compromisosDb.find((x) => x.id === Number(params.id))
     if (!c) return noExisteCompromiso()
-    return datos({ ...c, total_count: 1, items: itemsDb[c.id] ?? [] })
+    return datos({ ...banderasCompromiso(c), total_count: 1, items: itemsDb[c.id] ?? [] })
   }),
 
   http.get(`${BASE}/compromisos/:id/documento`, async ({ params }) => {

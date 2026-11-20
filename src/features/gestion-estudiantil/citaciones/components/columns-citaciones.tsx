@@ -9,13 +9,11 @@ import {
   accionesCitacion,
   COLOR_ESTADO_CITACION,
   origenEnlace,
-  type PermisosCitaciones,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_CITACION, MenuAccionesCitacion, type AccionCitacion } from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-citacion"
 
 interface ColumnasOpciones {
-  permisos: PermisosCitaciones & { puedeVer: boolean }
   onAccion: (citacion: CitacionRow, accion: AccionCitacion) => void
 }
 
@@ -32,7 +30,7 @@ const columna = (id: string, titulo: string) => ({
 })
 
 /** Columnas del listado de citaciones (G.3.CIT.1). */
-export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones): ColumnDef<CitacionRow>[] {
+export function buildColumnsCitaciones({ onAccion }: ColumnasOpciones): ColumnDef<CitacionRow>[] {
   return [
     {
       ...columna("fecha", "Fecha y hora"),
@@ -96,8 +94,7 @@ export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones)
       cell: ({ row }) => (
         <MenuAccionesCitacion
           estudiante={row.original.estudiante_nombre}
-          acciones={accionesCitacion(row.original, permisos)}
-          puedeVer={permisos.puedeVer}
+          acciones={accionesCitacion(row.original)}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),
