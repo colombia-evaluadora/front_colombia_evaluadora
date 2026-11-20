@@ -25,20 +25,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import {
   CaretRightIcon,
   CheckCircleIcon,
   CheckIcon,
   ControlPointIcon,
-  DotsThreeVerticalIcon,
   InfoIcon,
   LockIcon,
   PencilIcon,
@@ -50,6 +42,8 @@ import {
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ACTIONS_BUTTON_HOVER_CLASS } from "@/components/table-row-actions"
 import { useArrastrarFilas } from "@/hooks/use-arrastrar-filas"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -69,6 +63,7 @@ import { usePredeterminadoValor } from "@/features/administration/listas-valor/a
 import { useCategoriasQuery } from "@/features/administration/listas-valor/api/query/use-categorias-query"
 import { useValoresQuery } from "@/features/administration/listas-valor/api/query/use-valores-query"
 import type { Categoria, ListaValor } from "@/features/administration/listas-valor/api/types/lista-valor"
+import { AccionFila } from "@/features/administration/listas-valor/components/accion-fila"
 import { createValoresColumns } from "@/features/administration/listas-valor/components/columns-valores"
 import { DialogBloqueo, type Bloqueo } from "@/features/administration/listas-valor/components/dialog-bloqueo"
 import { DialogLista } from "@/features/administration/listas-valor/components/dialog-lista"
@@ -379,14 +374,22 @@ function ListasValorPageContent() {
   })
 
   // Una lista que usan campos del sistema no se inactiva ni se elimina (LIS.1); las del sistema tampoco se eliminan.
-  const usadaPorCampos = Boolean(categoria?.camposQueUsan?.length)
-  const notaMenuLista = !categoria
-    ? ""
-    : usadaPorCampos
-      ? `La usan selectores de ${modulosQueUsan(categoria.camposQueUsan ?? [])}: no se puede eliminar ni inactivar.`
-      : categoria.esSistema
+  const usadaPorCampos = (c: Categoria) => Boolean(c.camposQueUsan?.length)
+  const restriccionLista = (c: Categoria) =>
+    usadaPorCampos(c)
+      ? `La usan selectores de ${modulosQueUsan(c.camposQueUsan ?? [])}: no se puede eliminar ni inactivar.`
+      : c.esSistema
         ? "Lista del sistema: se puede inactivar, pero no eliminar."
-        : "Eliminar solo si ningún registro usa sus valores; si no, inactívela."
+        : null
+
+  function cambiarEstadoLista(c: Categoria) {
+    // LIS.3: en vez de un botón deshabilitado sin explicación, el aviso dice qué campos la usan.
+    if (c.habilitada && usadaPorCampos(c)) {
+      setBloqueo(bloqueoLista(c))
+      return
+    }
+    estadoLista.mutate({ categoria: c.categoria, habilitada: !c.habilitada })
+  }
 
   return (
     <TableScreen>
@@ -470,15 +473,17 @@ function ListasValorPageContent() {
                     <ul className="flex max-h-[65vh] flex-col overflow-y-auto lg:max-h-none lg:flex-1">
                       {listasFiltradas.map((c) => {
                         const activa = c.categoria === categoria?.categoria
+                        const restriccion = restriccionLista(c)
+                        const puedeBorrar = permisos.puedeEliminar && !usadaPorCampos(c) && !c.esSistema
                         return (
-                          <li key={c.categoria} className="border-b border-border last:border-b-0">
+                          <li key={c.categoria} className="group/row relative border-b border-border transition-colors last:border-b-0 hover:bg-muted-22">
                             <button
                               type="button"
                               aria-current={activa ? "true" : undefined}
                               onClick={() => seleccionar(c.categoria)}
                               className={cn(
                                 // Ring inset: el contenedor con scroll recorta el ring exterior.
-                                "flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none hover:bg-primary-22 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
+                                "flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
                                 activa && "bg-primary-22",
                                 !c.habilitada && "opacity-55",
                               )}
@@ -507,6 +512,55 @@ function ListasValorPageContent() {
                                 {c.habilitada ? "Activa" : "Inactiva"}
                               </Badge>
                             </button>
+                            {/* Acciones de la lista: iconos al hover (fuera del botón, quedan al 100% en las inactivas). */}
+                            {(permisos.puedeEditar || permisos.puedeEliminar) && (
+                              <div
+                                className={cn(
+                                  "absolute inset-y-0 right-0 flex items-center gap-1 px-2 opacity-0 transition-opacity group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
+                                  ACTIONS_BUTTON_HOVER_CLASS,
+                                  // Mismo fondo que el bloque de acciones de las tablas; en la lista elegida, su azul.
+                                  activa
+                                    ? "bg-card bg-[linear-gradient(var(--primary-22),var(--primary-22))]"
+                                    : "bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]",
+                                )}
+                              >
+                                {permisos.puedeEditar && (
+                                  <AccionFila label="Modificar" onClick={() => setDialogLista({ categoria: c })}>
+                                    <PencilIcon />
+                                  </AccionFila>
+                                )}
+                                {permisos.puedeEditar && (
+                                  <AccionFila
+                                    label={c.habilitada ? "Inactivar" : "Activar"}
+                                    disabled={estadoLista.isPending}
+                                    onClick={() => cambiarEstadoLista(c)}
+                                  >
+                                    {c.habilitada ? <ProhibitIcon /> : <CheckCircleIcon />}
+                                  </AccionFila>
+                                )}
+                                {puedeBorrar && (
+                                  <AccionFila label="Eliminar" destructivo onClick={() => setEliminandoLista(c)}>
+                                    <TrashIcon />
+                                  </AccionFila>
+                                )}
+                                {restriccion && (
+                                  <Tooltip>
+                                    <TooltipTrigger
+                                      render={
+                                        <span
+                                          tabIndex={0}
+                                          className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                                        />
+                                      }
+                                    >
+                                      <InfoIcon className="size-4" />
+                                      <span className="sr-only">Restricciones de la lista</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-64">{restriccion}</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            )}
                           </li>
                         )
                       })}
@@ -607,74 +661,12 @@ function ListasValorPageContent() {
                       onClearAll={() => setBusquedaValor("")}
                       activeFilterCount={busquedaValor ? 1 : 0}
                     />
-                    <div className="flex items-center gap-2">
-                      {permisos.puedeEditar && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          color="neutral"
-                          onClick={() => setDialogLista({ categoria })}
-                        >
-                          <PencilIcon data-icon="inline-start" />
-                          Modificar lista
-                        </Button>
-                      )}
-                      {(permisos.puedeEditar || permisos.puedeEliminar) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button
-                                variant="outline"
-                                color="neutral"
-                                size="icon"
-                                aria-label={`Acciones de la lista ${categoria.nombre}`}
-                                disabled={estadoLista.isPending}
-                              />
-                            }
-                          >
-                            <DotsThreeVerticalIcon />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-72">
-                            {permisos.puedeEditar && (
-                              <DropdownMenuItem
-                                disabled={categoria.habilitada && usadaPorCampos}
-                                onClick={() =>
-                                  estadoLista.mutate({
-                                    categoria: categoria.categoria,
-                                    habilitada: !categoria.habilitada,
-                                  })
-                                }
-                              >
-                                {categoria.habilitada ? <ProhibitIcon /> : <CheckCircleIcon />}
-                                {categoria.habilitada ? "Inactivar" : "Activar"}
-                              </DropdownMenuItem>
-                            )}
-                            {permisos.puedeEliminar && (
-                              <DropdownMenuItem
-                                variant="destructive"
-                                disabled={usadaPorCampos || categoria.esSistema}
-                                onClick={() => setEliminandoLista(categoria)}
-                              >
-                                <TrashIcon />
-                                Eliminar
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <p className="flex gap-1.5 px-2 py-1.5 text-xs text-muted-foreground">
-                              <InfoIcon aria-hidden className="mt-px size-3.5 shrink-0" />
-                              {notaMenuLista}
-                            </p>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                      {/* El botón primario va siempre al final del grupo. */}
                       {permisos.puedeCrear && (
                         <Button size="sm" color="primary" onClick={() => setDialogValor({})}>
                           <ControlPointIcon data-icon="inline-start" />
                           Nuevo valor
                         </Button>
                       )}
-                    </div>
                   </div>
 
                   {/* La fila que se arrastra flota sobre las demás. */}
