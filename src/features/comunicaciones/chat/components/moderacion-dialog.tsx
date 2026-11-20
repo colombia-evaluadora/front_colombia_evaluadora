@@ -18,7 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import { InfoIcon, WarningIcon } from "@/components/ui/icons"
-import { useAuth } from "@/features/auth/hooks/use-auth"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import {
@@ -104,23 +104,28 @@ type Pestana = "reportes" | "suspensiones" | "configuracion"
 
 /**
  * Opción de la vista de mensajería (Guía M.2.MOD.1). PROVISIONAL: Supervisor de sede = coordinador,
- * Administrador del establecimiento = rector. Suspensiones y configuración, solo el rector.
+ * Administrador del establecimiento = rector. Suspensiones: quien tenga `puedeSuspender` en la política
+ * (Administrador o Supervisor de sede, este solo en sus sedes y jornadas). Configuración, solo el rector.
  */
 export function ModeracionDialog({
   open,
   onClose,
   esAdministrador,
+  puedeSuspender,
   reporteResaltado,
 }: {
   open: boolean
   onClose: () => void
   esAdministrador: boolean
+  puedeSuspender: boolean
   reporteResaltado?: number
 }) {
   const [pestana, setPestana] = useState<Pestana>("reportes")
-  const pestanas: [Pestana, string][] = esAdministrador
-    ? [["reportes", "Reportes"], ["suspensiones", "Suspensiones"], ["configuracion", "Configuración de la mensajería"]]
-    : [["reportes", "Reportes"]]
+  const pestanas: [Pestana, string][] = [
+    ["reportes", "Reportes"],
+    ...(puedeSuspender ? [["suspensiones", "Suspensiones"] as [Pestana, string]] : []),
+    ...(esAdministrador ? [["configuracion", "Configuración de la mensajería"] as [Pestana, string]] : []),
+  ]
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-3xl">
@@ -135,7 +140,7 @@ export function ModeracionDialog({
           ))}
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
-          {pestana === "reportes" && <Reportes activo={open} esAdministrador={esAdministrador} resaltado={reporteResaltado} />}
+          {pestana === "reportes" && <Reportes activo={open} puedeSuspender={puedeSuspender} resaltado={reporteResaltado} />}
           {pestana === "suspensiones" && <Suspensiones activo={open} />}
           {pestana === "configuracion" && <Configuracion activo={open} />}
         </div>
@@ -146,7 +151,7 @@ export function ModeracionDialog({
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })
 
-function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esAdministrador: boolean; resaltado?: number }) {
+function Reportes({ activo, puedeSuspender, resaltado }: { activo: boolean; puedeSuspender: boolean; resaltado?: number }) {
   const reportes = useReportesQuery(activo)
   const [elegido, setElegido] = useState<number | null>(null)
   const revisar = useRevisarReporte()
@@ -193,7 +198,7 @@ function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esA
                   {m.eliminado ? <em>Mensaje retirado por el remitente</em> : textoPlano(m.texto, m.menciones)}
                 </p>
               ))}
-              {esAdministrador && autores.length > 0 && (
+              {puedeSuspender && autores.length > 0 && (
                 <div className="flex flex-wrap gap-2 border-t pt-2">
                   {autores.map(([id, nombre]) => (
                     <Button key={id} size="sm" variant="ghost" color="destructive" onClick={() => setSuspender({ id, nombre })}>
@@ -213,11 +218,14 @@ function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esA
   )
 }
 
-/** Botón de la ficha de la persona en el chat; solo el rector lo ve (el servidor también lo exige). */
+/**
+ * Botón de la ficha de la persona en el chat: Administrador o Supervisor de sede (`puedeSuspender`).
+ * El alcance por sedes y jornadas lo exige el servidor (403 con su mensaje en el diálogo).
+ */
 export function SuspenderPersona({ persona }: { persona: { id: number; nombre: string; rol?: string } }) {
-  const roles = useAuth().user?.roles ?? []
+  const { puedeSuspender } = useChatAccess()
   const [abierto, setAbierto] = useState(false)
-  if (!roles.includes("CEVAL-RECTOR")) return null
+  if (!puedeSuspender) return null
   return (
     <>
       <button

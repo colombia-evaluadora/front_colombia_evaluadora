@@ -36,8 +36,17 @@ describe("moderación de la mensajería (mock)", () => {
     expect((await llamar("GET", "moderacion/reportes")).filas).toHaveLength(antes + 1)
   })
 
-  it("solo el rector suspende, sin duplicar, y puede levantar", async () => {
+  it("el supervisor de sede suspende y levanta, pero no cambia la configuración", async () => {
     rol.actual = "CEVAL-COORDINADOR"
+    expect((await llamar("POST", "moderacion/suspensiones", { FK_USUARIO: 3, MOTIVO: "x" })).status).toBe(200)
+    const [s] = (await llamar("GET", "moderacion/suspensiones")).filas
+    expect((await llamar("PATCH", `moderacion/suspensiones/${s.id}/levantar`)).status).toBe(200)
+    expect((await llamar("GET", "moderacion/configuracion")).status).toBe(403)
+    expect((await llamar("PUT", "moderacion/configuracion", { HORA_INICIO: "", HORA_FIN: "" })).status).toBe(403)
+  })
+
+  it("el rector suspende, sin duplicar, y puede levantar; el docente no", async () => {
+    rol.actual = "CEVAL-DOCENTE"
     expect((await llamar("POST", "moderacion/suspensiones", { FK_USUARIO: 2, MOTIVO: "x" })).status).toBe(403)
     rol.actual = "CEVAL-RECTOR"
     expect((await llamar("POST", "moderacion/suspensiones", { FK_USUARIO: 2 })).status).toBe(400)

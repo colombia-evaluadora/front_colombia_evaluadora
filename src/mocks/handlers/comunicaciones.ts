@@ -118,6 +118,12 @@ function noEncontrada() {
 }
 
 /** Estudiante (menor en el mock) sin el permiso de la institución: solo responde. */
+// Igual que fn_moderacion_puede_suspender: Administrador (rector) o Supervisor de sede (coordinador).
+function puedeSuspender(request: Request) {
+  const roles = usuarioDe(request)?.roles ?? []
+  return roles.includes("CEVAL-RECTOR") || roles.includes("CEVAL-COORDINADOR")
+}
+
 function puedeIniciar(request: Request) {
   return perfilDe(request) !== "ESTUDIANTE" || permisoMenores.permitirMenoresIniciar
 }
@@ -298,7 +304,7 @@ export const comunicacionesHandlers = [
   // Política de DMs y menciones masivas de la institución (pendiente de aprobación).
   http.get(URL("politica"), async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({ rows: [{ ...politicaChat, puedeIniciarConversaciones: puedeIniciar(request) }] })
+    return HttpResponse.json({ rows: [{ ...politicaChat, puedeIniciarConversaciones: puedeIniciar(request), puedeSuspender: puedeSuspender(request) }] })
   }),
 
   // "Enviar por separado" (SSO #1006): un directo nuevo por destinatario, sin adjuntos.
