@@ -76,8 +76,8 @@ function PrevencionContent() {
 
   const tabs = (
     <Tabs value={actual} onValueChange={(v) => setPestana(v as Pestana)}>
-      {/* El borde inferior ya lo pone TableScreenTabs. */}
-      <TabsList className="border-b-0" aria-label="Secciones de prevención y retención">
+      {/* El borde inferior ya lo pone TableScreenTabs. Son 11 pestañas: en pantallas estrechas se desplazan en horizontal. */}
+      <TabsList className="border-b-0 overflow-x-auto overflow-y-hidden" aria-label="Secciones de prevención y retención">
         {visibles.map((p) => (
           <TabsTrigger key={p.value} value={p.value}>
             {/* Contador (§9.11): gestiones del usuario Pendientes o vencidas; sin ninguna, sin número. */}
