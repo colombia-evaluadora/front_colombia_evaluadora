@@ -19,7 +19,7 @@ export function ConstructorPruebas({ form }: { form: ProcesoFormState }) {
         forzarAbierta={intento && Object.keys(errores.pruebas).length > 0}
         contentClassName="flex flex-col gap-3 p-4"
         accion={
-          <Button type="button" size="sm" variant="outline" onClick={() => set({ pruebas: [...v.pruebas, pruebaVacia()] })}>
+          <Button type="button" size="sm" variant="outline" color="neutral" onClick={() => set({ pruebas: [...v.pruebas, pruebaVacia()] })}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar prueba
           </Button>

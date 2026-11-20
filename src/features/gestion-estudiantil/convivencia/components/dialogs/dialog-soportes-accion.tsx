@@ -44,7 +44,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
         </DialogHeader>
         <NoticeBanner notice={f.notice} onClose={f.cerrarNotice} variant="error" />
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant="outline" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={f.vincularCaso}>
+          <Button type="button" size="sm" variant="outline" color="neutral" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={f.vincularCaso}>
             <IconoCarga cargando={f.agregando}><LinkIcon data-icon="inline-start" /></IconoCarga>
             Vincular soporte del caso
           </Button>

@@ -1,11 +1,11 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { SiNo } from "@/features/gestion-estudiantil/convivencia/components/si-no"
 import type { DatosSiuce } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { useSecuelasHabilitadas, type ErroresSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface DatosSiuceFieldsProps {
   idPrefix: string
@@ -23,13 +23,10 @@ export function DatosSiuceFields({ idPrefix, value: v, onChange, required, error
   const agresiones = useCatalogo("TIPO_AGRESION")
   const eventos = useCatalogo("EVENTO_GENERADOR")
   const secuelasHabilitadas = useSecuelasHabilitadas(v)
-  const req = required ? "*" : ""
 
   return (
     <div className="flex flex-col gap-4">
-      <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.tiposDano) || undefined}>
-        <FieldLabel id={`${idPrefix}-dano`}>Tipo de daño{req}</FieldLabel>
-        <div role="group" aria-labelledby={`${idPrefix}-dano`} className="flex min-h-10 flex-wrap items-center gap-x-6 gap-y-2 px-3 pt-3">
+      <MarcoOpciones id={`${idPrefix}-dano`} label="Tipo de daño" required={Boolean(required)} error={errores.tiposDano}>
           {danos.map((d) => (
             <label key={d.value} className="flex items-center gap-2 text-sm">
               <Checkbox
@@ -44,9 +41,7 @@ export function DatosSiuceFields({ idPrefix, value: v, onChange, required, error
               {d.label}
             </label>
           ))}
-        </div>
-        {errores.tiposDano && <FieldError>{errores.tiposDano}</FieldError>}
-      </Field>
+      </MarcoOpciones>
       <div className={`grid grid-cols-1 items-start gap-3 ${conEvento ? "sm:grid-cols-2" : ""}`}>
         <ComboOpciones
           id={`${idPrefix}-agresion`}

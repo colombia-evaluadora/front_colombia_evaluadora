@@ -1,5 +1,6 @@
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 interface SiNoProps {
   id: string
@@ -14,40 +15,25 @@ interface SiNoProps {
   noDeshabilitado?: boolean
 }
 
-/** Pregunta Sí/No con dos radios y sin valor por defecto (patrón de dialog-save-festivo). */
+/** Pregunta Sí/No con dos radios en el recuadro de opciones, sin valor por defecto (patrón de dialog-save-festivo). */
 export function SiNo({ id, label, value, onChange, disabled, required, error, noDeshabilitado }: SiNoProps) {
   return (
-    <Field
-      orientation="vertical"
-      variant="outlined"
-      className="gap-2"
-      role="group"
-      aria-labelledby={`${id}-label`}
-      data-invalid={Boolean(error) || undefined}
-      data-disabled={disabled || undefined}
-    >
-      <FieldLabel id={`${id}-label`}>
-        {label}
-        {required && "*"}
-      </FieldLabel>
+    <MarcoOpciones id={id} label={label} required={required} error={error}>
       <RadioGroup
         aria-labelledby={`${id}-label`}
-        // pl-3.5: el mismo sangrado que el texto de la etiqueta flotante, para que el círculo arranque bajo ella.
-        className="flex h-10 flex-row items-center gap-6 pr-3 pl-3.5"
         value={value == null ? "" : value ? "si" : "no"}
         onValueChange={(v) => onChange(v === "si")}
         disabled={disabled}
       >
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2">
           <RadioGroupItem value="si" />
           Sí
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2">
           <RadioGroupItem value="no" disabled={noDeshabilitado} />
           No
         </label>
       </RadioGroup>
-      {error && <FieldError>{error}</FieldError>}
-    </Field>
+    </MarcoOpciones>
   )
 }

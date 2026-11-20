@@ -1,6 +1,4 @@
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { XIcon } from "@/components/ui/icons"
 
 import { CampoTexto } from "@/features/gestion-estudiantil/prevencion/components/estrategias/form/campo-texto"
 import { CampoLista } from "@/features/gestion-estudiantil/prevencion/components/caracterizacion/form/campo-lista"
@@ -11,6 +9,7 @@ import {
   MAX,
   type IntegranteForm,
 } from "@/features/gestion-estudiantil/prevencion/utils/formularios-caracterizacion"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 
 interface Props {
   f: FormularioCaracterizacion
@@ -37,17 +36,11 @@ export function FilaIntegrante({ f, integrante: i, indice: n }: Props) {
           </Badge>
         )}
         {!f.lectura && (
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
+          <BotonQuitar
+            label={`Quitar al integrante ${n + 1}`}
             className="ml-auto"
-            aria-label={`Quitar al integrante ${n + 1}`}
             onClick={() => f.integrantes.quitar(i.clave)}
-          >
-            <XIcon />
-          </Button>
+          />
         )}
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
