@@ -209,7 +209,7 @@ function ReservasCupoContent({ encabezado }: { encabezado: ReactNode }) {
               <PersonCheckIcon data-icon="inline-start" />
               Por confirmar
             </Button>
-            <ReservarCuposDialog onDone={exito} />
+            <ReservarCuposDialog />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>

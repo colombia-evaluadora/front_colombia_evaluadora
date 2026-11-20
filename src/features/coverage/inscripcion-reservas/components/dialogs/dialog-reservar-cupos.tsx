@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,39 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  ArmchairIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  InfoIcon,
-  WarningIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { ArmchairIcon, CalendarPlusIcon, CheckCircleIcon, InfoIcon } from "@/components/ui/icons"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 
 import { useReservarCupos } from "@/features/coverage/inscripcion-reservas/api/mutations/reservar-cupos"
 import { usePeriodosInscripcionesQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
-import { Aviso } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
+import {
+  Aviso,
+  EstadoReservaBadge,
+} from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
 import type { ReservarCuposResumen } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 
-function textoOmitidos(o: ReservarCuposResumen["omitidos"]) {
-  const partes = [
-    o.conReserva && `${o.conReserva} ya tenían reserva`,
-    o.sinGradoSiguiente && `${o.sinGradoSiguiente} sin grado siguiente`,
-    o.sinPeriodoContinuidad && `${o.sinPeriodoContinuidad} sin período de continuidad`,
-    o.noRenovacion && `${o.noRenovacion} con No renovación del cupo`,
-  ].filter(Boolean)
-  return `Estudiantes omitidos: ${o.total}${partes.length ? ` (${partes.join(", ")})` : ""}.`
-}
-
 /** Botón y modal de "Reservar cupos" (Cobertura, Sección 3.2, Regla 35). */
-export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => void }) {
+export function ReservarCuposDialog() {
   const [open, setOpen] = useState(false)
   // `null` = todavía no se tocó: por defecto van todos los períodos.
   const [elegidos, setElegidos] = useState<string[] | null>(null)
-  const [resumen, setResumen] = useState<ReservarCuposResumen | null>(null)
+  // El resumen lleva cuántos períodos se procesaron (el back no los devuelve).
+  const [resumen, setResumen] = useState<(ReservarCuposResumen & { periodos: number }) | null>(null)
 
   const { data: periodos, isPending } = usePeriodosInscripcionesQuery()
   const reservar = useReservarCupos()
@@ -69,12 +56,7 @@ export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => 
     reservar.mutate(
       { periodoIds: seleccion },
       {
-        onSuccess: (r) => {
-          setResumen(r)
-          onDone?.(
-            `Reservar cupos: ${r.creadas} reservas creadas, ${r.sinContinuidad} Sin continuidad.`,
-          )
-        },
+        onSuccess: (r) => setResumen({ ...r, periodos: seleccion.length }),
       },
     )
   }
@@ -87,32 +69,70 @@ export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => 
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-lg" showCloseButton={!resumen}>
+        <DialogContent className="sm:max-w-lg">
           {resumen ? (
             <>
               <DialogHeader>
-                <DialogTitle>Reservar cupos — Resumen</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <CheckCircleIcon className="size-5 text-green" aria-hidden />
+                  Reservas creadas
+                </DialogTitle>
+                <DialogDescription>
+                  Se{" "}
+                  {resumen.periodos === 1
+                    ? "procesó 1 período"
+                    : `procesaron ${resumen.periodos} períodos`}{" "}
+                  en Inscripciones.
+                </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-3">
-                <Aviso tono="success" icon={CheckCircleIcon}>
-                  Reservas creadas: {resumen.creadas}.
-                </Aviso>
-                {resumen.sinContinuidad > 0 && (
-                  <Aviso tono="warning" icon={WarningIcon}>
-                    Reservas Sin continuidad: {resumen.sinContinuidad}.
-                  </Aviso>
-                )}
-                {resumen.omitidos.total > 0 && (
-                  <Aviso tono="info" icon={InfoIcon}>
-                    {textoOmitidos(resumen.omitidos)}
-                  </Aviso>
-                )}
-              </div>
+              <dl className="grid text-sm">
+                <FilaResumen
+                  etiqueta={
+                    <>
+                      Reservas creadas <EstadoReservaBadge estado="RESERVADA" />
+                    </>
+                  }
+                  valor={resumen.creadas}
+                />
+                <FilaResumen
+                  etiqueta={
+                    <>
+                      Reservas Sin continuidad <EstadoReservaBadge estado="SIN_CONTINUIDAD" />
+                    </>
+                  }
+                  valor={resumen.sinContinuidad}
+                />
+              </dl>
+              {resumen.omitidos.total > 0 ? (
+                <div className="grid gap-1">
+                  <p className="text-sm font-medium">Estudiantes omitidos</p>
+                  <dl className="grid text-sm">
+                    <FilaResumen etiqueta="Ya tenían reserva" valor={resumen.omitidos.conReserva} />
+                    <FilaResumen
+                      etiqueta="No tienen grado siguiente"
+                      valor={resumen.omitidos.sinGradoSiguiente}
+                    />
+                    <FilaResumen
+                      etiqueta="Sin período de continuidad (o no ofrece su grado siguiente)"
+                      valor={resumen.omitidos.sinPeriodoContinuidad}
+                    />
+                    {resumen.omitidos.noRenovacion > 0 ? (
+                      <FilaResumen
+                        etiqueta="Con No renovación del cupo"
+                        valor={resumen.omitidos.noRenovacion}
+                      />
+                    ) : null}
+                  </dl>
+                </div>
+              ) : null}
+              {resumen.sinContinuidad > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Las reservas Sin continuidad las resuelve el Administrador del establecimiento o
+                  el Gestor administrativo del establecimiento con <em>Reservar cupo</em>.
+                </p>
+              ) : null}
               <DialogFooter>
-                <Button onClick={() => handleOpenChange(false)}>
-                  <CheckIcon data-icon="inline-start" />
-                  Entendido
-                </Button>
+                <Button onClick={() => handleOpenChange(false)}>Entendido</Button>
               </DialogFooter>
             </>
           ) : (
@@ -170,10 +190,6 @@ export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => 
 
               <ErrorNoticeBanner error={reservar.error} />
 
-              <p className="text-xs text-muted-foreground">
-                Los campos marcados con * son obligatorios
-              </p>
-
               <DialogFooter>
                 <Button
                   variant="outline"
@@ -181,14 +197,13 @@ export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => 
                   disabled={reservar.isPending}
                   onClick={() => handleOpenChange(false)}
                 >
-                  <XIcon data-icon="inline-start" />
                   Cancelar
                 </Button>
                 <Button disabled={!seleccion.length || reservar.isPending} onClick={handleSubmit}>
                   {reservar.isPending ? (
                     <Spinner data-icon="inline-start" />
                   ) : (
-                    <ArmchairIcon data-icon="inline-start" />
+                    <CalendarPlusIcon data-icon="inline-start" />
                   )}
                   Reservar cupos
                 </Button>
@@ -198,5 +213,15 @@ export function ReservarCuposDialog({ onDone }: { onDone?: (mensaje: string) => 
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+/** Fila del resumen: etiqueta (con su badge) a la izquierda y el número a la derecha. */
+function FilaResumen({ etiqueta, valor }: { etiqueta: ReactNode; valor: number }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 last:border-b-0">
+      <dt className="flex flex-wrap items-center gap-2">{etiqueta}</dt>
+      <dd className="font-medium tabular-nums">{valor}</dd>
+    </div>
   )
 }
