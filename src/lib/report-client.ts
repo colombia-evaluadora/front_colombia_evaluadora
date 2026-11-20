@@ -38,6 +38,7 @@ export type ReportKey =
   | "matricula-acta-retiro"
   | "promocion-reprobados"
   | "promocion-areas-pendientes"
+  | "actualizacion-datos-solicitudes"
   | "informes"
   | "informes-tabla"
   | "boletin"

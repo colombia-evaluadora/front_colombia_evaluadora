@@ -59,6 +59,7 @@ const MENU_CODIGO_BY_ID: Record<number, string> = {
   61: "CITACIONES_COMPROMISOS",
   62: "RECONOCIMIENTOS",
   71: "PROMOCION_NIVELACION",
+  72: "ACTUALIZACION_DATOS",
 }
 
 function menuCodigo(menu: MockMenu): string {

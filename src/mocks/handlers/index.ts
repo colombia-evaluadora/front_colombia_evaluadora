@@ -70,6 +70,7 @@ import { convocatoriasHandlers } from "@/mocks/handlers/convocatorias"
 import { postulacionesHandlers } from "@/mocks/handlers/postulaciones"
 import { conveniosHandlers } from "@/mocks/handlers/convenios"
 import { promocionNivelacionHandlers } from "@/mocks/handlers/promocion-nivelacion"
+import { actualizacionDatosHandlers } from "@/mocks/handlers/actualizacion-datos"
 import { continuidadHandlers } from "@/mocks/handlers/continuidad"
 import { estudianteExistenteHandlers } from "@/mocks/handlers/estudiante-existente"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
@@ -107,6 +108,7 @@ export const handlers = [
   ...postulacionesHandlers,
   ...conveniosHandlers,
   ...promocionNivelacionHandlers,
+  ...actualizacionDatosHandlers,
   ...continuidadHandlers,
   ...authHandlers,
   ...devicesHandlers,

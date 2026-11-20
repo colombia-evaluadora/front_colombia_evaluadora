@@ -146,6 +146,11 @@ export const paths = {
       path: "cobertura/promocion-nivelacion",
       getHref: () => "/app/cobertura/promocion-nivelacion",
     },
+    // Actualización de datos (Sección 2.19; Regla 69): pestañas Configuración y Solicitudes de corrección.
+    coberturaActualizacionDatos: {
+      path: "cobertura/actualizacion-datos",
+      getHref: () => "/app/cobertura/actualizacion-datos",
+    },
     coberturaConvocatoriaNueva: {
       path: "cobertura/matricula-complementaria/convocatorias/nueva",
       getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",
