@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge"
 import { ACTIONS_CELL_CLASS, actionsOverlayClass } from "@/components/table-row-actions"
 import { Button } from "@/components/ui/button"
 import {
+  CheckCircleIcon,
+  ControlPointIcon,
   DotsSixVerticalIcon,
-  EyeIcon,
-  EyeSlashIcon,
   InfoIcon,
   MinusIcon,
   PencilIcon,
   PlusIcon,
+  ProhibitIcon,
   TrashIcon,
 } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -33,14 +34,12 @@ import { useSetMenuState } from "@/features/administration/roles-menus/api/mutat
 import { useMenuCatalogQuery } from "@/features/administration/roles-menus/api/query/use-menu-catalog-query"
 import {
   buildMenuTree,
+  esPestana,
   reorderSiblings,
 } from "@/features/administration/roles-menus/api/types/role-menu"
-import type {
-  MenuCatalogNode,
-  MenuTreeNode,
-} from "@/features/administration/roles-menus/api/types/role-menu"
+import type { MenuCatalogNode } from "@/features/administration/roles-menus/api/types/role-menu"
 import { DialogDeleteMenu } from "@/features/administration/roles-menus/components/dialog-delete-menu"
-import { DialogSaveMenu } from "@/features/administration/roles-menus/components/dialog-save-menu"
+import { DialogVista } from "@/features/administration/roles-menus/components/dialog-vista"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
@@ -52,7 +51,7 @@ export function MenuCatalog() {
   // Los módulos arrancan plegados; aquí van los que el usuario desplegó.
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   // "new" = alta; un menú = edición; null = diálogo cerrado.
-  const [editing, setEditing] = useState<MenuCatalogNode | MenuTreeNode | "new" | null>(null)
+  const [editing, setEditing] = useState<MenuCatalogNode | "new" | null>(null)
   const [deleting, setDeleting] = useState<{ menu: MenuCatalogNode; childrenCount: number } | null>(null)
 
   const tree = buildMenuTree(menus)
@@ -107,24 +106,40 @@ export function MenuCatalog() {
         Array.from(tbody.parentElement?.querySelectorAll(":scope > tbody") ?? []) as HTMLElement[],
     },
   )
+  // Submódulos y pestañas se arrastran entre las filas del mismo padre.
   const arrastreSubmodulo = useArrastrarFilas(
     (desde, hasta, fila) => {
-      const group = tree.find((it) => it.id === Number(fila.dataset.padre))
-      const siblings = (group?.children ?? []).map((child) => byId.get(child.id)!)
+      const siblings = hermanosDe(Number(fila.dataset.padre))
       moveTo(siblings[desde], siblings, hasta)
     },
     {
       hermanas: (fila) =>
-        Array.from(fila.parentElement?.querySelectorAll(":scope > tr[data-padre]") ?? []) as HTMLElement[],
+        Array.from(
+          fila.parentElement?.querySelectorAll(`:scope > tr[data-padre="${fila.dataset.padre}"]`) ?? [],
+        ) as HTMLElement[],
     },
   )
+
+  function hermanosDe(padre: number): MenuCatalogNode[] {
+    for (const group of tree) {
+      if (group.id === padre) return group.children.map((child) => byId.get(child.id)!)
+      const child = group.children.find((it) => it.id === padre)
+      if (child) return child.pestanas.map((tab) => byId.get(tab.id)!)
+    }
+    return []
+  }
 
   if (isPending) return <Skeleton className="h-96" />
 
   const busy = reorderMenus.isPending || setMenuState.isPending
 
-  function renderRow(node: MenuCatalogNode, siblings: MenuCatalogNode[], children: MenuCatalogNode[]) {
-    const isModule = node.idParent == null
+  function renderRow(
+    node: MenuCatalogNode,
+    siblings: MenuCatalogNode[],
+    children: MenuCatalogNode[],
+    nivel: 0 | 1 | 2 = node.idParent == null ? 0 : 1,
+  ) {
+    const isModule = nivel === 0
     const open = expanded.has(node.id)
     const deleteBlock = deleteBlockReason(node, children)
     const index = siblings.findIndex((it) => it.id === node.id)
@@ -132,8 +147,13 @@ export function MenuCatalog() {
     const parent = node.idParent != null ? byId.get(node.idParent) : null
 
     return (
-      <TableRow key={node.id} className="group/row" data-padre={node.idParent ?? undefined}>
-        <TableCell className={isModule ? "font-semibold" : "pl-12"}>
+      <TableRow
+        key={node.id}
+        // Inactiva: la fila al 55%; los iconos de acción quedan al 100%.
+        className={cn("group/row", !node.activo && "[&>td:not(:last-child)]:opacity-55")}
+        data-padre={node.idParent ?? undefined}
+      >
+        <TableCell className={isModule ? "font-semibold" : nivel === 1 ? "pl-12" : "pl-20"}>
           <span className="inline-flex items-center gap-2">
             {puedeEditar && siblings.length > 1 ? (
               <button
@@ -152,7 +172,7 @@ export function MenuCatalog() {
                 <DotsSixVerticalIcon className="size-5" />
               </button>
             ) : null}
-            {isModule ? (
+            {nivel < 2 && (isModule || children.length > 0) ? (
               <button
                 type="button"
                 aria-expanded={open}
@@ -165,14 +185,25 @@ export function MenuCatalog() {
               </button>
             ) : null}
             {node.name}
+            {nivel === 2 ? (
+              <Badge variant="outline" color="neutral">
+                Pestaña
+              </Badge>
+            ) : null}
           </span>
         </TableCell>
         <TableCell>{parent?.name ?? "—"}</TableCell>
         <TableCell className="text-center">
           {/* El sidebar solo pinta el ícono del módulo. */}
-          {isModule ? <Icon className="inline size-4" aria-label={node.icon ?? "Sin ícono"} /> : "—"}
+          {node.icon?.startsWith("data:") || node.icon?.startsWith("http") ? (
+            <img src={node.icon} alt="Ícono cargado" className="inline size-4" />
+          ) : isModule ? (
+            <Icon className="inline size-4" aria-label={node.icon ?? "Sin ícono"} />
+          ) : (
+            "—"
+          )}
         </TableCell>
-        <TableCell className="text-center tabular-nums">{node.menuOrder ?? "—"}</TableCell>
+        <TableCell className="text-center tabular-nums">{index + 1}</TableCell>
         <TableCell>
           {/* Un módulo agrupa vistas: las acciones son de sus submódulos. */}
           {isModule ? null : node.admiteGuardar || node.admiteEliminar ? (
@@ -185,7 +216,7 @@ export function MenuCatalog() {
           )}
         </TableCell>
         <TableCell>
-          <Badge variant="soft" color={node.activo ? "success" : "muted"}>
+          <Badge variant="soft" color={node.activo ? "success" : "neutral"}>
             {node.activo ? "Activo" : "Inactivo"}
           </Badge>
         </TableCell>
@@ -195,10 +226,7 @@ export function MenuCatalog() {
           <div className={cn(actionsOverlayClass(false, "background"), "pointer-coarse:opacity-100")}>
             {puedeEditar ? (
               <>
-                <RowAction
-                  label="Modificar"
-                  onClick={() => setEditing(isModule ? (tree.find((it) => it.id === node.id) ?? node) : node)}
-                >
+                <RowAction label="Modificar" onClick={() => setEditing(node)}>
                   <PencilIcon />
                 </RowAction>
                 <RowAction
@@ -206,13 +234,14 @@ export function MenuCatalog() {
                   disabled={busy}
                   onClick={() => setMenuState.mutate({ id: node.id, activo: !node.activo })}
                 >
-                  {node.activo ? <EyeSlashIcon /> : <EyeIcon />}
+                  {node.activo ? <ProhibitIcon /> : <CheckCircleIcon />}
                 </RowAction>
               </>
             ) : null}
             {puedeEliminar ? (
               <RowAction
                 label={deleteBlock ?? "Eliminar"}
+                destructivo
                 disabled={deleteBlock != null}
                 onClick={() => setDeleting({ menu: node, childrenCount: children.length })}
               >
@@ -226,18 +255,20 @@ export function MenuCatalog() {
   }
 
   const views = menus.filter((menu) => menu.idParent != null).length
+  const pestanas = menus.filter((menu) => esPestana(menu)).length
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           Catálogo: {views} {views === 1 ? "vista" : "vistas"} en {roots.length}{" "}
-          {roots.length === 1 ? "módulo" : "módulos"}.
+          {roots.length === 1 ? "módulo" : "módulos"}
+          {pestanas > 0 ? ` (${pestanas} de ellas son pestañas)` : ""}.
           <HelpTip text="Incluye vistas activas e inactivas. Lo que puede hacer cada rol en ellas se define en Vistas base por rol." />
         </p>
         {puedeCrear ? (
-          <Button type="button" onClick={() => setEditing("new")}>
-            <PlusIcon data-icon="inline-start" />
+          <Button type="button" size="sm" color="primary" onClick={() => setEditing("new")}>
+            <ControlPointIcon data-icon="inline-start" />
             Nuevo módulo o submódulo
           </Button>
         ) : null}
@@ -283,18 +314,27 @@ export function MenuCatalog() {
               className="[&_tr:last-child]:border-b last:[&_tr:last-child]:border-0"
             >
               {renderRow(byId.get(group.id)!, roots, children)}
-              {!expanded.has(group.id) ? null : children.map((child) => renderRow(child, children, []))}
+              {!expanded.has(group.id)
+                ? null
+                : group.children.flatMap((child) => {
+                    const tabs = child.pestanas.map((tab) => byId.get(tab.id)!)
+                    return [
+                      renderRow(byId.get(child.id)!, children, tabs, 1),
+                      ...(expanded.has(child.id) ? tabs.map((tab) => renderRow(tab, tabs, [], 2)) : []),
+                    ]
+                  })}
             </TableBody>
           )
         })}
       </Table>
 
-      <DialogSaveMenu
-        open={editing !== null}
-        onOpenChange={(open) => !open && setEditing(null)}
-        roots={tree}
-        menu={editing === "new" ? undefined : (editing ?? undefined)}
-      />
+      {editing !== null ? (
+        <DialogVista
+          menus={menus}
+          menu={editing === "new" ? undefined : editing}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
       {deleting ? (
         <DialogDeleteMenu
           menu={deleting.menu}
@@ -311,11 +351,14 @@ export function MenuCatalog() {
 function RowAction({
   label,
   disabled,
+  destructivo,
   onClick,
   children,
 }: {
   label: string
   disabled?: boolean
+  /** Eliminar: rojo, también en hover. */
+  destructivo?: boolean
   onClick: () => void
   children: ReactNode
 }) {
@@ -325,7 +368,7 @@ function RowAction({
         <Button
           type="button"
           variant="ghost"
-          color="neutral"
+          color={destructivo ? "destructive" : "neutral"}
           size="icon-sm"
           aria-label={label}
           disabled={disabled}
