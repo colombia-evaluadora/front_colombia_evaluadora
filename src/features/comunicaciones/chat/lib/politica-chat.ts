@@ -45,6 +45,11 @@ export interface PoliticaChat {
    * servidor responde 403 fuera de ellas). No incluye la configuración de la mensajería.
    */
   puedeSuspender?: boolean
+  /**
+   * Bandeja de reportes y conversación reportada (MODERACION_REVISAR): solo el Supervisor de sede, en
+   * su alcance de sedes y jornadas. El Administrador del establecimiento no ve reportes (SSO #1027).
+   */
+  puedeRevisarReportes?: boolean
 }
 
 export interface PoliticaGrupos {
@@ -110,6 +115,7 @@ export const POLITICA_CHAT_DENEGADA: PoliticaChat = {
   pendienteDeAprobacion: true,
   puedeIniciarConversaciones: false,
   puedeSuspender: false,
+  puedeRevisarReportes: false,
 }
 
 const ROLES_DIRECTIVOS = [

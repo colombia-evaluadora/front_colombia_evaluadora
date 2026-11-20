@@ -36,6 +36,15 @@ describe("moderación de la mensajería (mock)", () => {
     expect((await llamar("GET", "moderacion/reportes")).filas).toHaveLength(antes + 1)
   })
 
+  it("el rector no ve reportes ni la conversación reportada", async () => {
+    rol.actual = "CEVAL-RECTOR"
+    expect((await llamar("GET", "moderacion/reportes")).status).toBe(403)
+    expect((await llamar("GET", "moderacion/reportes/1/mensajes")).status).toBe(403)
+    expect((await llamar("PATCH", "moderacion/reportes/1/revisar")).status).toBe(403)
+    rol.actual = "CEVAL-COORDINADOR"
+    expect((await llamar("GET", "moderacion/reportes/1/mensajes")).status).toBe(200)
+  })
+
   it("el supervisor de sede suspende y levanta, pero no cambia la configuración", async () => {
     rol.actual = "CEVAL-COORDINADOR"
     expect((await llamar("POST", "moderacion/suspensiones", { FK_USUARIO: 3, MOTIVO: "x" })).status).toBe(200)

@@ -33,6 +33,7 @@ import {
   useSuspensionesQuery,
 } from "@/features/comunicaciones/chat/api/use-moderacion"
 import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
+import { pestanasModeracion, type PestanaModeracion as Pestana } from "@/features/comunicaciones/chat/lib/pestanas-moderacion"
 
 const MAX_MOTIVO = 500
 
@@ -100,11 +101,10 @@ export function ReportarDialog({
   )
 }
 
-type Pestana = "reportes" | "suspensiones" | "configuracion"
-
 /**
  * Opción de la vista de mensajería (Guía M.2.MOD.1). PROVISIONAL: Supervisor de sede = coordinador,
- * Administrador del establecimiento = rector. Suspensiones: quien tenga `puedeSuspender` en la política
+ * Administrador del establecimiento = rector. Reportes: solo el Supervisor de sede (`puedeRevisarReportes`,
+ * en su alcance; el rector ya no los ve). Suspensiones: quien tenga `puedeSuspender` en la política
  * (Administrador o Supervisor de sede, este solo en sus sedes y jornadas). Configuración, solo el rector.
  */
 export function ModeracionDialog({
@@ -112,20 +112,20 @@ export function ModeracionDialog({
   onClose,
   esAdministrador,
   puedeSuspender,
+  puedeRevisarReportes,
   reporteResaltado,
 }: {
   open: boolean
   onClose: () => void
   esAdministrador: boolean
   puedeSuspender: boolean
+  puedeRevisarReportes: boolean
   reporteResaltado?: number
 }) {
-  const [pestana, setPestana] = useState<Pestana>("reportes")
-  const pestanas: [Pestana, string][] = [
-    ["reportes", "Reportes"],
-    ...(puedeSuspender ? [["suspensiones", "Suspensiones"] as [Pestana, string]] : []),
-    ...(esAdministrador ? [["configuracion", "Configuración de la mensajería"] as [Pestana, string]] : []),
-  ]
+  const pestanas = pestanasModeracion({ esAdministrador, puedeSuspender, puedeRevisarReportes })
+  const [elegida, setPestana] = useState<Pestana | null>(null)
+  // La política llega después de montar: sin elección propia, la primera pestaña disponible.
+  const pestana = elegida && pestanas.some(([id]) => id === elegida) ? elegida : pestanas[0]?.[0]
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-3xl">
