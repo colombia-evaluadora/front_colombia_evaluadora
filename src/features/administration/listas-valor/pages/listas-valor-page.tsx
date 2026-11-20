@@ -25,12 +25,20 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import {
   CaretRightIcon,
   CheckCircleIcon,
   CheckIcon,
   ControlPointIcon,
+  DotsThreeVerticalIcon,
   InfoIcon,
   LockIcon,
   PencilIcon,
@@ -382,6 +390,11 @@ function ListasValorPageContent() {
         ? "Lista del sistema: se puede inactivar, pero no eliminar."
         : null
 
+  const usadaElegida = categoria ? usadaPorCampos(categoria) : false
+  const notaMenuLista = !categoria
+    ? ""
+    : (restriccionLista(categoria) ?? "Eliminar solo si ningún registro usa sus valores; si no, inactívela.")
+
   function cambiarEstadoLista(c: Categoria) {
     // LIS.3: en vez de un botón deshabilitado sin explicación, el aviso dice qué campos la usan.
     if (c.habilitada && usadaPorCampos(c)) {
@@ -661,12 +674,74 @@ function ListasValorPageContent() {
                       onClearAll={() => setBusquedaValor("")}
                       activeFilterCount={busquedaValor ? 1 : 0}
                     />
+                      <div className="flex items-center gap-2">
+                      {permisos.puedeEditar && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          color="neutral"
+                          onClick={() => setDialogLista({ categoria })}
+                        >
+                          <PencilIcon data-icon="inline-start" />
+                          Modificar lista
+                        </Button>
+                      )}
+                      {(permisos.puedeEditar || permisos.puedeEliminar) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="outline"
+                                color="neutral"
+                                size="icon"
+                                aria-label={`Acciones de la lista ${categoria.nombre}`}
+                                disabled={estadoLista.isPending}
+                              />
+                            }
+                          >
+                            <DotsThreeVerticalIcon />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-72">
+                            {permisos.puedeEditar && (
+                              <DropdownMenuItem
+                                disabled={categoria.habilitada && usadaElegida}
+                                onClick={() =>
+                                  estadoLista.mutate({
+                                    categoria: categoria.categoria,
+                                    habilitada: !categoria.habilitada,
+                                  })
+                                }
+                              >
+                                {categoria.habilitada ? <ProhibitIcon /> : <CheckCircleIcon />}
+                                {categoria.habilitada ? "Inactivar" : "Activar"}
+                              </DropdownMenuItem>
+                            )}
+                            {permisos.puedeEliminar && (
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={usadaElegida || categoria.esSistema}
+                                onClick={() => setEliminandoLista(categoria)}
+                              >
+                                <TrashIcon />
+                                Eliminar
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <p className="flex gap-1.5 px-2 py-1.5 text-xs text-muted-foreground">
+                              <InfoIcon aria-hidden className="mt-px size-3.5 shrink-0" />
+                              {notaMenuLista}
+                            </p>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                      {/* El botón primario va siempre al final del grupo. */}
                       {permisos.puedeCrear && (
                         <Button size="sm" color="primary" onClick={() => setDialogValor({})}>
                           <ControlPointIcon data-icon="inline-start" />
                           Nuevo valor
                         </Button>
                       )}
+                    </div>
                   </div>
 
                   {/* La fila que se arrastra flota sobre las demás. */}
