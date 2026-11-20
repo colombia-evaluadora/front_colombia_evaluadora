@@ -5,7 +5,7 @@ import type { ConvivenciaFiltros } from "@/features/gestion-estudiantil/conviven
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useSearchCasos } from "@/features/gestion-estudiantil/convivencia/hooks/use-search-casos"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 export interface OpcionesFiltros {
   sedes: Opcion[]

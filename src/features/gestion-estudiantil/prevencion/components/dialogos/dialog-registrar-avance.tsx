@@ -17,7 +17,7 @@ import { useRegistrarAvance } from "@/features/gestion-estudiantil/prevencion/ap
 import { usePlanQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-valoraciones-query"
 import { fechaParaBackend } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
 import { DESCRIPCION_MAX, validarAvance } from "@/features/gestion-estudiantil/prevencion/utils/formularios-seguimiento"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   planId: number

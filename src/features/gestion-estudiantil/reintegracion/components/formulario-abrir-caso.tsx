@@ -10,7 +10,7 @@ import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/format
 import { CamposRazones } from "@/features/gestion-estudiantil/reintegracion/components/campos-razones"
 import type { useAbrirCasoForm } from "@/features/gestion-estudiantil/reintegracion/hooks/use-abrir-caso-form"
 import { MOTIVO_APERTURA_MAX } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 

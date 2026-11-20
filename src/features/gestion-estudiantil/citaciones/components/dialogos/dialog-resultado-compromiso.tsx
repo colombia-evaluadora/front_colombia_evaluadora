@@ -14,7 +14,7 @@ import { ResumenCompromiso } from "@/features/gestion-estudiantil/citaciones/com
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   compromiso: CompromisoRow

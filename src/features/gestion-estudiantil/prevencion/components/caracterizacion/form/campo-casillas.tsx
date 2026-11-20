@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
 
 import type { OpcionCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   id: string

@@ -22,16 +22,58 @@ const cat = (
   ...extra,
 })
 
+// `usadaEn`, `camposQueUsan` y `marca` son de prueba (pendientes de backend): salen del md
+// «Lista de Valores — Vistas del prototipo».
 export const categoriasDb: CategoriaDb[] = [
-  cat("TIPO_DOCUMENTO", "Tipo de documento", { esSistema: true }),
-  cat("JORNADA", "Jornada", { esSistema: true }),
+  cat("TIPO_DOCUMENTO", "Tipo de documento", {
+    esSistema: true,
+    usadaEn: ["Cobertura educativa · Información del estudiante", "Establecimiento · Funcionarios"],
+    camposQueUsan: ["Cobertura educativa · sección 1 · Tipo de documento"],
+  }),
+  cat("JORNADA", "Jornada", { esSistema: true, usadaEn: ["Establecimiento · Sedes y jornadas"] }),
   cat("GRADOS", "Grados", { esSistema: true, esOrdinal: true }),
   cat("CALENDARIO", "Calendario", { esSistema: true }),
-  cat("DEPARTAMENTO", "Departamento"),
-  cat("MUNICIPIO", "Municipio", { categoriaPadre: "DEPARTAMENTO" }),
+  cat("ESTADO_MATRICULA", "Estado de la matrícula", {
+    esSistema: true,
+    usadaEn: [
+      "Cobertura educativa · Matrícula (sección 4)",
+      "Gestión académica · Informes y consolidados y listados de estudiantes",
+    ],
+    camposQueUsan: [
+      "Cobertura educativa · sección 4 · Estado de la matrícula",
+      "Gestión académica · sección 8 · Etiqueta de estado del estudiante",
+    ],
+  }),
+  cat("ESPECIALIDAD", "Especialidad", {
+    usadaEn: ["Establecimiento · Catálogo de especialidades de la sede (sección 3.2)"],
+  }),
+  cat("PAIS", "País", { usadaEn: ["Cobertura educativa · Información del estudiante"] }),
+  cat("DEPARTAMENTO", "Departamento", {
+    categoriaPadre: "PAIS",
+    usadaEn: ["Establecimiento · Domicilio", "Cobertura educativa · Domicilio del estudiante"],
+  }),
+  cat("MUNICIPIO", "Municipio", {
+    categoriaPadre: "DEPARTAMENTO",
+    usadaEn: [
+      "Establecimiento · Domicilio",
+      "Cobertura educativa · información del estudiante, domicilio del estudiante, víctima conflicto armado e información del acudiente",
+    ],
+  }),
   cat("NIVEL_DESEMPENO", "Nivel de desempeño", {
     esOrdinal: true,
     descripcion: "Niveles de la escala nacional (Decreto 1290).",
+  }),
+  cat("TIPO_ESTRATEGIA_PERMANENCIA", "Tipo de estrategia de permanencia", {
+    marca: "SIMPADE",
+    usadaEn: ["Gestión estudiantil · Prevención y retención"],
+  }),
+  cat("CONDICIONES_ESPECIALES", "Condiciones especiales", {
+    marca: "PIAR",
+    usadaEn: ["Cobertura educativa · Información complementaria (sección 2.8)"],
+  }),
+  cat("CARGO_COMITE_CONVIVENCIA", "Cargo en el comité de convivencia", {
+    marca: "ESTAMENTO",
+    usadaEn: ["Gestión estudiantil · Integrantes del comité (sección 3.3)"],
   }),
 ]
 
@@ -72,20 +114,97 @@ const jornadas = ["Mañana", "Tarde", "Nocturna", "Única", "Fin de semana"].map
   }),
 )
 
-const antioquia = valor("DEPARTAMENTO", "Antioquia", "ANTIOQUIA", 1)
-const cundinamarca = valor("DEPARTAMENTO", "Cundinamarca", "CUNDINAMARCA", 2)
 const aPadre = (v: ListaValor) => ({
   pkListaValor: v.pkListaValor,
   categoria: v.categoria,
   nombre: v.nombre,
   valor: v.valor,
 })
+const colombia = valor("PAIS", "Colombia", "COLOMBIA", 1, { predeterminado: true, enUso: true })
+const enColombia = { padre: aPadre(colombia), enUso: true }
+const antioquia = valor("DEPARTAMENTO", "Antioquia", "ANTIOQUIA", 1, enColombia)
+const boyaca = valor("DEPARTAMENTO", "Boyacá", "BOYACA", 2, enColombia)
+const cundinamarca = valor("DEPARTAMENTO", "Cundinamarca", "CUNDINAMARCA", 3, enColombia)
+const santander = valor("DEPARTAMENTO", "Santander", "SANTANDER", 4, enColombia)
 const municipios = [
+  ["Bucaramanga", "BUCARAMANGA", santander],
+  ["Floridablanca", "FLORIDABLANCA", santander],
+  ["Girón", "GIRON", santander],
+  ["Piedecuesta", "PIEDECUESTA", santander],
   ["Medellín", "MEDELLIN", antioquia],
   ["Envigado", "ENVIGADO", antioquia],
   ["Soacha", "SOACHA", cundinamarca],
   ["Zipaquirá", "ZIPAQUIRA", cundinamarca],
-].map(([n, v, p], i) => valor("MUNICIPIO", n as string, v as string, i + 1, { padre: aPadre(p as ListaValor) }))
+  ["Tunja", "TUNJA", boyaca],
+].map(([n, v, p], i) =>
+  valor("MUNICIPIO", n as string, v as string, i + 1, { padre: aPadre(p as ListaValor), enUso: i < 2 }),
+)
+
+// S.1.VAL.LST.1: todos usados por el sistema.
+const estadosMatricula = [
+  ["Cursando", "CURSANDO", null],
+  ["Retirado", "RETIRADO", "Ret"],
+  ["Promovido", "PROMOVIDO", "Pro"],
+  ["Aprobado", "APROBADO", "Apr"],
+  ["Reprobado", "REPROBADO", "Rep"],
+  ["Graduado", "GRADUADO", "Gra"],
+  ["Reubicado", "REUBICADO", "Reu"],
+  ["Anulado", "ANULADO", null],
+].map(([n, v, e], i) =>
+  valor("ESTADO_MATRICULA", n as string, v as string, i + 1, { etiqueta: e, esSistema: true, enUso: true }),
+)
+
+// S.1.VAL.LST.2 / LST.4: Técnica sin registros (se puede eliminar), Comercial inactiva, Otra del sistema.
+const especialidades = [
+  valor("ESPECIALIDAD", "Académica", "ACADEMICA", 1, { enUso: true }),
+  valor("ESPECIALIDAD", "Técnica", "TECNICA", 2),
+  valor("ESPECIALIDAD", "Comercial", "COMERCIAL", 3, { habilitado: false, enUso: true }),
+  valor("ESPECIALIDAD", "Agropecuaria", "AGROPECUARIA", 4, { enUso: true }),
+  valor("ESPECIALIDAD", "Otra", "OTRA", 5, { esSistema: true, enUso: true }),
+]
+
+// S.1.VAL.LST.3a: la última no viene del SIMPADE.
+const estrategias = [
+  ["Alimentación escolar (PAE)", "ALIMENTACION_PAE"],
+  ["Transporte escolar", "TRANSPORTE"],
+  ["Útiles escolares", "UTILES"],
+  ["Vestuario escolar", "VESTUARIO"],
+  ["Subsidios condicionados a la asistencia escolar", "SUBSIDIOS"],
+  ["Tutorías y refuerzo", "TUTORIAS"],
+  ["Escuela de padres y madres", "ESCUELA_PADRES"],
+  ["Banco de útiles solidario", "BANCO_UTILES"],
+].map(([n, v], i) =>
+  valor("TIPO_ESTRATEGIA_PERMANENCIA", n, v, i + 1, { delSimpade: v !== "BANCO_UTILES", enUso: i < 3 }),
+)
+
+// S.1.VAL.LST.6a: las dos últimas no disparan el aviso del PIAR.
+const condiciones = [
+  ["Física", "FISICA"],
+  ["Auditiva", "AUDITIVA"],
+  ["Visual", "VISUAL"],
+  ["Sordoceguera", "SORDOCEGUERA"],
+  ["Intelectual o cognitiva", "INTELECTUAL"],
+  ["Psicosocial (mental)", "PSICOSOCIAL"],
+  ["Múltiple", "MULTIPLE"],
+  ["Autismo (trastorno del espectro autista, TEA)", "AUTISMO"],
+  ["Trastornos específicos del aprendizaje o del comportamiento", "TRASTORNOS"],
+  ["Sordomudo", "SORDOMUDO"],
+].map(([n, v], i) =>
+  valor("CONDICIONES_ESPECIALES", n, v, i + 1, { disparaPiar: i < 8, enUso: i < 5 }),
+)
+
+// S.1.VAL.LST.6b: todos usados por el sistema, con su estamento.
+const cargosComite = [
+  ["Rector", "RECTOR", "Directivos"],
+  ["Personero estudiantil", "PERSONERO", "Estudiantes"],
+  ["Docente con función de orientación", "DOC_ORIENTACION", "Docentes"],
+  ["Coordinador", "COORDINADOR", "Directivos"],
+  ["Presidente del consejo de padres", "PRES_PADRES", "Padres de familia"],
+  ["Presidente del consejo de estudiantes", "PRES_ESTUDIANTES", "Estudiantes"],
+  ["Docente líder de convivencia", "DOC_LIDER", "Docentes"],
+].map(([n, v, e], i) =>
+  valor("CARGO_COMITE_CONVIVENCIA", n, v, i + 1, { estamento: e, esSistema: true, enUso: true }),
+)
 
 const niveles = [
   ["Superior", "SUPERIOR", "S"],
@@ -99,10 +218,18 @@ export const valoresDb: ListaValor[] = [
   ...jornadas,
   ...gradosDb,
   ...calendariosDb,
+  colombia,
   antioquia,
+  boyaca,
   cundinamarca,
+  santander,
   ...municipios,
   ...niveles,
+  ...estadosMatricula,
+  ...especialidades,
+  ...estrategias,
+  ...condiciones,
+  ...cargosComite,
 ]
 
 export const nextValorPk = () => Math.max(...valoresDb.map((v) => v.pkListaValor)) + 1

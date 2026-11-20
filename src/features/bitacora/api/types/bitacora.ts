@@ -1,12 +1,12 @@
 /** Módulos auditados, con el código que usa el back (`MODULO`). */
 export const BITACORA_MODULOS = {
   ESTABLECIMIENTO: "Establecimiento",
-  COBERTURA: "Cobertura Educativa",
-  GESTION_ACADEMICA: "Gestión Académica",
-  GESTION_ESTUDIANTIL: "Gestión Estudiantil",
+  COBERTURA: "Cobertura educativa",
+  GESTION_ACADEMICA: "Gestión académica",
+  GESTION_ESTUDIANTIL: "Gestión estudiantil",
   /** B.1.EVA.1: sus valoraciones son información reservada; se registra la consulta de terceros. */
-  EVALUACION_DESEMPENO: "Evaluación del Desempeño",
-  ADMINISTRACION: "Administración del Sistema",
+  EVALUACION_DESEMPENO: "Evaluación del desempeño",
+  ADMINISTRACION: "Administración del sistema",
   COMUNICACIONES: "Comunicaciones",
 } as const
 

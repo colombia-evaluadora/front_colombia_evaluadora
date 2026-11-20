@@ -8,7 +8,7 @@ import type { EfectoSancion, SancionRow } from "@/features/gestion-estudiantil/c
 import { CampoDescripcion, CampoNombre, CampoRadios } from "@/features/gestion-estudiantil/configuracion/components/proceso-disciplinario/campos-catalogo"
 import { useSancionForm } from "@/features/gestion-estudiantil/configuracion/hooks/use-sancion-form"
 import { ESTADOS_PROCESO, LIM_PROCESO, type ValoresSancion } from "@/features/gestion-estudiantil/configuracion/utils/proceso"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   establecimiento: number

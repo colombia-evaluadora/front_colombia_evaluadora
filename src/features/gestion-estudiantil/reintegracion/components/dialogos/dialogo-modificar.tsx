@@ -20,7 +20,7 @@ import {
   razonesParaBackend,
   type RazonesForm,
 } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /**
  * Modificar el caso (§10.1): alta complejidad, razones del abandono con su causa principal y observaciones del

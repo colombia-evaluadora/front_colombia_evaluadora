@@ -20,7 +20,7 @@ import { useRegistrarRemision } from "@/features/gestion-estudiantil/reintegraci
 import { usePlazoRemisionesQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-remisiones-query"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import { ResumenCasoDialogo } from "@/features/gestion-estudiantil/reintegracion/components/dialogos/resumen-caso-dialogo"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const MAX_RECORDATORIOS = 5
 

@@ -26,7 +26,7 @@ import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-cata
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 function CampoFecha({
   id,

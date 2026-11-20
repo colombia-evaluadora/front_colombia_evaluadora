@@ -5,7 +5,7 @@ import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components
 import { SiNo } from "@/features/gestion-estudiantil/convivencia/components/si-no"
 import type { DatosSiuce } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { useSecuelasHabilitadas, type ErroresSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface DatosSiuceFieldsProps {
   idPrefix: string

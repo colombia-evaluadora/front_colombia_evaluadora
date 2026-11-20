@@ -11,7 +11,7 @@ import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/u
 import { ResumenCitacion } from "@/features/gestion-estudiantil/citaciones/components/dialogos/resumen-citacion"
 import { enfocarPrimerError, errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   citacion: CitacionRow

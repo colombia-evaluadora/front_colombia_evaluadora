@@ -11,7 +11,7 @@ import {
   OTRA_RAZON_MAX,
   type RazonesForm,
 } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   /** Prefijo de ids únicos (el formulario puede convivir con un diálogo). */

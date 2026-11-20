@@ -5,7 +5,7 @@ import { DatePicker } from "@/components/date-picker"
 import { parseDateValue } from "@/lib/date-value"
 
 import type { BaseFechaSiuce } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   base: BaseFechaSiuce

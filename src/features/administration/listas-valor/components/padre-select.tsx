@@ -41,20 +41,21 @@ export function CategoriaPadreSelect({
   disabled,
 }: CategoriaPadreSelectProps) {
   const opciones = categorias.filter((c) => c.categoria !== exclude)
+  const nombreDe = (codigo: string) => categorias.find((c) => c.categoria === codigo)?.nombre ?? codigo
   // Combobox y no select: hay decenas de listas y se busca escribiendo.
   return (
     <ComboboxField value={value} onValueChange={(next) => next && onChange(String(next))}>
       <ComboboxFieldTrigger id={id} disabled={disabled}>
         <ComboboxFieldValue>
-          {(current) => (current === NONE ? "Ninguna" : current)}
+          {(current) => (current === NONE ? "Sin lista padre" : nombreDe(String(current)))}
         </ComboboxFieldValue>
       </ComboboxFieldTrigger>
       <ComboboxFieldContent>
-        <ComboboxFieldItem value={NONE}>Ninguna</ComboboxFieldItem>
+        <ComboboxFieldItem value={NONE}>Sin lista padre</ComboboxFieldItem>
         <ComboboxSeparator />
         {opciones.map((c) => (
           <ComboboxFieldItem key={c.categoria} value={c.categoria}>
-            <span className="font-mono text-[0.8125rem]">{c.categoria}</span>
+            {c.nombre}
           </ComboboxFieldItem>
         ))}
       </ComboboxFieldContent>

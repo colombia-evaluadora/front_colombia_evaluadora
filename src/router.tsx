@@ -657,7 +657,7 @@ const PERIODOS_CRUMB = {
   to: paths.app.periodosAcademicos.getHref(),
 }
 const GESTION_ESTUDIANTIL_CRUMB = {
-  label: "Gestión Estudiantil",
+  label: "Gestión estudiantil",
   to: paths.app.observador.getHref(),
 }
 const GESTION_ACADEMICA_CRUMB = {
@@ -1143,7 +1143,7 @@ export const listasValorRoute = createRoute({
   path: paths.app.listasValor.path,
   validateSearch: listasValorSearchSchema,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Listas de valor" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Lista de valores" }],
   },
   component: ListasValorPage,
 })
@@ -1187,7 +1187,7 @@ export const supervisorTerritorialNuevoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.supervisorTerritorialNuevo.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Nuevo Supervisor territorial" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Nuevo supervisor territorial" }],
   },
   component: SupervisorNuevoPage,
 })
@@ -1229,7 +1229,7 @@ export const administradorTerritorialNuevoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.administradorTerritorialNuevo.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Nuevo Administrador territorial" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Nuevo administrador territorial" }],
   },
   component: AdministradorNuevoPage,
 })
@@ -2444,7 +2444,7 @@ const SesionDetallePage = lazyRouteComponent(
 export const convivenciaSesionRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.convivenciaSesion.path,
-  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Sesión del Comité" }] },
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Sesión del comité" }] },
   component: function SesionRoute() {
     const { sesionId } = convivenciaSesionRoute.useParams()
     return <SesionDetallePage sesionId={Number(sesionId)} />

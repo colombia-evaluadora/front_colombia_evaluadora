@@ -12,7 +12,7 @@ import {
   type SearchFiltrosProps,
 } from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
 import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 export interface OpcionesFiltrosReconocimientos {
   sedes: Opcion[]

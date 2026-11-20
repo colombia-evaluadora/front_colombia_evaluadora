@@ -18,7 +18,7 @@ import type { ResumenEstrategia } from "@/features/gestion-estudiantil/prevencio
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
 import { fechaParaBackend } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
 import { validarCopia } from "@/features/gestion-estudiantil/prevencion/utils/formularios-estrategias"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   estrategia: ResumenEstrategia

@@ -14,7 +14,7 @@ import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/comp
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useRegistrarAccion } from "@/features/gestion-estudiantil/convivencia/hooks/use-registrar-accion"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   caso: CasoResumen | null

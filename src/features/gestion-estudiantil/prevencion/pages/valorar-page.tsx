@@ -14,7 +14,7 @@ import { DialogOfrecerPlan } from "@/features/gestion-estudiantil/prevencion/com
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
 import { useValorarForm } from "@/features/gestion-estudiantil/prevencion/hooks/use-valorar-form"
 import { ANALISIS_MAX } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 function ValorarContent({ matricula: matriculaInicial }: { matricula?: number }) {
   const { volver, irPlanNuevo } = useNavegacionPrevencion()

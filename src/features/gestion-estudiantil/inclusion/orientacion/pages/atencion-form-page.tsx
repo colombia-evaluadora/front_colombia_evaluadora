@@ -19,7 +19,7 @@ import { SECCIONES } from "@/features/gestion-estudiantil/inclusion/orientacion/
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { esOpcionElegida } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
-import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /** G.4.ORI.ATE.1: nueva atención, modificar y ver detalle. */
 export function AtencionFormPage() {
