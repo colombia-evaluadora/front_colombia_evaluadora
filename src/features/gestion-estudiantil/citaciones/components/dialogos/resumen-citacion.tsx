@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 
 import type { CitacionRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import { COLOR_ESTADO_CITACION, origenEnlace } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
-import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { formatFechaHora12 } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
 /** Origen del registro: enlace cuando el front ya tiene su detalle; si no, texto. */
 function Origen({ c }: { c: CitacionRow }) {
@@ -43,7 +43,7 @@ export function ResumenCitacion({ c }: { c: CitacionRow }) {
       <Badge variant="soft" color={COLOR_ESTADO_CITACION[c.estado_valor] ?? "muted"}>
         <span>{c.estado_nombre}</span>
       </Badge>
-      {c.fecha_programada && <span>{formatFechaHora(c.fecha_programada)} ·</span>}
+      {c.fecha_programada && <span>{formatFechaHora12(c.fecha_programada)} ·</span>}
       <span>{c.motivo_nombre}</span>
       <span>
         · Acudiente: <strong className="font-medium text-foreground">{c.acudiente_nombre ?? "—"}</strong>
