@@ -27,7 +27,7 @@ export function RecuadroIntegrantes({ comite, puedeGestionar, onAdministrar }: P
           titulo={`Integrantes del Comité (${vigentes.length})`}
           accion={
             puedeGestionar && (
-              <Button type="button" size="sm" variant="outline" onClick={onAdministrar}>
+              <Button type="button" size="sm" variant="outline" color="neutral" onClick={onAdministrar}>
                 <PencilIcon data-icon="inline-start" />
                 Administrar integrantes
               </Button>

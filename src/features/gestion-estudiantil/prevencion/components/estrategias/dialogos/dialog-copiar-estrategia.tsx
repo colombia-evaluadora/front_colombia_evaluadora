@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react"
 
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { DatePicker } from "@/components/date-picker"
 import { useNotify } from "@/components/notice/notice-context"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { CopyIcon } from "@/components/ui/icons"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
@@ -18,6 +18,7 @@ import type { ResumenEstrategia } from "@/features/gestion-estudiantil/prevencio
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
 import { fechaParaBackend } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
 import { validarCopia } from "@/features/gestion-estudiantil/prevencion/utils/formularios-estrategias"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   estrategia: ResumenEstrategia
@@ -114,13 +115,12 @@ export function DialogCopiarEstrategia({ estrategia, onClose }: Props) {
           />
         </div>
       </div>
-      <Field orientation="vertical" variant="outlined" className="gap-2" role="group" aria-labelledby="copiar-beneficiarios">
-        <FieldLabel id="copiar-beneficiarios">Beneficiarios</FieldLabel>
+      <MarcoOpciones id="copiar-beneficiarios" label="Beneficiarios">
         <RadioGroup
-          aria-labelledby="copiar-beneficiarios"
-          className="flex flex-col gap-2 px-3.5 py-2"
+          aria-labelledby="copiar-beneficiarios-label"
           value={conBeneficiarios}
           onValueChange={(v) => setConBeneficiarios(v as "vacia" | "traer")}
+          className="flex-col items-start"
         >
           <label className="flex items-center gap-2 text-sm">
             <RadioGroupItem value="vacia" />
@@ -131,7 +131,7 @@ export function DialogCopiarEstrategia({ estrategia, onClose }: Props) {
             Traer los {copiables} que siguen Cursando (ingreso {inicio ? formatFecha(fechaParaBackend(inicio)) : "la nueva fecha de inicio"})
           </label>
         </RadioGroup>
-      </Field>
+      </MarcoOpciones>
     </DialogoOperacionShell>
   )
 }

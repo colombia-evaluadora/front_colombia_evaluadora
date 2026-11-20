@@ -1,8 +1,8 @@
 import { useState } from "react"
 
+import { Switch } from "@/components/ui/switch"
 import { useNotify } from "@/components/notice/notice-context"
 import { FloppyDiskIcon } from "@/components/ui/icons"
-import { Switch } from "@/components/ui/switch"
 
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
@@ -20,6 +20,7 @@ import {
   razonesParaBackend,
   type RazonesForm,
 } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /**
  * Modificar el caso (§10.1): alta complejidad, razones del abandono con su causa principal y observaciones del
@@ -71,10 +72,12 @@ export function DialogoModificar({ caso: c, onClose }: { caso: CasoDetalle; onCl
       confirmar={{ label: "Guardar", icon: <FloppyDiskIcon data-icon="inline-start" />, onClick: guardar }}
     >
       <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
-        <label className="flex h-11 items-center gap-3 text-sm">
-          <Switch round checked={alta} onCheckedChange={setAlta} />
-          Alta complejidad
-        </label>
+        <MarcoOpciones id="reintegracion-modificar-alta">
+          <label className="flex items-center gap-3">
+            <Switch round checked={alta} onCheckedChange={setAlta} />
+            Alta complejidad
+          </label>
+        </MarcoOpciones>
         <CamposRazones
           id="reintegracion-modificar"
           opciones={opciones}

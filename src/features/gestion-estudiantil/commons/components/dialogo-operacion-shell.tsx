@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import {
   Dialog,
   DialogClose,
@@ -42,7 +43,7 @@ export function DialogoOperacionShell({
   pending,
   confirmar,
   cancelarLabel = "Cancelar",
-  className = "sm:max-w-lg",
+  className = "sm:max-w-xl",
   children,
 }: Props) {
   return (
@@ -58,6 +59,7 @@ export function DialogoOperacionShell({
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} />}>
+            <XIcon data-icon="inline-start" />
             {cancelarLabel}
           </DialogClose>
           <Button size="sm" type="button" color={confirmar.color} disabled={pending || confirmar.disabled} onClick={confirmar.onClick}>

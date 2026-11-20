@@ -39,7 +39,7 @@ export function BloqueBeneficiarios({ estrategia: e, onAgregar, onRetirar, onVer
       comoSeccion
       titulo={`Beneficiarios (${e.beneficiarios_total})`}
       accion={
-        <Button size="sm" type="button" variant="outline" disabled={!e.puede_agregar_beneficiarios} onClick={onAgregar}>
+        <Button size="sm" type="button" variant="outline" color="neutral" disabled={!e.puede_agregar_beneficiarios} onClick={onAgregar}>
           <ControlPointIcon data-icon="inline-start" />
           Agregar beneficiarios
         </Button>
@@ -60,7 +60,7 @@ export function BloqueBeneficiarios({ estrategia: e, onAgregar, onRetirar, onVer
                   <span>Retirada</span>
                 </Badge>
               ) : (
-                <Button size="sm" type="button" variant="outline" disabled={!b.puede_retirar} onClick={() => onRetirar(b)}>
+                <Button size="sm" type="button" variant="outline" color="neutral" disabled={!b.puede_retirar} onClick={() => onRetirar(b)}>
                   <PersonRemoveIcon data-icon="inline-start" />
                   Retirar
                 </Button>

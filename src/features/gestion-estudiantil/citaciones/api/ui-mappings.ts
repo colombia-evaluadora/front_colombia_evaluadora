@@ -77,6 +77,8 @@ export interface AccionesCitacion {
   cancelar: boolean
   asistencia: boolean
   crearCompromiso: boolean
+  /** El documento lleva fecha, hora y lugar: una citación Por programar todavía no tiene qué imprimir. */
+  descargar: boolean
 }
 
 /**
@@ -99,6 +101,7 @@ export function accionesCitacion(c: CitacionRow, permisos: PermisosCitaciones, a
     // Solo quien atiende registra la asistencia, y después de la fecha y hora.
     asistencia: e && c.es_propia && (estado === "PROGRAMADA" || estado === "CONFIRMADA") && yaPaso,
     crearCompromiso: permisos.puedeCrear && estado === "ASISTIO",
+    descargar: c.fecha_programada != null,
   }
 }
 

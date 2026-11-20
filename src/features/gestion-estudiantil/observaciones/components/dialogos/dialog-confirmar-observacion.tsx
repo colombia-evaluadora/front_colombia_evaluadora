@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckIcon } from "@/components/ui/icons"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { ResumenObservacion } from "@/features/gestion-estudiantil/observaciones/api/types"
@@ -42,6 +42,7 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
         </DialogHeader>
         <DialogFooter>
           <Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} onClick={onCancelar}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button size="sm" type="button" disabled={pending} onClick={onConfirmar}>

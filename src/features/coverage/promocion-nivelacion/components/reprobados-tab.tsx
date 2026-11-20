@@ -28,7 +28,7 @@ import { DialogPromover } from "@/features/coverage/promocion-nivelacion/compone
 import { BotonExpandir, FiltrosFila } from "@/features/coverage/promocion-nivelacion/components/filtros"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-const num = "block text-right tabular-nums"
+const num = "block text-center tabular-nums"
 
 function Acciones({ r }: { r: Reprobado }) {
   const { puedeEditar } = useMenuPermission(MENU_PROMOCION)
@@ -69,24 +69,24 @@ function AreasDelAnio({ r }: { r: Reprobado }) {
       <thead className="text-left text-muted-foreground">
         <tr>
           <th className="px-3 py-1.5 font-medium">Asignatura</th>
-          <th className="px-3 py-1.5 text-right font-medium">I.H.</th>
-          <th className="px-3 py-1.5 text-right font-medium">Nota final</th>
+          <th className="px-3 py-1.5 text-center font-medium">I.H.</th>
+          <th className="px-3 py-1.5 text-center font-medium">Nota final</th>
           <th className="px-3 py-1.5 font-medium">Resultado</th>
-          <th className="px-3 py-1.5 text-right font-medium">Inasistencia</th>
+          <th className="px-3 py-1.5 text-center font-medium">Inasistencia</th>
         </tr>
       </thead>
       <tbody>
         {data.map((a) => (
           <tr key={a.area} className="border-t border-border">
             <td className="px-3 py-1.5">{a.area}</td>
-            <td className="px-3 py-1.5 text-right tabular-nums">{a.ih}</td>
-            <td className="px-3 py-1.5 text-right tabular-nums">{formatoNota(a.notaFinal)}</td>
+            <td className="px-3 py-1.5 text-center tabular-nums">{a.ih}</td>
+            <td className="px-3 py-1.5 text-center tabular-nums">{formatoNota(a.notaFinal)}</td>
             <td className="px-3 py-1.5">
               <Badge variant="soft" color={a.aprobo ? "success" : "destructive"} className="text-xs font-medium tracking-normal">
                 {a.aprobo ? "Aprobó" : "Reprobó"}
               </Badge>
             </td>
-            <td className="px-3 py-1.5 text-right tabular-nums">{a.inasistencia} %</td>
+            <td className="px-3 py-1.5 text-center tabular-nums">{a.inasistencia} %</td>
           </tr>
         ))}
       </tbody>
@@ -191,7 +191,7 @@ function columnas({
       id: "rendimiento",
       accessorFn: (r) => r.rendimiento,
       meta: { label: "Rendimiento académico" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Rendimiento académico" className="justify-end" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Rendimiento académico" className="justify-center" />,
       cell: ({ row }) => <span className={`${num} font-semibold`}>{formatoNota(row.original.rendimiento)}</span>,
       enableSorting: false,
     },
@@ -199,7 +199,7 @@ function columnas({
       id: "inasistencia",
       accessorFn: (r) => r.mayorInasistencia,
       meta: { label: "Mayor inasistencia" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Mayor inasistencia" className="justify-end" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Mayor inasistencia" className="justify-center" />,
       cell: ({ row }) => <span className={num}>{row.original.mayorInasistencia} %</span>,
       enableSorting: false,
     },

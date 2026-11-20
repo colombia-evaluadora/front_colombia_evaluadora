@@ -37,7 +37,7 @@ function Cargando() {
   )
 }
 
-const num = "text-right tabular-nums"
+const num = "text-center tabular-nums"
 
 /** Ver resultado (solo forma Abierta y Modo Automática): una fila por cupo, de consulta. */
 export function DialogResultadoSeleccion({

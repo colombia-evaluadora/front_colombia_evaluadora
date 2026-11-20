@@ -168,7 +168,7 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
                       </Tooltip>
                     </span>
                   </TableHead>
-                  <TableHead className="text-right">Definitiva</TableHead>
+                  <TableHead className="text-center">Definitiva</TableHead>
                   <TableHead>Valoración</TableHead>
                   <TableHead>Marca</TableHead>
                   <TableHead className="w-24">
@@ -191,7 +191,7 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-center tabular-nums">
                         {n.nota == null ? (
                           "—"
                         ) : n.notaOriginal != null ? (

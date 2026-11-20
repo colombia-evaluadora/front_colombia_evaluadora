@@ -55,7 +55,7 @@ export function MenuAccionesCitacion({ estudiante, acciones, puedeVer, onAccion 
           label: "Descargar citación",
           icon: <FilePdfIcon />,
           separada: true,
-          disabled: !puedeVer,
+          disabled: !puedeVer || !acciones.descargar,
           onSelect: () => onAccion("documento"),
         },
       ]}
