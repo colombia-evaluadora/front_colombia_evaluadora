@@ -22,7 +22,7 @@ export function ConstructorPruebasDescargos({ pruebas, onChange, errores, intent
         forzarAbierta={intento && Object.keys(errores).some((k) => k.startsWith("prueba:"))}
         contentClassName="flex flex-col gap-3 p-4"
         accion={
-          <Button type="button" size="sm" variant="outline" onClick={() => onChange([...pruebas, pruebaVacia()])}>
+          <Button type="button" size="sm" variant="outline" color="neutral" onClick={() => onChange([...pruebas, pruebaVacia()])}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar prueba
           </Button>

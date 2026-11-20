@@ -22,7 +22,7 @@ export function EncabezadoPlan({ plan: p, d }: Props) {
       <TableScreenTitle
         action={
           <div className="flex shrink-0 items-center gap-2">
-            <Button size="sm" type="button" variant="outline" disabled={!p.puede_marcar} onClick={() => d.marcar("SUPERADO")}>
+            <Button size="sm" type="button" variant="outline" color="neutral" disabled={!p.puede_marcar} onClick={() => d.marcar("SUPERADO")}>
               <CheckCircleIcon data-icon="inline-start" />
               Marcar Superado
             </Button>

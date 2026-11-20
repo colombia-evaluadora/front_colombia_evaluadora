@@ -38,8 +38,8 @@ Pendiente:
 
 - Listado: `/app/gestion-estudiantil/citaciones-compromisos` (`paths.app.citacionesCompromisos` en `src/config/paths.ts`; ruta `citacionesCompromisosRoute` en `src/router.tsx`).
 - Parámetro `?tab=`: `citaciones` (por defecto) o `compromisos`. Se valida con `citacionesSearchSchema` (`api/schema.ts`); cualquier otro valor se ignora y se muestra Citaciones.
-- Nueva citación: `/app/gestion-estudiantil/citaciones-compromisos/nueva` (`paths.app.citacionNueva`; `citacionNuevaRoute`). Al guardar vuelve al listado.
-- Nuevo compromiso: `/app/gestion-estudiantil/citaciones-compromisos/nuevo-compromiso` (`paths.app.compromisoNuevo`; `compromisoNuevoRoute`). Con `?citacion=<id>` parte de una citación Asistió y toma su estudiante (solo lectura); sin parámetro, el estudiante se busca.
+- Nueva citación: `/app/gestion-estudiantil/citaciones-compromisos/nueva` (`paths.app.citacionNueva`; `citacionNuevaRoute`): muestra el listado con el modal de Nueva citación ya abierto. Desde el botón del listado el modal se abre sin cambiar la URL. Al guardar o cancelar queda el listado.
+- Nuevo compromiso: `/app/gestion-estudiantil/citaciones-compromisos/nuevo-compromiso` (`paths.app.compromisoNuevo`; `compromisoNuevoRoute`): muestra el listado en la pestaña Compromisos con el modal de Nuevo compromiso ya abierto (desde el listado y desde «Registrar compromiso» de una citación se abre sin cambiar la URL). Al guardar lleva al detalle del compromiso creado. Con `?citacion=<id>` parte de una citación Asistió y toma su estudiante (solo lectura); sin parámetro, el estudiante se busca.
 
 Search params de Nueva citación (`/nueva`) y Nuevo compromiso (`/nuevo-compromiso`), validados con `origenSearchSchema` (`api/schema.ts`). Solo los llevan los accesos desde Observador y Convivencia; un valor inválido se ignora:
 - `origen_tipo`: `ANOTACION` o `CASO_CONVIVENCIA`. Con `origen_id` forma el «Registro de origen» (solo lectura); `origen_tipo` y `origen_id` van juntos o no se usan.
@@ -136,7 +136,7 @@ Ruta base: `src/features/gestion-estudiantil/citaciones/`.
 - `hooks/use-citaciones-access.ts`: permisos del menú CITACIONES_COMPROMISOS (`useCitacionesAccess`); no lee banderas `puede_*` del backend.
 - `hooks/use-citaciones-filtros.ts`: estado de filtros de citaciones y compromisos, con la cascada Sede → Jornada y las opciones de quién atiende.
 - `../commons/hooks/use-search-filtros.ts` (común a Gestión Estudiantil): borrador, aplicar y limpiar del panel de filtros, común a los dos listados.
-- `hooks/use-citacion-form.ts`: estado, validación y envío de Nueva citación (`useCitacionForm`); vuelve al listado al guardar.
+- `hooks/use-citacion-form.ts`: estado, validación y envío de Nueva citación (`useCitacionForm`); el error del backend va en el banner del modal y el éxito lo muestra quien lo abrió.
 - `hooks/use-compromiso-form.ts`: estado, validación y envío de Nuevo compromiso (`useCompromisoForm`), incluidos el constructor de ítems y la subida del soporte.
 - `../commons/hooks/use-estado-dialogo.ts` (común a Gestión Estudiantil): error y estado de envío compartidos por los diálogos de operación (`useEstadoDialogo`).
 
@@ -154,8 +154,8 @@ El Motivo no aparece en el documento de la citación: la especificación lo excl
 ### Páginas
 
 - `pages/citaciones-compromisos-page.tsx`: página con pestañas (`?tab=`), cabecera con el botón de alta de cada pestaña y los dos listados.
-- `pages/citacion-form-page.tsx`: Nueva citación (`CitacionFormPage`); estudiante, motivo, texto para el acudiente, fecha, lugar y quién atiende.
-- `pages/compromiso-form-page.tsx`: Nuevo compromiso (`CompromisoFormPage`); con `?citacion=` parte de una citación Asistió, incluye la aceptación presencial opcional y el constructor de compromisos.
+- `components/dialogos/dialog-nueva-citacion.tsx`: modal de Nueva citación (`DialogNuevaCitacion`); estudiante, acudiente, motivo, origen, texto para el acudiente, fecha, lugar y quién atiende.
+- `components/dialogos/dialog-nuevo-compromiso.tsx`: modal de Nuevo compromiso (`DialogNuevoCompromiso`); con `?citacion=` parte de una citación Asistió, incluye la aceptación presencial opcional y el constructor de compromisos.
 - `pages/compromiso-detalle-page.tsx`: detalle del compromiso (`CompromisoDetallePage`) con sus ítems, acudiente, soporte firmado, acciones de aceptación y resultado según estado, y «Descargar acta de compromiso».
 
 ### Entradas desde Observador y Convivencia

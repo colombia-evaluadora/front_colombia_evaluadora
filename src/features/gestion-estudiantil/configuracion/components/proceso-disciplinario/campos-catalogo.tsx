@@ -1,9 +1,10 @@
-import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { CharacterCounter } from "@/components/ui/character-counter"
+import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 interface TextoProps {
@@ -68,26 +69,20 @@ interface RadiosProps {
 /** Opción única en línea (Estado, Tiene duración, Efecto de la sanción). */
 export function CampoRadios({ id, label, value, options, required = true, error, onChange }: RadiosProps) {
   return (
-    <Field orientation="vertical" className="gap-2" data-invalid={Boolean(error) || undefined}>
-      <FieldLabel id={`${id}-label`}>
-        {label}
-        {required && "*"}
-      </FieldLabel>
+    <MarcoOpciones id={id} label={label} required={required} error={error}>
       <RadioGroup
         aria-labelledby={`${id}-label`}
         aria-invalid={Boolean(error) || undefined}
-        className="flex flex-row flex-wrap items-center gap-x-6 gap-y-2"
         value={value}
         onValueChange={(v) => onChange(String(v))}
       >
         {options.map((o) => (
-          <label key={o.value} className="flex items-center gap-2 text-sm">
+          <label key={o.value} className="flex items-center gap-2">
             <RadioGroupItem value={o.value} />
             {o.label}
           </label>
         ))}
       </RadioGroup>
-      {error && <FieldError>{error}</FieldError>}
-    </Field>
+    </MarcoOpciones>
   )
 }

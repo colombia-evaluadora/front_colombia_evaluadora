@@ -12,6 +12,7 @@ import {
   type SearchFiltrosProps,
 } from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
 import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
+import { MarcoOpciones } from "@/features/gestion-estudiantil/commons/components/marco-opciones"
 
 export interface OpcionesFiltrosReconocimientos {
   sedes: Opcion[]
@@ -82,13 +83,15 @@ export function SearchReconocimientos(props: Props) {
           placeholder={sinSede || sinJornada ? "Elija sede y jornada primero" : "Todos"}
           onChange={(periodo) => setDraft({ ...draft, periodo })}
         />
-        <label className="flex items-center gap-2 self-center text-sm md:col-span-2">
-          <Checkbox
-            checked={draft.anulados === "true"}
-            onCheckedChange={(c) => setDraft({ ...draft, anulados: c === true ? "true" : "" })}
-          />
-          Incluir anulados
-        </label>
+        <MarcoOpciones id="reconocimientos-anulados" className="md:col-span-2">
+          <label className="flex items-center gap-2">
+            <Checkbox
+              checked={draft.anulados === "true"}
+              onCheckedChange={(c) => setDraft({ ...draft, anulados: c === true ? "true" : "" })}
+            />
+            Incluir anulados
+          </label>
+        </MarcoOpciones>
       </div>
     </BarraBusquedaFiltros>
   )

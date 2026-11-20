@@ -19,13 +19,13 @@ import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils
 type Fila = InformeInclusion["cobertura"][number]
 
 const numero = (k: "con_ajustes" | "sin_ajustes" | "pendiente_revision") => ({ row }: { row: { original: Fila } }) => (
-  <span className="block text-right tabular-nums">{row.original[k]}</span>
+  <span className="block text-center tabular-nums">{row.original[k]}</span>
 )
 const COLUMNAS: ColumnDef<Fila>[] = [
   { id: "asignatura", header: "Cobertura por Asignatura", enableSorting: false, cell: ({ row }) => <strong className="font-medium">{row.original.asignatura_nombre}</strong> },
-  { id: "con", header: "Con ajustes", enableSorting: false, cell: numero("con_ajustes") },
-  { id: "sin", header: "Sin ajustes adicionales", enableSorting: false, cell: numero("sin_ajustes") },
-  { id: "pend", header: "Pendiente", enableSorting: false, cell: numero("pendiente_revision") },
+  { id: "con", header: () => <span className="block text-center">Con ajustes</span>, enableSorting: false, cell: numero("con_ajustes") },
+  { id: "sin", header: () => <span className="block text-center">Sin ajustes adicionales</span>, enableSorting: false, cell: numero("sin_ajustes") },
+  { id: "pend", header: () => <span className="block text-center">Pendiente</span>, enableSorting: false, cell: numero("pendiente_revision") },
 ]
 
 function Cifra({ titulo, valor, de }: { titulo: string; valor: number; de?: number }) {
@@ -52,8 +52,8 @@ function TablaCifras({ titulo, columnas, filas }: { titulo: string; columnas: st
         growColumnId="c0"
         columns={columnas.map((c, i) => ({
           id: `c${i}`,
-          header: c,
-          cell: ({ row }: { row: { original: (string | number)[] } }) => <span className={i ? "block text-right tabular-nums" : ""}>{row.original[i]}</span>,
+          header: () => <span className={i ? "block text-center" : ""}>{c}</span>,
+          cell: ({ row }: { row: { original: (string | number)[] } }) => <span className={i ? "block text-center tabular-nums" : ""}>{row.original[i]}</span>,
         }))}
       />
     </section>

@@ -16,6 +16,8 @@ import {
   type BitacoraAccion,
   type BitacoraEvento,
   type BitacoraPagina,
+  type AccesoDatos,
+  type EventoOriginal,
   type EventoPosterior,
   type TipoRestauracion,
 } from "@/features/bitacora/api/types/bitacora"
@@ -26,6 +28,11 @@ export interface BitacoraParams {
   sorting: SortingState
   pageIndex: number
   pageSize: number
+  /**
+   * Solo para los datos de prueba: el Administrador del establecimiento no ve los eventos de Sistema
+   * (B.1.LIS.2). Con el back real lo decide el servidor según quien consulta; no se envía.
+   */
+  verSistema?: boolean
 }
 
 /** Fila de `POST /audit-cval/bitacora/query` (V571). */
@@ -48,6 +55,12 @@ interface BitacoraRow {
   motivo_bloqueo_evento: string | null
   vigente: "S" | "N"
   eventos_posteriores: EventoPosterior[] | null
+  /** Pendiente de backend: el evento que deshizo una Restauración. */
+  evento_original?: EventoOriginal | null
+  /** Pendiente de backend: datos de un evento Acceso (B.7.LIS.1). */
+  /** Pendiente de backend: información reservada (no trae valores). */
+  reservado?: "S" | "N"
+  acceso?: { documento: string; tipo_cuenta: string; evento: string; ip: string | null; navegador: string | null } | null
   total_count: number | string
 }
 
@@ -69,6 +82,17 @@ const toEvento = (row: BitacoraRow): BitacoraEvento => ({
   motivoBloqueoEvento: row.motivo_bloqueo_evento,
   vigente: row.vigente === "S",
   eventosPosteriores: row.eventos_posteriores ?? [],
+  eventoOriginal: row.evento_original ?? null,
+  reservado: row.reservado === "S",
+  acceso: row.acceso
+    ? ({
+        documento: row.acceso.documento,
+        tipoCuenta: row.acceso.tipo_cuenta,
+        evento: row.acceso.evento,
+        ip: row.acceso.ip,
+        navegador: row.acceso.navegador,
+      } satisfies AccesoDatos)
+    : null,
 })
 
 /** Filtros con los nombres del back. Exportado: lo reusa la exportación. */
@@ -125,7 +149,7 @@ const normalizar = (text: string) =>
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
 
-async function fetchBitacoraMock({ filters: f, sorting, pageIndex, pageSize }: BitacoraParams) {
+async function fetchBitacoraMock({ filters: f, sorting, pageIndex, pageSize, verSistema = true }: BitacoraParams) {
   await new Promise((r) => setTimeout(r, 250))
   const q = normalizar(f.q.trim())
   const desde = parseDateValue(f.desde)
@@ -134,6 +158,7 @@ async function fetchBitacoraMock({ filters: f, sorting, pageIndex, pageSize }: B
     .map((m) => m.evento)
     .filter(
       (e) =>
+        (verSistema || !e.esSistema) &&
         (!q || normalizar(`${e.usuario.nombre} ${e.usuario.documento ?? ""}`).includes(q)) &&
         (!f.accion.length || f.accion.includes(e.accion)) &&
         (!desde || e.fecha >= startOfDay(desde)) &&

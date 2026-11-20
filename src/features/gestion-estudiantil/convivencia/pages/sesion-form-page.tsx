@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -35,6 +35,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" onClick={form.guardar} disabled={form.guardando}>

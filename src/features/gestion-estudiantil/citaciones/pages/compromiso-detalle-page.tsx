@@ -42,7 +42,7 @@ function SoporteFirmado({ archivo }: { archivo: number }) {
     }
   }
   return (
-    <Button type="button" size="sm" variant="outline" disabled={abriendo} onClick={abrir}>
+    <Button type="button" size="sm" variant="outline" color="neutral" disabled={abriendo} onClick={abrir}>
       <PaperclipIcon data-icon="inline-start" />
       Ver soporte firmado
     </Button>
@@ -64,13 +64,13 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
           action={
             <div className="flex flex-wrap gap-2">
               {acciones.aceptacionPresencial && (
-                <Button size="sm" variant="outline" onClick={() => dialogos.abrir("aceptacion", c)}>
+                <Button size="sm" variant="outline" color="neutral" onClick={() => dialogos.abrir("aceptacion", c)}>
                   <PencilIcon data-icon="inline-start" />
                   Registrar aceptación presencial
                 </Button>
               )}
               {acciones.registrarResultado && (
-                <Button size="sm" variant="outline" onClick={() => dialogos.abrir("resultado", c)}>
+                <Button size="sm" variant="outline" color="neutral" onClick={() => dialogos.abrir("resultado", c)}>
                   <CheckCircleIcon data-icon="inline-start" />
                   Registrar resultado
                 </Button>
@@ -88,7 +88,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
             </div>
           }
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={volver}>
+            <Button variant="ghost" color="neutral" size="sm" onClick={volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Citaciones y compromisos
             </Button>

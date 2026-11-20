@@ -9,7 +9,51 @@ export interface MockMenu extends RouteResponseDto {
   planId?: number | null
 }
 
+// Bitácora con un submenú por módulo, como en el prototipo (B.1.LIS.1). En el backend real hay que crear
+// estos ítems; mientras no existan, la Bitácora se abre desde Registro de actividad.
+const BITACORA_SUBMENUS: [number, string, string][] = [
+  [81, "Establecimiento", "establecimiento"],
+  [82, "Cobertura Educativa", "cobertura-educativa"],
+  [83, "Gestión Académica", "gestion-academica"],
+  [84, "Gestión Estudiantil", "gestion-estudiantil"],
+  [87, "Evaluación del Desempeño", "evaluacion-del-desempeno"],
+  [85, "Comunicaciones", "comunicaciones"],
+  [86, "Administración del Sistema", "administracion-del-sistema"],
+]
+
 export const navigationMenu: MockMenu[] = [
+  {
+    id: 80,
+    name: "Bitácora",
+    icon: "Clock-Counter-Clockwise-Icon",
+    path: "/app/registro-de-actividad/bitacora/establecimiento",
+    menuOrder: 3,
+    type: "GROUP",
+    idParent: null,
+    roleIds: [1, 2],
+  },
+  ...BITACORA_SUBMENUS.map(
+    ([id, name, slug], i): MockMenu => ({
+      id,
+      name,
+      icon: "",
+      path: `/app/registro-de-actividad/bitacora/${slug}`,
+      menuOrder: i,
+      type: "ITEM",
+      idParent: 80,
+      roleIds: [1, 2],
+    }),
+  ),
+  {
+    id: 88,
+    name: "Documentos emitidos",
+    icon: "",
+    path: "/app/registro-de-actividad/documentos-emitidos",
+    menuOrder: BITACORA_SUBMENUS.length,
+    type: "ITEM",
+    idParent: 80,
+    roleIds: [1, 2],
+  },
   {
     id: 12,
     name: "Cobertura educativa",

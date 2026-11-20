@@ -172,7 +172,7 @@ export function MenuCatalog() {
           {/* El sidebar solo pinta el ícono del módulo. */}
           {isModule ? <Icon className="inline size-4" aria-label={node.icon ?? "Sin ícono"} /> : "—"}
         </TableCell>
-        <TableCell className="text-right tabular-nums">{node.menuOrder ?? "—"}</TableCell>
+        <TableCell className="text-center tabular-nums">{node.menuOrder ?? "—"}</TableCell>
         <TableCell>
           {/* Un módulo agrupa vistas: las acciones son de sus submódulos. */}
           {isModule ? null : node.admiteGuardar || node.admiteEliminar ? (
@@ -250,7 +250,7 @@ export function MenuCatalog() {
             <TableHead className="text-foreground">Nombre</TableHead>
             <TableHead className="text-foreground">Módulo padre</TableHead>
             <TableHead className="w-20 text-center text-foreground">Icono</TableHead>
-            <TableHead className="w-24 text-right text-foreground">
+            <TableHead className="w-24 text-center text-foreground">
               <span className="inline-flex items-center gap-1.5">
                 Orden
                 <HelpTip text="Posición en el menú lateral, dentro de su módulo. Cámbiala arrastrando la fila." />

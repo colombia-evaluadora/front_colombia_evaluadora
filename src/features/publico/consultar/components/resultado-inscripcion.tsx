@@ -216,8 +216,8 @@ export function ResultadoInscripcion({
             <TableHead>Opción</TableHead>
             <TableHead>Establecimiento</TableHead>
             <TableHead>Sede · Jornada</TableHead>
-            {conSorteo && <TableHead className="text-right">Sorteo</TableHead>}
-            {conSorteo && <TableHead className="text-right">Posición</TableHead>}
+            {conSorteo && <TableHead className="text-center">Sorteo</TableHead>}
+            {conSorteo && <TableHead className="text-center">Posición</TableHead>}
             <TableHead>Estado</TableHead>
             {accionesFila && (
               <TableHead>
@@ -242,10 +242,10 @@ export function ResultadoInscripcion({
                 {o.sede} · {o.jornada}
               </TableCell>
               {conSorteo && (
-                <TableCell className="text-right tabular-nums">{o.sorteo ?? "—"}</TableCell>
+                <TableCell className="text-center tabular-nums">{o.sorteo ?? "—"}</TableCell>
               )}
               {conSorteo && (
-                <TableCell className="text-right tabular-nums">{o.posicion ?? "—"}</TableCell>
+                <TableCell className="text-center tabular-nums">{o.posicion ?? "—"}</TableCell>
               )}
               <TableCell>
                 <EstadoOpcionBadge opcion={o} />

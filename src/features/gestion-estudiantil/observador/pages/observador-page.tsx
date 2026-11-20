@@ -28,6 +28,7 @@ import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observa
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useObservadorAccess } from "@/features/gestion-estudiantil/observador/api/use-observador-access"
+import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
 import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
 import { SearchAnotaciones } from "@/features/gestion-estudiantil/observador/components/search/search-anotaciones"
@@ -61,6 +62,7 @@ function ObservadorContent() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useObservadorAccess()
+  const accesoConvivencia = useConvivenciaAccess()
 
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<ObservadorFiltros>(FILTROS_VACIOS)
@@ -121,6 +123,12 @@ function ObservadorContent() {
     puedeRemitir: access.puedeRemitir,
     puedeReportarSaludMental: access.puedeReportarSaludMental,
     onRemitir: setRemitir,
+    puedeAbrirProceso: accesoConvivencia.puedeSupervisar,
+    onAbrirProceso: (a) =>
+      navigate({
+        to: paths.app.convivenciaProcesoNuevo.getHref(),
+        search: { matricula: a.fk_tmatricula, anotacion: a.id, nombre: a.estudiante_nombre },
+      } as never),
     onReportarConsumo: setReportarConsumo,
     onReportarSaludMental: (a) =>
       navigate({

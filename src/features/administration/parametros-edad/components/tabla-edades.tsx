@@ -92,10 +92,10 @@ export function TablaEdades({
       meta: { label: "Edad recomendada" },
       enableHiding: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Edad recomendada" className="justify-end" />
+        <DataTableColumnHeader column={column} title="Edad recomendada" className="justify-center" />
       ),
       cell: ({ row }) => (
-        <span className="block text-right tabular-nums">{row.original.fila!.edad} años</span>
+        <span className="block text-center tabular-nums">{row.original.fila!.edad} años</span>
       ),
     },
     {

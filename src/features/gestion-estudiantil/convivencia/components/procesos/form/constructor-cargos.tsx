@@ -34,7 +34,7 @@ export function ConstructorCargos({ form }: { form: ProcesoFormState }) {
         forzarAbierta={intento && Object.keys(errores.cargos).length > 0}
         contentClassName="flex flex-col gap-3 p-4"
         accion={
-          <Button type="button" size="sm" variant="outline" onClick={() => set({ cargos: [...v.cargos, cargoVacio()] })}>
+          <Button type="button" size="sm" variant="outline" color="neutral" onClick={() => set({ cargos: [...v.cargos, cargoVacio()] })}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar cargo
           </Button>

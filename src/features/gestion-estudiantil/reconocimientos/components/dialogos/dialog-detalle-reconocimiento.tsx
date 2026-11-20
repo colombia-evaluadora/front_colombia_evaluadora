@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Badge } from "@/components/ui/badge"
@@ -11,11 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MedalIcon, PaperclipIcon, ProhibitIcon } from "@/components/ui/icons"
+import { MedalIcon, PaperclipIcon, ProhibitIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
+import { TablaDatos } from "@/components/tabla-datos"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useReconocimientoQuery } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-reconocimientos-query"
 import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"
@@ -26,15 +27,6 @@ interface Props {
   onClose: () => void
   /** Abre Anular o la Mención de honor encima del detalle, con las mismas reglas que el menú ⋮. */
   onAccion?: (accion: "anular" | "mencion", reconocimiento: ReconocimientoRow) => void
-}
-
-function Dato({ etiqueta, children, ancho }: { etiqueta: string; children: ReactNode; ancho?: boolean }) {
-  return (
-    <div className={ancho ? "flex flex-col gap-0.5 sm:col-span-2" : "flex flex-col gap-0.5"}>
-      <dt className="text-xs text-muted-foreground">{etiqueta}</dt>
-      <dd className="text-sm">{children || "—"}</dd>
-    </div>
-  )
 }
 
 /** Ver detalle (§7.1): todos los campos, la actividad, el soporte descargable, el período y la anulación. */
@@ -60,7 +52,7 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccio
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Reconocimiento</span>
@@ -75,55 +67,53 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccio
         {isError && <p role="alert" className="text-sm text-destructive">{getErrorMessage(error)}</p>}
         <ErrorNoticeBanner error={errorSoporte} />
         {r && (
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-            <Dato etiqueta="Estudiante">{r.estudiante_nombre}</Dato>
-            <Dato etiqueta="Documento">{r.estudiante_documento}</Dato>
-            <Dato etiqueta="Grado/Grupo">{r.grado_grupo}</Dato>
-            <Dato etiqueta="Fecha">{formatFecha(r.fecha)}</Dato>
-            <Dato etiqueta="Tipo">{r.tipo_nombre}</Dato>
-            <Dato etiqueta="Período de Evaluación">{r.periodo_evaluacion_nombre}</Dato>
-            <Dato etiqueta="Motivo" ancho>{r.motivo}</Dato>
-            <Dato etiqueta="Otorgado por">{r.otorgado_por}</Dato>
-            <Dato etiqueta="Registrado por">{r.registrado_por}</Dato>
-            <Dato etiqueta="Actividad relacionada">{r.actividad_nombre}</Dato>
-            <Dato etiqueta="Soporte">
-              {r.fk_tarchivo_soporte != null && (
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0"
-                  disabled={abriendo}
-                  onClick={() => abrirSoporte(r.fk_tarchivo_soporte as number)}
-                >
-                  <PaperclipIcon data-icon="inline-start" />
-                  {r.soporte_nombre ?? "Descargar soporte"}
-                </Button>
-              )}
-            </Dato>
-            {r.anulacion && (
-              <>
-                <Dato etiqueta="Fecha de anulación">{formatFecha(r.anulacion.fecha)}</Dato>
-                <Dato etiqueta="Anulado por">{r.anulacion.por}</Dato>
-                <Dato etiqueta="Motivo de la anulación" ancho>{r.anulacion.motivo}</Dato>
-              </>
-            )}
-          </dl>
+          <TablaDatos
+            datos={[
+              { etiqueta: "Estudiante", valor: r.estudiante_nombre },
+              { etiqueta: "Documento", valor: r.estudiante_documento },
+              { etiqueta: "Grado/Grupo", valor: r.grado_grupo },
+              { etiqueta: "Fecha", valor: formatFecha(r.fecha) },
+              { etiqueta: "Tipo", valor: r.tipo_nombre },
+              { etiqueta: "Período de Evaluación", valor: r.periodo_evaluacion_nombre },
+              { etiqueta: "Motivo", valor: r.motivo, ancho: true },
+              { etiqueta: "Otorgado por", valor: r.otorgado_por },
+              { etiqueta: "Registrado por", valor: r.registrado_por },
+              { etiqueta: "Actividad relacionada", valor: r.actividad_nombre },
+              {
+                etiqueta: "Soporte",
+                valor: r.fk_tarchivo_soporte != null && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    disabled={abriendo}
+                    onClick={() => abrirSoporte(r.fk_tarchivo_soporte as number)}
+                  >
+                    <PaperclipIcon data-icon="inline-start" />
+                    {r.soporte_nombre ?? "Descargar soporte"}
+                  </Button>
+                ),
+              },
+              ...(r.anulacion
+                ? [
+                    { etiqueta: "Fecha de anulación", valor: formatFecha(r.anulacion.fecha) },
+                    { etiqueta: "Anulado por", valor: r.anulacion.por },
+                    { etiqueta: "Motivo de la anulación", valor: r.anulacion.motivo, ancho: true },
+                  ]
+                : []),
+            ]}
+          />
         )}
+        {/* Orden de los pies de modal: Cerrar (secundario), Anular (destructivo) y la acción principal a la
+            derecha, en azul: Generar mención de honor. */}
         <DialogFooter>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
           {fila && acciones && onAccion && (
             <>
-              <Button
-                size="sm"
-                type="button"
-                variant="outline"
-                color="neutral"
-                disabled={!acciones.mencionHonor}
-                onClick={() => onAccion("mencion", fila)}
-              >
-                <MedalIcon data-icon="inline-start" />
-                Generar mención de honor
-              </Button>
               <Button
                 size="sm"
                 type="button"
@@ -135,9 +125,17 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccio
                 <ProhibitIcon data-icon="inline-start" />
                 Anular
               </Button>
+              <Button
+                size="sm"
+                type="button"
+                disabled={!acciones.mencionHonor}
+                onClick={() => onAccion("mencion", fila)}
+              >
+                <MedalIcon data-icon="inline-start" />
+                Generar mención de honor
+              </Button>
             </>
           )}
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

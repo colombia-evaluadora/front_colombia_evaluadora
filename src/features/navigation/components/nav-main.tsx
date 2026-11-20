@@ -62,7 +62,13 @@ function lineClamp(maxLines: NavMaxLines = 1) {
 
 export function NavMain() {
   const { data: items, isPending, isError, error, refetch } = useNavItemsQuery()
-  const pathname = resolveNavPathname(useLocation().pathname)
+  const ruta = useLocation().pathname
+  // Primero el ítem cuya URL contiene la ruta tal cual (p. ej. el submódulo de Bitácora); solo si ninguno la
+  // contiene se usa el alias, que la lleva al ítem dueño (p. ej. Registro de actividad).
+  const coincideDirecto = (items ?? []).some(
+    (item) => isUnder(ruta, item.url) || item.items?.some((sub) => isUnder(ruta, sub.url)),
+  )
+  const pathname = coincideDirecto ? ruta : resolveNavPathname(ruta)
 
   /**
    * Acordeón: un único grupo abierto a la vez. El estado vive aquí (no en cada

@@ -51,6 +51,7 @@ export function SeccionFechas({ form }: { form: Pick<CasoFormState, "v" | "set" 
         </Field>
       </div>
 
+      {/* Mismas 3 columnas que la fila de fechas: la hora queda debajo de «Fecha de los hechos». */}
       <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
         <SiNo
           id="caso-hora-conocida"
