@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Chat con MSW: borradores (guardar, retomar, enviar), bandeja Enviados por
 // tipo, participación en encuesta y elección (votar y ver resultados al cierre).
@@ -9,8 +10,7 @@ async function login(page: Page, email: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(CHAT)}`)
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if ((await compartido.isChecked()) && (await compartido.isEnabled())) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.waitForURL((url) => url.pathname === CHAT)

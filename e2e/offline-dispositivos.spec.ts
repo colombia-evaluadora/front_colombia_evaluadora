@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Credencial del equipo y borrado remoto (`add-offline-meses-pwa` D-3/D-8) y
 // conflicto por VERSION del planeador (BE-3B). Contra el dev server con MSW:
@@ -198,7 +199,7 @@ test("unidad editada sin red y cambiada por otro: conflicto por VERSION y 'Conse
   await page.goto(`/login?redirectTo=${encodeURIComponent("/app/planeador/unidades")}`)
   await page.getByLabel("Correo electrónico").fill(USUARIO)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  await page.getByRole("checkbox", { name: "Este es un equipo compartido" }).click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.goto("/app/planeador/unidades")

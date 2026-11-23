@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Request } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // "Preparar sin conexión" y el fin de la sesión (QA): al cerrar sesión con una
 // preparación en curso, las tareas que faltaban seguían saliendo con el token
@@ -23,8 +24,7 @@ async function login(page: Page, email: string, init?: () => void) {
   await page.reload()
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
 }
@@ -54,7 +54,7 @@ test("logout a mitad de Preparar: 0 requests después y a lo sumo un toast", asy
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: "Preparar todo" }).click()
+  await dialog.getByRole("button", { name: "Preparar este equipo" }).click()
   const chip = page.locator('[data-slot="offline-data-status"]')
   await expect(chip).toHaveAttribute("title", /^Preparando… \d+ %$/, { timeout: 15_000 })
 
@@ -74,8 +74,7 @@ test("logout a mitad de Preparar: 0 requests después y a lo sumo un toast", asy
   // Al volver a entrar, la corrida quedó para "Continuar" (detenida por la sesión).
   await page.getByLabel("Correo electrónico").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()

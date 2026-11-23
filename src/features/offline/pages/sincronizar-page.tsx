@@ -84,7 +84,7 @@ export function SincronizarPage() {
           {fase === "terminado" ? "Sincronizar de nuevo" : "Sincronizar ahora"}
         </Button>
         <Button variant="outline" color="primary" disabled={offline} onClick={() => setPrepareOpen(true)}>
-          Preparar todo para trabajar sin conexión
+          Preparar este equipo
         </Button>
       </div>
       {offline && <p className="text-muted-foreground text-sm">Necesitas conexión para sincronizar.</p>}

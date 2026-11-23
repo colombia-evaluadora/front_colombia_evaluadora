@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Fase 2 offline, tarea 5.3: 40 celdas sin red → cerrar y reabrir → con red =
 // 40 envíos, uno por celda; y dos pestañas sincronizando a la vez sin
@@ -47,7 +48,7 @@ async function login(page: Page) {
   await page.goto("/login?redirectTo=%2Fapp%2Fplaneador%2Fplanilla")
   await page.getByLabel("Correo electrónico").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  await page.getByRole("checkbox", { name: "Este es un equipo compartido" }).click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
 }

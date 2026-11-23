@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // PIN local y cifrado en reposo (`add-offline-meses-pwa` D-4/D-8).
 
@@ -16,8 +17,7 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
   )
   await page.getByLabel("Correo electrónico").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.goto("/app/planeador/actividades")

@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Preparar incremental (`add-offline-preparar-incremental`): la segunda
-// corrida de "Preparar todo" justo después de la primera no rehace nada.
+// corrida de "Preparar este equipo" justo después de la primera no rehace nada.
 // - Lo fresco (catálogos 1 día, datos de grupo 4 h) ni se pide.
 // - Planilla y asistencia se revisan con `If-None-Match` y vuelven 304.
 // - Lo que llega igual no se reescribe en IndexedDB.
@@ -39,8 +40,7 @@ async function login(page: Page, email: string) {
   await page.reload()
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.waitForLoadState("networkidle")
@@ -52,13 +52,13 @@ function snapshot(page: Page): Promise<Snapshot> {
   )
 }
 
-/** Arranca "Preparar todo" desde el diálogo y espera a que la corrida termine. */
+/** Arranca "Preparar este equipo" desde el diálogo y espera a que la corrida termine. */
 async function prepararTodo(page: Page): Promise<RunStats> {
   const antes = (await snapshot(page)).lastPrepareAt ?? 0
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  const boton = dialog.getByRole("button", { name: /^(Preparar todo|Continuar)$/ })
+  const boton = dialog.getByRole("button", { name: /^(Preparar este equipo|Continuar)$/ })
   await expect(boton).toBeEnabled({ timeout: 30_000 })
   await boton.click()
   await expect(dialog).toBeHidden()

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Fase 2 offline (`openspec/changes/add-offline-writes-asistencia-planilla`,
 // tarea 5.3). Contra el dev server con MSW y `VITE_APP_OFFLINE=full`
@@ -48,7 +49,7 @@ async function login(page: Page) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(ASISTENCIA)}`)
   await page.getByLabel("Correo electrónico").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  await page.getByRole("checkbox", { name: "Este es un equipo compartido" }).click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
 }
@@ -176,6 +177,7 @@ test("paquete USB: exportar sin red e importar en otro equipo", async ({ page, b
 
   await setApiFault(page, "network")
   await page.goto("/app/sincronizar")
+  await page.getByRole("button", { name: /pasar mis cambios a otro equipo/ }).click()
   await page.getByLabel(/Frase del paquete/).fill("frase de prueba")
   const descarga = page.waitForEvent("download")
   await page.getByRole("button", { name: "Exportar paquete" }).click()
@@ -187,6 +189,7 @@ test("paquete USB: exportar sin red e importar en otro equipo", async ({ page, b
   const p2 = await otro.newPage()
   await login(p2)
   await p2.goto("/app/sincronizar")
+  await p2.getByRole("button", { name: /pasar mis cambios a otro equipo/ }).click()
   await p2.getByLabel(/Frase del paquete/).fill("frase de prueba")
   await p2.getByLabel("Archivo de paquete").setInputFiles(archivo)
   await p2.getByRole("button", { name: "Importar paquete" }).click()

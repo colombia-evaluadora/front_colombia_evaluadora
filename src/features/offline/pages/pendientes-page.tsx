@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { PENDIENTE_APROBACION_NOTE } from "@/lib/offline/pending-approval"
 import { Link } from "@tanstack/react-router"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -195,7 +196,17 @@ export function PendientesPage() {
                         {d?.titulo ?? op.kind}
                       </button>
                       {d?.detalle && <p className="text-muted-foreground text-xs">{d.detalle}</p>}
-                      {op.resultNote && <p className="text-xs">{op.resultNote}</p>}
+                      {op.resultNote && (
+                        <p
+                          className={
+                            op.resultNote === PENDIENTE_APROBACION_NOTE
+                              ? "text-xs font-medium text-orange"
+                              : "text-xs"
+                          }
+                        >
+                          {op.resultNote}
+                        </p>
+                      )}
                       {detalle === op.id && (
                         <div className="mt-1 text-xs">
                           <p className="break-words">{legible(op.payload)}</p>

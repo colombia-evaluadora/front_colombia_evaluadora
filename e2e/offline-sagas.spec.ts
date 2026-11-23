@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Fase 3 offline (`openspec/changes/add-offline-planeador-sagas`, tarea
 // 5.2). Contra el dev server con MSW (`playwright.config.ts`). "Se cae la
@@ -23,7 +24,7 @@ async function login(page: Page, to: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(to)}`)
   await page.getByLabel("Correo electrónico").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  await page.getByRole("checkbox", { name: "Este es un equipo compartido" }).click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
 }

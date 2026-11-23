@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Fase 1 offline (`openspec/changes/add-offline-reads`, tareas 6.2 y 6.3),
 // parte de DATOS. Corre contra el dev server con MSW: el Service Worker de la
@@ -56,9 +57,8 @@ async function login(page: Page, email: string, { shared }: { shared: boolean })
   await page.goto(`/login?redirectTo=${encodeURIComponent(ACTIVIDADES)}`)
   await page.getByLabel("Correo electrónico").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const checkbox = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  await expect(checkbox).toBeChecked() // por defecto: compartido (§0.3)
-  if (!shared) await checkbox.click()
+  // Web en pestaña = compartido (por defecto); app instalada = personal.
+  if (!shared) await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.waitForLoadState("networkidle")
@@ -103,7 +103,7 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   await openAccountMenu(page)
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: /^Preparar (todo|selección)$/ }).click()
+  await dialog.getByRole("button", { name: /^Preparar (este equipo|selección)$/ }).click()
   await expect(dialog).toBeHidden()
   await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
   await shot(page, "f1-a-preparado")
@@ -256,17 +256,10 @@ test("vista solo en línea sin red: empty state 'Esta sección necesita conexió
   await setApiFault(page, null)
 })
 
-test("piloto: fuera de VITE_APP_OFFLINE_PILOT no se puede desmarcar 'equipo compartido'", async ({ page }) => {
-  // El E2E corre con `VITE_APP_OFFLINE_PILOT` = los tres usuarios fixture.
+test("web en pestaña = equipo compartido: sin pregunta y con aviso para instalar la app", async ({ page }) => {
   await page.goto("/login")
-  const checkbox = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  await page.getByLabel("Correo electrónico").fill("fuera-del-piloto@example.com")
-  await expect(checkbox).toBeChecked()
-  await expect(checkbox).toBeDisabled()
-  await expect(page.getByText(/Solo los usuarios del piloto sin conexión/)).toBeVisible()
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
-  await expect(checkbox).toBeEnabled()
-  await expect(page.getByText(/Solo los usuarios del piloto sin conexión/)).toHaveCount(0)
+  await expect(page.getByRole("checkbox", { name: "Este es un equipo compartido" })).toHaveCount(0)
+  await expect(page.getByText("Para usar la plataforma sin internet, instale la aplicación en su equipo personal.")).toBeVisible()
 })
 
 test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el botón queda deshabilitado", async ({
@@ -278,7 +271,7 @@ test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el 
   await page.getByRole("button", { name: "Preparar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
   // Los selectores van dentro de "Opciones" (solo para quien tiene grupos).
-  await dialog.getByRole("button", { name: "Opciones" }).click()
+  await dialog.getByRole("button", { name: "Opciones avanzadas" }).click()
   const grupos = dialog.getByRole("group", { name: "Grupos" })
   await expect(grupos.getByRole("checkbox").first()).toBeVisible({ timeout: 30_000 })
   await expect(dialog.getByRole("group", { name: "Asignaturas" }).getByRole("checkbox").first()).toBeVisible()
