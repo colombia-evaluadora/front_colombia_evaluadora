@@ -36,6 +36,7 @@ export interface ActividadRow {
   supervisor_externo: string | null
   esta_activa: boolean
   puede_editar: boolean
+  puede_cambiar_estado: boolean
   puede_inscribir: boolean
   total_count: number
 }
@@ -91,7 +92,8 @@ export const SERVICIO_SOCIAL_FILTROS_VACIOS: ServicioSocialFiltros = {
 export interface ServicioSocialQueryFilters {
   SEDE: number | null
   JORNADA: number | null
-  GRADO: number | null
+  /** Pk del Grado en la Lista de Valores GRADOS (los de `/servicio-social/parametros`); no depende de sede ni jornada. */
+  GRADO_LV: number | null
   ESTADO: string | null
   SEARCH: string | null
 }

@@ -122,6 +122,8 @@ export interface IntervencionRow {
   puede_modificar: boolean
   n_evidencias: number | string
   tiene_ficha: boolean
+  compromisos: string | null
+  evidencias: { id: number; nombre: string }[]
 }
 
 export interface CasoAnterior {
@@ -133,6 +135,8 @@ export interface CasoAnterior {
   motivo_cierre: string | null
   razones: RazonesDimension[]
   intervenciones: IntervencionRow[]
+  /** Mismas filas que `GET /casos/:ID/remisiones` del caso anterior. */
+  remisiones: RemisionRow[]
 }
 
 export interface DatosMatriculaFicha {
@@ -240,10 +244,12 @@ export interface RemisionRow {
   n_recordatorios: number | string
   registrada_por: string
   puede_gestionar: boolean
+  puede_responder: boolean
+  puede_registrar_gestion: boolean
   soportes: unknown
 }
 
-/** Detalle de una remisión externa (común, V669); las claves exactas de `vencimientos` no están fijadas. */
+/** Detalle de una remisión externa (común, V669). */
 export interface RemisionExternaDetalle {
   fk_tmatricula: number
   fk_origen: number
@@ -259,7 +265,8 @@ export interface RemisionExternaDetalle {
     fk_gestion: number | null
   }[]
   recordatorios: { id: number; fecha: string; estado: string }[]
-  vencimientos: unknown
+  /** Fecha esperada vigente y las previas, por orden de fecha. */
+  vencimientos: { fecha_esperada: string; vigente: boolean }[]
   fecha_esperada: string | null
   vigente: boolean
   banderas: { puede_responder: boolean; puede_registrar_gestion: boolean; puede_cambiar_recordatorios: boolean }
@@ -308,6 +315,8 @@ export interface OpcionMatricula {
   sede_nombre: string
   fk_tlv_jornada: number
   jornada_nombre: string
+  /** El estudiante ya tiene un caso abierto: no se puede abrir otro. */
+  caso_abierto: boolean
 }
 
 export interface OpcionProfesional {
@@ -353,7 +362,8 @@ interface RazonesInput {
 export interface AbrirCasoInput extends RazonesInput {
   MATRICULA: number
   MOTIVO: string
-  FK_PROFESIONAL?: number | null
+  /** Obligatorio en la apertura manual. */
+  FK_PROFESIONAL: number
   ALTA_COMPLEJIDAD?: boolean
 }
 

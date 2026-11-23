@@ -11,7 +11,7 @@ import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { GestionAlertaDetalle, GestionRuta } from "@/features/gestion-estudiantil/prevencion/api/types"
-import type { ResumenRemisionRuta } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/dialogos/dialogos-remision-ruta"
+import type { ResumenRemision } from "@/features/gestion-estudiantil/commons/components/remisiones/dialogos-remision"
 import { useRemisionExternaQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-remisiones-query"
 
 const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
@@ -22,8 +22,8 @@ const textoDe = (x: string | { nombre?: string }) => (typeof x === "string" ? x 
 interface Props {
   d: GestionAlertaDetalle
   ruta: GestionRuta
-  onRegistrarGestion: (r: ResumenRemisionRuta) => void
-  onRegistrarRespuesta: (r: ResumenRemisionRuta) => void
+  onRegistrarGestion: (r: ResumenRemision) => void
+  onRegistrarRespuesta: (r: ResumenRemision) => void
 }
 
 /**
@@ -39,7 +39,7 @@ export function RutaProteccion({ d, ruta, onRegistrarGestion, onRegistrarRespues
 
   const enviada = ruta.estado === "ENVIADA"
   const vencida = typeof rem?.vencida === "boolean" ? rem.vencida : ruta.respuesta_vencida
-  const resumen: ResumenRemisionRuta = useMemo(
+  const resumen: ResumenRemision = useMemo(
     () => ({
       id: ruta.id_remision,
       entidad_nombre: ruta.entidad_nombre,

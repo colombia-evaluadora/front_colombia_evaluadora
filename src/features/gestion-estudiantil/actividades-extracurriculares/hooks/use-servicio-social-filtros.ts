@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 
+import { useParametrosServicioSocialQuery } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query/use-servicio-social-query"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import {
   SERVICIO_SOCIAL_FILTROS_VACIOS,
@@ -9,13 +10,18 @@ import {
 } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
 import { ESTADOS_SERVICIO_SOCIAL_FILTRO } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/ui-mappings"
 
-/** Búsqueda, filtros aplicados y borrador del listado de servicio social. Grado: los grados de los grupos de la sede y jornada elegidas. */
+/** Búsqueda, filtros aplicados y borrador del listado de servicio social. Grado: los Grados del servicio social (parámetros), sin depender de sede ni jornada. */
 export function useServicioSocialFiltros(goToPage: (page: number) => void) {
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<ServicioSocialFiltros>(SERVICIO_SOCIAL_FILTROS_VACIOS)
   const [borrador, setBorrador] = useState<ServicioSocialFiltros>(SERVICIO_SOCIAL_FILTROS_VACIOS)
 
   const delBorrador = useOpcionesCascada(borrador.sede, borrador.jornada)
+  const parametros = useParametrosServicioSocialQuery().data
+  const grados = useMemo(
+    () => (parametros?.grados ?? []).map((g) => ({ value: String(g.pk), label: g.nombre })),
+    [parametros],
+  )
 
   const onSearchChange = useCallback(
     (v: string) => {
@@ -43,10 +49,10 @@ export function useServicioSocialFiltros(goToPage: (page: number) => void) {
     () => ({
       sedes: delBorrador.sedeOpciones,
       jornadas: delBorrador.jornadaOpciones,
-      grados: delBorrador.gradoOpciones,
+      grados,
       estados: ESTADOS_SERVICIO_SOCIAL_FILTRO,
     }),
-    [delBorrador.sedeOpciones, delBorrador.jornadaOpciones, delBorrador.gradoOpciones],
+    [delBorrador.sedeOpciones, delBorrador.jornadaOpciones, grados],
   )
 
   return {

@@ -65,6 +65,7 @@ export type ReportKey =
   | "inscripcion-lista-sorteo"
   | "prevencion-indicadores"
   | "prevencion-indicadores"
+  | "prevencion-simpade"
   | "prevencion-embarazo-siuce"
   | "prevencion-consumo-siuce"
   | "citacion-documento"
@@ -72,6 +73,9 @@ export type ReportKey =
   | "servicio-social-certificado"
   | "reconocimiento-mencion-honor"
   | "reintegracion-acta-retiro"
+  | "reintegracion-ficha-visita"
+  | "actividades-extracurriculares"
+  | "servicio-social"
 
 interface ReportInput {
   format: ExportFormat

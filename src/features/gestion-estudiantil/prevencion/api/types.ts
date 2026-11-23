@@ -1,3 +1,5 @@
+import type { RemisionRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
+
 // Contrato de V638-V650 (SSO), Prevención y retención. Las filas llegan en snake_case tal como las
 // devuelven las funciones `fn_prevencion_*`; los cuerpos de escritura y los parámetros de consulta van en
 // MAYÚSCULAS. Las fechas son `aaaa-mm-dd` (DATE) salvo las marcas de tiempo de auditoría.
@@ -254,6 +256,8 @@ export interface AccesoPrevencion {
   puede_crear_acomp?: boolean
   /** «Exportar para el SIUCE» de los acompañamientos: Supervisor de sede y Administrador. */
   puede_exportar_siuce_acomp?: boolean
+  /** «Exportar para el SIMPADE» (§9.4): Supervisor de sede y Administrador, misma condición que su endpoint. */
+  puede_exportar_simpade?: boolean
   /** Pestaña Gestión de alertas (§9.11). */
   ver_gestion_alertas?: boolean
   /** Gestiones del usuario como Responsable, Pendientes o vencidas (número de la pestaña). */
@@ -649,6 +653,8 @@ export interface SenalSMAtencion {
   entidad_valor: string | null
   entidad_nombre: string | null
   registrada_por: string
+  /** Remisión externa común (V667) de la acción, si tuvo Entidad remitida; trae las banderas de gestión. */
+  remision?: Omit<RemisionRow, "puede_gestionar" | "origen"> | null
 }
 
 export interface SenalSMDetalle {

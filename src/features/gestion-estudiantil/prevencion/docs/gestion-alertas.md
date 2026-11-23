@@ -79,7 +79,7 @@ Una línea por fichero, comprobada al abrirlo.
 - `prevencion/components/gestion-alertas/dialogos/dialog-contacto-gestion.tsx`: registrar contacto (G.8.GAL.3); cada intento, también el fallido, queda registrado.
 - `prevencion/components/gestion-alertas/dialogos/dialog-resolver-gestion.tsx`: resolver; «Matrícula retirada» la pone el sistema, quien resuelve solo verifica el regreso.
 - `prevencion/components/gestion-alertas/dialogos/dialog-ruta-proteccion.tsx`: activar la ruta (G.8.GAL.5); la fecha esperada se propone con el plazo de seguimiento y cambiarla pide motivo de 10 a 1000 caracteres.
-- `prevencion/components/gestion-alertas/dialogos/dialogos-remision-ruta.tsx`: registrar gestión y registrar respuesta de la remisión de la ruta (G.8.GAL.8), reutilizando las mutaciones de Reintegración.
+- `commons/components/remisiones/dialogos-remision.tsx`: registrar gestión y registrar respuesta de la remisión de la ruta (G.8.GAL.8), reutilizando las mutaciones de Reintegración.
 - `prevencion/components/gestion-alertas/dialogos/resumen-gestion.tsx`: línea bajo el título de los modales (estudiante, grupo, umbral y estado).
 
 **Utilidades y rutas**

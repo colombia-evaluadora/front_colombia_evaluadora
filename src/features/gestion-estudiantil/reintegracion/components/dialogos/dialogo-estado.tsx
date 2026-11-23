@@ -76,7 +76,7 @@ export function DialogoEstado({ caso: c, onClose }: { caso: CasoDetalle; onClose
   return (
     <DialogoOperacionShell
       titulo={`Cambiar estado — ${c.estudiante_nombre}`}
-      resumen={<ResumenCasoDialogo caso={c} />}
+      resumen={<ResumenCasoDialogo caso={c} conAltaComplejidad />}
       className={pideRazones ? "sm:max-w-3xl" : "sm:max-w-lg"}
       onClose={onClose}
       error={s.error}
@@ -105,6 +105,7 @@ export function DialogoEstado({ caso: c, onClose }: { caso: CasoDetalle; onClose
           disabled={siguientes.length === 0}
           value={estado}
           options={siguientes.map((e) => ({ value: e, label: etiquetaEstado(e) }))}
+          description="El estado siguiente de la Ruta."
           error={err("estado")}
           onChange={setEstado}
         />
@@ -112,8 +113,8 @@ export function DialogoEstado({ caso: c, onClose }: { caso: CasoDetalle; onClose
           <Alert>
             <InfoIcon aria-hidden="true" />
             <AlertDescription>
-              Es un caso de alta complejidad: no cambia de estado. Queda en Diagnóstico con la marca Pendiente de
-              validación y se avisa al Administrador del establecimiento, que debe validarlo antes de pasar a Intervención.
+              Caso de alta complejidad: seguirá en Diagnóstico con la marca Pendiente de validación hasta que el
+              Administrador del establecimiento lo valide. Se avisará al Administrador del establecimiento.
             </AlertDescription>
           </Alert>
         )}

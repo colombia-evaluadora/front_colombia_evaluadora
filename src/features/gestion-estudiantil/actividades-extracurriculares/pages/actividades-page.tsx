@@ -1,18 +1,24 @@
 "use no memo"
 
+import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
+import { ExportDialog } from "@/components/export-dialog"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { TableScreen, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { ControlPointIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { TablePaginationProvider } from "@/hooks/use-table-pagination"
 
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useCapacidadesGe } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
+import { useExportarActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/mutations/exportar"
+import type {
+  ActividadesQueryFilters,
+  ServicioSocialQueryFilters,
+} from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
 import { ListadoActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/listado-actividades"
 import { ListadoServicioSocial } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/listado-servicio-social"
 import { useNavegacionActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-navegacion-actividades"
@@ -29,6 +35,9 @@ function ActividadesContent() {
   const { data: cap } = useCapacidadesGe()
   const puedeCrearActividad = puedeCrear && Boolean(cap?.actividades_puede_crear)
   const pestana: Pestana = tab === "servicio-social" ? "servicio-social" : "actividades"
+  // Filtros aplicados de la pestaña visible: cada listado los publica al montarse y al cambiarlos.
+  const [filtros, setFiltros] = useState<ActividadesQueryFilters | ServicioSocialQueryFilters | null>(null)
+  const exportar = useExportarActividades()
 
   return (
     <>
@@ -36,16 +45,17 @@ function ActividadesContent() {
         <TableScreenTitle
           action={
             <div className="flex items-center gap-2">
-              {/* Brecha B1: no hay endpoint de exportación. */}
-              <Tooltip>
-                <TooltipTrigger render={<span tabIndex={0} />}>
-                  <Button size="sm" type="button" variant="outline" color="neutral" disabled>
-                    <FileDownloadOutlinedIcon data-icon="inline-start" />
-                    Exportar
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Sin exportación disponible todavía</TooltipContent>
-              </Tooltip>
+              <ExportDialog
+                label="Exportar"
+                texto="Exportar"
+                description={
+                  pestana === "actividades"
+                    ? "Elige un formato para descargar las actividades con los filtros aplicados."
+                    : "Elige un formato para descargar el servicio social con los filtros aplicados."
+                }
+                disabled={filtros == null}
+                onExport={(format) => exportar.mutateAsync({ pestana, filters: filtros!, format })}
+              />
               <Button size="sm" type="button" disabled={!puedeCrearActividad} onClick={irNueva}>
                 <ControlPointIcon data-icon="inline-start" />
                 Nueva actividad
@@ -76,7 +86,11 @@ function ActividadesContent() {
 
       {/* Una paginación por pestaña: al cambiar de pestaña el estado vuelve a la primera página. */}
       <TablePaginationProvider key={pestana}>
-        {pestana === "actividades" ? <ListadoActividades /> : <ListadoServicioSocial />}
+        {pestana === "actividades" ? (
+          <ListadoActividades onFiltersChange={setFiltros} />
+        ) : (
+          <ListadoServicioSocial onFiltersChange={setFiltros} />
+        )}
       </TablePaginationProvider>
     </>
   )
