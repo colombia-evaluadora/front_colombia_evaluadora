@@ -22,6 +22,7 @@ import {
   type CatalogoMock,
 } from "@/mocks/db/citaciones-compromisos"
 import { TIPOS_RECONOCIMIENTO_MOCK } from "@/mocks/db/reconocimientos"
+import { LISTAS_VALOR_COMUNICADO } from "@/mocks/db/comunicaciones-listas-valor"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -34,6 +35,7 @@ const deMock = (lista: CatalogoMock[]): SelectCategoryRow[] =>
   lista.map((c) => ({ pk_lista_valor: c.pk, nombre: c.nombre, valor: c.valor, accion: null }))
 
 const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
+  ...Object.fromEntries(Object.entries(LISTAS_VALOR_COMUNICADO).map(([k, filas]) => [k, () => filas])),
   METODOLOGIA: () => METODOLOGIAS.map((m) => ({ ...m, valor: m.nombre, accion: null })),
   ...Object.fromEntries(
     Object.entries(CATALOGOS_MATRICULA_NUEVOS).map(([k, filas]) => [
