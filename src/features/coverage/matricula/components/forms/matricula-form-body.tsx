@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-import { MatriculaMaskedContext, MatriculaSectionDisabledContext } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
+import { MatriculaMaskedContext, MatriculaPrecargaContext, MatriculaSectionDisabledContext } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
 import type { CreateMatriculaInput, MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
 import {
   MatriculaAcademicSection,
@@ -43,6 +43,12 @@ interface MatriculaFormBodyProps {
   datosProtegidos?: boolean
   /** Alta por traslado: grado de origen obligatorio (AGR.2). */
   gradoTraslado?: { valor: string; nombre: string } | null
+  /** Reemplaza la sección 1 (Asignar grupo de una reserva: sede, jornada y grado fijos). */
+  academicSection?: ReactNode
+  /** Asignar grupo: las secciones 2 a 13 llevan la etiqueta «Precargado». */
+  precargado?: boolean
+  /** Asignar grupo: la sección 2 (estudiante) completa en solo lectura. */
+  studentDisabled?: boolean
   /** Avisos dentro de los bloques 1 (matrícula) y 2 (estudiante). */
   avisoMatricula?: ReactNode
   avisoEstudiante?: ReactNode
@@ -66,11 +72,15 @@ export function MatriculaFormBody({
   especialidadBloqueo,
   datosProtegidos = false,
   gradoTraslado,
+  academicSection,
+  precargado = false,
+  studentDisabled = false,
   avisoMatricula,
   avisoEstudiante,
 }: MatriculaFormBodyProps) {
   return (
     <MatriculaSectionDisabledContext.Provider value={disabled}>
+      {academicSection ?? (
       <MatriculaAcademicSection
         value={values.academic}
         onChange={(academic) => onChange({ ...values, academic })}
@@ -84,9 +94,13 @@ export function MatriculaFormBody({
         gradoTraslado={gradoTraslado}
         aviso={avisoMatricula}
       />
+      )}
+
+      <MatriculaPrecargaContext.Provider value={precargado}>
 
       <MatriculaMaskedContext.Provider value={datosProtegidos}>
       <MatriculaSectionDisabledContext.Provider value={disabled || datosProtegidos}>
+      <MatriculaSectionDisabledContext.Provider value={disabled || datosProtegidos || studentDisabled}>
       <MatriculaStudentSection
         value={values.student}
         onChange={(student) => onChange({ ...values, student })}
@@ -97,6 +111,7 @@ export function MatriculaFormBody({
         identidadExistente={studentIdentidadExistente}
         aviso={avisoEstudiante}
       />
+      </MatriculaSectionDisabledContext.Provider>
 
       <MatriculaResidenceSection
         title="Domicilio del estudiante"
@@ -202,6 +217,7 @@ export function MatriculaFormBody({
         invalidFields={invalidFields}
         fieldSettings={fieldSettings}
       />
+      </MatriculaPrecargaContext.Provider>
     </MatriculaSectionDisabledContext.Provider>
   )
 }

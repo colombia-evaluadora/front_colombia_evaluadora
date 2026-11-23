@@ -5,10 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { coberturaInscritosRoute } from "@/router"
 
-import {
-  formatPeriodo,
-  usePeriodosInscripcionesQuery,
-} from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
+import { usePeriodosInscripcionesQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import type { PestanaInscripcion } from "@/features/coverage/inscripcion-reservas/api/schema"
 import { ReservasCupoTable } from "@/features/coverage/inscripcion-reservas/components/table/reservas-cupo-table"
 import { InscripcionesTable } from "@/features/coverage/inscripcion-reservas/components/table/inscripciones-table"
@@ -46,7 +43,7 @@ export function InscripcionReservasPage() {
       ? territorial && `${territorial.rol} · ${n} establecimiento${n === 1 ? "" : "s"}`
       : tabActual === "inscripciones"
         ? grupo && `Grupo: ${formatGrupoAdmision(grupo)}`
-        : siguiente && `Período siguiente: ${formatPeriodo(siguiente)}`
+        : siguiente && `Período siguiente: ${siguiente.ciclo}`
 
   const encabezadoCon = (accion?: ReactNode) => (
     <>
