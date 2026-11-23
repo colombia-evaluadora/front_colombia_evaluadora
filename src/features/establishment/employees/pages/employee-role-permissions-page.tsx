@@ -220,7 +220,7 @@ export function EmployeeRolePermissionsPage() {
             <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
             <span>
               Solo se restringe: lo que el rol no tiene aparece inactivo y bloqueado. Desactivar un permiso en un módulo lo
-              desactiva en todos sus submódulos. Los cambios aplican solo a este funcionario, en este rol, Sede y Jornada.
+              desactiva en todos sus submódulos. Los cambios aplican solo a este funcionario, en este rol, sede y jornada.
             </span>
           </p>
         </div>

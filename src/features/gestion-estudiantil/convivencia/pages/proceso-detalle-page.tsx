@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +12,7 @@ import { paths } from "@/config/paths"
 
 import { useProcesoDetalleQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-proceso-detalle-query"
 import type { EtapaDecision, EtapaDescargos } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
-import type { EstadoProcesoCodigo, ProcesoDetalle } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
+import type { EstadoProcesoCodigo, ProcesoDetalle, ProcesoResumen } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { BloqueAnulacion } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/bloque-anulacion"
@@ -21,6 +22,7 @@ import { EtapaDecisionProceso } from "@/features/gestion-estudiantil/convivencia
 import { EtapaDescargosProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-descargos"
 import { EtapaFirmeza } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-firmeza"
 import { EtapaRecursos } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-recursos"
+import { DialogAnularProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/dialog-anular-proceso"
 import { ItemsDocumentos } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/items-documentos"
 import { useDialogosProceso } from "@/features/gestion-estudiantil/convivencia/hooks/use-dialogos-proceso"
 import { MenuAccionesProceso, type AccionProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/menu-acciones-proceso"
@@ -34,8 +36,11 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
   const estado = p.estado.codigo as EstadoProcesoCodigo
   const { abrir, dialogos } = useDialogosProceso()
   const principal = p.accion_principal ? etapaDeAccionPrincipal(p.accion_principal) : undefined
+  const [anulando, setAnulando] = useState<ProcesoResumen | null>(null)
   const alAccionar = (accion: AccionProceso) => {
-    if (accion !== "ver" && accion !== "anular") abrir(accion, p.id)
+    if (accion === "anular")
+      setAnulando({ id: p.id, numero: p.numero, estudiante_nombre: p.estudiante.nombre, estado_codigo: estado, estado_nombre: p.estado.nombre })
+    else if (accion !== "ver") abrir(accion, p.id)
   }
 
   return (
@@ -43,7 +48,7 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
       <TableScreenHeader>
         <TableScreenTitle
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={volver}>
+            <Button variant="ghost" color="neutral" size="sm" onClick={volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Convivencia
             </Button>
@@ -56,7 +61,7 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
                 </Button>
               )}
               <MenuAccionesProceso numero={p.numero} acciones={p.acciones} onAccion={alAccionar} sinVerDetalle>
-                <ItemsDocumentos />
+                <ItemsDocumentos procesoId={p.id} documentos={p.documentos} />
               </MenuAccionesProceso>
             </div>
           }
@@ -87,6 +92,8 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
         </div>
       </TableScreenBody>
       {dialogos}
+      {/* Al anular, la mutación invalida convivencia (detalle incluido) y el bloque de anulación aparece. */}
+      <DialogAnularProceso proceso={anulando} onClose={() => setAnulando(null)} />
     </>
   )
 }

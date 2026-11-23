@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon, PencilIcon } from "@/components/ui/icons"
 
-import { DatosDocumento } from "@/features/gestion-estudiantil/commons/components/documento-imprimible"
+import { DatosDocumento } from "@/features/gestion-estudiantil/commons/components/datos-documento"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CaracterizacionDetalle, IntegranteDetalle, ItemLista } from "@/features/gestion-estudiantil/prevencion/api/types"
 import { BadgeEstadoCaracterizacion } from "@/features/gestion-estudiantil/prevencion/components/caracterizacion/badge-estado-caracterizacion"

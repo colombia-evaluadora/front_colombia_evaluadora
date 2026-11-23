@@ -74,6 +74,14 @@ import {
 } from "@/features/academic-management/reports/api/query/use-periodos-informe-query"
 import { fetchGruposPeriodo, gruposPeriodoQueryKey } from "@/features/academic-management/reports/api/query/use-grupos-periodo-query"
 import { fetchInformeGrupo, informeGrupoQueryKey } from "@/features/academic-management/reports/api/query/use-informe-grupo-query"
+import {
+  fetchAniosGe,
+  fetchGruposPeriodoGe,
+  fetchJornadasGe,
+  fetchPeriodosGe,
+  fetchSedesGe,
+  opcionesGeKeys,
+} from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 import type { PeriodoInforme } from "@/features/academic-management/reports/api/types"
 // Referentes curriculares
 import {
@@ -576,6 +584,54 @@ function cascadaJornada(filtros: PeriodosInformeParams): PrepareTask {
   })
 }
 
+// ---- Gestión Estudiantil: opciones de filtros ---------------------------------
+
+/**
+ * La cascada propia de GE (`/gestion-estudiantil/opciones/*`) con las keys de
+ * `useOpcionesCascada`: sedes → año en curso → jornadas → períodos y grupos.
+ */
+function gestionEstudiantilOpcionesTasks(): PrepareTask[] {
+  return [
+    seed(opcionesGeKeys.sedes(), fetchSedesGe, offlineMeta(TTL_OFFLINE.grupo), {
+      then: (sedes) =>
+        sedes.map((sede) =>
+          seed(opcionesGeKeys.anios(sede.id), () => fetchAniosGe(sede.id), offlineMeta(TTL_OFFLINE.grupo), {
+            then: (anios) => {
+              const anio = (anios.find((a) => a.esActual) ?? anios[0])?.anio
+              if (anio == null) return []
+              return [
+                seed(opcionesGeKeys.jornadas(sede.id, anio), () => fetchJornadasGe(sede.id, anio), offlineMeta(TTL_OFFLINE.grupo), {
+                  then: (jornadas) =>
+                    jornadas.flatMap((jornada) => {
+                      const filtros = { sedeId: sede.id, anio, jornadaId: jornada.id }
+                      return [
+                        seed(opcionesGeKeys.periodos(filtros), () => fetchPeriodosGe(filtros), offlineMeta(TTL_OFFLINE.grupo)),
+                        seed(opcionesGeKeys.grupos(filtros), () => fetchGruposPeriodoGe(filtros), offlineMeta(TTL_OFFLINE.grupo)),
+                      ]
+                    }),
+                }),
+              ]
+            },
+          }),
+        ),
+    }),
+  ]
+}
+
+/** Rutas de Gestión Estudiantil que usan la cascada propia; basta con tener una en el menú. */
+const GESTION_ESTUDIANTIL_PATHS = [
+  "/app/gestion-estudiantil/observador",
+  "/app/gestion-estudiantil/convivencia",
+  "/app/gestion-estudiantil/inclusion-orientacion",
+  "/app/gestion-estudiantil/citaciones-compromisos",
+  "/app/gestion-estudiantil/actividades-extracurriculares",
+  "/app/gestion-estudiantil/reconocimientos",
+  "/app/gestion-estudiantil/observaciones-sugerencias",
+  "/app/gestion-estudiantil/prevencion-retencion",
+  "/app/gestion-estudiantil/reintegracion",
+  "/app/gestion-estudiantil/configuracion",
+]
+
 // ---- Referentes curriculares --------------------------------------------------
 
 const REFERENTES_PAGE_SIZE = 10
@@ -838,6 +894,9 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
     ...notificacionesTasks(),
   ]
   if (menuIncludes(queryClient, "/app/gestion-academica/informes")) tasks.push(...informesTasks())
+  if (GESTION_ESTUDIANTIL_PATHS.some((path) => menuIncludes(queryClient, path))) {
+    tasks.push(...gestionEstudiantilOpcionesTasks())
+  }
   if (menuIncludes(queryClient, "/app/gestion-academica/referentes-curriculares")) tasks.push(...referentesTasks())
   if (menuIncludes(queryClient, "/app/comunicaciones/chat")) tasks.push(...comunicacionesTasks())
   tasks.push(...establecimientoTasks(queryClient, input.roles))

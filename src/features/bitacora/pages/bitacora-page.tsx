@@ -5,7 +5,6 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
-import { ExportDialog } from "@/components/export-dialog"
 import {
   TableScreen,
   TableScreenActions,
@@ -16,23 +15,34 @@ import {
 } from "@/components/layout/table-screen"
 import { useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
+import { Button } from "@/components/ui/button"
+import { FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 import { useUser } from "@/lib/auth"
 import { parseDateValue } from "@/lib/date-value"
-import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
+import { env } from "@/config/env"
 import { AuditViewTabs } from "@/features/administration/audits/components/audit-view-tabs"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 
 import { exportarBitacora } from "@/features/bitacora/api/mutations/exportar-bitacora"
 import { useBitacoraEstadoQuery } from "@/features/bitacora/api/query/use-bitacora-estado-query"
 import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
 import { useBitacoraQuery } from "@/features/bitacora/api/query/use-bitacora-query"
-import { BITACORA_MODULOS, moduloConSedeJornada, type BitacoraEvento } from "@/features/bitacora/api/types/bitacora"
+import {
+  BITACORA_MODULOS,
+  esVistaAccesos,
+  moduloConSedeJornada,
+  type BitacoraEvento,
+} from "@/features/bitacora/api/types/bitacora"
+import { createAccesoColumns } from "@/features/bitacora/components/columns-accesos"
 import { createBitacoraColumns } from "@/features/bitacora/components/columns-bitacora"
 import { DetalleEvento } from "@/features/bitacora/components/detalle-evento"
 import { DialogRestaurarEvento } from "@/features/bitacora/components/dialog-restaurar-evento"
+import { ResumenPorModulo } from "@/features/bitacora/components/resumen-por-modulo"
 import { SearchBitacora } from "@/features/bitacora/components/search-bitacora"
 import { useBitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
 
@@ -40,6 +50,7 @@ import { useBitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filte
 export function BitacoraPage() {
   return <BitacoraPageContent />
 }
+
 
 const fechaCorta = (value: string) => {
   const d = parseDateValue(value)
@@ -50,7 +61,8 @@ function BitacoraPageContent() {
   const { notify } = useNotify()
   const { data: user } = useUser()
   const esSuperAdmin = Boolean(user?.isSuperAdmin)
-  const { filters: filtrosUrl, applyFilters, clearAllFilters, activeFilterCount } = useBitacoraFilters()
+  const { filters: filtrosUrl, vista, setVista, applyFilters, clearAllFilters, activeFilterCount } = useBitacoraFilters()
+  const [exportando, setExportando] = useState<"pdf" | "excel" | null>(null)
   const paginacion = useTablePagination()
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [restaurando, setRestaurando] = useState<BitacoraEvento | null>(null)
@@ -63,6 +75,11 @@ function BitacoraPageContent() {
       filtrosUrl.establecimiento || (esSuperAdmin ? String(establecimientos[0]?.id ?? "") : ""),
   }
   const { modulo } = filters
+  // Administración del Sistema con la acción Acceso: tabla de accesos, sin pestañas ni detalle (B.7.LIS.1).
+  const accesos = esVistaAccesos(modulo, filters.accion)
+  // «Resumen por módulo» es vista previa (sin `/bitacora/resumen` en el backend): solo con mocks.
+  const conResumen = env.ENABLE_API_MOCKING && !accesos
+  const vistaActual = conResumen ? vista : "registros"
   const { data: sedes = [] } = useBitacoraSedesQuery(filters.establecimiento)
   const { data: jornadas = [] } = useJornadasQuery()
   const esperaEstablecimiento = esSuperAdmin && modulo !== "ADMINISTRACION" && !filters.establecimiento
@@ -72,8 +89,9 @@ function BitacoraPageContent() {
     sorting: paginacion.sorting,
     pageIndex: paginacion.pageIndex,
     pageSize: paginacion.pageSize,
+    verSistema: esSuperAdmin,
   }
-  const { data, isPending, isError, error, refetch } = useBitacoraQuery(params, !esperaEstablecimiento)
+  const { data, isPending, isError, error, refetch } = useBitacoraQuery(params, !esperaEstablecimiento && vistaActual === "registros")
   const eventos = data?.rows ?? []
   const pageCount = data?.pageCount ?? 0
   const { data: estados } = useBitacoraEstadoQuery(
@@ -81,25 +99,28 @@ function BitacoraPageContent() {
     filters.establecimiento,
   )
 
-  const columns = createBitacoraColumns({
-    conSedeJornada: moduloConSedeJornada(modulo),
-    expandidoId,
-    estados,
-    onToggle: (e) => setExpandidoId((id) => (id === e.id ? null : e.id)),
-  })
+  const columns = accesos
+    ? createAccesoColumns()
+    : createBitacoraColumns({
+        conSedeJornada: moduloConSedeJornada(modulo),
+        expandidoId,
+        estados,
+        onToggle: (e) => setExpandidoId((id) => (id === e.id ? null : e.id)),
+      })
   const { table } = useDataTable({
     columns,
     data: eventos,
     pageCount,
     getRowId: (row) => row.id,
     ...paginacion,
-    columnVisibilityStorageKey: "bitacora-column-visibility",
+    columnVisibilityStorageKey: accesos ? "bitacora-accesos-column-visibility" : "bitacora-column-visibility",
   })
 
   const establecimiento = establecimientos.find((e) => String(e.id) === filters.establecimiento)?.name
   // Dónde está parado el usuario: establecimiento, sede y jornada, y el rango.
   const sede = sedes.find((s) => String(s.id) === filters.sede)?.nombre
   const jornada = jornadas.find((j) => String(j.id) === filters.jornada)?.name
+
   const rango = `del ${fechaCorta(filters.desde)} al ${fechaCorta(filters.hasta)}`
   const alcance =
     modulo === "ADMINISTRACION"
@@ -115,11 +136,54 @@ function BitacoraPageContent() {
             .filter(Boolean)
             .join(", ")
 
+  // B.1.LIS.1: dos botones, en la línea del buscador. La descarga respeta la búsqueda y los filtros activos.
+  async function exportar(formato: "pdf" | "excel") {
+    setExportando(formato)
+    try {
+      const r = await exportarBitacora(formato, params)
+      notify(r.message, { variant: r.status === "ok" ? "success" : "error" })
+    } finally {
+      setExportando(null)
+    }
+  }
+  const botonExportar = (formato: "pdf" | "excel") => (
+    <Button
+      size="sm"
+      variant="outline"
+      color="neutral"
+      // En el Resumen no se exporta: descargaría los registros y el resumen aún no tiene reporte en el backend.
+      disabled={exportando !== null || vistaActual === "resumen" || eventos.length === 0}
+      onClick={() => exportar(formato)}
+    >
+      {exportando === formato ? (
+        <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+      ) : formato === "pdf" ? (
+        <FilePdfIcon data-icon="inline-start" />
+      ) : (
+        <FileXlsIcon data-icon="inline-start" />
+      )}
+      {formato === "pdf" ? "Exportar PDF" : "Exportar Excel"}
+    </Button>
+  )
+
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description={alcance}>Bitácora de {BITACORA_MODULOS[modulo]}</TableScreenTitle>
-        <AuditViewTabs />
+        <TableScreenTitle description={alcance}>
+          Bitácora · {vistaActual === "resumen" ? "Resumen por módulo" : BITACORA_MODULOS[modulo]}
+        </TableScreenTitle>
+        {/* B.1.LIS.1 / B.1.LIS.1a: las pestañas van arriba, antes del buscador (como en el prototipo). */}
+        {/* Registro de actividad (Por sesión / Por tablas / Bitácora): en test/prod el menú del backend no
+            tiene los submenús de Bitácora y esta es la forma de volver a las otras vistas. */}
+        {!env.ENABLE_API_MOCKING && <AuditViewTabs />}
+        {conResumen && (
+          <Tabs className="px-(--screen-spacing)" value={vista} onValueChange={(v) => setVista(v as "registros" | "resumen")}>
+            <TabsList>
+              <TabsTrigger value="registros">Registros</TabsTrigger>
+              <TabsTrigger value="resumen">Resumen por módulo</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
         <TableScreenToolbar>
           <SearchBitacora
             filters={filters}
@@ -128,18 +192,19 @@ function BitacoraPageContent() {
             activeFilterCount={activeFilterCount}
             esSuperAdmin={esSuperAdmin}
           />
+          {/* Exportar en la línea del buscador, a la derecha. */}
           <TableScreenActions>
-            <ExportDialog
-              label="Exportar la bitácora filtrada"
-              disabled={eventos.length === 0}
-              description="Elige un formato para exportar todos los registros de la bitácora que coincidan con la búsqueda y los filtros activos."
-              onExport={(formato) => exportarBitacora(formato, params)}
-            />
+            {botonExportar("pdf")}
+            {botonExportar("excel")}
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
+        {vistaActual === "resumen" ? (
+          <ResumenPorModulo filters={filters} enabled={!esperaEstablecimiento} />
+        ) : (
+        <>
         <DataTable
           table={table}
           isPending={isPending}
@@ -147,9 +212,10 @@ function BitacoraPageContent() {
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
           renderSubRow={(row) =>
-            expandidoId === row.original.id ? (
+            !accesos && expandidoId === row.original.id ? (
               <DetalleEvento
                 evento={row.original as BitacoraEvento}
+                modulo={modulo}
                 estado={estados?.get(row.original.id)}
                 onRestaurar={setRestaurando}
               />
@@ -168,6 +234,8 @@ function BitacoraPageContent() {
           pageSize={paginacion.pageSize}
           onPageSizeChange={paginacion.setPageSize}
         />
+        </>
+        )}
       </TableScreenBody>
 
       <DialogRestaurarEvento

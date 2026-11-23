@@ -28,6 +28,7 @@ import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observa
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useObservadorAccess } from "@/features/gestion-estudiantil/observador/api/use-observador-access"
+import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
 import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
 import { SearchAnotaciones } from "@/features/gestion-estudiantil/observador/components/search/search-anotaciones"
@@ -39,6 +40,12 @@ import { DialogExportarAnotaciones } from "@/features/gestion-estudiantil/observ
 
 const DialogRemitir = lazy(() =>
   import("@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-remitir").then((m) => ({ default: m.DialogRemitir })),
+)
+// Reportar posible consumo (G.1.REP.4) vive en Prevención: se carga solo al abrirlo.
+const DialogReportarConsumo = lazy(() =>
+  import("@/features/gestion-estudiantil/prevencion/components/acompanamientos/dialogos/dialog-reportar-consumo").then((m) => ({
+    default: m.DialogReportarConsumo,
+  })),
 )
 const TabMisRemisiones = lazy(() =>
   import("@/features/gestion-estudiantil/inclusion/orientacion/components/tab-mis-remisiones").then((m) => ({ default: m.TabMisRemisiones })),
@@ -55,6 +62,7 @@ function ObservadorContent() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useObservadorAccess()
+  const accesoConvivencia = useConvivenciaAccess()
 
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<ObservadorFiltros>(FILTROS_VACIOS)
@@ -63,6 +71,7 @@ function ObservadorContent() {
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
   const [anular, setAnular] = useState<AnotacionRow | null>(null)
   const [remitir, setRemitir] = useState<AnotacionRow | "nuevo" | null>(null)
+  const [reportarConsumo, setReportarConsumo] = useState<AnotacionRow | null>(null)
   const [pestana, setPestana] = useState("anotaciones")
   const { notify } = useNotify()
 
@@ -112,7 +121,15 @@ function ObservadorContent() {
     puedeEditar: access.puedeEditar,
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
+    puedeReportarSaludMental: access.puedeReportarSaludMental,
     onRemitir: setRemitir,
+    puedeAbrirProceso: accesoConvivencia.puedeSupervisar,
+    onAbrirProceso: (a) =>
+      navigate({
+        to: paths.app.convivenciaProcesoNuevo.getHref(),
+        search: { matricula: a.fk_tmatricula, anotacion: a.id, nombre: a.estudiante_nombre },
+      } as never),
+    onReportarConsumo: setReportarConsumo,
     onReportarSaludMental: (a) =>
       navigate({
         to: paths.app.prevencionSaludMentalNuevo.getHref(),
@@ -175,8 +192,8 @@ function ObservadorContent() {
               proyecto (orden de la guía de diseño). «Remitir a orientación» se hace desde la acción
               de cada anotación. */}
           <TableScreenActions>
-            {access.puedeImprimir && <DialogImprimirObservador filtros={filtros} />}
-            {access.puedeCrear && <DialogCargarObservadorFirmado estudiantes={estudiantesFirmado} periodos={periodosFirmado} />}
+            <DialogImprimirObservador filtros={filtros} disabled={!access.puedeImprimir} />
+            <DialogCargarObservadorFirmado estudiantes={estudiantesFirmado} periodos={periodosFirmado} disabled={!access.puedeCargarFirmado} />
             <DialogExportarAnotaciones filters={queryFilters} />
             {access.puedeCrear && (
               <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
@@ -236,6 +253,15 @@ function ObservadorContent() {
               setRemitir(null)
               notify("Remisión registrada. Se avisó a orientación.", { variant: "success" })
             }}
+          />
+        </Suspense>
+      )}
+      {reportarConsumo && (
+        <Suspense fallback={null}>
+          <DialogReportarConsumo
+            matricula={reportarConsumo.fk_tmatricula}
+            estudiante={`${reportarConsumo.estudiante_nombre} · ${reportarConsumo.grado_grupo}`}
+            onClose={() => setReportarConsumo(null)}
           />
         </Suspense>
       )}

@@ -39,7 +39,7 @@ async function resolverMotivo(
     staleTime: Infinity,
   })
   const id = c[lista].find((m) => m.nombre === nombre)?.id
-  if (id == null) throw new Error(`El motivo "${nombre}" no está en la Lista de Valores.`)
+  if (id == null) throw new Error(`El motivo "${nombre}" no está en la Lista de valores.`)
   return id
 }
 

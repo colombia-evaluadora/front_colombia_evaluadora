@@ -50,7 +50,7 @@ interface Props {
 
 /** Por qué no se puede reactivar, con el texto del doc; null si se puede. */
 function bloqueo(p: PreviaReactivar): string | null {
-  if (!p.periodoAbierto) return "No se puede reactivar la matrícula porque su Período Académico ya está cerrado."
+  if (!p.periodoAbierto) return "No se puede reactivar la matrícula porque su período académico ya está cerrado."
   if (p.promovidoAreasPendientes)
     return "No se puede reactivar la matrícula porque tiene la marca Promovido con áreas pendientes. Primero anule la promoción."
   if (p.tieneMatriculaSiguiente)

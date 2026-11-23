@@ -325,7 +325,7 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
             <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
               <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
               Registro único del período: estos valores rigen todos los cálculos de notas de Gestión
-              Académica y se actualizan con Guardar.
+              académica y se actualizan con Guardar.
             </p>
 
             <FormSection title="Escala y calificaciones">
@@ -462,7 +462,7 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
                   "periodCalculationElements",
                   "Elementos para calcular la nota de la asignatura",
                   options?.periodCalculationElements ?? [],
-                  "Con los rótulos del Referente curricular.",
+                  "Con los rótulos del referente curricular.",
                 )}
                 {catalogSelect(
                   "subjectGradeCriteria",

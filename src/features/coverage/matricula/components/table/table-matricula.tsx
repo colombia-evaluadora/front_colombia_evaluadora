@@ -37,6 +37,19 @@ import { SearchMatricula } from "@/features/coverage/matricula/components/search
 import { ExportMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-export-matricula"
 import { BarraLote } from "@/features/coverage/matricula/components/dialogs/acciones/barra-lote"
 
+// Columnas del PDF del prototipo (LIS.5) que la tabla ofrece ocultas por defecto.
+// Se exportan solo si el usuario las hace visibles (id de columna → clave del reporte).
+const EXPORT_KEYS_EXTRA: Partial<Record<string, string | string[]>> = {
+  tipoMatricula: "tipo_matricula",
+  birthDate: "birth_date",
+  address: "address",
+  phone: "phone",
+  guardianDetail: ["guardian_relationship", "guardian"],
+  guardianEmail: "guardian_email",
+  asignaturas: "asignaturas",
+  soportes: "soportes",
+}
+
 interface MatriculaDataTableProps {
   title: ReactNode
   action?: ReactNode
@@ -68,7 +81,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     sorting,
     setSorting,
     // Clave nueva: la vista guardada con el diseño anterior mostraba todas las columnas.
-    columnVisibilityStorageKey: "table-matricula-column-visibility-v2",
+    columnVisibilityStorageKey: "table-matricula-column-visibility-v3",
     initialColumnVisibility: MATRICULA_INITIAL_VISIBILITY,
   })
   const gradeLabel = useMatriculaGradeLabel()
@@ -86,7 +99,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
 
   const exportColumns = table
     .getVisibleLeafColumns()
-    .flatMap((column) => MATRICULA_EXPORT_COLUMN_KEYS[column.id] ?? [])
+    .flatMap((column) => MATRICULA_EXPORT_COLUMN_KEYS[column.id] ?? EXPORT_KEYS_EXTRA[column.id] ?? [])
 
   // Chips de filtros activos (prototipo C.1.LIS): quitar uno reaplica el resto.
   type Chip = { key: string; label: string; clear: () => void }
@@ -110,6 +123,11 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
       key: "metodologia",
       label: metodologias?.find((m) => String(m.id) === filters.metodologia)?.nombre ?? "Metodología",
       clear: () => applyFilters({ ...filters, metodologia: "" }),
+    },
+    filters.nuevo && {
+      key: "nuevo",
+      label: filters.nuevo === "S" ? "Nuevos" : "No nuevos",
+      clear: () => applyFilters({ ...filters, nuevo: "" }),
     },
     filters.solicitud && {
       key: "solicitud",

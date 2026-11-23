@@ -46,3 +46,13 @@ export function autorizarEn(lista: AutorizacionEstablecimiento[], ids: number[])
   for (const a of lista) if (ids.includes(a.establecimientoId)) a.autorizado = true
   return lista
 }
+
+// Matrícula (Regla 81): vale por estudiante y Establecimiento. El mock deja sin
+// autorización una de cada cuatro matrículas (pk % 4 === 0) hasta que se registre.
+const matriculasAutorizadas = new Map<number, { acudiente: string; fecha: string }>()
+
+export const sinAutorizacion = (pk: number) => pk % 4 === 0 && !matriculasAutorizadas.has(pk)
+
+export function registrarAutorizacion(pk: number, acudiente: string) {
+  matriculasAutorizadas.set(pk, { acudiente, fecha: new Date().toISOString() })
+}

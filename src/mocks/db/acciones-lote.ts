@@ -13,8 +13,8 @@ const nombre = (pk: number) => {
   return m ? `${m.firstName} ${m.lastName}` : `Matrícula ${pk}`
 }
 
-export const complementariaDe = (pk: number) =>
-  pk % 3 === 0 ? { sede: "IE Central", jornada: "Mañana", especialidad: "Sistemas" } : null
+export { complementariaDe } from "@/mocks/db/complementaria"
+import { complementariaDe, tipoDe } from "@/mocks/db/complementaria"
 
 type Resultado = { pk_matricula: number; ok: boolean; mensaje: string | null }
 const ok = (pk: number): Resultado => ({ pk_matricula: pk, ok: true, mensaje: null })
@@ -22,13 +22,38 @@ const falla = (pk: number, mensaje: string): Resultado => ({ pk_matricula: pk, o
 
 /* Retirar */
 
-export function retirarLote(pks: number[]): Resultado[] {
+/** Retiros por traslado (C.1.LIS.3b): acta para el SIMPADE y si ya se ingresó. */
+export interface RetiroTraslado {
+  acta: string
+  fecha: string
+  institucionDestino: string | null
+  simpade: { fechaIngreso: string; funcionarioId: number } | null
+}
+export const retirosTraslado = new Map<number, RetiroTraslado>()
+
+// Una matrícula ya Retirada por traslado de entrada, para ver las acciones sin retirar.
+const sembrada = matriculaDb.find((m) => m.status === "Retirado")
+if (sembrada)
+  retirosTraslado.set(Number(sembrada.id), { acta: `AR-${sembrada.id}`, fecha: "2027-04-20", institucionDestino: "IE San José", simpade: null })
+
+export function marcarSimpade(pk: number, fechaIngreso: string, funcionarioId: number): string | null {
+  const r = retirosTraslado.get(pk)
+  if (!r) return "La matrícula no tiene un retiro por traslado."
+  r.simpade = { fechaIngreso, funcionarioId }
+  return null
+}
+
+export function retirarLote(
+  pks: number[],
+  traslado?: { fecha: string; institucionDestino: string | null },
+): Resultado[] {
   return pks.map((pk) => {
     const m = byPk(pk)
     if (!m) return falla(pk, "la matrícula no existe.")
     if (m.status !== "Cursando") return falla(pk, `está ${m.status}; solo se retira una matrícula Cursando.`)
     if (m.retiroSolicitado || m.anulacionPendiente) return falla(pk, "tiene una solicitud pendiente: respóndala primero.")
     m.status = "Retirado"
+    if (traslado) retirosTraslado.set(pk, { acta: `AR-${pk}`, ...traslado, simpade: null })
     return ok(pk)
   })
 }
@@ -60,20 +85,20 @@ export function previaReingreso(pk: number) {
     grupos_con_cupo: sinCupo ? gruposDe(m.grade, m.group) : [],
     periodos_durante_retiro: pk % 4 === 0 ? ["P2"] : [],
     caso_reintegracion: pk % 5 === 0 ? "Reingreso aprobado" : null,
-    complementaria_sin_cupo: pk % 7 === 0 && complementariaDe(pk) ? "Electricidad" : null,
+    complementaria_sin_cupo: pk % 7 === 0 && (complementariaDe(pk) || tipoDe(pk) === "COMPLEMENTARIA") ? "Electricidad" : null,
   }
 }
 
 export function reingresarLote(matriculas: { ID: number; FK_TGRUPO: number | null }[]): Resultado[] {
-  // En lote la complementaria sin cupo no bloquea: la principal reingresa y se avisa (C.1.LOT.2).
-  const lote = matriculas.length > 1
+  // La principal reingresa aunque su complementaria no tenga cupo: solo se avisa (Regla 12).
   return matriculas.map(({ ID: pk, FK_TGRUPO }) => {
     const m = byPk(pk)
     const previa = previaReingreso(pk)
     if (!m || !previa) return falla(pk, "la matrícula no existe.")
     if (m.status !== "Retirado") return falla(pk, `está ${m.status}; solo se reingresa una matrícula Retirada.`)
-    if (!previa.periodo_abierto) return falla(pk, "su Período Académico ya está cerrado.")
-    if (previa.complementaria_sin_cupo && !lote)
+    if (!previa.periodo_abierto) return falla(pk, "su período académico ya está cerrado.")
+    // Solo se bloquea el reingreso de la propia complementaria (Regla 12).
+    if (previa.complementaria_sin_cupo && tipoDe(pk) === "COMPLEMENTARIA")
       return falla(pk, `no hay cupo libre en ${previa.complementaria_sin_cupo} para reingresar a la matrícula complementaria.`)
     if (previa.sin_cupo && !FK_TGRUPO) return falla(pk, "su grupo ya no tiene cupo: elija otro grupo.")
     m.status = "Cursando"
@@ -143,7 +168,8 @@ export function previaCambioGrado(pks: number[]) {
     grado_siguiente: grado < 11 ? grado + 1 : null,
     registros: pks.some((pk) => pk % 2 === 1) ? { actividades: 14, definitivas: ["P1"], clases: 32 } : null,
     con_registros: pks.filter((pk) => pk % 2 === 1).length,
-    complementaria: comp ? { ...comp, disponible_en_grado_siguiente: false } : null,
+    // Mock: la especialidad solo existe en el grado actual en jornada contraria
+    complementaria: comp ? { ...comp, grados_con_especialidad: [grado] } : null,
   }
 }
 

@@ -380,7 +380,8 @@ function TablaPublicados() {
                   <MenuAccionesComunicado c={c} onDialogo={setDialogo} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {fecha(c.publicarEn)} · {c.publicadoPor} · {tiposAbreviados(c.tipos)} ·{" "}
+                  {fecha(c.publicarEn)} · {c.publicadoPor}
+                    {c.establecimiento ? ` · ${c.establecimiento}` : ""} · {tiposAbreviados(c.tipos)} ·{" "}
                   {c.destinatarios ?? 0} destinatarios
                 </p>
                 <div className="mt-1">

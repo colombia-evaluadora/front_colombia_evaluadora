@@ -6,6 +6,7 @@ import {
   TODOS,
   type Cascada,
   type Conjunto,
+  SELECCION_ESPECIFICOS,
 } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
 
 /** Valor de Jornada para "Todas las jornadas": solo vale en un conjunto de funcionarios (M.1.AGR.3). */
@@ -51,8 +52,9 @@ export function textoFiltros(c: Conjunto, datos: Cascada | undefined): string {
     }
   }
   if (c.tipos.includes("FUNCIONARIOS")) {
-    partes.push(c.todosRoles ? "Todos los roles" : c.roles.join(", "))
-    if (c.seleccionFuncionarios === "ESPECIFICOS") {
+    // Etiqueta de la lista ROL (el valor es el código).
+    partes.push(c.todosRoles ? "Todos los roles" : c.roles.map((r) => etiquetaDe(datos?.roles, r) || r).join(", "))
+    if (c.seleccionFuncionarios === SELECCION_ESPECIFICOS) {
       partes.push(`${c.funcionarios.length} ${c.funcionarios.length === 1 ? "funcionario" : "funcionarios"}`)
     }
   }
@@ -94,6 +96,7 @@ export function erroresConjunto(c: Conjunto, numero: number): ErroresCampos {
   if (!c.jornada) e[id("jornada")] = required("La jornada", { femenino: true })
   if (c.tipos.length === 0) e[id("tipos")] = "Selecciona al menos un tipo de destinatario"
   if (esAcademico(c)) {
+    if (!c.poblacion) e[id("poblacion")] = required("La población académica", { femenino: true })
     if (!c.anio) e[id("anio")] = required("El año")
     if (!c.modalidad) e[id("modalidad")] = required("La modalidad", { femenino: true })
     if (!c.ciclo) e[id("ciclo")] = required("El ciclo")
@@ -106,7 +109,7 @@ export function erroresConjunto(c: Conjunto, numero: number): ErroresCampos {
   if (c.tipos.includes("FUNCIONARIOS")) {
     if (!c.todosRoles && c.roles.length === 0) e[id("roles")] = "Selecciona al menos un rol de funcionarios"
     if (!c.seleccionFuncionarios) e[id("seleccion")] = required("La selección de funcionarios", { femenino: true })
-    if (c.seleccionFuncionarios === "ESPECIFICOS" && c.funcionarios.length === 0) {
+    if (c.seleccionFuncionarios === SELECCION_ESPECIFICOS && c.funcionarios.length === 0) {
       e[id("funcionarios")] = "Selecciona al menos un funcionario"
     }
   }
@@ -154,7 +157,7 @@ export const ACADEMICO_VACIO = {
 export const FUNCIONARIOS_VACIO = {
   todosRoles: false,
   roles: [] as string[],
-  seleccionFuncionarios: "" as const,
+  seleccionFuncionarios: "",
   funcionarios: [] as string[],
 }
 

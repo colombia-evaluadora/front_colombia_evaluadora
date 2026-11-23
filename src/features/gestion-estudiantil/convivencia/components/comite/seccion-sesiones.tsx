@@ -71,7 +71,7 @@ export function SeccionSesiones({ tab, puedeGestionar, onVer, onModificar }: Pro
         isPending={sesiones.isPending}
         isError={sesiones.isError}
         onRetry={sesiones.refetch}
-        emptyMessage={tab.tipo ? "No hay sesiones para el filtro aplicado." : "Aún no hay sesiones del Comité en este período."}
+        emptyMessage={tab.tipo ? "No hay sesiones para el filtro aplicado." : "Aún no hay sesiones del comité en este período."}
         errorMessage={sesiones.error ? getErrorMessage(sesiones.error) : undefined}
       />
       <Pagination

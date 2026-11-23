@@ -13,7 +13,7 @@ const cierre = new Date(Date.now() + 30 * 60_000).toISOString()
 export const elecciones: EleccionMock[] = [
   {
     conversacionId: 5,
-    nombre: "Elección Personero 2026",
+    nombre: "Elección personero 2026",
     descripcion: "Elección del personero estudiantil para el año 2026.",
     fechaInicio: null,
     fechaCierre: cierre,

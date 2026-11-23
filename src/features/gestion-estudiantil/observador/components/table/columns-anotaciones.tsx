@@ -4,6 +4,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import {
   BrainIcon,
+  WarningCircleIcon,
   EyeIcon,
   GavelIcon,
   PencilIcon,
@@ -18,7 +19,7 @@ import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/format
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
 /** Ver, Modificar, Anular, Reportar salud mental, Remitir y Abrir proceso disciplinario (orden de la guía de diseño). */
-const ACCIONES_ANOTACION = 6
+const ACCIONES_ANOTACION = 7
 
 interface ColumnasOpciones {
   onVer: (row: AnotacionRow) => void
@@ -27,9 +28,15 @@ interface ColumnasOpciones {
   puedeEditar: boolean
   puedeAnular: boolean
   puedeRemitir: boolean
+  puedeReportarSaludMental: boolean
+  /** Supervisor de sede y Administrador del establecimiento (Convivencia). */
+  puedeAbrirProceso: boolean
+  onAbrirProceso: (row: AnotacionRow) => void
   onRemitir: (row: AnotacionRow) => void
   /** Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. */
   onReportarSaludMental: (row: AnotacionRow) => void
+  /** Reportar posible consumo (G.1.REP.4): misma población que el reporte de salud mental (docente con carga). */
+  onReportarConsumo: (row: AnotacionRow) => void
 }
 
 export function buildColumnsAnotaciones({
@@ -39,8 +46,12 @@ export function buildColumnsAnotaciones({
   puedeEditar,
   puedeAnular,
   puedeRemitir,
+  puedeReportarSaludMental,
+  puedeAbrirProceso,
+  onAbrirProceso,
   onRemitir,
   onReportarSaludMental,
+  onReportarConsumo,
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
@@ -150,10 +161,24 @@ export function buildColumnsAnotaciones({
                 onSelect: () => onModificar(a),
               },
               { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
-              // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario: aún sin backend.
-              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, onSelect: () => onReportarSaludMental(a) },
+              // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario:
+              // solo en una anotación Negativa vigente (G.1.LIS.3); abre el formulario con el estudiante y la anotación.
+              { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: !puedeReportarSaludMental, onSelect: () => onReportarSaludMental(a) },
+              {
+                id: "consumo",
+                label: "Reportar posible consumo",
+                icon: <WarningCircleIcon />,
+                disabled: !puedeReportarSaludMental,
+                onSelect: () => onReportarConsumo(a),
+              },
               { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
-              { id: "disciplinario", label: "Abrir proceso disciplinario", icon: <GavelIcon />, disabled: true, onSelect: () => {} },
+              {
+                id: "disciplinario",
+                label: "Abrir proceso disciplinario",
+                icon: <GavelIcon />,
+                disabled: !(puedeAbrirProceso && vigente && colorDeTipo(a.tipo_nombre) === "destructive"),
+                onSelect: () => onAbrirProceso(a),
+              },
             ]}
           />
         )

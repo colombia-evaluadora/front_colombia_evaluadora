@@ -3,7 +3,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { EstrategiaDetalle } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -32,6 +32,7 @@ export function PantallaEstrategia({ estrategia }: { estrategia?: EstrategiaDeta
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" type="button" disabled={f.pending || bloqueado} onClick={f.guardar}>

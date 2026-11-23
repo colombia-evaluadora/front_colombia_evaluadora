@@ -61,10 +61,17 @@ import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
 import { matriculaHandlers } from "@/mocks/handlers/matricula"
 import { notasHomologadasHandlers } from "@/mocks/handlers/notas-homologadas"
 import { matriculaAsignaturasHandlers } from "@/mocks/handlers/matricula-asignaturas"
+import { matriculaSoportesHandlers } from "@/mocks/handlers/matricula-soportes"
 import { unificarEstudiantesHandlers } from "@/mocks/handlers/unificar-estudiantes"
 import { solicitudRetiroHandlers } from "@/mocks/handlers/solicitud-retiro"
 import { reactivarHandlers } from "@/mocks/handlers/reactivar"
 import { accionesLoteHandlers } from "@/mocks/handlers/acciones-lote"
+import { convocatoriasHandlers } from "@/mocks/handlers/convocatorias"
+import { postulacionesHandlers } from "@/mocks/handlers/postulaciones"
+import { conveniosHandlers } from "@/mocks/handlers/convenios"
+import { promocionNivelacionHandlers } from "@/mocks/handlers/promocion-nivelacion"
+import { actualizacionDatosHandlers } from "@/mocks/handlers/actualizacion-datos"
+import { continuidadHandlers } from "@/mocks/handlers/continuidad"
 import { estudianteExistenteHandlers } from "@/mocks/handlers/estudiante-existente"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
 import { curricularStatementsHandlers } from "@/mocks/handlers/academic-management/curricular-statements"
@@ -76,6 +83,7 @@ import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/esca
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { geOpcionesHandlers, informesHandlers } from "@/mocks/handlers/informes"
 import { comunicacionesHilosAcudientesHandlers } from "@/mocks/handlers/comunicaciones-hilos-acudientes"
+import { geCapacidadesHandlers } from "@/mocks/handlers/ge-capacidades"
 import {
   comunicacionesArchivosHandlers,
   comunicacionesHandlers,
@@ -97,6 +105,12 @@ import { agenteHandlers } from "@/mocks/handlers/agente"
 export const handlers = [
   // Antes que las rutas de matrícula con :id: «lote» no es un id.
   ...accionesLoteHandlers,
+  ...convocatoriasHandlers,
+  ...postulacionesHandlers,
+  ...conveniosHandlers,
+  ...promocionNivelacionHandlers,
+  ...actualizacionDatosHandlers,
+  ...continuidadHandlers,
   ...authHandlers,
   ...devicesHandlers,
   ...agenteHandlers,
@@ -129,6 +143,7 @@ export const handlers = [
   ...relacionesAlumnoGrupoHandlers,
   // Antes de `planeadorHandlers`: atiende el view-token de las actas de Disponer.
   ...conservacionDatosHandlers,
+  ...matriculaSoportesHandlers,
   ...citacionesCompromisosHandlers,
   ...reconocimientosHandlers,
   ...academicAssignmentListHandlers,
@@ -175,6 +190,7 @@ export const handlers = [
   ...asistenciaHandlers,
   ...informesHandlers,
   ...geOpcionesHandlers,
+  ...geCapacidadesHandlers,
   ...comunicacionesArchivosHandlers,
   ...comunicacionesFiltrosHandlers,
   ...comunicacionesModeracionHandlers,

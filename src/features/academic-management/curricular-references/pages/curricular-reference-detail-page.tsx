@@ -53,8 +53,8 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
       <p className="text-sm font-bold">Estructura del referente</p>
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
-        <InfoField label="Rótulo de Nivel 1">{reference.level1 ? toSentenceCase(reference.level1) : "—"}</InfoField>
-        <InfoField label="Rótulo de Nivel 2">{reference.level2 ? toSentenceCase(reference.level2) : "—"}</InfoField>
+        <InfoField label="Rótulo de nivel 1">{reference.level1 ? toSentenceCase(reference.level1) : "—"}</InfoField>
+        <InfoField label="Rótulo de nivel 2">{reference.level2 ? toSentenceCase(reference.level2) : "—"}</InfoField>
 
         <InfoField label="Enfoque pedagógico">
           {reference.pedagogicalApproach ? toSentenceCase(reference.pedagogicalApproach.name) : "—"}
@@ -81,11 +81,11 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
             </div>
           )}
         </InfoField>
-        <InfoField label="Rótulo de Área">
+        <InfoField label="Rótulo de área">
           {reference.subjectLabel ? toSentenceCase(reference.subjectLabel.name) : "—"}
         </InfoField>
-        <InfoField label="Rótulo de Secuencia de Actividades">{reference.instrument ? toSentenceCase(reference.instrument) : "—"}</InfoField>
-        <InfoField label="Rótulo de Ejecución">{reference.executionLabel || "—"}</InfoField>
+        <InfoField label="Rótulo de secuencia de actividades">{reference.instrument ? toSentenceCase(reference.instrument) : "—"}</InfoField>
+        <InfoField label="Rótulo de ejecución">{reference.executionLabel || "—"}</InfoField>
 
         {/* Solo lectura: agregado de los grados de los enunciados de Nivel 1. `[]` = Todos. */}
         <InfoField label="Grados vinculados">
@@ -107,7 +107,7 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
           )}
         </InfoField>
 
-        <InfoField label="Información adicional de la Secuencia de Actividades">
+        <InfoField label="Información adicional de la secuencia de actividades">
           {reference.instrumentDescription || "—"}
         </InfoField>
         <InfoField label="Normatividad">

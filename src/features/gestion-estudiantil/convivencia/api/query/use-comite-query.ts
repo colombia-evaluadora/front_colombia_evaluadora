@@ -35,7 +35,7 @@ export function useComiteQuery(periodo: number | null | undefined) {
     queryFn: () =>
       evalCol
         .getRows<Record<string, unknown>>(`${BASE}/periodo/${periodo}`)
-        .then((r) => desenvolver<ComiteDetalle>(r[0], "comite", "No se encontró el Comité del período.")),
+        .then((r) => desenvolver<ComiteDetalle>(r[0], "comite", "No se encontró el comité del período.")),
     enabled: periodo != null,
   })
 }

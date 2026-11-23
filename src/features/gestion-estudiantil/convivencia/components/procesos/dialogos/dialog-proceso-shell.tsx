@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { XIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -70,7 +71,7 @@ export function DialogProcesoShell({ titulo, resumen, onClose, error, pending, c
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" color={confirmar.color} disabled={pending || confirmar.disabled} onClick={confirmar.onClick}>
             <IconoCarga cargando={pending}>{confirmar.icon}</IconoCarga>
             {confirmar.label}

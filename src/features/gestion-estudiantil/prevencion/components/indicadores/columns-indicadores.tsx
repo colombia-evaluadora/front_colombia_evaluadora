@@ -10,15 +10,15 @@ import {
   textoRetiros,
 } from "@/features/gestion-estudiantil/prevencion/utils/indicadores"
 
-/** Encabezado plano de las tablas de indicadores; las cifras van a la derecha. */
+/** Encabezado plano de las tablas de indicadores; las cifras van centradas. */
 const columnaIndicador = (id: string, titulo: string, cifra = false) => ({
   id,
   enableSorting: false,
   meta: { label: titulo },
-  header: () => <div className={cifra ? "text-right text-sm font-medium" : "text-sm font-medium"}>{titulo}</div>,
+  header: () => <div className={cifra ? "text-center text-sm font-medium" : "text-sm font-medium"}>{titulo}</div>,
 })
 
-const cifra = (texto: string) => <span className="block text-right tabular-nums">{texto}</span>
+const cifra = (texto: string) => <span className="block text-center tabular-nums">{texto}</span>
 
 /** Columnas del agrupamiento (G.8.IND.1): Sede/Grado/Responsable · Asistencia · Reprobación · En riesgo · Retiros (motivo). */
 export function buildColumnsIndicadores(agrupacion: string): ColumnDef<IndicadorRow>[] {

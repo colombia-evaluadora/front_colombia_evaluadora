@@ -37,7 +37,7 @@ export function buildColumnsEvaluativo(
   if (conFinal) {
     columnas.push(
       {
-        ...columna("nota-final", "Nota final del Período Académico"),
+        ...columna("nota-final", "Nota final del período académico"),
         accessorFn: (a) => (a.final && !a.final.sin_registro ? formatNota(a.final.nota) : "Sin registro"),
         cell: ({ row }) => {
           const f = row.original.final

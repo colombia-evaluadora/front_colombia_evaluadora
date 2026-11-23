@@ -84,7 +84,7 @@ function FormServicioSocial({
               disabled={deshabilitado}
               value={f.valores.anticipacion}
               error={f.errores.anticipacion}
-              ayuda="Antes del fin del Período Académico. Entre 1 y 6. Predeterminado: 2."
+              ayuda="Antes del fin del período académico. Entre 1 y 6. Predeterminado: 2."
               onChange={f.cambiarAnticipacion}
             />
           </div>

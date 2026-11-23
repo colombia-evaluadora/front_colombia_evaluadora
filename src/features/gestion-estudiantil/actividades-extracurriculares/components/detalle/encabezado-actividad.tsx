@@ -32,7 +32,7 @@ export function EncabezadoActividad({ actividad: a, pestana, onVolver, onModific
       <TableScreenTitle
         action={
           <div className="flex shrink-0 items-center gap-2">
-            <Button size="sm" type="button" variant="outline" disabled={!a.puede_editar} onClick={onModificar}>
+            <Button size="sm" type="button" variant="outline" color="neutral" disabled={!a.puede_editar} onClick={onModificar}>
               <PencilIcon data-icon="inline-start" />
               Modificar
             </Button>

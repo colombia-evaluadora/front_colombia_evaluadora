@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckIcon } from "@/components/ui/icons"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { ResumenObservacion } from "@/features/gestion-estudiantil/observaciones/api/types"
@@ -29,7 +29,7 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
   const boletin =
     periodos.length === 1
       ? `Saldrá en su boletín del ${periodos[0]} y la verán sus acudientes.`
-      : "Saldrá en el boletín del Período de Evaluación de cada grupo y la verán sus acudientes."
+      : "Saldrá en el boletín del período de evaluación de cada grupo y la verán sus acudientes."
 
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onCancelar()}>
@@ -42,6 +42,7 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
         </DialogHeader>
         <DialogFooter>
           <Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} onClick={onCancelar}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button size="sm" type="button" disabled={pending} onClick={onConfirmar}>

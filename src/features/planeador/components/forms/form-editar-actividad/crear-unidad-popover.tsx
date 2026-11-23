@@ -188,7 +188,7 @@ export function CrearUnidadPopover({
           <PlusCircleIcon />
         </TooltipTrigger>
         <TooltipContent>
-          {hasGradoAsignatura ? crearLabel : "Elegí Grado/Grupo y Asignatura de la actividad primero."}
+          {hasGradoAsignatura ? crearLabel : "Elegí grado/grupo y asignatura de la actividad primero."}
         </TooltipContent>
       </Tooltip>
       <PopoverContent

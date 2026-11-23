@@ -2,14 +2,23 @@ import { useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import { InfoIcon, WarningIcon } from "@/components/ui/icons"
-import { useAuth } from "@/features/auth/hooks/use-auth"
+import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import {
@@ -24,6 +33,7 @@ import {
   useSuspensionesQuery,
 } from "@/features/comunicaciones/chat/api/use-moderacion"
 import { textoPlano } from "@/features/comunicaciones/chat/lib/menciones"
+import { pestanasModeracion, type PestanaModeracion as Pestana } from "@/features/comunicaciones/chat/lib/pestanas-moderacion"
 
 const MAX_MOTIVO = 500
 
@@ -91,27 +101,31 @@ export function ReportarDialog({
   )
 }
 
-type Pestana = "reportes" | "suspensiones" | "configuracion"
-
 /**
  * Opción de la vista de mensajería (Guía M.2.MOD.1). PROVISIONAL: Supervisor de sede = coordinador,
- * Administrador del establecimiento = rector. Suspensiones y configuración, solo el rector.
+ * Administrador del establecimiento = rector. Reportes: solo el Supervisor de sede (`puedeRevisarReportes`,
+ * en su alcance; el rector ya no los ve). Suspensiones: quien tenga `puedeSuspender` en la política
+ * (Administrador o Supervisor de sede, este solo en sus sedes y jornadas). Configuración, solo el rector.
  */
 export function ModeracionDialog({
   open,
   onClose,
   esAdministrador,
+  puedeSuspender,
+  puedeRevisarReportes,
   reporteResaltado,
 }: {
   open: boolean
   onClose: () => void
   esAdministrador: boolean
+  puedeSuspender: boolean
+  puedeRevisarReportes: boolean
   reporteResaltado?: number
 }) {
-  const [pestana, setPestana] = useState<Pestana>("reportes")
-  const pestanas: [Pestana, string][] = esAdministrador
-    ? [["reportes", "Reportes"], ["suspensiones", "Suspensiones"], ["configuracion", "Configuración de la mensajería"]]
-    : [["reportes", "Reportes"]]
+  const pestanas = pestanasModeracion({ esAdministrador, puedeSuspender, puedeRevisarReportes })
+  const [elegida, setPestana] = useState<Pestana | null>(null)
+  // La política llega después de montar: sin elección propia, la primera pestaña disponible.
+  const pestana = elegida && pestanas.some(([id]) => id === elegida) ? elegida : pestanas[0]?.[0]
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-3xl">
@@ -126,7 +140,7 @@ export function ModeracionDialog({
           ))}
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
-          {pestana === "reportes" && <Reportes activo={open} esAdministrador={esAdministrador} resaltado={reporteResaltado} />}
+          {pestana === "reportes" && <Reportes activo={open} puedeSuspender={puedeSuspender} resaltado={reporteResaltado} />}
           {pestana === "suspensiones" && <Suspensiones activo={open} />}
           {pestana === "configuracion" && <Configuracion activo={open} />}
         </div>
@@ -137,7 +151,7 @@ export function ModeracionDialog({
 
 const fechaCorta = (iso: string) => new Date(iso).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })
 
-function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esAdministrador: boolean; resaltado?: number }) {
+function Reportes({ activo, puedeSuspender, resaltado }: { activo: boolean; puedeSuspender: boolean; resaltado?: number }) {
   const reportes = useReportesQuery(activo)
   const [elegido, setElegido] = useState<number | null>(null)
   const revisar = useRevisarReporte()
@@ -184,7 +198,7 @@ function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esA
                   {m.eliminado ? <em>Mensaje retirado por el remitente</em> : textoPlano(m.texto, m.menciones)}
                 </p>
               ))}
-              {esAdministrador && autores.length > 0 && (
+              {puedeSuspender && autores.length > 0 && (
                 <div className="flex flex-wrap gap-2 border-t pt-2">
                   {autores.map(([id, nombre]) => (
                     <Button key={id} size="sm" variant="ghost" color="destructive" onClick={() => setSuspender({ id, nombre })}>
@@ -204,11 +218,14 @@ function Reportes({ activo, esAdministrador, resaltado }: { activo: boolean; esA
   )
 }
 
-/** Botón de la ficha de la persona en el chat; solo el rector lo ve (el servidor también lo exige). */
+/**
+ * Botón de la ficha de la persona en el chat: Administrador o Supervisor de sede (`puedeSuspender`).
+ * El alcance por sedes y jornadas lo exige el servidor (403 con su mensaje en el diálogo).
+ */
 export function SuspenderPersona({ persona }: { persona: { id: number; nombre: string; rol?: string } }) {
-  const roles = useAuth().user?.roles ?? []
+  const { puedeSuspender } = useChatAccess()
   const [abierto, setAbierto] = useState(false)
-  if (!roles.includes("CEVAL-RECTOR")) return null
+  if (!puedeSuspender) return null
   return (
     <>
       <button
@@ -323,7 +340,7 @@ export function ConfiguracionMensajeriaDialog({ open, onClose }: { open: boolean
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Configuración de la mensajería{establecimiento ? ` — ${establecimiento}` : ""}</DialogTitle>
+          <DialogTitle className="text-balance break-words">Configuración de la mensajería{establecimiento ? ` — ${establecimiento}` : ""}</DialogTitle>
         </DialogHeader>
         <Configuracion activo={open} onCancelar={onClose} />
       </DialogContent>
@@ -331,8 +348,10 @@ export function ConfiguracionMensajeriaDialog({ open, onClose }: { open: boolean
   )
 }
 
-const ITEM_CONFIG = "flex items-center justify-between gap-3"
-
+/**
+ * Mismo patrón de interruptor que Preferencias de notificaciones: `Field orientation="horizontal"`
+ * con `Switch round` a la izquierda y el label (clickeable) con su descripción a la derecha.
+ */
 function FormConfiguracion({ inicial, onCancelar }: { inicial: ValoresConfiguracion; onCancelar?: () => void }) {
   const [valores, setValores] = useState(inicial)
   const guardar = useGuardarConfiguracion()
@@ -341,51 +360,64 @@ function FormConfiguracion({ inicial, onCancelar }: { inicial: ValoresConfigurac
   const idMenores = useId()
   const cambiar = (v: Partial<ValoresConfiguracion>) => setValores({ ...valores, ...v })
   return (
-    <div className="space-y-4 text-sm">
-      {guardar.isError && <p role="alert" className="text-red">{getErrorMessage(guardar.error)}</p>}
-      {guardar.isSuccess && <p role="status" className="text-green">Configuración guardada.</p>}
-      <fieldset className="space-y-3">
-        <legend className="mb-2 font-medium">
-          <span className="text-red">* </span>Horario de atención
-        </legend>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-muted-foreground">lun–vie</span>
-          <Field variant="outlined" className="w-36" data-invalid={!valores.horaInicio || undefined}>
-            <FieldLabel htmlFor="config-hora-inicio">Desde</FieldLabel>
-            <DatePicker id="config-hora-inicio" mode="time" value={valores.horaInicio} onChange={(v) => cambiar({ horaInicio: v })} />
+    <div className="flex flex-col gap-6">
+      {guardar.isError && <p role="alert" className="text-sm text-red">{getErrorMessage(guardar.error)}</p>}
+      {guardar.isSuccess && <p role="status" className="text-sm text-green">Configuración guardada.</p>}
+      <FieldGroup>
+        <FieldSet>
+          <FieldLegend variant="label">
+            Horario de atención<span className="text-red">*</span>
+          </FieldLegend>
+          <FieldDescription>lun–vie</FieldDescription>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field variant="outlined" data-invalid={!valores.horaInicio || undefined}>
+              <FieldLabel htmlFor="config-hora-inicio">Desde*</FieldLabel>
+              <DatePicker id="config-hora-inicio" mode="time" value={valores.horaInicio} onChange={(v) => cambiar({ horaInicio: v })} />
+            </Field>
+            <Field variant="outlined" data-invalid={!valores.horaFin || undefined}>
+              <FieldLabel htmlFor="config-hora-fin">Hasta*</FieldLabel>
+              <DatePicker id="config-hora-fin" mode="time" value={valores.horaFin} onChange={(v) => cambiar({ horaFin: v })} />
+            </Field>
+          </div>
+          {incompleto && <FieldError>Indique la hora de inicio y la de fin.</FieldError>}
+          <Field orientation="horizontal">
+            <Switch
+              id={idSabado}
+              round
+              checked={valores.incluyeSabado}
+              onCheckedChange={(v) => cambiar({ incluyeSabado: v })}
+            />
+            <FieldLabel htmlFor={idSabado}>Incluir sábado</FieldLabel>
           </Field>
-          <span>a</span>
-          <Field variant="outlined" className="w-36" data-invalid={!valores.horaFin || undefined}>
-            <FieldLabel htmlFor="config-hora-fin">Hasta</FieldLabel>
-            <DatePicker id="config-hora-fin" mode="time" value={valores.horaFin} onChange={(v) => cambiar({ horaFin: v })} />
-          </Field>
-        </div>
-        <div className={ITEM_CONFIG}>
-          <label htmlFor={idSabado}>sáb</label>
-          <Switch id={idSabado} checked={valores.incluyeSabado} onCheckedChange={(v) => cambiar({ incluyeSabado: v })} />
-        </div>
-        {incompleto && <p role="alert" className="text-red">Indique la hora de inicio y la de fin.</p>}
-      </fieldset>
-      <p className="flex items-start gap-2 text-muted-foreground">
-        <InfoIcon aria-hidden className="mt-px size-4 shrink-0" />
-        Fuera del horario no se envían avisos por correo; la campana sí.
-      </p>
-      {/* W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
-      <div className={ITEM_CONFIG}>
-        <label htmlFor={idMenores}>Permitir que estudiantes menores inicien conversaciones</label>
-        <Switch
-          id={idMenores}
-          checked={valores.permitirMenoresIniciar}
-          onCheckedChange={(v) => cambiar({ permitirMenoresIniciar: v })}
-        />
-      </div>
+          <FieldDescription className="flex items-start gap-2">
+            <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+            Fuera del horario no se envían avisos por correo; la campana sí.
+          </FieldDescription>
+        </FieldSet>
+        {/* W.17.EST.1: por defecto un estudiante menor solo responde donde lo incluyeron. */}
+        <Field orientation="horizontal" className="items-start">
+          <Switch
+            id={idMenores}
+            round
+            className="mt-0.5"
+            checked={valores.permitirMenoresIniciar}
+            onCheckedChange={(v) => cambiar({ permitirMenoresIniciar: v })}
+          />
+          <FieldContent>
+            <FieldLabel htmlFor={idMenores}>Permitir que estudiantes menores inicien conversaciones</FieldLabel>
+            <FieldDescription>Apagado: los menores solo responden en las conversaciones donde los incluyen.</FieldDescription>
+          </FieldContent>
+        </Field>
+      </FieldGroup>
       <DialogFooter>
         {onCancelar && (
-          <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCancelar}>
+          <Button size="sm" variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCancelar}>
             Cancelar
           </Button>
         )}
         <Button
+          size="sm"
+          color="primary"
           disabled={guardar.isPending || incompleto}
           aria-busy={guardar.isPending}
           onClick={() => guardar.mutate(valores, { onSuccess: () => onCancelar?.() })}

@@ -52,7 +52,6 @@ export function MatriculaGuardianSection({
           value={value.firstName}
           maxLength={50}
           transform={aNombre}
-          masked={identityDisabled}
           onChange={(firstName) => onChange({ ...value, firstName })}
         />
       )}
@@ -65,7 +64,6 @@ export function MatriculaGuardianSection({
           value={value.secondName}
           maxLength={50}
           transform={aNombre}
-          masked={identityDisabled}
           onChange={(secondName) => onChange({ ...value, secondName })}
         />
       )}
@@ -78,7 +76,6 @@ export function MatriculaGuardianSection({
           value={value.lastName}
           maxLength={50}
           transform={aNombre}
-          masked={identityDisabled}
           onChange={(lastName) => onChange({ ...value, lastName })}
         />
       )}
@@ -91,7 +88,6 @@ export function MatriculaGuardianSection({
           value={value.secondLastName}
           maxLength={50}
           transform={aNombre}
-          masked={identityDisabled}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
         />
       )}
@@ -117,6 +113,7 @@ export function MatriculaGuardianSection({
           transform={extranjero ? aDocumentoAlfanumerico : undefined}
           maxLength={20}
           disabled={identityDisabled}
+          description="Se busca al salir del campo; si ya existe, carga sus datos protegidos."
           onChange={(documentNumber) => onChange({ ...value, documentNumber })}
         />
       )}

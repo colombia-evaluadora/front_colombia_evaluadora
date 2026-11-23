@@ -51,7 +51,7 @@ export interface TableroRow {
   faltan_datos: boolean
   severidad_salud_mental: SeveridadSaludMental | null
   fk_gestion_alerta: number | null
-  /** Sin backend hasta 9.11: siempre false. */
+  /** Hay gestión abierta de la alerta de inasistencia (§9.11) y el usuario la ve. */
   puede_gestionar: boolean
   total_count: number
 }
@@ -244,6 +244,22 @@ export interface AccesoPrevencion {
   puede_caracterizacion?: boolean
   /** Consultar historial académico (§9.8): Supervisor de sede, Orientación, Trabajo social y Administrador. */
   puede_historial_academico?: boolean
+  /** Pestaña Embarazo y maternidad/paternidad (§9.9). */
+  ver_embarazo?: boolean
+  /** Pestaña Consumo de sustancias (§9.10). */
+  ver_consumo?: boolean
+  /** Vista Reportes recibidos de Consumo: solo orientación. */
+  ver_reportes_consumo?: boolean
+  /** «Nuevo acompañamiento» (embarazo y consumo): solo orientación. */
+  puede_crear_acomp?: boolean
+  /** «Exportar para el SIUCE» de los acompañamientos: Supervisor de sede y Administrador. */
+  puede_exportar_siuce_acomp?: boolean
+  /** Pestaña Gestión de alertas (§9.11). */
+  ver_gestion_alertas?: boolean
+  /** Gestiones del usuario como Responsable, Pendientes o vencidas (número de la pestaña). */
+  gestion_alertas_contador?: number
+  /** El Administrador del establecimiento abre la pestaña en «Ver todas». */
+  gestion_alertas_ver_todas_defecto?: boolean
 }
 
 /** `GET /estudiantes/:MATRICULA/historial` → columna `datos`. */
@@ -1247,3 +1263,600 @@ export interface HistorialAcademico {
     final: { observacion: string | null; sin_registro: boolean } | null
   } | null
 }
+
+// --- Acompañamientos por embarazo y por consumo (§9.9, §9.10) ---
+
+export type TipoAcompanamiento = "EMBARAZO" | "CONSUMO"
+export type EstadoAcompanamiento = "ABIERTO" | "EN_SEGUIMIENTO" | "CERRADO" | "ANULADO"
+export type EstadoReporteConsumo = "PENDIENTE_REVISION" | "RECIBIDO" | "ATENDIDO"
+export type EstadoAccionAcomp = "REALIZADA" | "PENDIENTE" | "VENCIDA"
+
+/** Fila de `GET /acompanamientos` (`total_count` en cada fila). Las banderas puede_* ya miran el estado. */
+export interface AcompanamientoRow {
+  id: number
+  tipo: TipoAcompanamiento
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tsede: number
+  sede_nombre: string
+  jornada_nombre: string | null
+  grado_grupo: string
+  estado_matricula: string | null
+  estado_matricula_nombre: string | null
+  situacion_valor: string | null
+  situacion_nombre: string | null
+  sustancia_valor: string | null
+  /** Con Otra, el texto de la otra sustancia. */
+  sustancia_nombre: string | null
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  proxima_fk_accion: number | null
+  proxima_fecha: string | null
+  proxima_tipo_valor: string | null
+  proxima_tipo_nombre: string | null
+  proxima_vencida: boolean | null
+  puede_modificar: boolean
+  puede_registrar_accion: boolean
+  puede_cerrar: boolean
+  puede_anular: boolean
+  total_count: number
+}
+
+export interface AcompanamientosFiltros {
+  sede: string
+  jornada: string
+  responsable: string
+  estado: string
+}
+
+export const ACOMPANAMIENTOS_FILTROS_VACIOS: AcompanamientosFiltros = { sede: "", jornada: "", responsable: "", estado: "" }
+
+export interface AcompanamientosQueryFilters {
+  ESTABLECIMIENTO: number
+  TIPO: TipoAcompanamiento
+  SEDE: number | null
+  JORNADA: number | null
+  RESPONSABLE: number | null
+  ESTADO: string | null
+  SEARCH: string | null
+}
+
+/** Contexto de Cobertura (solo lectura) del detalle y de Ver reporte. */
+export type ContextoAcompanamiento = Record<string, unknown> & {
+  sede_nombre?: string
+  jornada_nombre?: string
+  grado_grupo?: string
+  estudiante_nombre?: string
+}
+
+export interface AcompRemision {
+  id: number
+  [k: string]: unknown
+}
+
+export interface AcompAccion {
+  id: number
+  fk_tlv_tipo: number
+  tipo_valor: string
+  tipo_nombre: string
+  fecha: string
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  descripcion: string | null
+  plazo: string | null
+  resultado: string | null
+  realizada_en: string | null
+  realizada_por: string | null
+  estado: EstadoAccionAcomp
+  remision: AcompRemision | null
+  soportes: { id: number; fk_tarchivo: number; nombre: string }[]
+  puede_registrar_resultado: boolean
+}
+
+export interface AcompDetalleEmbarazo {
+  fk_tlv_situacion: number
+  situacion_valor: string
+  situacion_nombre: string
+  fk_torientacion_atencion: number | null
+  semanas_gestacion: number | null
+  fecha_estimada_parto: string | null
+  fuente_gestacion: string | null
+  fecha_info_gestacion: string | null
+  fk_tlv_progenitor_conocido: number
+  progenitor_conocido: string
+  fk_tlv_acomp_progenitor: number
+  acompanamiento_progenitor: string
+  fk_tlv_apoyo_acudiente: number
+  apoyo_acudiente: string
+}
+
+export interface AcompDetalleConsumo {
+  fk_tlv_origen: number
+  origen_nombre: string
+  fuente_info: string | null
+  fecha_info: string | null
+  fk_tlv_sustancia: number
+  sustancia_valor: string
+  sustancia_nombre: string
+  otra_sustancia: string | null
+  fk_tlv_lugar: number
+  lugar_valor: string
+  lugar_nombre: string
+  otro_lugar: string | null
+  semanas_consumo: number | null
+  senales_riesgo: string | null
+  semanas_senales: number | null
+}
+
+export interface AcompReporteVinculado {
+  id: number
+  fecha_conocimiento: string
+  fuente: string
+  descripcion: string
+  estado: EstadoReporteConsumo
+  reportado_por: string | null
+  atendido_en: string | null
+}
+
+/** `GET /acompanamientos/:ID` → columna `datos`. */
+export interface AcompanamientoDetalle {
+  id: number
+  tipo: TipoAcompanamiento
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  descripcion: string | null
+  acuerdos: string | null
+  contexto: ContextoAcompanamiento
+  fk_tfuncionario_responsable: number
+  responsable_nombre: string
+  creado_en: string
+  antecedente: { id: number; fecha_conocimiento: string; cerrado_en: string | null } | null
+  cierre: { resumen: string; cerrado_en: string; cerrado_por: string | null } | null
+  anulacion: { motivo: string; anulado_en: string; anulado_por: string | null } | null
+  detalle: AcompDetalleEmbarazo | AcompDetalleConsumo | null
+  acciones: AcompAccion[]
+  reportes_vinculados: AcompReporteVinculado[]
+  puede_modificar: boolean
+  puede_registrar_accion: boolean
+  puede_cerrar: boolean
+  puede_anular: boolean
+}
+
+/** Fila de `GET /acompanamientos/estudiantes/:MATRICULA/historial` (aviso de duplicado «Ver historial»). */
+export interface AcompHistorialRow {
+  id: number
+  tipo: TipoAcompanamiento
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  situacion_nombre: string | null
+  fk_tmatricula: number
+  grado_grupo: string
+  responsable_nombre: string
+  cerrado_en: string | null
+  fk_antecedente: number | null
+}
+
+/** Selector Atención de origen. */
+export interface OpcionAtencionAcomp {
+  id: number
+  fecha: string
+  fk_tmatricula: number
+  motivo_nombre: string | null
+}
+
+/** Selector Acompañamiento abierto de Vincular reporte. */
+export interface OpcionAcompAbierto {
+  id: number
+  fecha_conocimiento: string
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  responsable_nombre: string
+}
+
+/** Fila de `GET /acompanamientos/consumo/reportes` (vista Reportes recibidos). */
+export interface ReporteConsumoRow {
+  id: number
+  fecha_conocimiento: string
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tsede: number
+  sede_nombre: string
+  jornada_nombre: string | null
+  grado_grupo: string
+  fk_tfuncionario_reporta: number | null
+  reportado_por: string | null
+  estado: EstadoReporteConsumo
+  estado_nombre: string
+  total_count: number
+}
+
+export interface ReportesConsumoFiltros {
+  sede: string
+  jornada: string
+  estado: string
+}
+
+export const REPORTES_CONSUMO_FILTROS_VACIOS: ReportesConsumoFiltros = { sede: "", jornada: "", estado: "" }
+
+export interface ReportesConsumoQueryFilters {
+  ESTABLECIMIENTO: number
+  SEDE: number | null
+  JORNADA: number | null
+  ESTADO: string | null
+  SEARCH: string | null
+}
+
+/** `GET /acompanamientos/consumo/reportes/:ID` → columna `datos`. Abrirlo lo pasa a Recibido. */
+export interface ReporteConsumoDetalle {
+  id: number
+  estado: EstadoReporteConsumo
+  estado_nombre: string
+  fecha_conocimiento: string
+  fuente: string
+  descripcion: string
+  fk_tfuncionario_reporta: number | null
+  reportado_por: string | null
+  recibido_en: string | null
+  fk_tprevencion_acompanamiento: number | null
+  atendido_en: string | null
+  contexto: ContextoAcompanamiento
+  puede_vincular: boolean
+}
+
+/** Lo que necesitan los diálogos de un acompañamiento; sale de la fila del listado o del detalle. */
+export interface ResumenAcomp {
+  id: number
+  tipo: TipoAcompanamiento
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estado: EstadoAcompanamiento
+  estado_nombre: string
+  fecha_conocimiento: string
+  /** Situación (embarazo) o sustancia (consumo) para el resumen del modal. */
+  detalle_nombre: string | null
+}
+
+// Cuerpos de escritura: los nombres son los :BODY.* del endpoint (MAYÚSCULAS, sin conversión).
+
+interface AcompComunInput {
+  FECHA_CONOCIMIENTO: string
+  FK_RESPONSABLE: number
+  DESCRIPCION: string | null
+  ACUERDOS: string | null
+}
+
+export interface AcompEmbarazoInput extends AcompComunInput {
+  FK_ATENCION: number | null
+  FK_SITUACION: number
+  SEMANAS_GESTACION: number | null
+  FECHA_ESTIMADA_PARTO: string | null
+  FUENTE_GESTACION: string | null
+  FECHA_INFO_GESTACION: string | null
+  FK_PROGENITOR_CONOCIDO: number
+  FK_ACOMP_PROGENITOR: number
+  FK_APOYO_ACUDIENTE: number
+}
+
+export interface AcompConsumoInput extends AcompComunInput {
+  FK_ORIGEN: number
+  FUENTE_INFO: string | null
+  FECHA_INFO: string | null
+  FK_SUSTANCIA: number
+  OTRA_SUSTANCIA: string | null
+  FK_LUGAR: number
+  OTRO_LUGAR: string | null
+  SEMANAS_CONSUMO: number | null
+  SENALES_RIESGO: string | null
+  SEMANAS_SENALES: number | null
+}
+
+export type CrearAcompEmbarazoInput = AcompEmbarazoInput & { MATRICULA: number; CREAR_DE_TODOS_MODOS?: boolean }
+export type CrearAcompConsumoInput = AcompConsumoInput & { MATRICULA: number; CREAR_DE_TODOS_MODOS?: boolean }
+
+/** `POST /:ID/acciones`: sin ACCION crea; con ACCION edita esa acción. FK_ENTIDAD la vuelve remisión. */
+export interface AccionAcompInput {
+  id: number
+  ACCION?: number | null
+  FK_TIPO: number
+  FECHA: string
+  FK_RESPONSABLE: number
+  DESCRIPCION: string | null
+  PLAZO: string | null
+  RESULTADO: string | null
+  FK_ENTIDAD: number | null
+  MOTIVO_REMISION: string | null
+  FECHA_REMISION: string | null
+  RESPUESTA_REMISION: string | null
+  SOPORTES: number[] | null
+}
+
+export interface ResultadoAccionAcompInput {
+  accionId: number
+  RESULTADO: string
+  SOPORTES: number[] | null
+}
+
+/** `POST /consumo/reportes/:ID/vincular`: EXISTENTE con ACOMPANAMIENTO, o NUEVO con los datos de uno nuevo. */
+export type VincularReporteInput = { id: number; DESTINO: string; CREAR_DE_TODOS_MODOS?: boolean } & (
+  | { ACOMPANAMIENTO: number }
+  | Partial<AcompConsumoInput>
+)
+
+export interface ReportarConsumoInput {
+  MATRICULA: number
+  FECHA_CONOCIMIENTO: string
+  FUENTE: string
+  DESCRIPCION: string
+}
+
+// --- Gestión de la alerta de inasistencia (§9.11) ---
+
+export type UmbralGestion = "ALERTA" | "INTERVENCION"
+export type EstadoGestion = "PENDIENTE" | "EN_GESTION" | "RESUELTA" | "ESCALADA"
+
+/** Fila de `GET /gestion-alertas` (`total_count` en cada fila). Marcas separadas y banderas por fila. */
+export interface GestionAlertaRow {
+  id: number
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tgrupo: number
+  grado_grupo: string
+  umbral: UmbralGestion
+  umbral_nombre: string
+  fk_responsable: number | null
+  responsable_nombre: string | null
+  responsable_rol: string | null
+  responsable_rol_nombre: string | null
+  sin_responsable: boolean
+  plazo: string | null
+  estado: EstadoGestion
+  estado_nombre: string
+  reincidente: boolean
+  vencida: boolean
+  seguimiento_reforzado: boolean
+  motivos_seguimiento: string[]
+  /** Indicador al borde de la fila: Responsable con la gestión Pendiente o vencida, o Sin responsable de su sede. */
+  resaltar: boolean
+  puede_tomar: boolean
+  puede_registrar_contacto: boolean
+  puede_editar_causas: boolean
+  puede_editar_medidas: boolean
+  puede_resolver: boolean
+  puede_apoyo_orientacion: boolean
+  puede_ruta_proteccion: boolean
+  puede_escalar: boolean
+  total_count: number
+}
+
+/** Opción de lista TLV de `GET /gestion-alertas/opciones` (`id` = pk de TLISTA_VALOR). */
+export interface OpcionGestionTlv {
+  id: number
+  valor: string
+  nombre: string
+}
+
+/** `GET /gestion-alertas/opciones` → `datos`: todas las listas del módulo con su etiqueta. */
+export interface OpcionesGestionAlertas {
+  causas: (OpcionGestionTlv & { reservada: boolean })[]
+  estados_causa: OpcionGestionTlv[]
+  medios: OpcionGestionTlv[]
+  con_quien: OpcionGestionTlv[]
+  resultados_contacto: OpcionGestionTlv[]
+  entidades: OpcionGestionTlv[]
+  actuaciones: OpcionGestionTlv[]
+  estados: { valor: EstadoGestion; nombre: string }[]
+  umbrales: { valor: UmbralGestion; nombre: string }[]
+  grupos: { fk_tgrupo: number; grado_grupo: string }[]
+  responsables: {
+    yo: { id: number; nombre: string } | null
+    funcionarios: { id: number; nombre: string }[]
+    sin_responsable: boolean
+  }
+}
+
+export interface GestionAlertasFiltros {
+  estado: string
+  umbral: string
+  grupo: string
+  /** Id del responsable o `SIN` (Sin responsable). */
+  responsable: string
+}
+
+export const GESTION_ALERTAS_FILTROS_VACIOS: GestionAlertasFiltros = { estado: "", umbral: "", grupo: "", responsable: "" }
+
+export interface GestionAlertasQueryFilters {
+  ESTABLECIMIENTO: number
+  ESTADO: string | null
+  UMBRAL: string | null
+  GRUPO: number | null
+  RESPONSABLE: number | null
+  SIN_RESPONSABLE: boolean | null
+  VER_TODAS: boolean
+  SEARCH: string | null
+}
+
+export interface GuardarGestionInput {
+  id: number
+  /** NULL no toca; vacío vacía. ESTADOS va en paralelo a CAUSAS. */
+  CAUSAS: number[] | null
+  ESTADOS: number[] | null
+  MEDIDAS: string | null
+  FECHA_PREVISTA: string | null
+}
+
+export interface ContactoGestionInput {
+  id: number
+  FECHA: string
+  FK_MEDIO: number
+  FK_CON_QUIEN: number
+  FK_RESULTADO: number
+  RAZON: string | null
+}
+
+export interface ResolverGestionInput {
+  id: number
+  FECHA_VERIFICACION: string
+  RESULTADO: string | null
+}
+
+export interface RutaProteccionInput {
+  id: number
+  FK_ENTIDAD: number
+  FECHA: string
+  MOTIVO: string
+  DESCRIPCION: string
+  ENTORNO_FAMILIAR: string | null
+  SITUACION_RESIDENCIA: string | null
+  ACTUACIONES: number[] | null
+  FECHA_ESPERADA: string
+  MOTIVO_AJUSTE: string | null
+  RECORDATORIOS: string[] | null
+}
+
+export interface GestionCausa {
+  fk_tlv_causa: number | null
+  valor: string
+  etiqueta: string
+  /** Enmascarada («Información reservada») para quien no ve lo sensible. */
+  reservada: boolean
+  fk_tlv_estado_causa: number | null
+  estado_causa_valor: string | null
+  estado_causa: string | null
+}
+
+export interface GestionContacto {
+  id: number
+  fecha: string
+  medio: string
+  con_quien: string
+  resultado: string
+  resultado_valor: string
+  razon: string | null
+  registrado_por: string | null
+}
+
+export type EventoGestion =
+  | "ACTIVADA"
+  | "INTERVENCION"
+  | "TOMADA"
+  | "ESCALADA"
+  | "ORIENTACION"
+  | "EN_GESTION"
+  | "APOYO_ORIENTACION"
+  | "RUTA_PROTECCION"
+  | "RESUELTA"
+
+export interface GestionEvento {
+  fecha: string
+  evento: EventoGestion
+  detalle: string | null
+  desde_nombre: string | null
+  desde_rol_nombre: string | null
+  hacia_nombre: string | null
+  hacia_rol_nombre: string | null
+  quien_nombre: string | null
+  quien_rol_nombre: string | null
+  sin_responsable_hacia: boolean
+}
+
+/** Orientación de la entidad territorial vinculada a una gestión Escalada. */
+export interface GestionOrientacion {
+  id: number
+  tema: string
+  estado: "ENVIADA" | "ATENDIDA"
+  enviada_en: string
+  orientacion: string
+  respuesta: string | null
+  respuesta_en: string | null
+  puede_ver_orientacion: boolean
+}
+
+/** Ruta de protección activada (remisión externa de origen PROTECCION); todo su texto es sensible. */
+export interface GestionRuta {
+  id_remision: number
+  estado: "ENVIADA" | "RESPONDIDA"
+  entidad_nombre: string
+  fecha_activacion: string
+  fecha_esperada: string | null
+  activada_por_nombre: string | null
+  activada_por_rol: string | null
+  motivo: string | null
+  descripcion: string | null
+  entorno_familiar: string | null
+  situacion_residencia: string | null
+  actuaciones: (string | { id?: number; nombre?: string })[]
+  recordatorios: (string | { fecha: string; estado?: string })[]
+  gestiones: { id?: number; fecha: string; descripcion: string; registrada_por: string | null }[]
+  respuesta: string | null
+  fecha_respuesta: string | null
+  respuesta_vencida: boolean
+  puede_descargar: boolean
+  puede_registrar_gestion: boolean
+  puede_registrar_respuesta: boolean
+}
+
+export interface GestionBanderas {
+  puede_tomar: boolean
+  puede_escalar: boolean
+  puede_resolver: boolean
+  puede_ver_sensible: boolean
+  puede_editar_causas: boolean
+  puede_editar_medidas: boolean
+  puede_ruta_proteccion: boolean
+  puede_apoyo_orientacion: boolean
+  puede_descargar_reporte: boolean
+  puede_registrar_contacto: boolean
+}
+
+/** `GET /gestion-alertas/:ID` → `datos`. */
+export interface GestionAlertaDetalle {
+  id: number
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tgrupo: number
+  fk_tsede: number
+  grado_grupo: string
+  umbral: UmbralGestion
+  umbral_nombre: string
+  estado: EstadoGestion
+  estado_nombre: string
+  plazo: string | null
+  fecha_activacion: string
+  fecha_intervencion: string | null
+  fk_responsable: number | null
+  responsable_nombre: string | null
+  responsable_rol: string | null
+  responsable_rol_nombre: string | null
+  sin_responsable: boolean
+  vencida: boolean
+  reincidente: boolean
+  seguimiento_reforzado: boolean
+  motivos_seguimiento: string[]
+  gestion_anterior: { id: number; fecha_activacion: string; resultado: string | null } | null
+  causas: GestionCausa[]
+  medidas: string | null
+  fecha_prevista: string | null
+  contactos: GestionContacto[]
+  historial: GestionEvento[]
+  orientaciones: GestionOrientacion[]
+  verificacion: { fecha: string; resultado: string; resuelta_en: string | null; resuelta_por: string | null } | null
+  ruta: GestionRuta | null
+  ruta_activada: boolean
+  ruta_defaults: { plazo_dias_habiles: number; fecha_esperada_propuesta: string } | null
+  banderas: GestionBanderas
+}
+
+/** Lo que necesitan los modales de la gestión: lo traen la fila del listado y el detalle. */
+export type ResumenGestion = Pick<
+  GestionAlertaRow,
+  "id" | "estudiante_nombre" | "grado_grupo" | "umbral" | "umbral_nombre" | "estado" | "estado_nombre"
+>

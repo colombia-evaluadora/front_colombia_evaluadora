@@ -1,11 +1,5 @@
 import type { ObservacionRow } from "@/features/gestion-estudiantil/observaciones/api/types"
 
-/**
- * Registrar y corregir: el Responsable de grupo en los grupos de su designación (§8). RECTOR y COORDINADOR
- * tienen la ruta porque también pueden dirigir un grupo; si no lo dirigen, el backend responde 403.
- */
-export const ROLES_REGISTRAN_OBSERVACION = ["CEVAL-DIRECTOR_GRUPO", "CEVAL-RECTOR", "CEVAL-COORDINADOR"]
-
 export interface AccionesObservacion {
   verDetalle: boolean
   modificar: boolean

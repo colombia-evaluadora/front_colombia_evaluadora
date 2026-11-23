@@ -44,58 +44,15 @@ export function HighDemandBanner() {
   )
 }
 
-interface PublicSplitProps {
-  icon: IconComponent
-  title: string
-  description?: string
-  /** Tres puntos de confianza del panel izquierdo. */
-  points: [string, string, string]
-  breadcrumb: string[]
-  children: ReactNode
-}
-
-/**
- * Formularios cortos (Guía UX §22): panel de color a la izquierda y el
- * formulario sin tarjeta a la derecha. En celular el panel se reduce a una franja.
- */
-export function PublicSplit({ icon: Icon, title, description, points, breadcrumb, children }: PublicSplitProps) {
-  return (
-    <div className="grid flex-1 lg:grid-cols-[minmax(0,45%)_1fr]">
-      <section className="from-navy to-primary text-navy-foreground relative overflow-hidden bg-linear-to-br px-6 py-8 lg:flex lg:flex-col lg:justify-center lg:px-14">
-        <Decoration />
-        <div className="relative max-w-md">
-          <span className="mb-4 hidden size-14 items-center justify-center rounded-xl bg-white/15 lg:flex">
-            <Icon className="size-7" aria-hidden />
-          </span>
-          <h1 className="text-2xl font-extrabold lg:text-4xl">{title}</h1>
-          {description && <p className="mt-2 opacity-90 lg:text-lg">{description}</p>}
-          <ul className="mt-6 hidden flex-col gap-2 text-sm lg:flex">
-            {points.map((p) => (
-              <li key={p} className="flex items-center gap-2">
-                <CheckCircleIcon className="size-4 shrink-0" aria-hidden="true" />
-                {p}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      <section className="flex justify-center px-4 py-8 sm:px-8 lg:items-center">
-        <div className="flex w-full max-w-md flex-col gap-5">
-          <PublicBreadcrumb items={breadcrumb} className="text-muted-foreground" />
-          {children}
-        </div>
-      </section>
-    </div>
-  )
-}
-
 interface PublicBandProps {
   icon: IconComponent
   title: string
   subtitle?: string
   breadcrumb: string[]
-  /** Puntos de confianza bajo el título (los del panel de `PublicSplit`). */
+  /** Puntos de confianza bajo el título. */
   points?: string[]
+  /** "Volver al inicio" debajo de la tarjeta, fuera de ella. */
+  backToHome?: boolean
   /** Acciones de la vista: van arriba de la tarjeta, nunca al pie (Guía UX §3). */
   actions?: ReactNode
   width?: "md" | "lg" | "xl"
@@ -103,7 +60,17 @@ interface PublicBandProps {
 }
 
 /** Páginas anchas (Guía UX §22): franja de color con ruta y título, y tarjeta flotante. */
-export function PublicBand({ icon: Icon, title, subtitle, breadcrumb, points, actions, width = "lg", children }: PublicBandProps) {
+export function PublicBand({
+  icon: Icon,
+  title,
+  subtitle,
+  breadcrumb,
+  points,
+  backToHome,
+  actions,
+  width = "lg",
+  children,
+}: PublicBandProps) {
   const max = { md: "max-w-3xl", lg: "max-w-4xl", xl: "max-w-5xl" }[width]
   return (
     <div className="flex-1 pb-10">
@@ -137,6 +104,11 @@ export function PublicBand({ icon: Icon, title, subtitle, breadcrumb, points, ac
           {actions && <div className="flex justify-end gap-2 border-b px-6 py-3">{actions}</div>}
           <div className="p-6">{children}</div>
         </div>
+        {backToHome && (
+          <div className="mt-6">
+            <BackToHomeLink />
+          </div>
+        )}
       </div>
     </div>
   )

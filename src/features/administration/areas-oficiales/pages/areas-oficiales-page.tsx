@@ -167,7 +167,7 @@ function AreasOficialesPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description="Catálogo global de áreas que usan los Planes de Estudio y los Referentes.">
+        <TableScreenTitle description="Catálogo global de áreas que usan los planes de estudio y los referentes.">
           Áreas oficiales
         </TableScreenTitle>
         <TableScreenToolbar>
@@ -193,6 +193,8 @@ function AreasOficialesPageContent() {
         <DataTable
           table={table}
           isPending={isPending}
+          // Inactiva: la fila al 55%; los iconos de acción quedan al 100%.
+          isRowMuted={(row) => !(row.original as AreaOficial).habilitada}
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}

@@ -45,8 +45,8 @@ export const FUENTES_MOCK = ["observador", "casos de convivencia", "convivencia"
 
 /** Módulos = grupos raíz del menú mock (Sección 4.1). */
 export const modulosDb = [
-  { pkModulo: 6, nombre: "Gestión Estudiantil" },
-  { pkModulo: 7, nombre: "Gestión Académica" },
+  { pkModulo: 6, nombre: "Gestión estudiantil" },
+  { pkModulo: 7, nombre: "Gestión académica" },
   { pkModulo: 8, nombre: "Comunicaciones" },
   { pkModulo: 9, nombre: "Administración" },
 ]

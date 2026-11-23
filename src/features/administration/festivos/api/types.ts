@@ -39,4 +39,4 @@ export const TIPO_FECHA_AYUDA: Record<TipoFecha, string> = {
 }
 
 export const FESTIVO_EN_USO_MENSAJE =
-  "Lo usa el Calendario Académico de un período que ya comenzó: no se puede eliminar. Puede inactivarlo."
+  "Lo usa el Calendario académico de un período que ya comenzó: no se puede eliminar. Puede inactivarlo."

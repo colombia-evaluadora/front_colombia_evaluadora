@@ -72,12 +72,12 @@ export function createComunicadosColumns({
     {
       id: "destinatarios",
       accessorFn: (row) => row.destinatarios ?? 0,
-      meta: { label: "Destinatarios", className: "text-right" },
+      meta: { label: "Destinatarios", className: "text-center" },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Destinatarios" className="justify-end" />
+        <DataTableColumnHeader column={column} title="Destinatarios" className="justify-center" />
       ),
       cell: ({ row }) => (
-        <span className="block text-right tabular-nums">
+        <span className="block text-center tabular-nums">
           {(row.original.destinatarios ?? 0).toLocaleString("es-CO")}
         </span>
       ),
@@ -131,6 +131,15 @@ export function createBandejaColumns(): ColumnDef<ComunicadoGestion>[] {
           }
         : col,
     )
+    .concat({
+      // Quien recibe (estudiante o acudiente, 3.1) ve de qué establecimiento viene; el orden es del servidor.
+      id: "establecimiento",
+      accessorFn: (c) => c.establecimiento ?? "",
+      enableSorting: false,
+      meta: { label: "Establecimiento" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Establecimiento" />,
+      cell: ({ row }) => row.original.establecimiento || "—",
+    })
     .concat({
       id: "actions",
       size: anchoAccionesFila(1),

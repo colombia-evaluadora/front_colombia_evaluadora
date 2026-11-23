@@ -530,6 +530,8 @@ export interface Comunicado {
   publicadoPor: string
   // Rol de quien lo publicó ("Rector", "Coordinador"...): lo muestra el detalle (M.1.DET.1). Opcional.
   publicadoPorRol?: string | null
+  // Nombre del establecimiento del comunicado (bandeja de estudiantes y acudientes, 3.1). Opcional.
+  establecimiento?: string | null
   esCreador: boolean
   // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
   // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
@@ -587,17 +589,6 @@ export interface AdjuntoComunicado {
   nombre: string
   formato: FormatoArchivo
   peso: number
-}
-
-// Registro de recepción por destinatario (solo lo ve quien publicó el comunicado).
-export interface RecepcionComunicado {
-  usuarioId: number
-  nombre: string
-  estado: "LEIDO" | "NO_LEIDO"
-  // Cuándo salió el aviso; null mientras siga programado.
-  entregadoEn: string | null
-  // Cuándo lo abrió; null si no lo ha visto o si lo leyó antes de existir el registro.
-  vistoEn: string | null
 }
 
 // Miembro de un canal. Bloqueado = sigue en el canal pero no puede escribir.

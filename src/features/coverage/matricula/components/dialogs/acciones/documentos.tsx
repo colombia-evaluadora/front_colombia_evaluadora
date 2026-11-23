@@ -10,6 +10,7 @@ import {
   FilePdfIcon,
   FileTextIcon,
   FileZipIcon,
+  IdentificationCardIcon,
   SpinnerIcon,
   WarningCircleIcon,
 } from "@/components/ui/icons"
@@ -21,9 +22,11 @@ import { cn } from "@/lib/utils"
 
 import {
   useConfiguracionConstanciaQuery,
+  useGenerarCarnes,
   useGenerarConstancias,
   useGenerarHojas,
   useGenerarPaquete,
+  usePreviaCarnesQuery,
   usePreviaPaqueteQuery,
 } from "@/features/coverage/matricula/api/acciones-lote"
 import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
@@ -100,7 +103,7 @@ export function DialogGenerarConstancias({
             onChange={(e) => setDirigidaA(e.target.value)}
           />
           <FieldDescription className={cn(!valido && "text-red")}>
-            {uno ? "" : "La misma para todas. "}Entre {DIRIGIDA_MIN} y {DIRIGIDA_MAX} caracteres; p. ej. «Caja de Compensación Familiar».
+            {valido ? "Se puede cambiar; p. ej. el nombre de la entidad que la pide." : `Entre ${DIRIGIDA_MIN} y ${DIRIGIDA_MAX} caracteres.`}
           </FieldDescription>
         </Field>
 
@@ -130,6 +133,87 @@ export function DialogGenerarConstancias({
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
               <FilePdfIcon data-icon="inline-start" />
+            )}
+            Generar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * Generar carné(s) estudiantil(es) (Sección 2.18, Regla 61): un solo PDF.
+ * Antes avisa cuántos no tienen foto: su carné sale con una silueta.
+ */
+export function DialogGenerarCarnes({
+  matriculas,
+  onOpenChange,
+  onDone,
+}: {
+  matriculas: Matricula[]
+  onOpenChange: (open: boolean) => void
+  onDone?: () => void
+}) {
+  const { notify } = useNotify()
+  const ids = matriculas.map((m) => m.id)
+  const { data: previa, isPending } = usePreviaCarnesQuery(ids)
+  const generar = useGenerarCarnes()
+  const [error, setError] = useState<{ id: number; message: string } | null>(null)
+  const total = matriculas.length
+  const uno = total === 1
+  const sinFoto = previa?.sinFoto ?? 0
+
+  function confirmar() {
+    generar.mutate(ids, {
+      onSuccess: () => {
+        notify(uno ? `Se generó el carné estudiantil de ${nombreDe(matriculas[0])}.` : `Se generaron ${total} carnés estudiantiles.`)
+        onDone?.()
+        onOpenChange(false)
+      },
+      onError: (err) => setError({ id: Date.now(), message: getErrorMessage(err) }),
+    })
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !generar.isPending && onOpenChange(o)}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {sinFoto ? <WarningCircleIcon className="size-5 shrink-0 text-yellow" aria-hidden /> : null}
+            {uno ? "Generar carné estudiantil" : "Generar carnés"}
+          </DialogTitle>
+          {uno ? <DialogDescription>{nombreDe(matriculas[0])}</DialogDescription> : null}
+        </DialogHeader>
+        <NoticeBanner notice={error} onClose={() => setError(null)} variant="error" />
+
+        {isPending ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <SpinnerIcon className="animate-spin" /> Revisando las fotos…
+          </div>
+        ) : sinFoto ? (
+          <p className="text-sm">
+            <span className="font-semibold">
+              {uno ? "El estudiante" : `${sinFoto} de los ${total} estudiantes`}
+            </span>{" "}
+            no {sinFoto === 1 ? "tiene" : "tienen"} foto; su carné saldrá con una silueta.
+            <span className="block text-muted-foreground">La foto se carga en la matrícula.</span>
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {uno ? "Se generará el carné en PDF." : `Se generarán ${total} carnés en un solo PDF.`} El carné anterior de cada estudiante queda reemplazado.
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button type="button" variant="fill" color="primary" size="sm" disabled={isPending || generar.isPending} onClick={confirmar}>
+            {generar.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <IdentificationCardIcon data-icon="inline-start" />
             )}
             Generar
           </Button>
@@ -228,11 +312,11 @@ export function DialogPaqueteSoporte({ matricula, onOpenChange }: { matricula: M
   )
 }
 
-/** Documentos de una matrícula Cursando: hoja de matrícula, constancia y paquete de soporte (fila y detalle). */
+/** Documentos de una matrícula Cursando: hoja de matrícula, constancia, carné y paquete de soporte (fila y detalle). */
 export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Matricula; modo?: "icon" | "button" }) {
   const { notify } = useNotify()
   const hojas = useGenerarHojas()
-  const [abierto, setAbierto] = useState<"constancia" | "paquete" | null>(null)
+  const [abierto, setAbierto] = useState<"constancia" | "carne" | "paquete" | null>(null)
   if (matricula.status !== "Cursando") return null
   const nombre = nombreDe(matricula)
   const cerrar = (open: boolean) => !open && setAbierto(null)
@@ -265,6 +349,15 @@ export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Ma
       <OnlineOnlyAction>
         <BotonAccion
           modo={modo}
+          label="Generar carné estudiantil"
+          ariaLabel={`Generar carné estudiantil de ${nombre}`}
+          Icon={IdentificationCardIcon}
+          onClick={() => setAbierto("carne")}
+        />
+      </OnlineOnlyAction>
+      <OnlineOnlyAction>
+        <BotonAccion
+          modo={modo}
           label="Generar paquete de soporte"
           ariaLabel={`Generar paquete de soporte de ${nombre}`}
           Icon={FileZipIcon}
@@ -272,6 +365,7 @@ export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Ma
         />
       </OnlineOnlyAction>
       {abierto === "constancia" ? <DialogGenerarConstancias matriculas={[matricula]} onOpenChange={cerrar} /> : null}
+      {abierto === "carne" ? <DialogGenerarCarnes matriculas={[matricula]} onOpenChange={cerrar} /> : null}
       {abierto === "paquete" ? <DialogPaqueteSoporte matricula={matricula} onOpenChange={cerrar} /> : null}
     </>
   )

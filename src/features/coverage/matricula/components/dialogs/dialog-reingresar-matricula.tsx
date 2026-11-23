@@ -64,9 +64,12 @@ export function DialogReingresar({
   const porId = new Map((previas ?? []).map((p) => [p.matriculaId, p]))
   const matriculaDe = new Map(matriculas.map((m) => [m.id, m]))
   const uno = matriculas.length === 1
-  const bloqueadas = (previas ?? []).filter((p) => p.complementariaSinCupo)
-  // En lote la complementaria que no reingresa solo se avisa por fila: la principal sí reingresa (Regla 56).
-  const aplicables = uno ? (previas ?? []).filter((p) => !p.complementariaSinCupo) : (previas ?? [])
+  // Regla 12: se bloquea el reingreso de la complementaria sin cupo en su especialidad.
+  // Si reingresa la principal, la complementaria no se reactiva: solo se avisa.
+  const esComplementaria = (id: string) => matriculaDe.get(id)?.tipo === "COMPLEMENTARIA"
+  const bloqueadas = (previas ?? []).filter((p) => p.complementariaSinCupo && esComplementaria(p.matriculaId))
+  const sinComplementaria = (previas ?? []).filter((p) => p.complementariaSinCupo && !esComplementaria(p.matriculaId))
+  const aplicables = uno ? (previas ?? []).filter((p) => !bloqueadas.includes(p)) : (previas ?? [])
   const sinCupo = uno ? aplicables.filter((p) => p.sinCupo) : []
   // Lote: solo con el período Abierto y sin pasarse de los cupos de cada grupo.
   const cerradas = uno ? [] : aplicables.filter((p) => !p.periodoAbierto)
@@ -199,7 +202,11 @@ export function DialogReingresar({
                 onChange={(d) => setFecha(formatDateValue(d))}
               />
               <FieldDescription className={cn(intentado && !fechaValida && "text-red")}>
-                {desde ? `Entre el ${fechaTexto(desde)} y hoy.` : "No admite fechas futuras."}
+                {desde
+                  ? uno
+                    ? `Entre el ${fechaTexto(desde)} y hoy.`
+                    : `No anterior al ${fechaTexto(desde)}, el retiro más reciente de las marcadas.`
+                  : "No admite fechas futuras."}
               </FieldDescription>
             </Field>
 
@@ -210,13 +217,13 @@ export function DialogReingresar({
               </Aviso>
             ))}
             {cerradas.length ? (
-              <Aviso tono="advertencia" titulo="Solo se reingresa con el Período Académico Abierto.">
+              <Aviso tono="advertencia" titulo="Solo se reingresa con el período académico Abierto.">
                 Quite de la selección: {cerradas.map((p) => nombreDe(matriculaDe.get(p.matriculaId) as Matricula)).join(", ")}.
               </Aviso>
             ) : null}
-            {!uno && bloqueadas.length ? (
+            {sinComplementaria.length || (!uno && bloqueadas.length) ? (
               <Aviso tono="advertencia" titulo="La matrícula complementaria no reingresa">
-                {bloqueadas
+                {[...sinComplementaria, ...(uno ? [] : bloqueadas)]
                   .map((p) => `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaSinCupo})`)
                   .join(", ")}
                 : sin cupo o con el convenio finalizado. La matrícula principal sí reingresa.
@@ -250,7 +257,11 @@ export function DialogReingresar({
               </div>
             </Field>
 
-            {periodosRetiro.length ? (
+            {!uno ? (
+              <Aviso tono="info">
+                Los períodos de evaluación transcurridos durante el retiro quedan Pendientes por nivelación en cada asignatura.
+              </Aviso>
+            ) : periodosRetiro.length ? (
               <Aviso tono="info">
                 {periodosRetiro.join(", ")} {periodosRetiro.length === 1 ? "transcurrió" : "transcurrieron"} durante el retiro:
                 queda Pendiente por nivelación en cada asignatura.

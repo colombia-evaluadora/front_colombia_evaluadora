@@ -63,7 +63,7 @@ export function useHistorialAcademico(matricula: number) {
   const opcionesPeriodo: Opcion[] = useMemo(
     () => [
       ...(matriculaActual?.periodos ?? []).map((p) => ({ value: String(p.fk_tperiodo_evaluacion), label: p.nombre })),
-      { value: PERIODO_FINAL, label: "Resultado final del Período Académico" },
+      { value: PERIODO_FINAL, label: "Resultado final del período académico" },
     ],
     [matriculaActual],
   )

@@ -36,7 +36,11 @@ let siguiente = 100
 
 const roles = (request: Request) => usuarioDe(request)?.roles ?? []
 const esRector = (request: Request) => roles(request).includes("CEVAL-RECTOR")
-const modera = (request: Request) => esRector(request) || roles(request).includes("CEVAL-COORDINADOR")
+// Reportes: solo el Supervisor de sede (coordinador); el rector ya no los ve (SSO #1027).
+const revisa = (request: Request) => roles(request).includes("CEVAL-COORDINADOR")
+// Suspender y levantar: rector o Supervisor de sede; en el backend real este solo dentro de sus
+// sedes y jornadas (fn_moderacion_puede_suspender_a), alcance que el mock no modela.
+const suspende = (request: Request) => esRector(request) || revisa(request)
 const prohibido = () => HttpResponse.json({ message: "No tienes permiso para esta acción." }, { status: 403 })
 const ok = () => HttpResponse.json({ rows: [{ ok: true }] })
 const motivoInvalido = (motivo?: string) => !motivo?.trim() || motivo.trim().length > 500
@@ -62,25 +66,25 @@ export const comunicacionesModeracionHandlers = [
     return ok()
   }),
   http.get(URL("moderacion/reportes"), ({ request }) =>
-    modera(request) ? HttpResponse.json({ rows: reportesMock }) : prohibido(),
+    revisa(request) ? HttpResponse.json({ rows: reportesMock }) : prohibido(),
   ),
   http.get(URL("moderacion/reportes/:id/mensajes"), ({ params, request }) => {
-    if (!modera(request)) return prohibido()
+    if (!revisa(request)) return prohibido()
     const r = reportesMock.find((x) => x.id === Number(params.id))
     if (!r) return HttpResponse.json({ message: "El reporte no existe." }, { status: 404 })
     return HttpResponse.json({ rows: mensajes.filter((m) => m.conversacionId === r.conversacionId) })
   }),
   http.patch(URL("moderacion/reportes/:id/revisar"), ({ params, request }) => {
-    if (!modera(request)) return prohibido()
+    if (!revisa(request)) return prohibido()
     const r = reportesMock.find((x) => x.id === Number(params.id))
     if (r) r.estado = "REVISADO"
     return ok()
   }),
   http.get(URL("moderacion/suspensiones"), ({ request }) =>
-    esRector(request) ? HttpResponse.json({ rows: suspensionesMock }) : prohibido(),
+    suspende(request) ? HttpResponse.json({ rows: suspensionesMock }) : prohibido(),
   ),
   http.post(URL("moderacion/suspensiones"), async ({ request }) => {
-    if (!esRector(request)) return prohibido()
+    if (!suspende(request)) return prohibido()
     const b = (await request.json()) as { FK_USUARIO: number; MOTIVO?: string; VENCE_EN?: string }
     if (motivoInvalido(b.MOTIVO)) return sinMotivo()
     if (suspensionesMock.some((s) => s.usuarioId === b.FK_USUARIO)) {
@@ -97,7 +101,7 @@ export const comunicacionesModeracionHandlers = [
     return ok()
   }),
   http.patch(URL("moderacion/suspensiones/:id/levantar"), ({ params, request }) => {
-    if (!esRector(request)) return prohibido()
+    if (!suspende(request)) return prohibido()
     const i = suspensionesMock.findIndex((s) => s.id === Number(params.id))
     if (i < 0) return HttpResponse.json({ message: "La suspension no existe o ya se levanto." }, { status: 404 })
     suspensionesMock.splice(i, 1)

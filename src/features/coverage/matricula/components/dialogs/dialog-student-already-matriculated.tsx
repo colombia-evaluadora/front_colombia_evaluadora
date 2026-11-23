@@ -6,55 +6,54 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { WarningCircleIcon, XIcon } from "@/components/ui/icons"
 
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
 
 interface StudentAlreadyMatriculatedDialogProps {
   matricula: Matricula
+  /** Nombre del estudiante como se digitó en el alta. */
+  nombre: string
+  /** Período de la matrícula existente (mismo que el elegido). */
+  periodo: string
   onClose: () => void
 }
 
+/** AGR.6: ya tiene matrícula en el mismo grado y período; no se puede matricular. */
 export function StudentAlreadyMatriculatedDialog({
   matricula,
+  nombre,
+  periodo,
   onClose,
 }: StudentAlreadyMatriculatedDialogProps) {
   const gradeLabel = useMatriculaGradeLabel()
+  const grado = gradeLabel(matricula.grade)
   return (
     <AlertDialog open onOpenChange={(next) => !next && onClose()}>
-      <AlertDialogContent className="sm:max-w-sm">
+      <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <WarningCircleIcon className="size-5 text-yellow" />
-            Estudiante ya matriculado
-          </AlertDialogTitle>
-          <AlertDialogDescription className="font-semibold text-foreground">
-            El estudiante ya se encuentra matriculado para el año lectivo actual.
-          </AlertDialogDescription>
+          <AlertDialogTitle>Agregar estudiante — {nombre}</AlertDialogTitle>
           <AlertDialogDescription>
-            No es posible crear un nuevo registro porque existe una matrícula en curso con los
-            siguientes datos:
+            No se puede matricular a {nombre} en {grado} · {periodo}: ya tiene una matrícula en ese mismo grado y
+            período, en estado {matricula.status}, en {matricula.institution}.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <p>
-            Sede: <span className="font-semibold text-foreground">{matricula.campus}</span>
-          </p>
-          <p>
-            Grado: <span className="font-semibold text-foreground">{gradeLabel(matricula.grade)}</span>
-          </p>
-          <p>
-            Grupo: <span className="font-semibold text-foreground">{matricula.group}</span>
-          </p>
-        </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 text-sm">
+          <dt className="text-muted-foreground">Matrícula existente</dt>
+          <dd className="flex flex-wrap items-center gap-2 font-medium">
+            {[matricula.institution, grado, periodo].filter(Boolean).join(" · ")}
+            <Badge variant="soft" color="info">
+              {matricula.status}
+            </Badge>
+          </dd>
+        </dl>
 
         <AlertDialogFooter>
-          <Button type="button" variant="fill" color="neutral" size="sm" onClick={onClose}>
-            <XIcon data-icon="inline-start" />
-            Cerrar
+          <Button type="button" variant="fill" color="primary" size="sm" onClick={onClose}>
+            Entendido
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

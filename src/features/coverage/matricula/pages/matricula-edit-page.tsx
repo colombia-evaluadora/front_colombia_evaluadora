@@ -1,3 +1,4 @@
+import { MatriculaSoportesSection } from "@/features/coverage/matricula/components/forms/form-create-matricula/soportes-section"
 import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
 import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/hooks/use-matricula-validacion-opciones"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -13,7 +14,10 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { WarningIcon, CheckIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { WarningIcon, CheckIcon, InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/components/dialogs/dialog-registrar-autorizacion"
+import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
 import { DialogCorregirIdentidadEstudiante } from "@/features/coverage/matricula/components/dialogs/dialog-corregir-identidad-estudiante"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
@@ -58,7 +62,6 @@ import type { DepartmentOption } from "@/features/coverage/matricula/components/
 import type {
   BulkGroupChangeClassification,
   CreateMatriculaInput,
-  MatriculaStatus,
 } from "@/features/coverage/matricula/api/types/matricula"
 import {
   getMatriculaFieldErrorMessage,
@@ -68,15 +71,19 @@ import {
 } from "@/features/coverage/matricula/utils/matricula-form-defaults"
 import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { Badge } from "@/components/ui/badge"
+import { BadgeComplementaria } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
 
 const EDIT_MATRICULA_FORM_ID = "edit-matricula-form"
 
-const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
+// Editar solo con la matrícula Cursando (tabla de acciones de la lista).
 
 const SEDE_CLASSIFICATION_LABELS: Record<BulkGroupChangeClassification, string> = {
   cambioGrado: "Reubicación de sede",
   correccion: "Corrección de matrícula",
 }
+
+const BLOQUES_ESTUDIANTE = /^(student|benefits|complementary|conflict|origin|previous|welfare)-/
 
 export function MatriculaEditPage() {
   return (
@@ -129,6 +136,8 @@ function MatriculaEditPageContent() {
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
   const { accion } = coberturaMatriculaEditarRoute.useSearch()
   const [corrigiendo, setCorrigiendo] = useState(accion === "corregir-identidad")
+  const [autorizando, setAutorizando] = useState(false)
+  const queryClient = useQueryClient()
   const valoresListos = values != null
   // Ícono de la fila en la lista: cambiar de grupo o de grado se hace en su campo; se abre su sección y se enfoca.
   useEffect(() => {
@@ -145,6 +154,10 @@ function MatriculaEditPageContent() {
   // Estable a propósito: es dep del efecto de validación y el compiler no la memoiza aquí (si cambia en cada render, bucle).
   const fieldSettings = useMemo(() => applyGradeFieldRules(configuredFieldSettings, grade), [configuredFieldSettings, grade])
   const [missingFields, setMissingFields] = useState<string[]>([])
+  // Sin autorización (Regla 81) o por adscripción (Regla 8) los bloques 2.2 a 2.9 no se editan: sus faltantes no frenan el guardado.
+  const sinBloqueados = (ids: string[]) =>
+    data?.details?.restricciones?.sinAutorizacion || data?.details?.restricciones?.origenAdscripcion
+      ? ids.filter((id) => !BLOQUES_ESTUDIANTE.test(id)) : ids
   const [hasSubmitted, setHasSubmitted] = useState(false)
   // UI asistida: el agente lee y rellena datos del estudiante y acudiente (nunca guarda).
   useAsistenteMatricula({ values, setValues, matriculaId, invalidFields: missingFields })
@@ -290,7 +303,7 @@ function MatriculaEditPageContent() {
 
   useEffect(() => {
     if (!hasSubmitted || !values) return
-    setMissingFields(validateMatricula(values, undefined, fieldSettings, undefined, validacion))
+    setMissingFields(sinBloqueados(validateMatricula(values, undefined, fieldSettings, undefined, validacion)))
   }, [values, hasSubmitted, fieldSettings])
 
   useEffect(() => {
@@ -526,7 +539,7 @@ function MatriculaEditPageContent() {
   function handleSave() {
     if (!values) return
     setHasSubmitted(true)
-    const missing = validateMatricula(values, undefined, fieldSettings, undefined, validacion)
+    const missing = sinBloqueados(validateMatricula(values, undefined, fieldSettings, undefined, validacion))
     setMissingFields(missing)
     if (missing.length > 0) return
 
@@ -594,7 +607,15 @@ function MatriculaEditPageContent() {
             </Button>
           }
         >
-          Editar Matrícula
+          <span className="inline-flex flex-wrap items-center gap-2">
+            Editar matrícula
+            {restricciones?.tieneComplementaria ? <BadgeComplementaria /> : null}
+            {restricciones?.tipo === "COMPLEMENTARIA" ? (
+              <Badge variant="soft" color="secondary" className="rounded-full text-xs font-medium tracking-normal">
+                Complementaria
+              </Badge>
+            ) : null}
+          </span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
@@ -614,7 +635,7 @@ function MatriculaEditPageContent() {
 
       {data?.status === "ok" &&
         data.matricula &&
-        NOT_EDITABLE_STATUSES.includes(data.matricula.status) && (
+        data.matricula.status !== "Cursando" && (
           <div className="p-10 text-center text-sm text-destructive">
             Esta matrícula está {data.matricula.status.toLowerCase()} y no se puede editar.
           </div>
@@ -623,13 +644,13 @@ function MatriculaEditPageContent() {
       {data?.status === "ok" &&
         data.matricula &&
         values &&
-        !NOT_EDITABLE_STATUSES.includes(data.matricula.status) && (
+        data.matricula.status === "Cursando" && (
         <>
           <TableScreenBody className="rounded-b-none border-b-0">
             <div id={EDIT_MATRICULA_FORM_ID} className="flex flex-col gap-6">
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {/* Regla 43: la identidad no se edita aquí; el back limita a Administrador y Gestor administrativo. */}
-                {puedeEditar && data.matricula.status === "Cursando" ? (
+                {puedeEditar && data.matricula.status === "Cursando" && !restricciones?.origenAdscripcion ? (
                   <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => setCorrigiendo(true)}>
                     <PencilIcon data-icon="inline-start" />
                     Corregir datos de identidad
@@ -657,8 +678,44 @@ function MatriculaEditPageContent() {
                   </p>
                 </div>
               ) : null}
+              {restricciones?.sinAutorizacion ? (
+                <div role="status" className="flex items-start gap-3 rounded-md border border-yellow-stroke bg-yellow-22 px-4 py-3 text-sm">
+                  <WarningIcon className="size-5 shrink-0 text-yellow" aria-hidden />
+                  <div className="flex flex-1 flex-col gap-1">
+                    <p className="font-semibold">Falta la autorización de tratamiento de datos del acudiente.</p>
+                    <p>
+                      Los datos del estudiante (bloques 2 a 9) están en solo lectura y enmascarados. Puede editar los datos de
+                      la matrícula, los del acudiente, los soportes y las asignaturas matriculadas.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => setAutorizando(true)}>
+                    Registrar autorización
+                  </Button>
+                  {autorizando ? (
+                    <DialogRegistrarAutorizacion
+                      matricula={data.matricula}
+                      onOpenChange={setAutorizando}
+                      onDone={async () => {
+                        // Se resiembra el formulario con los datos ya sin enmascarar.
+                        await queryClient.refetchQueries({ queryKey: matriculaKeys.detalle(matriculaId) })
+                        setValues(null)
+                        setInicial(null)
+                      }}
+                    />
+                  ) : null}
+                </div>
+              ) : restricciones?.origenAdscripcion ? (
+                <div role="status" className="flex items-start gap-3 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm">
+                  <InfoIcon className="size-5 shrink-0 text-blue" aria-hidden />
+                  <p>
+                    Estudiante de {restricciones.origenAdscripcion} por adscripción: sus datos se ven protegidos y en solo
+                    lectura. Los corrige su establecimiento de origen.
+                  </p>
+                </div>
+              ) : null}
               <MatriculaFormBody
                 values={values}
+                datosProtegidos={Boolean(restricciones?.sinAutorizacion || restricciones?.origenAdscripcion)}
                 onChange={setValues}
                 catalogs={catalogs}
                 departments={departments}
@@ -671,7 +728,10 @@ function MatriculaEditPageContent() {
                 }
                 tipoMatricula={restricciones?.tipo === "COMPLEMENTARIA" ? "Complementaria" : "Principal"}
                 especialidadBloqueo={
-                  restricciones?.tieneComplementaria
+                  // La de una complementaria se cambia con su acción, con grupo y cupo (Sección 2.16).
+                  restricciones?.tipo === "COMPLEMENTARIA"
+                    ? "Cambie la especialidad con Cambiar de especialidad, en la lista de Matrícula."
+                    : restricciones?.tieneComplementaria
                     ? "Cambie la especialidad desde su matrícula complementaria."
                     : restricciones?.postulacionRegistrada
                       ? "Cambie la especialidad con Cambiar cupo."
@@ -679,6 +739,11 @@ function MatriculaEditPageContent() {
                 }
                 guardianIdentityDisabled={guardianSinCambio}
                 studentIdentityDisabled
+              />
+              <MatriculaSoportesSection
+                matriculaId={data.matricula.id}
+                editable={puedeEditar}
+                porAdscripcion={restricciones?.tipo === "COMPLEMENTARIA" && Boolean(restricciones?.origenAdscripcion)}
               />
               <MatriculaAsignaturasSection
                 asignaturas={asignaturasData?.asignaturas ?? []}

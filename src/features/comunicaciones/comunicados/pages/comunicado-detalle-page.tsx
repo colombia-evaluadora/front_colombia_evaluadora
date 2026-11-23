@@ -142,7 +142,10 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
           Publicado por {c.publicadoPor}
           {c.publicadoPorRol ? ` (${c.publicadoPorRol})` : ""} ·{" "}
           <time dateTime={c.publicarEn}>{format(new Date(c.publicarEn), "dd/MM/yyyy H:mm")}</time>
+          {c.establecimiento ? ` · ${c.establecimiento}` : ""}
         </p>
+        {/* Acudiente (3.1 "Consulta"): por cuál de sus estudiantes le llegó. Solo a quien recibe. */}
+        {!gestiona && (c.paraEstudiantes?.length ?? 0) > 0 && <p>Por: {c.paraEstudiantes?.join(", ")}</p>}
         {(c.visibleHasta || adjuntos.length > 0) && (
           <p className="break-words">
             {c.visibleHasta && <>Visible hasta: {format(new Date(`${c.visibleHasta}T00:00:00`), "dd/MM/yyyy")}</>}

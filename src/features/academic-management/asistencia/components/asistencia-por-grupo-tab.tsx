@@ -293,7 +293,7 @@ export function AsistenciaPorGrupoTab({
       </div>
 
       {!listo ? (
-        <Vacio>Elija el Grado/Grupo y la asignatura para ver la asistencia.</Vacio>
+        <Vacio>Elija el grado/grupo y la asignatura para ver la asistencia.</Vacio>
       ) : isError ? (
         <Vacio className="text-red">{getErrorMessage(error)}</Vacio>
       ) : isPending ? (
@@ -448,7 +448,7 @@ function EncabezadoTotales({ totales }: { totales: typeof TOTALES }) {
       key={t.id}
       scope="col"
       style={fijoDerecha(i, totales.length)}
-      className={cn(TH, "z-30 text-right", i === 0 && "border-l")}
+      className={cn(TH, "z-30 text-center", i === 0 && "border-l")}
     >
       <Tooltip>
         <TooltipTrigger
@@ -469,7 +469,7 @@ function CeldasTotales({ t, totales }: { t: TotalesEstudiante; totales: typeof T
       style={fijoDerecha(i, totales.length)}
       className={cn(
         TD,
-        "sticky z-10 bg-card text-right tabular-nums group-hover:bg-muted",
+        "sticky z-10 bg-card text-center tabular-nums group-hover:bg-muted",
         i === 0 && "border-l",
         c.id === "fallas" && t.fallas > 0 && "font-semibold text-red",
       )}

@@ -132,8 +132,8 @@ export function ReservarCuposDialog() {
                   <Skeleton className="h-28 w-full" />
                 ) : !todosIds.length ? (
                   <p className="text-muted-foreground">
-                    No hay períodos en Inscripciones. Las reservas se crean cuando un Período
-                    Académico pasa a Inscripciones.
+                    No hay períodos en Inscripciones. Las reservas se crean cuando un período
+                    académico pasa a Inscripciones.
                   </p>
                 ) : (
                   <>

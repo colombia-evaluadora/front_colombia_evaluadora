@@ -67,7 +67,7 @@ export function DialogOrigenNota({ matriculaId, nota, onOpenChange }: Props) {
                   <tr className="bg-muted/40 text-left">
                     <th className="px-2 py-2.5 font-medium">Actividad</th>
                     <th className="w-28 px-2 py-2.5 font-medium">Fecha</th>
-                    <th className="w-20 px-2 py-2.5 text-right font-medium">Nota</th>
+                    <th className="w-20 px-2 py-2.5 text-center font-medium">Nota</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -75,7 +75,7 @@ export function DialogOrigenNota({ matriculaId, nota, onOpenChange }: Props) {
                     <tr key={`${a.nombre}-${a.fecha}`} className="border-b border-border">
                       <td className="px-2 py-3">{a.nombre}</td>
                       <td className="px-2 py-3 tabular-nums">{formatFecha(a.fecha)}</td>
-                      <td className="px-2 py-3 text-right tabular-nums">{formatNota(a.nota)}</td>
+                      <td className="px-2 py-3 text-center tabular-nums">{formatNota(a.nota)}</td>
                     </tr>
                   ))}
                 </tbody>

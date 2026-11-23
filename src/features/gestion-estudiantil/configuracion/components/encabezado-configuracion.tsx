@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import { TableScreenHeader, TableScreenTabs, TableScreenTitle } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 
@@ -37,6 +37,7 @@ export function AccionesFormulario({ guardando, deshabilitado, onCancelar, onGua
   return (
     <div className="flex shrink-0 items-center gap-2">
       <Button size="sm" type="button" variant="outline" color="neutral" disabled={guardando || deshabilitado} onClick={onCancelar}>
+        <XIcon data-icon="inline-start" />
         Cancelar
       </Button>
       <Button size="sm" type="button" disabled={guardando || deshabilitado} onClick={onGuardar}>

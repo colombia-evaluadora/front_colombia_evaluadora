@@ -7,6 +7,7 @@ import type {
   PreferenciaTipoRow,
   PrioridadNotificacion,
 } from "@/features/notificaciones/api/types"
+import { matriculaDb } from "@/mocks/db/matricula"
 
 /**
  * Bandeja y preferencias del centro de notificaciones (solo mock: el backend
@@ -294,7 +295,33 @@ notificacionesDb.unshift({
   usuario: "admin@example.com",
 })
 
-export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA, ...TIPOS_RESULTADOS, ...TIPOS_INFORMES].map((t) => ({
+// AVI.1 (Matrícula): aviso del sistema por 30 días calendario sin asistir. Fuera de TIPOS
+// para no mover la bandeja sembrada; dos avisos fijos sobre matrículas del mock.
+const TIPOS_MATRICULA = [
+  { tipo: "MATRICULA_INASISTENCIA", categoria: "SISTEMA", etiqueta: "Estudiantes con 30 días sin asistir", push: true, email: false, silenciable: true },
+] as const
+
+matriculaDb.slice(0, 2).forEach((m, i) => {
+  const estudiante = `${m.firstName} ${m.lastName}`.trim()
+  notificacionesDb.unshift({
+    id: `matricula-inasistencia-${m.id}`,
+    tipo: "MATRICULA_INASISTENCIA",
+    categoria: "SISTEMA",
+    titulo: "Aviso del sistema",
+    cuerpo_corto: `${estudiante} lleva 30 días calendario sin asistir. Si corresponde, registre su retiro con el motivo de la novedad Inasistencia continua de más de 30 días calendario sin justificación válida.`,
+    deep_link: `/app/cobertura/matricula/detalle/${m.id}`,
+    prioridad: "NORMAL",
+    creada_en: new Date(Date.now() - (i + 2) * 60 * 60_000).toISOString(),
+    leida_en: null,
+    actores: null,
+    conteo: null,
+    contexto: `Matrícula · ${m.group}`,
+    acciones: [{ etiqueta: "Retirar", deep_link: `/app/cobertura/matricula?search=${m.documentNumber}` }],
+    archivada: false,
+  })
+})
+
+export const preferenciasTiposDb: PreferenciaTipoRow[] = [...TIPOS, ...TIPOS_MEMBRESIA, ...TIPOS_RESULTADOS, ...TIPOS_INFORMES, ...TIPOS_MATRICULA].map((t) => ({
   tipo: t.tipo,
   categoria: t.categoria,
   etiqueta: t.etiqueta,

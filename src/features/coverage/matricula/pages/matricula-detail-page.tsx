@@ -97,7 +97,7 @@ function MatriculaDetailPageContent() {
             </Button>
           }
         >
-          Detalle de Matrícula
+          Detalle de matrícula
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
@@ -132,6 +132,9 @@ function MatriculaDetailPageContent() {
                   departments={departments}
                   disabled
                   fieldSettings={fieldSettings}
+                  datosProtegidos={
+                    Boolean(data.matricula.sinAutorizacion) || Boolean(data.details?.restricciones?.origenAdscripcion)
+                  }
                 />
               </div>
             </TabsContent>

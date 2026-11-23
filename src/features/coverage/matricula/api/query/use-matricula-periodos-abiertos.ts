@@ -15,7 +15,11 @@ export interface MatriculaPeriodoOption {
   value: string
   /** "2027 · Anual · Ciclo 1", como el prototipo C.1.LIS. */
   label: string
+  /** Fecha límite de matrícula ya pasó (AGR.5): se lista deshabilitado. */
+  vencido: boolean
 }
+
+const hoy = () => new Date().toISOString().slice(0, 10)
 
 /** Periodos Abiertos de la sede y jornada: los únicos que lista Matrícula (Regla 54). */
 export function useMatriculaPeriodosAbiertosQuery(sedeId: number | null, jornadaId: number | null) {
@@ -34,6 +38,7 @@ export function useMatriculaPeriodosAbiertosQuery(sedeId: number | null, jornada
         .map((periodo) => ({
           value: String(periodo.id),
           label: `${periodo.schoolYearId} · ${MODALIDAD[periodo.enrollmentModality ?? "ANUAL"]} · Ciclo ${periodo.cycle ?? 1}`,
+          vencido: Boolean(periodo.enrollmentDeadline) && periodo.enrollmentDeadline < hoy(),
         }))
     },
     enabled: sedeId != null && jornadaId != null,

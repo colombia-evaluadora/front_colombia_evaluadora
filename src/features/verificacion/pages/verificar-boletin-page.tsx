@@ -2,7 +2,9 @@ import { useEffect, useState } from "react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
-import { PublicBreadcrumb } from "@/components/public/public-page"
+import { Link } from "@tanstack/react-router"
+
+import { PublicBand } from "@/components/public/public-page"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -10,11 +12,16 @@ import { Spinner } from "@/components/ui/spinner"
 import { Turnstile } from "@/components/captcha/turnstile"
 import { useCaptcha } from "@/hooks/use-captcha"
 import {
+  ArrowCounterClockwiseIcon,
   CheckCircleIcon,
+  EyeIcon,
   FileDownloadOutlinedIcon,
+  MagnifyingGlassIcon,
+  ShieldCheckIcon,
   WarningIcon,
   XCircleIcon,
 } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
 import { toDigitsOnly } from "@/lib/text-input"
 import { cn } from "@/lib/utils"
 import { verificarBoletinRoute } from "@/router"
@@ -67,7 +74,7 @@ function StatusCard({ data }: { data: BoletinVerificacion }) {
     <section
       role="status"
       className={cn(
-        "flex gap-3 rounded-xl border p-4 sm:p-5",
+        "flex gap-3 rounded-lg border p-4 sm:p-5",
         config.tone === "green" && "border-green-stroke bg-green-22",
         config.tone === "yellow" && "border-yellow-stroke bg-yellow-22",
         config.tone === "red" && "border-red-stroke bg-red-22",
@@ -100,7 +107,7 @@ function Detalles({ data }: { data: BoletinVerificacion }) {
   const visibles = items.filter(([, v]) => v)
   if (visibles.length === 0) return null
   return (
-    <section className="rounded-xl border bg-card p-4 sm:p-5">
+    <section className="rounded-lg border p-4 sm:p-5">
       <h2 className="mb-3 text-base font-semibold">Datos del boletín</h2>
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         {visibles.map(([k, v]) => (
@@ -144,7 +151,7 @@ function PdfVigente({ codigo }: { codigo: string }) {
   }
 
   return (
-    <section className="space-y-3 rounded-xl border bg-card p-4 sm:p-5">
+    <section className="space-y-3 rounded-lg border p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold">Versión vigente</h2>
         {url && (
@@ -175,7 +182,7 @@ function PdfVigente({ codigo }: { codigo: string }) {
               />
             </Field>
             <Button type="submit" disabled={digitos.length !== 4 || pdf.isPending || !captcha.ready}>
-              {pdf.isPending && <Spinner data-icon="inline-start" />}
+              {pdf.isPending ? <Spinner data-icon="inline-start" /> : <EyeIcon data-icon="inline-start" />}
               Ver boletín
             </Button>
           </div>
@@ -209,24 +216,36 @@ export function VerificarBoletinPage() {
   const query = useBoletinVerificacion(codigo)
 
   return (
-    // El encabezado y el pie los pone PublicLayout (U.4 dentro del sitio público).
-    <div className="text-foreground">
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <PublicBreadcrumb items={["Verificar un documento", "Boletín"]} className="text-muted-foreground" />
-        <h1 className="text-navy dark:text-foreground text-2xl font-bold">Verificación de boletín</h1>
+    // Mismo marco que el resto del sitio público: franja con título y tarjeta central.
+    <PublicBand
+      icon={ShieldCheckIcon}
+      title="Verificación de boletín"
+      subtitle={`Código ${codigo}`}
+      breadcrumb={["Verificar un documento", "Boletín"]}
+      width="lg"
+      backToHome
+      actions={
+        <Button variant="outline" color="neutral" nativeButton={false} render={<Link to={paths.publico.verificar.getHref()} />}>
+          <MagnifyingGlassIcon data-icon="inline-start" />
+          Verificar otro código
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-4">
         {query.isPending && (
           <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
             <Spinner /> Verificando boletín…
           </div>
         )}
         {query.isError && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center">
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
             <p className="text-sm">
               {isOfflineVerificationError(query.error)
                 ? "No pudimos verificar el boletín porque no hay conexión. Intenta de nuevo cuando tengas internet."
                 : "No pudimos verificar el boletín en este momento. Intenta de nuevo en unos minutos."}
             </p>
-            <Button variant="outline" onClick={() => query.refetch()}>
+            <Button variant="outline" color="neutral" onClick={() => query.refetch()}>
+              <ArrowCounterClockwiseIcon data-icon="inline-start" />
               Reintentar
             </Button>
           </div>
@@ -243,6 +262,6 @@ export function VerificarBoletinPage() {
           </>
         )}
       </div>
-    </div>
+    </PublicBand>
   )
 }

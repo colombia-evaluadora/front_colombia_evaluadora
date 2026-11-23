@@ -1,7 +1,7 @@
 import { TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
@@ -35,6 +35,7 @@ export function EncabezadoSenal({ senal: s, d }: Props) {
             {s.puede_valorar && (
               <>
                 <Button size="sm" type="button" variant="outline" color="neutral" disabled={d.pending} onClick={d.volver}>
+                  <XIcon data-icon="inline-start" />
                   Cancelar
                 </Button>
                 <Button size="sm" type="button" disabled={d.pending} onClick={d.guardar}>

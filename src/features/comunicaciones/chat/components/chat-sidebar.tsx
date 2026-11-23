@@ -129,7 +129,8 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
-  const { puedeGestionar, reglaDirectoCon, puedeIniciarConversaciones } = useChatAccess()
+  const { puedeGestionar, reglaDirectoCon, puedeIniciarConversaciones, puedeSuspender, puedeRevisarReportes } =
+    useChatAccess()
   // PROVISIONAL: Supervisor de sede = coordinador, Administrador del establecimiento = rector.
   const roles = useAuth().user?.roles ?? []
   const esAdministrador = roles.includes("CEVAL-RECTOR")
@@ -274,6 +275,8 @@ export function ChatSidebar({
           <ModeracionDialog
             open
             esAdministrador={esAdministrador}
+            puedeSuspender={puedeSuspender}
+            puedeRevisarReportes={puedeRevisarReportes}
             reporteResaltado={reporteEnlazado}
             onClose={() => {
               setModeracion(false)

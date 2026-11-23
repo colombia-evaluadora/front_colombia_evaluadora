@@ -32,6 +32,10 @@ export interface SolicitudRetiro {
   /** yyyy-MM-dd */
   fecha: string
   diasSinRespuesta: number
+  /** Destino: días desde el «Cerrar sin retiro» sin anular la matrícula. */
+  diasSinAnular: number | null
+  /** yyyy-MM-dd: vence el plazo para responder. */
+  vence: string | null
   estado: EstadoSolicitudRetiro
   evidenciaNombre: string
   evidenciaArchivoId: number | null
@@ -47,6 +51,8 @@ interface SolicitudRow {
   establecimiento_origen: string
   fecha_solicitud: string
   dias_sin_respuesta: number
+  dias_sin_anular?: number | null
+  vence?: string | null
   estado: EstadoSolicitudRetiro
   evidencia_nombre: string
   fk_tarchivo_evidencia: number | null
@@ -61,6 +67,8 @@ const toSolicitud = (r: SolicitudRow): SolicitudRetiro => ({
   establecimientoOrigen: r.establecimiento_origen,
   fecha: r.fecha_solicitud,
   diasSinRespuesta: r.dias_sin_respuesta ?? 0,
+  diasSinAnular: r.dias_sin_anular ?? null,
+  vence: r.vence ?? null,
   estado: r.estado,
   evidenciaNombre: r.evidencia_nombre,
   evidenciaArchivoId: r.fk_tarchivo_evidencia,
@@ -82,18 +90,21 @@ export function useSolicitudRetiroQuery(matriculaId: string, enabled = true) {
 }
 
 export type RespuestaSolicitud =
-  | { matriculaId: string; accion: "retirar" }
+  | { matriculaId: string; accion: "retirar"; fecha: string; observacion: string }
   | { matriculaId: string; accion: "objetar"; motivo: string; evidencia: File | null }
 
 /**
  * Retirar usa los motivos fijos de la Sección 2.2 (Traslado a otro
  * establecimiento / Requerimiento de otra entidad territorial o
- * establecimiento): el back los pone, no se mandan.
+ * establecimiento): el back los pone; solo van fecha y observación (SOL.6).
  */
 async function responderSolicitud(input: RespuestaSolicitud) {
   const base = `/cobertura-academica/matricula/${input.matriculaId}/solicitud-retiro`
   if (input.accion === "retirar") {
-    await evalCol.postRow(`${base}/retirar`, {})
+    await evalCol.postRow(`${base}/retirar`, {
+      FECHA_RETIRO: input.fecha,
+      OBSERVACION: input.observacion || null,
+    })
     return
   }
   await postMultipart(`/eval-col${base}/objetar`, { MOTIVO: input.motivo.trim() }, { EVIDENCIA: input.evidencia })
@@ -126,4 +137,12 @@ export function useAnularMatricula() {
       queryClient.invalidateQueries({ queryKey: matriculaKeys.solicitudRetiro(matriculaId) })
     },
   })
+}
+
+/**
+ * SOL.1: el destino matricula y pide el retiro al establecimiento donde el
+ * estudiante sigue Cursando. La evidencia es obligatoria (PDF, JPG o PNG).
+ */
+export async function solicitarRetiro(matriculaId: string, evidencia: File) {
+  await postMultipart(`/eval-col/cobertura-academica/matricula/${matriculaId}/solicitud-retiro`, {}, { ARCHIVO: evidencia })
 }

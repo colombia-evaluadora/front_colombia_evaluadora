@@ -33,10 +33,12 @@ interface MenuAccionesCasoProps {
   conVer?: boolean
   /** Crear en CITACIONES_COMPROMISOS: sin él, «Citar» y «Crear compromiso» quedan deshabilitadas. */
   puedeCitar?: boolean
+  /** Capacidad `citaciones_puede_crear_compromiso`: «Crear compromiso» tiene su propio gate (el Administrador cita pero no crea compromisos). */
+  puedeCrearCompromiso?: boolean
 }
 
 /** Acciones del caso (G.2.CAS.LIS.3): todas visibles; las que no aplican, deshabilitadas. */
-export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, puedeCitar = false }: MenuAccionesCasoProps) {
+export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, puedeCitar = false, puedeCrearCompromiso = false }: MenuAccionesCasoProps) {
   const abierto = !esFinal(caso.estado_codigo)
   const gestiona = !(abierto && access.puedeGestionar)
   const supervisa = !(abierto && access.puedeSupervisar)
@@ -57,7 +59,7 @@ export function MenuAccionesCaso({ caso, access, onAccion, conVer = true, puedeC
     { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: supervisa, onSelect: () => onAccion("anular") },
     // Citaciones y compromisos §4: el Responsable de enseñanza no cita desde un caso; el backend lo rechaza.
     { id: "citar", label: "Citar al acudiente", icon: <CalendarBlankIcon />, disabled: !puedeCitar, onSelect: () => onAccion("citar") },
-    { id: "compromiso", label: "Crear compromiso", icon: <ClipboardAddIcon />, disabled: !puedeCitar, onSelect: () => onAccion("compromiso") },
+    { id: "compromiso", label: "Crear compromiso", icon: <ClipboardAddIcon />, disabled: !puedeCrearCompromiso, onSelect: () => onAccion("compromiso") },
   ]
 
   return (

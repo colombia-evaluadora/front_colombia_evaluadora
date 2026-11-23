@@ -24,7 +24,7 @@ describe("historial académico", () => {
     )
     expect(filas.map((f) => [f.asignatura, f.periodo, f.sinRegistro])).toEqual([
       ["General", "Período 1", true],
-      ["General", "Resultado final del Período Académico", false],
+      ["General", "Resultado final del período académico", false],
     ])
   })
 })

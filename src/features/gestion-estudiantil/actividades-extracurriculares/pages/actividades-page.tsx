@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { TablePaginationProvider } from "@/hooks/use-table-pagination"
 
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { useCapacidadesGe } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
 import { ListadoActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/listado-actividades"
 import { ListadoServicioSocial } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/listado-servicio-social"
 import { useNavegacionActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-navegacion-actividades"
@@ -23,6 +24,10 @@ function ActividadesContent() {
   const { tab } = actividadesExtracurricularesRoute.useSearch()
   const navigate = useNavigate()
   const { irNueva } = useNavegacionActividades()
+  // Menú con crear y capacidad del backend; mientras cargan, deshabilitado (no oculto).
+  const { puedeCrear } = useMenuPermission("ACTIVIDADES_EXTRACURRICULARES")
+  const { data: cap } = useCapacidadesGe()
+  const puedeCrearActividad = puedeCrear && Boolean(cap?.actividades_puede_crear)
   const pestana: Pestana = tab === "servicio-social" ? "servicio-social" : "actividades"
 
   return (
@@ -34,14 +39,14 @@ function ActividadesContent() {
               {/* Brecha B1: no hay endpoint de exportación. */}
               <Tooltip>
                 <TooltipTrigger render={<span tabIndex={0} />}>
-                  <Button size="sm" type="button" variant="outline" disabled>
+                  <Button size="sm" type="button" variant="outline" color="neutral" disabled>
                     <FileDownloadOutlinedIcon data-icon="inline-start" />
                     Exportar
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Sin exportación disponible todavía</TooltipContent>
               </Tooltip>
-              <Button size="sm" type="button" onClick={irNueva}>
+              <Button size="sm" type="button" disabled={!puedeCrearActividad} onClick={irNueva}>
                 <ControlPointIcon data-icon="inline-start" />
                 Nueva actividad
               </Button>

@@ -130,6 +130,7 @@ export function MatriculaResidenceSection({
               placeLabel="el domicilio"
             />
           </div>
+          <p className="text-xs text-muted-foreground">Puede arrastrar el punto para corregirlo.</p>
           {locateMessage ? (
             <p role="status" className="text-xs text-muted-foreground">
               {locateMessage}
@@ -183,6 +184,7 @@ export function MatriculaContactSection({
           // Bloque 2.4/2.12: 7 a 15 dígitos, «+» opcional al inicio.
           maxLength={16}
           transform={aTelefono}
+          description={idPrefix === "student-contact" ? "Solo dígitos; admite + al inicio." : undefined}
           disabled={disabled}
           onChange={(phone) => onChange({ ...value, phone })}
         />
@@ -196,6 +198,11 @@ export function MatriculaContactSection({
           value={value.email}
           invalid={invalidFields.includes(emailId)}
           maxLength={254}
+          description={
+            idPrefix === "student-contact"
+              ? "Obligatorio en Básica secundaria y Media."
+              : "Recibe las notificaciones y, si es nuevo, el enlace para crear su contraseña."
+          }
           disabled={disabled}
           onChange={(email) => onChange({ ...value, email })}
         />

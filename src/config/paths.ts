@@ -14,6 +14,12 @@ export const paths = {
     noFuiYo: { path: "/no-fui-yo", getHref: () => "/no-fui-yo" },
   },
 
+  // Ruta común del QR de los documentos (Adm. §12.4); el boletín redirige a la suya.
+  verificarDocumento: {
+    path: "/verificar/$codigo",
+    getHref: (codigo: string) => `/verificar/${encodeURIComponent(codigo)}`,
+  },
+
   verificarBoletin: {
     path: "/verificar/b/$codigo",
     getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
@@ -129,6 +135,50 @@ export const paths = {
       path: "cobertura/matricula/detalle/$matriculaId/editar",
       getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}/editar`,
     },
+    // Matrícula complementaria por adscripción (Sección 2.16.2): mismo prefijo
+    // para que el ítem del menú quede marcado en todas sus pantallas.
+    coberturaComplementaria: {
+      path: "cobertura/matricula-complementaria",
+      getHref: () => "/app/cobertura/matricula-complementaria",
+    },
+    // Promoción y nivelación (Sección 4.7): pestañas Reprobados y Áreas pendientes.
+    coberturaPromocion: {
+      path: "cobertura/promocion-nivelacion",
+      getHref: () => "/app/cobertura/promocion-nivelacion",
+    },
+    // Actualización de datos (Sección 2.19; Regla 69): pestañas Configuración y Solicitudes de corrección.
+    coberturaActualizacionDatos: {
+      path: "cobertura/actualizacion-datos",
+      getHref: () => "/app/cobertura/actualizacion-datos",
+    },
+    coberturaConvocatoriaNueva: {
+      path: "cobertura/matricula-complementaria/convocatorias/nueva",
+      getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",
+    },
+    coberturaConvocatoriaDetalle: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}`,
+    },
+    coberturaConvocatoriaEditar: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/editar",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}/editar`,
+    },
+    coberturaConvocatoriaSeleccionar: {
+      path: "cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/seleccionar",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/convocatorias/detalle/${id}/seleccionar`,
+    },
+    coberturaPostulacionNueva: {
+      path: "cobertura/matricula-complementaria/postulaciones/nueva",
+      getHref: () => "/app/cobertura/matricula-complementaria/postulaciones/nueva",
+    },
+    coberturaPostulacionDetalle: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}`,
+    },
+    coberturaPostulacionCambiarCupo: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/cambiar-cupo",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}/cambiar-cupo`,
+    },
     // Mismo prefijo para las dos vistas: el ítem del menú se marca en ambas.
     auditoriaSesiones: {
       path: "registro-de-actividad/sesiones",
@@ -150,6 +200,16 @@ export const paths = {
     bitacora: {
       path: "registro-de-actividad/bitacora",
       getHref: () => "/app/registro-de-actividad/bitacora",
+    },
+    /** Bitácora · Documentos emitidos (B.8.LIS.1). Fuera de `bitacora/` para no chocar con `$modulo`. */
+    bitacoraDocumentos: {
+      path: "registro-de-actividad/documentos-emitidos",
+      getHref: () => "/app/registro-de-actividad/documentos-emitidos",
+    },
+    /** Un submenú de Bitácora por módulo (`establecimiento`, `cobertura-educativa`…). */
+    bitacoraModulo: {
+      path: "registro-de-actividad/bitacora/$modulo",
+      getHref: (modulo: string) => `/app/registro-de-actividad/bitacora/${modulo}`,
     },
     rolesMenus: {
       path: "administracion/roles-menus",
@@ -632,6 +692,23 @@ export const paths = {
     prevencionSenalSaludMental: {
       path: "gestion-estudiantil/prevencion-retencion/salud-mental/$senalId",
       getHref: (senalId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/salud-mental/${senalId}`,
+    },
+    prevencionAcompNuevo: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$tipo/nuevo",
+      getHref: (tipo: "embarazo" | "consumo") => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${tipo}/nuevo`,
+    },
+    prevencionAcompDetalle: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
+      getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
+    },
+    prevencionGestionAlerta: {
+      path: "gestion-estudiantil/prevencion-retencion/gestion-alertas/$gestionId",
+      getHref: (gestionId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/gestion-alertas/${gestionId}`,
+    },
+    prevencionAcompEditar: {
+      path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",
+      getHref: (acompId: number | string) =>
+        `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}/editar`,
     },
     observacionesSugerencias: {
       path: "gestion-estudiantil/observaciones-sugerencias",

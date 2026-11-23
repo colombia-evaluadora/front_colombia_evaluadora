@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react"
 
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
 import { useNotify } from "@/components/notice/notice-context"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { parseDateValue } from "@/lib/date-value"
@@ -17,6 +17,7 @@ import { useRegistrarAvance } from "@/features/gestion-estudiantil/prevencion/ap
 import { usePlanQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-valoraciones-query"
 import { fechaParaBackend } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
 import { DESCRIPCION_MAX, validarAvance } from "@/features/gestion-estudiantil/prevencion/utils/formularios-seguimiento"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   planId: number
@@ -125,10 +126,12 @@ export function DialogRegistrarAvance({ planId, estudianteNombre, accionId, onCl
               onChange={setDescripcion}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm sm:col-span-5">
-            <Checkbox checked={cumplida} onCheckedChange={(v) => setCumplida(v === true)} />
-            Acción cumplida
-          </label>
+          <MarcoOpciones id="avance-cumplida" className="sm:col-span-5">
+            <label className="flex items-center gap-2">
+              <Checkbox checked={cumplida} onCheckedChange={(v) => setCumplida(v === true)} />
+              Acción cumplida
+            </label>
+          </MarcoOpciones>
         </div>
       )}
     </DialogoOperacionShell>

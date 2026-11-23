@@ -54,7 +54,7 @@ export function SeccionFactores({ f }: { f: FormularioCaracterizacion }) {
           ? ` Última revisión: ${e.revision_factores?.nombre ?? "—"}, el ${formatFecha(e.fecha_revision)}${e.revisada_por ? ` por ${e.revisada_por}` : ""}.`
           : ` Estado actual: ${e.revision_factores?.nombre ?? "Sin revisar"}.`}
       </p>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4">
         <CampoLista
           id="revision-resultado"
           label="Revisión de factores"
