@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { desenvolver } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import type {
@@ -34,6 +35,7 @@ export interface CitacionesParams {
   filters: CitacionesQueryFilters
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
 /** `POST /citaciones/query`: el alcance lo aplica el backend; `total_count` viene repetido en cada fila. */
@@ -43,6 +45,7 @@ export function useCitacionesQuery(params: CitacionesParams) {
     queryFn: async () => {
       const rows = await evalCol.postRows<CitacionRow>(`${BASE_CITACIONES}/query`, {
         FILTERS: params.filters,
+        ...params.orden,
         PAGEINDEX: params.pageIndex,
         PAGESIZE: params.pageSize,
       })

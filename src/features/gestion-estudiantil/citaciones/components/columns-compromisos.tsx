@@ -4,6 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { paths } from "@/config/paths"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CompromisoRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import {
@@ -20,13 +22,16 @@ interface ColumnasOpciones {
 /** Sede y Jornada siguen en «Columnas», pero arrancan ocultas. */
 export const COLUMNAS_COMPROMISOS_OCULTAS = { sede: false, jornada: false }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el orden lo fija el backend (ver columns-citaciones).
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_COMPROMISOS: MapaOrden = {
+  fecha: "fecha",
+  estudiante: "estudiante",
+  tipo: "tipo",
+  fecha_revision: "revision",
+  estado: "estado",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<CompromisoRow>(ORDEN_COMPROMISOS, id, titulo)
 
 /** Columnas del listado de compromisos (G.3.CMP.1). */
 export function buildColumnsCompromisos({ onAccion }: ColumnasOpciones): ColumnDef<CompromisoRow>[] {
