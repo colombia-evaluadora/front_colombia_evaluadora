@@ -25,6 +25,17 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
+/* Fila recién creada o modificada (DataTable, `useFilasResaltadas`): resaltada y se desvanece. */
+@keyframes resaltar-fila {
+  0%,
+  55% {
+    background-color: color-mix(in srgb, var(--primary) 16%, var(--card));
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 @keyframes accordion-down {
   from {
     height: 0;
