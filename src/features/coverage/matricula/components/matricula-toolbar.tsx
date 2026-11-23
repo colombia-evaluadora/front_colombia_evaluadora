@@ -16,11 +16,13 @@ interface MatriculaToolbarProps {
   matricula: Matricula
   showModificar?: boolean
   filesEditable?: boolean
+  /** Abre Retirar al entrar (enlace del aviso por inasistencia continua). */
+  abrirRetiro?: boolean
 }
 
 // Editar solo con la matrícula Cursando (tabla de acciones de la lista).
 
-export function MatriculaToolbar({ matricula, showModificar = true, filesEditable = false }: MatriculaToolbarProps) {
+export function MatriculaToolbar({ matricula, showModificar = true, filesEditable = false, abrirRetiro = false }: MatriculaToolbarProps) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
 
   return (
@@ -44,7 +46,7 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
         Asignaturas
       </Button>
       */}
-      {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" /> : null}
+      {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" porInasistencia={abrirRetiro} /> : null}
       {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
       <AccionesDocumentos matricula={matricula} modo="button" />
       <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable && puedeEditar} />

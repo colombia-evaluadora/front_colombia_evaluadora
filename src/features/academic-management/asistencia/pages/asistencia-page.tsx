@@ -1,12 +1,24 @@
 import * as React from "react"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
-import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { CaretDownIcon, FileDownloadOutlinedIcon, PrinterIcon } from "@/components/ui/icons"
+import {
+  CaretDownIcon,
+  CheckCircleFillIcon,
+  ClockCountdownIcon,
+  FileDownloadOutlinedIcon,
+  InfoIcon,
+  PrinterIcon,
+} from "@/components/ui/icons"
+import {
+  useAsistenciaDiariaCalendarioQuery,
+  useAsistenciaDiariaGruposQuery,
+} from "@/features/academic-management/asistencia/api/query/use-asistencia-diaria-query"
+import type { EntradaDiaria } from "@/features/academic-management/asistencia/utils/asistencia-diaria"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { asistenciaRoute } from "@/router"
@@ -30,13 +42,11 @@ import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic
 import type { SesionCalendario } from "@/features/academic-management/asistencia/api/types/asistencia"
 import {
   AsistenciaPorGrupoTab,
-  exportarCsv,
-  ImpresionPorGrupo,
   type FiltrosPorGrupo,
   type ReportePorGrupo,
 } from "@/features/academic-management/asistencia/components/asistencia-por-grupo-tab"
-import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import { DatosDelBadge } from "@/components/offline/datos-del-badge"
+import { useExportarPorGrupo } from "@/features/academic-management/asistencia/api/mutations/export"
 import { TTL_OFFLINE } from "@/lib/offline/query-meta"
 import { fechaResumen, toIsoDate } from "@/features/academic-management/asistencia/lib/fechas"
 
@@ -66,7 +76,18 @@ function AsistenciaPageContent() {
   const [selectedDay, setSelectedDayState] = React.useState(() => fromIsoDate(search.fecha))
   const vista = search.vista ?? "calendario"
   const [reporte, setReporte] = React.useState<ReportePorGrupo | null>(null)
-  const { data: establecimientos } = useEstablishmentsOptionsQuery(vista === "grupo")
+  const { notify } = useNotify()
+  const { mutate: exportarReporte, isPending: exportando } = useExportarPorGrupo()
+  // Imprimir = reporte estructurado en PDF; Exportar = la tabla en PDF o Excel. Ambos quedan en la Bitácora.
+  const exportar = (accion: "IMPRIMIR" | "EXPORTAR", format: "pdf" | "excel") => {
+    if (!reporte) return
+    exportarReporte(
+      { reporte, accion, format },
+      {
+        onSuccess: (r) => notify(r.message, { variant: r.status === "ok" ? "success" : "error" }),
+      },
+    )
+  }
 
   function setVista(next: "calendario" | "grupo") {
     navigate({ search: (prev) => ({ ...prev, vista: next }), replace: true })
@@ -137,6 +158,25 @@ function AsistenciaPageContent() {
     const clave = s.esFormativa ? `${s.fkGrupo}-act-${s.fkActividad}` : `${s.fkGrupo}-asig-${s.fkAsignatura}`
     return clavesPropias?.has(clave) ?? false
   }
+
+  // Regla 115: los grupos en modo Diaria del Responsable de grupo, una entrada por día hábil.
+  const { data: diariasMes } = useAsistenciaDiariaCalendarioQuery(
+    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes },
+    sedeId != null && puedeRegistrar,
+  )
+  const diarias = (() => {
+    const map = new Map<number, EntradaDiaria[]>()
+    for (const d of diariasMes ?? []) {
+      const day = Number(d.fecha.split("-")[2])
+      map.set(day, [...(map.get(day) ?? []), d])
+    }
+    return map
+  })()
+  const gruposDiarios = [...new Set((diariasMes ?? []).map((d) => d.etiqueta))]
+  // A.4.GRU.1a: con un grupo Diaria elegido en Asistencia por grupo no hay «Registrar sesión».
+  const { data: gruposModoDiaria } = useAsistenciaDiariaGruposQuery(vista === "grupo" ? sedeId : null)
+  const grupoDiarioElegido =
+    vista === "grupo" && search.grupo != null && (gruposModoDiaria ?? []).some((g) => g.fk_tgrupo === search.grupo)
 
   const { data: diasInhabiles } = useAsistenciaDiasInhabilesQuery(
     { SEDE: sedeId ?? 0, ANIO: anio, MES: mes },
@@ -214,26 +254,31 @@ function AsistenciaPageContent() {
               />
               {vista === "grupo" && (
                 <>
-                  <Button variant="outline" color="neutral" disabled={!reporte} onClick={() => window.print()}>
+                  <Button
+                    variant="outline"
+                    color="neutral"
+                    disabled={!reporte || exportando}
+                    onClick={() => exportar("IMPRIMIR", "pdf")}
+                  >
                     <PrinterIcon data-icon="inline-start" />
                     Imprimir
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      render={<Button variant="outline" color="neutral" disabled={!reporte} />}
+                      render={<Button variant="outline" color="neutral" disabled={!reporte || exportando} />}
                     >
                       <FileDownloadOutlinedIcon data-icon="inline-start" />
                       Exportar
                       <CaretDownIcon data-icon="inline-end" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => reporte && exportarCsv(reporte)}>Excel (CSV)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => window.print()}>PDF (guardar desde Imprimir)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportar("EXPORTAR", "pdf")}>PDF</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportar("EXPORTAR", "excel")}>Excel</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </>
               )}
-              {puedeRegistrar && sedeId != null && (
+              {puedeRegistrar && sedeId != null && !grupoDiarioElegido && (
                 <DialogRegistrarSesion
                   sede={sedeId}
                   soloPropias={!esAdminEstablecimiento}
@@ -277,15 +322,6 @@ function AsistenciaPageContent() {
               puedeAbrirPlanilla={puedeRegistrar}
               onReporte={setReporte}
             />
-            {reporte && (
-              <ImpresionPorGrupo
-                reporte={reporte}
-                institucion={
-                  establecimientos?.find((e) => e.id === sedes?.find((s) => s.pk_sede === sedeId)?.fk_establecimiento)?.name ?? ""
-                }
-                sede={sedes?.find((s) => s.pk_sede === sedeId)?.nombre ?? ""}
-              />
-            )}
           </TabsContent>
           <TabsContent value="calendario">
         <div className="mb-4 flex items-center justify-between gap-4">
@@ -293,6 +329,20 @@ function AsistenciaPageContent() {
         </div>
 
         {puedeAprobar && <AsistenciaCambiosPendientesBanner />}
+
+        {gruposDiarios.length > 0 && (
+          <div
+            role="status"
+            className="mb-4 flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm"
+          >
+            <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" />
+            <p>
+              Su grupo <b>{gruposDiarios.join(", ")}</b> registra la asistencia una vez por día, para todo el grupo
+              (modo Diaria). Elija un día hábil, hasta hoy, para registrar o corregir su planilla; los grupos en modo
+              Por clase siguen mostrando sus clases por asignatura.
+            </p>
+          </div>
+        )}
 
         <div className="mb-4">
           <AsistenciaSummaryCards resumen={resumen} />
@@ -312,8 +362,23 @@ function AsistenciaPageContent() {
             inhabiles={inhabiles}
             manualSede={sedeId ?? 0}
             restrictedView={!puedeRegistrar}
+            diarias={diarias}
           />
         </div>
+        {gruposDiarios.length > 0 && (
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+            <li className="flex items-center gap-1.5">
+              <CheckCircleFillIcon className="size-3 text-green" /> <b className="text-foreground">Registrada</b> planilla del día guardada
+            </li>
+            <li className="flex items-center gap-1.5">
+              <ClockCountdownIcon className="size-3 text-yellow" /> <b className="text-foreground">Pendiente</b> día hábil sin planilla
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-4 rounded-sm bg-muted ring-1 ring-border" /> Día inhábil, sin clases o
+              futuro: no se puede elegir
+            </li>
+          </ul>
+        )}
           </TabsContent>
         </Tabs>
       </TableScreenBody>

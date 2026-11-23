@@ -67,6 +67,8 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   escalas: "escalas",
   asignaciones: "asignaciones",
   asistencia: "asistencia",
+  "asistencia-por-grupo": "asistencia-por-grupo",
+  "planilla-auxiliar": "planilla-auxiliar",
   matricula: "matricula",
   informes: "informes",
   "informes-tabla": "informe-tabla",
@@ -317,4 +319,6 @@ export const reportesHandlers = [
       },
     })
   }),
+  // Registro de la exportación en la Bitácora (audit-cval, ClickHouse): en mock no se guarda.
+  http.post("*/audit-cval/bitacora/exportaciones", () => HttpResponse.json({ rows: [] })),
 ]

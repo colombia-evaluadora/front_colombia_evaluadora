@@ -41,6 +41,7 @@ export const CATEGORIA_ICONS: Record<CategoriaNotificacion, typeof BellIcon> = {
 export const ENLACE_POR_TIPO: Record<string, string> = {
   ROL_POR_VENCER: "Abrir Roles y permisos",
   ROL_VENCIDO: "Abrir Roles y permisos",
+  MATRICULA_INASISTENCIA: "Abrir Retirar",
 }
 
 /**
@@ -52,8 +53,9 @@ export const ENLACE_POR_TIPO: Record<string, string> = {
 export const TIPO_AUTORIZACION_PENDIENTE = "AUTORIZACION_PENDIENTE"
 
 /**
- * AVI.1 (Matrícula): el estudiante lleva 30 días calendario sin asistir. El deep link
- * abre la matrícula; la acción "Retirar" lleva a la lista filtrada por el documento.
+ * AVI.1 (Matrícula, Regla 74): el estudiante lleva 30 días calendario sin asistir (sso
+ * fn_matricula_avisar_inasistencia_continua_interno). El deep link abre el Detalle de la
+ * matrícula con `?accion=retirar`: Retirar se abre con la novedad de inasistencia.
  */
 export const TIPO_MATRICULA_INASISTENCIA = "MATRICULA_INASISTENCIA"
 

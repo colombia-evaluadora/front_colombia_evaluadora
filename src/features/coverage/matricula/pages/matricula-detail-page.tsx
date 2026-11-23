@@ -42,6 +42,7 @@ export function MatriculaDetailPage() {
 
 function MatriculaDetailPageContent() {
   const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
+  const { accion } = coberturaMatriculaDetalleRoute.useSearch()
   const gradeLabel = useMatriculaGradeLabel()
   const { notify } = useNotify()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
@@ -124,7 +125,7 @@ function MatriculaDetailPageContent() {
             </TabsList>
             <TabsContent value="datos" className="pt-4">
               <div className="flex flex-col gap-6">
-                <MatriculaToolbar matricula={data.matricula} />
+                <MatriculaToolbar matricula={data.matricula} abrirRetiro={accion === "retirar"} />
                 <MatriculaFormBody
                   values={details}
                   onChange={() => {}}

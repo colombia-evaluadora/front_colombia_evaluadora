@@ -45,10 +45,14 @@ function masRelevante(tipos: (TipoAsistencia | null)[]): TipoAsistencia | null {
 function estados(s: SolicitudAprobacionAsistencia) {
   const anterior = tipoDe(s.valor_anterior?.tipoAsistencia)
   const propuesto = tipoDe(s.valor_propuesto?.tipoAsistencia) ?? anterior
-  const soporteAntes = s.valor_anterior?.soporteArchivo != null
-  const soporteDespues = s.valor_propuesto?.limpiarArchivo
-    ? false
-    : s.valor_propuesto?.soporteArchivo != null || soporteAntes
+  // La planilla diaria (TASISTENCIA_DIARIA) también justifica sin archivo; su propuesta es el reemplazo completo.
+  const diaria = s.tabla_objeto === "TASISTENCIA_DIARIA"
+  const soporteAntes = s.valor_anterior?.soporteArchivo != null || Boolean(s.valor_anterior?.justificacion?.texto)
+  const soporteDespues = diaria
+    ? s.valor_propuesto?.soporteArchivo != null || Boolean(s.valor_propuesto?.justificacion?.texto)
+    : s.valor_propuesto?.limpiarArchivo
+      ? false
+      : s.valor_propuesto?.soporteArchivo != null || soporteAntes
   return { anterior, propuesto, soporteAntes, soporteDespues }
 }
 
@@ -81,7 +85,12 @@ function agruparPorEstudiante(solicitudes: SolicitudAprobacionAsistencia[]): Cam
       return {
         clave,
         estudiante: grupo[0].estudiante,
-        bloques: grupo.length > 1 ? (etiquetaBloques(bloques) ?? `${grupo.length} bloques`) : null,
+        bloques:
+          grupo.length > 1
+            ? (etiquetaBloques(bloques) ?? `${grupo.length} bloques`)
+            : grupo[0].valor_propuesto?.bloqueLlegada != null
+              ? `Llega en el bloque ${Number(grupo[0].valor_propuesto.bloqueLlegada) + 1}`
+              : null,
         anterior: masRelevante(e.map((x) => x.anterior)),
         propuesto: masRelevante(e.map((x) => x.propuesto)),
         soporteAntes: e.some((x) => x.soporteAntes),

@@ -24,7 +24,7 @@ export function AcademicPeriodsPage() {
               nativeButton={false}
             >
               <ControlPointIcon data-icon="inline-start" />
-              Agregar
+              Nuevo período académico
             </Button>
           ) : undefined
         }

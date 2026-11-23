@@ -29,6 +29,8 @@ export type ReportKey =
   | "escalas"
   | "asignaciones"
   | "asistencia"
+  | "asistencia-por-grupo"
+  | "planilla-auxiliar"
   | "matricula"
   | "matricula-complementaria-sorteo"
   | "matricula-carne"
