@@ -46,6 +46,14 @@ interface Fila {
 
 const sinCambio = () => {}
 
+/** Sin tildes ni mayúsculas: «basica» encuentra «Básica primaria». */
+const normalizar = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
+
+function coincide(r: RelacionAlumnoGrupo, busqueda: string) {
+  const q = normalizar(busqueda.trim())
+  return !q || normalizar(`${r.nivel} ${r.zona} ${r.maximo}`).includes(q)
+}
+
 export function TablaRelaciones({
   relaciones,
   niveles,
@@ -57,8 +65,11 @@ export function TablaRelaciones({
   guardando,
   onGuardar,
   onEliminar,
+  busqueda = "",
 }: {
   relaciones: RelacionAlumnoGrupo[]
+  /** Texto del buscador: filtra por nivel o zona (en el navegador; la lista es corta). */
+  busqueda?: string
   niveles: Opcion[]
   zonas: Opcion[]
   edicion: EdicionRelacion | null
@@ -107,10 +118,15 @@ export function TablaRelaciones({
   }
 
   const editandoId = edicion ? (edicion.pkRelacion == null ? NUEVA : String(edicion.pkRelacion)) : null
-  // La fila de alta va al final, como en el prototipo.
+  // La fila de alta va primero, debajo del botón que la abre (como en Parámetros de edad); al
+  // guardar pasa a su lugar en el orden nivel/zona. El prototipo la ponía al final.
   const data: Fila[] = [
-    ...relaciones.map((r) => ({ id: String(r.pkRelacion), relacion: r })),
     ...(edicion?.pkRelacion === null ? [{ id: NUEVA, relacion: null }] : []),
+    // El filtro solo afecta lo que se ve: la validación de repetidas sigue mirando todas. La fila
+    // en edición nunca se oculta, aunque deje de coincidir.
+    ...relaciones
+      .filter((r) => String(r.pkRelacion) === editandoId || coincide(r, busqueda))
+      .map((r) => ({ id: String(r.pkRelacion), relacion: r })),
   ]
 
   const columns: ColumnDef<Fila>[] = [
@@ -186,7 +202,19 @@ export function TablaRelaciones({
         const r = row.original.relacion
         if (row.id === editandoId) {
           return (
+            // Reglas de UI: descartar primero (borde neutro) y guardar, el primario, al final.
             <div key="editando" className="flex justify-end gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Cancelar edición"
+                disabled={guardando}
+                onClick={cancelar}
+              >
+                <XIcon />
+              </Button>
               <Button
                 type="submit"
                 color="primary"
@@ -196,17 +224,6 @@ export function TablaRelaciones({
                 aria-busy={guardando}
               >
                 {guardando ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
-              </Button>
-              <Button
-                type="button"
-                variant="fill"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Cancelar edición"
-                disabled={guardando}
-                onClick={cancelar}
-              >
-                <XIcon />
               </Button>
             </div>
           )
@@ -231,7 +248,7 @@ export function TablaRelaciones({
               </AccionIcono>
             )}
             {puedeEliminar && (
-              <AccionIcono label="Eliminar" disabled={Boolean(edicion)} onClick={() => onEliminar(r)}>
+              <AccionIcono label="Eliminar" destructivo disabled={Boolean(edicion)} onClick={() => onEliminar(r)}>
                 <TrashIcon />
               </AccionIcono>
             )}
@@ -262,7 +279,11 @@ export function TablaRelaciones({
         isPending={false}
         isError={false}
         onRetry={sinCambio}
-        emptyMessage="Aún no hay relaciones alumno-grupo. Use + Relación para agregar la primera."
+        emptyMessage={
+          busqueda.trim() && relaciones.length > 0
+            ? "Ninguna relación coincide con la búsqueda."
+            : "Aún no hay relaciones alumno-grupo. Use Nueva relación para agregar la primera."
+        }
         isRowActive={(row) => row.id === editandoId}
       />
     </form>
@@ -273,11 +294,14 @@ export function TablaRelaciones({
 function AccionIcono({
   label,
   disabled,
+  destructivo,
   onClick,
   children,
 }: {
   label: string
   disabled?: boolean
+  /** Eliminar: rojo, también en hover. */
+  destructivo?: boolean
   onClick: () => void
   children: React.ReactNode
 }) {
@@ -288,7 +312,7 @@ function AccionIcono({
           <Button
             type="button"
             variant="ghost"
-            color="neutral"
+            color={destructivo ? "destructive" : "neutral"}
             size="icon-sm"
             aria-label={label}
             disabled={disabled}

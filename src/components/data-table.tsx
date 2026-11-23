@@ -305,7 +305,15 @@ export function DataTable({
                   <TableRow
                     data-state={row.getIsSelected() && "selected"}
                     aria-current={isRowHighlighted?.(row) || undefined}
-                    className={cn("group/row", isRowHighlighted?.(row) && "bg-blue-22 hover:bg-blue-22")}
+                    className={cn(
+                      "group/row",
+                      isRowHighlighted?.(row) && "bg-blue-22 hover:bg-blue-22",
+                      // Fila en edición: toda la fila con el mismo gris del bloque de acciones (antes solo
+                      // el bloque quedaba gris y el resto de la fila en blanco).
+                      active &&
+                        !insideSubRow &&
+                        "bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))] hover:bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]",
+                    )}
                   >
                     {row.getVisibleCells().map((cell) => {
                       const isActions = isActionsColumn(cell.column.id)

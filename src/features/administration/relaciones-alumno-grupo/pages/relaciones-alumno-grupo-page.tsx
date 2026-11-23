@@ -3,9 +3,12 @@ import { useState } from "react"
 import {
   TableScreen,
   TableScreenBody,
+  TableScreenActions,
   TableScreenHeader,
   TableScreenTitle,
+  TableScreenToolbar,
 } from "@/components/layout/table-screen"
+import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
@@ -47,6 +50,7 @@ function RelacionesAlumnoGrupoContent() {
   const { data, isPending, isError, error } = useRelacionesAlumnoGrupoQuery()
   const [edicion, setEdicion] = useState<EdicionRelacion | null>(null)
   const [aEliminar, setAEliminar] = useState<RelacionAlumnoGrupo | null>(null)
+  const [busqueda, setBusqueda] = useState("")
 
   const save = useSaveRelacion({
     mutationConfig: {
@@ -73,10 +77,23 @@ function RelacionesAlumnoGrupoContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle
-          description="Máximo de estudiantes por grupo según el nivel educativo y la zona de la sede. Solo advierte cuando el cupo de un grupo lo supera."
-          action={
-            puedeEditar && (
+        <TableScreenTitle description="Máximo de estudiantes por grupo según el nivel educativo y la zona de la sede. Solo advierte cuando el cupo de un grupo lo supera.">
+          Relaciones alumno-grupo
+        </TableScreenTitle>
+        {/* Reglas de UI: buscador a la izquierda y el botón de crear a la derecha, en la misma línea.
+            La barra también pinta los avisos de la pantalla. */}
+        <TableScreenToolbar>
+          <SearchQueryBar
+            id="relaciones-search"
+            label="Buscar por nivel o zona"
+            placeholder="Buscar"
+            value={busqueda}
+            onValueChange={setBusqueda}
+            onClearAll={() => setBusqueda("")}
+            activeFilterCount={busqueda ? 1 : 0}
+          />
+          {puedeEditar && (
+            <TableScreenActions className="ml-auto">
               <Button
                 color="primary"
                 size="sm"
@@ -84,13 +101,11 @@ function RelacionesAlumnoGrupoContent() {
                 onClick={() => setEdicion({ pkRelacion: null, nivel: "", zona: zonaInicial, maximo: "" })}
               >
                 <ControlPointIcon data-icon="inline-start" />
-                Relación
+                Nueva relación
               </Button>
-            )
-          }
-        >
-          Relaciones alumno-grupo
-        </TableScreenTitle>
+            </TableScreenActions>
+          )}
+        </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>
         {isError ? (
@@ -100,6 +115,7 @@ function RelacionesAlumnoGrupoContent() {
         ) : (
           <TablaRelaciones
             relaciones={data.relaciones}
+            busqueda={busqueda}
             niveles={data.niveles}
             zonas={data.zonas}
             edicion={edicion}
