@@ -20,6 +20,7 @@ import {
   BARRA_ACCIONES,
   BotonEliminarDeBandeja,
   MensajeAcciones,
+  MenuModeradorHilo,
 } from "@/features/comunicaciones/chat/components/mensaje-acciones"
 import { cn } from "@/lib/utils"
 import type { AutorMensaje, Conversacion, Mensaje } from "@/features/comunicaciones/chat/api/types"
@@ -394,6 +395,15 @@ function MensajeItem({
 
   if (m.eliminado) return <MensajeEliminado mensaje={m} />
 
+  // Hilo con acudientes: el moderador lo ocultó (M.2.HIL.3).
+  if (m.ocultoPorModerador) {
+    return (
+      <p className="text-sm text-muted-foreground italic">
+        <span className="font-medium not-italic text-foreground/80">{m.autor.nombre}</span> · Mensaje oculto por el moderador
+      </p>
+    )
+  }
+
   // Colevabot: tarjeta estructurada, sin acciones de mensaje (no se responde ni se edita).
   if (m.bot) return <TarjetaBotMensaje mensaje={m} tarjeta={m.bot} />
 
@@ -473,6 +483,7 @@ function MensajeItem({
             {CHAT_FUNCIONES.reacciones && <BotonReaccionar mensaje={m} />}
             <BotonResponder mensaje={m} onResponder={onResponder} />
             <BotonEliminarDeBandeja mensaje={m} />
+            <MenuModeradorHilo mensaje={m} />
           </div>
           <header className="mb-1 flex items-baseline gap-2 text-xs">
             <span className="font-medium">{m.autor.nombre}</span>

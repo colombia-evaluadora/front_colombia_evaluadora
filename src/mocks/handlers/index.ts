@@ -82,6 +82,7 @@ import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planead
 import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { geOpcionesHandlers, informesHandlers } from "@/mocks/handlers/informes"
+import { comunicacionesHilosAcudientesHandlers } from "@/mocks/handlers/comunicaciones-hilos-acudientes"
 import { geCapacidadesHandlers } from "@/mocks/handlers/ge-capacidades"
 import {
   comunicacionesArchivosHandlers,
@@ -206,6 +207,7 @@ export const handlers = [
   // Antes que el chat general: atiende los grupos y deja caer el resto.
   ...comunicacionesEspaciosHandlers,
   ...comunicacionesGruposHandlers,
+  ...comunicacionesHilosAcudientesHandlers,
   ...comunicacionesHandlers,
   ...notificacionesHandlers,
 ]
