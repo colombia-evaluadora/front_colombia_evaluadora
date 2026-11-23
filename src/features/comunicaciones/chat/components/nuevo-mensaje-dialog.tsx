@@ -6,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PaperclipIcon, XIcon } from "@/components/ui/icons"
+import { InfoIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { useNotify } from "@/components/notice/notice-context"
@@ -20,6 +20,12 @@ import {
   useEnviarPorSeparado,
   type ResultadoPorSeparado,
 } from "@/features/comunicaciones/chat/api/mutations/use-enviar-por-separado"
+import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
+import { useDisponibilidadDirectosQuery } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
+import {
+  conversacionesExistentesPorPersona,
+  type HiloExistente,
+} from "@/features/comunicaciones/chat/lib/conversaciones-existentes"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { SelectorPersonas } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
 import {
@@ -129,6 +135,11 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
   })
   const modo = useStore(form.store, (s) => s.values.modo)
   const sucio = useStore(form.store, (s) => s.isDirty) || archivos.length > 0
+  const para = useStore(form.store, (s) => s.values.para)
+  // Hay algo que se perdería al abrir otro hilo (elegir solo el destinatario no cuenta).
+  const conContenido =
+    useStore(form.store, (s) => s.values.asunto.trim() !== "" || s.values.mensaje.trim() !== "") ||
+    archivos.length > 0
   const conAdjuntos = modo !== "SEPARADO"
 
   // Patrón del repo (crear-evaluacion-dialog): foco y scroll al primer campo en rojo.
@@ -143,11 +154,43 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
 
   // Con cambios pide confirmar; mientras envía no se cierra.
   const [descartar, setDescartar] = useState(false)
+  // Hilo existente elegido en el aviso de "Para": se abre tras confirmar el descarte.
+  const [abrirTras, setAbrirTras] = useState<number | null>(null)
   const cerrar = () => {
     if (pendiente) return
+    setAbrirTras(null)
     if (sucio) setDescartar(true)
     else onClose()
   }
+  const abrirExistente = (id: number) => {
+    if (pendiente) return
+    if (conContenido) {
+      setAbrirTras(id)
+      setDescartar(true)
+      return
+    }
+    onClose()
+    onCreado(id)
+  }
+  const confirmarDescarte = () => {
+    onClose()
+    if (abrirTras != null) onCreado(abrirTras)
+  }
+
+  // Directos ya abiertos con las personas elegidas (datos ya cargados de la bandeja; misma key que
+  // la presencia de la barra lateral): informa, no bloquea.
+  const conversaciones = useConversacionesQuery().data ?? []
+  const directos =
+    useDisponibilidadDirectosQuery(conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.esBot).map((c) => c.id))
+      .data ?? []
+  const existentes =
+    modo === "GRUPAL"
+      ? new Map<number, HiloExistente[]>()
+      : conversacionesExistentesPorPersona(
+          conversaciones,
+          directos,
+          para.map((p) => p.id),
+        )
 
   const elegirArchivos = (lista: FileList | null) => {
     const { archivos: siguientes, error } = agregarAdjuntos(archivos, Array.from(lista ?? []))
@@ -189,6 +232,10 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
                 />
               )}
             </form.AppField>
+
+            {existentes.size > 0 && (
+              <AvisoConversacionesExistentes para={para} existentes={existentes} onAbrir={abrirExistente} />
+            )}
 
             <form.AppField
               name="modo"
@@ -316,7 +363,7 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
           </Button>
         </DialogFooter>
       </DialogContent>
-      <ConfirmDiscardDialog open={descartar} onOpenChange={setDescartar} onConfirm={onClose} />
+      <ConfirmDiscardDialog open={descartar} onOpenChange={setDescartar} onConfirm={confirmarDescarte} />
     </Dialog>
   )
 }
@@ -353,6 +400,61 @@ function CampoPara({ paraGrupo, permitido }: { paraGrupo: boolean; permitido: (p
         <FieldDescription>Solo aparecen las personas a quienes puede escribir.</FieldDescription>
       )}
     </Field>
+  )
+}
+
+const MAX_ASUNTOS_AVISO = 3
+
+/**
+ * Aviso informativo bajo "Para": quien escribe ya tiene directos con las personas elegidas. No
+ * bloquea (cada "Nuevo mensaje" crea un hilo por asunto, SSO #1006); cada asunto abre ese hilo.
+ */
+function AvisoConversacionesExistentes({
+  para,
+  existentes,
+  onAbrir,
+}: {
+  para: Persona[]
+  existentes: Map<number, HiloExistente[]>
+  onAbrir: (id: number) => void
+}) {
+  const conHilos = para.filter((p) => existentes.has(p.id))
+  const unSoloHilo = conHilos.length === 1 && existentes.get(conHilos[0].id)?.length === 1
+  return (
+    <div role="status" className="flex gap-3 rounded-md border border-primary-stroke bg-primary-22 px-4 py-2 text-sm">
+      <InfoIcon className="mt-0.5 size-5 shrink-0 text-primary" />
+      <div className="min-w-0 flex-1 space-y-1">
+        {conHilos.map((p) => {
+          const hilos = existentes.get(p.id) ?? []
+          const visibles = hilos.slice(0, MAX_ASUNTOS_AVISO)
+          const resto = hilos.length - visibles.length
+          return (
+            <p key={p.id}>
+              {hilos.length === 1 ? "Ya tiene 1 conversación con " : `Ya tiene ${hilos.length} conversaciones con `}
+              <strong>{p.nombre}</strong>:{" "}
+              {visibles.map((h, i) => (
+                <span key={h.id}>
+                  {i > 0 && ", "}
+                  <button
+                    type="button"
+                    onClick={() => onAbrir(h.id)}
+                    className="font-semibold break-words text-primary underline underline-offset-2 hover:no-underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  >
+                    {h.asunto}
+                  </button>
+                </span>
+              ))}
+              {resto > 0 && ` y ${resto} más`}.
+            </p>
+          )
+        })}
+        <p>
+          {unSoloHilo
+            ? "Puede continuarla o crear una nueva con otro asunto."
+            : "Puede continuar una de ellas o crear una nueva con otro asunto."}
+        </p>
+      </div>
+    </div>
   )
 }
 
