@@ -10,6 +10,8 @@ export interface ReconocimientoRow {
   estudiante_nombre: string
   estudiante_documento: string
   grado_grupo: string
+  sede_nombre: string | null
+  jornada_nombre: string | null
   fk_tlv_tipo: number
   tipo_valor: string
   /** Lo que se muestra: nunca el código. */

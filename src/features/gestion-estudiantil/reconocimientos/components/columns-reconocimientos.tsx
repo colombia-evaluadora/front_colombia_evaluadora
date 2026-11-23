@@ -2,6 +2,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"
@@ -13,16 +15,18 @@ interface ColumnasOpciones {
   onAccion: (reconocimiento: ReconocimientoRow, accion: AccionReconocimiento) => void
 }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el backend no tiene parámetro de orden, así que no se ofrece el menú con flechas
-  // (`DataTableColumnHeader` lo pinta mientras la columna sea ocultable). «Columnas» sigue ocultándolas.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_RECONOCIMIENTOS: MapaOrden = {
+  fecha: "fecha",
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  tipo: "tipo",
+  otorgado_por: "otorgado",
+}
 
-/** Columnas del listado de reconocimientos (G.6.LIS.1). Sede y Jornada no vienen en la fila. */
+const columna = (id: string, titulo: string) => columnaOrden<ReconocimientoRow>(ORDEN_RECONOCIMIENTOS, id, titulo)
+
+/** Columnas del listado de reconocimientos (G.6.LIS.1). Sede y Jornada ocultas de entrada. */
 export function buildColumnsReconocimientos({ onAccion }: ColumnasOpciones): ColumnDef<ReconocimientoRow>[] {
   return [
     {
@@ -46,6 +50,8 @@ export function buildColumnsReconocimientos({ onAccion }: ColumnasOpciones): Col
     },
     { ...columna("grado_grupo", "Grado/Grupo"), accessorKey: "grado_grupo" },
     { ...columna("tipo", "Tipo"), accessorKey: "tipo_nombre" },
+    { ...columna("sede", "Sede"), accessorKey: "sede_nombre" },
+    { ...columna("jornada", "Jornada"), accessorKey: "jornada_nombre" },
     { ...columna("motivo", "Motivo"), accessorKey: "motivo" },
     {
       ...columna("otorgado_por", "Otorgado por"),

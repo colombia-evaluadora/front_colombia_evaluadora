@@ -85,6 +85,8 @@ export function construirReconocimiento(s: Semilla): ReconocimientoRow {
     estudiante_nombre: est.nombre,
     estudiante_documento: est.documento,
     grado_grupo: est.grado_grupo,
+    sede_nombre: "Sede principal",
+    jornada_nombre: "Mañana",
     fk_tlv_tipo: t.pk,
     tipo_valor: t.valor,
     tipo_nombre: t.nombre,
