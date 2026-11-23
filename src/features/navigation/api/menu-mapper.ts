@@ -22,12 +22,19 @@ export interface MenuSource {
  *
  * Dos reglas que salen del dato real:
  *
- * - **Un grupo (raíz, `idParent === null`) nunca tiene ruta propia
- *   navegable** — es un contenedor, no una pantalla. Siempre hereda la de su
- *   primer hijo, que es a donde lleva al abrirlo. Se ignora el `path` propio
- *   del grupo aunque el backend lo traiga cargado: visto en real, un valor
- *   suelto ahí (que ni siquiera correspondía a ninguno de sus hijos) mandaba
- *   a una URL que no existe en el front.
+ * - **Un grupo (raíz, `idParent === null`) con hijos no tiene ruta propia
+ *   navegable** — es un contenedor, no una pantalla. Hereda la de su primer
+ *   hijo, que es a donde lleva al abrirlo. Se ignora el `path` propio del
+ *   grupo aunque el backend lo traiga cargado: visto en real, un valor suelto
+ *   ahí (que ni siquiera correspondía a ninguno de sus hijos) mandaba a una
+ *   URL que no existe en el front.
+ * - **Una raíz sin hijos visibles es una pantalla de primer nivel** y usa su
+ *   propio `path`. Así se siembran `COMUNICADOS_TERRITORIAL` (V562: consulta
+ *   territorial de comunicados del Supervisor y el Administrador territorial,
+ *   fuera de Comunicaciones para no arrastrar el chat, en el que no
+ *   participan) y `PROCESOS`. Antes se descartaban y el Supervisor territorial
+ *   no tenía cómo llegar a sus comunicados desde el menú (QA 94). Los hijos
+ *   ocultos (`PROCESOS_CREAR`) son permisos, no entradas del menú.
  * - **`visible: false` no se pinta.** Es el interruptor que maneja la pantalla
  *   de configuración de roles y menús; un grupo oculto se lleva a sus ítems.
  *
@@ -50,8 +57,8 @@ export function toNavItemDtos(menus: MenuSource[]): NavItemDto[] {
     .filter((menu) => menu.idParent === null)
     .map((menu): NavItemDto | null => {
       const children = (childrenByParent.get(menu.id) ?? []).filter((child) => child.path)
-      const url = children[0]?.path ?? null
-      if (url === null) return null
+      const url = children[0]?.path ?? menu.path ?? null
+      if (!url) return null
 
       return {
         title: menu.name,
