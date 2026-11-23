@@ -33,6 +33,7 @@ import {
   seleccionarSearchSchema,
 } from "@/features/coverage/matricula-complementaria/api/schema"
 import { promocionNivelacionSearchSchema } from "@/features/coverage/promocion-nivelacion/api/schema"
+import { actualizacionDatosSearchSchema } from "@/features/coverage/actualizacion-datos/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -968,6 +969,21 @@ export const coberturaPromocionRoute = createRoute({
   validateSearch: promocionNivelacionSearchSchema,
   staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Promoción y nivelación", to: paths.app.coberturaPromocion.getHref() }] },
   component: PromocionNivelacionPage,
+})
+
+const ActualizacionDatosPage = lazyRouteComponent(
+  () => import("@/features/coverage/actualizacion-datos/pages/actualizacion-datos-page"),
+  "ActualizacionDatosPage",
+)
+
+export const coberturaActualizacionDatosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaActualizacionDatos.path,
+  validateSearch: actualizacionDatosSearchSchema,
+  staticData: {
+    breadcrumb: [COBERTURA_CRUMB, { label: "Actualización de datos", to: paths.app.coberturaActualizacionDatos.getHref() }],
+  },
+  component: ActualizacionDatosPage,
 })
 
 export const coberturaConvocatoriaNuevaRoute = createRoute({
@@ -2884,6 +2900,7 @@ const routeTree = rootRoute.addChildren([
     coberturaMatriculaDetalleRoute,
     coberturaComplementariaRoute,
     coberturaPromocionRoute,
+    coberturaActualizacionDatosRoute,
     coberturaConvocatoriaNuevaRoute,
     coberturaConvocatoriaDetalleRoute,
     coberturaConvocatoriaEditarRoute,

@@ -38,6 +38,7 @@ export type ReportKey =
   | "matricula-acta-retiro"
   | "promocion-reprobados"
   | "promocion-areas-pendientes"
+  | "actualizacion-datos-solicitudes"
   | "informes"
   | "informes-tabla"
   | "boletin"
@@ -66,6 +67,11 @@ export type ReportKey =
   | "prevencion-indicadores"
   | "prevencion-embarazo-siuce"
   | "prevencion-consumo-siuce"
+  | "citacion-documento"
+  | "compromiso-documento"
+  | "servicio-social-certificado"
+  | "reconocimiento-mencion-honor"
+  | "reintegracion-acta-retiro"
 
 interface ReportInput {
   format: ExportFormat

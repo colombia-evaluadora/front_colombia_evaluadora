@@ -19,16 +19,14 @@ interface Props {
   /** Para el nombre accesible del botón. */
   estudiante: string
   acciones: AccionesCitacion
-  /** «Descargar citación» solo exige poder ver. */
-  puedeVer: boolean
   onAccion: (accion: AccionCitacion) => void
 }
 
 /**
- * Acciones de la citación (G.3.CIT.1): todas a la vista; las que el estado (§12.4) o el permiso no
- * permiten van deshabilitadas, como en Procesos disciplinarios.
+ * Acciones de la citación (G.3.CIT.1): todas a la vista; las que el back no permite (puede_*)
+ * van deshabilitadas, como en Procesos disciplinarios.
  */
-export function MenuAccionesCitacion({ estudiante, acciones, puedeVer, onAccion }: Props) {
+export function MenuAccionesCitacion({ estudiante, acciones, onAccion }: Props) {
   return (
     <AccionesFila
       etiqueta={`Acciones de la citación de ${estudiante}`}
@@ -55,7 +53,7 @@ export function MenuAccionesCitacion({ estudiante, acciones, puedeVer, onAccion 
           label: "Descargar citación",
           icon: <FilePdfIcon />,
           separada: true,
-          disabled: !puedeVer || !acciones.descargar,
+          disabled: !acciones.documento,
           onSelect: () => onAccion("documento"),
         },
       ]}

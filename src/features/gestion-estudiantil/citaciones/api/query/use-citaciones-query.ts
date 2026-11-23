@@ -8,7 +8,6 @@ import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/qu
 import type {
   AcudienteMatricula,
   CitacionDetalle,
-  CitacionDocumento,
   CitacionRow,
   CitacionesFiltros,
   CitacionesQueryFilters,
@@ -63,18 +62,6 @@ export function useCitacionQuery(citacionId: number | undefined) {
         .getRows<Record<string, unknown>>(`${BASE_CITACIONES}/${citacionId}`)
         .then((r) => desenvolver<CitacionDetalle>(r[0], "datos", "No se encontró la citación solicitada.")),
     enabled: citacionId != null,
-  })
-}
-
-/** `GET /citaciones/:ID/documento`: los datos de la citación impresa (sin origen, historial ni estado). */
-export function useCitacionDocumentoQuery(citacionId: number | undefined, enabled = true) {
-  return useQuery({
-    queryKey: citacionesKeys.citaciones.documento(citacionId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_CITACIONES}/${citacionId}/documento`)
-        .then((r) => desenvolver<CitacionDocumento>(r[0], "datos", "No se encontró la citación solicitada.")),
-    enabled: citacionId != null && enabled,
   })
 }
 

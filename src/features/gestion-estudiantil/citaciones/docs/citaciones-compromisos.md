@@ -29,7 +29,7 @@ Sin probar:
 - Cualquier llamada contra el backend real (todo lo anterior corre contra mocks).
 
 Pendiente:
-- El backend no expone flags `puede_*`. Las acciones se habilitan por estado en el front (§12.4 en `api/ui-mappings.ts`); el backend vuelve a validar cada acción con su gate y devuelve 42501 si no corresponde.
+- El backend devuelve banderas `puede_*` en listados y detalles (cada una con el estado y el gate de su POST) y `GET /gestion-estudiantil/capacidades` (`useCapacidadesGe`) para los botones de cabecera; el front no deduce permisos por estado.
 - Colección Postman del módulo.
 - Fuera de alcance: portal del acudiente (W.10 y W.11) y plantillas de correo por tipo de aviso.
 - Sin vista de detalle de citación: la especificación no la define.
@@ -133,7 +133,7 @@ Ruta base: `src/features/gestion-estudiantil/citaciones/`.
 
 ### Hooks
 
-- `hooks/use-citaciones-access.ts`: permisos del menú CITACIONES_COMPROMISOS (`useCitacionesAccess`); no lee banderas `puede_*` del backend.
+- `hooks/use-citaciones-access.ts`: permisos del menú CITACIONES_COMPROMISOS (`useCitacionesAccess`); los botones de cabecera salen de `GET /gestion-estudiantil/capacidades` (`useCapacidadesGe`) y los de fila de las banderas `puede_*` del listado.
 - `hooks/use-citaciones-filtros.ts`: estado de filtros de citaciones y compromisos, con la cascada Sede → Jornada y las opciones de quién atiende.
 - `../commons/hooks/use-search-filtros.ts` (común a Gestión Estudiantil): borrador, aplicar y limpiar del panel de filtros, común a los dos listados.
 - `hooks/use-citacion-form.ts`: estado, validación y envío de Nueva citación (`useCitacionForm`); el error del backend va en el banner del modal y el éxito lo muestra quien lo abrió.
@@ -179,7 +179,6 @@ El Motivo no aparece en el documento de la citación: la especificación lo excl
 - Probar contra backend real (todo lo probado corre contra mocks).
 - Probar aceptación y resultado desde el detalle del compromiso, y Nueva citación con `FK_ATIENDE` elegido.
 - Probar las entradas de Observador y Convivencia en navegador (sin mocks de esos módulos) y el escudo en el encabezado (mock con `escudo_archivo: null`).
-- Flags `puede_*` en el backend; hoy las acciones se habilitan por estado en el front.
 - Colección Postman del módulo.
 - Fuera de alcance: portal del acudiente (W.10 y W.11) y plantillas de correo por tipo de aviso.
 - Vista de detalle de citación (no definida en la especificación).

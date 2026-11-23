@@ -382,6 +382,25 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 - Exportar (C.5.REP.1, C.5.PEN.1; Regla 47): reportes `promocion-reprobados` y `promocion-areas-pendientes` en reporting-service, formato `excel`/`pdf`, con `filters` = el mismo cuerpo del `query` de cada pestaña, sin paginación.
 - Mock: src/mocks/db/promocion-nivelacion.ts, src/mocks/handlers/promocion-nivelacion.ts.
 
+### 30. Actualización de datos (C.6.CFG.1, C.6.SOL.1–3; Sección 2.19, Reglas 43 y 69)
+- **Hecho en el SSO (sin desplegar), rama `feat/CU-1dfvn9h8d9a-actualizacion-datos`:** V734–V739, con el contrato de abajo tal cual. Además:
+  - La configuración es la del único establecimiento que alcanza el usuario; con varios o ninguno responde 22023.
+  - `POST /portal/actualizacion-datos/solicitudes` (multipart, roles estudiante y acudiente) `{ MATRICULA, CAMPO, VALOR, MOTIVO, SOPORTE }`, para Mi cuenta. `CAMPO`: TIPO_DOCUMENTO, IDENTIFICACION, PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, FECHA_NACIMIENTO (YYYY-MM-DD), MUNICIPIO_NACIMIENTO, MUNICIPIO_DOCUMENTO o GENERO (los de catálogo, con el pk). Solo datos del estudiante; los del acudiente quedan pendientes.
+  - Aviso `SOLICITUD_CORRECCION_DECIDIDA` al solicitante al aprobar o rechazar.
+- Pantalla: vista nueva `/app/cobertura/actualizacion-datos`, pestañas Configuración y Solicitudes de corrección. Menú TMENU `ACTUALIZACION_DATOS` bajo Cobertura; acceso y Guardar para el Administrador del establecimiento y el Gestor administrativo del establecimiento (con solo acceso, solo lectura).
+- Base: `/eval-col/cobertura-academica/actualizacion-datos`. Respuestas en snake_case.
+- `GET /configuracion` → `{ activo, fecha_inicio, fecha_cierre, campos: [{ codigo, nombre, bloque, acudiente, estudiante }] }`. Un registro por establecimiento (todas sus Sedes y Jornadas); sin registro, `activo` false y fechas null. `bloque` agrupa la fila («Domicilio del estudiante (2.3)»); `acudiente`/`estudiante` = `null` cuando ese perfil no admite el campo (el front pinta «—»). Campos configurables:
+  - 2.3 Dirección, Barrio, Ubicación del domicilio y Lugar de residencia (municipio) del estudiante: solo acudiente.
+  - 2.4 Teléfono de estudiante: acudiente y estudiante.
+  - 2.11 Dirección y Lugar de residencia (municipio) del acudiente; 2.12 Teléfono de acudiente; 2.13 Profesión, Nombre, Dirección y Teléfono de la entidad y Cargo: solo acudiente.
+- `PUT /configuracion` `{ ACTIVO: "S"|"N", FECHA_INICIO, FECHA_CIERRE, CAMPOS: [{ CODIGO, ACUDIENTE: "S"|"N", ESTUDIANTE: "S"|"N" }] }`. Valida: cierre no anterior al inicio; no marcar un perfil que el campo no admite. Fechas vacías: abre al encender, cierra al apagar.
+- `POST /solicitudes/query` `{ SEARCH (solicitante o estudiante), ESTADO (PENDIENTE|APROBADA|RECHAZADA|null), PAGE_INDEX, PAGE_SIZE }` → `{ solicitud_id, solicitante, estudiante, dato, valor_actual, valor_solicitado, fecha, estado, motivo, soporte_id, motivo_decision, decidido_por, fecha_decision, total_count }`. El número de la pestaña sale de este mismo query con `ESTADO: PENDIENTE` y `PAGE_SIZE: 1`.
+- `PUT /solicitudes/:ID/aprobar` `{}`: aplica el valor como corrección de datos de identidad (Regla 43, misma validación de documento repetido de la Regla 3), con el motivo y el soporte del solicitante; queda en la Bitácora. 400 si ya fue decidida.
+- `PUT /solicitudes/:ID/rechazar` `{ MOTIVO (10–500) }`: se le notifica al solicitante (campana y correo). 400 si ya fue decidida.
+- Exportar Excel: reporte `actualizacion-datos-solicitudes` en reporting-service, `filters` = `{ SEARCH, ESTADO }` del query, sin paginación.
+- Fuera de esta vista (Administración del Sistema, Sección 13.5, Mi cuenta): Datos que puedo actualizar según la ventana y el perfil, y Solicitar corrección (dato, valor solicitado, motivo 10–500 y soporte obligatorio). Bitácora con la marca «Actualizado por el titular».
+- Mock: src/mocks/db/actualizacion-datos.ts, src/mocks/handlers/actualizacion-datos.ts.
+
 ## Formato para nuevas tareas
 
 ```

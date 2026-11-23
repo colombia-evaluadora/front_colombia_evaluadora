@@ -173,6 +173,7 @@ export interface ServicioSocialDetalle {
   faltan: number
   estado: EstadoServicioSocial
   sesiones: ServicioSocialSesion[]
+  puede_certificar: boolean
 }
 
 export interface CertificadoServicioSocial {

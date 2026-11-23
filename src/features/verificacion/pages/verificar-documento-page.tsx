@@ -3,6 +3,7 @@ import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
 import { PublicBreadcrumb } from "@/components/public/public-page"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircleIcon, WarningIcon, XCircleIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
@@ -13,6 +14,7 @@ import { isOfflineVerificationError } from "@/features/verificacion/api/boletin-
 import {
   useDocumentoVerificacion,
   type CarneVerificacion,
+  type DocumentoGeVerificacion,
 } from "@/features/verificacion/api/documento-verificacion"
 
 const fecha = (iso: string | null) => {
@@ -111,6 +113,57 @@ function Carne({ c }: { c: CarneVerificacion }) {
   )
 }
 
+const NOMBRE_GE = {
+  SERVICIO_SOCIAL_CERTIFICADO: "Certificado de servicio social",
+  MENCION_HONOR: "Mención de honor",
+} as const
+
+/** Certificado de servicio social y mención de honor (Gestión Estudiantil): mismo resultado y tabla que el carné. */
+function DocumentoGe({ d }: { d: DocumentoGeVerificacion }) {
+  const nombre = NOMBRE_GE[d.tipo]
+  if (d.estado === "NO_VALIDO") return <Resultado {...NO_ENCONTRADO} />
+  const resultado = {
+    VIGENTE: { tono: "green" as const, titulo: "Documento auténtico", texto: `${nombre} emitido el ${fecha(d.emitidoEn)}.` },
+    ACTUALIZADO: {
+      tono: "yellow" as const,
+      titulo: "Actualizado",
+      texto: `Este documento es auténtico, pero los datos del titular cambiaron después de emitirlo el ${fecha(d.emitidoEn)}.`,
+    },
+    REEMPLAZADO: {
+      tono: "yellow" as const,
+      titulo: "Reemplazado",
+      texto: `Este documento es auténtico, pero se generó uno más reciente${d.reemplazadoEn ? ` el ${fecha(d.reemplazadoEn)}` : ""}.`,
+    },
+    ANULADO: { tono: "red" as const, titulo: "Anulado", texto: "Este documento fue anulado: ya no es válido." },
+  }[d.estado]
+  const color = resultado.tono === "green" ? "success" : resultado.tono === "yellow" ? "warning" : "destructive"
+  const filas: [string, React.ReactNode][] = [
+    ["Tipo de documento", nombre],
+    [
+      "Estado",
+      <Badge key="e" variant="soft" color={color}>
+        {resultado.titulo}
+      </Badge>,
+    ],
+    ["Establecimiento", [d.institucion, d.dane ? `DANE ${d.dane}` : null].filter(Boolean).join(" · ") || "—"],
+    ["Titular", d.titular ?? "—"],
+    ["Fecha de emisión", fecha(d.emitidoEn)],
+  ]
+  return (
+    <>
+      <Resultado {...resultado} />
+      <dl className="grid overflow-hidden rounded-xl border bg-card text-sm sm:grid-cols-[auto_1fr]">
+        {filas.map(([t, v]) => (
+          <div key={t} className="contents">
+            <dt className="border-b bg-muted/40 px-4 py-2.5 text-muted-foreground">{t}</dt>
+            <dd className="border-b px-4 py-2.5">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </>
+  )
+}
+
 /**
  * Verificación pública por código (Administración del Sistema, Sección 12.4):
  * `/verificar/<código>`, a donde apunta el QR. El boletín sigue en su página
@@ -149,6 +202,7 @@ export function VerificarDocumentoPage() {
           </div>
         )}
         {query.data?.tipo === "CARNE" ? <Carne c={query.data.carne} /> : null}
+        {query.data && "ge" in query.data ? <DocumentoGe d={query.data.ge} /> : null}
         {query.data?.tipo === null ? <Resultado {...NO_ENCONTRADO} /> : null}
       </div>
     </div>

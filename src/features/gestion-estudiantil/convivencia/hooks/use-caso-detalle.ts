@@ -16,7 +16,7 @@ export function useCasoDetalle(caso: CasoDetalle) {
   const router = useRouter()
   const canGoBack = useCanGoBack()
   const access = useConvivenciaAccess()
-  const { puedeCrear: puedeCitar } = useCitacionesAccess()
+  const { puedeCrearCitacion: puedeCitar, puedeCrearCompromiso } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
   const resumen = resumenDeDetalle(caso)
 
@@ -40,6 +40,7 @@ export function useCasoDetalle(caso: CasoDetalle) {
   return {
     access,
     puedeCitar,
+    puedeCrearCompromiso,
     abierto,
     datosPendientes,
     completarDatos: () => onAccionMenu("modificar"),

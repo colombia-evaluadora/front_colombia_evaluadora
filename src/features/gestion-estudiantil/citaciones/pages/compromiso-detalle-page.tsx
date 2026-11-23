@@ -21,7 +21,6 @@ import {
   origenEnlace,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { useDialogosCompromiso } from "@/features/gestion-estudiantil/citaciones/components/dialogos/use-dialogos-citaciones"
-import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
@@ -53,8 +52,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
   const navigate = useNavigate()
   const volver = () => navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab: "compromisos" } } as never)
   const origen = origenEnlace(c.origen_tipo, c.origen_id)
-  const permisos = useCitacionesAccess()
-  const acciones = accionesCompromiso(c, permisos)
+  const acciones = accionesCompromiso(c)
   const dialogos = useDialogosCompromiso()
 
   return (
@@ -79,7 +77,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
                 size="sm"
                 variant="outline"
                 color="neutral"
-                disabled={!permisos.puedeVer}
+                disabled={!acciones.documento}
                 onClick={() => dialogos.abrir("documento", c)}
               >
                 <FilePdfIcon data-icon="inline-start" />

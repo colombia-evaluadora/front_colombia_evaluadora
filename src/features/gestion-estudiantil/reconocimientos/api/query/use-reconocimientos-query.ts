@@ -6,7 +6,6 @@ import { toPageCount } from "@/lib/pagination"
 import { desenvolver, queryString } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { reconocimientosKeys } from "@/features/gestion-estudiantil/reconocimientos/api/query-keys"
 import type {
-  MencionHonorDocumento,
   ReconocimientoDetalle,
   ReconocimientoRow,
   ReconocimientosFiltros,
@@ -72,14 +71,3 @@ export function useReconocimientoQuery(reconocimientoId: number | undefined) {
   })
 }
 
-/** `GET /reconocimientos/:ID/mencion-honor`: los datos de la mención impresa. */
-export function useMencionHonorQuery(reconocimientoId: number | undefined, enabled = true) {
-  return useQuery({
-    queryKey: reconocimientosKeys.mencion(reconocimientoId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_RECONOCIMIENTOS}/${reconocimientoId}/mencion-honor`)
-        .then((r) => desenvolver<MencionHonorDocumento>(r[0], "datos", "No se encontró el reconocimiento solicitado.")),
-    enabled: reconocimientoId != null && enabled,
-  })
-}

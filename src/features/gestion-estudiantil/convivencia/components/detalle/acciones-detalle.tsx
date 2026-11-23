@@ -15,7 +15,7 @@ interface Props {
 
 /** Botones de la cabecera del detalle: proceso disciplinario, cambiar tipo, registrar acción y menú ⋮. */
 export function AccionesDetalle({ caso, detalle }: Props) {
-  const { access, puedeCitar, abierto, abrirTipo, abrirAccion, onAccionMenu } = detalle
+  const { access, puedeCitar, puedeCrearCompromiso, abierto, abrirTipo, abrirAccion, onAccionMenu } = detalle
   return (
     <div className="flex items-center gap-2">
       {/*
@@ -53,6 +53,7 @@ export function AccionesDetalle({ caso, detalle }: Props) {
         caso={{ numero: caso.numero, estado_codigo: caso.estado_codigo, sinGestor: !caso.fk_funcionario_gestor }}
         access={access}
         puedeCitar={puedeCitar}
+        puedeCrearCompromiso={puedeCrearCompromiso}
         onAccion={onAccionMenu}
       />
     </div>

@@ -11,7 +11,8 @@ import { env } from "@/config/env"
  * `fetch` directo, como en el boletín: página pública, sin Bearer ni el manejo
  * de sesión vencida del interceptor de axios.
  */
-export type TipoDocumento = "CARNE" | "BOLETIN" | null
+export type TipoDocumentoGe = "SERVICIO_SOCIAL_CERTIFICADO" | "MENCION_HONOR"
+export type TipoDocumento = "CARNE" | "BOLETIN" | TipoDocumentoGe | null
 export type EstadoCarne = "VIGENTE" | "REEMPLAZADO" | "ANULADO" | "NO_VALIDO"
 
 export interface CarneVerificacion {
@@ -31,7 +32,27 @@ export interface CarneVerificacion {
   anio: string | null
 }
 
-export type DocumentoVerificacion = { tipo: "CARNE"; carne: CarneVerificacion } | { tipo: "BOLETIN" } | { tipo: null }
+/** Estados de un documento de Gestión Estudiantil; ACTUALIZADO: sus datos cambiaron tras emitirlo. */
+export type EstadoDocumentoGe = "VIGENTE" | "ACTUALIZADO" | "REEMPLAZADO" | "ANULADO" | "NO_VALIDO"
+
+export interface DocumentoGeVerificacion {
+  tipo: TipoDocumentoGe
+  estado: EstadoDocumentoGe
+  emitidoEn: string | null
+  reemplazadoEn: string | null
+  institucion: string | null
+  dane: string | null
+  titular: string | null
+}
+
+export type DocumentoVerificacion =
+  | { tipo: "CARNE"; carne: CarneVerificacion }
+  | { tipo: "BOLETIN" }
+  | { tipo: TipoDocumentoGe; ge: DocumentoGeVerificacion }
+  | { tipo: null }
+
+const TIPOS_GE: string[] = ["SERVICIO_SOCIAL_CERTIFICADO", "MENCION_HONOR"]
+const ESTADOS_GE: EstadoDocumentoGe[] = ["VIGENTE", "ACTUALIZADO", "REEMPLAZADO", "ANULADO", "NO_VALIDO"]
 
 const ESTADOS: EstadoCarne[] = ["VIGENTE", "REEMPLAZADO", "ANULADO", "NO_VALIDO"]
 
@@ -40,6 +61,22 @@ const str = (v: unknown): string | null => (v == null || v === "" || typeof v ==
 export function toDocumentoVerificacion(raw: unknown): DocumentoVerificacion {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>
   if (o.tipo === "BOLETIN") return { tipo: "BOLETIN" }
+  if (typeof o.tipo === "string" && TIPOS_GE.includes(o.tipo)) {
+    const e = String(o.estado ?? "").toUpperCase()
+    const tipo = o.tipo as TipoDocumentoGe
+    return {
+      tipo,
+      ge: {
+        tipo,
+        estado: ESTADOS_GE.includes(e as EstadoDocumentoGe) ? (e as EstadoDocumentoGe) : "NO_VALIDO",
+        emitidoEn: str(o.emitidoEn),
+        reemplazadoEn: str(o.reemplazadoEn),
+        institucion: str(o.institucion),
+        dane: str(o.dane),
+        titular: str(o.titular),
+      },
+    }
+  }
   if (o.tipo !== "CARNE") return { tipo: null }
   const estadoRaw = String(o.estado ?? "").toUpperCase()
   return {

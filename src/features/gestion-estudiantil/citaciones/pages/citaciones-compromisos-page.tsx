@@ -66,7 +66,6 @@ interface PestanaProps {
 
 function PestanaCitaciones({ cabecera, onNuevoCompromiso }: PestanaProps & { onNuevoCompromiso: (citacion: number) => void }) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const permisos = useCitacionesAccess()
   const f = useCitacionesFiltros(goToPage)
 
   const { data, isPending, isError, error, refetch } = useCitacionesQuery({
@@ -78,7 +77,6 @@ function PestanaCitaciones({ cabecera, onNuevoCompromiso }: PestanaProps & { onN
   const dialogosCitacion = useDialogosCitacion()
 
   const columns = buildColumnsCitaciones({
-    permisos,
     onAccion: (citacion, accion) => {
       if (accion === "compromiso") onNuevoCompromiso(citacion.id)
       else dialogosCitacion.abrir(accion, citacion)
@@ -146,7 +144,6 @@ function PestanaCitaciones({ cabecera, onNuevoCompromiso }: PestanaProps & { onN
 
 function PestanaCompromisos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const permisos = useCitacionesAccess()
   const f = useCompromisosFiltros(goToPage)
 
   const { data, isPending, isError, error, refetch } = useCompromisosQuery({
@@ -159,7 +156,6 @@ function PestanaCompromisos({ cabecera }: PestanaProps) {
   const dialogosCompromiso = useDialogosCompromiso()
 
   const columns = buildColumnsCompromisos({
-    permisos,
     onAccion: (compromiso, accion) => {
       if (accion === "ver") navigate({ to: paths.app.compromisoDetalle.getHref(compromiso.id), search: {} })
       else dialogosCompromiso.abrir(accion, compromiso)
@@ -234,7 +230,7 @@ interface ModalesIniciales {
 }
 
 function CitacionesCompromisosContent({ nuevaCitacion, nuevoCompromiso }: ModalesIniciales) {
-  const permisos = useCitacionesAccess()
+  const acceso = useCitacionesAccess()
   const { notify } = useNotify()
   // Desde el listado el modal se abre en el sitio; desde /nueva (Convivencia, Observador) llega ya abierto.
   const [citacion, setCitacion] = useState<NuevaCitacionInicial | null>(nuevaCitacion ?? null)
@@ -268,7 +264,7 @@ function CitacionesCompromisosContent({ nuevaCitacion, nuevoCompromiso }: Modale
         action={
           <Button
             size="sm"
-            disabled={!permisos.puedeCrear}
+            disabled={!(pestana === "citaciones" ? acceso.puedeCrearCitacion : acceso.puedeCrearCompromiso)}
             onClick={() =>
               pestana === "citaciones" ? setCitacion({}) : setCompromiso({})
             }
