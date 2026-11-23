@@ -26,6 +26,14 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { MarcoOpciones } from "@/components/marco-opciones"
+
+import {
+  useCambiarModoAsistencia,
+  useGrupoModoAsistenciaQuery,
+} from "@/features/establishment/academic-period/api/query/use-grupo-modo-asistencia"
+import type { ModoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia-diaria"
 
 import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
 import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
@@ -107,11 +115,33 @@ export function CreateGradeGroupDialog({
         cupo: Number.NaN,
       }
 
+  // Regla 117: el modo va aparte del grupo (GET/PATCH /grupos/:ID/modo-asistencia).
+  const { data: modoActual } = useGrupoModoAsistenciaQuery(gradeGroup?.id, open)
+  const modoInicial: ModoAsistencia = modoActual?.modo ?? "POR_CLASE"
+  const [modo, setModo] = useState<ModoAsistencia | null>(null)
+  const modoElegido = modo ?? modoInicial
+  const cambiarModo = useCambiarModoAsistencia()
+
+  /** Tras guardar el grupo: el modo solo se manda si cambió. El grupo ya quedó guardado aunque falle. */
+  async function guardarModo(grupoId: number, base: ModoAsistencia): Promise<string | null> {
+    if (modoElegido === base) return null
+    try {
+      await cambiarModo.mutateAsync({ grupoId, modo: modoElegido })
+      return null
+    } catch (error) {
+      return getErrorMessage(error)
+    }
+  }
+
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
-      onSuccess: () => {
-        notify(SUCCESS_MESSAGES.gradeGroup.created)
+      // El grupo nace Por clase: si eligió Diaria se cambia con el id devuelto.
+      onSuccess: async ({ id }) => {
+        const errorModo = await guardarModo(id, "POR_CLASE")
+        if (errorModo) notify(`Se agregó el grupo, pero no se cambió el modo de asistencia: ${errorModo}`, { variant: "error" })
+        else notify(SUCCESS_MESSAGES.gradeGroup.created)
         form.reset()
+        setModo(null)
         setOpen(false)
       },
       onError: (error) => notifyInDialog(getErrorMessage(error)),
@@ -120,19 +150,26 @@ export function CreateGradeGroupDialog({
 
   const updateGradeGroup = useUpdateGradeGroup({
     mutationConfig: {
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         if (result.status === "error") {
           notifyInDialog(result.message)
           return
         }
+        const errorModo = await guardarModo(gradeGroup!.id, modoInicial)
+        if (errorModo) {
+          notifyInDialog(`Se guardó el grupo, pero no se cambió el modo de asistencia: ${errorModo}`)
+          return
+        }
         notify(SUCCESS_MESSAGES.gradeGroup.updated)
+        setModo(null)
         setOpen(false)
       },
       onError: (error) => notifyInDialog(getErrorMessage(error)),
     },
   })
 
-  const isSaving = createGradeGroup.isPending || updateGradeGroup.isPending
+  const isSaving = createGradeGroup.isPending || updateGradeGroup.isPending || cambiarModo.isPending
+  const modoBloqueado = Boolean(modoActual?.bloqueado)
 
   const form = useAppForm({
     defaultValues,
@@ -157,15 +194,17 @@ export function CreateGradeGroupDialog({
   function closeDialog() {
     setOpen(false)
     setNotice(null)
+    setModo(null)
     form.reset()
   }
 
   const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
     isSaving,
-    isDirty: () => !formValuesEqual(form.state.values, defaultValues),
+    isDirty: () => !formValuesEqual(form.state.values, defaultValues) || modoElegido !== modoInicial,
     onOpen: () => {
       setOpen(true)
       setNotice(null)
+      setModo(null)
       form.reset(defaultValues)
     },
     onClose: closeDialog,
@@ -288,6 +327,41 @@ export function CreateGradeGroupDialog({
               </div>
             )}
           </form.AppField>
+
+          {/* Regla 117: Por clase o Diaria; solo lectura si ya hay asistencia en el período en curso. */}
+          <MarcoOpciones id="grade-group-modo-asistencia" label="Modo de registro de asistencia" required>
+            {(() => {
+              const radios = (
+                <RadioGroup
+                  value={modoElegido}
+                  disabled={modoBloqueado}
+                  onValueChange={(v) => setModo(v as ModoAsistencia)}
+                  aria-labelledby="grade-group-modo-asistencia-label"
+                >
+                  <label className="flex items-center gap-2 text-sm">
+                    <RadioGroupItem value="POR_CLASE" disabled={modoBloqueado} />
+                    Por clase
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <RadioGroupItem value="DIARIA" disabled={modoBloqueado} />
+                    Diaria
+                  </label>
+                </RadioGroup>
+              )
+              if (!modoBloqueado) return radios
+              return (
+                <Tooltip>
+                  <TooltipTrigger render={<span className="flex items-center gap-2 text-muted-foreground" />}>
+                    {radios}
+                    <LockIcon className="size-4" aria-label="Solo lectura" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-72">
+                    {modoActual?.motivo ?? "El grupo ya tiene asistencia registrada en este período de evaluación."}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })()}
+          </MarcoOpciones>
         </form>
 
         <DialogFooter>

@@ -225,6 +225,7 @@ export function previaPromover(ids: number[]) {
       areas: reprobadas(r).map((a) => ({ abreviatura: a.abreviatura, nombre: a.area })),
       grupo: r.grupo,
       fecha_cierre: `${r.anio}-11-27`,
+      fin_periodo_siguiente: `${r.anio + 1}-11-30`,
       bloqueo: bloqueoDe(r),
     }))
 }
@@ -451,7 +452,7 @@ export function ampliarPlazo(id: number, plazo: string): Resultado {
   const p = buscar(id)
   if (!p) return "La promoción no existe."
   if (plazo <= p.plazo) return "La nueva fecha debe ser posterior al plazo actual."
-  if (plazo > p.fin_periodo) return "La nueva fecha debe estar dentro del período académico de la matrícula promovida."
+  if (plazo > p.fin_periodo) return "La nueva fecha debe estar dentro del período académico siguiente."
   p.plazo = plazo
   return null
 }

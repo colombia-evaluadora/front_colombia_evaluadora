@@ -419,3 +419,10 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 - Mock: src/mocks/db/<archivo>.ts, src/mocks/handlers/<archivo>.ts
 - Regla del doc: Sección / Regla
 ```
+
+### B4 Aviso por inasistencia continua (C.1.AVI.1, Regla 74) — hecho en el SSO
+- Back: tipo de notificación `MATRICULA_INASISTENCIA` (categoría SISTEMA, solo campana), tarea diaria
+  `matricula-aviso-inasistencia-continua` (V750); deep link `/app/cobertura/matricula/detalle/<id>?accion=retirar`.
+- Front: la campana muestra «Abrir Retirar» (`ENLACE_POR_TIPO`); `accion=retirar` en el Detalle abre Retirar con
+  la novedad «Inasistencia continua de más de 30 días calendario sin justificación válida» (nueva opción de
+  Motivo de la novedad). El mock deja de usar `acciones` (el back no las manda).

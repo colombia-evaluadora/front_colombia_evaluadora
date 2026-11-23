@@ -1,20 +1,26 @@
 "use no memo"
 
+import { useEffect } from "react"
+
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { TableScreenBody, TableScreenToolbar } from "@/components/layout/table-screen"
 import { getErrorMessage } from "@/lib/api-client"
 
+import type { ActividadesQueryFilters } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
+import { DialogoInscribir } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/dialogos/dialogo-inscribir"
 import { DialogoEstadoActividad } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/dialogos/dialogo-estado-actividad"
 import { SearchActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/search-actividades"
 import { useActividadesLista } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-actividades-lista"
 
 /** Pestaña Actividades (G.5.ACT.LIS): búsqueda, filtros y tabla paginada en el servidor. */
-export function ListadoActividades() {
+export function ListadoActividades({ onFiltersChange }: { onFiltersChange: (f: ActividadesQueryFilters) => void }) {
   const l = useActividadesLista()
   const { f, query, table, pageIndex, pageSize } = l
   const { data, isPending, isError, error, refetch } = query
   const total = data?.totalCount ?? 0
+  const { filters } = l
+  useEffect(() => onFiltersChange(filters), [filters, onFiltersChange])
 
   return (
     <>
@@ -55,6 +61,7 @@ export function ListadoActividades() {
           viewOptions={<DataTableViewOptions table={table} />}
         />
       </TableScreenBody>
+      {l.inscribirEn && <DialogoInscribir actividad={l.inscribirEn} onClose={l.cerrarInscribir} />}
       {l.estadoDe && <DialogoEstadoActividad actividad={l.estadoDe} onClose={l.cerrarEstado} />}
     </>
   )

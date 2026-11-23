@@ -2,11 +2,17 @@
 
 import { useCallback, useMemo, useState } from "react"
 
+import { getErrorMessage } from "@/lib/api-client"
+
 import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
-import { enfocarPrimerError, errorLargo } from "@/features/gestion-estudiantil/commons/utils/validaciones"
+import {
+  enfocarPrimerError,
+  errorLargo,
+  obligatorioSegun,
+} from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import {
   useCrearActividad,
   useModificarActividad,
@@ -20,6 +26,7 @@ import {
   type EstadoActividad,
 } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
 import { useNavegacionActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-navegacion-actividades"
+import { mensajeNombreRepetido } from "@/features/gestion-estudiantil/actividades-extracurriculares/utils/errores-actividad"
 import { encolarExito } from "@/features/gestion-estudiantil/actividades-extracurriculares/utils/avisos"
 import {
   dateAFechaIso,
@@ -32,6 +39,7 @@ export const NOMBRE_MAX = 100
 export const HORARIO_MAX = 150
 export const EXTERNO_MAX = 150
 export const DESCRIPCION_MAX = 1000
+const CAMPO_SUPERVISOR = "El supervisor externo"
 
 export type CampoActividad =
   | "nombre"
@@ -56,6 +64,12 @@ export function useActividadForm(actividad?: ActividadDetalle) {
   const s = useEstadoDialogo()
 
   const [nombre, setNombre] = useState(actividad?.nombre ?? "")
+  // Nombre repetido que respondió el backend: va en el campo Nombre, no en el banner; se limpia al editarlo.
+  const [errorNombre, setErrorNombre] = useState<string | null>(null)
+  const cambiarNombre = useCallback((v: string) => {
+    setNombre(v)
+    setErrorNombre(null)
+  }, [])
   const [tipo, setTipo] = useState(actividad ? String(actividad.fk_tlv_tipo) : "")
   const [sede, setSede] = useState(actividad ? String(actividad.fk_tsede) : "")
   const [jornada, setJornada] = useState(actividad ? String(actividad.fk_tlv_jornada) : "")
@@ -156,21 +170,31 @@ export function useActividadForm(actividad?: ActividadDetalle) {
   if (cupo.trim() && enteroPositivo(cupo) == null) errores.cupo = "El cupo debe ser un número entero mayor o igual a 1."
   if (grados.length === 0) errores.grados = "Elija al menos un grado."
   if (entidad.trim() && !supervisor.trim())
-    errores.supervisor = "El supervisor externo es obligatorio si hay entidad externa."
-  const error = (c: CampoActividad) => (s.intento ? errores[c] : undefined)
+    errores.supervisor = `${CAMPO_SUPERVISOR} ${obligatorioSegun(CAMPO_SUPERVISOR)} si hay entidad externa.`
+  const error = (c: CampoActividad) =>
+    c === "nombre" && errorNombre ? errorNombre : s.intento ? errores[c] : undefined
+
+  const alFallar = (e: Error) => {
+    const repetido = mensajeNombreRepetido(getErrorMessage(e))
+    if (repetido) {
+      setErrorNombre(repetido)
+      enfocarPrimerError()
+    } else s.setError(e)
+  }
 
   const alExito = ({ id }: { id: number }) => {
     encolarExito(edicion ? "Actividad actualizada." : "Actividad creada.")
     irActividad(id)
   }
-  const crear = useCrearActividad({ mutationConfig: { onSuccess: alExito, onError: (e: Error) => s.setError(e) } })
+  const crear = useCrearActividad({ mutationConfig: { onSuccess: alExito, onError: alFallar } })
   const modificar = useModificarActividad({
-    mutationConfig: { onSuccess: alExito, onError: (e: Error) => s.setError(e) },
+    mutationConfig: { onSuccess: alExito, onError: alFallar },
   })
 
   const guardar = () => {
     s.setIntento(true)
     s.setError(null)
+    setErrorNombre(null)
     if (Object.keys(errores).length > 0) {
       enfocarPrimerError()
       return
@@ -206,7 +230,7 @@ export function useActividadForm(actividad?: ActividadDetalle) {
     edicion,
     titulo: edicion ? "Modificar actividad" : "Nueva actividad",
     nombre,
-    setNombre,
+    setNombre: cambiarNombre,
     tipo,
     elegirTipo,
     tipoOpciones,

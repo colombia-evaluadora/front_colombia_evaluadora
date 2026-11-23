@@ -46,7 +46,7 @@ export function SearchServicioSocial(props: Props) {
           label="Sede"
           value={draft.sede}
           options={opciones.sedes}
-          onChange={(sede) => setDraft({ ...draft, sede, jornada: "", grado: "" })}
+          onChange={(sede) => setDraft({ ...draft, sede, jornada: "" })}
         />
         <Combo
           id="servicio-social-jornada"
@@ -55,15 +55,13 @@ export function SearchServicioSocial(props: Props) {
           options={opciones.jornadas}
           disabled={!draft.sede}
           placeholder={draft.sede ? "Todos" : "Elija una sede primero"}
-          onChange={(jornada) => setDraft({ ...draft, jornada, grado: "" })}
+          onChange={(jornada) => setDraft({ ...draft, jornada })}
         />
         <Combo
           id="servicio-social-grado"
           label="Grado"
           value={draft.grado}
           options={opciones.grados}
-          disabled={!draft.sede || !draft.jornada}
-          placeholder={draft.sede && draft.jornada ? "Todos" : "Elija sede y jornada primero"}
           onChange={(grado) => setDraft({ ...draft, grado })}
         />
         <Combo

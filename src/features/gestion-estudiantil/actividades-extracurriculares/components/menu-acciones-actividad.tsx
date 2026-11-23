@@ -1,12 +1,12 @@
-import { CheckCircleIcon, EyeIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, EyeIcon, PencilIcon, PersonAddIcon, ProhibitIcon } from "@/components/ui/icons"
 
 import { AccionesFila, type AccionFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import type { ActividadRow } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
 
-export type AccionActividad = "ver" | "modificar" | "estado"
+export type AccionActividad = "ver" | "inscribir" | "modificar" | "estado"
 
-/** Las tres acciones de la fila (§6.1). */
-export const ACCIONES_ACTIVIDAD = 3
+/** Las cuatro acciones de la fila (§6.1). */
+export const ACCIONES_ACTIVIDAD = 4
 
 interface Props {
   fila: ActividadRow
@@ -14,12 +14,19 @@ interface Props {
 }
 
 /**
- * Acciones de una fila del listado: Ver detalle, Modificar e Inactivar/Activar, estas dos guiadas por
- * `puede_editar` (brecha B2: el backend solo da Inactivar a Supervisor y Administrador).
+ * Acciones de una fila del listado, guiadas por las banderas del backend: Ver detalle, Inscribir
+ * (`puede_inscribir`), Modificar (`puede_editar`) e Inactivar/Activar (`puede_cambiar_estado`).
  */
 export function MenuAccionesActividad({ fila: f, onAccion }: Props) {
   const acciones: AccionFila[] = [
     { id: "ver", label: "Ver detalle", icon: <EyeIcon />, onSelect: () => onAccion("ver") },
+    {
+      id: "inscribir",
+      label: "Inscribir",
+      icon: <PersonAddIcon />,
+      disabled: !f.puede_inscribir,
+      onSelect: () => onAccion("inscribir"),
+    },
     {
       id: "modificar",
       label: "Modificar",
@@ -31,7 +38,7 @@ export function MenuAccionesActividad({ fila: f, onAccion }: Props) {
       id: "estado",
       label: f.esta_activa ? "Inactivar" : "Activar",
       icon: f.esta_activa ? <ProhibitIcon /> : <CheckCircleIcon />,
-      disabled: !f.puede_editar,
+      disabled: !f.puede_cambiar_estado,
       onSelect: () => onAccion("estado"),
     },
   ]

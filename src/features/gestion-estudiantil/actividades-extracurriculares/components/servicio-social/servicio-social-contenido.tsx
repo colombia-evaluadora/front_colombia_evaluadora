@@ -1,15 +1,15 @@
 "use no memo"
 
 import { useMemo, useState } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
+import type { Column, ColumnDef, SortingState } from "@tanstack/react-table"
 
-import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { FileTextIcon } from "@/components/ui/icons"
+import { FileTextIcon, InfoIcon } from "@/components/ui/icons"
 import { Progress } from "@/components/ui/progress"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -31,12 +31,31 @@ import { formatHoras, formatNumero } from "@/features/gestion-estudiantil/activi
 
 const NOOP = () => {}
 
-const columna = (id: string, titulo: string) => ({
+// El historial llega completo y se ordena en el cliente (ver `ordenar`).
+const columna = (id: string, titulo: string, className?: string) => ({
   id,
-  enableSorting: false,
+  enableSorting: true,
   meta: { label: titulo },
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
+  header: ({ column }: { column: Column<ServicioSocialSesion> }) => (
+    <DataTableColumnHeader column={column} title={titulo} className={className} />
+  ),
 })
+
+const COMPARADORES: Record<string, (a: ServicioSocialSesion, b: ServicioSocialSesion) => number> = {
+  fecha: (a, b) => a.fecha.localeCompare(b.fecha),
+  actividad: (a, b) =>
+    a.actividad.localeCompare(b.actividad, "es") || (a.entidad_externa ?? "").localeCompare(b.entidad_externa ?? "", "es"),
+  horas: (a, b) => a.horas - b.horas,
+  responsable: (a, b) => a.responsable.localeCompare(b.responsable, "es"),
+}
+
+/** Ordena las sesiones según el orden elegido; sin orden, como llegan (Fecha descendente). */
+function ordenar(sesiones: ServicioSocialSesion[], sorting: SortingState): ServicioSocialSesion[] {
+  const cmp = sorting[0] ? COMPARADORES[sorting[0].id] : undefined
+  if (!cmp) return sesiones
+  const signo = sorting[0].desc ? -1 : 1
+  return [...sesiones].sort((a, b) => signo * cmp(a, b))
+}
 
 /** Columnas del historial (G.5.SOC.DET.1): Fecha · Actividad o entidad externa · Horas · Responsable. */
 function columnas(): ColumnDef<ServicioSocialSesion>[] {
@@ -54,7 +73,11 @@ function columnas(): ColumnDef<ServicioSocialSesion>[] {
         </span>
       ),
     },
-    { ...columna("horas", "Horas"), accessorFn: (f) => formatHoras(f.horas) },
+    {
+      ...columna("horas", "Horas", "justify-end"),
+      accessorFn: (f) => formatHoras(f.horas),
+      cell: ({ row }) => <span className="block text-right tabular-nums">{formatHoras(row.original.horas)}</span>,
+    },
     { ...columna("responsable", "Responsable"), accessorFn: (f) => abreviarPersona(f.responsable) },
   ]
 }
@@ -68,8 +91,8 @@ export function ServicioSocialContenido({ detalle: d }: { detalle: ServicioSocia
   const cols = useMemo(() => columnas(), [])
   // El detalle trae todo el historial: se pagina en el cliente.
   const pagina = useMemo(
-    () => d.sesiones.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
-    [d.sesiones, pageIndex, pageSize],
+    () => ordenar(d.sesiones, sorting).slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
+    [d.sesiones, sorting, pageIndex, pageSize],
   )
   const pageCount = Math.max(1, Math.ceil(d.sesiones.length / pageSize))
   const { table } = useDataTable({
@@ -96,15 +119,18 @@ export function ServicioSocialContenido({ detalle: d }: { detalle: ServicioSocia
           action={
             <Tooltip>
               <TooltipTrigger render={<span tabIndex={0} />}>
-                <Button size="sm" type="button" disabled={!cumplido || !d.puede_certificar} onClick={() => setCertificado(true)}>
+                {/* puede_certificar ya incluye el Cumplido (backend); el estado solo elige el texto del tooltip. */}
+                <Button size="sm" type="button" disabled={!d.puede_certificar} onClick={() => setCertificado(true)}>
                   <FileTextIcon data-icon="inline-start" />
                   Certificado de servicio social
                 </Button>
               </TooltipTrigger>
-              {!d.puede_certificar ? (
-                <TooltipContent>Solo el Supervisor de sede o el Administrador del establecimiento pueden certificar el servicio social</TooltipContent>
-              ) : (
-                !cumplido && <TooltipContent>Disponible cuando el servicio social esté cumplido</TooltipContent>
+              {!d.puede_certificar && (
+                <TooltipContent>
+                  {cumplido
+                    ? "Solo el Supervisor de sede o el Administrador del establecimiento pueden certificar el servicio social"
+                    : "Disponible cuando el servicio social esté cumplido"}
+                </TooltipContent>
               )}
             </Tooltip>
           }
@@ -121,18 +147,28 @@ export function ServicioSocialContenido({ detalle: d }: { detalle: ServicioSocia
       </TableScreenHeader>
       <TableScreenBody>
         <div className="flex flex-col gap-4 pb-6">
-          <Progress
-            value={Math.min(d.horas, d.horas_requeridas)}
-            max={d.horas_requeridas || 1}
-            className="flex-nowrap items-center gap-4"
-          >
-            <div className="order-last flex flex-wrap items-baseline gap-x-2 text-sm">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Progress
+              value={Math.min(d.horas, d.horas_requeridas)}
+              max={d.horas_requeridas || 1}
+              className="w-64 shrink-0"
+            />
+            <div className="flex items-center gap-2 text-sm">
               <strong className="font-semibold tabular-nums">
                 {formatNumero(d.horas)} de {formatNumero(d.horas_requeridas)} horas
               </strong>
               {!cumplido && <span className="text-muted-foreground">· le faltan {formatNumero(faltan)}</span>}
+              <Tooltip>
+                <TooltipTrigger render={<span tabIndex={0} aria-label="Cómo se calculan las horas" />}>
+                  <InfoIcon className="size-4 text-muted-foreground" aria-hidden />
+                </TooltipTrigger>
+                <TooltipContent>
+                  Suma las horas de las sesiones de servicio social de todas sus matrículas en los Grados del servicio
+                  social (Regla 30).
+                </TooltipContent>
+              </Tooltip>
             </div>
-          </Progress>
+          </div>
           <DataTable
             table={table}
             isPending={false}
