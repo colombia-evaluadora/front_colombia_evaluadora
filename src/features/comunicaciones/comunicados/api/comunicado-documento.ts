@@ -29,6 +29,8 @@ export interface Conjunto {
   sede: string
   jornada: string
   tipos: TipoDestinatario[]
+  // Valor de la lista POBLACION_ACADEMICA_COMUNICADO; solo con Estudiantes o Acudientes.
+  poblacion: string
   anio: string
   modalidad: string
   ciclo: string
@@ -38,15 +40,21 @@ export interface Conjunto {
   estudiantes: string[]
   todosRoles: boolean
   roles: string[]
-  seleccionFuncionarios: "" | "TODOS" | "ESPECIFICOS"
+  // Valor de la lista SELECCION_FUNCIONARIOS ("" sin elegir).
+  seleccionFuncionarios: string
   funcionarios: string[]
 }
+
+/** Códigos ES_SISTEMA de SELECCION_FUNCIONARIOS que cambian el formulario. */
+export const SELECCION_ESPECIFICOS = "ESPECIFICOS"
+export const FORMA_PROGRAMADA = "PROGRAMADA"
 
 export const CONJUNTO_VACIO: Conjunto = {
   establecimiento: "",
   sede: "",
   jornada: "",
   tipos: [],
+  poblacion: "",
   anio: "",
   modalidad: "",
   ciclo: "",
@@ -139,7 +147,8 @@ export interface ComunicadoDocumentoInput {
   titulo: string
   mensaje: string
   conjuntos: { conjunto: Conjunto; resumen: string }[]
-  publicacion: "INMEDIATA" | "PROGRAMADA"
+  // Valor de la lista FORMA_PUBLICACION.
+  publicacion: string
   // ISO; solo con publicación programada.
   publicarEn: string | null
   // yyyy-MM-dd o null.
@@ -156,7 +165,7 @@ const cuerpoConjunto = ({ conjunto: c, resumen }: { conjunto: Conjunto; resumen:
   SEDE: Number(c.sede),
   JORNADA: c.jornada && c.jornada !== "TODAS" ? Number(c.jornada) : null,
   TIPOS: c.tipos,
-  POBLACION: esAcademico(c) ? "MATRICULADOS" : null,
+  POBLACION: esAcademico(c) ? c.poblacion || null : null,
   ANIO: c.anio ? Number(c.anio) : null,
   MODALIDAD: c.modalidad || null,
   CICLO: c.ciclo ? Number(c.ciclo) : null,

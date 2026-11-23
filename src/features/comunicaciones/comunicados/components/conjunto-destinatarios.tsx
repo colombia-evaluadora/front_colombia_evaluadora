@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon, WarningCircleIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { useUser } from "@/lib/auth"
 import { SelectOpciones } from "@/components/select-opciones"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
@@ -27,7 +28,16 @@ import {
   type Cascada,
   type Conjunto,
   type TipoDestinatario,
+  SELECCION_ESPECIFICOS,
 } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
+import {
+  ASPIRANTES,
+  LISTA_POBLACION,
+  LISTA_SELECCION_FUNCIONARIOS,
+  predeterminadoDe,
+  puedeElegirAspirantes,
+  useListaComunicado,
+} from "@/features/comunicaciones/comunicados/api/listas-valor"
 import {
   ACADEMICO_VACIO,
   alCambiar,
@@ -74,6 +84,29 @@ export function ConjuntoDestinatarios({
   const bloqueado = sinPeriodos(c, datos)
   const id = `conjunto-${numero}`
   const periodo = textoPeriodo(c, datos)
+  // Listas de valor (QA 90): las opciones de los radios no van quemadas.
+  const poblaciones = useListaComunicado(LISTA_POBLACION).data ?? []
+  const selecciones = useListaComunicado(LISTA_SELECCION_FUNCIONARIOS).data ?? []
+  const aspirantesPermitido = puedeElegirAspirantes(useUser().data?.roles)
+  // Aspirantes: solo el Administrador del establecimiento o el Gestor administrativo, y con Acudientes.
+  const motivoPoblacion = (valor: string, tipos: TipoDestinatario[]) =>
+    valor !== ASPIRANTES
+      ? undefined
+      : !aspirantesPermitido
+        ? "Solo el Administrador del establecimiento o el Gestor administrativo publican a aspirantes."
+        : !tipos.includes("ACUDIENTES")
+          ? "Aspirantes requiere el tipo Acudientes."
+          : undefined
+
+  // Con Estudiantes o Acudientes la población es obligatoria: por defecto, el predeterminado de la lista.
+  useEffect(() => {
+    if (!academico || poblaciones.length === 0) return
+    if (!c.poblacion || motivoPoblacion(c.poblacion, c.tipos)) {
+      const defecto = predeterminadoDe(poblaciones)
+      if (defecto !== c.poblacion) onChange({ ...c, poblacion: defecto })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [academico, poblaciones.length, c.poblacion, c.tipos.join(",")])
 
   useEffect(() => {
     onDatos(datos)
@@ -100,7 +133,7 @@ export function ConjuntoDestinatarios({
   const ponerTipos = (tipos: TipoDestinatario[]) => {
     let nuevo: Conjunto = { ...c, tipos: TIPOS.map((t) => t.valor).filter((t) => tipos.includes(t)) }
     // Lo que deja de aplicar se limpia: un campo deshabilitado no puede seguir filtrando.
-    if (!esAcademico(nuevo)) nuevo = { ...nuevo, ...ACADEMICO_VACIO }
+    if (!esAcademico(nuevo)) nuevo = { ...nuevo, ...ACADEMICO_VACIO, poblacion: "" }
     if (!nuevo.tipos.includes("FUNCIONARIOS")) nuevo = { ...nuevo, ...FUNCIONARIOS_VACIO }
     // "Todas las jornadas" solo vale sin estudiantes ni acudientes: el período es de una jornada.
     if (esAcademico(nuevo) && nuevo.jornada === TODAS_LAS_JORNADAS) nuevo = { ...nuevo, jornada: "" }
@@ -190,20 +223,33 @@ export function ConjuntoDestinatarios({
         </div>
         <div className="min-w-0 space-y-2">
           <Etiqueta requerido={academico}>Población académica</Etiqueta>
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm" role="radiogroup" aria-label="Población académica">
-            <label className={academico ? "flex items-center gap-2" : "flex items-center gap-2 text-muted-foreground"}>
-              <input type="radio" name={`${id}-poblacion`} checked={academico} disabled={!academico} readOnly />
-              Matriculados
-            </label>
-            {/* Inscripciones aún no tiene backend: la opción existe, pero todavía no se puede elegir. */}
-            <label
-              className="flex items-center gap-2 text-muted-foreground"
-              title="Aún no disponible: Inscripciones todavía no está conectado."
-            >
-              <input type="radio" name={`${id}-poblacion`} disabled />
-              Aspirantes
-            </label>
+          <div
+            id={`${id}-poblacion`}
+            className="flex flex-wrap gap-x-4 gap-y-2 text-sm"
+            role="radiogroup"
+            aria-label="Población académica"
+          >
+            {poblaciones.map((o) => {
+              const motivo = !academico ? NO_APLICA : motivoPoblacion(o.valor, c.tipos)
+              return (
+                <label
+                  key={o.valor}
+                  className={motivo ? "flex items-center gap-2 text-muted-foreground" : "flex items-center gap-2"}
+                  title={motivo}
+                >
+                  <input
+                    type="radio"
+                    name={`${id}-poblacion`}
+                    checked={academico && c.poblacion === o.valor}
+                    disabled={!!motivo}
+                    onChange={() => onChange({ ...c, poblacion: o.valor })}
+                  />
+                  {o.etiqueta}
+                </label>
+              )
+            })}
           </div>
+          <ErrorCampo mensaje={errores?.[`${id}-poblacion`]} />
         </div>
       </div>
 
@@ -341,20 +387,15 @@ export function ConjuntoDestinatarios({
                 errores?.[`${id}-seleccion`] && "rounded-md text-red outline outline-offset-4 outline-red-stroke",
               )}
             >
-              {(
-                [
-                  ["TODOS", "Todos los que cumplen el filtro"],
-                  ["ESPECIFICOS", "Personas específicas"],
-                ] as const
-              ).map(([valor, etiqueta]) => (
-                <label key={valor} className="flex items-center gap-2">
+              {selecciones.map((o) => (
+                <label key={o.valor} className="flex items-center gap-2">
                   <input
                     type="radio"
                     name={`${id}-seleccion`}
-                    checked={c.seleccionFuncionarios === valor}
-                    onChange={() => onChange({ ...c, seleccionFuncionarios: valor, funcionarios: [] })}
+                    checked={c.seleccionFuncionarios === o.valor}
+                    onChange={() => onChange({ ...c, seleccionFuncionarios: o.valor, funcionarios: [] })}
                   />
-                  {etiqueta}
+                  {o.etiqueta}
                 </label>
               ))}
             </div>
@@ -363,7 +404,7 @@ export function ConjuntoDestinatarios({
         </div>
       </div>
 
-      {conFuncionarios && c.seleccionFuncionarios === "ESPECIFICOS" && (
+      {conFuncionarios && c.seleccionFuncionarios === SELECCION_ESPECIFICOS && (
         <Multiple
           errores={errores}
           id={`${id}-funcionarios`}

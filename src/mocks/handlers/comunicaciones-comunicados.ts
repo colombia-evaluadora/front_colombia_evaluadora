@@ -456,9 +456,10 @@ export const comunicacionesComunicadosHandlers = [
           grupos: periodo && q.get("grado") ? [op("61", "A"), op("62", "B")] : [],
           estudiantes: periodo && q.get("grupo") ? [op("901", "Moreno Silva Andrés"), op("902", "Rincón Gil Laura")] : [],
           // Sin jornada = Todas las jornadas (conjunto solo de funcionarios).
-          roles: sede ? [op("Responsable de enseñanza", "Responsable de enseñanza"), op("Supervisor de sede", "Supervisor de sede")] : [],
+          // Valores de la lista ROL con asignaciones en la sede (valor = código, etiqueta = nombre).
+          roles: sede ? [op("COORDINADOR", "Coordinador"), op("DOCENTE", "Docente")] : [],
           funcionarios: sede
-            ? [op("11", "López Marta", "Supervisor de sede"), op("12", "Rojas Andrés", "Responsable de enseñanza")]
+            ? [op("11", "López Marta", "COORDINADOR"), op("12", "Rojas Andrés", "DOCENTE")]
             : [],
         },
       ],
