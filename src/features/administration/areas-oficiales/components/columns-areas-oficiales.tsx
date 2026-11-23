@@ -48,9 +48,7 @@ export function createAreasOficialesColumns({
         const area = row.original
         return (
           <span className="flex flex-wrap items-center gap-1.5 font-medium">
-            <span className={area.habilitada ? undefined : "text-muted-foreground"}>
-              {area.nombre}
-            </span>
+            <span>{area.nombre}</span>
             {area.esDimensionTransversal && (
               <Badge variant="soft" color="info">
                 {DIMENSION_TRANSVERSAL_LABEL}
@@ -80,7 +78,7 @@ export function createAreasOficialesColumns({
             Activa
           </Badge>
         ) : (
-          <Badge variant="outline" color="neutral">
+          <Badge variant="soft" color="neutral">
             Inactiva
           </Badge>
         ),

@@ -193,6 +193,8 @@ function AreasOficialesPageContent() {
         <DataTable
           table={table}
           isPending={isPending}
+          // Inactiva: la fila al 55%; los iconos de acción quedan al 100%.
+          isRowMuted={(row) => !(row.original as AreaOficial).habilitada}
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
