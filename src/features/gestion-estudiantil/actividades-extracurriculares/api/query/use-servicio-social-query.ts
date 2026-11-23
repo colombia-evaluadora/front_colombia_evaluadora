@@ -22,7 +22,7 @@ export function toServicioSocialFilters(search: string, f: ServicioSocialFiltros
   return {
     SEDE: id(f.sede),
     JORNADA: id(f.jornada),
-    GRADO: id(f.grado),
+    GRADO_LV: id(f.grado),
     ESTADO: f.estado || null,
     SEARCH: search.trim() || null,
   }

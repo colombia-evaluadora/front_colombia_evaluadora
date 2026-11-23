@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { DatePicker } from "@/components/date-picker"
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { PersonAddIcon } from "@/components/ui/icons"
 
@@ -13,6 +14,7 @@ import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils
 import { useInscribirEstudiante } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/mutations/actividades"
 import { useCandidatosQuery } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query/use-actividades-query"
 import type { CandidatoRow } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
+import { mensajeCupoCompleto } from "@/features/gestion-estudiantil/actividades-extracurriculares/utils/errores-actividad"
 import { avisarExito } from "@/features/gestion-estudiantil/actividades-extracurriculares/utils/avisos"
 import {
   dateAFechaIso,
@@ -39,6 +41,8 @@ export function DialogoInscribir({ actividad: a, onClose }: Props) {
   const [texto, setTexto] = useState("")
   const [busqueda, setBusqueda] = useState("")
   const [elegidas, setElegidas] = useState<Record<string, CandidatoRow>>({})
+  // Cupo lleno que respondió el backend: va en el campo Estudiante, no en el banner; se limpia al cambiar de estudiante.
+  const [errorCupo, setErrorCupo] = useState<string | null>(null)
   const [fecha, setFecha] = useState<Date | undefined>(() => hoySiEnRango(inicio, fin))
 
   useEffect(() => {
@@ -58,12 +62,14 @@ export function DialogoInscribir({ actividad: a, onClose }: Props) {
     const c = candidatos?.find((x) => String(x.id) === v)
     if (c) setElegidas((e) => ({ ...e, [v]: c }))
     setMatricula(v)
+    setErrorCupo(null)
   }
 
   const errores: { matricula?: string; fecha?: string } = {}
   if (!matricula) errores.matricula = "El estudiante es obligatorio."
   if (!fecha) errores.fecha = "La fecha de inscripción es obligatoria."
   const error = (c: keyof typeof errores) => (s.intento ? errores[c] : undefined)
+  const errorEstudiante = error("matricula") ?? errorCupo ?? undefined
 
   const mut = useInscribirEstudiante({
     mutationConfig: {
@@ -71,13 +77,20 @@ export function DialogoInscribir({ actividad: a, onClose }: Props) {
         avisarExito(notify, "Estudiante inscrito.")
         onClose()
       },
-      onError: (e: Error) => s.setError(e),
+      onError: (e: Error) => {
+        const cupo = mensajeCupoCompleto(getErrorMessage(e))
+        if (cupo) {
+          setErrorCupo(cupo)
+          enfocarPrimerError()
+        } else s.setError(e)
+      },
     },
   })
 
   const guardar = () => {
     s.setIntento(true)
     s.setError(null)
+    setErrorCupo(null)
     if (Object.keys(errores).length > 0) {
       enfocarPrimerError()
       return
@@ -102,7 +115,7 @@ export function DialogoInscribir({ actividad: a, onClose }: Props) {
         placeholder="Buscar estudiante"
         value={matricula}
         options={opciones}
-        error={error("matricula")}
+        error={errorEstudiante}
         onInputChange={setTexto}
         onChange={elegir}
       />

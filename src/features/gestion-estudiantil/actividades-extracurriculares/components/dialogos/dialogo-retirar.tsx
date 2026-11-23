@@ -30,6 +30,7 @@ export function DialogoRetirar({ actividadNombre, participante: p, onClose }: Pr
 
   return (
     <DialogoOperacionShell
+      sinCampos
       titulo={`Retirar a ${p.estudiante_nombre}`}
       resumen={
         <div className="flex flex-col gap-1 text-sm">
