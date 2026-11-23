@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ControlPointIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { ControlPointIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -130,6 +130,10 @@ function RelacionesAlumnoGrupoContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={remove.isPending}>
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               disabled={remove.isPending}
@@ -139,14 +143,10 @@ function RelacionesAlumnoGrupoContent() {
               {remove.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
-                <CheckIcon data-icon="inline-start" />
+                <TrashIcon data-icon="inline-start" />
               )}
-              Si
+              Eliminar
             </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={remove.isPending}>
-              <XIcon data-icon="inline-start" />
-              No
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

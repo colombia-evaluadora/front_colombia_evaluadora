@@ -5,15 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import {
-  CheckCircleIcon,
-  FilePdfIcon,
-  FileTextIcon,
-  FileZipIcon,
-  IdentificationCardIcon,
-  SpinnerIcon,
-  WarningCircleIcon,
-} from "@/components/ui/icons"
+import { CheckCircleIcon, FilePdfIcon, FileTextIcon, FileZipIcon, IdentificationCardIcon, SpinnerIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { OnlineOnlyAction } from "@/components/offline/online-only-action"
@@ -125,7 +117,8 @@ export function DialogGenerarConstancias({
         ) : null}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={!valido || generar.isPending} onClick={confirmar}>
@@ -206,7 +199,8 @@ export function DialogGenerarCarnes({
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={isPending || generar.isPending} onClick={confirmar}>
@@ -280,7 +274,8 @@ export function DialogPaqueteSoporte({ matricula, onOpenChange }: { matricula: M
         ) : null}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

@@ -99,7 +99,8 @@ export function DialogMatricularYSolicitar({
           )}
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" disabled={saving} onClick={onCancel}>
+          <Button variant="outline" color="neutral" type="button" size="sm" disabled={saving} onClick={onCancel}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={saving} aria-busy={saving} onClick={confirmar}>

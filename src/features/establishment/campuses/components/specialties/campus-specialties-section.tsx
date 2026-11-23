@@ -81,7 +81,8 @@ function DeleteSpecialtyDialog({
               <AlertDialogDescription>{blockedMessage}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel color="primary">
+              <AlertDialogCancel variant="outline" color="neutral">
+                <XIcon data-icon="inline-start" />
                 <CheckIcon data-icon="inline-start" />
                 Entendido
               </AlertDialogCancel>
@@ -200,7 +201,7 @@ export function CampusSpecialtiesSection({ campusId, readOnly }: CampusSpecialti
                               <Button
                                 type="button"
                                 variant="ghost"
-                                color="neutral"
+                                color="destructive"
                                 size="icon-sm"
                                 aria-label="Eliminar especialidad"
                                 onClick={() => setDeleting(item)}

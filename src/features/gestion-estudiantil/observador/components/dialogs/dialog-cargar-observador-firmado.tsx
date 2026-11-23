@@ -207,7 +207,7 @@ export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled 
 
         <DialogFooter className="sm:items-center">
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>

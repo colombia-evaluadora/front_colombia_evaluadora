@@ -10,7 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ControlPointIcon, DotsThreeVerticalIcon, FunnelXIcon } from "@/components/ui/icons"
+import { ControlPointIcon, DotsThreeVerticalIcon, FunnelXIcon, XIcon } from "@/components/ui/icons"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { usePaginaLocal } from "@/features/comunicaciones/procesos/components/paginar"
 import { Spinner } from "@/components/ui/spinner"
@@ -345,7 +345,7 @@ function DialogoPostular({ eleccion, onCerrar, onCreada }: { eleccion: MiProceso
           <Textarea className={TEXTAREA_OUTLINED} maxLength={2000} value={propuesta} onChange={(e) => setPropuesta(e.target.value)} />
         </Field>
         <DialogFooter>
-          <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
+          <Button variant="outline" color="neutral" onClick={onCerrar}><XIcon data-icon="inline-start" />Cancelar</Button>
           <Button disabled={m.isPending} onClick={() => m.mutate(
             { ruta: `/elecciones/${eleccion.eleccion}/postulaciones`, cuerpo: { PROPUESTA: propuesta, USUARIO: tercero ? Number(tercero) : null } },
             { onSuccess: (r) => tercero ? onCerrar() : onCreada((r.rows[0] as { id: number }).id), onError: (e) => setError(getErrorMessage(e)) },

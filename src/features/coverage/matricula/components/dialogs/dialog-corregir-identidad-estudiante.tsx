@@ -334,7 +334,7 @@ export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matricul
         {intentado && !soporte && <p className="-mt-2 text-xs text-red">Adjunte el soporte de la corrección.</p>}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

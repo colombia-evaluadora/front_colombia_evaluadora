@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FloppyDiskIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
 import { useAppForm } from "@/lib/forms"
@@ -136,14 +136,15 @@ export function DialogJustificarAusencia({
         </form>
 
         <DialogFooter>
-          {justificacion && (
+          <Button variant="outline" color="neutral" size="sm" disabled={justificar.isPending} onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </Button>
+            {justificacion && (
             <Button size="sm" variant="ghost" color="destructive" disabled={justificar.isPending} onClick={quitar}>
               Quitar justificación
             </Button>
           )}
-          <Button size="sm" variant="outline" color="neutral" disabled={justificar.isPending} onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
           <Button size="sm" type="submit" color="primary" form={FORM_ID} disabled={justificar.isPending} aria-busy={justificar.isPending}>
             {justificar.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

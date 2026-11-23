@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { Device } from "@/features/devices/api/types/device"
@@ -63,6 +64,7 @@ export function RevokeDeviceDialog({
         )}
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={pending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button variant="fill" color="destructive" disabled={pending} onClick={() => onConfirm(wipe)}>

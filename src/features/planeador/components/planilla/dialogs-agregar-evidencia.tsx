@@ -142,7 +142,7 @@ export function DialogSubirEvidencia({
         )}
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button
             size="sm"
             type="button"
@@ -221,7 +221,7 @@ export function DialogEnlaceEvidencia({ open, onOpenChange, inicial, onConfirmar
         )}
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" color="primary" disabled={!valido} onClick={() => onConfirmar(limpio)}>
             Agregar
           </Button>

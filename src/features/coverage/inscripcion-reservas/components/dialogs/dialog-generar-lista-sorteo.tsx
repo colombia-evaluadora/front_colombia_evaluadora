@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { FilePdfIcon, ShuffleIcon } from "@/components/ui/icons"
+import { FilePdfIcon, ShuffleIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -116,12 +116,11 @@ export function GenerarListaSorteoDialog({
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button
-                variant="outline"
-                color="neutral"
+              <Button variant="outline" color="neutral"
                 disabled={sortear.isPending}
                 onClick={() => setOpen(false)}
               >
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button

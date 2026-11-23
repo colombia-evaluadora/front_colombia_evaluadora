@@ -237,6 +237,7 @@ function ConfigurarDisponibilidadDialog({
         </form>
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={actualizar.isPending} onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="submit" form="configurar-disponibilidad" disabled={actualizar.isPending || largo}>

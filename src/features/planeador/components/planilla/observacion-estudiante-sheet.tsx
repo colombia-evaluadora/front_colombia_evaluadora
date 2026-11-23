@@ -572,6 +572,10 @@ export function ObservacionEstudianteSheet({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               onClick={() => {
@@ -582,9 +586,6 @@ export function ObservacionEstudianteSheet({
               <XIcon data-icon="inline-start" />
               Quitar
             </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral">
-              Cancelar
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -598,6 +599,10 @@ export function ObservacionEstudianteSheet({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Seguir editando
+            </AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               onClick={() => {
@@ -607,9 +612,6 @@ export function ObservacionEstudianteSheet({
             >
               Salir sin guardar
             </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral">
-              Seguir editando
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

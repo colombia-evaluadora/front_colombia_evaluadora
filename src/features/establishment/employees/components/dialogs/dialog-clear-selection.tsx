@@ -38,7 +38,7 @@ export function ClearSelectionDialog({ resetSelection }: ClearSelectionDialogPro
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel variant="outline" color="neutral"><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               resetSelection()

@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { rolVisible } from "@/features/comunicaciones/chat/lib/estado-mensaje"
+import { XIcon } from "@/components/ui/icons"
 import type { ResolucionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { textoConfirmacion, textoYaEnElGrupo } from "@/features/comunicaciones/chat/lib/seleccion-grupal"
 
@@ -67,7 +68,8 @@ export function ConfirmarAltaDialog({
           </ul>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={pendiente}>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={pendiente}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction disabled={pendiente || total === 0} aria-busy={pendiente} onClick={onConfirmar}>

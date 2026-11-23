@@ -339,7 +339,8 @@ export function BorradoresView({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={confirmando}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={confirmando}>
+              <XIcon data-icon="inline-start" />
               Volver
             </AlertDialogCancel>
             <AlertDialogAction

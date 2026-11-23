@@ -298,7 +298,8 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
         </form>
 
         <DialogFooter>
-          <Button type="button" variant="fill" color="neutral" onClick={cerrar} disabled={pendiente}>
+          <Button variant="outline" color="neutral" type="button" onClick={cerrar} disabled={pendiente}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="submit" form={FORM_ID} disabled={pendiente} aria-busy={pendiente}>

@@ -175,14 +175,14 @@ export function AsignarCupoDialog({
         </div>
 
         <DialogFooter className="m-0 shrink-0 px-6 pb-6">
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
           <Button size="sm" color="primary" onClick={handleConfirm}>
             <CheckIcon data-icon="inline-start" />
             Aceptar
           </Button>
-          <DialogClose render={<Button size="sm" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

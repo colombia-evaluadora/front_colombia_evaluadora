@@ -11,16 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
-import {
-  ArrowsLeftRightIcon,
-  FloppyDiskIcon,
-  ListPlusIcon,
-  LockIcon,
-  PersonRemoveIcon,
-  ProhibitIcon,
-  SpinnerIcon,
-  WarningIcon,
-} from "@/components/ui/icons"
+import { ArrowsLeftRightIcon, FloppyDiskIcon, ListPlusIcon, LockIcon, PersonRemoveIcon, ProhibitIcon, SpinnerIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { NoticeBanner } from "@/components/notice/notice-banner"
@@ -83,7 +74,8 @@ function Pie({
 }) {
   return (
     <DialogFooter>
-      <Button type="button" variant="outline" color="neutral" size="sm" onClick={onCancel}>
+      <Button variant="outline" color="neutral" type="button" size="sm" onClick={onCancel}>
+        <XIcon data-icon="inline-start" />
         Cancelar
       </Button>
       <Button

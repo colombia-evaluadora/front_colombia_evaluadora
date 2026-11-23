@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon } from "@/components/ui/icons"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Evaluacion } from "@/features/comunicaciones/chat/api/types"
@@ -140,7 +140,8 @@ function Cuestionario({ evaluacion: e, onEnviada }: { evaluacion: Evaluacion; on
           </AlertDialogHeader>
           <ErrorNoticeBanner error={enviar.isError ? enviar.error : null} />
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={enviar.isPending}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={enviar.isPending}>
+              <XIcon data-icon="inline-start" />
               Seguir respondiendo
             </AlertDialogCancel>
             <AlertDialogAction disabled={enviar.isPending} aria-busy={enviar.isPending} onClick={mandar}>

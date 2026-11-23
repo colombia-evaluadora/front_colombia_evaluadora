@@ -150,9 +150,7 @@ function Contenido({
       </div>
 
       <DialogFooter>
-        <Button
-          variant="outline"
-          color="neutral"
+        <Button variant="outline" color="neutral"
           disabled={copiar.isPending}
           onClick={() => !copiar.isPending && onClose()}
         >

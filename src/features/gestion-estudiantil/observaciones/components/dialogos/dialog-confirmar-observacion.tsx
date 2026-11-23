@@ -41,7 +41,7 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} onClick={onCancelar}>
+          <Button variant="outline" color="neutral" size="sm" type="button" disabled={pending} onClick={onCancelar}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

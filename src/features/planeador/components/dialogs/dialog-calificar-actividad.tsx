@@ -260,7 +260,7 @@ export function DialogCalificarActividad({
           {soloEnLinea.disabled && (
             <p className="text-muted-foreground mr-auto self-center text-xs">{soloEnLinea.tooltip}</p>
           )}
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>

@@ -326,7 +326,11 @@ export function CambioGradoMatriculaDialog(props: CambioGradoMatriculaDialogProp
         </div>
 
         <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-end">
-          {masivo && (
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
+            {masivo && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={handleBack}>
               <ArrowLeftIcon data-icon="inline-start" />
               Anterior
@@ -336,10 +340,6 @@ export function CambioGradoMatriculaDialog(props: CambioGradoMatriculaDialogProp
             <CheckIcon data-icon="inline-start" />
             Confirmar cambio
           </Button>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

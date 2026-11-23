@@ -253,6 +253,10 @@ export function EscalaValoracionSection({
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
+                <AlertDialogCancel variant="outline" color="neutral" disabled={restaurando}>
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </AlertDialogCancel>
                 <AlertDialogAction onClick={restaurar} disabled={restaurando} aria-busy={restaurando}>
                   {restaurando ? (
                     <SpinnerIcon data-icon="inline-start" className="animate-spin" />
@@ -261,10 +265,6 @@ export function EscalaValoracionSection({
                   )}
                   Restaurar
                 </AlertDialogAction>
-                <AlertDialogCancel variant="fill" color="neutral" disabled={restaurando}>
-                  <XIcon data-icon="inline-start" />
-                  Cancelar
-                </AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -448,7 +448,7 @@ function CriterioEscalaCard({
         <SoloEdicion>
           <Button
             variant="ghost"
-            color="neutral"
+            color="destructive"
             size="icon-sm"
             type="button"
             className="mt-2"
@@ -557,7 +557,7 @@ function CriterioEscalaCard({
                   <SoloEdicion>
                     <Button
                       variant="ghost"
-                      color="neutral"
+                      color="destructive"
                       size="icon-sm"
                       type="button"
                       className="mt-2"

@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { WarningIcon } from "@/components/ui/icons"
+import { WarningIcon, XIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { wipeDeviceData } from "@/lib/offline/device-data"
 import { useOutboxSummary } from "@/lib/offline/outbox/hooks"
@@ -77,7 +77,11 @@ export function WipeDeviceDataDialog({
         )}
 
         <DialogFooter>
-          {paso === "confirmar-pendientes" ? (
+          <Button variant="outline" color="neutral" disabled={busy} onClick={() => cerrar(false)}>
+                <XIcon data-icon="inline-start" />
+                Cancelar
+              </Button>
+            {paso === "confirmar-pendientes" ? (
             <>
               <Button variant="outline" color="neutral" disabled={busy} onClick={() => setPaso("aviso")}>
                 Volver
@@ -88,9 +92,6 @@ export function WipeDeviceDataDialog({
             </>
           ) : (
             <>
-              <Button variant="outline" color="neutral" disabled={busy} onClick={() => cerrar(false)}>
-                Cancelar
-              </Button>
               {pendientes > 0 && (
                 <Button
                   variant="outline"

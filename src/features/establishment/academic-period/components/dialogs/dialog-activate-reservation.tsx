@@ -134,6 +134,10 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
         </AlertDialogHeader>
         <ErrorNoticeBanner error={isError ? error : null} />
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="primary"
             disabled={!detail || activate.isPending || isFetching}
@@ -145,12 +149,8 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
             ) : (
               <CheckIcon data-icon="inline-start" />
             )}
-            Si
+            Activar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

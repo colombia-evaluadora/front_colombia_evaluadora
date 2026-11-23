@@ -245,7 +245,7 @@ function CriterioItem({
             render={
               <Button
                 variant="ghost"
-                color="neutral"
+                color="destructive"
                 size="icon-sm"
                 type="button"
                 aria-label={`Quitar criterio ${index + 1}`}

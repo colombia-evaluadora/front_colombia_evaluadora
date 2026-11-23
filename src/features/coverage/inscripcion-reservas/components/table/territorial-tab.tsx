@@ -602,9 +602,7 @@ function Confirmar({
           <DialogDescription render={<div />}>{children}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={pendiente}
             onClick={() => onOpenChange(false)}
           >

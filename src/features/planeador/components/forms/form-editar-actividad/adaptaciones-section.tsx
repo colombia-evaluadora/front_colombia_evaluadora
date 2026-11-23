@@ -381,7 +381,7 @@ function AdaptacionItem({
             render={
               <Button
                 variant="ghost"
-                color="neutral"
+                color="destructive"
                 size="icon-sm"
                 type="button"
                 aria-label={`Quitar adaptación ${index + 1}`}

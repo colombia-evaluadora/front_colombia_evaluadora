@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowUpIcon, PersonAddIcon, UsersIcon } from "@/components/ui/icons"
+import { ArrowUpIcon, PersonAddIcon, UsersIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
@@ -89,7 +89,8 @@ export function DialogConfirmarGestion({
         <ErrorNoticeBanner error={s.error} />
         <p className="text-sm">{t.cuerpo}</p>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" disabled={mut.isPending} />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" disabled={mut.isPending} />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <Button

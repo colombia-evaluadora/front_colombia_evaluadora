@@ -249,7 +249,11 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange, criterio }
         </div>
 
         <DialogFooter className="sm:justify-end">
-          {/* Mientras el draft está completamente vacío, los botones de
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
+            {/* Mientras el draft está completamente vacío, los botones de
               "Vincular…" no aportan nada —no hay qué guardar— y solo
               recargan visualmente el footer. Aparecen apenas se tipea algo
               en cualquier campo; siguen deshabilitados hasta que todos
@@ -296,10 +300,6 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange, criterio }
               </Button>
             </>
           )}
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

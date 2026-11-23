@@ -112,9 +112,7 @@ function DialogMotivo({
           </p>
         </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={pendiente}
             onClick={() => onOpenChange(false)}
           >

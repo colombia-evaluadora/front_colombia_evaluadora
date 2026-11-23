@@ -468,7 +468,15 @@ export function CrearComunicadoDialog({
           />
 
           <DialogFooter className="sm:justify-between">
-            {paso === 1 ? (
+            <Button variant="outline" color="neutral"
+                    type="button"
+                    onClick={() => void intentarCerrar()}
+                    disabled={crear.isPending}
+                  >
+                    <XIcon data-icon="inline-start" />
+                    Cancelar
+                  </Button>
+              {paso === 1 ? (
               <Button type="submit" form="comunicado-datos" className="sm:ml-auto">
                 Siguiente
                 <ArrowRightIcon data-icon="inline-end" />
@@ -510,15 +518,6 @@ export function CrearComunicadoDialog({
                       <ArrowRightIcon data-icon="inline-end" />
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    color="neutral"
-                    onClick={() => void intentarCerrar()}
-                    disabled={crear.isPending}
-                  >
-                    <XIcon data-icon="inline-start" />
-                    Cancelar
-                  </Button>
                 </div>
               </>
             )}

@@ -259,17 +259,12 @@ export function DialogBibliotecaRecursos({
         </div>
 
         <DialogFooter className="m-0 shrink-0 px-6 pb-6">
-          {/* El footer acá es solo "Cerrar" — la selección es single-shot
-              (cada card click agrega y cierra), no hay draft que confirmar
-              como en el dialog de áreas. Diferencia explícita con
-              `DialogSelectGeneralAreas`. `fill` + `neutral` para que el
-              botón tenga el mismo peso visual que la acción primaria
-              (agregar un recurso desde la card), sin competir con ella
-              por color: acá no hay primaria, las acciones del modal son
-              todas neutras. */}
+          {/* El footer acá es solo "Cerrar": la selección es single-shot (cada card click agrega y
+              cierra), no hay draft que confirmar. Cerrar con borde neutro, como todo botón que
+              vuelve atrás (CLAUDE.md §13). */}
           <DialogClose
             render={
-              <Button size="sm" type="button" variant="fill" color="neutral" />
+              <Button size="sm" type="button" variant="outline" color="neutral" />
             }
           >
             <XIcon data-icon="inline-start" />

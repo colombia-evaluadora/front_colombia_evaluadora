@@ -121,7 +121,7 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={f.pending} onClick={f.guardar}>
             <IconoCarga cargando={f.pending}><FloppyDiskIcon data-icon="inline-start" /></IconoCarga>
             Guardar

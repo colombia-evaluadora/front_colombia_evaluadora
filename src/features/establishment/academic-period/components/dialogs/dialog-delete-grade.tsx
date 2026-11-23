@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -63,7 +63,7 @@ export function DeleteGradeDialog({ grade, variant = "icon", onDeleted }: Delete
           <TooltipTrigger
             render={
               <AlertDialogTrigger
-                render={<Button variant="ghost" color="neutral" size="icon-sm" />}
+                render={<Button variant="ghost" color="destructive" size="icon-sm" />}
               />
             }
           >
@@ -81,6 +81,10 @@ export function DeleteGradeDialog({ grade, variant = "icon", onDeleted }: Delete
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMutation.isPending}
@@ -90,14 +94,10 @@ export function DeleteGradeDialog({ grade, variant = "icon", onDeleted }: Delete
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

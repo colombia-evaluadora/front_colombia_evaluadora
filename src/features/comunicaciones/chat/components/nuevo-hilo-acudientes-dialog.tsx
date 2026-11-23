@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useStore } from "@tanstack/react-form"
+import { XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -118,7 +119,8 @@ function NuevoHiloContenido({ onClose, onCreado }: NuevoHiloAcudientesDialogProp
           </form.AppField>
         </form>
         <DialogFooter>
-          <Button type="button" variant="fill" color="neutral" onClick={cerrar} disabled={pendiente}>
+          <Button variant="outline" color="neutral" type="button" onClick={cerrar} disabled={pendiente}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

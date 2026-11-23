@@ -94,7 +94,8 @@ export function ChangeCampusStatusDialog({ campus }: ChangeCampusStatusDialogPro
               <AlertDialogDescription>{blockedMessage}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel color="primary">
+              <AlertDialogCancel variant="outline" color="neutral">
+                <XIcon data-icon="inline-start" />
                 <CheckIcon data-icon="inline-start" />
                 Entendido
               </AlertDialogCancel>

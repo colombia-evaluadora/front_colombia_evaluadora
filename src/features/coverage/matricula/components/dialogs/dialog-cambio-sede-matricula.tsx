@@ -205,6 +205,10 @@ export function CambioSedeMatriculaDialog({
         </div>
 
         <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-end">
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
           {onBack && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={onBack}>
               <ArrowLeftIcon data-icon="inline-start" />
@@ -215,10 +219,6 @@ export function CambioSedeMatriculaDialog({
             <CheckIcon data-icon="inline-start" />
             Confirmar cambio de sede
           </Button>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cerrar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

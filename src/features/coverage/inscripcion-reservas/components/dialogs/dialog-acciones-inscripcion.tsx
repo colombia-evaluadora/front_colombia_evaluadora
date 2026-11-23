@@ -96,12 +96,11 @@ export function AdmitirDialog({
           </p>
         </div>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={admitir.isPending}
             onClick={() => onOpenChange(false)}
           >
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button disabled={admitir.isPending} onClick={confirmar}>
@@ -221,12 +220,11 @@ function NoAdmitirContenido({ opciones, onOpenChange, onDone }: AccionProps) {
         </form.AppField>
       </form>
       <DialogFooter>
-        <Button
-          variant="outline"
-          color="neutral"
+        <Button variant="outline" color="neutral"
           disabled={noAdmitir.isPending}
           onClick={() => onOpenChange(false)}
         >
+          <XIcon data-icon="inline-start" />
           Cancelar
         </Button>
         <Button type="submit" form={NO_ADMITIR_FORM_ID} disabled={noAdmitir.isPending}>

@@ -2,7 +2,7 @@ import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { PaperPlaneTiltIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PaperPlaneTiltIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { useAppForm } from "@/lib/forms"
 import { maxLength, required } from "@/lib/forms/messages"
 
@@ -101,7 +101,8 @@ export function DialogSolicitarAprobacion({ solicitud, enviando, onCancelar, onE
         </form>
 
         <DialogFooter>
-          <Button size="sm" variant="outline" color="neutral" disabled={enviando} onClick={onCancelar}>
+          <Button variant="outline" color="neutral" size="sm" disabled={enviando} onClick={onCancelar}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button size="sm" type="submit" color="primary" form={FORM_ID} disabled={enviando} aria-busy={enviando}>
