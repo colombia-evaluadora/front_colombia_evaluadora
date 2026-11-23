@@ -13,8 +13,8 @@ export function EstadoDocumento({ documento }: { documento: DocumentoVerificado 
       Icono: CheckCircleFillIcon,
       titulo: carne ? "Carné vigente" : "Documento auténtico",
       texto: carne
-        ? "Lo emitió la plataforma Control Escolar y el estudiante tiene matrícula vigente en el establecimiento."
-        : "Lo emitió la plataforma Control Escolar y es la versión vigente.",
+        ? "Lo emitió la plataforma Colombia Evaluadora y el estudiante tiene matrícula vigente en el establecimiento."
+        : "Lo emitió la plataforma Colombia Evaluadora y es la versión vigente.",
     },
     REEMPLAZADO: {
       tono: "yellow",

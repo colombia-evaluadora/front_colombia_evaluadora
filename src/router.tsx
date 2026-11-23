@@ -121,7 +121,7 @@ const ActivatePage = lazyRouteComponent(
 const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
 const PublicLayout = lazyRouteComponent(() => import("@/components/public/public-layout"), "PublicLayout")
 // Mismo valor que exporta public-layout; aquí sin importar el módulo para no romper el lazy.
-const PUBLIC_SITE_NAME = "Control Escolar"
+const PUBLIC_SITE_NAME = "Colombia Evaluadora"
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
