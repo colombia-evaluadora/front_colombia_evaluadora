@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XSquareIcon } from "@/components/ui/icons"
+import { XIcon, XSquareIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -40,7 +40,7 @@ export function ClearSelectionAcademicPeriodsDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel variant="outline" color="neutral"><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               resetSelection()

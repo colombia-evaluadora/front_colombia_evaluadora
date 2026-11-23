@@ -147,7 +147,7 @@ export function ReopenAcademicPeriodDialog({
         </form>
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" onClick={requestClose}>
+          <Button variant="outline" color="neutral" type="button" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

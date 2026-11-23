@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { FunnelXIcon } from "@/components/ui/icons"
+import { FunnelXIcon, XIcon } from "@/components/ui/icons"
 
 import {
   TableScreen,
@@ -295,7 +295,7 @@ function DialogoRevisar({ e, p, onCerrar, onHecho }: { e: EleccionProceso; p: Po
         <Field variant="outlined"><FieldLabel>Motivo y vía de reclamación (si no se habilita)</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
         <Field variant="outlined"><FieldLabel>Fecha límite de subsanación</FieldLabel><Input type="datetime-local" value={limite} onChange={(x) => setLimite(x.target.value)} /></Field>
         <DialogFooter>
-          <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
+          <Button variant="outline" color="neutral" onClick={onCerrar}><XIcon data-icon="inline-start" />Cancelar</Button>
           <Button variant="outline" color="destructive" disabled={m.isPending} onClick={() => enviar("NO_HABILITAR")}>No habilitar</Button>
           <Button variant="outline" color="neutral" disabled={m.isPending} onClick={() => enviar("SUBSANAR")}>Pedir subsanación</Button>
           <Button disabled={m.isPending} onClick={() => enviar("HABILITAR")}>Habilitar</Button>
@@ -411,7 +411,7 @@ function DialogoExcepcion({ e, onCerrar, onHecho }: { e: EleccionProceso; onCerr
         </Field>
         <Field variant="outlined"><FieldLabel>* Motivo</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivo} onChange={(x) => setMotivo(x.target.value)} /></Field>
         <DialogFooter>
-          <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
+          <Button variant="outline" color="neutral" onClick={onCerrar}><XIcon data-icon="inline-start" />Cancelar</Button>
           <Button disabled={!usuario || !motivo.trim() || m.isPending} onClick={() => m.mutate(
             { ruta: `/elecciones/${e.id}/padron/excepcion`, cuerpo: { USUARIO: Number(usuario), ACCION: accion, MOTIVO: motivo } },
             { onSuccess: () => onHecho("Excepción registrada."), onError: (x) => setError(getErrorMessage(x)) },
@@ -540,7 +540,7 @@ function DialogoResolver({ id, onCerrar, onHecho }: { id: number; onCerrar: () =
         </Field>
         <Field variant="outlined"><FieldLabel>* Respuesta</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={respuesta} onChange={(x) => setRespuesta(x.target.value)} /></Field>
         <DialogFooter>
-          <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
+          <Button variant="outline" color="neutral" onClick={onCerrar}><XIcon data-icon="inline-start" />Cancelar</Button>
           <Button disabled={!respuesta.trim() || m.isPending} onClick={() => m.mutate(
             { ruta: `/reclamaciones/${id}/resolver`, cuerpo: { DECISION: decision, AFECTA_RESULTADO: afecta, RESPUESTA: respuesta } },
             { onSuccess: () => onHecho("Reclamación resuelta."), onError: (x) => setError(getErrorMessage(x)) },
@@ -599,7 +599,7 @@ function DialogoNovedad({ id, onCerrar, onHecho }: { id: number; onCerrar: () =>
         </Field>
         <Field variant="outlined"><FieldLabel>* Detalle</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={detalle} onChange={(x) => setDetalle(x.target.value)} /></Field>
         <DialogFooter>
-          <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
+          <Button variant="outline" color="neutral" onClick={onCerrar}><XIcon data-icon="inline-start" />Cancelar</Button>
           <Button disabled={!detalle.trim() || m.isPending} onClick={() => m.mutate(
             { ruta: `/designaciones/${id}/novedad`, cuerpo: { TIPO: tipo, DETALLE: detalle } },
             { onSuccess: () => onHecho("Novedad registrada."), onError: (x) => setError(getErrorMessage(x)) },
@@ -640,7 +640,7 @@ function DialogoDecision({ e, tipo, onCerrar, onHecho }: { e: EleccionProceso; t
         ))}
         <Field variant="outlined"><FieldLabel>* Motivación</FieldLabel><Textarea className={TEXTAREA_OUTLINED} value={motivacion} onChange={(x) => setMotivacion(x.target.value)} /></Field>
         <DialogFooter>
-          <Button variant="outline" color="neutral" onClick={onCerrar}>Cancelar</Button>
+          <Button variant="outline" color="neutral" onClick={onCerrar}><XIcon data-icon="inline-start" />Cancelar</Button>
           <Button disabled={!personas.length || !motivacion.trim() || m.isPending} onClick={() => m.mutate(
             { ruta: `/elecciones/${e.id}/${tipo}`, cuerpo: { PERSONAS: personas, MOTIVACION: motivacion } },
             { onSuccess: () => onHecho("Decisión registrada; nueva versión del acta."), onError: (x) => setError(getErrorMessage(x)) },

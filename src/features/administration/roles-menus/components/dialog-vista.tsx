@@ -372,7 +372,7 @@ export function DialogVista({ menus, menu, onClose }: DialogVistaProps) {
         </form>
         <DialogFooter className="sm:items-center">
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <Button size="sm" type="button" variant="outline" color="neutral" disabled={busy} onClick={onClose}>
+          <Button variant="outline" color="neutral" size="sm" type="button" disabled={busy} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

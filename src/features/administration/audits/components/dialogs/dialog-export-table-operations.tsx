@@ -76,7 +76,7 @@ export function ExportTableOperationsDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>

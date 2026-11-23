@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { XIcon } from "@/components/ui/icons"
 
 /**
  * "Eliminar de mi bandeja" (informe de Comunicaciones §4.3, prototipo M.2.RET.2): un solo diálogo
@@ -57,7 +58,7 @@ export function EliminarDeBandejaDialog({
           </span>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pendiente}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={pendiente}><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={pendiente}

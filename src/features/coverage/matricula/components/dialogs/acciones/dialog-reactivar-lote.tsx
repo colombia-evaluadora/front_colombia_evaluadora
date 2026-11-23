@@ -15,7 +15,7 @@ import {
   FileUploadItemPreview,
   FileUploadList,
 } from "@/components/ui/file-upload"
-import { ArrowCounterClockwiseIcon, FileUploadOutlinedIcon, SpinnerIcon, WarningIcon } from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, FileUploadOutlinedIcon, SpinnerIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -149,7 +149,8 @@ export function DialogReactivarLote({
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={reactivar.isPending} onClick={confirmar}>

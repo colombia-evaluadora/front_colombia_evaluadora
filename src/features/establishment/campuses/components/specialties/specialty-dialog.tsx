@@ -185,7 +185,7 @@ function SpecialtyForm({ campusId, item, onClose }: { campusId: number; item: Ca
         </form>
 
         <DialogFooter>
-          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+          <Button variant="outline" color="neutral" size="sm" type="button" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

@@ -114,7 +114,7 @@ function DialogEmitir({ piar, onClose }: { piar: PiarDetalle; onClose: () => voi
         </ul>
         <p className="text-xs text-muted-foreground">El PDF lleva la versión, la fecha y el responsable; es información sensible.</p>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button
             size="sm"
             disabled={pending || criterios.some((c) => !c.ok)}

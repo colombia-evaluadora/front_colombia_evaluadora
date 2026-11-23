@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
-import { CheckIcon, MagnifyingGlassIcon, SpinnerIcon, TrashIcon, UserSwitchIcon, XIcon } from "@/components/ui/icons"
+import { MagnifyingGlassIcon, SpinnerIcon, TrashIcon, UserSwitchIcon, XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -446,9 +446,9 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
               {deleteMutation.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
-                <CheckIcon data-icon="inline-start" />
+                <TrashIcon data-icon="inline-start" />
               )}
-              Si
+              Eliminar
             </AlertDialogAction>
           )}
           {cerrar(tieneActividades ? "Cancelar" : "No", deleteMutation.isPending)}
@@ -467,7 +467,7 @@ export function DialogDeleteUnidad({ unidad, rotuloUnidad, onDeleted, triggerPro
                 <Button
                   type="button"
                   variant="ghost"
-                  color="neutral"
+                  color="destructive"
                   size="icon-sm"
                   aria-label={`Eliminar ${unidad.nombre}`}
                   {...triggerProps}

@@ -66,26 +66,7 @@ import {
   useSalirConversacion,
   useSilenciarConversacion,
 } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
-import {
-  ArchiveIcon,
-  UnarchiveIcon,
-  CopyIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-  ChatReadIcon,
-  DotsThreeVerticalIcon,
-  ChatUnreadIcon,
-  SignOutIcon,
-  BellSlashIcon,
-  BellIcon,
-  BellRingingIcon,
-  LightningIcon,
-  XSquareIcon,
-  WarningIcon,
-  EyeSlashIcon,
-  PersonAddIcon,
-  PersonRemoveIcon,
-} from "@/components/ui/icons"
+import { ArchiveIcon, BellIcon, BellRingingIcon, BellSlashIcon, ChatReadIcon, ChatUnreadIcon, CopyIcon, DotsThreeVerticalIcon, EyeSlashIcon, LightningIcon, PencilSimpleIcon, PersonAddIcon, PersonRemoveIcon, SignOutIcon, TrashIcon, UnarchiveIcon, WarningIcon, XIcon, XSquareIcon } from "@/components/ui/icons"
 
 // Los items del menú base van en mayúsculas; el diseño del chat los pide en oración.
 const ITEM = "gap-3 py-2.5 text-sm font-normal tracking-normal normal-case [&_svg]:size-5!"
@@ -520,13 +501,12 @@ export function ConversacionAcciones({
               />
             </Field>
             <DialogFooter>
-              <Button
+              <Button variant="outline" color="neutral"
                 type="button"
-                variant="fill"
-                color="neutral"
                 onClick={cerrar}
                 disabled={renombrar.isPending}
               >
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button
@@ -618,7 +598,8 @@ function Confirmacion({
           <AlertDialogDescription>{children}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={pendiente}>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={pendiente}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction

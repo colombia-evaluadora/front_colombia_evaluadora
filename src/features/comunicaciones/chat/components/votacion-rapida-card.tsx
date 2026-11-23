@@ -314,7 +314,8 @@ function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
           </AlertDialogHeader>
           <ErrorNoticeBanner error={cerrar.isError ? cerrar.error : null} />
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={cerrar.isPending}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={cerrar.isPending}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -338,7 +339,8 @@ function AccionesCreador({ mensaje: m }: { mensaje: Mensaje }) {
           </AlertDialogHeader>
           <ErrorNoticeBanner error={eliminar.isError ? eliminar.error : null} />
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={eliminar.isPending}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={eliminar.isPending}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction

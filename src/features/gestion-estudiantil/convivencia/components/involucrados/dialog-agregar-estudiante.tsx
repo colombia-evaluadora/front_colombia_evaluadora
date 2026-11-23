@@ -80,7 +80,7 @@ export function DialogAgregarEstudiante({
           />
         </div>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={!s.estudiante} onClick={s.agregar}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar

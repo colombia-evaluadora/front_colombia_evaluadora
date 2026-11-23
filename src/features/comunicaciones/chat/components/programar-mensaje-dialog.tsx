@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import { DatePicker } from "@/components/date-picker"
 import {
   Dialog,
@@ -124,12 +125,12 @@ export function ProgramarMensajeDialog({
         </form>
 
         <DialogFooter>
-          <Button
+          <Button variant="outline" color="neutral"
             type="button"
-            color="neutral"
             onClick={() => onOpenChange(false)}
             disabled={guardando}
           >
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="submit" form="programar-mensaje" disabled={guardando} aria-busy={guardando}>

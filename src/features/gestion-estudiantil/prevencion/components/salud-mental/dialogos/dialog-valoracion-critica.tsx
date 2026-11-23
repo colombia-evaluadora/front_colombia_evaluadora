@@ -30,7 +30,7 @@ export function DialogValoracionCritica({ pending, onCancelar, onConfirmar }: Pr
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" disabled={pending} />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>

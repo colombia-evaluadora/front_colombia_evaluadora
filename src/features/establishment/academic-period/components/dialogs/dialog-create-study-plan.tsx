@@ -477,7 +477,7 @@ export function CreateStudyPlanDialog({
         </div>
 
         <DialogFooter className="m-0 shrink-0 px-6 pb-6">
-          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+          <Button variant="outline" color="neutral" size="sm" type="button" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

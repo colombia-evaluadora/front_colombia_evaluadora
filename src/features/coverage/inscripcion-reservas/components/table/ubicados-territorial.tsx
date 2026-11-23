@@ -353,9 +353,7 @@ function LiberarDialog({
           </form.AppField>
         </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={liberar.isPending}
             onClick={() => onOpenChange(false)}
           >

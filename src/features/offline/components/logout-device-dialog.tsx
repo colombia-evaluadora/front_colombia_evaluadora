@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react"
 
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useOutboxSummary } from "@/lib/offline/outbox/hooks"
 import { vaultStore } from "@/lib/offline/vault"
@@ -40,13 +41,14 @@ export function LogoutDeviceDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
+          <Button variant="outline" color="neutral" onClick={() => onOpenChange(false)}>
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </Button>
           <Button variant="ghost" color="destructive" onClick={onWipe}>
             Borrar los datos de este equipo…
           </Button>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button variant="outline" color="neutral" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
             <Button color="primary" onClick={onLogout}>
               Cerrar sesión
             </Button>

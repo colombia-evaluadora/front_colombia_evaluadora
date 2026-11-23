@@ -569,7 +569,8 @@ export function DetailPreMatriculaDialog({
         </div>
 
         <DialogFooter className="m-0 shrink-0 px-6 pb-6 sm:justify-center">
-          <DialogClose render={<Button size="sm" variant="fill" color="neutral" />}>
+          <DialogClose render={<Button size="sm" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </DialogClose>
         </DialogFooter>

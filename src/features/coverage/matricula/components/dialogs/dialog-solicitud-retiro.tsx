@@ -144,7 +144,8 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
             </>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
             <Button type="button" variant="outline" color="primary" size="sm" disabled={!solicitud} onClick={() => ir("objetar")}>
@@ -244,7 +245,8 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={responder.isPending} onClick={objetar}>
@@ -383,7 +385,8 @@ export function DialogAnularMatricula({ matricula, onOpenChange, onDone }: Props
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

@@ -12,15 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  DotsThreeVerticalIcon,
-  EyeSlashIcon,
-  InfoIcon,
-  PencilSimpleIcon,
-  PushPinFillIcon,
-  PushPinIcon,
-  TrashIcon,
-} from "@/components/ui/icons"
+import { DotsThreeVerticalIcon, EyeSlashIcon, InfoIcon, PencilSimpleIcon, PushPinFillIcon, PushPinIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -239,7 +231,7 @@ export function MensajeAcciones({ mensaje: m, extra }: { mensaje: Mensaje; extra
           </AlertDialogHeader>
           {/* Textos literales de M.2.RET.1. */}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={eliminar.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={eliminar.isPending}><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               disabled={eliminar.isPending}
@@ -331,7 +323,7 @@ export function MenuModeradorHilo({ mensaje: m }: { mensaje: Mensaje }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={ocultar.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={ocultar.isPending}><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               disabled={ocultar.isPending}

@@ -10,7 +10,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ControlPointIcon, TrashIcon } from "@/components/ui/icons"
+import { ControlPointIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { getErrorMessage } from "@/lib/api-client"
@@ -261,7 +261,8 @@ export function CrearEncuestaAcademicaDialog({
             edicion={!!editar}
           />
           <DialogFooter>
-            <Button type="button" color="neutral" onClick={() => void cerrar()} disabled={crear.isPending}>
+            <Button variant="outline" color="neutral" type="button" onClick={() => void cerrar()} disabled={crear.isPending}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
             <Button type="submit" form="encuesta-academica" disabled={crear.isPending} aria-busy={crear.isPending}>

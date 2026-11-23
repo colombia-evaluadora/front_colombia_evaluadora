@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -111,7 +112,8 @@ function Formulario({
         />
       </div>
       <DialogFooter>
-        <Button type="button" variant="fill" color="neutral" onClick={onClose} disabled={editar.isPending}>
+        <Button variant="outline" color="neutral" type="button" onClick={onClose} disabled={editar.isPending}>
+          <XIcon data-icon="inline-start" />
           Cancelar
         </Button>
         <Button type="submit" disabled={!valido || editar.isPending} aria-busy={editar.isPending}>

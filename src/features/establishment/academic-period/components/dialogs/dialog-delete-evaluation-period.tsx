@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -50,7 +50,7 @@ export function DeleteEvaluationPeriodDialog({
       <Tooltip>
         <TooltipTrigger
           render={
-            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            <AlertDialogTrigger render={<Button variant="ghost" color="destructive" size="icon-sm" />} />
           }
         >
           <span className="sr-only">Eliminar periodo de evaluación</span>
@@ -67,6 +67,10 @@ export function DeleteEvaluationPeriodDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMutation.isPending}
@@ -80,14 +84,10 @@ export function DeleteEvaluationPeriodDialog({
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

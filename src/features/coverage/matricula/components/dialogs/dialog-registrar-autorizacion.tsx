@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -94,13 +94,12 @@ export function DialogRegistrarAutorizacion({
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <Button
+          <Button variant="outline" color="neutral"
             type="button"
-            variant="outline"
-            color="neutral"
             disabled={registrar.isPending}
             onClick={() => onOpenChange(false)}
           >
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" disabled={registrar.isPending} onClick={guardar}>

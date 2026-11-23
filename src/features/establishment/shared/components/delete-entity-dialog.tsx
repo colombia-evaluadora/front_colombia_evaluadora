@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react"
 import type { UseMutationResult } from "@tanstack/react-query"
 
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -81,7 +81,7 @@ export function DeleteEntityDialog({
                 <Button
                   type="button"
                   variant="ghost"
-                  color="neutral"
+                  color="destructive"
                   size="icon-sm"
                   aria-label={`Eliminar ${name}`}
                 />
@@ -99,6 +99,10 @@ export function DeleteEntityDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={mutation.isPending}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={mutation.isPending}
@@ -108,14 +112,10 @@ export function DeleteEntityDialog({
             {mutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={mutation.isPending}>
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

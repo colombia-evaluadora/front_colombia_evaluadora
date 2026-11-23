@@ -124,7 +124,7 @@ function VigenciaContent({ accion, rol, employeeName, onClose, prorrogar, activa
       </form>
 
       <DialogFooter>
-        <Button size="sm" type="button" variant="outline" color="neutral" onClick={onClose} disabled={saving}>
+        <Button variant="outline" color="neutral" size="sm" type="button" onClick={onClose} disabled={saving}>
           <XIcon data-icon="inline-start" />
           Cancelar
         </Button>

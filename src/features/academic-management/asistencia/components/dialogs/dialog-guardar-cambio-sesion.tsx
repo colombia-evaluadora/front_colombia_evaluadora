@@ -9,7 +9,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CheckIcon, SpinnerIcon, TrashIcon, WarningIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import type { useOnlineOnly } from "@/lib/offline/use-online-only"
 
 // Pregunta si guardar antes de cambiar de sesión.
@@ -46,7 +46,8 @@ export function DialogGuardarCambioSesion({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:items-center">
-            <AlertDialogCancel variant="ghost" color="neutral" disabled={guardandoCambio} className="sm:mr-auto">
+            <AlertDialogCancel variant="outline" color="neutral" disabled={guardandoCambio} className="sm:mr-auto">
+              <XIcon data-icon="inline-start" />
               Seguir editando
             </AlertDialogCancel>
             <Button variant="outline" color="destructive" disabled={guardandoCambio} onClick={onDescartar}>

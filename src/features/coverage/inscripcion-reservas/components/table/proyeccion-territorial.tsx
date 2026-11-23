@@ -317,9 +317,7 @@ export function AprobarProyeccionDialog({
           Se avisa al establecimiento.
         </Aviso>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={aprobar.isPending}
             onClick={() => onOpenChange(false)}
           >

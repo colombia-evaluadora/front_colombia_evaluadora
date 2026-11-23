@@ -239,7 +239,7 @@ export function DialogDisponer({
         )}
 
         <DialogFooter>
-          <Button size="sm" variant="outline" color="neutral" disabled={disponer.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" size="sm" disabled={disponer.isPending} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

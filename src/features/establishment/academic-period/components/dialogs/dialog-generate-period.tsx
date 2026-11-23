@@ -233,10 +233,8 @@ export function GeneratePeriodDialog({
         )}
 
         <DialogFooter>
-          <Button
+          <Button variant="outline" color="neutral"
             size="sm"
-            variant="outline"
-            color="neutral"
             onClick={close}
             disabled={isGenerating}
           >

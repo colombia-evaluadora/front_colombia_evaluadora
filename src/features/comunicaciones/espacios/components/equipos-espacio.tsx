@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -78,6 +79,7 @@ function DialogoEquipo({
         )}
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCerrar}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
@@ -164,6 +166,7 @@ function DialogoMover({
         )}
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCerrar}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button disabled={!destino || guardar.isPending} onClick={confirmar}>

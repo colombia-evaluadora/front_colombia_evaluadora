@@ -608,7 +608,8 @@ function DialogRechazarCambios({
           />
         </Field>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" variant="fill" color="neutral" disabled={rechazar.isPending} />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" disabled={rechazar.isPending} />}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
           <Button

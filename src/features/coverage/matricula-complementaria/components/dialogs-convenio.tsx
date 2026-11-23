@@ -80,7 +80,8 @@ function Botones({
 }) {
   return (
     <DialogFooter>
-      <Button type="button" variant="outline" color="neutral" size="sm" onClick={onCancel}>
+      <Button variant="outline" color="neutral" type="button" size="sm" onClick={onCancel}>
+        <XIcon data-icon="inline-start" />
         Cancelar
       </Button>
       <Button type="button" variant="fill" color={destructivo ? "destructive" : "primary"} size="sm" disabled={pending || disabled} onClick={onConfirm}>

@@ -266,9 +266,7 @@ export function UbicarDialog({
           )
         )}
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={ubicar.isPending}
             onClick={() => cerrar(false)}
           >

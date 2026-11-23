@@ -300,7 +300,7 @@ export function SelectGeneralAreaDialog({
 
         <DialogFooter className="shrink-0">
           <DialogClose
-            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+            render={<Button variant="outline" color="neutral" size="sm" type="button" />}
           >
             <XIcon data-icon="inline-start" />
             Cancelar

@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon } from "@/components/ui/icons"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Encuesta } from "@/features/comunicaciones/chat/api/types"
 import { useResponderEncuesta } from "@/features/comunicaciones/chat/api/mutations/use-crear-encuesta"
@@ -135,7 +135,8 @@ function Formulario({ encuesta: e }: { encuesta: Encuesta }) {
           </AlertDialogHeader>
           <ErrorNoticeBanner error={responder.isError ? responder.error : null} />
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={responder.isPending}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={responder.isPending}>
+              <XIcon data-icon="inline-start" />
               Seguir respondiendo
             </AlertDialogCancel>
             <AlertDialogAction disabled={responder.isPending} aria-busy={responder.isPending} onClick={enviar}>

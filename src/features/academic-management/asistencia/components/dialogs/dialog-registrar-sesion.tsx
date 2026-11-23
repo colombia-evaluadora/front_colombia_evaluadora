@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ClipboardCheckIcon } from "@/components/ui/icons"
+import { ClipboardCheckIcon, XIcon } from "@/components/ui/icons"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toSelectItemsMap } from "@/lib/catalog-options"
@@ -184,7 +184,8 @@ export function DialogRegistrarSesion({
           </Field>
         </div>
         <DialogFooter>
-          <Button size="sm" variant="outline" color="neutral" onClick={() => setOpen(false)}>
+          <Button variant="outline" color="neutral" size="sm" onClick={() => setOpen(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button size="sm" color="primary" disabled={!grupo || !asignatura || !fecha} onClick={abrir}>

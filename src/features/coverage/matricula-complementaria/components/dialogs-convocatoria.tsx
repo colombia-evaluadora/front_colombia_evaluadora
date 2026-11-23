@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { FileDownloadOutlinedIcon, FileXlsIcon, SpinnerIcon, TrashIcon, WarningIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FileXlsIcon, SpinnerIcon, TrashIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -256,7 +256,8 @@ export function DialogEliminarConvocatoria({
         </DialogHeader>
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

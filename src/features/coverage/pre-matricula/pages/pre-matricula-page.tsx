@@ -154,6 +154,10 @@ export function PreMatriculaPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter className="sm:justify-center">
+                    <DialogClose render={<Button variant="outline" color="neutral" size="sm" />}>
+                      <XIcon data-icon="inline-start" />
+                      Cancelar
+                    </DialogClose>
                     <Button
                       size="sm"
                       color="primary"
@@ -165,10 +169,6 @@ export function PreMatriculaPage() {
                       <CheckIcon data-icon="inline-start" />
                       Continuar con la prematrícula
                     </Button>
-                    <DialogClose render={<Button size="sm" variant="fill" color="neutral" />}>
-                      <XIcon data-icon="inline-start" />
-                      Cancelar
-                    </DialogClose>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,7 +63,7 @@ export function DeleteEnrollmentDialog({ enrollment }: DeleteEnrollmentDialogPro
                 <Button
                   type="button"
                   variant="ghost"
-                  color="neutral"
+                  color="destructive"
                   size="icon-sm"
                   aria-label={`Eliminar inscripción de ${fullName}`}
                 />
@@ -88,6 +88,13 @@ export function DeleteEnrollmentDialog({ enrollment }: DeleteEnrollmentDialogPro
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center">
+          <AlertDialogCancel variant="outline" color="neutral"
+            className="w-20"
+            disabled={deleteMutation.isPending}
+          >
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             className="w-20"
             color="destructive"
@@ -98,16 +105,8 @@ export function DeleteEnrollmentDialog({ enrollment }: DeleteEnrollmentDialogPro
             {deleteMutation.isPending && (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel
-            className="w-20"
-            variant="fill"
-            color="neutral"
-            disabled={deleteMutation.isPending}
-          >
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

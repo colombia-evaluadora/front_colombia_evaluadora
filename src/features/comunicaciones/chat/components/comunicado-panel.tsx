@@ -11,14 +11,7 @@ import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  ChatCircleTextIcon,
-  ClockIcon,
-  LockIcon,
-  MegaphoneIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from "@/components/ui/icons"
+import { ChatCircleTextIcon, ClockIcon, LockIcon, MegaphoneIcon, WarningCircleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { paths } from "@/config/paths"
 import type { Comunicado, EstadoComunicado } from "@/features/comunicaciones/chat/api/types"
@@ -284,7 +277,8 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
           {intentado && vacio && <FieldError>Escribe el motivo de la anulación.</FieldError>}
         </Field>
         <DialogFooter>
-          <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
+          <Button variant="outline" color="neutral" type="button" onClick={cerrar} disabled={anular.isPending}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

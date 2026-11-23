@@ -6,7 +6,7 @@ import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeftIcon, CheckIcon, ListNumbersIcon, SpinnerIcon, WarningIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, CheckIcon, ListNumbersIcon, SpinnerIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
@@ -296,7 +296,8 @@ function DialogConfirmarSeleccion({
           </li>
         </ul>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

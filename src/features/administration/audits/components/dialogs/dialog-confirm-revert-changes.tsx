@@ -157,6 +157,10 @@ function DialogConfirmRevertChangesInner({
         />
 
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </AlertDialogCancel>
           <AlertDialogAction
             disabled={revertChange.isPending}
             aria-busy={revertChange.isPending}
@@ -171,10 +175,6 @@ function DialogConfirmRevertChangesInner({
             )}
             Revertir
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            Cerrar
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

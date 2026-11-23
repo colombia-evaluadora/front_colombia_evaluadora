@@ -12,7 +12,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { WarningIcon } from "@/components/ui/icons"
+import { WarningIcon, XIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
@@ -65,7 +65,7 @@ export function DialogRestablecerSegundoFactor({
           <FieldDescription>Entre 10 y 500 caracteres.</FieldDescription>
         </Field>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={restablecer.isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={restablecer.isPending}><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <Button
             color="destructive"
             disabled={!valido || restablecer.isPending || !s}

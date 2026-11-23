@@ -134,13 +134,13 @@ export function VotacionRapidaDialog({
           {(lleno) =>
             lleno && (
               <DialogFooter>
+                <Button variant="outline" color="neutral" type="button" onClick={cerrar} disabled={mutacion.isPending}>
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </Button>
                 <Button type="submit" form={FORM_ID} disabled={mutacion.isPending} aria-busy={mutacion.isPending}>
                   {editar ? "Guardar" : "Crear"}
                   <ArrowRightIcon data-icon="inline-end" />
-                </Button>
-                <Button type="button" color="neutral" onClick={cerrar} disabled={mutacion.isPending}>
-                  <XIcon data-icon="inline-start" />
-                  Cancelar
                 </Button>
               </DialogFooter>
             )

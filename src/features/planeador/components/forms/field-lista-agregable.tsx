@@ -470,7 +470,7 @@ export function ContenidosCaja({
                       <Button
                         type="button"
                         variant="ghost"
-                        color="neutral"
+                        color="destructive"
                         size="icon-sm"
                         aria-label={`Quitar sección ${index + 1}`}
                         onClick={() => quitar(index)}
@@ -632,7 +632,7 @@ export function ListaAgregableCajaSelect({
                       <Button
                         type="button"
                         variant="ghost"
-                        color="neutral"
+                        color="destructive"
                         size="icon-sm"
                         aria-label={`Quitar "${item.text}"`}
                         className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"

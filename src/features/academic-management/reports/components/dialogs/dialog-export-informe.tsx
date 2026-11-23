@@ -82,7 +82,7 @@ function DialogDescarga({
           <DialogDescription>{descripcion}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
@@ -319,10 +319,12 @@ export function DialogGenerarBoletin({
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {/* Cancelar primero; la acción principal (Continuar) al final. */}
           <AlertDialogFooter>
-            {!nadaQueGenerar && (
-              <AlertDialogAction onClick={() => void generar()}>Continuar</AlertDialogAction>
-            )}
+            <AlertDialogCancel variant="outline" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
             {sinConsolidar.length > 0 && (
               <AlertDialogCancel
                 variant="outline"
@@ -336,9 +338,9 @@ export function DialogGenerarBoletin({
                 Ir a consolidar
               </AlertDialogCancel>
             )}
-            <AlertDialogCancel variant="fill" color="neutral">
-              Cancelar
-            </AlertDialogCancel>
+            {!nadaQueGenerar && (
+              <AlertDialogAction onClick={() => void generar()}>Continuar</AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

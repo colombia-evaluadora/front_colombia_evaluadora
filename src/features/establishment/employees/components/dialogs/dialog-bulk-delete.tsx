@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 interface DialogBulkDeleteProps<T, TId> {
   // Elementos seleccionados. Necesitamos su `id` para la mutación y la
@@ -100,6 +100,10 @@ export function DialogBulkDelete<T, TId>({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={isPending}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={isPending}
@@ -109,14 +113,10 @@ export function DialogBulkDelete<T, TId>({
             {isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={isPending}>
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

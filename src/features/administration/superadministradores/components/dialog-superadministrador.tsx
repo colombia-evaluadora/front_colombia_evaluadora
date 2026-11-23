@@ -415,7 +415,24 @@ function SuperadministradorForm({
           )}
         </form>
 
+        {/* Cancelar/Cerrar primero; el primario al final (CLAUDE.md §13). */}
         <DialogFooter>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+            <XIcon data-icon="inline-start" />
+            {soloLectura ? "Cerrar" : "Cancelar"}
+          </Button>
+          {soloLectura && actual != null && puedeEditar && (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              color="neutral"
+              onClick={() => onModificar(actual)}
+            >
+              <PencilIcon data-icon="inline-start" />
+              Modificar
+            </Button>
+          )}
           {!soloLectura && (
             <Button
               size="sm"
@@ -433,22 +450,6 @@ function SuperadministradorForm({
               Guardar
             </Button>
           )}
-          {soloLectura && actual != null && puedeEditar && (
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              color="neutral"
-              onClick={() => onModificar(actual)}
-            >
-              <PencilIcon data-icon="inline-start" />
-              Modificar
-            </Button>
-          )}
-          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
-            <XIcon data-icon="inline-start" />
-            {soloLectura ? "Cerrar" : "Cancelar"}
-          </Button>
         </DialogFooter>
       </DialogContent>
       <ConfirmDiscardDialog

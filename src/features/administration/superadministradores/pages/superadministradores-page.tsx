@@ -248,6 +248,10 @@ function SuperadministradoresPageContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={estado.isPending}>
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               disabled={estado.isPending}
@@ -261,10 +265,6 @@ function SuperadministradoresPageContent() {
               )}
               Inactivar
             </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={estado.isPending}>
-              <XIcon data-icon="inline-start" />
-              Cancelar
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
