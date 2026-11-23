@@ -3,7 +3,16 @@ import type { CasoDetalle } from "@/features/gestion-estudiantil/reintegracion/a
 import { BadgesEstadoCaso } from "@/features/gestion-estudiantil/reintegracion/components/badges-caso"
 
 /** Línea bajo el título de los modales: estado, sede y jornada, profesional y, si aplica, el retiro. */
-export function ResumenCasoDialogo({ caso: c, conRetiro }: { caso: CasoDetalle; conRetiro?: boolean }) {
+export function ResumenCasoDialogo({
+  caso: c,
+  conRetiro,
+  conAltaComplejidad,
+}: {
+  caso: CasoDetalle
+  conRetiro?: boolean
+  /** Suma «Alta complejidad: Sí/No» a la línea del estado (Cambiar estado, G.9.EST.3). */
+  conAltaComplejidad?: boolean
+}) {
   return (
     <div className="flex flex-col gap-1 text-sm">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -13,6 +22,7 @@ export function ResumenCasoDialogo({ caso: c, conRetiro }: { caso: CasoDetalle; 
         <span>
           {c.dias_en_estado} {c.dias_en_estado === 1 ? "día" : "días"} en el estado
         </span>
+        {conAltaComplejidad && <span>Alta complejidad: {c.alta_complejidad ? "Sí" : "No"}</span>}
       </div>
       <span>
         {c.sede} · {c.jornada}
