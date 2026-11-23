@@ -3,7 +3,7 @@ import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { ArrowCounterClockwiseIcon, InfoIcon, LockIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TablaDatos } from "@/components/tabla-datos"
+import { FichaDatos } from "@/components/ficha-datos"
 
 import {
   BITACORA_ACCIONES,
@@ -71,7 +71,7 @@ export function DetalleEvento({
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {/* Restauración (B.1.DET.2): qué evento deshizo, antes de la tabla. */}
           {esRestauracion && (evento.eventoOriginal || evento.motivo) && (
-            <TablaDatos
+            <FichaDatos
               datos={[
                 ...(evento.eventoOriginal
                   ? [{ etiqueta: "Evento original", valor: textoEventoOriginal(evento.eventoOriginal), ancho: true }]
@@ -84,7 +84,7 @@ export function DetalleEvento({
             // Eliminar (B.1.DET.1): la copia completa que guardó la bitácora, que es la que se recupera.
             <div className="flex flex-col gap-1.5">
               <p className="text-sm font-medium">Copia completa del registro eliminado</p>
-              <TablaDatos datos={estado.cambios.map((c) => ({ etiqueta: c.campo, valor: vacio(c.anterior) }))} />
+              <FichaDatos datos={estado.cambios.map((c) => ({ etiqueta: c.campo, valor: vacio(c.anterior) }))} />
               {estado.creado && (
                 <p className="text-xs text-muted-foreground">
                   Creada {fechaHora(estado.creado.fecha)} · {estado.creado.por}

@@ -55,7 +55,9 @@ export function useDocumentosEmitidosQuery(params: DocumentosParams, enabled = t
     queryKey: bitacoraKeys.documentos(params),
     queryFn: () => fetchDocumentos(params),
     placeholderData: keepPreviousData,
-    enabled,
+    // Sin servicio en el backend todavía: con mocks apagados (test/prod) no se consulta, para no
+    // pedir un endpoint inexistente. La pantalla muestra el aviso de «Vista previa».
+    enabled: enabled && env.ENABLE_API_MOCKING,
   })
 }
 

@@ -19,6 +19,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InfoIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
+import { env } from "@/config/env"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 import { useUser } from "@/lib/auth"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
@@ -103,7 +104,8 @@ function DocumentosContent() {
       : "todas las fechas"
   const alcance = [nombreEstablecimiento, rango].filter(Boolean).join(", ")
 
-  if (isError && isNotFoundError(error)) {
+  // Vista previa: el servicio no existe aún en el backend; solo con mocks se ven datos (de ejemplo).
+  if (!env.ENABLE_API_MOCKING || (isError && isNotFoundError(error))) {
     return (
       <TableScreen>
         <TableScreenHeader>
@@ -113,8 +115,8 @@ function DocumentosContent() {
           <Alert variant="info">
             <InfoIcon aria-hidden />
             <AlertDescription>
-              Documentos emitidos todavía no está disponible: falta el servicio en el backend
-              (<code>/bitacora/documentos/query</code>).
+              Vista previa: Documentos emitidos todavía no está disponible porque falta el servicio en el
+              backend (<code>/bitacora/documentos/query</code>).
             </AlertDescription>
           </Alert>
         </TableScreenBody>

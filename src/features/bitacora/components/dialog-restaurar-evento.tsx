@@ -14,7 +14,7 @@ import {
   XCircleIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { TablaDatos } from "@/components/tabla-datos"
+import { FichaDatos } from "@/components/ficha-datos"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -100,7 +100,7 @@ function Contenido({
       <ErrorNoticeBanner error={restaurar.isError ? restaurar.error : null} />
 
       {/* Mismo formato que el detalle del reconocimiento: nombre del dato en gris claro y valor en blanco. */}
-      <TablaDatos
+      <FichaDatos
         datos={[
           {
             etiqueta: "Evento",
@@ -144,7 +144,7 @@ function Contenido({
         <div className="flex flex-col gap-1.5">
           <p className="text-sm font-medium">Se volverá a crear con la copia guardada</p>
           {/* Un par por fila: el modal es angosto y en dos columnas los valores se partían. */}
-          <TablaDatos datos={estado.cambios.map((c) => ({ etiqueta: c.campo, valor: c.anterior ?? "—", ancho: true }))} />
+          <FichaDatos datos={estado.cambios.map((c) => ({ etiqueta: c.campo, valor: c.anterior ?? "—", ancho: true }))} />
         </div>
       )}
 

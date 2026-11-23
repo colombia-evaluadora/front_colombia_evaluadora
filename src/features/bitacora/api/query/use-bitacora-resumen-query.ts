@@ -51,7 +51,9 @@ export function useBitacoraResumenQuery(filters: BitacoraFilters, enabled = true
     queryKey: bitacoraKeys.resumen(filters),
     queryFn: () => fetchResumen(filters),
     placeholderData: keepPreviousData,
-    enabled,
+    // Sin servicio en el backend todavía: con mocks apagados (test/prod) no se consulta, para no
+    // pedir un endpoint inexistente. La pantalla muestra el aviso de «Vista previa».
+    enabled: enabled && env.ENABLE_API_MOCKING,
   })
 }
 

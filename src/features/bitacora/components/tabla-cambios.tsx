@@ -9,7 +9,7 @@ interface Props {
 }
 
 /**
- * Comparación campo a campo con el estilo de `TablaDatos`: encabezado y columna «Campo» en gris claro, valores
+ * Comparación campo a campo con el estilo de `FichaDatos`: encabezado y columna «Campo» en gris claro, valores
  * en blanco, líneas finas y marco redondeado. Las líneas salen del `gap-px` sobre el fondo del borde, así que
  * todas las celdas llevan fondo sólido.
  */

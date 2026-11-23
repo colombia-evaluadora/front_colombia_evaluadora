@@ -2,19 +2,19 @@ import { Fragment, type ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
-export interface DatoTabla {
+export interface DatoFicha {
   etiqueta: string
   valor: ReactNode
   /** Ocupa la fila entera (textos largos como el motivo). */
   ancho?: boolean
 }
 
-type Fila = { datos: [DatoTabla] | [DatoTabla, DatoTabla]; completa: boolean }
+type Fila = { datos: [DatoFicha] | [DatoFicha, DatoFicha]; completa: boolean }
 
 /** Agrupa de a dos; un dato `ancho`, o el último que queda solo, ocupa la fila entera (sin celdas vacías). */
-function aFilas(datos: DatoTabla[]): Fila[] {
+function aFilas(datos: DatoFicha[]): Fila[] {
   const filas: Fila[] = []
-  let pendiente: DatoTabla | null = null
+  let pendiente: DatoFicha | null = null
   for (const d of datos) {
     if (d.ancho) {
       if (pendiente) filas.push({ datos: [pendiente], completa: true })
@@ -35,7 +35,7 @@ function aFilas(datos: DatoTabla[]): Fila[] {
  * En pantallas angostas va un par por fila. Las líneas salen del `gap-px` sobre el fondo del borde, así que
  * las celdas van con fondos sólidos (un gris semitransparente dejaba ver el borde y se veía oscuro).
  */
-export function TablaDatos({ datos, className }: { datos: DatoTabla[]; className?: string }) {
+export function FichaDatos({ datos, className }: { datos: DatoFicha[]; className?: string }) {
   return (
     <dl
       className={cn(

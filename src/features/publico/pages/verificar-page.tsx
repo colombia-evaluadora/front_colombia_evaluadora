@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router"
 import { PublicBand } from "@/components/public/public-page"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import {
   ArrowLeftIcon,
@@ -49,7 +48,6 @@ export function VerificarPage() {
   const navigate = useNavigate()
   const [vista, setVista] = useState<Vista>({ tipo: "formulario" })
   const [codigo, setCodigo] = useState("")
-  const [robot, setRobot] = useState(false)
   const [intentado, setIntentado] = useState(false)
   /** Código de la vista previa que no corresponde a ningún documento. */
   const [noEncontrado, setNoEncontrado] = useState<string | null>(null)
@@ -63,7 +61,7 @@ export function VerificarPage() {
   function verificar(e: React.FormEvent) {
     e.preventDefault()
     setIntentado(true)
-    if (!limpio || !robot) return
+    if (!limpio) return
     // Los datos de ejemplo solo existen con mocks: en test/prod nunca se muestran.
     if (!env.ENABLE_API_MOCKING || !esCodigoDemo(limpio.toUpperCase())) {
       navigate({ to: paths.verificarDocumento.getHref(limpio) })
@@ -101,7 +99,6 @@ export function VerificarPage() {
                 color="neutral"
                 onClick={() => {
                   setCodigo("")
-                  setRobot(false)
                   setIntentado(false)
                   ir({ tipo: "formulario" })
                 }}
@@ -206,18 +203,6 @@ export function VerificarPage() {
               : "Escriba el código que aparece debajo del código QR del documento."}
           </FieldDescription>
         </Field>
-        <div className="flex flex-col gap-1.5">
-          {/* Lugar del captcha del sitio público (pendiente de conectar). */}
-          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
-            <Checkbox
-              checked={robot}
-              onCheckedChange={(c) => setRobot(Boolean(c))}
-              aria-invalid={intentado && !robot}
-            />
-            No soy un robot
-          </label>
-          {intentado && !robot && <p className="text-red text-xs">Confirme que no es un robot.</p>}
-        </div>
         <Button type="submit" className="w-full">
           <MagnifyingGlassIcon data-icon="inline-start" />
           Verificar

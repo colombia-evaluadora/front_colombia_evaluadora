@@ -228,7 +228,7 @@ export function DialogSaveValor({ categoria, valor, valores, nombreListaPadre, o
 
   return (
     <Dialog open onOpenChange={(next) => !next && requestClose()}>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Modificar valor" : "Nuevo valor"} · {categoria.nombre}

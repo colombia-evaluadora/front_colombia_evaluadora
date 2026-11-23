@@ -1108,6 +1108,8 @@ export const bitacoraDocumentosRoute = createRoute({
   path: paths.app.bitacoraDocumentos.path,
   staticData: {
     breadcrumb: [
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
       { label: "Bitácora", to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG.ESTABLECIMIENTO) },
       { label: "Documentos emitidos", to: paths.app.bitacoraDocumentos.getHref() },
     ],
@@ -1122,6 +1124,8 @@ export const bitacoraModuloRoute = createRoute({
   validateSearch: bitacoraSearchSchema,
   staticData: {
     breadcrumb: (params: Record<string, string>) => [
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
       { label: "Bitácora", to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG.ESTABLECIMIENTO) },
       { label: BITACORA_MODULOS[moduloDeSlug(params.modulo)], to: paths.app.bitacoraModulo.getHref(params.modulo ?? "") },
     ],

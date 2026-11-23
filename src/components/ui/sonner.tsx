@@ -31,11 +31,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "0px",
-          // La × de cerrar va en la esquina superior derecha (prototipo M.1.CAM.3: [Abrir] [×]); sonner la
-          // pone a la izquierda en páginas de izquierda a derecha.
-          "--toast-close-button-start": "unset",
-          "--toast-close-button-end": "0",
-          "--toast-close-button-transform": "translate(35%, -35%)",
         } as React.CSSProperties
       }
       toastOptions={{

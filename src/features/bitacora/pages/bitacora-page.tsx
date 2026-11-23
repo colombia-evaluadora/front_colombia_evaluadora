@@ -23,6 +23,8 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 import { useUser } from "@/lib/auth"
 import { parseDateValue } from "@/lib/date-value"
+import { env } from "@/config/env"
+import { AuditViewTabs } from "@/features/administration/audits/components/audit-view-tabs"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 
 import { exportarBitacora } from "@/features/bitacora/api/mutations/exportar-bitacora"
@@ -75,7 +77,9 @@ function BitacoraPageContent() {
   const { modulo } = filters
   // Administración del Sistema con la acción Acceso: tabla de accesos, sin pestañas ni detalle (B.7.LIS.1).
   const accesos = esVistaAccesos(modulo, filters.accion)
-  const vistaActual = accesos ? "registros" : vista
+  // «Resumen por módulo» es vista previa (sin `/bitacora/resumen` en el backend): solo con mocks.
+  const conResumen = env.ENABLE_API_MOCKING && !accesos
+  const vistaActual = conResumen ? vista : "registros"
   const { data: sedes = [] } = useBitacoraSedesQuery(filters.establecimiento)
   const { data: jornadas = [] } = useJornadasQuery()
   const esperaEstablecimiento = esSuperAdmin && modulo !== "ADMINISTRACION" && !filters.establecimiento
@@ -169,7 +173,10 @@ function BitacoraPageContent() {
           Bitácora · {vistaActual === "resumen" ? "Resumen por módulo" : BITACORA_MODULOS[modulo]}
         </TableScreenTitle>
         {/* B.1.LIS.1 / B.1.LIS.1a: las pestañas van arriba, antes del buscador (como en el prototipo). */}
-        {!accesos && (
+        {/* Registro de actividad (Por sesión / Por tablas / Bitácora): en test/prod el menú del backend no
+            tiene los submenús de Bitácora y esta es la forma de volver a las otras vistas. */}
+        {!env.ENABLE_API_MOCKING && <AuditViewTabs />}
+        {conResumen && (
           <Tabs className="px-(--screen-spacing)" value={vista} onValueChange={(v) => setVista(v as "registros" | "resumen")}>
             <TabsList>
               <TabsTrigger value="registros">Registros</TabsTrigger>

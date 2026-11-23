@@ -7,8 +7,7 @@ import { paths } from "@/config/paths"
 const viewLinks = [
   { label: "Por sesión", to: paths.app.auditoriaSesiones.getHref() },
   { label: "Por tablas", to: paths.app.auditoriaTablas.getHref() },
-  // Mientras el menú del backend no tenga «Bitácora» con sus submódulos, se llega desde aquí.
-  { label: "Bitácora", to: paths.app.bitacoraModulo.getHref("establecimiento") },
+  { label: "Bitácora", to: paths.app.bitacora.getHref() },
 ]
 
 /** Pestañas de Registro de actividad: cada una es un enlace a su vista. */

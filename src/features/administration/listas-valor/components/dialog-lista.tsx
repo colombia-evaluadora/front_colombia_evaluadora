@@ -148,7 +148,7 @@ export function DialogLista({ categoria, categorias, onClose, onCreated, onBloqu
 
   return (
     <Dialog open onOpenChange={(next) => !next && requestClose()}>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? `Modificar lista · ${categoria.nombre}` : "Nueva lista"}</DialogTitle>
         </DialogHeader>

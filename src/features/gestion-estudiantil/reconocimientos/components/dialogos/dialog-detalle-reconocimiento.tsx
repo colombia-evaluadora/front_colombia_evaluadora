@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
-import { TablaDatos } from "@/components/tabla-datos"
+import { FichaDatos } from "@/components/ficha-datos"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useReconocimientoQuery } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-reconocimientos-query"
 import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"
@@ -67,7 +67,7 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccio
         {isError && <p role="alert" className="text-sm text-destructive">{getErrorMessage(error)}</p>}
         <ErrorNoticeBanner error={errorSoporte} />
         {r && (
-          <TablaDatos
+          <FichaDatos
             datos={[
               { etiqueta: "Estudiante", valor: r.estudiante_nombre },
               { etiqueta: "Documento", valor: r.estudiante_documento },
