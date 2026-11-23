@@ -26,6 +26,8 @@ interface Props {
   confirmar: { label: string; icon: ReactNode; color?: "destructive"; onClick: () => void; disabled?: boolean }
   /** G.3.CIT.5 rotula el botón secundario «Volver». */
   cancelarLabel?: string
+  /** Los modales de solo confirmación (sin campos) no llevan la nota de obligatorios. */
+  sinCampos?: boolean
   className?: string
   children: ReactNode
 }
@@ -43,6 +45,7 @@ export function DialogoOperacionShell({
   pending,
   confirmar,
   cancelarLabel = "Cancelar",
+  sinCampos = false,
   className = "sm:max-w-xl",
   children,
 }: Props) {
@@ -57,7 +60,7 @@ export function DialogoOperacionShell({
         {children}
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
-          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          {!sinCampos && <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>}
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} />}>
             <XIcon data-icon="inline-start" />
             {cancelarLabel}
