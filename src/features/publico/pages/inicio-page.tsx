@@ -199,7 +199,7 @@ function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-8 lg:grid-cols-[1.3fr_1fr] lg:py-16">
         <div className="flex flex-col items-start gap-5">
           <span className="bg-primary-22 text-primary rounded-full px-4 py-1.5 text-sm">
-            Plataforma de control escolar
+            Plataforma Colombia Evaluadora
           </span>
           <h1 className="text-navy dark:text-foreground text-4xl leading-[1.1] font-extrabold tracking-tight sm:text-5xl">
             La vida escolar de su <span className="sm:block">establecimiento,</span>

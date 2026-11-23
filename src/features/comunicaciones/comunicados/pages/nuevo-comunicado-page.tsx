@@ -110,7 +110,8 @@ function NuevoComunicadoContent() {
   const previsualizar = usePrevisualizarDocumento()
   const publicar = usePublicarDocumento()
 
-  const volver = () => void navigate({ to: paths.app.comunicacionesChat.getHref() })
+  // Cancelar vuelve al listado de Comunicados institucionales (de donde se entra), no a la mensajería.
+  const volver = () => void navigate({ to: paths.app.comunicacionesComunicados.getHref() })
   const sucio = !!titulo || !!mensaje || archivos.length > 0 || conjuntos.some((c) => c.tipos.length > 0 || !!c.sede)
   const bloqueado = conjuntos.some((c, i) => sinPeriodos(c, datos.current[i]))
   const mensajeLimpio = mensaje.trim()

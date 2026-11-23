@@ -71,6 +71,21 @@ describe("aplicarEventoUsuario (bandeja personal)", () => {
     expect(r).toEqual({ id: 1, nombre: "Feria", motivo: "QUITADO" })
     expect(qc.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.map((c) => c.id)).toEqual([2])
   })
+
+  it("QA 99: retirado con solo lectura la conserva en la lista y la vuelve a pedir", () => {
+    const qc = new QueryClient()
+    qc.setQueryData(chatKeys.conversaciones, [conv(1, "Irresponsables"), conv(2)])
+    qc.setQueryData(chatKeys.mensajes(1), [conVotacion(null)])
+    const r = aplicarEventoUsuario(qc, {
+      event: "conversacion.eliminada",
+      data: { id: 1, motivo: "QUITADO", soloLectura: true },
+    })
+    expect(r).toEqual({ id: 1, nombre: "Irresponsables", motivo: "QUITADO", soloLectura: true })
+    expect(qc.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.map((c) => c.id)).toEqual([1, 2])
+    expect(qc.getQueryState(chatKeys.conversaciones)?.isInvalidated).toBe(true)
+    // El historial ya recibido se conserva.
+    expect(qc.getQueryData<Mensaje[]>(chatKeys.mensajes(1))).toHaveLength(1)
+  })
 })
 
 describe("puedeAgregarParticipantes", () => {

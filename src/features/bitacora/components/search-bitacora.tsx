@@ -23,6 +23,8 @@ import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacor
 import { useBitacoraEntidadesQuery } from "@/features/bitacora/api/query/use-bitacora-entidades-query"
 import {
   BITACORA_ACCIONES,
+  BITACORA_MODULOS,
+  BITACORA_MODULO_IDS,
   accionesDe,
   moduloConSedeJornada,
 } from "@/features/bitacora/api/types/bitacora"
@@ -100,6 +102,7 @@ export function SearchBitacora({
 
   const rangoInvalido = draft.desde && draft.hasta && draft.hasta < draft.desde
   const set = (patch: Partial<BitacoraFilters>) => setDraft((d) => ({ ...d, ...patch }))
+  const modulos = BITACORA_MODULO_IDS.map((m) => ({ value: m, label: BITACORA_MODULOS[m] }))
   const conSedeJornada = moduloConSedeJornada(draft.modulo)
 
   function toggleAccion(accion: string, checked: boolean) {
@@ -149,7 +152,30 @@ export function SearchBitacora({
         size="sm"
       >
         <div className="flex flex-col gap-3 px-4">
-          {/* El módulo ya no es un filtro: es el submenú de Bitácora (la ruta). */}
+          {/*
+            El módulo también es el submenú de Bitácora (la ruta), pero esos submenús no existen en
+            el menú del backend: sin este filtro la pestaña Bitácora queda fija en Establecimiento y
+            los registros de Comunicaciones (comunicados, moderación) no se encuentran (QA 93, 97).
+            Al aplicarlo se navega a la ruta del módulo (applyFilters). Entidad y acciones son de
+            cada módulo, y sede/jornada solo aplican a los módulos que las tienen.
+          */}
+          <Combo
+            id="bitacora-modulo"
+            label="Módulo *"
+            options={modulos}
+            value={draft.modulo}
+            onChange={(v) => {
+              const modulo = v as BitacoraFilters["modulo"]
+              if (!v || modulo === draft.modulo) return
+              set({
+                modulo,
+                entidad: "",
+                accion: accionPorDefecto(modulo),
+                ...(moduloConSedeJornada(modulo) ? {} : { sede: "", jornada: "" }),
+              })
+            }}
+            obligatorio
+          />
           {esSuperAdmin && draft.modulo !== "ADMINISTRACION" && (
             <Combo
               id="bitacora-establecimiento"

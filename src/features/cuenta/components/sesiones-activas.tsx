@@ -65,7 +65,7 @@ export function SesionesActivas() {
                 <tr key={s.id} className="border-t">
                   <td className="py-2 pr-4">
                     <span className="flex items-center gap-2">
-                      {s.app === "COLOMBIA-EVALUADORA" || !s.app ? "Control Escolar" : s.app}
+                      {s.app === "COLOMBIA-EVALUADORA" || !s.app ? "Colombia Evaluadora" : s.app}
                       {s.actual && <Badge variant="soft" color="info">Esta sesión</Badge>}
                     </span>
                   </td>

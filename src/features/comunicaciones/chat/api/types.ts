@@ -47,6 +47,9 @@ export interface Conversacion {
   // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
   // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
   leidoHasta?: number | null
+  // Comunicaciones §4.6: otra persona lo retiró del grupo. Queda en la bandeja en solo lectura con lo
+  // que recibió hasta su retiro (comms-service no le entrega nada posterior); no escribe.
+  retirado?: boolean
   // Igual con el marcador de entrega (comms-service, `GREATEST(entregado, leído)` por miembro): un
   // mensaje propio con id menor o igual ya llegó a un cliente de todos (✓✓ gris, como WhatsApp).
   // Llega en vivo con `conversacion.entrega`.
@@ -225,6 +228,9 @@ export interface Mensaje {
   bot?: TarjetaBot | null
   // Mensaje propio que pidió confirmación de lectura: estado y receptores (comms-service).
   confirmacion?: ConfirmacionLectura | null
+  // Mensaje propio en un grupo: cuántos participantes (sin contar al autor) ya lo leyeron
+  // (Comunicaciones §4.6 Acuses, "Visto por N"). Agregado, sin decir quiénes; null si no aplica.
+  vistoPor?: number | null
   // Hilo con acudientes (Comunicaciones 4.5): el moderador lo ocultó. Llega sin texto ni adjuntos y se
   // pinta "Mensaje oculto por el moderador"; el original queda en la base para auditoría.
   ocultoPorModerador?: boolean
