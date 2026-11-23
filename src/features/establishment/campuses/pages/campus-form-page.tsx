@@ -41,7 +41,7 @@ import { FormDisabledProvider, useAppForm } from "@/lib/forms"
 import { SUCCESS_MESSAGES, campusMovedMessage } from "@/lib/success-messages"
 import { campusDetailRoute } from "@/router"
 
-import { buildCampusFormSchema, hasRepeatedName } from "@/features/establishment/campuses/api/schema"
+import { buildCampusFormSchema, hasRepeatedName, normalizeCampusName } from "@/features/establishment/campuses/api/schema"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 import { useCampusQuery } from "@/features/establishment/campuses/api/query/use-campus"
 import {
@@ -330,15 +330,28 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
   const [locateMessage, setLocateMessage] = useState<string | null>(null)
   const [recenterVersion, setRecenterVersion] = useState(0)
   const location = useStore(form.store, (s) => s.values.location)
+  // Lo último que se ubicó solo (dirección y barrio, y el punto que quedó): la ubicación
+  // automática no repite la consulta ni mueve un punto que la persona marcó o arrastró.
+  const lastLocatedQuery = useRef<string | null>(null)
+  const autoPlacedLocation = useRef<string | null>(null)
+  const locatingRef = useRef(false)
 
-  async function locateWithAddress() {
+  function addressQuery() {
     const values = form.state.values
     const address = principal ? (campus?.address ?? "") : values.address
     const neighborhood = principal ? (campus?.neighborhood ?? "") : values.neighborhood
+    return { address, neighborhood, key: normalizeCampusName(`${address}|${neighborhood}`) }
+  }
+
+  async function locateWithAddress() {
+    const values = form.state.values
+    const { address, neighborhood, key } = addressQuery()
     if (!address.trim() && !neighborhood.trim()) {
       setLocateMessage("Escriba la dirección de la sede, o marque el punto directamente en el mapa.")
       return
     }
+    lastLocatedQuery.current = key
+    locatingRef.current = true
     setLocating(true)
     setLocateMessage(null)
     try {
@@ -362,7 +375,8 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
         setLocateMessage("No se encontró la dirección en el mapa. Marque el punto directamente en el mapa.")
         return
       }
-      form.setFieldValue("location", formatLocation(result.location))
+      autoPlacedLocation.current = formatLocation(result.location)
+      form.setFieldValue("location", autoPlacedLocation.current)
       setRecenterVersion((v) => v + 1)
       setLocateMessage(
         result.precision === "address"
@@ -374,8 +388,28 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
     } catch (error) {
       setLocateMessage(error instanceof Error ? error.message : "No fue posible consultar el mapa.")
     } finally {
+      locatingRef.current = false
       setLocating(false)
     }
+  }
+
+  /**
+   * Al salir de la dirección o del barrio, la sede se ubica sola (Regla 89). Una consulta
+   * por cambio y no por tecla: Nominatim no admite autocompletado. Si el punto lo marcó o
+   * arrastró la persona (o ya venía guardado), no se mueve: se avisa y decide con el botón.
+   */
+  function autoLocate() {
+    if (readOnly || locatingRef.current) return
+    const { address, neighborhood, key } = addressQuery()
+    if (!address.trim() && !neighborhood.trim()) return
+    if (key === lastLocatedQuery.current) return
+    const current = form.state.values.location
+    if (current.trim() && current !== autoPlacedLocation.current) {
+      lastLocatedQuery.current = key
+      setLocateMessage("La dirección cambió: si el punto ya no corresponde, use «Ubicar con la dirección» o arrástrelo.")
+      return
+    }
+    void locateWithAddress()
   }
 
   const zoneOptions = zones.map((z) => ({ id: z.id, name: z.name }))
@@ -610,7 +644,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                         {principal ? null : (
                           <>
                             <div className="md:col-span-3">
-                              <form.AppField name="neighborhood">
+                              <form.AppField name="neighborhood" listeners={{ onBlur: autoLocate }}>
                                 {(f) => <f.TextField label="Barrio" maxLength={100} transform={(v) => toTextoInput(v, 100)} />}
                               </form.AppField>
                             </div>
@@ -620,7 +654,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
                               </form.AppField>
                             </div>
                             <div className="md:col-span-4">
-                              <form.AppField name="address">
+                              <form.AppField name="address" listeners={{ onBlur: autoLocate }}>
                                 {(f) => (
                                   <f.TextField label="Dirección de la sede" maxLength={150} transform={(v) => toDireccionInput(v, 150)} />
                                 )}
