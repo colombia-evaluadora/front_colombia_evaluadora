@@ -49,6 +49,9 @@ interface MatriculaFormBodyProps {
   precargado?: boolean
   /** Asignar grupo: la sección 2 (estudiante) completa en solo lectura. */
   studentDisabled?: boolean
+  /** Avisos dentro de los bloques 1 (matrícula) y 2 (estudiante). */
+  avisoMatricula?: ReactNode
+  avisoEstudiante?: ReactNode
 }
 
 
@@ -72,6 +75,8 @@ export function MatriculaFormBody({
   academicSection,
   precargado = false,
   studentDisabled = false,
+  avisoMatricula,
+  avisoEstudiante,
 }: MatriculaFormBodyProps) {
   return (
     <MatriculaSectionDisabledContext.Provider value={disabled}>
@@ -87,6 +92,7 @@ export function MatriculaFormBody({
         tipoMatricula={tipoMatricula}
         especialidadBloqueo={especialidadBloqueo}
         gradoTraslado={gradoTraslado}
+        aviso={avisoMatricula}
       />
       )}
 
@@ -103,6 +109,7 @@ export function MatriculaFormBody({
         fieldSettings={fieldSettings}
         identityDisabled={studentIdentityDisabled}
         identidadExistente={studentIdentidadExistente}
+        aviso={avisoEstudiante}
       />
       </MatriculaSectionDisabledContext.Provider>
 

@@ -21,6 +21,12 @@ import { puedeSolicitarConfirmacionLectura } from "@/features/comunicaciones/cha
 import { useMarcarLeido } from "@/features/comunicaciones/chat/api/mutations/use-acciones-conversacion"
 import { ChatSidebar } from "@/features/comunicaciones/chat/components/chat-sidebar"
 import { ChatHeader } from "@/features/comunicaciones/chat/components/chat-header"
+import { HiloAcudientesBarra } from "@/features/comunicaciones/chat/components/hilo-acudientes-barra"
+import {
+  useHiloAcudientesQuery,
+  useResumenHilo,
+} from "@/features/comunicaciones/chat/api/query/use-hilos-acudientes-query"
+import { motivoSinEscrituraHilo } from "@/features/comunicaciones/chat/lib/hilo-acudientes"
 import { ChatMessages } from "@/features/comunicaciones/chat/components/chat-messages"
 import { ChatComposer } from "@/features/comunicaciones/chat/components/chat-composer"
 import { segundosDePausa } from "@/features/comunicaciones/chat/lib/limites-mensaje"
@@ -167,7 +173,17 @@ function ChatContent() {
       activa.esBot)
   // Grupo en Solo lectura o Moderado: quien no puede escribir ve la explicación (comms-service
   // responde 403 igual si lo intenta).
-  const sinEscritura = activa ? motivoSinEscritura(activa, perfil) : null
+  // Hilo con acudientes (4.5): cerrado o silenciado no escribe.
+  const resumenHilo = useResumenHilo(activa?.id)
+  const hiloActivo = useHiloAcudientesQuery(resumenHilo ? activa?.id : undefined).data
+  // Retirado del grupo por otra persona (Comunicaciones §4.6): conserva en solo lectura lo que ya
+  // recibió; no escribe, no responde ni marca leído, y no pide la lista de participantes (404).
+  const retirado = !!activa?.retirado
+  const sinEscritura = activa
+    ? retirado
+      ? "Ya no participa en este grupo. Puede leer lo que recibió hasta su retiro."
+      : (motivoSinEscrituraHilo(hiloActivo) ?? motivoSinEscritura(activa, perfil))
+    : null
 
   // Campana de una solicitud de aprobación (?colevabot=1): abre la conversación de Colevabot en
   // cuanto la sincronización la deja en la lista.
@@ -186,6 +202,13 @@ function ChatContent() {
   // Tiempo real: bandeja personal, presencia y eventos del canal abierto.
   // Si lo quitan (o se borra) la conversación abierta, se vuelve a la lista con un aviso.
   useChatTiempoRealUsuario((e) => {
+    // Retirado con solo lectura: la conversación sigue en la lista; se avisa sin cerrarla.
+    if (e.soloLectura) {
+      notify(`Te retiraron de ${e.nombre ?? "un grupo"}. Puedes seguir leyendo lo que ya recibiste.`, {
+        variant: "warning",
+      })
+      return
+    }
     if (e.id === canal) navigate({ search: (prev) => ({ ...prev, canal: undefined, mensaje: undefined }) })
     // "Eliminar de mi bandeja" desde otra sesión del propio usuario: no es una novedad que avisar.
     if (e.motivo === "OCULTA") return
@@ -196,7 +219,7 @@ function ChatContent() {
   })
   const escribiendo = useChatTiempoRealCanal(activa?.id, puedeVerEliminados(activa, perfil))
   const avisarEscribiendo = useAvisarEscribiendo(activa?.id)
-  const miembrosQuery = useMiembrosQuery(activa && !soloLectura ? activa.id : undefined)
+  const miembrosQuery = useMiembrosQuery(activa && !soloLectura && !retirado ? activa.id : undefined)
   // Atajos "/" del compositor (crear actividades y votación rápida).
   const atajos = useDialogosAtajos({ conversacion: activa, onCreado: (id) => seleccionar(id) })
 
@@ -262,7 +285,7 @@ function ChatContent() {
   useEffect(() => {
     const antes = vistoAntes.current
     vistoAntes.current = { id: activa?.id, visible }
-    if (!activa?.id || pendientes === 0 || !visible) return
+    if (!activa?.id || pendientes === 0 || !visible || retirado) return
     // Divisor "Nuevos": la foto se toma al abrir. Si ya estaba abierta y a la vista, lo que llega
     // en vivo se está viendo y el divisor deja de tener sentido; si vuelve a la pestaña con
     // mensajes sin leer, el divisor pasa al primero de ellos.
@@ -274,7 +297,7 @@ function ChatContent() {
       )
     }
     leer(activa.id)
-  }, [activa?.id, pendientes, visible, leer])
+  }, [activa?.id, retirado, pendientes, visible, leer])
 
   // Aviso de la campana por un mensaje de la conversación abierta y a la vista: notification-service
   // lo crea ~1 s después del mensaje (outbox), cuando la conversación ya se leyó; queda leído en el acto.
@@ -357,6 +380,7 @@ function ChatContent() {
                 onIrAMensaje={irAMensaje}
                 onVolver={() => seleccionar(undefined)}
               />
+              {resumenHilo && <HiloAcudientesBarra conversacionId={activa.id} />}
               {!esComunicado && <FijadosBarra mensajes={mensajesQuery.data ?? []} onIr={irAMensaje} />}
               {eleccion && <EleccionEstado eleccion={eleccion} />}
               {encuesta && <EncuestaEstado encuesta={encuesta} />}
@@ -384,7 +408,7 @@ function ChatContent() {
                 nombreConversacion={activa.nombre}
                 conversacion={activa}
                 primerNoLeidoId={marca?.conversacionId === activa.id ? (marca.id ?? undefined) : undefined}
-                onResponder={soloLectura ? undefined : setRespondiendo}
+                onResponder={soloLectura || retirado ? undefined : setRespondiendo}
                 onIrAMensaje={irAMensaje}
                 anteriores={
                   hayMensajesAnteriores(mensajesQuery.data, agotados.has(activa.id)) && (

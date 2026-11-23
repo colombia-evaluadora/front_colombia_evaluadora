@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, type CSSProperties } from "react"
 import { toast } from "sonner"
 
 import { useAuth } from "@/features/auth/hooks/use-auth"
@@ -91,6 +91,13 @@ export function useNotificacionesTiempoReal() {
             position: "top-right",
             // Prototipo M.1.CAM.3: [Abrir] [×]; cerrarlo no quita el aviso de la campana.
             closeButton: true,
+            // La × va en la esquina superior derecha (M.1.CAM.3) SOLO en este aviso: sonner la pone a
+            // la izquierda y el resto de toasts de la app la conserva ahí (no se toca el Toaster global).
+            style: {
+              "--toast-close-button-start": "unset",
+              "--toast-close-button-end": "0",
+              "--toast-close-button-transform": "translate(35%, -35%)",
+            } as CSSProperties,
             action: {
               label: "Abrir",
               onClick: () => {

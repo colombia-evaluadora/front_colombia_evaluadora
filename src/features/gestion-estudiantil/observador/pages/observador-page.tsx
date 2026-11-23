@@ -1,6 +1,6 @@
 "use no memo"
 
-import { lazy, Suspense, useEffect, useState } from "react"
+import { lazy, Suspense, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -24,6 +24,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { paths } from "@/config/paths"
 
 import { toObservadorFilters, useAnotacionesQuery } from "@/features/gestion-estudiantil/observador/api/query/use-anotaciones-query"
+import { useResponsablesObservadorQuery } from "@/features/gestion-estudiantil/observador/api/query/use-opciones-observador-query"
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
@@ -60,10 +61,12 @@ function unicas(pares: Array<[number | null, string | null]>): Opcion[] {
 function ObservadorContent() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
-  const access = useObservadorAccess()
+  // El establecimiento aplicado del filtro decide las capacidades; sin elegir, el de la sede aplicada.
+  const [filtros, setFiltros] = useState<ObservadorFiltros>(FILTROS_VACIOS)
+  const opcionesAplicadas = useOpcionesCascada(filtros.sede, "", filtros.establecimiento)
+  const access = useObservadorAccess(opcionesAplicadas.establecimientoId)
 
   const [search, setSearch] = useState("")
-  const [filtros, setFiltros] = useState<ObservadorFiltros>(FILTROS_VACIOS)
   // El panel abierto pide las opciones de lo que se está eligiendo, no de lo aplicado.
   const [borrador, setBorrador] = useState<ObservadorFiltros>(FILTROS_VACIOS)
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
@@ -73,7 +76,7 @@ function ObservadorContent() {
   const [pestana, setPestana] = useState("anotaciones")
   const { notify } = useNotify()
 
-  const opciones = useOpcionesCascada(borrador.sede, borrador.jornada)
+  const opciones = useOpcionesCascada(borrador.sede, borrador.jornada, borrador.establecimiento)
   const codigos = useCodigosAnotacionQuery(opciones.establecimientoId)
 
   const queryFilters = toObservadorFilters(search, filtros)
@@ -84,25 +87,16 @@ function ObservadorContent() {
   })
   const rows = data?.rows ?? []
 
-  // Responsables: los que van apareciendo en el listado; no hay un catálogo propio.
-  const [responsables, setResponsables] = useState<Opcion[]>([])
-  useEffect(() => {
-    const nuevas = data?.rows ?? []
-    if (!nuevas.length) return
-    setResponsables((prev) =>
-      unicas([
-        ...prev.map((o) => [Number(o.value), o.label] as [number, string]),
-        ...nuevas.map((r) => [r.fk_tfuncionario, r.responsable_nombre] as [number, string | null]),
-      ]),
-    )
-  }, [data])
-
-  // «Cargar observador firmado»: estudiantes y períodos del listado, mientras no haya un buscador en el backend.
-  const estudiantesFirmado = unicas(rows.map((r) => [r.fk_tmatricula, `${r.estudiante_nombre} · ${r.grado_grupo}`]))
-  const periodosFirmado = unicas(rows.map((r) => [r.fk_tperiodo_evaluacion, r.periodo_evaluacion_nombre]))
+  // Responsables del alcance (opciones/responsables), acotados al establecimiento y la sede del borrador.
+  const responsablesQuery = useResponsablesObservadorQuery({
+    establecimiento: borrador.establecimiento ? Number(borrador.establecimiento) : (opciones.establecimientoId ?? undefined),
+    sede: borrador.sede ? Number(borrador.sede) : undefined,
+  })
+  const responsables = unicas((responsablesQuery.data ?? []).map((r) => [r.fk_tfuncionario, r.nombre]))
 
   const lista = codigos.data ?? []
   const opcionesFiltros = {
+    establecimientos: opciones.establecimientoOpciones,
     sedes: opciones.sedeOpciones,
     jornadas: opciones.jornadaOpciones,
     grupos: opciones.grupoOpciones,
@@ -116,11 +110,17 @@ function ObservadorContent() {
     onVer: setVerDetalle,
     onAnular: setAnular,
     onModificar: (a) => navigate({ to: paths.app.observadorEditar.getHref(a.id) }),
-    puedeEditar: access.puedeEditar,
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
     puedeReportarSaludMental: access.puedeReportarSaludMental,
     onRemitir: setRemitir,
+    onAbrirProceso: (a) =>
+      a.fk_tproceso_disciplinario != null
+        ? navigate({ to: paths.app.convivenciaProceso.getHref(a.fk_tproceso_disciplinario) } as never)
+        : navigate({
+            to: paths.app.convivenciaProcesoNuevo.getHref(),
+            search: { matricula: a.fk_tmatricula, anotacion: a.id, nombre: a.estudiante_nombre },
+          } as never),
     onReportarConsumo: setReportarConsumo,
     onReportarSaludMental: (a) =>
       navigate({
@@ -184,8 +184,8 @@ function ObservadorContent() {
               proyecto (orden de la guía de diseño). «Remitir a orientación» se hace desde la acción
               de cada anotación. */}
           <TableScreenActions>
-            <DialogImprimirObservador filtros={filtros} disabled={!access.puedeImprimir} />
-            <DialogCargarObservadorFirmado estudiantes={estudiantesFirmado} periodos={periodosFirmado} disabled={!access.puedeCargarFirmado} />
+            <DialogImprimirObservador disabled={!access.puedeImprimir} />
+            <DialogCargarObservadorFirmado disabled={!access.puedeCargarFirmado} />
             <DialogExportarAnotaciones filters={queryFilters} />
             {access.puedeCrear && (
               <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>

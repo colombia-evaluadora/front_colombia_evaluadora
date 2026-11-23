@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ControlPointIcon, XIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { SesionFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { LIM } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 /** Invitados (Nombre y Calidad): con voz, sin voto y sin contar para el quórum. */
@@ -16,7 +17,7 @@ export function SeccionInvitados({ form }: { form: SesionFormState }) {
         titulo={`Invitados (${v.invitados.length})`}
         forzarAbierta={Object.keys(errores.invitados).length > 0}
         accion={
-          <Button type="button" size="sm" variant="outline" onClick={form.agregarInvitado}>
+          <Button type="button" size="sm" variant="outline" color="neutral" onClick={form.agregarInvitado}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar invitado
           </Button>
@@ -52,17 +53,7 @@ export function SeccionInvitados({ form }: { form: SesionFormState }) {
                     {err?.calidad && <FieldError>{err.calidad}</FieldError>}
                   </Field>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  className="shrink-0"
-                  aria-label="Quitar invitado"
-                  onClick={() => form.quitarInvitado(i.key)}
-                >
-                  <XIcon />
-                </Button>
+                <BotonQuitar label="Quitar invitado" onClick={() => form.quitarInvitado(i.key)} className="shrink-0" />
               </div>
             )
           })}

@@ -24,6 +24,10 @@ export interface ChatAccess {
   reglaDirectoCon: (perfil: PerfilChat | undefined) => ReglaDirecto
   // "+ Nuevo mensaje" (SSO #1006): falso para el estudiante menor sin permiso y mientras carga.
   puedeIniciarConversaciones: boolean
+  // Suspender mensajería (Administrador o Supervisor de sede); falso mientras carga.
+  puedeSuspender: boolean
+  // Pestaña Reportes de Moderación (solo Supervisor de sede); falso mientras carga.
+  puedeRevisarReportes: boolean
 }
 
 // Igual que `useAsistenciaAccess`: el alcance sale de los roles del token.
@@ -43,5 +47,7 @@ export function useChatAccess(): ChatAccess {
     puedeMencionarMasivo: puedeMencionarMasivo(politica, perfil),
     reglaDirectoCon: (otro) => reglaDirecto(politica, perfil, otro ?? "DOCENTE"),
     puedeIniciarConversaciones: politica.puedeIniciarConversaciones !== false,
+    puedeSuspender: politica.puedeSuspender === true,
+    puedeRevisarReportes: politica.puedeRevisarReportes === true,
   }
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -31,7 +32,10 @@ export function DialogoConCaso({ casoId, titulo, onClose, children }: Props) {
         </DialogHeader>
         {q.isError ? <ErrorNoticeBanner error={q.error} /> : <Skeleton className="h-40" />}
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

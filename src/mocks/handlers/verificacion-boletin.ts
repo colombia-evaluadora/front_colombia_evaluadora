@@ -34,7 +34,63 @@ endstream endobj
 trailer<</Root 1 0 R>>
 %%EOF`
 
+/**
+ * Ruta común /verificar/<código>. Carné (tres bloques de cuatro hexadecimales):
+ * empieza en "A" → VIGENTE, "B" → REEMPLAZADO, "C" → ANULADO, "D" → vigente
+ * sin matrícula Cursando, otro → NO_VALIDO. Los códigos del mock del boletín
+ * (VIG…, ACT…, REE…) responden BOLETIN.
+ */
+const CARNE = /^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/
+
+/**
+ * Gestión Estudiantil: tres bloques de cuatro con alguna letra G-Z. Primera letra:
+ * "S" → certificado de servicio social, "M" → mención de honor; segunda letra:
+ * V vigente, A actualizado, R reemplazado, N anulado; otra → NO_VALIDO.
+ */
+function documentoGe(c: string) {
+  const tipo = c[0] === "S" ? "SERVICIO_SOCIAL_CERTIFICADO" : c[0] === "M" ? "MENCION_HONOR" : null
+  const estado = { V: "VIGENTE", A: "ACTUALIZADO", R: "REEMPLAZADO", N: "ANULADO" }[c[1]]
+  if (!tipo || !estado) return { tipo: null, estado: "NO_VALIDO" }
+  return {
+    tipo,
+    estado,
+    emitidoEn: "2027-03-15",
+    ...(estado === "REEMPLAZADO" ? { reemplazadoEn: "2027-06-01" } : {}),
+    institucion: "Institución Educativa de Prueba",
+    dane: "105001000123",
+    titular: "Ana S. P. G.",
+  }
+}
+
+function documentoPorCodigo(codigo: string) {
+  const c = codigo.trim().toUpperCase()
+  if (/^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(c) && !CARNE.test(c)) return documentoGe(c)
+  if (!CARNE.test(c)) return { tipo: estadoPorCodigo(c) === "NO_VALIDO" ? null : "BOLETIN", estado: estadoPorCodigo(c) }
+  const estado = { A: "VIGENTE", B: "REEMPLAZADO", C: "ANULADO", D: "VIGENTE" }[c[0]] ?? "NO_VALIDO"
+  if (estado === "NO_VALIDO") return { tipo: "CARNE", estado }
+  return {
+    tipo: "CARNE",
+    estado,
+    emitidoEn: "2027-02-10",
+    reemplazadoEn: estado === "REEMPLAZADO" ? "2027-05-03" : null,
+    vigencia: "2027-11-30",
+    matriculaVigente: c[0] === "A" || c[0] === "B",
+    institucion: "Institución Educativa de Prueba",
+    dane: "105001000123",
+    titular: "Ana S. P. G.",
+    documentoUltimos4: "4321",
+    sede: "Sede Principal",
+    jornada: "Mañana",
+    gradoGrupo: "Noveno · 9°A",
+    anio: "2027",
+  }
+}
+
 export const verificacionBoletinHandlers = [
+  http.get("*/reportes/public/documento/:codigo", async ({ params }) => {
+    await delay(300)
+    return HttpResponse.json(documentoPorCodigo(String(params.codigo)))
+  }),
   http.post("*/reportes/public/boletin/:codigo/pdf", async ({ params, request }) => {
     await delay(400)
     const rejected = rejectWithoutCaptcha(request)

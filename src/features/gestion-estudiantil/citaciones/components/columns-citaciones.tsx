@@ -9,18 +9,18 @@ import {
   accionesCitacion,
   COLOR_ESTADO_CITACION,
   origenEnlace,
-  type PermisosCitaciones,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_CITACION, MenuAccionesCitacion, type AccionCitacion } from "@/features/gestion-estudiantil/citaciones/components/menu-acciones-citacion"
 
 interface ColumnasOpciones {
-  permisos: PermisosCitaciones & { puedeVer: boolean }
   onAccion: (citacion: CitacionRow, accion: AccionCitacion) => void
 }
 
 /** Sede y Jornada siguen en «Columnas», pero arrancan ocultas (como en Procesos disciplinarios). */
-export const COLUMNAS_CITACIONES_OCULTAS = { sede: false, jornada: false }
+// G.3.CIT.1 muestra 6 columnas; Origen, Sede y Jornada quedan en «Columnas visibles». Con Origen visible
+// la tabla no cabía a 1440 px y el Estado se cortaba.
+export const COLUMNAS_CITACIONES_OCULTAS = { origen: false, sede: false, jornada: false }
 
 const columna = (id: string, titulo: string) => ({
   id,
@@ -32,7 +32,7 @@ const columna = (id: string, titulo: string) => ({
 })
 
 /** Columnas del listado de citaciones (G.3.CIT.1). */
-export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones): ColumnDef<CitacionRow>[] {
+export function buildColumnsCitaciones({ onAccion }: ColumnasOpciones): ColumnDef<CitacionRow>[] {
   return [
     {
       ...columna("fecha", "Fecha y hora"),
@@ -44,9 +44,10 @@ export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones)
       ...columna("estudiante", "Estudiante"),
       accessorKey: "estudiante_nombre",
       cell: ({ row }) => (
-        <span className="flex flex-col gap-0.5">
+        // Nombre y grado en una línea, separados por «·» (igual que en Compromisos).
+        <span>
           <span className="font-medium">{row.original.estudiante_nombre}</span>
-          <span className="text-xs text-muted-foreground">{row.original.grado_grupo}</span>
+          {row.original.grado_grupo && <span className="text-muted-foreground"> · {row.original.grado_grupo}</span>}
         </span>
       ),
     },
@@ -96,8 +97,7 @@ export function buildColumnsCitaciones({ permisos, onAccion }: ColumnasOpciones)
       cell: ({ row }) => (
         <MenuAccionesCitacion
           estudiante={row.original.estudiante_nombre}
-          acciones={accionesCitacion(row.original, permisos)}
-          puedeVer={permisos.puedeVer}
+          acciones={accionesCitacion(row.original)}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),

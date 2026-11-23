@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
+import { toPageCount } from "@/lib/pagination"
 import type { Audiencia, DestinosComunicado, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 
 const RUTA = "/comunicaciones/comunicados/territorial"
@@ -36,6 +37,9 @@ export interface FiltrosTerritorial {
   estado?: string
   desde?: string
   q?: string
+  // Orden de la tabla: comms-service valida la columna (lista blanca) y la dirección.
+  sortBy?: string
+  sortDir?: "asc" | "desc"
 }
 
 /** Filtro por establecimiento: comms-service solo devuelve los que el usuario tiene a cargo. */
@@ -70,7 +74,7 @@ export function useComunicadosTerritorialQuery(filtros: FiltrosTerritorial, { pa
       // Por `api` y no `evalCol.getRows`: ese descarta todo lo que no sea `rows` y aquí hace falta el total.
       const r = await api.get<PaginaTerritorialRespuesta>(`/eval-col${RUTA}?${params.toString()}`)
       const totalCount = r?.totalCount ?? 0
-      return { rows: r?.rows ?? [], totalCount, pageCount: Math.max(1, Math.ceil(totalCount / tamano)) }
+      return { rows: r?.rows ?? [], totalCount, pageCount: toPageCount(totalCount, tamano) }
     },
     placeholderData: keepPreviousData,
   })

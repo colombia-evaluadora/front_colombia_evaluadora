@@ -1,5 +1,5 @@
 import type { BadgeColor } from "@/features/gestion-estudiantil/commons/utils/badge-color"
-import type { EstadoAcompanamiento, EstadoCaracterizacion, EstadoReporteConsumo, EstadoEstrategia, EstadoPlan, EstadoSenalSM, NivelRiesgo, SenalRiesgo, SeveridadSaludMental, TipoAcompanamiento, EstadoAccionAcomp } from "@/features/gestion-estudiantil/prevencion/api/types"
+import type { EstadoAcompanamiento, EstadoCaracterizacion, EstadoReporteConsumo, EstadoEstrategia, EstadoPlan, EstadoSenalSM, NivelRiesgo, SenalRiesgo, SeveridadSaludMental, TipoAcompanamiento, EstadoAccionAcomp, EstadoGestion, UmbralGestion } from "@/features/gestion-estudiantil/prevencion/api/types"
 
 /** Etiquetas de las señales del tablero (nunca el código). */
 export const SENAL_ETIQUETA: Record<SenalRiesgo, string> = {
@@ -172,4 +172,17 @@ export const ESTADO_ACCION_ACOMP: Record<EstadoAccionAcomp, { label: string; col
   REALIZADA: { label: "Realizada", color: "success" },
   PENDIENTE: { label: "Pendiente", color: "warning" },
   VENCIDA: { label: "Vencida", color: "destructive" },
+}
+
+/** Colores de la gestión de la alerta (§9.11); la etiqueta sale de `estado_nombre` / `umbral_nombre` del backend. */
+export const ESTADO_GESTION_COLOR: Record<EstadoGestion, BadgeColor> = {
+  PENDIENTE: "warning",
+  EN_GESTION: "primary",
+  ESCALADA: "destructive",
+  RESUELTA: "success",
+}
+
+export const UMBRAL_GESTION_COLOR: Record<UmbralGestion, BadgeColor> = {
+  ALERTA: "muted",
+  INTERVENCION: "orange",
 }

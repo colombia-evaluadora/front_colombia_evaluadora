@@ -183,6 +183,14 @@ const OPCIONES_CUPO = [
   grados: GRADOS_CASCADA,
 }))
 
+/** Mensaje del back (fn_inscripcion_opcion_validar_decidible) si alguna opción ya no se puede decidir. */
+function noDecidibleEn(ids: number[]): string | null {
+  const o = todas().find(
+    (x) => ids.includes(x.id) && x.estado_opcion !== "PENDIENTE" && x.estado_opcion !== "EN_LISTA_ESPERA",
+  )
+  return o ? "Una de las opciones ya no está Pendiente ni En lista de espera" : null
+}
+
 export const inscripcionesHandlers = [
   // Antes que `/:id`: si no, "opciones-cupo" se toma como un id.
   http.get(`${BASE}/opciones-cupo`, async () => {
@@ -257,6 +265,9 @@ export const inscripcionesHandlers = [
   http.post(`${BASE}/admitir`, async ({ request }) => {
     await delay(500)
     const { IDS } = (await request.json()) as { IDS: number[] }
+    // Como el back: una opción que ya no está Pendiente ni En lista de espera rechaza el lote entero.
+    const noDecidible = noDecidibleEn(IDS)
+    if (noDecidible) return error(400, noDecidible)
     let admitidas = 0
     let enListaEspera = 0
     let omitidas = 0
@@ -286,6 +297,8 @@ export const inscripcionesHandlers = [
     await delay(400)
     const { IDS, FK_TLV_MOTIVO } = (await request.json()) as { IDS: number[]; FK_TLV_MOTIVO: number | null }
     if (!FK_TLV_MOTIVO) return error(400, "El motivo de no admisión es obligatorio.")
+    const noDecidible = noDecidibleEn(IDS)
+    if (noDecidible) return error(400, noDecidible)
     for (const o of todas()) if (IDS.includes(o.id)) o.estado_opcion = "NO_ADMITIDA"
     return conDatos(IDS.length)
   }),
@@ -323,7 +336,7 @@ export const inscripcionesHandlers = [
       opciones: opcionesDeInscripcion(base),
       estudiante: {
         usuarioId: base.inscripcion_id + 5000,
-        tipoDocumento: "Registro Civil de Nacimiento",
+        tipoDocumento: "Registro civil de nacimiento",
         documento: base.documento,
         primerNombre,
         segundoNombre: null,

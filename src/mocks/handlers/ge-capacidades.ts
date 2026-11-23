@@ -7,8 +7,12 @@ const CAPACIDADES: CapacidadesGe = {
   observador_puede_cargar_firmado: true,
   observador_puede_reportar_salud_mental: true,
   observador_puede_remitir: true,
+  observador_puede_anular: true,
+  observador_puede_ver_mis_reportes: true,
   observaciones_puede_registrar: true,
   actividades_puede_crear: true,
+  citaciones_puede_citar: true,
+  citaciones_puede_crear_compromiso: true,
 }
 
 /** Capacidades de página de Gestión Estudiantil: una fila con todo habilitado. */

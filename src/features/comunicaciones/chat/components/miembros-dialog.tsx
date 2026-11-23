@@ -379,9 +379,10 @@ export function MiembrosDialog({
                 : `¿Retirar a ${porEliminar.length} personas del ${donde}?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {porEliminar.length === 1 ? "Dejará" : "Dejarán"} de ver los mensajes de {c.nombre} y
-              {porEliminar.length === 1 ? " recibirá" : " recibirán"} un aviso. Puedes volver a añadirlas desde el
-              buscador.
+              {/* Comunicaciones §4.6: quien es retirado conserva lo que ya recibió, pero no ve lo nuevo. */}
+              {porEliminar.length === 1
+                ? `Ya no podrá escribir ni verá los mensajes nuevos de ${c.nombre}; conservará lo que ya recibió. Puedes volver a añadirlo desde el buscador.`
+                : `Ya no podrán escribir ni verán los mensajes nuevos de ${c.nombre}; conservarán lo que ya recibieron. Puedes volver a añadirlas desde el buscador.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -407,7 +408,7 @@ export function MiembrosDialog({
                 }
               }}
             >
-              Eliminar
+              Retirar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

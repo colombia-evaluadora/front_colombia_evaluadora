@@ -136,14 +136,12 @@ function CampoCaso({ form }: { form: ProcesoFormState }) {
   )
 }
 
-/** Estudiante y origen del proceso: los orígenes quedan deshabilitados hasta elegir estudiante. */
+/** Estudiante y origen del proceso en una fila: los orígenes quedan deshabilitados hasta elegir estudiante. */
 export function SeccionEstudianteOrigen({ form }: { form: ProcesoFormState }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
-        <CampoEstudiante form={form} />
-        <CampoCaso form={form} />
-      </div>
+    <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3">
+      <CampoEstudiante form={form} />
+      <CampoCaso form={form} />
       <CampoAnotaciones form={form} />
     </div>
   )

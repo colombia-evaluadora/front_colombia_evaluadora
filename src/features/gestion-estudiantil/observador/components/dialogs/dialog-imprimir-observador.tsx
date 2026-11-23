@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,43 +12,41 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
 import { FilePdfIcon, PrinterIcon, XIcon } from "@/components/ui/icons"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
-import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { useImprimirObservador } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
-import type { ObservadorFiltros, TipoImpresion } from "@/features/gestion-estudiantil/observador/api/types"
+import { SelectorEstudianteObservador } from "@/features/gestion-estudiantil/observador/components/selector-estudiante-observador"
+import type { EstudianteObservador, TipoImpresion } from "@/features/gestion-estudiantil/observador/api/types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { MarcoOpciones } from "@/components/marco-opciones"
+import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 
 const TODO_EL_ANIO = "todo"
 
 interface Seleccion {
-  sede: string
-  jornada: string
-  grupo: string
-  matricula: string
+  estudiante: EstudianteObservador | null
   periodo: string
   tipo: TipoImpresion
 }
 
 /** Imprimir observador (2.3): PDF para firmar de UN estudiante, del período o de todo el año. */
-export function DialogImprimirObservador({ filtros, disabled }: { filtros: ObservadorFiltros; disabled?: boolean }) {
+export function DialogImprimirObservador({ disabled }: { disabled?: boolean }) {
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [intento, setIntento] = useState(false)
-  const [sel, setSel] = useState<Seleccion>(() => inicial(filtros))
+  const [sel, setSel] = useState<Seleccion>(INICIAL)
 
-  const opciones = useOpcionesCascada(sel.sede, sel.jornada)
-  const grupoId = sel.grupo ? Number(sel.grupo) : undefined
-  const estudiantes = useActividadMatriculasGrupoQuery(open ? grupoId : undefined)
-  const estudianteOpciones = (estudiantes.data ?? []).map((m) => ({ value: String(m.id), label: m.nombre }))
-  // Por defecto, el período en curso (2.3).
+  // Los períodos salen de la sede y la jornada de la matrícula elegida.
+  const opciones = useOpcionesCascada(
+    sel.estudiante ? String(sel.estudiante.fk_tsede) : "",
+    sel.estudiante?.fk_tlv_jornada != null ? String(sel.estudiante.fk_tlv_jornada) : "",
+  )
+  // Por defecto, el período en curso del estudiante elegido (2.3).
   const enCurso = opciones.periodos.find((p) => p.enCurso)
 
   const imprimir = useImprimirObservador({
@@ -65,7 +64,7 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
 
   function abrir(next: boolean) {
     if (next) {
-      setSel(inicial(filtros))
+      setSel(INICIAL)
       setNotice(null)
       setIntento(false)
     }
@@ -73,14 +72,17 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
   }
 
   const periodo = sel.periodo || (enCurso ? String(enCurso.id) : "")
+  // Lista de Valores «Tipo de observador para firmar» (2.3); viene ordenada y la primera es la predeterminada.
+  const tipos = useCatalogo("TIPO_OBSERVADOR_FIRMAR")
+  const tipo = sel.tipo || tipos[0]?.codigo || ""
 
   function generar() {
     setIntento(true)
-    if (!sel.matricula || !periodo) return
+    if (!sel.estudiante || !periodo || !tipo) return
     imprimir.mutate({
-      matriculaId: Number(sel.matricula),
+      matriculaId: sel.estudiante.fk_tmatricula,
       periodoId: periodo === TODO_EL_ANIO ? null : Number(periodo),
-      tipo: sel.tipo,
+      tipo,
     })
   }
 
@@ -93,49 +95,17 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
       <DialogContent showCloseButton={false} className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Imprimir observador</DialogTitle>
-          <DialogDescription>Documento para imprimir y firmar a mano por el estudiante y su acudiente.</DialogDescription>
+          <DialogDescription>Documento para imprimir y firmar a mano por el Responsable de grupo, el acudiente y el estudiante.</DialogDescription>
         </DialogHeader>
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <ComboOpciones
-            id="imprimir-sede"
-            label="Sede"
-            todos={false}
-            value={sel.sede}
-            options={opciones.sedeOpciones}
-            onChange={(sede) => setSel({ ...sel, sede, jornada: "", grupo: "", matricula: "", periodo: "" })}
-          />
-          <ComboOpciones
-            id="imprimir-jornada"
-            label="Jornada"
-            todos={false}
-            disabled={!sel.sede}
-            value={sel.jornada}
-            options={opciones.jornadaOpciones}
-            onChange={(jornada) => setSel({ ...sel, jornada, grupo: "", matricula: "", periodo: "" })}
-          />
-          <ComboOpciones
-            id="imprimir-grupo"
-            label="Grado/Grupo"
-            todos={false}
-            disabled={!sel.jornada}
-            value={sel.grupo}
-            options={opciones.grupoOpciones}
-            onChange={(grupo) => setSel({ ...sel, grupo, matricula: "" })}
-          />
-        </div>
-        <ComboOpciones
-          id="imprimir-estudiante"
-          label="Estudiante"
-          required
-          todos={false}
-          disabled={!sel.grupo}
-          placeholder={sel.grupo ? "Busca por nombre" : "Elegí Grado/Grupo primero"}
-          value={sel.matricula}
-          options={estudianteOpciones}
-          error={intento && !sel.matricula ? "Elegí el estudiante." : undefined}
-          onChange={(matricula) => setSel({ ...sel, matricula })}
+        <SelectorEstudianteObservador
+          idPrefix="imprimir"
+          proposito="IMPRIMIR"
+          enabled={open}
+          value={sel.estudiante}
+          error={intento && !sel.estudiante ? "Seleccione el estudiante." : undefined}
+          onChange={(estudiante) => setSel({ ...sel, estudiante, periodo: "" })}
         />
         <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
           <ComboOpciones
@@ -143,29 +113,26 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
             label="Período"
             required
             todos={false}
-            disabled={!sel.jornada}
+            disabled={!sel.estudiante}
             value={periodo}
             options={[...opciones.periodoOpciones, { value: TODO_EL_ANIO, label: "Todo el año" }]}
-            error={intento && !periodo ? "Elegí el período." : undefined}
+            error={intento && !periodo ? "Seleccione el período." : undefined}
             onChange={(p) => setSel({ ...sel, periodo: p })}
           />
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel>Tipo*</FieldLabel>
+          <MarcoOpciones id="imprimir-tipo" label="Tipo" required>
             <RadioGroup
-              value={sel.tipo}
-              onValueChange={(tipo) => setSel({ ...sel, tipo: tipo as TipoImpresion })}
-              className="flex h-10 flex-row items-center gap-6"
+              aria-labelledby="imprimir-tipo-label"
+              value={tipo}
+              onValueChange={(t) => setSel({ ...sel, tipo: t as TipoImpresion })}
             >
-              <label className="flex items-center gap-2 text-sm whitespace-nowrap">
-                <RadioGroupItem value="COMPORTAMIENTOS" />
-                Solo comportamientos
-              </label>
-              <label className="flex items-center gap-2 text-sm whitespace-nowrap">
-                <RadioGroupItem value="COMPLETO" />
-                Completo
-              </label>
+              {tipos.map((t) => (
+                <label key={t.codigo} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                  <RadioGroupItem value={t.codigo} />
+                  {t.label}
+                </label>
+              ))}
             </RadioGroup>
-          </Field>
+          </MarcoOpciones>
         </div>
         <DialogFooter className="sm:items-center">
           {/* Nota de obligatorios a la izquierda, en la misma línea que los botones. */}
@@ -184,13 +151,9 @@ export function DialogImprimirObservador({ filtros, disabled }: { filtros: Obser
   )
 }
 
-function inicial(filtros: ObservadorFiltros): Seleccion {
-  return {
-    sede: filtros.sede,
-    jornada: filtros.jornada,
-    grupo: filtros.grupo,
-    matricula: "",
-    periodo: filtros.periodo,
-    tipo: "COMPORTAMIENTOS",
-  }
+const INICIAL: Seleccion = {
+  estudiante: null,
+  // Por defecto va el período en curso del estudiante elegido (2.3), no el del listado.
+  periodo: "",
+  tipo: "",
 }

@@ -134,12 +134,29 @@ const conEstado = (c: Comunicado): Comunicado => ({
   paraEstudiantes: c.esCreador ? [] : (c.paraEstudiantes ?? []),
 })
 
+// Dos establecimientos a cargo, repartidos por id: alcanza para probar el filtro y el orden.
+const ESTABLECIMIENTOS_TERRITORIAL = [
+  { id: 1, nombre: "IE Central" },
+  { id: 2, nombre: "IE Rural Norte" },
+]
+const eeTerritorial = (id: number) => ESTABLECIMIENTOS_TERRITORIAL[id % 2]
+
+// Columnas de orden que acepta comms-service (sortBy); el resto es 400.
+const ORDEN_TERRITORIAL: Record<string, (f: ReturnType<typeof filaTerritorial>) => string | number> = {
+  fecha: (f) => f.publicarEn,
+  establecimiento: (f) => f.establecimiento.toLowerCase(),
+  titulo: (f) => f.titulo.toLowerCase(),
+  publicadoPor: (f) => (f.publicadoPor ?? "").toLowerCase(),
+  destinatarios: (f) => f.destinatarios,
+  estado: (f) => f.estado,
+}
+
 const filaTerritorial = (c: Comunicado) => ({
   id: c.conversacionId,
   titulo: c.titulo,
   publicarEn: c.publicarEn,
-  establecimientoId: 1,
-  establecimiento: "IE Central",
+  establecimientoId: eeTerritorial(c.conversacionId).id,
+  establecimiento: eeTerritorial(c.conversacionId).nombre,
   publicadoPor: c.publicadoPor,
   audiencia: c.audiencia,
   destinos: c.destinos ?? null,
@@ -456,9 +473,10 @@ export const comunicacionesComunicadosHandlers = [
           grupos: periodo && q.get("grado") ? [op("61", "A"), op("62", "B")] : [],
           estudiantes: periodo && q.get("grupo") ? [op("901", "Moreno Silva Andrés"), op("902", "Rincón Gil Laura")] : [],
           // Sin jornada = Todas las jornadas (conjunto solo de funcionarios).
-          roles: sede ? [op("Responsable de enseñanza", "Responsable de enseñanza"), op("Supervisor de sede", "Supervisor de sede")] : [],
+          // Valores de la lista ROL con asignaciones en la sede (valor = código, etiqueta = nombre).
+          roles: sede ? [op("COORDINADOR", "Coordinador"), op("DOCENTE", "Docente")] : [],
           funcionarios: sede
-            ? [op("11", "López Marta", "Supervisor de sede"), op("12", "Rojas Andrés", "Responsable de enseñanza")]
+            ? [op("11", "López Marta", "COORDINADOR"), op("12", "Rojas Andrés", "DOCENTE")]
             : [],
         },
       ],
@@ -520,7 +538,9 @@ export const comunicacionesComunicadosHandlers = [
   // Consulta territorial (M.1.TER.1): solo lectura; un establecimiento fijo basta para el mock.
   http.get(URL("comunicados/territorial/establecimientos"), async () => {
     await delay(100)
-    return HttpResponse.json({ rows: [{ valor: "1", etiqueta: "IE Central", detalle: null, total: 0 }] })
+    return HttpResponse.json({
+      rows: ESTABLECIMIENTOS_TERRITORIAL.map((e) => ({ valor: String(e.id), etiqueta: e.nombre, detalle: null, total: 0 })),
+    })
   }),
 
   // Como comms-service: Programado, Publicado, Vencido y Anulado (no Cancelado), filtros y página
@@ -531,6 +551,14 @@ export const comunicacionesComunicadosHandlers = [
     const estado = sp.get("estado")
     const desde = sp.get("desde")
     const q = (sp.get("q") ?? "").toLowerCase()
+    const establecimiento = sp.get("establecimiento")
+    const sortBy = sp.get("sortBy") ?? "fecha"
+    const sortDir = sp.get("sortDir") ?? "desc"
+    const clave = ORDEN_TERRITORIAL[sortBy]
+    if (!clave || (sortDir !== "asc" && sortDir !== "desc")) {
+      return HttpResponse.json({ message: "El orden no es válido." }, { status: 400 })
+    }
+    const signo = sortDir === "desc" ? -1 : 1
     const pagina = Number(sp.get("pagina") ?? 0)
     const tamano = Number(sp.get("tamano") ?? 20)
     const filas = comunicados
@@ -539,7 +567,13 @@ export const comunicacionesComunicadosHandlers = [
       .filter((c) => !estado || c.estado === estado)
       .filter((c) => !desde || c.publicarEn.slice(0, 10) >= desde)
       .filter((c) => !q || c.titulo.toLowerCase().includes(q))
-      .sort((a, b) => b.publicarEn.localeCompare(a.publicarEn))
+      .filter((c) => !establecimiento || String(c.establecimientoId) === establecimiento)
+      .sort((a, b) => {
+        const x = clave(a)
+        const y = clave(b)
+        const cmp = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y))
+        return cmp * signo || b.publicarEn.localeCompare(a.publicarEn)
+      })
     return HttpResponse.json({
       rows: filas.slice(pagina * tamano, (pagina + 1) * tamano),
       totalCount: filas.length,

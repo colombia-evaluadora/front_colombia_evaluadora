@@ -1,3 +1,4 @@
+import type { InscripcionSocioeconomico } from "@/features/coverage/inscripcion-reservas/api/types/socioeconomico"
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -62,8 +63,8 @@ export interface GrupoAdmisionRow {
   configurado: boolean
   criterios: number[]
   documentosRequeridos: number[]
-  /** "Sede · Jornada" de cada período del grupo. */
-  periodos: { id: number; nombre: string }[]
+  /** "Sede · Jornada" de cada período del grupo, con la jornada aparte. */
+  periodos: { id: number; nombre: string; jornada?: string }[]
 }
 
 export async function fetchGruposAdmisionRows(ee: number): Promise<GrupoAdmisionRow[]> {
@@ -80,10 +81,11 @@ async function fetchGruposAdmision(): Promise<GrupoAdmision[]> {
   return Promise.all(
     grupos.map(async (g) => {
       // El grupo no trae grados: salen de sus períodos.
-      const grados = new Set<string>()
-      for (const p of g.periodos) for (const gr of await fetchGrados(p.id)) grados.add(gr.nombre)
+      // En paralelo: en serie eran N peticiones encadenadas antes de pintar la pantalla.
+      const porPeriodo = await Promise.all(g.periodos.map((p) => fetchGrados(p.id)))
+      const grados = new Set(porPeriodo.flat().map((gr) => gr.nombre))
       const jornadas = [
-        ...new Set(g.periodos.map((p) => p.nombre.split(" · ").at(-1) ?? "")),
+        ...new Set(g.periodos.map((p) => p.jornada ?? p.nombre.split(" · ").at(-1) ?? "")),
       ].filter(Boolean)
       return {
         id: String(g.id),
@@ -233,9 +235,12 @@ export interface InscripcionDetalleRow {
   paisOrigen: string | null
   lenguaMaterna: string | null
   condicionMigratoria: string | null
+  socioeconomico?: InscripcionSocioeconomico | null
   opciones: {
     id: number
     preferencia: number
+    periodoId?: number
+    gradoId?: number
     grado: string
     establecimiento: string
     sede: string
@@ -267,6 +272,8 @@ export function toInscripcionDetalle(d: InscripcionDetalleRow): InscripcionDetal
       establecimiento: o.establecimiento,
       sede: o.sede,
       jornada: o.jornada,
+      periodoId: o.periodoId,
+      gradoId: o.gradoId,
       numeroSorteo: formatNumeroSorteo(o.numeroSorteo),
       estado: o.estado,
       hermanoVerificado: o.hermanoVerificado,
@@ -304,6 +311,7 @@ export function toInscripcionDetalle(d: InscripcionDetalleRow): InscripcionDetal
       archivo: s.archivo,
       revision: s.revision,
     })),
+    socioeconomico: d.socioeconomico ?? null,
   }
 }
 
@@ -377,9 +385,12 @@ export function useCatalogosInscripcionQuery() {
 /** Motivos de no admisión y de anulación (Listas de Valores), por nombre. */
 export function useMotivosInscripcion() {
   const { data } = useCatalogosInscripcionQuery()
+  // Opciones con el pk como valor: el back recibe FK_TLV_MOTIVO y dos motivos pueden llamarse igual.
+  const opciones = (l: { id: number; nombre: string }[] | undefined) =>
+    (l ?? []).map((m) => ({ value: String(m.id), label: m.nombre }))
   return {
-    noAdmision: (data?.motivosNoAdmision ?? []).map((m) => m.nombre),
-    anulacion: (data?.motivosAnulacion ?? []).map((m) => m.nombre),
+    noAdmision: opciones(data?.motivosNoAdmision),
+    anulacion: opciones(data?.motivosAnulacion),
   }
 }
 

@@ -28,6 +28,12 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { paths } from "@/config/paths"
 import { minLength, required } from "@/lib/forms/messages"
+import {
+  LISTA_FORMA_PUBLICACION,
+  predeterminadoDe,
+  useListaComunicado,
+} from "@/features/comunicaciones/comunicados/api/listas-valor"
+import { FORMA_PROGRAMADA } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
 import { textoFallidos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import {
   CONJUNTO_VACIO,
@@ -93,7 +99,10 @@ function NuevoComunicadoContent() {
   const [titulo, setTitulo] = useState("")
   const [mensaje, setMensaje] = useState("")
   const [archivos, setArchivos] = useState<File[]>([])
-  const [publicacion, setPublicacion] = useState<"INMEDIATA" | "PROGRAMADA">("INMEDIATA")
+  // Lista FORMA_PUBLICACION: sin elección explícita vale su predeterminado (Inmediata).
+  const formas = useListaComunicado(LISTA_FORMA_PUBLICACION).data ?? []
+  const [formaElegida, setPublicacion] = useState("")
+  const publicacion = formaElegida || predeterminadoDe(formas)
   const [fecha, setFecha] = useState<Date | undefined>()
   const [visibleHasta, setVisibleHasta] = useState<Date | undefined>()
   const [intentado, setIntentado] = useState(false)
@@ -101,7 +110,8 @@ function NuevoComunicadoContent() {
   const previsualizar = usePrevisualizarDocumento()
   const publicar = usePublicarDocumento()
 
-  const volver = () => void navigate({ to: paths.app.comunicacionesChat.getHref() })
+  // Cancelar vuelve al listado de Comunicados institucionales (de donde se entra), no a la mensajería.
+  const volver = () => void navigate({ to: paths.app.comunicacionesComunicados.getHref() })
   const sucio = !!titulo || !!mensaje || archivos.length > 0 || conjuntos.some((c) => c.tipos.length > 0 || !!c.sede)
   const bloqueado = conjuntos.some((c, i) => sinPeriodos(c, datos.current[i]))
   const mensajeLimpio = mensaje.trim()
@@ -110,8 +120,8 @@ function NuevoComunicadoContent() {
   const errores: ErroresCampos = conjuntos.reduce<ErroresCampos>((acc, c, i) => ({ ...acc, ...erroresConjunto(c, i + 1) }), {})
   if (!titulo.trim()) errores[CAMPO.titulo] = required("El título")
   if (mensajeLimpio.length < MIN_MENSAJE) errores[CAMPO.mensaje] = mensajeLimpio ? minLength(MIN_MENSAJE, "El mensaje") : required("El mensaje")
-  if (publicacion === "PROGRAMADA" && !fecha) errores[CAMPO.fecha] = required("La fecha y hora programada", { femenino: true })
-  else if (publicacion === "PROGRAMADA" && fecha && fecha <= new Date()) {
+  if (publicacion === FORMA_PROGRAMADA && !fecha) errores[CAMPO.fecha] = required("La fecha y hora programada", { femenino: true })
+  else if (publicacion === FORMA_PROGRAMADA && fecha && fecha <= new Date()) {
     errores[CAMPO.fecha] = "La fecha y hora programada debe ser posterior a la actual."
   }
   if (visibleHasta && format(visibleHasta, "yyyy-MM-dd") <= format(fecha ?? new Date(), "yyyy-MM-dd")) {
@@ -125,7 +135,7 @@ function NuevoComunicadoContent() {
     mensaje: mensajeLimpio,
     conjuntos: conjuntos.map((c, i) => ({ conjunto: c, resumen: resumenConjunto(c, datos.current[i]) })),
     publicacion,
-    publicarEn: publicacion === "PROGRAMADA" && fecha ? fecha.toISOString() : null,
+    publicarEn: publicacion === FORMA_PROGRAMADA && fecha ? fecha.toISOString() : null,
     visibleHasta: visibleHasta ? format(visibleHasta, "yyyy-MM-dd") : null,
     archivos,
   })
@@ -225,23 +235,18 @@ function NuevoComunicadoContent() {
                 <div className="min-w-0 space-y-2">
                   <Etiqueta>Publicación</Etiqueta>
                   <div className="flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="radiogroup" aria-label="Publicación">
-                    {(
-                      [
-                        ["INMEDIATA", "Inmediata"],
-                        ["PROGRAMADA", "Programada"],
-                      ] as const
-                    ).map(([valor, etiqueta]) => (
-                      <label key={valor} className="flex items-center gap-2">
+                    {formas.map((o) => (
+                      <label key={o.valor} className="flex items-center gap-2">
                         <input
                           type="radio"
                           name="comunicado-publicacion"
-                          checked={publicacion === valor}
+                          checked={publicacion === o.valor}
                           onChange={() => {
-                            setPublicacion(valor)
-                            if (valor === "INMEDIATA") setFecha(undefined)
+                            setPublicacion(o.valor)
+                            if (o.valor !== FORMA_PROGRAMADA) setFecha(undefined)
                           }}
                         />
-                        {etiqueta}
+                        {o.etiqueta}
                       </label>
                     ))}
                   </div>
@@ -256,7 +261,7 @@ function NuevoComunicadoContent() {
                     aria-invalid={!!visibles[CAMPO.fecha]}
                     value={fecha}
                     onChange={setFecha}
-                    disabled={publicacion !== "PROGRAMADA"}
+                    disabled={publicacion !== FORMA_PROGRAMADA}
                     minDate={new Date()}
                     maxDate={addDays(new Date(), MAX_DIAS_PROGRAMADO)}
                   />
@@ -340,7 +345,7 @@ function NuevoComunicadoContent() {
           }))}
           // Tipos que no se eligieron en ningún conjunto: la previsualización lo dice antes de confirmar.
           tiposSinElegir={TIPOS.filter((t) => !conjuntos.some((c) => c.tipos.includes(t.valor))).map((t) => t.etiqueta)}
-          programada={publicacion === "PROGRAMADA"}
+          programada={publicacion === FORMA_PROGRAMADA}
           pendiente={publicar.isPending}
           conArchivos={archivos.length > 0}
           error={publicar.isError ? publicar.error : null}
@@ -354,7 +359,7 @@ function NuevoComunicadoContent() {
               {
                 onSuccess: ({ canal, fallidos }) => {
                   const aviso =
-                    publicacion === "PROGRAMADA"
+                    publicacion === FORMA_PROGRAMADA
                       ? `Se programó el comunicado ${canal.nombre}.`
                       : `Se publicó el comunicado ${canal.nombre}.`
                   const adjuntos = textoFallidos(fallidos)

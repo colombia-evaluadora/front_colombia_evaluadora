@@ -19,6 +19,8 @@ interface SectionProps {
   /** Archivos va a 2 por fila; el resto de las secciones, a 3. */
   columns?: 2 | 3
   children: ReactNode
+  /** Aviso a todo el ancho antes de los campos (p. ej. estudiante ya registrado). */
+  aviso?: ReactNode
 }
 
 /**
@@ -115,7 +117,7 @@ export const MatriculaPrecargaContext = createContext(false)
 // contenedor (`[counter-reset:seccion]`), porque las secciones se ocultan
 // según la configuración de campos y la numeración tiene que seguir corrida.
 // El contenido plegado queda montado (`hidden`) para conservar el conteo.
-export function MatriculaFormSection({ title, columns = 3, children }: SectionProps) {
+export function MatriculaFormSection({ title, columns = 3, children, aviso }: SectionProps) {
   const pending = useContext(MatriculaPendingContext)
   const disabled = useContext(MatriculaSectionDisabledContext)
   const precarga = useContext(MatriculaPrecargaContext)
@@ -170,6 +172,7 @@ export function MatriculaFormSection({ title, columns = 3, children }: SectionPr
         </button>
       </h2>
       <div ref={bodyRef} id={bodyId} hidden={!open} className="border-t border-border px-4 py-4">
+        {aviso ? <div className="mb-4 flex flex-col gap-3">{aviso}</div> : null}
         <fieldset
           disabled={disabled}
           // Con menos campos que columnas, los que hay se reparten todo el ancho

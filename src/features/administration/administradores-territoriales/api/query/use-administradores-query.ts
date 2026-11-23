@@ -21,7 +21,7 @@ export function useAdministradoresQuery() {
 
 async function fetchAdministrador(id: number) {
   const [row] = await evalCol.getRows<Resultado<AdministradorTerritorial>>(`/administradores-territoriales/${id}`)
-  if (!row) throw new Error("No existe el Administrador territorial solicitado.")
+  if (!row) throw new Error("No existe el administrador territorial solicitado.")
   return row.resultado
 }
 

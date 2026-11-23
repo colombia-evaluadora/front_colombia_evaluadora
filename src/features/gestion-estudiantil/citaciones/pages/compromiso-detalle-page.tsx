@@ -21,7 +21,6 @@ import {
   origenEnlace,
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { useDialogosCompromiso } from "@/features/gestion-estudiantil/citaciones/components/dialogos/use-dialogos-citaciones"
-import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
@@ -42,7 +41,7 @@ function SoporteFirmado({ archivo }: { archivo: number }) {
     }
   }
   return (
-    <Button type="button" size="sm" variant="outline" disabled={abriendo} onClick={abrir}>
+    <Button type="button" size="sm" variant="outline" color="neutral" disabled={abriendo} onClick={abrir}>
       <PaperclipIcon data-icon="inline-start" />
       Ver soporte firmado
     </Button>
@@ -53,8 +52,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
   const navigate = useNavigate()
   const volver = () => navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab: "compromisos" } } as never)
   const origen = origenEnlace(c.origen_tipo, c.origen_id)
-  const permisos = useCitacionesAccess()
-  const acciones = accionesCompromiso(c, permisos)
+  const acciones = accionesCompromiso(c)
   const dialogos = useDialogosCompromiso()
 
   return (
@@ -64,13 +62,13 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
           action={
             <div className="flex flex-wrap gap-2">
               {acciones.aceptacionPresencial && (
-                <Button size="sm" variant="outline" onClick={() => dialogos.abrir("aceptacion", c)}>
+                <Button size="sm" variant="outline" color="neutral" onClick={() => dialogos.abrir("aceptacion", c)}>
                   <PencilIcon data-icon="inline-start" />
                   Registrar aceptación presencial
                 </Button>
               )}
               {acciones.registrarResultado && (
-                <Button size="sm" variant="outline" onClick={() => dialogos.abrir("resultado", c)}>
+                <Button size="sm" variant="outline" color="neutral" onClick={() => dialogos.abrir("resultado", c)}>
                   <CheckCircleIcon data-icon="inline-start" />
                   Registrar resultado
                 </Button>
@@ -79,7 +77,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
                 size="sm"
                 variant="outline"
                 color="neutral"
-                disabled={!permisos.puedeVer}
+                disabled={!acciones.documento}
                 onClick={() => dialogos.abrir("documento", c)}
               >
                 <FilePdfIcon data-icon="inline-start" />
@@ -88,7 +86,7 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
             </div>
           }
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={volver}>
+            <Button variant="ghost" color="neutral" size="sm" onClick={volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Citaciones y compromisos
             </Button>

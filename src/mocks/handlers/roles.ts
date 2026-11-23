@@ -41,10 +41,157 @@ function rows<T>(data: T[], init?: ResponseInit) {
 const roleMenuOrder = new Map<number, number[]>()
 const roleMenuReadOnly = new Map<number, Set<number>>()
 
+// ── Vistas por rol (S.3.VRO / S.3.CAT) ────────────────────────────────────────
+// Guardar y Eliminar por separado, bloqueos de los roles territoriales, estado y
+// acciones que admite cada vista: el SSO real todavía no los tiene (hoy guarda
+// un solo `soloLectura`). Viven acá para que la pantalla se pruebe entera.
+
+type Acciones = { guardar: boolean; eliminar: boolean }
+type Bloqueos = { guardar?: boolean; eliminar?: boolean }
+
+/** Guardar y Eliminar de cada vista, por rol. Sin entrada: salen de `soloLectura`. */
+const roleMenuActions = new Map<number, Map<number, Acciones>>()
+/** Acciones que el rol no puede tener en la vista (roles territoriales). */
+const roleMenuLocks = new Map<number, Map<number, Bloqueos>>()
+/** Estado de cada vista en el catálogo (Módulos y submódulos). Sin entrada: activa. */
+const menuActivo = new Map<number, boolean>()
+/** Acciones que admite cada vista además del Acceso. Sin entrada: las dos. */
+const menuAdmite = new Map<number, Acciones>()
+
+// La Bitácora y el Registro de actividad solo se consultan (S.3.VRO.1b).
+for (const id of [10, 80, 81, 82, 83, 84, 85, 86, 87, 88]) menuAdmite.set(id, { guardar: false, eliminar: false })
+// Vistas que se guardan pero no tienen nada que eliminar.
+for (const id of [14, 16, 26, 39, 45, 51, 53, 61, 62, 63, 71, 92, 93]) {
+  menuAdmite.set(id, { guardar: true, eliminar: false })
+}
+
+const plansDb: { id: number; name: string }[] = [
+  { id: 1, name: "Básico" },
+  { id: 2, name: "Completo" },
+]
+
+/** Funcionarios activos con cada rol, para el aviso de quitar permisos (S.3.VRO.2). */
+const FUNCIONARIOS_POR_ROL: Record<number, number> = { 1: 3, 2: 18, 3: 640, 4: 12, 5: 412, 6: 37, 7: 9, 8: 6 }
+
+/** A = solo Acceso, G = Acceso y Guardar, GE = las tres. `lock` bloquea acciones para el rol. */
+type Semilla = [menuId: number, acciones: "A" | "G" | "GE", lock?: "G" | "E" | "GE"]
+
+function sembrar(roleId: number, semillas: Semilla[], soloBloqueos: [number, "G" | "E" | "GE"][] = []) {
+  const acciones = new Map<number, Acciones>()
+  const bloqueos = new Map<number, Bloqueos>()
+  const bloquear = (id: number, lock: "G" | "E" | "GE") =>
+    bloqueos.set(id, { ...(lock.includes("G") ? { guardar: true } : {}), ...(lock.includes("E") ? { eliminar: true } : {}) })
+  for (const [id, a, lock] of semillas) {
+    const menu = navigationMenu.find((it) => it.id === id)
+    if (!menu) continue
+    if (!menu.roleIds.includes(roleId)) menu.roleIds.push(roleId)
+    const admite = menuAdmite.get(id) ?? { guardar: true, eliminar: true }
+    acciones.set(id, {
+      guardar: a !== "A" && admite.guardar && !lock?.includes("G"),
+      eliminar: a === "GE" && admite.eliminar && !lock?.includes("E"),
+    })
+    if (lock) bloquear(id, lock)
+  }
+  for (const [id, lock] of soloBloqueos) bloquear(id, lock)
+  roleMenuActions.set(roleId, acciones)
+  roleMenuLocks.set(roleId, bloqueos)
+}
+
+const hijosDe = (padre: number): number[] =>
+  navigationMenu.filter((it) => it.idParent === padre).map((it) => it.id)
+const soloAcceso = (...modulos: number[]): Semilla[] =>
+  modulos.flatMap((id) => [[id, "A"], ...hijosDe(id).map((h): Semilla => [h, "A"])] as Semilla[])
+
+// Cobertura educativa de los roles territoriales (S.3.VRO.3 y 4): casi todo en consulta.
+const COBERTURA_TERRITORIAL: Semilla[] = [
+  [12, "A"],
+  [16, "A", "G"],
+  [70, "A", "GE"],
+  [13, "G", "E"],
+  [90, "G", "E"],
+  [91, "A", "GE"],
+  [92, "A", "G"],
+  [93, "G"],
+  [14, "A", "G"],
+  [71, "A", "G"],
+]
+
+// S.3.VRO.1: Responsable de enseñanza.
+sembrar(5, [
+  [23, "A"],
+  [40, "A"],
+  [24, "GE"],
+  [26, "G"],
+  [60, "A"],
+  [61, "G"],
+  [62, "A"],
+])
+// S.3.VRO.1a/1b: Gestor administrativo, con pestañas propias y la Bitácora sin Evaluación del
+// desempeño ni Administración del sistema.
+sembrar(6, [
+  [12, "A"],
+  [16, "G"],
+  [13, "GE"],
+  [90, "GE"],
+  [91, "GE"],
+  [92, "G"],
+  [14, "G"],
+  [70, "G"],
+  [71, "G"],
+  [80, "A"],
+  [81, "A"],
+  [82, "A"],
+  [83, "A"],
+  [84, "A"],
+  [85, "A"],
+  [88, "A"],
+])
+// S.3.VRO.3: Supervisor territorial.
+sembrar(7, [
+  [17, "A"],
+  [19, "G"],
+  [20, "A", "GE"],
+  [21, "A", "GE"],
+  [22, "A", "GE"],
+  ...COBERTURA_TERRITORIAL,
+  ...soloAcceso(23, 60, 41, 80),
+])
+// S.3.VRO.4: Administrador territorial; en Administración del sistema solo lo suyo.
+sembrar(
+  8,
+  [
+    ...soloAcceso(17),
+    ...COBERTURA_TERRITORIAL,
+    ...soloAcceso(23, 60, 41, 80),
+    [9, "A"],
+    [45, "G"],
+    [53, "G"],
+    [51, "G"],
+  ],
+  [10, 18, 47, 44, 46, 52, 48, 49, 50].map((id): [number, "GE"] => [id, "GE"]),
+)
+
+const catalogNode = (menu: MockMenu) => {
+  const admite = menuAdmite.get(menu.id) ?? { guardar: true, eliminar: true }
+  return {
+    ...toMenuNode(menu),
+    activo: menuActivo.get(menu.id) ?? true,
+    enUso: menu.roleIds.length > 0,
+    admiteGuardar: admite.guardar,
+    admiteEliminar: admite.eliminar,
+  }
+}
+
 // Códigos confirmados contra `{{baseUrl}}/eval-col/usuarios/permisos-menu`
 // real; el resto del catálogo mock no los tiene todavía, así que se derivan
 // del nombre solo para que el mock tenga algo consistente que devolver.
 const MENU_CODIGO_BY_ID: Record<number, string> = {
+  // Pestañas de Inscripciones: código propio para no chocar con otros menús.
+  18: "CONFIG_ROLES_MENUS",
+  90: "INSCRIPCION_RESERVAS_CUPO",
+  91: "INSCRIPCION_INSCRIPCIONES",
+  92: "INSCRIPCION_CONFIGURACION",
+  93: "INSCRIPCION_ENTIDAD_TERRITORIAL",
   21: "FUNCIONARIOS",
   13: "INSCRITOS",
   16: "MATRICULA",
@@ -59,6 +206,7 @@ const MENU_CODIGO_BY_ID: Record<number, string> = {
   61: "CITACIONES_COMPROMISOS",
   62: "RECONOCIMIENTOS",
   71: "PROMOCION_NIVELACION",
+  72: "ACTUALIZACION_DATOS",
 }
 
 function menuCodigo(menu: MockMenu): string {
@@ -100,9 +248,61 @@ export const rolesHandlers = [
     return rows<Role>([role], { status: 201 })
   }),
 
+  // Los inactivos no salen: desaparecen de los roles y del menú lateral.
   http.get("/api/eval-col/menus", async () => {
     await delay(150)
-    return rows<MenuNode>(navigationMenu.map(toMenuNode))
+    return rows<MenuNode>(navigationMenu.filter((menu) => menuActivo.get(menu.id) !== false).map(toMenuNode))
+  }),
+
+  // Catálogo de Módulos y submódulos: también los inactivos.
+  http.get("/api/eval-col/menus/catalogo", async () => {
+    await delay(150)
+    return rows(navigationMenu.map(catalogNode))
+  }),
+
+  http.put("/api/eval-col/menus/:menuId/acciones", async ({ params, request }) => {
+    await delay(150)
+    const id = Number(params.menuId)
+    if (!navigationMenu.some((menu) => menu.id === id)) {
+      return HttpResponse.json({ message: "El menú no existe." }, { status: 404 })
+    }
+    const { guardar, eliminar } = (await request.json()) as Acciones
+    menuAdmite.set(id, { guardar, eliminar })
+    return rows<UpdateRoleMenusResult>([{ status: "success", message: "Acciones actualizadas." }])
+  }),
+
+  // Inactivar un módulo inactiva también sus submódulos y pestañas.
+  http.put("/api/eval-col/menus/:menuId/estado", async ({ params, request }) => {
+    await delay(150)
+    const id = Number(params.menuId)
+    if (!navigationMenu.some((menu) => menu.id === id)) {
+      return HttpResponse.json({ message: "El menú no existe." }, { status: 404 })
+    }
+    const { activo } = (await request.json()) as { activo: boolean }
+    const rama = [id]
+    for (let i = 0; i < rama.length; i++) rama.push(...hijosDe(rama[i]))
+    for (const menuId of activo ? [id] : rama) menuActivo.set(menuId, activo)
+    return rows<UpdateRoleMenusResult>([
+      { status: "success", message: activo ? "Menú activado." : "Menú inactivado." },
+    ])
+  }),
+
+  http.get("/api/eval-col/plans", async () => {
+    await delay(100)
+    return rows(plansDb)
+  }),
+
+  http.post("/api/eval-col/plans", async ({ request }) => {
+    await delay(150)
+    const { name } = (await request.json()) as { name: string }
+    const plan = { id: Math.max(0, ...plansDb.map((it) => it.id)) + 1, name: name.trim() }
+    plansDb.push(plan)
+    return rows([plan], { status: 201 })
+  }),
+
+  http.get("/api/eval-col/roles/:roleId/funcionarios/total", async ({ params }) => {
+    await delay(100)
+    return rows([{ total: FUNCIONARIOS_POR_ROL[Number(params.roleId)] ?? 0 }])
   }),
 
   http.get("/api/eval-col/my-menus", async ({ request }) => {
@@ -230,21 +430,25 @@ export const rolesHandlers = [
       idParent: number | null
       visible?: boolean
       planId?: number | null
+      activo?: boolean
     }
     const siblings = navigationMenu.filter((menu) => menu.idParent === values.idParent)
+    const parent = navigationMenu.find((it) => it.id === values.idParent)
     const menu = {
       id: Math.max(0, ...navigationMenu.map((it) => it.id)) + 1,
       name: values.name.trim(),
       icon: values.icon.trim(),
       path: values.path.trim(),
       menuOrder: siblings.length,
-      type: values.idParent === null ? "GROUP" : "ITEM",
+      // Colgando de un submódulo es una pestaña (S.3.VRO.1a): no se pinta en el menú lateral.
+      type: values.idParent === null ? "GROUP" : parent?.idParent != null ? "TAB" : "ITEM",
       idParent: values.idParent,
-      visible: values.visible ?? true,
+      visible: parent?.idParent != null ? false : (values.visible ?? true),
       planId: values.planId ?? null,
       roleIds: [] as number[],
     }
     navigationMenu.push(menu)
+    if (values.activo === false) menuActivo.set(menu.id, false)
     return rows<MenuNode>([toMenuNode(menu)], { status: 201 })
   }),
 
@@ -283,7 +487,8 @@ export const rolesHandlers = [
     menu.path = values.path.trim()
     menu.icon = values.icon.trim()
     menu.idParent = values.idParent
-    menu.type = values.idParent === null ? "GROUP" : "ITEM"
+    const parent = navigationMenu.find((it) => it.id === values.idParent)
+    menu.type = values.idParent === null ? "GROUP" : parent?.idParent != null ? "TAB" : "ITEM"
     if (values.visible !== undefined) menu.visible = values.visible
     if (values.planId !== undefined) menu.planId = values.planId
     return rows<MenuNode>([toMenuNode(menu)])
@@ -336,13 +541,33 @@ export const rolesHandlers = [
         ]
 
     const readOnly = roleMenuReadOnly.get(roleId)
-    return rows(ids.map((id) => ({ id, soloLectura: readOnly?.has(id) ?? false })))
+    const actions = roleMenuActions.get(roleId)
+    const locks = roleMenuLocks.get(roleId)
+    const assignedRows = ids.map((id) => {
+      const soloLectura = readOnly?.has(id) ?? false
+      const a = actions?.get(id)
+      const bloqueos = locks?.get(id)
+      return {
+        id,
+        soloLectura: a ? !a.guardar && !a.eliminar : soloLectura,
+        guardar: a?.guardar ?? !soloLectura,
+        eliminar: a?.eliminar ?? !soloLectura,
+        ...(bloqueos ? { bloqueos } : {}),
+      }
+    })
+    // Vistas que el rol no tiene pero con acciones bloqueadas: viajan para pintar el candado.
+    const lockedRows = [...(locks?.entries() ?? [])]
+      .filter(([id]) => !ids.includes(id))
+      .map(([id, bloqueos]) => ({ id, acceso: false, bloqueos }))
+    return rows([...assignedRows, ...lockedRows])
   }),
 
   http.put("/api/eval-col/roles/:roleId/menus", async ({ params, request }) => {
     await delay(200)
     const roleId = Number(params.roleId)
-    const { menus } = (await request.json()) as { menus: { id: number; soloLectura?: boolean }[] }
+    const { menus } = (await request.json()) as {
+      menus: { id: number; soloLectura?: boolean; guardar?: boolean; eliminar?: boolean }[]
+    }
     const menuIds = menus.map((menu) => menu.id)
 
     if (!rolesDb.some((role) => role.id === roleId)) {
@@ -367,6 +592,19 @@ export const rolesHandlers = [
     roleMenuReadOnly.set(
       roleId,
       new Set(menus.filter((menu) => menu.soloLectura).map((menu) => menu.id)),
+    )
+    // Lo bloqueado para el rol no se concede aunque llegue en el pedido.
+    const locks = roleMenuLocks.get(roleId)
+    roleMenuActions.set(
+      roleId,
+      new Map(
+        menus.map((menu) => {
+          const lock = locks?.get(menu.id)
+          const guardar = menu.guardar ?? !menu.soloLectura
+          const eliminar = menu.eliminar ?? !menu.soloLectura
+          return [menu.id, { guardar: guardar && !lock?.guardar, eliminar: eliminar && !lock?.eliminar }]
+        }),
+      ),
     )
 
     return rows<UpdateRoleMenusResult>([

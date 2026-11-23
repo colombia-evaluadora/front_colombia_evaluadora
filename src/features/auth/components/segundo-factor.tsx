@@ -44,7 +44,7 @@ export function QrApp({ config }: { config: ConfiguracionApp }) {
 export function CodigosRespaldo({ codigos }: { codigos: string[] }) {
   function descargar() {
     const texto = [
-      "Control Escolar — códigos de respaldo de la verificación en dos pasos",
+      "Colombia Evaluadora — códigos de respaldo de la verificación en dos pasos",
       "Cada código sirve una sola vez. Guárdelos en un lugar seguro.",
       "",
       ...codigos,
@@ -63,7 +63,7 @@ export function CodigosRespaldo({ codigos }: { codigos: string[] }) {
     w.document.title = "Códigos de respaldo"
     const pre = w.document.createElement("pre")
     pre.style.font = "16px monospace"
-    pre.textContent = ["Códigos de respaldo — Control Escolar", "", ...codigos].join("\n")
+    pre.textContent = ["Códigos de respaldo — Colombia Evaluadora", "", ...codigos].join("\n")
     w.document.body.appendChild(pre)
     w.print()
   }

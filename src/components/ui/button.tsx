@@ -329,6 +329,8 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
+      // Lo leen contenedores que estilan a sus botones (p. ej. el hover de las acciones de fila).
+      data-color={color}
       className={cn(buttonVariants({ variant, color, size, className }))}
       {...props}
     />

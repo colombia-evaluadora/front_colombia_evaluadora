@@ -42,7 +42,7 @@ export function ResultadosHistorialAcademico({ h }: { h: ReturnType<typeof useHi
       {!evaluativo && (
         <Alert>
           <AlertDescription>
-            Gestión Académica guarda una observación por estudiante y período, no por asignatura: se muestran como «General».
+            Gestión académica guarda una observación por estudiante y período, no por asignatura: se muestran como «General».
           </AlertDescription>
         </Alert>
       )}

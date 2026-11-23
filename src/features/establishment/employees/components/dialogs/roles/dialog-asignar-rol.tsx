@@ -107,7 +107,7 @@ export function DialogAsignarRol({ funcionarioId, establishmentId, employeeName 
         <DialogHeader>
           <DialogTitle>Asignar permisos</DialogTitle>
           <DialogDescription>
-            Elija el rol de {employeeName} y la Sede y Jornada donde lo ejerce. Los permisos los da el rol; luego puede restringirlos.
+            Elija el rol de {employeeName} y la sede y jornada donde lo ejerce. Los permisos los da el rol; luego puede restringirlos.
           </DialogDescription>
         </DialogHeader>
 

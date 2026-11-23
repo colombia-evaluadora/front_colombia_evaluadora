@@ -1,6 +1,10 @@
+import { Link } from "@tanstack/react-router"
+
+import { paths } from "@/config/paths"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import {
   Dialog,
   DialogClose,
@@ -29,7 +33,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
             <Dato label="Fecha">{formatFecha(a.fecha)}</Dato>
             <Dato label="Grado/Grupo">{a.grado_grupo}</Dato>
             <Dato label="Tipo">
-              <Badge variant="soft" color={colorDeTipo(a.tipo_nombre)}>
+              <Badge variant="soft" color={colorDeTipo(a.tipo_codigo)}>
                 {a.tipo_nombre}
               </Badge>
             </Dato>
@@ -45,9 +49,19 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
               </Dato>
             </div>
             <Dato label="Responsable de enseñanza">{a.responsable_nombre}</Dato>
-            <Dato label="Período de Evaluación">{a.periodo_evaluacion_nombre}</Dato>
+            <Dato label="Período de evaluación">{a.periodo_evaluacion_nombre}</Dato>
             <Dato label="Preocupa la permanencia">{a.preocupa_permanencia ? "Sí" : "No"}</Dato>
             <Dato label="Requiere mediación">{a.requiere_mediacion ? "Sí" : "No"}</Dato>
+            {a.fk_tcaso_convivencia != null && (
+              <Dato label="Caso de convivencia">
+                <Link
+                  to={paths.app.convivenciaCaso.getHref(a.fk_tcaso_convivencia)}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Ver el caso
+                </Link>
+              </Dato>
+            )}
             {a.anulada && (
               <Alert className="col-span-2">
                 <AlertTitle>Anulada el {formatFecha(a.anulado_en)}{a.anulado_por_nombre && ` por ${a.anulado_por_nombre}`}</AlertTitle>
@@ -58,6 +72,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
         )}
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </DialogClose>
         </DialogFooter>

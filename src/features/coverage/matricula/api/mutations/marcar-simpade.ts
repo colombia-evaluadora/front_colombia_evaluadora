@@ -28,7 +28,7 @@ export function useMarcarSimpadeMatricula({
     mutationFn: marcarSimpade,
     ...rest,
     onSuccess: (...args) => {
-      // La acción desaparece de la fila al quedar marcada.
+      // La fila trae la marca guardada para corregirla.
       invalidarMatriculas(queryClient)
       onSuccess?.(...args)
     },

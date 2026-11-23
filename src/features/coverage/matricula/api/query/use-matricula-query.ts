@@ -100,11 +100,14 @@ interface MatriculaListRow {
   acta_retiro?: string | null
   fecha_retiro?: string | null
   simpade_ingresado?: "S" | "N"
+  simpade_fecha_ingreso?: string | null
+  simpade_fk_funcionario?: number | null
   tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
   tiene_complementaria?: "S" | "N"
   origen_adscripcion?: string | null
   puede_agregar_complementaria?: "S" | "N"
   sin_autorizacion?: "S" | "N"
+  posible_duplicado?: "S" | "N"
   nuevo?: "S" | "N"
   metodologia_grupo?: string | null
   anulacion_pendiente?: "S" | "N"
@@ -147,6 +150,10 @@ function toMatricula(row: MatriculaListRow): Matricula {
     retiroTraslado:
       row.retiro_traslado === "S" ? { acta: row.acta_retiro ?? "", fecha: row.fecha_retiro ?? "" } : null,
     simpadeIngresado: row.simpade_ingresado === "S",
+    simpade:
+      row.simpade_ingresado === "S" && row.simpade_fecha_ingreso
+        ? { fechaIngreso: row.simpade_fecha_ingreso.slice(0, 10), funcionarioId: row.simpade_fk_funcionario ?? null }
+        : null,
     anulacionPendiente: row.anulacion_pendiente === "S",
     snapshotPendiente: row.snapshot_pendiente === "S",
     tipo: row.tipo_matricula ?? "PRINCIPAL",
@@ -154,6 +161,7 @@ function toMatricula(row: MatriculaListRow): Matricula {
     origenAdscripcion: row.origen_adscripcion?.trim() || null,
     puedeAgregarComplementaria: row.puede_agregar_complementaria === "S",
     sinAutorizacion: row.sin_autorizacion === "S",
+    posibleDuplicado: row.posible_duplicado === "S",
     nuevo: row.nuevo === "S",
     metodologiaGrupo: row.metodologia_grupo ?? "",
   }

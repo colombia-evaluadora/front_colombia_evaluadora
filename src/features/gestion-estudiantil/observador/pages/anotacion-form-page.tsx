@@ -1,14 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
-import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -21,27 +21,28 @@ import { paths } from "@/config/paths"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
+import { CombosCascadaEstudiante } from "@/features/gestion-estudiantil/observador/components/cascada-estudiante"
 import {
-  useActividadMatriculasGrupoQuery,
-  type MatriculaGrupo,
-} from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
+  etiquetaEstudiante,
+  useBusquedaEstudiantes,
+} from "@/features/gestion-estudiantil/observador/hooks/use-busqueda-estudiantes"
 import { useAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-anotaciones-query"
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
 import { useActualizarAnotacion, useCrearAnotacion } from "@/features/gestion-estudiantil/observador/api/mutations/anotaciones"
 import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
 import { colorDeTipo, MENSAJES } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
-import type { AnotacionRow, CodigoAnotacion } from "@/features/gestion-estudiantil/observador/api/types"
+import type { AnotacionRow, CodigoAnotacion, EstudianteObservador } from "@/features/gestion-estudiantil/observador/api/types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { observadorEditarRoute } from "@/router"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const OBS_MIN = 10
 const OBS_MAX = 1000
 
 interface Valores {
+  /** Solo al modificar: de ahí sale el establecimiento del catálogo de códigos. */
   sede: string
-  jornada: string
-  grupo: string
-  estudiantes: MatriculaGrupo[]
+  estudiantes: EstudianteObservador[]
   fecha: string
   codigo: string
   observacion: string
@@ -54,9 +55,22 @@ const hoy = () => formatDateValue(new Date())
 function desdeAnotacion(a: AnotacionRow | undefined): Valores {
   return {
     sede: a ? String(a.fk_tsede) : "",
-    jornada: a?.fk_tlv_jornada != null ? String(a.fk_tlv_jornada) : "",
-    grupo: a ? String(a.fk_tgrupo) : "",
-    estudiantes: a ? [{ id: a.fk_tmatricula, estudianteId: 0, nombre: a.estudiante_nombre }] : [],
+    estudiantes: a
+      ? [
+          {
+            fk_tmatricula: a.fk_tmatricula,
+            estudiante_nombre: a.estudiante_nombre,
+            estudiante_documento: a.estudiante_documento,
+            fk_tgrupo: a.fk_tgrupo,
+            grado_grupo: a.grado_grupo,
+            fk_tsede: a.fk_tsede,
+            sede_nombre: a.sede_nombre,
+            fk_tlv_jornada: a.fk_tlv_jornada,
+            jornada_nombre: a.jornada_nombre,
+            fk_testablecimiento: 0,
+          },
+        ]
+      : [],
     fecha: a ? a.fecha.slice(0, 10) : hoy(),
     codigo: a ? String(a.fk_tcomportamiento) : "",
     observacion: a?.observacion ?? "",
@@ -68,7 +82,7 @@ function desdeAnotacion(a: AnotacionRow | undefined): Valores {
 /** Errores de cliente; las reglas que dependen de la base (período Calificable, alcance) las da el backend. */
 function validar(v: Valores, codigo: CodigoAnotacion | undefined) {
   const e: Partial<Record<keyof Valores, string>> = {}
-  if (!v.estudiantes.length) e.estudiantes = "Elegí al menos un estudiante."
+  if (!v.estudiantes.length) e.estudiantes = "Seleccione al menos un estudiante."
   if (!v.fecha) e.fecha = "La fecha es obligatoria."
   else if (v.fecha > hoy()) e.fecha = "La fecha no puede ser posterior a hoy."
   if (!codigo) e.codigo = "El código es obligatorio."
@@ -85,9 +99,15 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
   const [v, setV] = useState<Valores>(() => desdeAnotacion(anotacion))
   const [intento, setIntento] = useState(false)
 
-  const opciones = useOpcionesCascada(v.sede, v.jornada)
-  const codigos = useCodigosAnotacionQuery(opciones.establecimientoId)
-  const roster = useActividadMatriculasGrupoQuery(!editar && v.grupo ? Number(v.grupo) : undefined)
+  const b = useBusquedaEstudiantes("REGISTRAR", !editar)
+  // Al modificar no hay cascada: el establecimiento sale de la sede de la anotación.
+  const opciones = useOpcionesCascada(editar ? v.sede : b.filtro.sede, "", editar ? "" : b.filtro.establecimiento)
+  // El establecimiento del catálogo de códigos es el de los estudiantes elegidos (todos del mismo);
+  // sin elegir, el único del usuario.
+  const establecimientoEstudiantes = v.estudiantes[0]?.fk_testablecimiento || null
+  const establecimientoId = establecimientoEstudiantes ?? opciones.establecimientoId
+  const codigos = useCodigosAnotacionQuery(establecimientoId)
+  const estudiantesQuery = b.estudiantes
   const codigo = codigos.data?.find((c) => String(c.id) === v.codigo)
 
   const tipoSituacion = codigo?.situacion_codigo
@@ -134,12 +154,12 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
     else
       crear.mutate({
         ...base,
-        matriculas: v.estudiantes.map((e) => e.id),
+        matriculas: v.estudiantes.map((e) => e.fk_tmatricula),
         requiereMediacion: mediacionHabilitada && v.mediacion,
       })
   }
 
-  const codigoOpciones = (codigos.data ?? []).map((c) => ({ value: String(c.id), label: `${c.codigo} - ${c.descripcion}` }))
+  const codigoOpciones = (codigos.data ?? []).map((c) => ({ value: String(c.id), label: `${c.codigo} · ${c.descripcion}` }))
 
   return (
     <>
@@ -166,52 +186,44 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
       <TableScreenBody>
         <div className="flex flex-col gap-5">
           {!editar && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <ComboOpciones
-                id="anotacion-sede"
-                label="Sede"
-                todos={false}
-                value={v.sede}
-                options={opciones.sedeOpciones}
-                onChange={(sede) => setV({ ...v, sede, jornada: "", grupo: "", estudiantes: [], codigo: "" })}
-              />
-              <ComboOpciones
-                id="anotacion-jornada"
-                label="Jornada"
-                todos={false}
-                disabled={!v.sede}
-                value={v.jornada}
-                options={opciones.jornadaOpciones}
-                onChange={(jornada) => setV({ ...v, jornada, grupo: "", estudiantes: [] })}
-              />
-              <ComboOpciones
-                id="anotacion-grupo"
-                label="Grado/Grupo"
-                todos={false}
-                disabled={!v.jornada}
-                value={v.grupo}
-                options={opciones.grupoOpciones}
-                onChange={(grupo) => setV({ ...v, grupo, estudiantes: [] })}
-              />
-            </div>
+            <CombosCascadaEstudiante
+              idPrefix="anotacion"
+              filtro={b.filtro}
+              onChange={b.setFiltro}
+              cascada={b.cascada}
+              grupoOpciones={b.grupoOpciones}
+              // Lo elegido de otro establecimiento, y su catálogo de códigos, ya no valen.
+              onEstablecimientoCambia={() => setV((prev) => ({ ...prev, estudiantes: [], codigo: "", mediacion: false, preocupa: false }))}
+            />
           )}
 
           <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errores.estudiantes) || undefined}>
             <FieldLabel htmlFor="anotacion-estudiantes">{editar ? "Estudiante" : "Estudiantes*"}</FieldLabel>
             {editar ? (
               // La anotación es de un estudiante: no se cambia al modificar.
-              <Input id="anotacion-estudiantes" value={v.estudiantes[0]?.nombre ?? ""} readOnly disabled />
+              <Input id="anotacion-estudiantes" value={v.estudiantes[0]?.estudiante_nombre ?? ""} readOnly disabled />
             ) : (
               <SelectorChips
-                items={roster.data ?? []}
+                items={estudiantesQuery.data ?? []}
                 value={v.estudiantes}
                 onChange={(estudiantes) =>
                   setV({ ...v, estudiantes, preocupa: estudiantes.length === 1 && v.preocupa, mediacion: v.mediacion && estudiantes.length >= 2 })
                 }
-                getId={(m) => m.id}
-                getLabel={(m) => m.nombre}
-                cargando={roster.isFetching}
-                placeholder={v.grupo ? "Buscar estudiante" : "Elegí Grado/Grupo primero"}
+                getId={(m) => m.fk_tmatricula}
+                getLabel={etiquetaEstudiante}
+                renderItem={(m) => (
+                  <span className="flex flex-col">
+                    <span>{m.estudiante_nombre}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {m.grado_grupo}
+                      {m.estudiante_documento ? ` · ${m.estudiante_documento}` : ""}
+                    </span>
+                  </span>
+                )}
+                filtrar={() => true}
+                onConsulta={b.setConsulta}
+                cargando={estudiantesQuery.isFetching}
+                placeholder="Buscar por nombre o documento"
                 ariaLabel="Estudiantes"
                 invalido={Boolean(errores.estudiantes)}
                 conFlecha
@@ -250,8 +262,8 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
                 label="Código"
                 required
                 todos={false}
-                disabled={!opciones.establecimientoId}
-                placeholder={opciones.establecimientoId ? "Buscar código" : "Elegí Sede primero"}
+                disabled={!establecimientoId}
+                placeholder={establecimientoId ? "Buscar código" : "Seleccione estudiantes primero"}
                 value={v.codigo}
                 options={codigoOpciones}
                 error={errores.codigo}
@@ -261,7 +273,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
                 <div className="mt-2 flex h-10 items-center gap-3 text-sm">
                   <span className="flex items-center gap-1.5">
                     Tipo:
-                    <Badge variant="soft" color={colorDeTipo(codigo.tipo_nombre)}>
+                    <Badge variant="soft" color={colorDeTipo(codigo.tipo_codigo)}>
                       {codigo.tipo_nombre}
                     </Badge>
                   </span>
@@ -300,32 +312,45 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             </div>
           </Field>
 
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-3 text-sm">
-              <Switch
-                round
-                checked={v.preocupa}
-                disabled={!permanenciaHabilitada}
-                onCheckedChange={(preocupa) => setV({ ...v, preocupa })}
-                aria-label="Preocupa la permanencia"
-              />
-              Preocupa la permanencia
-              <span className="text-xs text-muted-foreground">· solo con un estudiante</span>
-            </label>
-            <label className="flex items-center gap-3 text-sm">
-              <Switch
-                round
-                checked={v.mediacion}
-                disabled={!mediacionHabilitada}
-                onCheckedChange={(mediacion) => setV({ ...v, mediacion })}
-                aria-label="Requiere mediación"
-              />
-              Requiere mediación
-              <span className="text-xs text-muted-foreground">· solo con un código Tipo I y dos o más estudiantes</span>
-            </label>
-            {errores.mediacion && <FieldError>{errores.mediacion}</FieldError>}
+          {/* Las dos marcas en recuadros, una al lado de la otra (en pantallas angostas, una debajo de otra). */}
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
+            <MarcoOpciones id="anotacion-preocupa">
+              <label className="flex items-center gap-3">
+                <Switch
+                  round
+                  checked={v.preocupa}
+                  disabled={!permanenciaHabilitada}
+                  onCheckedChange={(preocupa) => setV({ ...v, preocupa })}
+                  aria-label="Preocupa la permanencia"
+                />
+                Preocupa la permanencia
+                <span className="text-xs text-muted-foreground">· solo con un estudiante</span>
+              </label>
+            </MarcoOpciones>
+            <MarcoOpciones id="anotacion-mediacion" error={errores.mediacion}>
+              <label className="flex items-center gap-3">
+                <Switch
+                  round
+                  checked={v.mediacion}
+                  disabled={!mediacionHabilitada}
+                  onCheckedChange={(mediacion) => setV({ ...v, mediacion })}
+                  aria-label="Requiere mediación"
+                />
+                Requiere mediación
+                <span className="text-xs text-muted-foreground">· solo con un código Tipo I y dos o más estudiantes</span>
+              </label>
+            </MarcoOpciones>
           </div>
 
+          {mediacionHabilitada && v.mediacion && (
+            <Alert variant="info">
+              <InfoIcon aria-hidden="true" />
+              <AlertDescription>
+                Al guardar se crea un caso de convivencia Tipo I con los {v.estudiantes.length} estudiantes, que usted
+                gestiona. En el caso se completan el rol de cada uno y la descripción de los hechos.
+              </AlertDescription>
+            </Alert>
+          )}
           {esGrave && (
             <Alert variant="info">
               <InfoIcon aria-hidden="true" />

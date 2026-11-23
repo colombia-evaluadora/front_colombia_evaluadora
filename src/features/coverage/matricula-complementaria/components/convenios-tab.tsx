@@ -49,7 +49,7 @@ import { MENU_COMPLEMENTARIA } from "@/features/coverage/matricula-complementari
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const ANIOS = [2028, 2027, 2026, 2025]
-const num = "block text-right tabular-nums"
+const num = "block text-center tabular-nums"
 
 const columns: ColumnDef<Convenio>[] = [
   {
@@ -96,7 +96,7 @@ const columns: ColumnDef<Convenio>[] = [
     id: "cupo",
     accessorFn: (r) => r.id,
     meta: { label: "Cupo máximo de adscritos" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Cupo máximo de adscritos" className="justify-end" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Cupo máximo de adscritos" className="justify-center" />,
     cell: ({ row }) => (
       <span className={num} aria-label={row.original.cupoMaximo == null ? "Sin límite" : undefined}>
         {row.original.cupoMaximo ?? "—"}
@@ -108,7 +108,7 @@ const columns: ColumnDef<Convenio>[] = [
     id: "adscritos",
     accessorFn: (r) => r.id,
     meta: { label: "Adscritos matriculados" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Adscritos matriculados" className="justify-end" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Adscritos matriculados" className="justify-center" />,
     cell: ({ row }) => <span className={num}>{row.original.adscritos}</span>,
     enableSorting: false,
   },

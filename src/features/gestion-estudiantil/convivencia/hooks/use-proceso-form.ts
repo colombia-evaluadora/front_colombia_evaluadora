@@ -40,7 +40,8 @@ export function useProcesoForm(origen: OrigenProceso) {
   const desdeAnotacion = origen.matricula != null && origen.anotacion != null
   const desdeCaso = origen.caso != null
   const [valores, setValores] = useState<ValoresProceso>(() => ({
-    matricula: desdeAnotacion ? String(origen.matricula) : "",
+    // Desde una anotación, o desde un caso con el estudiante ya elegido en el modal (G.2.CAS.DIS.2).
+    matricula: origen.matricula != null ? String(origen.matricula) : "",
     anotaciones: desdeAnotacion ? [origen.anotacion as number] : [],
     caso: desdeCaso ? String(origen.caso) : "",
     fecha: hoy,

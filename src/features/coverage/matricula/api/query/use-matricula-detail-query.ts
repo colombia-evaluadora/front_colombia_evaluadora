@@ -84,13 +84,14 @@ interface RawMatriculaCore {
   fk_tperiodo_academico: number
   created_at: string
   estado_matricula_nombre: string
+  /** Regla 81 (V177): S sin autorizacion de datos; los bloques 2.2 a 2.9 llegan enmascarados. */
+  sin_autorizacion?: "S" | "N"
   // Pendiente en el back (docs/matricula/pendientes-back.md): por ahora solo lo trae el mock.
   tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
   tiene_complementaria?: "S" | "N"
   postulacion_registrada?: "S" | "N"
   retiro_solicitado_por?: string | null
   anulacion_pendiente?: "S" | "N"
-  sin_autorizacion?: "S" | "N"
   origen_adscripcion?: string | null
   // Bloques 2.1, 2.2 y 2.8 nuevos (pendientes-back, tarea 8): solo los trae el mock.
   fk_tlv_internado?: number | null

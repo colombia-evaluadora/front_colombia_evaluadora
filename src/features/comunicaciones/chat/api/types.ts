@@ -47,6 +47,9 @@ export interface Conversacion {
   // Menor marcador de lectura de los miembros (comms-service): un mensaje propio con id menor o
   // igual ya lo leyeron todos (doble check). Llega también en vivo (`conversacion.lectura`).
   leidoHasta?: number | null
+  // Comunicaciones §4.6: otra persona lo retiró del grupo. Queda en la bandeja en solo lectura con lo
+  // que recibió hasta su retiro (comms-service no le entrega nada posterior); no escribe.
+  retirado?: boolean
   // Igual con el marcador de entrega (comms-service, `GREATEST(entregado, leído)` por miembro): un
   // mensaje propio con id menor o igual ya llegó a un cliente de todos (✓✓ gris, como WhatsApp).
   // Llega en vivo con `conversacion.entrega`.
@@ -225,6 +228,12 @@ export interface Mensaje {
   bot?: TarjetaBot | null
   // Mensaje propio que pidió confirmación de lectura: estado y receptores (comms-service).
   confirmacion?: ConfirmacionLectura | null
+  // Mensaje propio en un grupo: cuántos participantes (sin contar al autor) ya lo leyeron
+  // (Comunicaciones §4.6 Acuses, "Visto por N"). Agregado, sin decir quiénes; null si no aplica.
+  vistoPor?: number | null
+  // Hilo con acudientes (Comunicaciones 4.5): el moderador lo ocultó. Llega sin texto ni adjuntos y se
+  // pinta "Mensaje oculto por el moderador"; el original queda en la base para auditoría.
+  ocultoPorModerador?: boolean
 }
 
 export type TipoMencion = "USUARIO" | "CANAL" | "TODOS"
@@ -742,4 +751,51 @@ export interface AlertasConversacion {
   campana: boolean
   sonido: boolean
   correo: boolean
+}
+
+// ── Hilo común del docente con acudientes (Comunicaciones 4.5, M.2.HIL.1-3) ──────────────────────
+// Es un GRUPO del chat: mensajes, bandeja y Reportar van por las rutas normales. Los participantes
+// (acudientes vigentes de las matrículas Cursando) los calcula comms-service.
+
+export type TipoOpcionHilo = "GRUPO" | "EJECUCION"
+
+/** Grupo (responsable de grupo) o [Ejecución] (responsable de enseñanza) desde el que se abre un hilo. */
+export interface OpcionHiloAcudientes {
+  tipo: TipoOpcionHilo
+  grupo: number
+  asignacion: number | null
+  nombre: string
+  // Acudientes vigentes que quedarían como participantes.
+  acudientes: number
+}
+
+/** Fila de la bandeja: "Grupo · N acudientes · hora". */
+export interface HiloAcudientesResumen {
+  conversacionId: number
+  grupo: string
+  acudientes: number
+  soloLectura: boolean
+}
+
+export interface SilenciadoHilo {
+  usuarioId: number
+  nombre: string
+  motivo: string
+  silenciadoEn: string
+}
+
+/** Encabezado: "{asunto}" + "N acudientes vigentes · Moderador: {nombre}". */
+export interface HiloAcudientes {
+  conversacionId: number
+  asunto: string
+  grupo: string
+  acudientes: number
+  moderador: { id: number; nombre: string }
+  esModerador: boolean
+  // Grupo, [Ejecución] o periodo cerrados: nadie escribe.
+  soloLectura: boolean
+  // El propio usuario está silenciado: ve pero no escribe.
+  silenciado: boolean
+  // Solo llega al moderador.
+  silenciados: SilenciadoHilo[]
 }

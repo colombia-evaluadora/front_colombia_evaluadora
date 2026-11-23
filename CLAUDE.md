@@ -472,3 +472,33 @@ feature/* ──squash──▶ dev ──merge commit──▶ test ──merge
 ## 12. Proyecto hermano
 
 Existe `front_pigse` (mismo stack y patrones), con el que a veces se comparte código puntual (p. ej. auth). No asumas que vive dentro de este repo ni lo modifiques sin pedido explícito. Las colecciones Postman que citan los comentarios del planeador casi todas **no están en este repo** (solo `planeador-ver-editar-actividad.postman_collection.json`).
+
+---
+
+## 13. Reglas de UI (obligatorias en toda vista)
+
+Las definió el equipo de diseño (ajustadas a lo acordado en §7): el prototipo dicta qué hay en la pantalla, estas reglas dictan cómo se ve. Revisá la vista contra esta lista antes de entregarla.
+
+**Textos**
+- Mayúscula solo inicial en todo texto de UI (títulos, menú, migas, pestañas, modales, labels, datos de prueba): «Lista de valores», «Gestión académica», «Cargo en el comité de convivencia». Excepciones: nombres propios y siglas (PIAR, SIMPADE). El menú real lo trae el backend: sus nombres se corrigen en Configuración de roles y menús.
+
+**Pantallas de lista**
+- Buscador: siempre `SearchQueryBar` (label flotante «Buscar por…», input «Buscar»; embudo solo si hay filtros), nunca un `Input` suelto con lupa.
+- El botón de crear y las demás acciones van en la línea del buscador, a la derecha (`TableScreenToolbar` / `TableScreenActions`), nunca en el título. Esa fila va con `items-end` para que campo y botones queden alineados.
+- En un grupo de botones, el primario va siempre al final (a la derecha).
+
+**Tablas**
+- Acciones de fila: iconos sueltos con tooltip en la columna `actions` (aparecen al hover), nunca un menú ⁞. Eliminar: `TrashIcon` con `color="destructive"` (rojo, también en hover).
+- Encabezados o labels que necesitan explicación: ⓘ con tooltip (`TituloConAyuda`, `src/components/titulo-con-ayuda.tsx`).
+- Filas inactivas o anuladas: `isRowMuted` (la fila atenuada al 50% que pone `DataTable`; los iconos del hover quedan al 100%). Misma opacidad en ítems inactivos de paneles y tarjetas.
+- Columnas de solo números: encabezado y celdas centrados (`text-center tabular-nums`).
+- No forzar anchos ni `nowrap` por columna sin necesidad: el reparto del ancho lo decide `DataTable` (columna `growColumnId` absorbe el sobrante). No midas el DOM ni dupliques renders para ajustarlo.
+- Etiqueta Inactivo: `Badge variant="soft" color="neutral"`.
+
+**Formularios y modales**
+- `*` de obligatorio en rojo, después del texto del label. También en interruptores y campos de solo lectura que siempre tienen valor, si el prototipo los marca.
+- Interruptores, radios y grupos de casillas: dentro de `MarcoOpciones` (`src/components/marco-opciones.tsx`).
+- Modales de formulario: **sin X en la esquina si el pie tiene Cancelar/Volver** (`showCloseButton={false}`); la X solo en modales sin botón de cierre en el pie. Cancelar con `XIcon` (outline neutral) y el primario azul a la derecha; nota «Los campos marcados con * son obligatorios» en la línea de los botones.
+- Campos de solo lectura con candado; contador «n / máx» en los campos con límite.
+- Avisos de bloqueo: ícono rojo junto al título, nombres en negrita y un solo botón primario «Entendido».
+- Ítems destructivos de un menú desplegable: `DropdownMenuItem variant="destructive"` (rojo).

@@ -7,9 +7,64 @@ import type { RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 export interface MockMenu extends RouteResponseDto {
   visible?: boolean
   planId?: number | null
+  /** Módulo fuera de la licencia (Vistas por rol, S.3.VRO.1c). */
+  fueraDeLicencia?: boolean
 }
 
+// Pestañas con permiso propio de Inscripciones (Vistas por rol, S.3.VRO.1a): `type` TAB, cuelgan del
+// submódulo y no se pintan en el menú lateral. En el backend real no existen todavía.
+const PESTANAS_INSCRIPCIONES: [number, string][] = [
+  [90, "Reservas de cupo"],
+  [91, "Inscripciones"],
+  [92, "Configuración"],
+  [93, "Entidad territorial"],
+]
+
+// Bitácora con un submenú por módulo, como en el prototipo (B.1.LIS.1). En el backend real hay que crear
+// estos ítems; mientras no existan, la Bitácora se abre desde Registro de actividad.
+const BITACORA_SUBMENUS: [number, string, string][] = [
+  [81, "Establecimiento", "establecimiento"],
+  [82, "Cobertura educativa", "cobertura-educativa"],
+  [83, "Gestión académica", "gestion-academica"],
+  [84, "Gestión estudiantil", "gestion-estudiantil"],
+  [87, "Evaluación del desempeño", "evaluacion-del-desempeno"],
+  [85, "Comunicaciones", "comunicaciones"],
+  [86, "Administración del sistema", "administracion-del-sistema"],
+]
+
 export const navigationMenu: MockMenu[] = [
+  {
+    id: 80,
+    name: "Bitácora",
+    icon: "Clock-Counter-Clockwise-Icon",
+    path: "/app/registro-de-actividad/bitacora/establecimiento",
+    menuOrder: 3,
+    type: "GROUP",
+    idParent: null,
+    roleIds: [1, 2],
+  },
+  ...BITACORA_SUBMENUS.map(
+    ([id, name, slug], i): MockMenu => ({
+      id,
+      name,
+      icon: "",
+      path: `/app/registro-de-actividad/bitacora/${slug}`,
+      menuOrder: i,
+      type: "ITEM",
+      idParent: 80,
+      roleIds: [1, 2],
+    }),
+  ),
+  {
+    id: 88,
+    name: "Documentos emitidos",
+    icon: "",
+    path: "/app/registro-de-actividad/documentos-emitidos",
+    menuOrder: BITACORA_SUBMENUS.length,
+    type: "ITEM",
+    idParent: 80,
+    roleIds: [1, 2],
+  },
   {
     id: 12,
     name: "Cobertura educativa",
@@ -30,9 +85,22 @@ export const navigationMenu: MockMenu[] = [
     idParent: 12,
     roleIds: [1, 2],
   },
+  ...PESTANAS_INSCRIPCIONES.map(
+    ([id, name], i): MockMenu => ({
+      id,
+      name,
+      icon: "",
+      path: `/app/cobertura/inscritos#${id}`,
+      menuOrder: i,
+      type: "TAB",
+      idParent: 13,
+      visible: false,
+      roleIds: [1, 2],
+    }),
+  ),
   {
     id: 14,
-    name: "Pre-Matricula",
+    name: "Pre-matrícula",
     icon: "",
     path: "/app/cobertura/pre-matricula",
     menuOrder: 1,
@@ -66,6 +134,16 @@ export const navigationMenu: MockMenu[] = [
     icon: "",
     path: "/app/cobertura/promocion-nivelacion",
     menuOrder: 4,
+    type: "ITEM",
+    idParent: 12,
+    roleIds: [1, 2],
+  },
+  {
+    id: 72,
+    name: "Actualización de datos",
+    icon: "",
+    path: "/app/cobertura/actualizacion-datos",
+    menuOrder: 5,
     type: "ITEM",
     idParent: 12,
     roleIds: [1, 2],
@@ -162,7 +240,7 @@ export const navigationMenu: MockMenu[] = [
   // V101: solo el Superadministrador. Código LISTAS_VALOR (mapeado en roles.ts).
   {
     id: 49,
-    name: "Lista de Valores",
+    name: "Lista de valores",
     icon: "",
     path: "/app/administracion/listas-valor",
     menuOrder: 9,
@@ -256,7 +334,7 @@ export const navigationMenu: MockMenu[] = [
   // },
   {
     id: 17,
-    name: "Establecimiento Educativo",
+    name: "Establecimiento educativo",
     icon: "Bank-Icon",
     path: "/app/establecimiento-educativo",
     menuOrder: 2,
@@ -281,7 +359,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 20,
-    name: "Sedes Educativas",
+    name: "Sedes educativas",
     icon: "",
     path: "/app/establecimiento-educativo/sedes",
     menuOrder: 1,
@@ -301,7 +379,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 22,
-    name: "Periodos Académicos",
+    name: "Periodos académicos",
     icon: "",
     path: "/app/establecimiento-educativo/periodos",
     menuOrder: 3,
@@ -311,7 +389,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 23,
-    name: "Gestión Académica",
+    name: "Gestión académica",
     icon: "GraduationCap-Icon",
     path: "/app/planeador/actividades",
     menuOrder: 3,
@@ -371,6 +449,8 @@ export const navigationMenu: MockMenu[] = [
     type: "GROUP",
     idParent: null,
     roleIds: [1, 2, 3],
+    // Ejemplo de módulo que el cliente no contrató (S.3.VRO.1c).
+    fueraDeLicencia: true,
   },
   {
     id: 42,
@@ -395,7 +475,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 60,
-    name: "Gestión Estudiantil",
+    name: "Gestión estudiantil",
     icon: "Users-Three-Icon",
     path: "/app/gestion-estudiantil/citaciones-compromisos",
     menuOrder: 5,

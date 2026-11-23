@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { aDocumentoAlfanumerico, aNombre, esTipoDocExtranjero, fechaMinimaNacimiento } from "@/features/coverage/matricula/utils/matricula-formatos"
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { useEtniasCatalogo } from "@/features/coverage/matricula/api/query/catalogos-fijos"
@@ -19,6 +21,8 @@ interface StudentSectionProps {
   /** Alta de un estudiante ya registrado (Regla 8): el documento se puede cambiar,
    * el resto de su identidad queda en solo lectura, sin enmascarar los nombres. */
   identidadExistente?: boolean
+  /** Aviso dentro del bloque, antes de los campos (verificación de identidad, Regla 8). */
+  aviso?: ReactNode
 }
 
 export function MatriculaStudentSection({
@@ -29,6 +33,7 @@ export function MatriculaStudentSection({
   fieldSettings,
   identityDisabled,
   identidadExistente = false,
+  aviso,
 }: StudentSectionProps) {
   const bloqueado = Boolean(identityDisabled) || identidadExistente
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
@@ -45,7 +50,7 @@ export function MatriculaStudentSection({
   const etniaNombreById = new Map((etnias ?? []).map((e) => [String(e.id), e.name]))
 
   return (
-    <MatriculaFormSection title="Información del estudiante">
+    <MatriculaFormSection title="Información del estudiante" aviso={aviso}>
       <MatriculaSelectField
         id="student-document-type"
         label="Tipo de documento del estudiante"

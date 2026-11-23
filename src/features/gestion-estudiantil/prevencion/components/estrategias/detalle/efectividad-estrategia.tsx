@@ -46,7 +46,7 @@ export function EfectividadEstrategia({ efectividad: e }: { efectividad: Efectiv
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <TarjetaGrupo titulo="Beneficiarios" total={e.beneficiarios} grupo={e} />
         <TarjetaGrupo
-          titulo="No beneficiarios del Período Académico"
+          titulo="No beneficiarios del período académico"
           total={e.no_beneficiarios.estudiantes}
           grupo={e.no_beneficiarios}
         />

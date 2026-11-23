@@ -22,16 +22,16 @@ export function TrayectoriaCalculadaBloque({ c }: { c: TrayectoriaCalculada }) {
         Calculado por la plataforma
       </p>
       <dl className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <Dato label="Repitente (Cobertura Educativa)">{siNo(c.repitente)}</Dato>
+        <Dato label="Repitente (Cobertura educativa)">{siNo(c.repitente)}</Dato>
         <Dato label={`Resultado del año anterior${previo ? ` (${previo.anio})` : ""}`}>
           {previo ? `${previo.resultado ?? "—"}${previo.promovido ? " · Promovido" : ""}` : null}
         </Dato>
         <Dato label="Grado y grupo del año anterior">{previo?.grado_grupo}</Dato>
-        <Dato label="Asistencia del año anterior (Gestión Académica)">{asistencia(previo?.asistencia)}</Dato>
+        <Dato label="Asistencia del año anterior (Gestión académica)">{asistencia(previo?.asistencia)}</Dato>
         <Dato label="Áreas reprobadas del último período consolidado">
           {areas ? `${areas.areas_reprobadas} de ${areas.areas_evaluadas} (${areas.periodo})` : null}
         </Dato>
-        <Dato label="Asistencia del año actual (Gestión Académica)">{asistencia(c.asistencia_anio_actual)}</Dato>
+        <Dato label="Asistencia del año actual (Gestión académica)">{asistencia(c.asistencia_anio_actual)}</Dato>
         <Dato label="Anotaciones negativas (Observador)">{antecedentes ? String(antecedentes.anotaciones_negativas) : null}</Dato>
         <Dato label="Casos de convivencia (tipo II y III)">
           {antecedentes ? `${antecedentes.casos_convivencia} (${antecedentes.casos_tipo_ii_iii})` : null}

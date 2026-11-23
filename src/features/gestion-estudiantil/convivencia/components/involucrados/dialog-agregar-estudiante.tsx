@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ControlPointIcon } from "@/components/ui/icons"
+import { ControlPointIcon, XIcon } from "@/components/ui/icons"
 
 import type { EstudianteFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
@@ -80,7 +80,7 @@ export function DialogAgregarEstudiante({
           />
         </div>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button size="sm" type="button" disabled={!s.estudiante} onClick={s.agregar}>
             <ControlPointIcon data-icon="inline-start" />
             Agregar

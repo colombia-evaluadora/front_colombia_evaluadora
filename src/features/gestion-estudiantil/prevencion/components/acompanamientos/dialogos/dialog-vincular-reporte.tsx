@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { getErrorMessage, isConflictError } from "@/lib/api-client"
-import { useNotify } from "@/components/notice/notice-context"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { LinkIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useNotify } from "@/components/notice/notice-context"
+import { LinkIcon } from "@/components/ui/icons"
 
 import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
@@ -122,18 +122,15 @@ export function DialogVincularReporte({ reporte, onClose }: { reporte: ReporteCo
         className="sm:max-w-3xl"
         confirmar={{ label: "Vincular reporte", icon: <LinkIcon data-icon="inline-start" />, onClick: () => enviar(false) }}
       >
-        <Field
-          orientation="vertical"
-          variant="outlined"
-          className="gap-2"
-          role="group"
-          aria-labelledby="vincular-destino-label"
-          data-invalid={(s.intento && Boolean(errorDestino)) || undefined}
+        <MarcoOpciones
+          id="vincular-destino"
+          label="Destino del reporte"
+          required
+          error={s.intento ? errorDestino : undefined}
         >
-          <FieldLabel id="vincular-destino-label">Destino del reporte*</FieldLabel>
           <RadioGroup
             aria-labelledby="vincular-destino-label"
-            className="flex min-h-10 flex-col gap-2 py-2 pr-3 pl-3.5"
+            className="flex-col items-start"
             value={destino}
             onValueChange={(d) => setDestino(String(d))}
           >
@@ -144,8 +141,7 @@ export function DialogVincularReporte({ reporte, onClose }: { reporte: ReporteCo
               </label>
             ))}
           </RadioGroup>
-          {s.intento && errorDestino && <FieldError>{errorDestino}</FieldError>}
-        </Field>
+        </MarcoOpciones>
 
         {destino === VINCULAR && (
           <ComboOpciones

@@ -90,6 +90,8 @@ export interface ConversacionEliminada {
   nombre: string | null
   // QUITADO: un administrador sacó al usuario; ELIMINADA: se borró la conversación.
   motivo: string | null
+  // QUITADO de un grupo: la conversación sigue en la lista en solo lectura (Comunicaciones §4.6).
+  soloLectura?: boolean
 }
 
 /**
@@ -159,8 +161,15 @@ export function aplicarEventoUsuario(
     return null
   }
   if (e.event === "conversacion.eliminada") {
-    const { id, motivo } = e.data as { id: number; motivo?: string }
+    const { id, motivo, soloLectura } = e.data as { id: number; motivo?: string; soloLectura?: boolean }
     const nombre = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.find((x) => x.id === id)?.nombre
+    // Retirado de un grupo (Comunicaciones §4.6): conserva lo recibido en solo lectura. Se vuelve a
+    // pedir la lista (llega con `retirado`) sin borrar el historial ya cargado.
+    if (soloLectura) {
+      void queryClient.invalidateQueries({ queryKey: chatKeys.conversaciones })
+      queryClient.removeQueries({ queryKey: chatKeys.miembros(id) })
+      return { id, nombre: nombre ?? null, motivo: motivo ?? null, soloLectura: true }
+    }
     queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) => prev?.filter((x) => x.id !== id))
     queryClient.removeQueries({ queryKey: chatKeys.mensajes(id) })
     queryClient.removeQueries({ queryKey: chatKeys.miembros(id) })
@@ -269,6 +278,10 @@ export function useChatTiempoRealCanal(conversacionId: number | undefined, verEl
         queryClient.setQueryData<Conversacion[]>(chatKeys.conversaciones, (prev) =>
           prev?.map((c) => (c.id === id ? { ...c, leidoHasta: Math.max(c.leidoHasta ?? 0, leidoHasta) } : c)),
         )
+        // "Visto por N" en grupos (§4.6 Acuses): el conteo por mensaje lo calcula comms-service y el
+        // evento no dice quién leyó, así que se vuelve a pedir el historial.
+        const conv = queryClient.getQueryData<Conversacion[]>(chatKeys.conversaciones)?.find((c) => c.id === id)
+        if (conv && conv.tipo !== "DIRECTO") void queryClient.invalidateQueries({ queryKey: chatKeys.mensajes(id) })
         return
       }
       case "conversacion.entrega": {

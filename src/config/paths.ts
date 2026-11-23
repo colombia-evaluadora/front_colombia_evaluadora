@@ -14,6 +14,12 @@ export const paths = {
     noFuiYo: { path: "/no-fui-yo", getHref: () => "/no-fui-yo" },
   },
 
+  // Ruta común del QR de los documentos (Adm. §12.4); el boletín redirige a la suya.
+  verificarDocumento: {
+    path: "/verificar/$codigo",
+    getHref: (codigo: string) => `/verificar/${encodeURIComponent(codigo)}`,
+  },
+
   verificarBoletin: {
     path: "/verificar/b/$codigo",
     getHref: (codigo: string) => `/verificar/b/${encodeURIComponent(codigo)}`,
@@ -140,6 +146,11 @@ export const paths = {
       path: "cobertura/promocion-nivelacion",
       getHref: () => "/app/cobertura/promocion-nivelacion",
     },
+    // Actualización de datos (Sección 2.19; Regla 69): pestañas Configuración y Solicitudes de corrección.
+    coberturaActualizacionDatos: {
+      path: "cobertura/actualizacion-datos",
+      getHref: () => "/app/cobertura/actualizacion-datos",
+    },
     coberturaConvocatoriaNueva: {
       path: "cobertura/matricula-complementaria/convocatorias/nueva",
       getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",
@@ -189,6 +200,16 @@ export const paths = {
     bitacora: {
       path: "registro-de-actividad/bitacora",
       getHref: () => "/app/registro-de-actividad/bitacora",
+    },
+    /** Bitácora · Documentos emitidos (B.8.LIS.1). Fuera de `bitacora/` para no chocar con `$modulo`. */
+    bitacoraDocumentos: {
+      path: "registro-de-actividad/documentos-emitidos",
+      getHref: () => "/app/registro-de-actividad/documentos-emitidos",
+    },
+    /** Un submenú de Bitácora por módulo (`establecimiento`, `cobertura-educativa`…). */
+    bitacoraModulo: {
+      path: "registro-de-actividad/bitacora/$modulo",
+      getHref: (modulo: string) => `/app/registro-de-actividad/bitacora/${modulo}`,
     },
     rolesMenus: {
       path: "administracion/roles-menus",
@@ -679,6 +700,10 @@ export const paths = {
     prevencionAcompDetalle: {
       path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId",
       getHref: (acompId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/acompanamientos/${acompId}`,
+    },
+    prevencionGestionAlerta: {
+      path: "gestion-estudiantil/prevencion-retencion/gestion-alertas/$gestionId",
+      getHref: (gestionId: number | string) => `/app/gestion-estudiantil/prevencion-retencion/gestion-alertas/${gestionId}`,
     },
     prevencionAcompEditar: {
       path: "gestion-estudiantil/prevencion-retencion/acompanamientos/$acompId/editar",

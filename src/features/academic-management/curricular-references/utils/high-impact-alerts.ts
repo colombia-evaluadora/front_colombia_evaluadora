@@ -85,7 +85,7 @@ function buildAlert(
       return {
         field,
         kind: "confirm",
-        title: "Cambio de Enfoque Pedagógico",
+        title: "Cambio de enfoque pedagógico",
         message:
           `Este cambio afecta ${units} y ${activities}. ` +
           (esEnfoqueFormativo(next.pedagogicalApproach)
@@ -99,7 +99,7 @@ function buildAlert(
       return {
         field,
         kind: "confirm",
-        title: "Cambio de Tipo de Evaluación",
+        title: "Cambio de tipo de evaluación",
         message: evaluationTypeMessage(next, impact),
       }
     case "contentLabels":
@@ -143,7 +143,7 @@ function buildAlert(
         return {
           field,
           kind: "block",
-          title: "Retiro de Nivel educativo",
+          title: "Retiro de nivel educativo",
           message:
             `No es posible retirar ${removed}: hay ` +
             `${plural(impact.levelUnits, "unidad/proyecto", "unidades/proyectos")} y ` +
@@ -154,7 +154,7 @@ function buildAlert(
       return {
         field,
         kind: "confirm",
-        title: "Retiro de Nivel educativo",
+        title: "Retiro de nivel educativo",
         message:
           `${plural(impact.levelComponents, "componente", "componentes")} de ${next.level1 || "nivel 1"} ` +
           `en grados de ${removed} pasarán a Inactivo y saldrán de los grados vinculados.`,
@@ -166,7 +166,7 @@ function buildAlert(
         return {
           field,
           kind: "block",
-          title: "Retiro de Área o dimensión",
+          title: "Retiro de área o dimensión",
           message:
             `No es posible retirar ${removed}: la usan ` +
             `${plural(impact.areaUnits, "unidad/proyecto", "unidades/proyectos")} y ` +
@@ -177,7 +177,7 @@ function buildAlert(
       return {
         field,
         kind: "confirm",
-        title: "Retiro de Área o dimensión",
+        title: "Retiro de área o dimensión",
         message:
           `${plural(impact.areaComponents, "componente", "componentes")} de ${next.level1 || "nivel 1"} ` +
           `en ${removed} pasarán a Inactivo y el área dejará de estar disponible en Unidad y Planeador.`,
@@ -188,7 +188,7 @@ function buildAlert(
       return {
         field,
         kind: "confirm",
-        title: "Inactivación del Referente",
+        title: "Inactivación del referente",
         message:
           `Bajo este referente hay ${units} y ${activities}. No se podrán crear nuevas; ` +
           "las existentes se conservan en solo lectura con sus datos históricos.",

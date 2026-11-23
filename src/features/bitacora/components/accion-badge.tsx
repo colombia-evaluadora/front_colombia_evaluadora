@@ -8,6 +8,9 @@ const COLOR: Record<BitacoraAccion, "success" | "info" | "warning" | "destructiv
   CAMBIO_ESTADO: "warning",
   ELIMINAR: "destructive",
   RESTAURACION: "secondary",
+  ACCESO: "info",
+  CONSULTA: "secondary",
+  EXPORTAR: "secondary",
 }
 
 export function AccionBadge({ accion }: { accion: BitacoraAccion }) {

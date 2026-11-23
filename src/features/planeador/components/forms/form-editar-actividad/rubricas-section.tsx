@@ -40,7 +40,7 @@ export function RubricasSection({
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Definición de Rúbricas *</h3>
+        <h3 className="text-base font-semibold">Definición de rúbricas *</h3>
         <SoloEdicion>
         <Tooltip>
           <TooltipTrigger
@@ -279,7 +279,7 @@ function CriterioItem({
 
       {/* Descripción del criterio en sí, distinta de la de cada nivel. */}
       <Field variant="outlined" className="mt-3">
-        <FieldLabel>Descripción o Juicio de valor</FieldLabel>
+        <FieldLabel>Descripción o juicio de valor</FieldLabel>
         <Textarea
           className={TEXTAREA_OUTLINED}
           rows={2}

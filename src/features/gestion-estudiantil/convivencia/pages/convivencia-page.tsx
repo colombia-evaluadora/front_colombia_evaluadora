@@ -49,7 +49,7 @@ function PestanaCasos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
   const access = useConvivenciaAccess()
-  const { puedeCrear: puedeCitar } = useCitacionesAccess()
+  const { puedeCrearCitacion: puedeCitar, puedeCrearCompromiso } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
 
   const f = useCasosFiltros(goToPage)
@@ -65,6 +65,7 @@ function PestanaCasos({ cabecera }: PestanaProps) {
   const columns = buildColumnsCasos({
     access,
     puedeCitar,
+    puedeCrearCompromiso,
     onAccion: (caso, accion) => {
       if (accion === "citar" || accion === "compromiso")
         navigate({

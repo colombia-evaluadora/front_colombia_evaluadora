@@ -136,7 +136,7 @@ export function CatalogoTab({ tabs, establecimiento, cargandoEstablecimiento, ac
           onRetry={refetch}
           isRowMuted={(row) => !row.original.habilitado}
           growColumnId="descripcion"
-          emptyMessage={hayFiltros ? "No hay códigos para los filtros aplicados." : "Aún no hay códigos. Cargue los del Manual de Convivencia."}
+          emptyMessage={hayFiltros ? "No hay códigos para los filtros aplicados." : "Aún no hay códigos. Cargue los del manual de convivencia."}
           errorMessage={error ? getErrorMessage(error) : undefined}
         />
         <Pagination

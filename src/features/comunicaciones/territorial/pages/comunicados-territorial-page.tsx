@@ -1,160 +1,280 @@
-import { useState } from "react"
+"use no memo"
+
+import { useEffect, useState } from "react"
+import { format } from "date-fns"
+
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { DatePicker } from "@/components/date-picker"
 import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
   TableScreenTitle,
+  TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { format } from "date-fns"
-
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { NoticeProvider } from "@/components/notice/notice-context"
+import { Pagination } from "@/components/pagination"
+import { SearchQueryBar } from "@/components/search/search-query-bar"
+import { SelectOpciones } from "@/components/select-opciones"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { DotsThreeVerticalIcon } from "@/components/ui/icons"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Pagination } from "@/components/pagination"
-import { SelectOpciones } from "@/components/select-opciones"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { DotsThreeVerticalIcon, EyeIcon, FunnelXIcon, XIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useDataTable } from "@/hooks/use-data-table"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
+import { comunicadosTerritorialRoute } from "@/router"
 import { CLASES_HTML, htmlSeguro } from "@/features/comunicaciones/chat/lib/html-seguro"
-import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
 import {
   useComunicadoTerritorialQuery,
   useComunicadosTerritorialQuery,
   useEstablecimientosTerritorialQuery,
-  type ComunicadoTerritorial,
   type EstadoTerritorial,
 } from "@/features/comunicaciones/territorial/api/comunicados-territorial"
+import type { ComunicadosTerritorialSearch } from "@/features/comunicaciones/territorial/api/schema"
+import {
+  createTerritorialColumns,
+  dirigidoA,
+  ESTADOS_TERRITORIAL,
+  EstadoTerritorialBadge,
+} from "@/features/comunicaciones/territorial/components/table/columns-territorial"
 
-const ESTADOS: Record<EstadoTerritorial, { etiqueta: string; color: "info" | "success" | "neutral" | "destructive" }> = {
-  PROGRAMADO: { etiqueta: "Programado", color: "info" },
-  PUBLICADO: { etiqueta: "Publicado", color: "success" },
-  VENCIDO: { etiqueta: "Vencido", color: "neutral" },
-  ANULADO: { etiqueta: "Anulado", color: "destructive" },
-}
-
-function Estado({ estado }: { estado: EstadoTerritorial }) {
-  const { etiqueta, color } = ESTADOS[estado]
-  return (
-    <Badge variant="soft" color={color}>
-      {etiqueta}
-    </Badge>
-  )
-}
-
-const dirigidoA = (c: ComunicadoTerritorial) => resumenDestinatarios(c.audiencia, c.destinos) || "—"
+const ESTADOS = Object.keys(ESTADOS_TERRITORIAL) as EstadoTerritorial[]
 
 /**
  * Comunicados institucionales del Supervisor territorial y el Administrador territorial (Guía
- * M.1.TER.1): solo consulta. Sin "Nuevo comunicado" ni "Recibidos", con la columna y el filtro de
- * establecimiento, y el menú reducido a "Ver detalle". El alcance lo aplica comms-service.
+ * M.1.TER.1/2): solo consulta, con el mismo listado que Publicados (buscador por título con filtros
+ * avanzados y chips, tabla ordenable con columna Establecimiento, paginación y "Ver detalle" en el
+ * hover). Sin "Nuevo comunicado" ni "Recibidos": no publican ni participan en la mensajería. El
+ * filtro Establecimiento lista solo los de su alcance (a cargo del supervisor; todos para el
+ * administrador): comms-service lo resuelve y también recorta la lista y el detalle.
  */
 export function ComunicadosTerritorialPage() {
-  const [q, setQ] = useState("")
-  const [establecimiento, setEstablecimiento] = useState("")
-  const [estado, setEstado] = useState("")
-  const [desde, setDesde] = useState("")
-  const [abierto, setAbierto] = useState<number | null>(null)
+  return (
+    <NoticeProvider>
+      <TableScreen>
+        <TableScreenHeader>
+          <TableScreenTitle description="Consulta de los comunicados de sus establecimientos, sin publicar.">
+            Comunicados institucionales
+          </TableScreenTitle>
+          <TableScreenToolbar>
+            <FiltrosTerritorial />
+          </TableScreenToolbar>
+        </TableScreenHeader>
+        <TableScreenBody>
+          <TablaTerritorial />
+        </TableScreenBody>
+      </TableScreen>
+    </NoticeProvider>
+  )
+}
+
+type ClaveFiltro = "establecimiento" | "estado" | "desde"
+
+/**
+ * Buscador por título con el embudo de filtros avanzados (Establecimiento, Estado, Desde), como
+ * Comunicados institucionales (M.1.LIS.1). Los aplicados se ven como chips removibles. Todo en la URL.
+ */
+function FiltrosTerritorial() {
+  const search = comunicadosTerritorialRoute.useSearch()
+  const navigate = comunicadosTerritorialRoute.useNavigate()
   const establecimientos = useEstablecimientosTerritorialQuery()
-  const [pagina, setPagina] = useState(0)
-  const [tamano, setTamano] = useState(20)
-  const lista = useComunicadosTerritorialQuery({ q: q.trim(), establecimiento, estado, desde }, { pagina, tamano })
-  const filas = lista.data?.rows ?? []
-  const totalCount = lista.data?.totalCount ?? 0
-  const pageCount = lista.data?.pageCount ?? 1
-  // Cambiar un filtro vuelve a la primera página: la actual puede no existir con el nuevo total.
-  const filtrar = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v)
-    setPagina(0)
-  }
-  const hayFiltros = !!(q || establecimiento || estado || desde)
+  const [abierto, setAbierto] = useState(false)
+  const [establecimiento, setEstablecimiento] = useState(search.establecimiento ?? "")
+  const [estado, setEstado] = useState<EstadoTerritorial | "">(search.estado ?? "")
+  const [desde, setDesde] = useState(search.desde ?? "")
+
+  // Al abrir, el panel arranca con los filtros vigentes.
+  useEffect(() => {
+    if (!abierto) return
+    setEstablecimiento(search.establecimiento ?? "")
+    setEstado(search.estado ?? "")
+    setDesde(search.desde ?? "")
+  }, [abierto, search.establecimiento, search.estado, search.desde])
+
+  const cambiar = (cambios: Partial<ComunicadosTerritorialSearch>) =>
+    void navigate({ search: (prev) => ({ ...prev, ...cambios, page: 0 }), replace: true })
+
+  const nombreEe = (id: string) => establecimientos.data?.find((o) => o.valor === id)?.etiqueta ?? id
+  const chips = [
+    search.establecimiento && {
+      clave: "establecimiento" as const,
+      texto: `Establecimiento: ${nombreEe(search.establecimiento)}`,
+    },
+    search.estado && { clave: "estado" as const, texto: `Estado: ${ESTADOS_TERRITORIAL[search.estado].etiqueta}` },
+    search.desde && {
+      clave: "desde" as const,
+      texto: `Desde ${format(new Date(`${search.desde}T00:00:00`), "dd/MM/yyyy")}`,
+    },
+  ].filter(Boolean) as { clave: ClaveFiltro; texto: string }[]
+  const hayFiltros = chips.length > 0 || !!search.q
+
+  const limpiar = () => cambiar({ q: undefined, establecimiento: undefined, estado: undefined, desde: undefined })
 
   return (
-    <TableScreen>
-      <TableScreenHeader>
-        <TableScreenTitle description="Consulta de los comunicados de sus establecimientos, sin publicar.">
-          Comunicados institucionales
-        </TableScreenTitle>
-      </TableScreenHeader>
-      <TableScreenBody contentClassName="flex min-w-0 flex-col gap-4">
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] lg:items-end">
-        <Field variant="outlined">
-          <FieldLabel htmlFor="territorial-q">Buscar por título</FieldLabel>
-          <Input id="territorial-q" value={q} onChange={(e) => filtrar(setQ)(e.target.value)} />
-        </Field>
-        <Field variant="outlined">
-          <FieldLabel htmlFor="territorial-est">Establecimiento</FieldLabel>
-          <SelectOpciones
-            id="territorial-est"
-            value={establecimiento}
-            onValueChange={(x) => filtrar(setEstablecimiento)(x)}
-            opciones={[
-              { value: "", label: "Todos" },
-              ...(establecimientos.data ?? []).map((o) => ({ value: o.valor, label: o.etiqueta })),
-            ]}
-          />
-        </Field>
-        <Field variant="outlined">
-          <FieldLabel htmlFor="territorial-estado">Estado</FieldLabel>
-          <SelectOpciones
-            id="territorial-estado"
-            value={estado}
-            onValueChange={(x) => filtrar(setEstado)(x)}
-            opciones={[
-              { value: "", label: "Todos" },
-              ...(Object.keys(ESTADOS) as EstadoTerritorial[]).map((k) => ({ value: k, label: ESTADOS[k].etiqueta })),
-            ]}
-          />
-        </Field>
-        <Field variant="outlined">
-          <FieldLabel htmlFor="territorial-desde">Desde</FieldLabel>
-          <Input id="territorial-desde" type="date" value={desde} onChange={(e) => filtrar(setDesde)(e.target.value)} />
-        </Field>
-        <Button
-          variant="ghost"
-          color="neutral"
-          disabled={!hayFiltros}
-          onClick={() => {
-            setQ("")
-            setEstablecimiento("")
-            setEstado("")
-            setDesde("")
-            setPagina(0)
-          }}
-        >
-          Limpiar
-        </Button>
-      </div>
-
-      {lista.isPending ? (
-        <Spinner className="m-6" />
-      ) : lista.isError ? (
-        <p className="text-sm text-muted-foreground">
-          {getErrorMessage(lista.error)}{" "}
-          <button type="button" onClick={() => void lista.refetch()} className="font-medium text-primary underline">
-            Reintentar
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <SearchQueryBar
+        id="territorial-q"
+        label="Buscar por título"
+        placeholder="Buscar por título"
+        value={search.q ?? ""}
+        onValueChange={(v) => cambiar({ q: v || undefined })}
+        onClearAll={() => {
+          limpiar()
+          setAbierto(false)
+        }}
+        activeFilterCount={chips.length + (search.q ? 1 : 0)}
+        badgeCount={chips.length}
+        open={abierto}
+        onOpenChange={setAbierto}
+        onApply={() => {
+          cambiar({
+            establecimiento: establecimiento || undefined,
+            estado: estado || undefined,
+            desde: desde || undefined,
+          })
+          setAbierto(false)
+        }}
+        size="sm"
+      >
+        <div className="flex flex-col gap-3 px-4">
+          <Field variant="outlined">
+            <FieldLabel htmlFor="territorial-est">Establecimiento</FieldLabel>
+            <SelectOpciones
+              id="territorial-est"
+              value={establecimiento}
+              onValueChange={(x) => setEstablecimiento(x)}
+              opciones={[
+                { value: "", label: "Todos" },
+                ...(establecimientos.data ?? []).map((o) => ({ value: o.valor, label: o.etiqueta })),
+              ]}
+            />
+          </Field>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="territorial-estado">Estado</FieldLabel>
+            <SelectOpciones
+              id="territorial-estado"
+              value={estado}
+              onValueChange={(x) => setEstado(x as EstadoTerritorial | "")}
+              opciones={[
+                { value: "", label: "Todos" },
+                ...ESTADOS.map((k) => ({ value: k, label: ESTADOS_TERRITORIAL[k].etiqueta })),
+              ]}
+            />
+          </Field>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="territorial-desde">Desde</FieldLabel>
+            <DatePicker
+              id="territorial-desde"
+              value={parseDateValue(desde)}
+              onChange={(d) => setDesde(formatDateValue(d))}
+            />
+          </Field>
+        </div>
+      </SearchQueryBar>
+      {hayFiltros && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {chips.map((c) => (
+            <span
+              key={c.clave}
+              className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted px-2.5 py-0.5"
+            >
+              <span className="truncate">{c.texto}</span>
+              <button
+                type="button"
+                aria-label={`Quitar filtro ${c.texto}`}
+                onClick={() => cambiar({ [c.clave]: undefined })}
+                className="grid size-4 place-items-center rounded-full text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              >
+                <XIcon aria-hidden className="size-3.5" />
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={limpiar}
+            className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+          >
+            <FunnelXIcon aria-hidden className="size-3.5" />
+            Limpiar filtros
           </button>
-        </p>
-      ) : filas.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">No hay comunicados para mostrar.</p>
-      ) : (
-        <>
-          {/* Móvil: tarjetas, para no desbordar con todas las columnas. */}
-          <ul className="flex flex-col gap-2 md:hidden">
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Tabla de escritorio y tarjetas en móvil; orden y página en la URL, resueltos por comms-service. */
+function TablaTerritorial() {
+  const search = comunicadosTerritorialRoute.useSearch()
+  const paginacion = useTablePagination()
+  const [abierto, setAbierto] = useState<number | null>(null)
+  const lista = useComunicadosTerritorialQuery(
+    {
+      q: search.q?.trim(),
+      establecimiento: search.establecimiento,
+      estado: search.estado,
+      desde: search.desde,
+      sortBy: search.sortBy,
+      sortDir: search.sortBy ? search.sortDir : undefined,
+    },
+    { pagina: paginacion.pageIndex, tamano: paginacion.pageSize },
+  )
+  const filas = lista.data?.rows ?? []
+  const pageCount = lista.data?.pageCount ?? 0
+  const totalCount = lista.data?.totalCount ?? 0
+
+  const { table } = useDataTable({
+    columns: createTerritorialColumns({ onVer: (c) => setAbierto(c.id) }),
+    data: filas,
+    pageCount,
+    getRowId: (c) => String(c.id),
+    ...paginacion,
+    columnVisibilityStorageKey: "comunicados-territorial-column-visibility",
+  })
+
+  return (
+    <>
+      {/* Móvil: tarjetas, para no desbordar con todas las columnas. */}
+      <div className="md:hidden">
+        {lista.isPending ? (
+          <Spinner className="m-6" />
+        ) : lista.isError ? (
+          <p className="text-sm text-muted-foreground">
+            {getErrorMessage(lista.error)}{" "}
+            <button type="button" onClick={() => void lista.refetch()} className="font-medium text-primary underline">
+              Reintentar
+            </button>
+          </p>
+        ) : filas.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">No hay comunicados para mostrar.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
             {filas.map((c) => (
               <li key={c.id} className="rounded-lg border p-3 text-sm">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 font-medium break-words">{c.titulo}</p>
-                  <Estado estado={c.estado} />
+                  <span className="min-w-0 font-medium break-words">{c.titulo}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      aria-label={`Opciones de ${c.titulo}`}
+                      className="grid size-8 shrink-0 place-items-center rounded-md hover:bg-muted"
+                    >
+                      <DotsThreeVerticalIcon className="size-4.5" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setAbierto(c.id)}>
+                        <EyeIcon aria-hidden />
+                        Ver detalle
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {format(new Date(c.publicarEn), "dd/MM/yyyy")} · {c.establecimiento}
@@ -162,80 +282,39 @@ export function ComunicadosTerritorialPage() {
                 <p className="text-xs break-words text-muted-foreground">
                   {c.publicadoPor} · {c.destinatarios} destinatarios
                 </p>
-                <Button size="sm" variant="link" className="mt-1 px-0" onClick={() => setAbierto(c.id)}>
-                  Ver detalle
-                </Button>
+                <div className="mt-1">
+                  <EstadoTerritorialBadge estado={c.estado} />
+                </div>
               </li>
             ))}
           </ul>
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Establecimiento</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Publicado por</TableHead>
-                  <TableHead>Tipos</TableHead>
-                  <TableHead className="text-right">Destinatarios</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-10">
-                    <span className="sr-only">Acciones</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filas.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>{format(new Date(c.publicarEn), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>{c.establecimiento}</TableCell>
-                    <TableCell>{c.titulo}</TableCell>
-                    <TableCell>{c.publicadoPor}</TableCell>
-                    <TableCell className="max-w-56 truncate" title={dirigidoA(c)}>
-                      {dirigidoA(c)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{c.destinatarios}</TableCell>
-                    <TableCell>
-                      <Estado estado={c.estado} />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          aria-label={`Opciones de ${c.titulo}`}
-                          className="grid size-8 place-items-center rounded-md hover:bg-muted"
-                        >
-                          <DotsThreeVerticalIcon className="size-4.5" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setAbierto(c.id)}>Ver detalle</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {/* Pie "23 comunicados" + páginas (M.1.TER.1): el total lo da comms-service. */}
-          <Pagination
-            pageIndex={pagina}
-            pageCount={pageCount}
-            canPrev={pagina > 0}
-            canNext={pagina + 1 < pageCount}
-            totalCount={totalCount}
-            pageSize={tamano}
-            onPageChange={setPagina}
-            onPageSizeChange={(t) => {
-              setTamano(t)
-              setPagina(0)
-            }}
-          />
-        </>
-      )}
+        )}
+      </div>
+      <div className="hidden md:block">
+        <DataTable
+          table={table}
+          isPending={lista.isPending}
+          isError={lista.isError}
+          onRetry={() => void lista.refetch()}
+          errorMessage={lista.error ? getErrorMessage(lista.error) : undefined}
+          emptyMessage="No hay comunicados para mostrar."
+          growColumnId="titulo"
+        />
+      </div>
+      <Pagination
+        viewOptions={<DataTableViewOptions table={table} />}
+        pageIndex={paginacion.pageIndex}
+        pageCount={Math.max(pageCount, 1)}
+        canPrev={paginacion.pageIndex > 0}
+        canNext={paginacion.pageIndex + 1 < pageCount}
+        onPageChange={paginacion.goToPage}
+        totalCount={totalCount}
+        pageSize={paginacion.pageSize}
+        onPageSizeChange={paginacion.setPageSize}
+      />
 
       {abierto != null && <DetalleDialog id={abierto} onClose={() => setAbierto(null)} />}
-      </TableScreenBody>
-    </TableScreen>
+    </>
   )
 }
 
@@ -272,7 +351,7 @@ function DetalleDialog({ id, onClose }: { id: number; onClose: () => void }) {
                 <dd className="inline">{dirigidoA(d.comunicado)}</dd>
               </div>
             </dl>
-            <Estado estado={d.comunicado.estado} />
+            <EstadoTerritorialBadge estado={d.comunicado.estado} />
             {d.comunicado.estado === "ANULADO" ? (
               <p className="text-muted-foreground">El contenido ya no está disponible.</p>
             ) : (

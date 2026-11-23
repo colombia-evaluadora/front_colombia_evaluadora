@@ -138,7 +138,7 @@ export function DialogAccionAcomp({ acomp, accion = null, onClose }: Props) {
           placeholder="Seleccione"
           value={v.responsable}
           options={responsables}
-          description="Funcionario autorizado de la misma Sede y Jornada."
+          description="Funcionario autorizado de la misma sede y jornada."
           error={error("responsable")}
           onInputChange={setBuscar}
           onChange={(responsable) => set({ responsable })}

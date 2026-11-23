@@ -9,6 +9,7 @@ import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 export interface OpcionesFiltros {
+  establecimientos: Opcion[]
   sedes: Opcion[]
   jornadas: Opcion[]
   grupos: Opcion[]
@@ -80,6 +81,7 @@ export function SearchAnotaciones({
     empty: { ...FILTROS_VACIOS, search: "" },
     freeText: { key: "texto", field: "search" },
     terms: [
+      ...(opciones.establecimientos.length ? [optionTerm("establecimiento", "establecimiento", opciones.establecimientos)] : []),
       optionTerm("sede", "sede", opciones.sedes),
       optionTerm("jornada", "jornada", opciones.jornadas),
       optionTerm("grupo", "grupo", opciones.grupos),
@@ -121,6 +123,18 @@ export function SearchAnotaciones({
       className="sm:w-full max-w-xl"
     >
       <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-3">
+        {opciones.establecimientos.length > 0 && (
+          <Combo
+            id="observador-establecimiento"
+            label="Establecimiento"
+            value={draft.establecimiento}
+            options={opciones.establecimientos}
+            // Establecimiento reencuadra toda la cascada: sede, jornada, grupo y período.
+            onChange={(establecimiento) =>
+              setDraft({ ...draft, establecimiento, sede: "", jornada: "", grupo: "", periodo: "" })
+            }
+          />
+        )}
         <Combo
           id="observador-sede"
           label="Sede"
@@ -135,7 +149,7 @@ export function SearchAnotaciones({
           value={draft.jornada}
           options={opciones.jornadas}
           disabled={sinSede}
-          placeholder={sinSede ? "Elegí Sede primero" : "Todos"}
+          placeholder={sinSede ? "Seleccione Sede primero" : "Todos"}
           onChange={(jornada) => setDraft({ ...draft, jornada, grupo: "", periodo: "" })}
         />
         <Combo
@@ -144,7 +158,7 @@ export function SearchAnotaciones({
           value={draft.grupo}
           options={opciones.grupos}
           disabled={sinJornada}
-          placeholder={sinJornada ? "Elegí Jornada primero" : "Todos"}
+          placeholder={sinJornada ? "Seleccione Jornada primero" : "Todos"}
           onChange={(grupo) => setDraft({ ...draft, grupo })}
         />
         <Combo
@@ -153,7 +167,7 @@ export function SearchAnotaciones({
           value={draft.periodo}
           options={opciones.periodos}
           disabled={sinJornada}
-          placeholder={sinJornada ? "Elegí Jornada primero" : "Todos"}
+          placeholder={sinJornada ? "Seleccione Jornada primero" : "Todos"}
           onChange={(periodo) => setDraft({ ...draft, periodo })}
         />
         <Combo

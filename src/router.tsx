@@ -10,7 +10,8 @@ import type { QueryClient } from "@tanstack/react-query"
 
 import { paths } from "@/config/paths"
 import { humanizeSlug } from "@/config/breadcrumbs"
-import { hasSession } from "@/lib/auth"
+import { hasSession, USER_QUERY_KEY } from "@/lib/auth"
+import type { AuthUser } from "@/lib/auth-mapper"
 import { NetworkSessionError } from "@/lib/network-error"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
@@ -33,6 +34,7 @@ import {
   seleccionarSearchSchema,
 } from "@/features/coverage/matricula-complementaria/api/schema"
 import { promocionNivelacionSearchSchema } from "@/features/coverage/promocion-nivelacion/api/schema"
+import { actualizacionDatosSearchSchema } from "@/features/coverage/actualizacion-datos/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -70,12 +72,15 @@ import { areasOficialesSearchSchema } from "@/features/administration/areas-ofic
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
 import { conservacionSearchSchema } from "@/features/administration/conservacion-datos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
+import { BITACORA_MODULOS, BITACORA_MODULO_SLUG, moduloDeSlug } from "@/features/bitacora/api/types/bitacora"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
 import { superadministradoresSearchSchema } from "@/features/administration/superadministradores/api/schema"
 import { administradoresSearchSchema } from "@/features/administration/administradores-territoriales/api/schema"
 import { supervisoresSearchSchema } from "@/features/administration/supervisores-territoriales/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { comunicadosSearchSchema } from "@/features/comunicaciones/comunicados/api/schema"
+import { comunicadosTerritorialSearchSchema } from "@/features/comunicaciones/territorial/api/schema"
+import { esUsuarioTerritorial } from "@/features/comunicaciones/territorial/lib/rol-territorial"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -119,7 +124,7 @@ const ActivatePage = lazyRouteComponent(
 const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
 const PublicLayout = lazyRouteComponent(() => import("@/components/public/public-layout"), "PublicLayout")
 // Mismo valor que exporta public-layout; aquí sin importar el módulo para no romper el lazy.
-const PUBLIC_SITE_NAME = "Control Escolar"
+const PUBLIC_SITE_NAME = "Colombia Evaluadora"
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
@@ -428,6 +433,23 @@ export const noFuiYoRoute = createRoute({
   component: lazyRouteComponent(() => import("@/features/cuenta/pages/cambio-correo-pages"), "NoFuiYoPage"),
 })
 
+// Pública (Adm. §12.4): la ruta común del QR; el carné se verifica aquí y el boletín
+// redirige a /verificar/b/<código>.
+export const verificarDocumentoRoute = createRoute({
+  getParentRoute: () => publicLayoutRoute,
+  path: paths.verificarDocumento.path,
+  head: () => ({
+    meta: [
+      { title: `Verificación de documento · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: lazyRouteComponent(
+    () => import("@/features/verificacion/pages/verificar-documento-page"),
+    "VerificarDocumentoPage",
+  ),
+})
+
 // Pública (QR del boletín, U.4): sin sesión, dentro del marco del sitio público.
 export const verificarBoletinRoute = createRoute({
   getParentRoute: () => publicLayoutRoute,
@@ -639,7 +661,7 @@ const PERIODOS_CRUMB = {
   to: paths.app.periodosAcademicos.getHref(),
 }
 const GESTION_ESTUDIANTIL_CRUMB = {
-  label: "Gestión Estudiantil",
+  label: "Gestión estudiantil",
   to: paths.app.observador.getHref(),
 }
 const GESTION_ACADEMICA_CRUMB = {
@@ -692,7 +714,7 @@ export const coberturaPreMatriculaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaPreMatricula.path,
   validateSearch: preMatriculaSearchSchema,
-  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Pre-Matrícula" }] },
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Pre-matrícula" }] },
   component: PreMatriculaPage,
 })
 
@@ -952,6 +974,21 @@ export const coberturaPromocionRoute = createRoute({
   component: PromocionNivelacionPage,
 })
 
+const ActualizacionDatosPage = lazyRouteComponent(
+  () => import("@/features/coverage/actualizacion-datos/pages/actualizacion-datos-page"),
+  "ActualizacionDatosPage",
+)
+
+export const coberturaActualizacionDatosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaActualizacionDatos.path,
+  validateSearch: actualizacionDatosSearchSchema,
+  staticData: {
+    breadcrumb: [COBERTURA_CRUMB, { label: "Actualización de datos", to: paths.app.coberturaActualizacionDatos.getHref() }],
+  },
+  component: ActualizacionDatosPage,
+})
+
 export const coberturaConvocatoriaNuevaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaConvocatoriaNueva.path,
@@ -1061,12 +1098,56 @@ export const auditoriaTablaDetalleRoute = createRoute({
   component: TableOperationsPage,
 })
 
+/**
+ * Ruta anterior de la Bitácora (el módulo iba en `?modulo=`): redirige al submenú del módulo, con los
+ * mismos filtros. Se conserva para enlaces guardados.
+ */
 export const bitacoraRoute = createRoute({
   getParentRoute: () => auditsLayoutRoute,
   path: paths.app.bitacora.path,
   validateSearch: bitacoraSearchSchema,
+  beforeLoad: ({ search }) => {
+    const { modulo, ...resto } = search
+    throw redirect({
+      to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG[modulo ?? "ESTABLECIMIENTO"]),
+      search: resto,
+      replace: true,
+    } as never)
+  },
+})
+
+const DocumentosEmitidosPage = lazyRouteComponent(
+  () => import("@/features/bitacora/pages/documentos-emitidos-page"),
+  "DocumentosEmitidosPage",
+)
+
+/** Bitácora · Documentos emitidos (B.8.LIS.1). */
+export const bitacoraDocumentosRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
+  path: paths.app.bitacoraDocumentos.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, REGISTRO_ACTIVIDAD_CRUMB, { label: "Bitácora" }],
+    breadcrumb: [
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
+      { label: "Bitácora", to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG.ESTABLECIMIENTO) },
+      { label: "Documentos emitidos", to: paths.app.bitacoraDocumentos.getHref() },
+    ],
+  },
+  component: DocumentosEmitidosPage,
+})
+
+/** Bitácora de un módulo (B.1.LIS.1): cada módulo es un submenú; el módulo sale de la ruta. */
+export const bitacoraModuloRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
+  path: paths.app.bitacoraModulo.path,
+  validateSearch: bitacoraSearchSchema,
+  staticData: {
+    breadcrumb: (params: Record<string, string>) => [
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
+      { label: "Bitácora", to: paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG.ESTABLECIMIENTO) },
+      { label: BITACORA_MODULOS[moduloDeSlug(params.modulo)], to: paths.app.bitacoraModulo.getHref(params.modulo ?? "") },
+    ],
   },
   component: BitacoraPage,
 })
@@ -1085,7 +1166,7 @@ export const listasValorRoute = createRoute({
   path: paths.app.listasValor.path,
   validateSearch: listasValorSearchSchema,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Listas de valor" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Lista de valores" }],
   },
   component: ListasValorPage,
 })
@@ -1129,7 +1210,7 @@ export const supervisorTerritorialNuevoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.supervisorTerritorialNuevo.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Nuevo Supervisor territorial" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, SUPERVISORES_CRUMB, { label: "Nuevo supervisor territorial" }],
   },
   component: SupervisorNuevoPage,
 })
@@ -1171,7 +1252,7 @@ export const administradorTerritorialNuevoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.administradorTerritorialNuevo.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Nuevo Administrador territorial" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Nuevo administrador territorial" }],
   },
   component: AdministradorNuevoPage,
 })
@@ -2132,6 +2213,21 @@ export const prevencionAcompDetalleRoute = createRoute({
   },
 })
 
+const PrevencionGestionAlertaPage = lazyRouteComponent(
+  () => import("@/features/gestion-estudiantil/prevencion/pages/gestion-alerta-detalle-page"),
+  "GestionAlertaDetallePage",
+)
+
+export const prevencionGestionAlertaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.prevencionGestionAlerta.path,
+  staticData: { breadcrumb: [...PREVENCION_CRUMBS, { label: "Gestión de la alerta" }] },
+  component: function PrevencionGestionAlertaRoute() {
+    const { gestionId } = prevencionGestionAlertaRoute.useParams()
+    return <PrevencionGestionAlertaPage gestionId={Number(gestionId)} />
+  },
+})
+
 export const prevencionAcompEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.prevencionAcompEditar.path,
@@ -2274,14 +2370,7 @@ export const observacionesSugerenciasRoute = createRoute({
 
 const CITACIONES_CRUMB = { label: "Citaciones y compromisos", to: paths.app.citacionesCompromisos.getHref() }
 
-const CitacionFormPage = lazyRouteComponent(
-  () => import("@/features/gestion-estudiantil/citaciones/pages/citacion-form-page"),
-  "CitacionFormPage",
-)
-const CompromisoFormPage = lazyRouteComponent(
-  () => import("@/features/gestion-estudiantil/citaciones/pages/compromiso-form-page"),
-  "CompromisoFormPage",
-)
+
 const CompromisoDetallePage = lazyRouteComponent(
   () => import("@/features/gestion-estudiantil/citaciones/pages/compromiso-detalle-page"),
   "CompromisoDetallePage",
@@ -2294,7 +2383,12 @@ export const citacionNuevaRoute = createRoute({
   validateSearch: origenSearchSchema,
   component: function CitacionNuevaRoute() {
     const search = citacionNuevaRoute.useSearch()
-    return <CitacionFormPage origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+    // El listado con el modal de Nueva citación ya abierto (así llegan Convivencia y Observador con su origen).
+    return (
+      <CitacionesCompromisosPage
+        nuevaCitacion={{ origen: origenDeSearch(search), matricula: search.matricula, estudiante: search.estudiante }}
+      />
+    )
   },
 })
 
@@ -2309,7 +2403,17 @@ export const compromisoNuevoRoute = createRoute({
   }),
   component: function CompromisoNuevoRoute() {
     const search = compromisoNuevoRoute.useSearch()
-    return <CompromisoFormPage citacion={search.citacion} origen={origenDeSearch(search)} matricula={search.matricula} estudiante={search.estudiante} />
+    // El listado (pestaña Compromisos) con el modal de Nuevo compromiso ya abierto.
+    return (
+      <CitacionesCompromisosPage
+        nuevoCompromiso={{
+          citacion: search.citacion,
+          origen: origenDeSearch(search),
+          matricula: search.matricula,
+          estudiante: search.estudiante,
+        }}
+      />
+    )
   },
 })
 
@@ -2363,7 +2467,7 @@ const SesionDetallePage = lazyRouteComponent(
 export const convivenciaSesionRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.convivenciaSesion.path,
-  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Sesión del Comité" }] },
+  staticData: { breadcrumb: [GESTION_ESTUDIANTIL_CRUMB, CONVIVENCIA_CRUMB, { label: "Sesión del comité" }] },
   component: function SesionRoute() {
     const { sesionId } = convivenciaSesionRoute.useParams()
     return <SesionDetallePage sesionId={Number(sesionId)} />
@@ -2576,6 +2680,7 @@ export const chatRoute = createRoute({
 export const comunicadosTerritorialRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.comunicacionesComunicadosTerritorial.path,
+  validateSearch: comunicadosTerritorialSearchSchema,
   staticData: {
     breadcrumb: [
       {
@@ -2610,6 +2715,15 @@ export const comunicadosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.comunicacionesComunicados.path,
   validateSearch: comunicadosSearchSchema,
+  // QA 830: el Supervisor y el Administrador territorial no publican ni reciben por la bandeja
+  // institucional; un enlace viejo a esta ruta los lleva a su consulta territorial. La sesión ya la
+  // cargó el guard de /app, así que el usuario está en caché.
+  beforeLoad: ({ context }) => {
+    const user = context.queryClient.getQueryData<AuthUser | null>(USER_QUERY_KEY)
+    if (esUsuarioTerritorial(user?.roles)) {
+      throw redirect({ to: paths.app.comunicacionesComunicadosTerritorial.getHref(), replace: true })
+    }
+  },
   staticData: {
     breadcrumb: [{ label: "Comunicados institucionales", to: paths.app.comunicacionesComunicados.getHref() }],
   },
@@ -2760,6 +2874,7 @@ const routeTree = rootRoute.addChildren([
   publicLayoutRoute.addChildren([
     homeRoute,
     verificarRoute,
+    verificarDocumentoRoute,
     verificarBoletinRoute,
     inscribirRoute,
     consultarInscripcionRoute,
@@ -2798,6 +2913,7 @@ const routeTree = rootRoute.addChildren([
     coberturaMatriculaDetalleRoute,
     coberturaComplementariaRoute,
     coberturaPromocionRoute,
+    coberturaActualizacionDatosRoute,
     coberturaConvocatoriaNuevaRoute,
     coberturaConvocatoriaDetalleRoute,
     coberturaConvocatoriaEditarRoute,
@@ -2811,6 +2927,8 @@ const routeTree = rootRoute.addChildren([
       auditoriaTablaDetalleRoute,
       auditoriaSesionOperacionesRoute,
       bitacoraRoute,
+      bitacoraModuloRoute,
+      bitacoraDocumentosRoute,
     ]),
     rolesMenusRoute,
     listasValorRoute,
@@ -2919,6 +3037,7 @@ const routeTree = rootRoute.addChildren([
     prevencionAcompNuevoRoute,
     prevencionAcompDetalleRoute,
     prevencionAcompEditarRoute,
+    prevencionGestionAlertaRoute,
     prevencionEstrategiaNuevaRoute,
     prevencionEstrategiaEditarRoute,
     prevencionEstrategiaDetalleRoute,

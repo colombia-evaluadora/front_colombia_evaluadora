@@ -1,10 +1,10 @@
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { CharacterCounter } from "@/components/ui/character-counter"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { LockIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
@@ -18,6 +18,7 @@ import {
   type ActividadForm,
 } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-actividad-form"
 import type { EstadoActividad } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 /** Campo de texto con etiqueta, contador opcional y ayuda (Field outlined). */
 function CampoTexto({
@@ -234,15 +235,19 @@ export function FormularioActividad({ f }: { f: ActividadForm }) {
           value={f.grados}
           disabled={sinSedeJornada}
           placeholder={sinSedeJornada ? "Elija sede y jornada primero" : "Seleccione"}
-          ayuda={f.esServicioSocial ? "Solo los Grados del servicio social." : "Grados del Período Académico."}
+          ayuda={f.esServicioSocial ? "Solo los grados del servicio social." : "Grados del período académico."}
           error={f.error("grados")}
           onChange={f.setGrados}
         />
       </div>
       <div className="sm:col-span-2">
-        <Field orientation="vertical" variant="outlined" className="gap-2">
-          <FieldLabel htmlFor="actividad-asistencia">Registra asistencia*</FieldLabel>
-          <label className="flex h-11 items-center gap-3 text-sm">
+        <MarcoOpciones
+          id="actividad-asistencia"
+          label="Registra asistencia"
+          required
+          descripcion="Obligatorio en Servicio social."
+        >
+          <label className="flex items-center gap-3">
             <Switch
               id="actividad-asistencia"
               round
@@ -253,8 +258,7 @@ export function FormularioActividad({ f }: { f: ActividadForm }) {
             {f.registraAsistencia ? "Sí" : "No"}
             {f.esServicioSocial && <LockIcon className="size-4 text-muted-foreground" aria-hidden />}
           </label>
-          <FieldDescription>Obligatorio en Servicio social.</FieldDescription>
-        </Field>
+        </MarcoOpciones>
       </div>
 
       {f.esServicioSocial && (

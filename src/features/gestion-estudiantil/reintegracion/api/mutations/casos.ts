@@ -1,4 +1,5 @@
 import { evalCol } from "@/lib/eval-col-client"
+import { downloadReport } from "@/lib/report-client"
 
 import { subirSoporteConvivencia } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import type { CasoDatosInput } from "@/features/gestion-estudiantil/convivencia/api/types"
@@ -10,7 +11,6 @@ import {
 } from "@/features/gestion-estudiantil/reintegracion/api/mutations/use-reintegracion-mutation"
 import type {
   AbrirCasoInput,
-  ActaRetiro,
   AsignarCasoInput,
   CambiarEstadoInput,
   CerrarCasoInput,
@@ -103,16 +103,15 @@ const abrirConvivencia = async ({ casoId, datos, tipoId, rolId, soporte }: Abrir
 export const useAbrirConvivencia = ({ mutationConfig }: MutationCfg<typeof abrirConvivencia> = {}) =>
   useReintegracionMutation(abrirConvivencia, mutationConfig)
 
-/** `POST /casos/:ID/acta` → `datos`: contenido del acta de retiro (§10.1), sin PDF por ahora. */
-const generarActa = async ({ id }: { id: number }) =>
-  desenvolver<ActaRetiro>(
-    await evalCol.postRow<Record<string, unknown>>(casoUrl(id, "/acta"), {}),
-    "datos",
-    "No se pudo generar el acta de retiro.",
-  )
+/** Genera el acta (asigna su número la primera vez) y descarga el PDF: `POST /reportes/reintegracion-acta-retiro`. */
+const descargarActa = async ({ id }: { id: number }) => {
+  const r = await downloadReport("reintegracion-acta-retiro", { format: "pdf", filters: { FK_CASO: id } })
+  if (r.status === "error") throw new Error(r.message)
+  return r
+}
 
-export const useGenerarActa = ({ mutationConfig }: MutationCfg<typeof generarActa> = {}) =>
-  useReintegracionMutation(generarActa, mutationConfig)
+export const useDescargarActa = ({ mutationConfig }: MutationCfg<typeof descargarActa> = {}) =>
+  useReintegracionMutation(descargarActa, mutationConfig)
 
 /** `POST /casos/:ID/simpade`: fecha de ingreso (no posterior a hoy) y quién digitó (por defecto, quien marca). */
 const marcarSimpade = ({ id, FECHA, FK_DIGITADO_POR }: MarcarSimpadeInput) =>

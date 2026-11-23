@@ -9,7 +9,7 @@ import { paths } from "@/config/paths"
 import { cn } from "@/lib/utils"
 
 /** Nombre del sitio público (Guía UX §17: identidad provisional). */
-export const PUBLIC_SITE_NAME = "Control Escolar"
+export const PUBLIC_SITE_NAME = "Colombia Evaluadora"
 
 const NAV_LINKS = [
   { to: paths.publico.inscribir.getHref(), label: "Inscribir" },
@@ -115,7 +115,7 @@ function PublicFooter() {
       <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-8">
         {/* La política de tratamiento de datos y la ayuda aún no tienen página. */}
         <p>Tratamos sus datos conforme a la Ley 1581 de 2012.</p>
-        <p>Plataforma {PUBLIC_SITE_NAME} · bySloz</p>
+        <p>Plataforma {PUBLIC_SITE_NAME} · Solinces</p>
       </div>
     </footer>
   )
