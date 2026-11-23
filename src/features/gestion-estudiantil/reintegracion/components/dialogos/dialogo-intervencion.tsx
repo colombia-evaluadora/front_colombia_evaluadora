@@ -3,9 +3,10 @@ import { useState } from "react"
 import { DatePicker } from "@/components/date-picker"
 import { useNotify } from "@/components/notice/notice-context"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ControlPointIcon } from "@/components/ui/icons"
+import { ControlPointIcon, FloppyDiskIcon } from "@/components/ui/icons"
 import { parseDateValue } from "@/lib/date-value"
 
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
@@ -15,10 +16,11 @@ import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils
 import { fechaParaBackend } from "@/features/gestion-estudiantil/prevencion/utils/formularios"
 import {
   subirSoporteReintegracion,
+  useModificarIntervencion,
   useRegistrarIntervencion,
 } from "@/features/gestion-estudiantil/reintegracion/api/mutations/intervenciones"
 import { useOpcionesListaQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-opciones-query"
-import type { CasoDetalle, IntervencionInput } from "@/features/gestion-estudiantil/reintegracion/api/types"
+import type { CasoDetalle, IntervencionDetalle, IntervencionInput } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import { ResumenCasoDialogo } from "@/features/gestion-estudiantil/reintegracion/components/dialogos/resumen-caso-dialogo"
 
 type Seccion = Exclude<keyof IntervencionInput, "id" | "FK_TIPO" | "FECHA_PROGRAMADA" | "FECHA_REALIZACION" | "FK_RESULTADO" | "EVIDENCIAS">
@@ -39,23 +41,42 @@ const VISITA = "VISITA_DOMICILIARIA"
 
 const ISO = (d: Date) => fechaParaBackend(d)
 
+const MAX_EVIDENCIAS = 5
+
+const textosDe = (i?: IntervencionDetalle) =>
+  Object.fromEntries(
+    SECCIONES.map((x) => [x.campo, i?.[x.campo.toLowerCase() as Lowercase<Seccion>] ?? ""]),
+  ) as Record<Seccion, string>
+
+interface Props {
+  caso: CasoDetalle
+  onClose: () => void
+  /** Con la intervención cargada, el diálogo la modifica (G.9.INT.2) en vez de registrar una nueva. */
+  intervencion?: IntervencionDetalle
+}
+
 /**
- * Registrar intervención (§10.3): tipo, fecha programada (obligatoria en una visita domiciliaria), fecha de
- * realización con su resultado y trabajo realizado, las ocho secciones y hasta cinco evidencias por file-service.
+ * Registrar o modificar intervención (§10.3): tipo, fecha programada (obligatoria en una visita domiciliaria),
+ * fecha de realización con su resultado y trabajo realizado, las ocho secciones y hasta cinco evidencias por
+ * file-service. Al modificar, `EVIDENCIAS` es el conjunto completo: las que se conservan más las nuevas.
  */
-export function DialogoIntervencion({ caso: c, onClose }: { caso: CasoDetalle; onClose: () => void }) {
+export function DialogoIntervencion({ caso: c, onClose, intervencion }: Props) {
+  const edita = intervencion != null
   const { notify } = useNotify()
   const s = useEstadoDialogo()
   const tipos = useOpcionesListaQuery("TIPO_INTERVENCION").data ?? []
   const resultados = useOpcionesListaQuery("RESULTADO_INTERVENCION").data ?? []
 
-  const [tipo, setTipo] = useState("")
-  const [programada, setProgramada] = useState<Date | undefined>()
-  const [realizacion, setRealizacion] = useState<Date | undefined>()
-  const [resultado, setResultado] = useState("")
-  const [textos, setTextos] = useState<Record<Seccion, string>>(
-    () => Object.fromEntries(SECCIONES.map((x) => [x.campo, ""])) as Record<Seccion, string>,
+  const [tipo, setTipo] = useState(() => (intervencion ? String(intervencion.tipo.id) : ""))
+  const [programada, setProgramada] = useState<Date | undefined>(() =>
+    intervencion?.fecha_programada ? parseDateValue(intervencion.fecha_programada.slice(0, 10)) : undefined,
   )
+  const [realizacion, setRealizacion] = useState<Date | undefined>(() =>
+    intervencion?.fecha_realizacion ? parseDateValue(intervencion.fecha_realizacion.slice(0, 10)) : undefined,
+  )
+  const [resultado, setResultado] = useState(() => (intervencion?.resultado ? String(intervencion.resultado.id) : ""))
+  const [textos, setTextos] = useState<Record<Seccion, string>>(() => textosDe(intervencion))
+  const [conservadas, setConservadas] = useState(() => intervencion?.evidencias ?? [])
   const [evidencias, setEvidencias] = useState<File[]>([])
   const [subiendo, setSubiendo] = useState(false)
 
@@ -78,15 +99,20 @@ export function DialogoIntervencion({ caso: c, onClose }: { caso: CasoDetalle; o
   }
   const err = (k: keyof typeof errores) => (s.intento ? errores[k] : undefined)
 
-  const mut = useRegistrarIntervencion({
-    mutationConfig: {
-      onSuccess: () => {
-        notify(realizacion ? "Intervención registrada." : "Intervención programada.", { variant: "success" })
-        onClose()
-      },
-      onError: (e: Error) => s.setError(e),
+  const alExito = {
+    onSuccess: () => {
+      notify(
+        edita ? "Intervención actualizada." : realizacion ? "Intervención registrada." : "Intervención programada.",
+        { variant: "success" },
+      )
+      onClose()
     },
-  })
+    onError: (e: Error) => s.setError(e),
+  }
+  const registrarMut = useRegistrarIntervencion({ mutationConfig: alExito })
+  const modificarMut = useModificarIntervencion({ mutationConfig: alExito })
+  const mut = edita ? modificarMut : registrarMut
+  const evidenciasCambian = edita && (evidencias.length > 0 || conservadas.length !== intervencion.evidencias.length)
 
   async function registrar() {
     s.setIntento(true)
@@ -99,15 +125,22 @@ export function DialogoIntervencion({ caso: c, onClose }: { caso: CasoDetalle; o
       setSubiendo(true)
       const ids: number[] = []
       for (const f of evidencias) ids.push(await subirSoporteReintegracion(f))
-      mut.mutate({
+      const body: IntervencionInput = {
         id: c.id,
         FK_TIPO: Number(tipo),
         FECHA_PROGRAMADA: programada ? ISO(programada) : null,
         FECHA_REALIZACION: realizacion ? ISO(realizacion) : null,
         FK_RESULTADO: resultado ? Number(resultado) : null,
         ...Object.fromEntries(SECCIONES.map((x) => [x.campo, textos[x.campo].trim() || null])),
-        ...(ids.length > 0 ? { EVIDENCIAS: ids } : {}),
-      })
+      }
+      if (intervencion) {
+        // Sin tocar las evidencias no se envía `EVIDENCIAS`: el backend las conserva.
+        modificarMut.mutate({
+          ...body,
+          intervencion: intervencion.id,
+          ...(evidenciasCambian ? { EVIDENCIAS: [...conservadas.map((e) => e.id), ...ids] } : {}),
+        })
+      } else registrarMut.mutate({ ...body, ...(ids.length > 0 ? { EVIDENCIAS: ids } : {}) })
     } catch (e) {
       s.setError(e)
     } finally {
@@ -117,13 +150,17 @@ export function DialogoIntervencion({ caso: c, onClose }: { caso: CasoDetalle; o
 
   return (
     <DialogoOperacionShell
-      titulo={`Registrar intervención — ${c.estudiante_nombre}`}
+      titulo={`${edita ? "Modificar" : "Registrar"} intervención — ${c.estudiante_nombre}`}
       resumen={<ResumenCasoDialogo caso={c} />}
       className="sm:max-w-3xl"
       onClose={onClose}
       error={s.error}
       pending={mut.isPending || subiendo}
-      confirmar={{ label: "Registrar", icon: <ControlPointIcon data-icon="inline-start" />, onClick: registrar }}
+      confirmar={{
+        label: edita ? "Guardar" : "Registrar",
+        icon: edita ? <FloppyDiskIcon data-icon="inline-start" /> : <ControlPointIcon data-icon="inline-start" />,
+        onClick: registrar,
+      }}
     >
       <div className="grid max-h-[60vh] grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
         <ComboOpciones
@@ -197,7 +234,28 @@ export function DialogoIntervencion({ caso: c, onClose }: { caso: CasoDetalle; o
           </div>
         ))}
         <div className="sm:col-span-2">
-          <SoportesUpload label="Evidencias" archivos={evidencias} onChange={setEvidencias} max={5} />
+          {conservadas.length > 0 && (
+            <ul className="mb-3 flex flex-col gap-1 text-sm">
+              {conservadas.map((e) => (
+                <li key={e.id} className="flex items-center gap-2">
+                  <span className="truncate">{e.nombre}</span>
+                  <BotonQuitar
+                    label={`Quitar ${e.nombre}`}
+                    className="ml-auto"
+                    onClick={() => setConservadas((prev) => prev.filter((x) => x.id !== e.id))}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+          {conservadas.length < MAX_EVIDENCIAS && (
+            <SoportesUpload
+              label="Evidencias"
+              archivos={evidencias}
+              onChange={setEvidencias}
+              max={MAX_EVIDENCIAS - conservadas.length}
+            />
+          )}
         </div>
       </div>
     </DialogoOperacionShell>

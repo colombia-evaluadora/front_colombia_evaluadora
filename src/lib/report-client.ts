@@ -72,6 +72,7 @@ export type ReportKey =
   | "servicio-social-certificado"
   | "reconocimiento-mencion-honor"
   | "reintegracion-acta-retiro"
+  | "reintegracion-ficha-visita"
 
 interface ReportInput {
   format: ExportFormat

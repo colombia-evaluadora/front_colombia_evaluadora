@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react"
 
+import { prevencionKeys } from "@/features/gestion-estudiantil/prevencion/api/query-keys"
 import type { ResumenGestion } from "@/features/gestion-estudiantil/prevencion/api/types"
 import {
   DialogConfirmarGestion,
@@ -9,15 +10,15 @@ import { DialogContactoGestion } from "@/features/gestion-estudiantil/prevencion
 import { DialogResolverGestion } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/dialogos/dialog-resolver-gestion"
 import { DialogRutaProteccion } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/dialogos/dialog-ruta-proteccion"
 import {
-  DialogGestionRemisionRuta,
-  DialogRespuestaRemisionRuta,
-  type ResumenRemisionRuta,
-} from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/dialogos/dialogos-remision-ruta"
+  DialogoGestionRemision,
+  DialogoRespuestaRemision,
+  type ResumenRemision,
+} from "@/features/gestion-estudiantil/commons/components/remisiones/dialogos-remision"
 
 export type DialogoGestion =
   | { dialogo: "contacto" | "resolver" | "ruta"; gestion: ResumenGestion }
   | { dialogo: ConfirmacionGestion; gestion: ResumenGestion }
-  | { dialogo: "remision-gestion" | "remision-respuesta"; remision: ResumenRemisionRuta }
+  | { dialogo: "remision-gestion" | "remision-respuesta"; remision: ResumenRemision }
 
 /** Un solo modal de la gestión abierto a la vez; lo comparten el listado y el detalle. */
 export function useDialogosGestion() {
@@ -30,7 +31,7 @@ export function useDialogosGestion() {
   else if (d?.dialogo === "ruta") dialogo = <DialogRutaProteccion gestion={d.gestion} onClose={cerrar} />
   else if (d?.dialogo === "tomar" || d?.dialogo === "apoyo" || d?.dialogo === "escalar")
     dialogo = <DialogConfirmarGestion gestion={d.gestion} accion={d.dialogo} onClose={cerrar} />
-  else if (d?.dialogo === "remision-gestion") dialogo = <DialogGestionRemisionRuta remision={d.remision} onClose={cerrar} />
-  else if (d?.dialogo === "remision-respuesta") dialogo = <DialogRespuestaRemisionRuta remision={d.remision} onClose={cerrar} />
+  else if (d?.dialogo === "remision-gestion") dialogo = <DialogoGestionRemision remision={d.remision} onClose={cerrar} invalidar={prevencionKeys.all} />
+  else if (d?.dialogo === "remision-respuesta") dialogo = <DialogoRespuestaRemision remision={d.remision} onClose={cerrar} invalidar={prevencionKeys.all} />
   return { abrir: setAbierto, dialogos: dialogo }
 }
