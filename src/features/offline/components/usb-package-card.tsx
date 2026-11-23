@@ -46,7 +46,7 @@ export function UsbPackageCard() {
       a.download = `sincronizacion-${new Date().toISOString().slice(0, 10)}.cesync.json`
       a.click()
       URL.revokeObjectURL(url)
-      setOk(`Paquete con ${count} cambios descargado. Cópielo a una memoria USB e impórtelo en un equipo con internet; en este equipo los cambios siguen pendientes.`)
+      setOk(`Paquete exportado (${count} ${count === 1 ? "cambio" : "cambios"}). Estos cambios siguen pendientes en este equipo y se enviarán cuando tenga internet; el servidor no los aplicará dos veces. Si ya los importó en otro equipo, conéctese antes de 15 días o descártelos aquí.`)
     } catch (e) {
       setError(mensaje(e))
     } finally {
@@ -61,7 +61,7 @@ export function UsbPackageCard() {
     setOk(null)
     try {
       const result = await importSyncPackage(await archivo.text(), frase, sub)
-      setOk(`Se agregaron ${result.agregados} cambios a la cola${result.yaEstaban ? ` (${result.yaEstaban} ya estaban)` : ""}. Enviando a la plataforma…`)
+      setOk(`Se agregaron ${result.agregados} cambios; ${result.yaEstaban} ya estaban en este equipo. Enviando a la plataforma…`)
       void syncNow()
     } catch (e) {
       setError(mensaje(e))
@@ -90,7 +90,7 @@ export function UsbPackageCard() {
           sus cambios pendientes; cópielo a una memoria USB.
         </li>
         <li>
-          En un equipo con internet, inicie sesión con su misma cuenta, abra esta pantalla, escriba la misma frase,
+          En un equipo personal con la app instalada y con internet, inicie sesión con la misma cuenta, abra esta pantalla, escriba la misma frase,
           elija el archivo y pulse «Importar paquete». Los cambios se envían a la plataforma.
         </li>
         <li>En este equipo los cambios siguen apareciendo como pendientes; no se borran.</li>

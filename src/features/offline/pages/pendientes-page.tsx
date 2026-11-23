@@ -13,6 +13,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowCounterClockwiseIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -231,6 +232,11 @@ export function PendientesPage() {
                         <span className="text-green text-xs">Sincronizado</span>
                       ) : (
                         <PendingStatusBadge status={op.status} />
+                      )}
+                      {op.sharedViaPackage && (
+                        <Badge variant="soft" color="neutral" className="ml-1">
+                          {op.sharedViaPackage === "exported" ? "Enviado por USB" : "Recibido por USB"}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="tabular-nums">{op.attempts}</TableCell>

@@ -182,7 +182,7 @@ test("paquete USB: exportar sin red e importar en otro equipo", async ({ page, b
   const descarga = page.waitForEvent("download")
   await page.getByRole("button", { name: "Exportar paquete" }).click()
   const archivo = await (await descarga).path()
-  await expect(page.getByText(/Paquete con 1 cambios descargado/)).toBeVisible()
+  await expect(page.getByText(/Paquete exportado (1 cambio)/)).toBeVisible()
 
   // Otro equipo, con internet y la misma cuenta.
   const otro = await browser.newContext()
