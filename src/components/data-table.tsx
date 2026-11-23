@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useFilasResaltadas } from "@/components/use-filas-resaltadas"
 
 declare module "@tanstack/react-table" {
   // El `header` de cada columna es JSX, así que no sirve como etiqueta
@@ -137,6 +138,8 @@ export function DataTable({
   const offline = useConnectivity().status === "offline"
   const pendingStalled = useOfflineStall(isPending)
   const showOfflineMessage = pendingStalled || (isError && offline)
+  // Filas recién creadas o modificadas: se resaltan unos segundos (ver `useFilasResaltadas`).
+  const resaltadas = useFilasResaltadas(table, isRowActive)
 
   // Los botones de fila son un overlay ABSOLUTO sobre la celda `actions`, no
   // contenido en flujo: así no empujan el layout y solo se revelan al hacer
@@ -313,7 +316,9 @@ export function DataTable({
                       active &&
                         !insideSubRow &&
                         "bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))] hover:bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]",
+                      resaltadas.has(row.id) && "animate-[resaltar-fila_3.5s_ease-out]",
                     )}
+                    data-resaltada={resaltadas.has(row.id) || undefined}
                   >
                     {row.getVisibleCells().map((cell) => {
                       const isActions = isActionsColumn(cell.column.id)
