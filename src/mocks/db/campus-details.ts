@@ -27,6 +27,8 @@ export interface CampusSpecialtyMock {
   specialtyId: number
   ownName: string | null
   status: CampusStatus
+  description?: string | null
+  activities?: string | null
 }
 
 /** Lista general de especialidades con su carácter (TESPECIALIDAD), sin "No aplica". */

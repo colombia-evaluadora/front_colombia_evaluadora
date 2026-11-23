@@ -144,6 +144,10 @@ export interface CampusSpecialty {
   ownName: string | null
   isOther: boolean
   status: CampusStatus
+  /** Qué es la especialidad y qué se aprende en ella. */
+  description: string | null
+  /** Ferias, visitas, muestras u otras actividades para conocerla. */
+  activities: string | null
 }
 
 export interface CampusSpecialtyValues {
@@ -151,4 +155,6 @@ export interface CampusSpecialtyValues {
   specialtyId: number | null
   ownName: string
   status: CampusStatus
+  description: string
+  activities: string
 }

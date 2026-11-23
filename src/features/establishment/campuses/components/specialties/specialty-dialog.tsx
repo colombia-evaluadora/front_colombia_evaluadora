@@ -41,12 +41,16 @@ function SpecialtyForm({ campusId, item, onClose }: { campusId: number; item: Ca
     specialtyId: item?.specialtyId ?? null,
     ownName: item?.ownName ?? "",
     status: item?.status ?? "A",
+    description: item?.description ?? "",
+    activities: item?.activities ?? "",
     isOther: item?.isOther ?? false,
   } as {
     characterId: number | null
     specialtyId: number | null
     ownName: string
     status: "A" | "I"
+    description: string
+    activities: string
     isOther: boolean
   }
 
@@ -70,7 +74,14 @@ function SpecialtyForm({ campusId, item, onClose }: { campusId: number; item: Ca
       save.mutate({
         campusId,
         specialtyItemId: item?.id ?? null,
-        values: { characterId: value.characterId, specialtyId: value.specialtyId, ownName: value.ownName, status: value.status },
+        values: {
+          characterId: value.characterId,
+          specialtyId: value.specialtyId,
+          ownName: value.ownName,
+          status: value.status,
+          description: value.description,
+          activities: value.activities,
+        },
         isOther: value.isOther,
       })
     },
@@ -182,9 +193,36 @@ function SpecialtyForm({ campusId, item, onClose }: { campusId: number; item: Ca
               )}
             </form.AppField>
           </div>
+
+          {/* Ficha informativa de la especialidad (3.2): opcional. */}
+          <div className="sm:col-span-3">
+            <form.AppField name="description">
+              {(f) => (
+                <f.TextareaField
+                  label="Descripción"
+                  maxLength={1000}
+                  rows={3}
+                  description="Qué es la especialidad y qué se aprende en ella."
+                />
+              )}
+            </form.AppField>
+          </div>
+          <div className="sm:col-span-3">
+            <form.AppField name="activities">
+              {(f) => (
+                <f.TextareaField
+                  label="Actividades para conocerla"
+                  maxLength={1000}
+                  rows={3}
+                  description="Ferias, visitas, muestras u otras actividades para conocer la especialidad."
+                />
+              )}
+            </form.AppField>
+          </div>
         </form>
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto sm:self-center">Los campos marcados con * son obligatorios</p>
           <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar

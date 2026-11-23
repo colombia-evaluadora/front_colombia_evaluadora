@@ -262,10 +262,18 @@ export const campusHandlers = [
     await delay(250)
     const item = campusSpecialtiesDb.find((s) => s.id === Number(params.id))
     if (!item) return HttpResponse.json({ message: "No se encontró la especialidad en el catálogo de la sede." }, { status: 404 })
-    const body = (await request.json()) as { specialty: number; ownName: string | null; status: CampusStatus }
+    const body = (await request.json()) as {
+      specialty: number
+      ownName: string | null
+      status: CampusStatus
+      description: string | null
+      activities: string | null
+    }
     item.specialtyId = body.specialty
     item.ownName = body.ownName
     item.status = body.status
+    item.description = body.description
+    item.activities = body.activities
     return HttpResponse.json({ rows: [{ pk_sede_especialidad: item.id }] })
   }),
 
@@ -299,6 +307,8 @@ export const campusHandlers = [
           nombre_propio: s.ownName,
           es_otra: c.es_otra,
           estado: s.status,
+          descripcion: s.description ?? null,
+          actividades: s.activities ?? null,
         }
       })
     return HttpResponse.json({ rows })
@@ -307,7 +317,13 @@ export const campusHandlers = [
   http.post("*/api/eval-col/establecimientos/sedes/:id/especialidades", async ({ params, request }) => {
     await delay(250)
     const campusId = Number(params.id)
-    const body = (await request.json()) as { specialty: number; ownName: string | null; status: CampusStatus }
+    const body = (await request.json()) as {
+      specialty: number
+      ownName: string | null
+      status: CampusStatus
+      description: string | null
+      activities: string | null
+    }
     const repeated = campusSpecialtiesDb.some(
       (s) =>
         s.campusId === campusId &&
@@ -320,7 +336,15 @@ export const campusHandlers = [
       return conflict(`La especialidad ${name} ya está en el catálogo de la sede.`)
     }
     const id = takeNextSpecialtyItemId()
-    campusSpecialtiesDb.push({ id, campusId, specialtyId: body.specialty, ownName: body.ownName, status: body.status })
+    campusSpecialtiesDb.push({
+      id,
+      campusId,
+      specialtyId: body.specialty,
+      ownName: body.ownName,
+      status: body.status,
+      description: body.description,
+      activities: body.activities,
+    })
     return HttpResponse.json({ rows: [{ pk_sede_especialidad: id }] })
   }),
 

@@ -4,15 +4,29 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 import { invalidateEnfasisRelated } from "@/features/establishment/academic-period/api/mutations/invalidate"
-import type { CampusSpecialtyValues } from "@/features/establishment/campuses/api/types/campus"
+import type { CampusSpecialty, CampusSpecialtyValues } from "@/features/establishment/campuses/api/types/campus"
 
-// Body de las escrituras del catálogo (sso V449): el nombre propio solo con "Otra".
+// Body de las escrituras del catálogo (sso V449): el nombre propio solo con "Otra"; los textos vacíos van null.
 function toBody(values: CampusSpecialtyValues, isOther: boolean) {
   return {
     character: values.characterId,
     specialty: values.specialtyId,
     ownName: isOther ? values.ownName.trim() : null,
     status: values.status,
+    description: values.description.trim() || null,
+    activities: values.activities.trim() || null,
+  }
+}
+
+/** Los valores del formulario de un ítem guardado: Inactivar / Activar lo reenvía con el otro estado. */
+export function toCampusSpecialtyValues(item: CampusSpecialty): CampusSpecialtyValues {
+  return {
+    characterId: item.characterId,
+    specialtyId: item.specialtyId,
+    ownName: item.ownName ?? "",
+    status: item.status,
+    description: item.description ?? "",
+    activities: item.activities ?? "",
   }
 }
 
