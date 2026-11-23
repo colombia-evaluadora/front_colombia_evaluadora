@@ -27,6 +27,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -35,6 +36,7 @@ import {
 import { toast } from "sonner"
 
 import { NoticeBanner, type Notice, type NoticeVariant } from "@/components/notice/notice-banner"
+import { elegirDuenoOutlet, type OutletRegistration } from "@/components/notice/outlet-owner"
 import { pendingNoticeStore, type NotifyOptions } from "@/components/notice/pending-notice"
 import { setSuppressGlobalErrorToast } from "@/lib/api-client"
 import { resolveSuccessMessage } from "@/lib/server-message"
@@ -69,6 +71,14 @@ interface ActiveNotice extends Notice {
 const NoticeDispatchContext = createContext<NoticeDispatch>(FALLBACK)
 const NoticeStateContext = createContext<ActiveNotice | null>(null)
 
+interface OutletRegistry {
+  duenoId: string | null
+  register: (registro: OutletRegistration) => () => void
+}
+
+// Sin provider no hay aviso que pintar; el valor por defecto no restringe nada.
+const OutletRegistryContext = createContext<OutletRegistry | null>(null)
+
 export function useNotify(): NoticeDispatch {
   return useContext(NoticeDispatchContext)
 }
@@ -86,6 +96,21 @@ export function queueNotice(message: string, options?: NotifyOptions) {
 export function NoticeProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<ActiveNotice | null>(null)
   const idRef = useRef(0)
+  const registrosRef = useRef<OutletRegistration[]>([])
+  const [duenoId, setDuenoId] = useState<string | null>(null)
+
+  // Aunque la página y una `TableScreenToolbar` monten cada una su
+  // `NoticeOutlet`, sólo uno pinta: el prioritario (la toolbar) y, si no hay,
+  // el primero registrado. Si el dueño se desmonta, pasa al siguiente.
+  const register = useCallback((registro: OutletRegistration) => {
+    registrosRef.current = [...registrosRef.current, registro]
+    setDuenoId(elegirDuenoOutlet(registrosRef.current))
+    return () => {
+      registrosRef.current = registrosRef.current.filter((r) => r.id !== registro.id)
+      setDuenoId(elegirDuenoOutlet(registrosRef.current))
+    }
+  }, [])
+  const registry = useMemo(() => ({ duenoId, register }), [duenoId, register])
 
   const notify = useCallback((message: string, options?: NotifyOptions) => {
     const variant = options?.variant ?? "success"
@@ -136,15 +161,22 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
   return (
     <NoticeDispatchContext.Provider value={dispatch}>
       <NoticeStateContext.Provider value={notice}>
-        {children}
+        <OutletRegistryContext.Provider value={registry}>{children}</OutletRegistryContext.Provider>
       </NoticeStateContext.Provider>
     </NoticeDispatchContext.Provider>
   )
 }
 
-export function NoticeOutlet({ className }: { className?: string }) {
+export function NoticeOutlet({ className, prioritario = false }: { className?: string; prioritario?: boolean }) {
   const notice = useContext(NoticeStateContext)
   const { dismiss } = useContext(NoticeDispatchContext)
+  const registry = useContext(OutletRegistryContext)
+  const id = useId()
+  const register = registry?.register
+
+  useEffect(() => register?.({ id, prioritario }), [register, id, prioritario])
+
+  if (registry && registry.duenoId !== id) return null
 
   return (
     <NoticeBanner

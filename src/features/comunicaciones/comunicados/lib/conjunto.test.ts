@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { CONJUNTO_VACIO, type Cascada, type Conjunto } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
-import { erroresConjunto, sinPeriodos, TODAS_LAS_JORNADAS } from "@/features/comunicaciones/comunicados/lib/conjunto"
+import {
+  erroresConjunto,
+  funcionariosDelConjunto,
+  sinPeriodos,
+  soloFuncionariosInactivos,
+  TODAS_LAS_JORNADAS,
+} from "@/features/comunicaciones/comunicados/lib/conjunto"
 
 // Cascada de una sede sin períodos Abiertos (QA 91): la sede y la jornada se eligen, pero no hay años.
 const sinAnios: Cascada = {
@@ -66,5 +72,33 @@ describe("erroresConjunto", () => {
   it("sin sede ni jornada los marca primero", () => {
     const e = erroresConjunto({ ...funcionarios, sede: "", jornada: "" }, 1)
     expect(Object.keys(e)).toEqual(["conjunto-1-sede", "conjunto-1-jornada"])
+  })
+})
+
+describe("funcionarios inactivos en el EE (Regla 101)", () => {
+  const conInactiva: Cascada = {
+    ...sinAnios,
+    funcionarios: [
+      { valor: "9", etiqueta: "Dora", detalle: "DOCENTE", total: 0 },
+      { valor: "7", etiqueta: "Melyssa", detalle: "DOCENTE", total: 1 },
+      { valor: "7", etiqueta: "Melyssa", detalle: "COORDINADOR", total: 1 },
+    ],
+  }
+
+  it("separa activos e inactivos, una vez por persona", () => {
+    const r = funcionariosDelConjunto(funcionarios, conInactiva)
+    expect(r.activos.map((f) => f.valor)).toEqual(["9"])
+    expect(r.inactivos.map((f) => f.valor)).toEqual(["7"])
+    expect(soloFuncionariosInactivos(funcionarios, conInactiva)).toBe(false)
+  })
+
+  it("bloquea solo si todos los elegidos están inactivos", () => {
+    const especificos: Conjunto = { ...funcionarios, seleccionFuncionarios: "ESPECIFICOS", funcionarios: ["7"] }
+    expect(soloFuncionariosInactivos(especificos, conInactiva)).toBe(true)
+    expect(soloFuncionariosInactivos({ ...especificos, funcionarios: ["7", "9"] }, conInactiva)).toBe(false)
+  })
+
+  it("sin Funcionarios en los tipos no advierte", () => {
+    expect(funcionariosDelConjunto({ ...funcionarios, tipos: ["ESTUDIANTES"] }, conInactiva).inactivos).toEqual([])
   })
 })

@@ -155,7 +155,7 @@ function TableScreenToolbar({ children, className }: { children: ReactNode; clas
     // línea de cierre; sin barra, el borde del título ya cierra.
     <div data-slot="table-screen-toolbar" className={cn("px-(--screen-spacing) py-4", className)}>
       <div className="flex flex-wrap items-end justify-between gap-4">{children}</div>
-      <NoticeOutlet className="mt-3" />
+      <NoticeOutlet className="mt-3" prioritario />
     </div>
   )
 }

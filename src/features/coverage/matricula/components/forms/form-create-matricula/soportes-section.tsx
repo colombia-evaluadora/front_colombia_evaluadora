@@ -66,7 +66,7 @@ const COLOR_REVISION: Record<RevisionSoporte, "success" | "warning" | "destructi
   SIN_REVISAR: "muted",
 }
 
-function RevisionBadge({ revision }: { revision: RevisionSoporte }) {
+export function RevisionBadge({ revision }: { revision: RevisionSoporte }) {
   return (
     <Badge variant="outline" color={COLOR_REVISION[revision]} className="rounded-full text-xs font-medium tracking-normal">
       {REVISION_SOPORTE[revision]}
@@ -75,7 +75,7 @@ function RevisionBadge({ revision }: { revision: RevisionSoporte }) {
 }
 
 /** Fila de la tabla: los fijos siempre aparecen, cargados o no. */
-interface Fila {
+export interface FilaSoporte {
   key: string
   tipo: TipoSoporte
   etiqueta: string
@@ -83,8 +83,8 @@ interface Fila {
   soporte: Soporte | null
 }
 
-function armarFilas(soportes: Soporte[]): Fila[] {
-  const fijos = SOPORTES_FIJOS.map((tipo): Fila => {
+export function armarFilas(soportes: Soporte[]): FilaSoporte[] {
+  const fijos = SOPORTES_FIJOS.map((tipo): FilaSoporte => {
     const soporte = soportes.find((s) => s.tipo === tipo && s.archivoId != null) ?? null
     return { key: tipo, tipo, etiqueta: NOMBRE_SOPORTE[tipo], soporte }
   })
@@ -92,7 +92,7 @@ function armarFilas(soportes: Soporte[]): Fila[] {
   return [
     ...fijos,
     ...otros.map(
-      (s, i): Fila => ({
+      (s, i): FilaSoporte => ({
         key: `OTRO-${s.id}`,
         tipo: "OTRO",
         etiqueta: NOMBRE_SOPORTE.OTRO,
@@ -123,10 +123,10 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
   // A qué fila va el archivo elegido con el input oculto (adjuntar o agregar).
   const destino = useRef<{ tipo: TipoSoporte; id: number | null } | null>(null)
 
-  const [viendo, setViendo] = useState<Fila | null>(null)
-  const [revisando, setRevisando] = useState<Fila | null>(null)
-  const [reemplazando, setReemplazando] = useState<Fila | null>(null)
-  const [quitando, setQuitando] = useState<Fila | null>(null)
+  const [viendo, setViendo] = useState<FilaSoporte | null>(null)
+  const [revisando, setRevisando] = useState<FilaSoporte | null>(null)
+  const [reemplazando, setReemplazando] = useState<FilaSoporte | null>(null)
+  const [quitando, setQuitando] = useState<FilaSoporte | null>(null)
 
   const filas = armarFilas(soportesQuery.data ?? [])
 
@@ -309,7 +309,8 @@ function Ficha({ filas }: { filas: [string, ReactNode][] }) {
 }
 
 /** Ver archivo (EDI.1h): vista previa y, al lado, la ficha con la revisión vigente. */
-function DialogVerSoporte({ fila, onClose }: { fila: Fila; onClose: () => void }) {
+/** Vista previa del soporte; la reusa la ficha de una reserva (Asignar grupo). */
+export function DialogVerSoporte({ fila, onClose }: { fila: FilaSoporte; onClose: () => void }) {
   const s = fila.soporte as Soporte
   const { data: url, isPending } = useArchivoViewUrl(s.archivoId)
   const esPdf = (s.archivoNombre ?? "").toLowerCase().endsWith(".pdf")
@@ -362,8 +363,28 @@ function DialogVerSoporte({ fila, onClose }: { fila: Fila; onClose: () => void }
   )
 }
 
-/** Revisar soporte (EDI.1c, Regla 73): la observación es obligatoria salvo en Soportado. */
-function DialogRevisarSoporte({ matriculaId, fila, onClose }: { matriculaId: string; fila: Fila; onClose: () => void }) {
+/** Revisión elegida en el modal, para guardarla después (Asignar grupo de una reserva). */
+export interface RevisionPendiente {
+  resultado: Exclude<RevisionSoporte, "SIN_REVISAR">
+  observacion: string
+}
+
+interface DialogSoporteProps {
+  matriculaId: string
+  fila: FilaSoporte
+  onClose: () => void
+}
+
+/**
+ * Revisar soporte (EDI.1c, Regla 73): la observación es obligatoria salvo en Soportado. Con
+ * `onGuardar` no llama al back: Asignar grupo la aplica a la matrícula nueva al crearla.
+ */
+export function DialogRevisarSoporte({
+  matriculaId,
+  fila,
+  onClose,
+  onGuardar,
+}: DialogSoporteProps & { onGuardar?: (revision: RevisionPendiente) => void }) {
   const s = fila.soporte as Soporte
   const { notify } = useNotify()
   const revisar = useRevisarSoporte(matriculaId)
@@ -385,6 +406,10 @@ function DialogRevisarSoporte({ matriculaId, fila, onClose }: { matriculaId: str
   function guardar() {
     setIntento(true)
     if (invalido || resultado == null) return
+    if (onGuardar) {
+      onGuardar({ resultado, observacion: observacion.trim() })
+      return onClose()
+    }
     revisar.mutate(
       { id: s.id as number, resultado, observacion },
       {
@@ -477,8 +502,16 @@ function DialogRevisarSoporte({ matriculaId, fila, onClose }: { matriculaId: str
   )
 }
 
-/** Reemplazar (EDI.1i, Regla 73): la revisión vuelve a Sin revisar y la anterior queda en la Bitácora. */
-function DialogReemplazarSoporte({ matriculaId, fila, onClose }: { matriculaId: string; fila: Fila; onClose: () => void }) {
+/**
+ * Reemplazar (EDI.1i, Regla 73): la revisión vuelve a Sin revisar y la anterior queda en la Bitácora.
+ * Con `onGuardar` no sube nada: Asignar grupo lo sube a la matrícula nueva al crearla.
+ */
+export function DialogReemplazarSoporte({
+  matriculaId,
+  fila,
+  onClose,
+  onGuardar,
+}: DialogSoporteProps & { onGuardar?: (archivo: File) => void }) {
   const s = fila.soporte as Soporte
   const { notify } = useNotify()
   const cargar = useCargarSoporte(matriculaId)
@@ -492,6 +525,10 @@ function DialogReemplazarSoporte({ matriculaId, fila, onClose }: { matriculaId: 
       return
     }
     if (errorArchivo) return
+    if (onGuardar) {
+      onGuardar(archivo)
+      return onClose()
+    }
     cargar.mutate(
       { tipo: fila.tipo, id: s.id, archivo },
       {
@@ -549,7 +586,7 @@ function DialogReemplazarSoporte({ matriculaId, fila, onClose }: { matriculaId: 
 }
 
 /** Quitar (EDI.1j, patrón P.4): solo los de Otros documentos relevantes. */
-function DialogQuitarSoporte({ matriculaId, fila, onClose }: { matriculaId: string; fila: Fila; onClose: () => void }) {
+function DialogQuitarSoporte({ matriculaId, fila, onClose }: { matriculaId: string; fila: FilaSoporte; onClose: () => void }) {
   const s = fila.soporte as Soporte
   const { notify } = useNotify()
   const quitar = useQuitarSoporte(matriculaId)

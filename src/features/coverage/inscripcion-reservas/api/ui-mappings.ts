@@ -1,15 +1,15 @@
 import type {
   EstadoReserva,
   EstadoTraslado,
-  FiltroRapido,
   ReservasCupoContadores,
+  ReservasCupoFilters,
 } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 
-type BadgeColor = "success" | "orange" | "info" | "muted"
+type BadgeColor = "success" | "destructive" | "orange" | "info" | "muted"
 
 export const ESTADO_RESERVA_UI: Record<EstadoReserva, { label: string; color: BadgeColor }> = {
   RESERVADA: { label: "Reservada", color: "success" },
-  SIN_CONTINUIDAD: { label: "Sin continuidad", color: "orange" },
+  SIN_CONTINUIDAD: { label: "Sin continuidad", color: "destructive" },
   LIBERADA: { label: "Liberada", color: "muted" },
   MATRICULADA: { label: "Matriculada", color: "info" },
 }
@@ -21,18 +21,39 @@ export const ESTADO_TRASLADO_LABELS: Record<EstadoTraslado, string> = {
   CANCELADO: "Cancelado",
 }
 
-export const FILTRO_RAPIDO_UI: {
-  value: FiltroRapido
-  label: string
+/**
+ * Tarjetas de contadores sobre la lista (prototipo). Cada una es además un
+ * filtro rápido: aplica `filtro` y se ve activa mientras ese filtro esté puesto.
+ */
+export const CONTADORES_UI: {
   count: keyof ReservasCupoContadores
+  label: string
+  /** Color del número (clases literales: Tailwind no ve strings armados). */
+  numero: string
+  filtro: Partial<ReservasCupoFilters>
 }[] = [
-  { value: "TODAS", label: "Todas", count: "todas" },
-  { value: "RESERVADAS", label: "Reservadas", count: "reservadas" },
-  { value: "SIN_CONTINUIDAD", label: "Sin continuidad", count: "sinContinuidad" },
-  { value: "POR_CONFIRMAR", label: "Por confirmar", count: "porConfirmar" },
   {
-    value: "TRASLADOS_POR_RESPONDER",
-    label: "Traslados por responder",
+    count: "reservadas",
+    label: "Reservadas",
+    numero: "text-foreground",
+    filtro: { estado: "RESERVADA" },
+  },
+  {
+    count: "sinContinuidad",
+    label: "Sin continuidad",
+    numero: "text-red",
+    filtro: { estado: "SIN_CONTINUIDAD" },
+  },
+  {
+    count: "porConfirmar",
+    label: "Por confirmar",
+    numero: "text-foreground",
+    filtro: { porConfirmar: true },
+  },
+  {
     count: "trasladosPorResponder",
+    label: "Traslados por responder",
+    numero: "text-orange",
+    filtro: { entrantes: true },
   },
 ]

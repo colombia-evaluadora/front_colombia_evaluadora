@@ -3,7 +3,6 @@ import { z } from "zod"
 import {
   ESTADOS_RESERVA,
   ESTADOS_TRASLADO,
-  FILTROS_RAPIDOS,
 } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 import { ESTADOS_OPCION } from "@/features/coverage/inscripcion-reservas/api/types/inscripcion"
 
@@ -46,11 +45,14 @@ export const inscripcionReservasSearchSchema = z.object({
   pageSize: z.coerce.number().int().positive().catch(10).default(10),
   sortBy: z.string().optional().catch(undefined),
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  // Pestaña Reservas de cupo. Ciclo = grupo de admisión; sede y jornada son pk; grado es el código.
   q: z.string().optional().catch(undefined),
-  rapido: z.enum(FILTROS_RAPIDOS).optional().catch(undefined),
+  ciclo: z.string().optional().catch(undefined),
   sede: z.string().optional().catch(undefined),
   jornada: z.string().optional().catch(undefined),
   grado: z.string().optional().catch(undefined),
+  porConfirmar: z.boolean().optional().catch(undefined),
+  entrantes: z.boolean().optional().catch(undefined),
   estado: z.enum(ESTADOS_RESERVA).optional().catch(undefined),
   estadoTraslado: z.enum(ESTADOS_TRASLADO).optional().catch(undefined),
   // Pestaña Inscripciones: con prefijo para no chocar con los filtros de reservas.
