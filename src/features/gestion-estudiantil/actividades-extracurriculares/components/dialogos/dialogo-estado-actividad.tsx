@@ -27,6 +27,7 @@ export function DialogoEstadoActividad({ actividad: a, onClose }: { actividad: A
 
   return (
     <DialogoOperacionShell
+      sinCampos
       titulo={`${inactivar ? "Inactivar" : "Activar"} ${a.nombre}`}
       resumen={
         inactivar ? (

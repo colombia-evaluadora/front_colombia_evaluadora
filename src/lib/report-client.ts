@@ -73,6 +73,8 @@ export type ReportKey =
   | "reconocimiento-mencion-honor"
   | "reintegracion-acta-retiro"
   | "reintegracion-ficha-visita"
+  | "actividades-extracurriculares"
+  | "servicio-social"
 
 interface ReportInput {
   format: ExportFormat
