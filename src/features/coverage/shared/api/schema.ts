@@ -172,8 +172,8 @@ export const matriculaSearchSchema = z.object({
   metodologia: z.coerce.number().int().positive().optional().catch(undefined),
   solicitud: z.enum(["CON_SOLICITUD"]).optional().catch(undefined),
   nuevo: z.enum(["S", "N"]).optional().catch(undefined),
-  /** Acción de la fila de la lista que Editar abre al entrar. */
-  accion: z.enum(["cambiar-grupo", "cambiar-grado", "corregir-identidad"]).optional().catch(undefined),
+  /** Acción que se abre al entrar: las de la fila en Editar; "retirar" en Detalle (aviso de inasistencia). */
+  accion: z.enum(["cambiar-grupo", "cambiar-grado", "corregir-identidad", "retirar"]).optional().catch(undefined),
 })
 export type MatriculaSearch = z.infer<typeof matriculaSearchSchema>
 

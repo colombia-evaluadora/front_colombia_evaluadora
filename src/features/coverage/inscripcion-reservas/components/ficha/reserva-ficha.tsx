@@ -104,7 +104,7 @@ function FichaFormulario({ ficha, modo }: { ficha: Ficha; modo: ModoFicha }) {
   const { reserva, details, sinAutorizacion } = ficha
   const navigate = useNavigate()
   const { notify } = useNotify()
-  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("INSCRITOS")
+  const { puedeEditar, isLoading: permisoCargando } = useMenuPermission("INSCRIPCIONES")
   const asignable = reserva.estado === "RESERVADA"
   const asignar = modo === "asignar" && asignable
   const generada = reserva.fkTmatriculaGenerada != null ? String(reserva.fkTmatriculaGenerada) : undefined

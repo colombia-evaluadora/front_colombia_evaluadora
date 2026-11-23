@@ -34,6 +34,8 @@ const OBSERVACION_MAX = 500
 const MOTIVO_TRASLADO = "Traslado a otro establecimiento"
 const NOVEDAD_INICIAL = "Solicitud del acudiente o del estudiante mayor de edad"
 const NOVEDAD_REQUERIMIENTO = "Requerimiento de otra entidad territorial o establecimiento"
+/** Regla 74: el aviso de 30 días sin asistir abre Retirar con esta novedad. */
+export const NOVEDAD_INASISTENCIA = "Inasistencia continua de más de 30 días calendario sin justificación válida"
 const DESTINO_MIN = 3
 const DESTINO_MAX = 150
 
@@ -43,6 +45,7 @@ const MOTIVOS_NOVEDAD = [
   "Decisión del establecimiento",
   NOVEDAD_REQUERIMIENTO,
   "Fallecimiento",
+  NOVEDAD_INASISTENCIA,
 ].map((m) => ({ value: m, label: m }))
 
 /** Retiro pedido por otro establecimiento (SOL.6): motivos fijos y sin destino. */
@@ -58,11 +61,13 @@ export function DialogRetirar({
   onOpenChange,
   onDone,
   porSolicitud,
+  novedadInicial,
 }: {
   matriculas: Matricula[]
   onOpenChange: (open: boolean) => void
   onDone?: () => void
   porSolicitud?: RetiroPorSolicitud
+  novedadInicial?: string
 }) {
   const { notify } = useNotify()
   const ids = matriculas.map((m) => m.id)
@@ -73,7 +78,7 @@ export function DialogRetirar({
   const pendiente = retirar.isPending || responder.isPending
   const [fecha, setFecha] = useState(formatDateValue(new Date()))
   const [motivoRetiro, setMotivoRetiro] = useState("")
-  const [motivoNovedad, setMotivoNovedad] = useState(porSolicitud ? NOVEDAD_REQUERIMIENTO : NOVEDAD_INICIAL)
+  const [motivoNovedad, setMotivoNovedad] = useState(porSolicitud ? NOVEDAD_REQUERIMIENTO : (novedadInicial ?? NOVEDAD_INICIAL))
   const [observacion, setObservacion] = useState("")
   const [institucionDestino, setInstitucionDestino] = useState("")
   const [intentado, setIntentado] = useState(false)
@@ -279,10 +284,12 @@ interface RetirarMatriculaDialogProps {
   matricula: Matricula
   /** "icon" (fila de la tabla) o "button" (barra de detalle/edición). */
   trigger?: "icon" | "button"
+  /** Enlace del aviso por inasistencia continua: abre el diálogo al entrar, con esa novedad. */
+  porInasistencia?: boolean
 }
 
-export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarMatriculaDialogProps) {
-  const [open, setOpen] = useState(false)
+export function RetirarMatriculaDialog({ matricula, trigger = "icon", porInasistencia = false }: RetirarMatriculaDialogProps) {
+  const [open, setOpen] = useState(porInasistencia)
   // Solo se retira una matrícula Cursando.
   if (matricula.status !== "Cursando") return null
   return (
@@ -294,7 +301,13 @@ export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarM
         Icon={PersonRemoveIcon}
         onClick={() => setOpen(true)}
       />
-      {open ? <DialogRetirar matriculas={[matricula]} onOpenChange={setOpen} /> : null}
+      {open ? (
+        <DialogRetirar
+          matriculas={[matricula]}
+          onOpenChange={setOpen}
+          novedadInicial={porInasistencia ? NOVEDAD_INASISTENCIA : undefined}
+        />
+      ) : null}
     </>
   )
 }

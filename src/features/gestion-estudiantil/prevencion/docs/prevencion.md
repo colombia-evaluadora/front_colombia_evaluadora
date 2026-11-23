@@ -463,13 +463,18 @@ Comprobaciones:
 - Fase Historial académico (G.8.HIS).
 - Correcciones de icono (`ControlPointIcon` en los botones de agregar) y de etiqueta flotante (una línea).
 
+**2026-11-23**
+
+- Salud mental: la Atención pasa a tabla con Ver detalle, Descargar remisión externa, Registrar gestión y Registrar respuesta (G.8.SAL.8-9), reutilizando el módulo común de remisiones (V667/V669) y sus diálogos.
+- Valoraciones y planes: «Exportar para el SIMPADE» habilitado (G.8.VAL.4) con Período Académico, Sede y Jornada; `POST /prevencion/simpade/exportar`, clave `prevencion-simpade`, solo Excel.
+
 ## Decisiones pendientes
 
 **(a) Gestor administrativo sin acceso a Parámetros.** Las pestañas ya salen de `GET /prevencion/acceso`. Parámetros se decide solo para el Rector; el gestor administrativo no está verificado en navegador.
 
-**(b) Gestionar 9.11 sin backend.** Suposición: la acción queda deshabilitada.
+**(b) Gestionar 9.11.** Resuelta: el backend ya existe (remisiones comunes V667/V669) y la acción se habilita con las banderas de la remisión.
 
-**(c) SIMPADE sin estructura.** Suposición: el botón queda deshabilitado.
+**(c) SIMPADE con estructura provisional.** El botón se habilita con la bandera `puede_exportar_siuce_acomp` (Supervisor de sede y Administrador) y exporta una estructura provisional; la definitiva depende de la Decisión Pendiente «Validación con el SIMPADE».
 
 **(d) Oferta de Crear plan tras valorar.** Usa `puede_valorar` más plan abierto, no `puede_crear_plan` (Regla 40, coordinador). Pedir la bandera al backend en el historial.
 

@@ -29,6 +29,8 @@ export type ReportKey =
   | "escalas"
   | "asignaciones"
   | "asistencia"
+  | "asistencia-por-grupo"
+  | "planilla-auxiliar"
   | "matricula"
   | "matricula-complementaria-sorteo"
   | "matricula-carne"
@@ -65,6 +67,7 @@ export type ReportKey =
   | "inscripcion-lista-sorteo"
   | "prevencion-indicadores"
   | "prevencion-indicadores"
+  | "prevencion-simpade"
   | "prevencion-embarazo-siuce"
   | "prevencion-consumo-siuce"
   | "citacion-documento"
@@ -73,6 +76,8 @@ export type ReportKey =
   | "reconocimiento-mencion-honor"
   | "reintegracion-acta-retiro"
   | "reintegracion-ficha-visita"
+  | "actividades-extracurriculares"
+  | "servicio-social"
 
 interface ReportInput {
   format: ExportFormat

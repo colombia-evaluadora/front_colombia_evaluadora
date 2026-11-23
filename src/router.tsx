@@ -59,6 +59,7 @@ import {
   planillaInformeSearchSchema,
 } from "@/features/academic-management/reports/api/schema"
 import {
+  asistenciaDiariaSearchSchema,
   asistenciaManualSearchSchema,
   asistenciaSearchSchema,
 } from "@/features/academic-management/asistencia/api/schema"
@@ -2624,6 +2625,25 @@ export const asistenciaManualRoute = createRoute({
   component: AsistenciaManualPage,
 })
 
+const AsistenciaDiariaPage = lazyRouteComponent(
+  () => import("@/features/academic-management/asistencia/pages/asistencia-diaria-page"),
+  "AsistenciaDiariaPage",
+)
+
+export const asistenciaDiariaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.asistenciaDiaria.path,
+  validateSearch: asistenciaDiariaSearchSchema,
+  staticData: {
+    breadcrumb: [
+      GESTION_ACADEMICA_CRUMB,
+      { label: "Asistencia", to: paths.app.asistencia.getHref() },
+      { label: "Asistencia diaria", to: paths.app.asistenciaDiaria.getHref() },
+    ],
+  },
+  component: AsistenciaDiariaPage,
+})
+
 const EspaciosPage = lazyRouteComponent(
   () => import("@/features/comunicaciones/espacios/pages/espacios-page"),
   "EspaciosPage",
@@ -2999,6 +3019,7 @@ const routeTree = rootRoute.addChildren([
     observadorNuevaRoute,
     observadorEditarRoute,
     asistenciaManualRoute,
+    asistenciaDiariaRoute,
     convivenciaRoute,
     convivenciaNuevoRoute,
     convivenciaCasoRoute,

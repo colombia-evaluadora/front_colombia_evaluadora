@@ -34,6 +34,9 @@ const planillaCalificacionesAll = [...planillaAll, "calificaciones"] as const
 export const planeadorKeys = {
   all,
 
+  /** Opciones del modal Planillas auxiliares (Regla 96). */
+  planillasAuxiliaresGrupos: [...all, "planillas-auxiliares", "grupos"] as const,
+
   actividades: {
     /** Prefijo de TODOS los listados de actividades. */
     all: actividadesAll,

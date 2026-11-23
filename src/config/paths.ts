@@ -483,6 +483,10 @@ export const paths = {
       path: "asistencia/manual",
       getHref: () => "/app/asistencia/manual",
     },
+    asistenciaDiaria: {
+      path: "asistencia/diaria",
+      getHref: () => "/app/asistencia/diaria",
+    },
     convivencia: {
       path: "gestion-estudiantil/convivencia",
       getHref: () => "/app/gestion-estudiantil/convivencia",

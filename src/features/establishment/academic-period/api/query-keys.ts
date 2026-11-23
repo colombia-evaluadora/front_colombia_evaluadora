@@ -83,6 +83,7 @@ export const academicPeriodKeys = {
     all: gradeGroupsAll,
     list: <P extends WithEnabled>(params: P) => [...gradeGroupsAll, withoutEnabled(params)] as const,
     dependencies: (id: number) => [...gradeGroupsAll, "dependencies", id] as const,
+    modoAsistencia: (id: number | "none") => [...gradeGroupsAll, "modo-asistencia", id] as const,
   },
   grades: {
     all: gradesAll,

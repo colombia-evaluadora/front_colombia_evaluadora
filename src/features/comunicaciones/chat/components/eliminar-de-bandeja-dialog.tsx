@@ -20,6 +20,7 @@ import { XIcon } from "@/components/ui/icons"
 export function EliminarDeBandejaDialog({
   open,
   conversacion,
+  comunicado = false,
   pendiente,
   error,
   onConfirmar,
@@ -28,6 +29,8 @@ export function EliminarDeBandejaDialog({
   open: boolean
   // Nombre de la conversación que se oculta; sin él, lo que se oculta es un mensaje.
   conversacion?: string
+  // Comunicado institucional recibido: nombra "El comunicado" y aclara que su lectura queda registrada.
+  comunicado?: boolean
   pendiente: boolean
   error: unknown
   onConfirmar: () => void
@@ -45,16 +48,17 @@ export function EliminarDeBandejaDialog({
           <span className="block">
             {conversacion ? (
               <>
-                La conversación <strong className="text-foreground">{conversacion}</strong> dejará de verse en su
-                bandeja.
+                {comunicado ? "El comunicado" : "La conversación"}{" "}
+                <strong className="text-foreground">{conversacion}</strong> dejará de verse en su bandeja.
               </>
             ) : (
               "El mensaje dejará de verse en su bandeja."
             )}
           </span>
           <span className="mt-2 block">
-            No se elimina la copia de los otros participantes ni el registro conservado, y no cambia la lectura
-            de los demás.
+            {comunicado
+              ? "Su lectura queda registrada. No se elimina la copia de los demás destinatarios ni el registro conservado."
+              : "No se elimina la copia de los otros participantes ni el registro conservado, y no cambia la lectura de los demás."}
           </span>
         </AlertDialogDescription>
         <AlertDialogFooter>

@@ -268,6 +268,20 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
   // catalog.ts`) — sin esto, el catálogo real resuelve `[]` (categoría
   // desconocida, no 404: ver el fallback del handler) y bloqueaba CUALQUIER
   // URL con mocks activos, no solo las que de verdad hay que rechazar.
+  // Regla 96, planillas auxiliares (sso V747). Calificaciones y Rúbricas
+  // están en la lista aunque el modal todavía no las ofrece.
+  TIPO_PLANILLA_AUXILIAR: () =>
+    [
+      { nombre: "Listado de estudiantes", valor: "LISTADO" },
+      { nombre: "Asistencia", valor: "ASISTENCIA" },
+      { nombre: "Calificaciones", valor: "CALIFICACIONES" },
+      { nombre: "Rúbricas", valor: "RUBRICAS" },
+    ].map(({ nombre, valor }, i) => ({ pk_lista_valor: i + 1, nombre, valor, accion: null })),
+  CONTENIDO_PLANILLA: () =>
+    [
+      { nombre: "En blanco", valor: "EN_BLANCO", predeterminado: true },
+      { nombre: "Con lo registrado", valor: "CON_REGISTRADO", predeterminado: false },
+    ].map((o, i) => ({ pk_lista_valor: i + 1, accion: null, ...o })),
   // Regla 109: fuente de la justificación sin archivo (sso V542.3).
   FUENTE_JUSTIFICACION: () =>
     ["Llamada del acudiente", "Mensaje del acudiente", "Aviso del establecimiento", "Otra"].map((nombre, i) => ({
