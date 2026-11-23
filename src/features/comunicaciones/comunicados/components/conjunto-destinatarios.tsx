@@ -42,10 +42,13 @@ import {
   ACADEMICO_VACIO,
   alCambiar,
   descarta,
+  esFuncionarioInactivo,
   etiquetaDe,
+  funcionariosDelConjunto,
   FUNCIONARIOS_VACIO,
   NOMBRE_NIVEL,
   sinPeriodos,
+  soloFuncionariosInactivos,
   textoPeriodo,
   TODAS_LAS_JORNADAS,
   type ErroresCampos,
@@ -143,9 +146,13 @@ export function ConjuntoDestinatarios({
   const estudiantes = datos?.estudiantes ?? []
   const roles = datos?.roles ?? []
   // Solo personas con los roles elegidos en esa sede y jornada.
-  const funcionarios = (datos?.funcionarios ?? []).filter(
-    (f) => c.todosRoles || (f.detalle != null && c.roles.includes(f.detalle)),
-  )
+  // Los Inactivos en el EE (Regla 101, el estado del listado de Funcionarios) se ven marcados: comms
+  // los excluye, no reciben el comunicado ni cuentan como destinatarios.
+  const funcionarios = (datos?.funcionarios ?? [])
+    .filter((f) => c.todosRoles || (f.detalle != null && c.roles.includes(f.detalle)))
+    .map((f) => (esFuncionarioInactivo(f) ? { ...f, etiqueta: `${f.etiqueta} (Inactivo)` } : f))
+  const inactivos = funcionariosDelConjunto(c, datos).inactivos
+  const todosInactivos = soloFuncionariosInactivos(c, datos)
 
   return (
     <div className="space-y-4">
@@ -428,6 +435,34 @@ export function ConjuntoDestinatarios({
               períodos Abiertos (se excluyen los Cerrados y los de Inscripciones), así que no se puede enviar a
               Estudiantes ni Acudientes. El filtro no se amplía: elija otra jornada o quite Estudiantes y Acudientes de
               este conjunto; a Funcionarios sí se puede enviar.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {inactivos.length > 0 && (
+        // Mismo aviso que M.1.AGR.5: bloquea solo si ningún funcionario elegido está activo.
+        <div role="alert" className="flex items-start gap-2 rounded-md border border-red-stroke bg-red-22 px-3 py-2 text-sm">
+          <WarningCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-red" />
+          <div className="min-w-0">
+            <p className="font-medium">
+              {todosInactivos
+                ? "No se puede publicar para estos funcionarios"
+                : inactivos.length === 1
+                  ? "Hay un funcionario inactivo"
+                  : "Hay funcionarios inactivos"}
+            </p>
+            <p className="break-words">
+              {inactivos.map((f, i) => (
+                <span key={f.valor}>
+                  {i > 0 && (i === inactivos.length - 1 ? " y " : ", ")}
+                  <span className="font-semibold">{f.etiqueta}</span>
+                </span>
+              ))}{" "}
+              {inactivos.length === 1 ? "está inactivo" : "están inactivos"} en el establecimiento (sin roles activos en
+              sus sedes), así que no {inactivos.length === 1 ? "recibirá" : "recibirán"} el comunicado ni{" "}
+              {inactivos.length === 1 ? "cuenta" : "cuentan"} como destinatario. Quítelos de la selección o actívelos
+              asignándoles un rol en Funcionarios.
             </p>
           </div>
         </div>
