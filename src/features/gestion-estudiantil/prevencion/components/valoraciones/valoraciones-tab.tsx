@@ -41,7 +41,7 @@ interface Props {
 export function ValoracionesTab({ tabs }: Props) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const f = useValoracionesFiltros(goToPage)
-  const { irPlan, irPlanEditar, irValoracion } = useNavegacionPrevencion()
+  const { irPlan, irPlanEditar, irValoracion, irGestionAlerta } = useNavegacionPrevencion()
   const dialogos = useDialogosPrevencion()
   const [exportando, setExportando] = useState(false)
   const acceso = useAccesoPrevencionQuery(f.establecimientoId).data
@@ -59,6 +59,8 @@ export function ValoracionesTab({ tabs }: Props) {
       if (accion === "ver") {
         if (planId != null) irPlan(planId)
         else irValoracion(fila.id)
+      } else if (accion === "gestionar") {
+        if (fila.fk_gestion_alerta != null) irGestionAlerta(fila.fk_gestion_alerta)
       } else if (accion === "anular-valoracion") {
         dialogos.abrir({ dialogo: "anular-valoracion", valoracionId: fila.id, estudiante })
       } else if (planId != null) {
@@ -69,7 +71,7 @@ export function ValoracionesTab({ tabs }: Props) {
         else if (accion === "modificar") irPlanEditar(planId)
       }
     },
-    [irPlan, irPlanEditar, irValoracion, dialogos],
+    [irPlan, irPlanEditar, irValoracion, irGestionAlerta, dialogos],
   )
   const columns = useMemo(() => buildColumnsValoraciones({ onAccion }), [onAccion])
 

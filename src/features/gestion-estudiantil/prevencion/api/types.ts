@@ -78,6 +78,9 @@ export interface ValoracionRow {
   puede_aceptar_presencial: boolean
   puede_anular: boolean
   puede_anular_valoracion: boolean
+  /** Gestión abierta de la alerta (§9.11) y el usuario la ve. */
+  fk_gestion_alerta: number | null
+  puede_gestionar: boolean
   total_count: number
 }
 
@@ -275,6 +278,8 @@ export interface Historial {
   puede_valorar: boolean
   /** Misma regla del tablero (Regla 40). */
   puede_crear_plan: boolean
+  fk_gestion_alerta: number | null
+  puede_gestionar: boolean
   tiene_plan_abierto: boolean
   fk_tprevencion_plan_abierto: number | null
   valoraciones: HistorialValoracion[]
@@ -1687,6 +1692,9 @@ export interface GestionAlertasQueryFilters {
   SIN_RESPONSABLE: boolean | null
   VER_TODAS: boolean
   SEARCH: string | null
+  /** estudiante, grupo, umbral o plazo (V698); sin él, vencidas y plazo más próximo. */
+  ORDEN?: string | null
+  DIR?: "asc" | "desc" | null
 }
 
 export interface GuardarGestionInput {
