@@ -59,3 +59,4 @@ Ruta `/app/gestion-estudiantil/configuracion`, menú `CONFIGURACION_GE`. Todo es
 - `SubjectsMultiSelect` deja activa la X de los chips aunque esté deshabilitado: aquí se ignora el cambio sin permiso.
 - Duración «Hasta fin del período» del prototipo: el backend solo guarda `TIENE_DURACION` (booleano); se muestra Sí/No.
 - Eliminar es lógico en el backend (`active = false`).
+- Catálogo de anotaciones con orden por servidor (`BODY.ORDEN`/`BODY.DIR`: código, descripción, tipo, estado; `ORDEN_CODIGOS`).

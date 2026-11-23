@@ -1,12 +1,21 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircleIcon, PencilIcon, ProhibitIcon, TrashIcon } from "@/components/ui/icons"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_CODIGOS: MapaOrden = {
+  codigo: "codigo",
+  descripcion: "descripcion",
+  tipo: "tipo",
+  estado: "estado",
+}
 
 interface Opciones {
   puedeEditar: boolean
@@ -20,27 +29,18 @@ interface Opciones {
 export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, onCambiarEstado, onEliminar }: Opciones): ColumnDef<CodigoRow>[] {
   return [
     {
-      id: "codigo",
+      ...columnaOrden<CodigoRow>(ORDEN_CODIGOS, "codigo", "Código"),
       accessorKey: "codigo",
-      enableSorting: false,
-      meta: { label: "Código" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
       cell: ({ row }) => <span className="font-semibold">{row.original.codigo}</span>,
     },
     {
-      id: "descripcion",
+      ...columnaOrden<CodigoRow>(ORDEN_CODIGOS, "descripcion", "Descripción"),
       accessorKey: "descripcion",
-      enableSorting: false,
-      meta: { label: "Descripción" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Descripción" />,
       cell: ({ row }) => <span className="whitespace-normal">{row.original.descripcion}</span>,
     },
     {
-      id: "tipo",
+      ...columnaOrden<CodigoRow>(ORDEN_CODIGOS, "tipo", "Tipo"),
       accessorKey: "tipo_nombre",
-      enableSorting: false,
-      meta: { label: "Tipo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
       cell: ({ row }) => (
         <Badge variant="soft" color={colorDeTipo(row.original.tipo_nombre)}>
           {row.original.tipo_nombre}
@@ -48,19 +48,13 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       ),
     },
     {
-      id: "situacion",
+      ...columnaOrden<CodigoRow>(ORDEN_CODIGOS, "situacion", "Tipo de situación"),
       accessorKey: "situacion_nombre",
-      enableSorting: false,
-      meta: { label: "Tipo de situación" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo de situación" />,
       cell: ({ row }) => row.original.situacion_nombre ?? "—",
     },
     {
-      id: "estado",
+      ...columnaOrden<CodigoRow>(ORDEN_CODIGOS, "estado", "Estado"),
       accessorKey: "habilitado",
-      enableSorting: false,
-      meta: { label: "Estado" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       cell: ({ row }) => (
         <Badge variant="soft" color={row.original.habilitado ? "success" : "muted"}>
           {row.original.habilitado ? "Activo" : "Inactivo"}
