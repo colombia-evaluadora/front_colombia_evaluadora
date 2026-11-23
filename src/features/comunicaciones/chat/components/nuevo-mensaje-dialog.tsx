@@ -28,6 +28,7 @@ import {
 } from "@/features/comunicaciones/chat/lib/conversaciones-existentes"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { SelectorPersonas } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
+import { reemplazarSeleccion } from "@/features/comunicaciones/chat/lib/seleccion-unica"
 import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
@@ -227,6 +228,7 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
             <form.AppField name="para">
               {() => (
                 <CampoPara
+                  unico={modo === "INDIVIDUAL"}
                   paraGrupo={modo === "GRUPAL"}
                   permitido={(p) => modo === "GRUPAL" || reglaDirectoCon(p.perfil) !== "PROHIBIDO"}
                 />
@@ -242,6 +244,12 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
               listeners={{
                 // Sin adjuntos al enviar por separado (comms-service no los acepta).
                 onChange: ({ value }) => {
+                  // QA 105: al pasar a Individual con varias personas elegidas queda solo la primera;
+                  // Enviar por separado y Grupal conservan todas.
+                  const elegidas = form.getFieldValue("para")
+                  if (value === "INDIVIDUAL" && elegidas.length > 1) {
+                    form.setFieldValue("para", elegidas.slice(0, 1))
+                  }
                   if (value === "SEPARADO") {
                     setArchivos([])
                     setErrorAdjuntos(null)
@@ -369,7 +377,15 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
 }
 
 /** "* Para" con el selector de personas existente (chips) y la regla de a quién se escribe. */
-function CampoPara({ paraGrupo, permitido }: { paraGrupo: boolean; permitido: (p: Persona) => boolean }) {
+function CampoPara({
+  unico,
+  paraGrupo,
+  permitido,
+}: {
+  unico: boolean
+  paraGrupo: boolean
+  permitido: (p: Persona) => boolean
+}) {
   const field = useFieldContext<Persona[]>()
   const valor = useStore(field.store, (s) => s.value)
   const meta = useStore(field.store, (s) => s.meta)
@@ -388,7 +404,8 @@ function CampoPara({ paraGrupo, permitido }: { paraGrupo: boolean; permitido: (p
         onConsulta={setConsulta}
         value={valor}
         onChange={(v) => {
-          field.handleChange(v)
+          // QA 833: en Individual el Para admite una sola persona; elegir otra reemplaza a la anterior.
+          field.handleChange(unico ? reemplazarSeleccion(valor, v) : v)
           field.handleBlur()
         }}
         paraGrupo={paraGrupo}
