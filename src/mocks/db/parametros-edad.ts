@@ -42,11 +42,16 @@ export const calendariosDb: ListaValor[] = [
   valor(2101, "CALENDARIO", "B", 2),
 ]
 
-/** pk del grado → edad recomendada y cortes propios (null = rige el por defecto). Prejardín 3 años … Undécimo 16. */
+/**
+ * pk del grado → edad recomendada y cortes propios (null = rige el por defecto). Prejardín 3 años
+ * … Undécimo 16. Undécimo trae cortes propios (−3 / +1 / +3), como en los datos del md S.5.
+ */
 export const edadesDb = new Map<number, { edad: number } & CortesGrado>(
   gradosDb.map((g, i) => [
     g.pkListaValor,
-    { edad: i + 3, bajaEdadHasta: null, preextraedadDesde: null, extraedadDesde: null },
+    g.nombre === "Undécimo"
+      ? { edad: i + 3, bajaEdadHasta: -3, preextraedadDesde: 1, extraedadDesde: 3 }
+      : { edad: i + 3, bajaEdadHasta: null, preextraedadDesde: null, extraedadDesde: null },
   ]),
 )
 

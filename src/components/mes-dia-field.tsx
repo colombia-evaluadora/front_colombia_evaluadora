@@ -22,24 +22,42 @@ interface MesDiaFieldProps {
   onChange: (mes: number, dia: number) => void
   error?: string
   required?: boolean
+  /** Label flotante. `null`: sin label visible (en una fila de tabla), con `aria-label` «Fecha». */
+  label?: string | null
+  /** Ayuda bajo el campo; `null` la quita (en una fila, el ⓘ del encabezado ya lo explica). */
+  descripcion?: string | null
+  className?: string
 }
 
 /**
- * Mes y día de una fecha que se repite cada año (festivo fijo o Ley Emiliani), en un solo
- * calendario sin año. Se pinta sobre el año en curso para que los días de la semana coincidan
- * con la vista previa; el 29 de febrero nunca se ofrece.
+ * Mes y día de una fecha que se repite cada año (festivo fijo, Ley Emiliani, fecha de corte de
+ * edad), en un solo calendario sin año. Se pinta sobre el año en curso para que los días de la
+ * semana coincidan con la vista previa; el 29 de febrero nunca se ofrece.
  */
-export function MesDiaField({ id, mes, dia, onChange, error, required }: MesDiaFieldProps) {
+export function MesDiaField({
+  id,
+  mes,
+  dia,
+  onChange,
+  error,
+  required,
+  label = "Fecha",
+  descripcion = "No admite el 29 de febrero.",
+  className,
+}: MesDiaFieldProps) {
   const [open, setOpen] = useState(false)
   const anio = new Date().getFullYear()
   const seleccion = mes && dia ? new Date(anio, mes - 1, Number(dia)) : undefined
   const texto = mes && dia ? `${Number(dia)} de ${MESES[mes - 1]}` : null
 
   return (
-    <Field variant="outlined" data-invalid={error ? "true" : undefined}>
-      <FieldLabel htmlFor={id}>
-        Fecha{required ? "*" : null}
-      </FieldLabel>
+    <Field variant="outlined" className={className} data-invalid={error ? "true" : undefined}>
+      {label != null && (
+        <FieldLabel htmlFor={id}>
+          {label}
+          {required ? "*" : null}
+        </FieldLabel>
+      )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
@@ -47,6 +65,7 @@ export function MesDiaField({ id, mes, dia, onChange, error, required }: MesDiaF
               type="button"
               id={id}
               aria-invalid={Boolean(error)}
+              aria-label={label == null ? "Fecha" : undefined}
               className={cn(
                 inputVariants({ variant: "outlined" }),
                 inputTriggerVariants({ variant: "outlined" }),
@@ -76,7 +95,11 @@ export function MesDiaField({ id, mes, dia, onChange, error, required }: MesDiaF
           />
         </PopoverContent>
       </Popover>
-      {error ? <FieldError>{error}</FieldError> : <FieldDescription>No admite el 29 de febrero.</FieldDescription>}
+      {error ? (
+        <FieldError>{error}</FieldError>
+      ) : descripcion ? (
+        <FieldDescription>{descripcion}</FieldDescription>
+      ) : null}
     </Field>
   )
 }

@@ -4,14 +4,12 @@ import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
-import { Input } from "@/components/ui/input"
+import { MesDiaField } from "@/components/mes-dia-field"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "@/components/ui/icons"
-import { toDigitsOnly } from "@/lib/text-input"
 
 import type { ListaValor } from "@/features/administration/listas-valor/api/types/lista-valor"
 import {
-  MESES,
   diasDelMes,
   formatCorte,
   type CorteCalendario,
@@ -80,7 +78,7 @@ export function TablaCortes({
     if (edicion.calendario == null && filas.some((f) => f.calendario === calendario)) {
       return setError("El calendario ya tiene una fecha de corte.")
     }
-    if (!mes) return setError("Seleccione el mes.")
+    if (!mes || !dia) return setError("Seleccione la fecha de corte.")
     if (mes === 2 && dia === 29) return setError("La fecha de corte no puede ser el 29 de febrero.")
     if (!dia || dia > diasDelMes(mes)) {
       return setError(`El día debe estar entre 1 y ${diasDelMes(mes)}.`)
@@ -93,31 +91,22 @@ export function TablaCortes({
     }
   }
 
+  // Mes y día en un solo calendario sin año, como la fecha de Festivos (no ofrece el 29 de febrero).
   const campoFecha = (
-    <div className="flex flex-col gap-1">
-      {/* Puede partirse en dos líneas si la columna es angosta, en vez de forzar scroll. */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Input
-          inputMode="numeric"
-          autoFocus={edicion?.calendario != null}
-          aria-label="Día"
-          aria-invalid={Boolean(error)}
-          variant="outlined"
-          size="sm"
-          className="h-8 w-14 text-right tabular-nums"
-          value={edicion?.dia ?? ""}
-          onChange={(e) => setEdicion((p) => p && { ...p, dia: toDigitsOnly(e.target.value, 2) })}
-        />
-        <span className="text-muted-foreground">de</span>
-        <SelectFila
-          label="Mes"
-          placeholder="Mes"
-          className="w-32"
-          opciones={MESES.map((m, i) => ({ value: String(i + 1), label: m }))}
-          value={edicion?.mes ?? ""}
-          onChange={(v) => setEdicion((p) => p && { ...p, mes: v })}
-        />
-      </div>
+    // `pr-24`: los botones × y √ de la fila en edición flotan sobre el final de la fila y taparían la fecha.
+    <div className="flex flex-col gap-1 pr-24">
+      <MesDiaField
+        id="corte-calendario-fecha"
+        label={null}
+        descripcion={null}
+        className="w-48"
+        mes={Number(edicion?.mes ?? 0)}
+        dia={edicion?.dia ?? ""}
+        onChange={(mes, dia) => {
+          setError(null)
+          setEdicion((p) => p && { ...p, mes: String(mes), dia: String(dia) })
+        }}
+      />
       <ErrorCampo mensaje={error} />
     </div>
   )
@@ -163,7 +152,7 @@ export function TablaCortes({
               <span className="sr-only">Qué es la fecha de corte</span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              Día del año lectivo en el que se cuentan los años cumplidos del aspirante.
+              Día del año lectivo en el que se cuentan los años cumplidos del aspirante. No admite el 29 de febrero.
             </TooltipContent>
           </Tooltip>
         </span>
@@ -205,11 +194,13 @@ export function TablaCortes({
   return (
     <TablaParametros
       titulo="Fecha de corte por calendario"
-      agregarLabel="Calendario"
+      enmarcada
+      agregarLabel="Agregar calendario"
+      agregarBloqueado={libres.length === 0 ? "Todos los calendarios ya tienen fecha de corte." : undefined}
       columns={columns}
       data={data}
       editandoId={editandoId}
-      emptyMessage="Aún no hay fechas de corte. Use + Calendario para agregar la primera."
+      emptyMessage="Aún no hay fechas de corte. Use Agregar calendario para agregar la primera."
       puedeAgregar={puedeEditar && libres.length > 0 && !edicion}
       onAgregar={() => setEdicion({ calendario: null, nuevoCalendario: "", mes: "", dia: "" })}
       onSubmit={guardar}

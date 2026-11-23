@@ -1,7 +1,8 @@
 import { useState } from "react"
 
+import { TituloConAyuda } from "@/components/titulo-con-ayuda"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PencilIcon } from "@/components/ui/icons"
 
 import {
   CORTES,
@@ -10,6 +11,7 @@ import {
 } from "@/features/administration/parametros-edad/api/types"
 import { EscalaSituacion } from "@/features/administration/parametros-edad/components/escala-situacion"
 import {
+  AccionesFila,
   ErrorCampo,
   InputCorte,
 } from "@/features/administration/parametros-edad/components/tabla-parametros"
@@ -84,28 +86,18 @@ export function TablaCortesDefecto({
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="cortes-defecto" className="text-base font-semibold">
-            Cortes por defecto
+            <TituloConAyuda
+              titulo="Cortes por defecto"
+              ayuda="Un solo registro que rige para los grados sin cortes propios. Debe cumplir Baja edad < 0 < Preextraedad < Extraedad. Lo fija la entidad territorial al validar su metodología."
+            />
           </h2>
           <p className="max-w-prose text-sm text-muted-foreground">
             Años de diferencia entre la edad cumplida a la fecha de corte y la edad recomendada del
             grado. Rigen para los grados sin cortes propios.
           </p>
         </div>
-        {borrador ? (
-          <div className="flex shrink-0 gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={guardando} onClick={cancelar}>
-              Cancelar
-            </Button>
-            <Button type="submit" size="sm" disabled={guardando} aria-busy={guardando}>
-              {guardando ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <CheckIcon data-icon="inline-start" />
-              )}
-              Guardar cortes
-            </Button>
-          </div>
-        ) : (
+        {/* Al modificar, Cancelar y Guardar van junto a los campos, como en las filas de las tablas. */}
+        {!borrador && (
           <Button
             type="button"
             variant="outline"
@@ -120,15 +112,24 @@ export function TablaCortesDefecto({
         )}
       </div>
 
-      <EscalaSituacion cortes={vista} />
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-medium">
+          <TituloConAyuda
+            titulo="Situación de edad (referencia)"
+            ayuda="Se cuentan los años cumplidos a la fecha de corte del calendario en el año lectivo y se comparan con la edad recomendada del grado. Ejemplo: con corte 31 de marzo, año lectivo 2027 y nacimiento el 15/06/2021, el aspirante tiene 5 años."
+          />
+        </h3>
+        <EscalaSituacion cortes={vista} sinCalcular />
+      </div>
 
       {borrador && (
         <div className="flex flex-col gap-2">
-          <div className="grid gap-3 sm:grid-cols-3">
-            {CORTES.map((c, i) => (
-              <label key={c.campo} className="flex items-center justify-between gap-3 text-sm">
-                {c.label}
+          <div className="flex items-end gap-3 pt-2">
+            <div className="grid flex-1 grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-x-4 gap-y-6">
+              {CORTES.map((c, i) => (
                 <InputCorte
+                  key={c.campo}
+                  id={`cortes-defecto-${c.campo}`}
                   label={c.label}
                   autoFocus={i === 0}
                   invalido={Boolean(error)}
@@ -138,16 +139,27 @@ export function TablaCortesDefecto({
                     setBorrador((p) => p && { ...p, [c.campo]: v })
                   }}
                 />
-              </label>
-            ))}
+              ))}
+            </div>
+            {/* × y √ como en la fila en edición de las tablas; miden 40 px, igual que los campos. */}
+            <div className="shrink-0">
+              <AccionesFila
+                editando
+                puedeEditar={puedeEditar}
+                guardando={guardando}
+                etiqueta="cortes por defecto"
+                onModificar={() => {}}
+                onCancelar={cancelar}
+              />
+            </div>
           </div>
           <ErrorCampo mensaje={error} />
         </div>
       )}
 
       <p className="text-xs text-muted-foreground">
-        Preextraedad es una señal de contexto: no genera aviso. Si falta la edad del grado o la fecha
-        de corte del calendario, la situación queda Sin calcular.
+        Preextraedad es una señal de contexto: no genera aviso. Sin calcular: falta la edad del grado o
+        la fecha de corte del calendario del establecimiento.
       </p>
     </form>
   )

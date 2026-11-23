@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +14,12 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { getErrorMessage } from "@/lib/api-client"
 import { toDigitsOnly } from "@/lib/text-input"
@@ -187,13 +193,13 @@ export function DialogEdadGrado({
                 data-invalid={errores.grado ? true : undefined}
               >
                 <FieldLabel htmlFor="edad-grado-grado">
-                  Grado<span className="text-red"> *</span>
+                  Grado<span data-required-mark="">*</span>
                 </FieldLabel>
                 <SelectFila
                   id="edad-grado-grado"
                   label="Grado"
                   placeholder="Seleccione el grado"
-                  className="h-9 max-w-none"
+                  className="max-w-none"
                   opciones={opciones.map((o) => ({ value: String(o.pkListaValor), label: o.nombre }))}
                   value={borrador.grado}
                   onChange={(v) => cambiar({ grado: v }, "grado")}
@@ -201,31 +207,34 @@ export function DialogEdadGrado({
                 <ErrorCampo mensaje={errores.grado ?? null} />
               </Field>
             )}
-            <Field variant="outlined" className="w-auto" data-invalid={errores.edad ? true : undefined}>
+            {/* Ancho para que el label flotante quepa en una línea; «años» va dentro del campo. */}
+            <Field variant="outlined" className="w-52 shrink-0" data-invalid={errores.edad ? true : undefined}>
               <FieldLabel htmlFor="edad-grado-edad">
-                Edad recomendada<span className="text-red"> *</span>
+                Edad recomendada<span data-required-mark="">*</span>
               </FieldLabel>
-              <span className="flex items-center gap-2">
-                <Input
+              <InputGroup className="h-10 rounded-sm border border-input px-3 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                <InputGroupInput
                   id="edad-grado-edad"
                   inputMode="numeric"
                   autoFocus={!nuevo}
                   aria-invalid={Boolean(errores.edad)}
-                  variant="outlined"
-                  className="h-9 w-20 text-right tabular-nums"
+                  placeholder="Agregar"
+                  className="px-0 tabular-nums"
                   value={borrador.edad}
                   onChange={(e) => cambiar({ edad: toDigitsOnly(e.target.value, 2) }, "edad")}
                 />
-                <span className="text-sm text-muted-foreground">años</span>
-              </span>
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>años</InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
               <ErrorCampo mensaje={errores.edad ?? null} />
             </Field>
           </div>
 
-          <fieldset className="flex flex-col gap-3">
-            <legend className="mb-2 text-sm">Cortes de la situación de edad</legend>
+          <div className="flex flex-col gap-3">
+            <MarcoOpciones id="edad-grado-modo" label="Cortes de la situación de edad" required>
             <RadioGroup
-              className="flex flex-col gap-2"
+              aria-labelledby="edad-grado-modo-label"
               value={borrador.modo}
               onValueChange={(v) => cambiar({ modo: v as Modo }, "cortes")}
             >
@@ -241,14 +250,15 @@ export function DialogEdadGrado({
                 Definir cortes propios para este grado
               </label>
             </RadioGroup>
+            </MarcoOpciones>
 
             {borrador.modo === "propios" && (
-              <div className="flex flex-col gap-2 pl-6">
-                <div className="grid gap-3 sm:grid-cols-3">
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-x-4 gap-y-6">
                   {CORTES.map((c) => (
-                    <label key={c.campo} className="flex items-center justify-between gap-3 text-sm">
-                      {c.label}
                       <InputCorte
+                        key={c.campo}
+                        id={`edad-grado-${c.campo}`}
                         label={c.label}
                         invalido={Boolean(errores.cortes)}
                         value={borrador.cortes[c.campo]}
@@ -256,13 +266,12 @@ export function DialogEdadGrado({
                           cambiar({ cortes: { ...borrador.cortes, [c.campo]: v } }, "cortes")
                         }
                       />
-                    </label>
                   ))}
                 </div>
                 <ErrorCampo mensaje={errores.cortes ?? null} />
               </div>
             )}
-          </fieldset>
+          </div>
 
           <section aria-labelledby="vista-previa" className="flex flex-col gap-2">
             <h3 id="vista-previa" className="text-sm font-medium">
@@ -278,7 +287,8 @@ export function DialogEdadGrado({
           </section>
         </form>
 
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
