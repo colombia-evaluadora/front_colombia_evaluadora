@@ -12,7 +12,7 @@ import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion
  * la cascada de GE: ya vienen acotadas al alcance de quien pregunta, como
  * el listado del Observador (fn_usuario_sedes_lectura).
  */
-export function useOpcionesCascada(sede: string, jornada: string) {
+export function useOpcionesCascada(sede: string, jornada: string, establecimiento = "") {
   const sedeId = sede ? Number(sede) : null
   const jornadaId = jornada ? Number(jornada) : null
 
@@ -23,7 +23,12 @@ export function useOpcionesCascada(sede: string, jornada: string) {
   const grupos = useGruposPeriodoGeQuery({ sedeId, anio, jornadaId })
   const periodos = usePeriodosGeQuery({ sedeId, anio, jornadaId })
 
-  const sedeOpciones: Opcion[] = (sedes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre }))
+  // Con establecimiento elegido, solo las sedes de ese establecimiento.
+  const establecimientoElegido = establecimiento ? Number(establecimiento) : null
+  const sedesVisibles = (sedes.data ?? []).filter(
+    (s) => establecimientoElegido == null || s.establecimientoId === establecimientoElegido,
+  )
+  const sedeOpciones: Opcion[] = sedesVisibles.map((s) => ({ value: String(s.id), label: s.nombre }))
   // Una jornada puede llegar repetida si la sede tiene dos períodos académicos en el año.
   const jornadaOpciones: Opcion[] = [
     ...new Map((jornadas.data ?? []).map((j) => [j.id, { value: String(j.id), label: j.nombre }])).values(),
@@ -41,13 +46,19 @@ export function useOpcionesCascada(sede: string, jornada: string) {
   const periodoOpciones: Opcion[] = (periodos.data ?? []).map((p) => ({ value: String(p.id), label: p.nombre }))
 
   // Un rector de varios colegios: el catálogo de códigos es el del colegio de la sede elegida.
-  const establecimientos = new Set((sedes.data ?? []).map((s) => s.establecimientoId))
+  const establecimientos = new Map((sedes.data ?? []).map((s) => [s.establecimientoId, s.establecimientoNombre]))
   const establecimientoId =
     sedes.data?.find((s) => s.id === sedeId)?.establecimientoId ??
-    (establecimientos.size === 1 ? [...establecimientos][0] : null)
+    establecimientoElegido ??
+    (establecimientos.size === 1 ? [...establecimientos.keys()][0] : null)
+
+  // Solo hay filtro de Establecimiento si las sedes del usuario son de más de uno.
+  const establecimientoOpciones: Opcion[] =
+    establecimientos.size > 1 ? [...establecimientos].map(([id, nombre]) => ({ value: String(id), label: nombre })) : []
 
   return {
     sedeOpciones,
+    establecimientoOpciones,
     jornadaOpciones,
     grupoOpciones,
     gradoOpciones,
