@@ -141,6 +141,9 @@ export interface ValorSolicitudAsistencia {
   alta?: boolean
   limpiarArchivo?: boolean
   limpiarObservacion?: boolean
+  /** Solo en solicitudes de la planilla diaria (TASISTENCIA_DIARIA, sso V747). */
+  bloqueLlegada?: number | null
+  justificacion?: { texto: string | null; fkFuente: number | null }
 }
 
 /** Fila de `GET /aprobaciones/pendientes?tipo=CORRECCION_ASISTENCIA`: una por registro. */

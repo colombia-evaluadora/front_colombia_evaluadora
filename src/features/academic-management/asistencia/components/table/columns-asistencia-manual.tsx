@@ -104,6 +104,8 @@ interface BuildColumnsParams {
   justificacionLocal: Record<number, JustificacionLocal>
   /** Soporte rechazado (tamaño o tipo): la pantalla avisa por qué. */
   onSoporteRechazado: (mensaje: string) => void
+  /** Planilla diaria (Regla 115): los bloques del horario del día («2 · Aritmética»); vacío = sin horario. */
+  opcionesBloque?: { value: number; label: string }[]
 }
 
 /** Planilla de la sesión (Sección 7): una fila por estudiante, el estado como
@@ -126,14 +128,20 @@ export function buildColumnsAsistenciaManual({
   onJustificar,
   justificacionLocal,
   onSoporteRechazado,
+  opcionesBloque,
 }: BuildColumnsParams): ColumnDef<RosterEstudiante>[] {
-  const bloqueItems = Object.fromEntries(
-    bloques.map((b) => {
-      const horas = horasPorBloque[b]
-      const rango = horas ? formatHoraRango(horas.horaInicio, horas.horaFin) : ""
-      return [b.toString(), rango ? `Bloque ${b + 1} (${rango})` : `Bloque ${b + 1}`]
-    }),
-  )
+  const bloqueItems = opcionesBloque
+    ? Object.fromEntries(opcionesBloque.map((o) => [o.value.toString(), o.label]))
+    : Object.fromEntries(
+        bloques.map((b) => {
+          const horas = horasPorBloque[b]
+          const rango = horas ? formatHoraRango(horas.horaInicio, horas.horaFin) : ""
+          return [b.toString(), rango ? `Bloque ${b + 1} (${rango})` : `Bloque ${b + 1}`]
+        }),
+      )
+  const bloquesSelect = opcionesBloque ? opcionesBloque.map((o) => o.value) : bloques
+  // Por clase el bloque solo importa con varios; en el día basta con que haya horario.
+  const sinBloque = opcionesBloque ? opcionesBloque.length === 0 : bloques.length <= 1
 
   return [
     {
@@ -201,7 +209,7 @@ export function buildColumnsAsistenciaManual({
       enableHiding: false,
       cell: ({ row }) => {
         const fk = row.original.fk_tmatricula
-        if (seleccion[fk] !== LLEGO_TARDE || bloques.length <= 1 || tieneExcusa(row.original)) {
+        if (seleccion[fk] !== LLEGO_TARDE || sinBloque || tieneExcusa(row.original)) {
           return <span className="text-muted-foreground">—</span>
         }
         return (
@@ -215,7 +223,7 @@ export function buildColumnsAsistenciaManual({
               <SelectValue placeholder="Seleccione" />
             </SelectTrigger>
             <SelectContent>
-              {bloques.map((b) => (
+              {bloquesSelect.map((b) => (
                 <SelectItem key={b} value={b.toString()}>
                   {bloqueItems[b.toString()]}
                 </SelectItem>

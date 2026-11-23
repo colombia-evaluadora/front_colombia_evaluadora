@@ -36,6 +36,8 @@ interface DialogJustificarAusenciaProps {
   onJustificada: (mensaje: string) => void
   /** Sin registro guardado: no llama al servidor, la justificación viaja al guardar la sesión. */
   onLocal?: (valor: JustificacionLocal) => void
+  /** Planilla diaria: guarda con su propio endpoint (PATCH /asistencias/diaria/:ID/justificar), que no la quita. */
+  guardar?: (valor: { justificacion: string; fuente: number }) => Promise<unknown>
 }
 
 /**
@@ -52,6 +54,7 @@ export function DialogJustificarAusencia({
   fuente,
   onJustificada,
   onLocal,
+  guardar,
 }: DialogJustificarAusenciaProps) {
   const { data: fuentes = [] } = useQuery({
     ...selectCategoryQueryOptions("FUENTE_JUSTIFICACION"),
@@ -76,7 +79,8 @@ export function DialogJustificarAusencia({
         return
       }
       try {
-        await justificar.mutateAsync({ pks, justificacion: value.justificacion.trim(), fuente: value.fuente })
+        if (guardar) await guardar({ justificacion: value.justificacion.trim(), fuente: value.fuente })
+        else await justificar.mutateAsync({ pks, justificacion: value.justificacion.trim(), fuente: value.fuente })
         onJustificada("Se registró la justificación.")
         onOpenChange(false)
       } catch (error) {
@@ -136,7 +140,7 @@ export function DialogJustificarAusencia({
         </form>
 
         <DialogFooter>
-          {justificacion && (
+          {justificacion && !guardar && (
             <Button size="sm" variant="ghost" color="destructive" disabled={justificar.isPending} onClick={quitar}>
               Quitar justificación
             </Button>
