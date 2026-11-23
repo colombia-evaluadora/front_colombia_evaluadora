@@ -3,17 +3,18 @@
 import { useCallback, useMemo, useState } from "react"
 
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { useOpcionesEstadosAcompQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-opciones-prevencion-query"
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
 import type { FiltrosListadoAcomp } from "@/features/gestion-estudiantil/prevencion/components/acompanamientos/search-acompanamientos"
 
 /**
  * Búsqueda, filtros aplicados y borrador de Embarazo, Consumo y Reportes recibidos. Sede → Jornada salen de
- * `/opciones/sedes-jornadas`; Estado y Responsable los da quien llama.
+ * `/opciones/sedes-jornadas`; Estado, de `/acompanamientos/opciones/estados` (la clave dice de qué pestaña); Responsable lo da quien llama.
  */
 export function useAcompanamientosFiltros<F extends FiltrosListadoAcomp>(
   vacios: F,
   goToPage: (page: number) => void,
-  extra: { estados: Opcion[]; responsables?: Opcion[] },
+  extra: { estados: "acompanamiento" | "reporte_consumo"; responsables?: Opcion[] },
 ) {
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<F>(vacios)
@@ -44,7 +45,10 @@ export function useAcompanamientosFiltros<F extends FiltrosListadoAcomp>(
     goToPage(0)
   }, [goToPage, vacios])
 
-  const { estados, responsables } = extra
+  const { responsables } = extra
+  const estadosQ = useOpcionesEstadosAcompQuery(aplicadas.establecimientoId)
+  const estadosData = estadosQ.data?.[extra.estados]
+  const estados = useMemo(() => (estadosData ?? []).map((e) => ({ value: e.valor, label: e.nombre })), [estadosData])
   const opciones = useMemo(
     () => ({ sedes: delBorrador.sedeOpciones, jornadas: delBorrador.jornadaOpciones, estados, responsables }),
     [delBorrador.sedeOpciones, delBorrador.jornadaOpciones, estados, responsables],

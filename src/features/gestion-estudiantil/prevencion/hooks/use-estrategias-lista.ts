@@ -5,6 +5,7 @@ import { useCallback, useMemo } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   toEstrategiasFilters,
   useEstrategiasQuery,
@@ -13,7 +14,7 @@ import { useOpcionesSedesJornadasQuery } from "@/features/gestion-estudiantil/pr
 import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
 import type { EstrategiaRow } from "@/features/gestion-estudiantil/prevencion/api/types"
 import type { AccionEstrategia } from "@/features/gestion-estudiantil/prevencion/components/estrategias/acciones-estrategia"
-import { buildColumnsEstrategias } from "@/features/gestion-estudiantil/prevencion/components/estrategias/columns-estrategias"
+import { buildColumnsEstrategias, ORDEN_ESTRATEGIAS } from "@/features/gestion-estudiantil/prevencion/components/estrategias/columns-estrategias"
 import { useDialogosEstrategias } from "@/features/gestion-estudiantil/prevencion/components/estrategias/dialogos/use-dialogos-estrategias"
 import { useEstrategiasFiltros } from "@/features/gestion-estudiantil/prevencion/hooks/use-estrategias-filtros"
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
@@ -36,7 +37,7 @@ export function useEstrategiasLista() {
       f.establecimientoId == null ? null : toEstrategiasFilters(f.establecimientoId, f.search, f.filtros, f.tipoCodigo),
     [f.establecimientoId, f.search, f.filtros, f.tipoCodigo],
   )
-  const query = useEstrategiasQuery({ filters, pageIndex, pageSize })
+  const query = useEstrategiasQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_ESTRATEGIAS) }, pageIndex, pageSize })
 
   const jornadaPorId = useMemo(
     () => new Map((sedesJornadas ?? []).map((r) => [r.fk_tlv_jornada, r.jornada_nombre] as const)),
