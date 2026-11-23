@@ -45,7 +45,7 @@ export const ACCIONES_INSCRIPCION: Record<
   ELEGIR_OPCION: { label: "Elegir opción", icon: CheckSquareIcon },
 }
 
-const admisible = (o: OpcionInscripcion) =>
+export const admisible = (o: OpcionInscripcion) =>
   o.estadoOpcion === "PENDIENTE" || o.estadoOpcion === "EN_LISTA_ESPERA"
 
 /** Acciones por fila según la Sección 3.3, "Acciones por fila". */
@@ -91,10 +91,12 @@ const ACTIONS_SIZE =6 * 32 + 5 * 4 + 16
 
 export function createInscripcionesColumns({
   sorteoEjecutado,
+  admisionAbierta,
   fechaSorteo,
   onAction,
 }: {
   sorteoEjecutado: boolean
+  admisionAbierta: boolean
   fechaSorteo: string
   onAction: (accion: AccionInscripcion, opcion: OpcionInscripcion) => void
 }): ColumnDef<OpcionInscripcion>[] {
@@ -216,7 +218,7 @@ export function createInscripcionesColumns({
       cell: ({ row }) =>
         accionesDe(row.original, sorteoEjecutado).map((accion) => {
           const { label, icon: Icon } = ACCIONES_INSCRIPCION[accion]
-          const bloqueada = accion === "ADMITIR" && !sorteoEjecutado
+          const bloqueada = accion === "ADMITIR" && !admisionAbierta
           return (
             <Tooltip key={accion}>
               <TooltipTrigger

@@ -55,7 +55,7 @@ async function resolverAcudiente(
   return { pkUsuarioAcudiente, actualizarAcudiente: true }
 }
 
-async function updateMatricula({
+export async function updateMatricula({
   id,
   values,
   pkTpadre,

@@ -215,7 +215,13 @@ export function ChatSidebar({
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
   // En el chat los CANAL se llaman "Foros".
-  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada && !esAnterior(c))
+  // Los comunicados institucionales no son foros (Comunicaciones §3): sección propia.
+  const comunicados = visibles.filter(
+    (c) => c.tipo === "CANAL" && c.categoria === "ANUNCIO" && !c.archivada && !esAnterior(c),
+  )
+  const foros = visibles.filter(
+    (c) => c.tipo === "CANAL" && c.categoria !== "ANUNCIO" && !c.archivada && !esAnterior(c),
+  )
   const archivadas = visibles.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
@@ -352,29 +358,28 @@ export function ChatSidebar({
           </button>
         </div>
       )}
-      <div className="flex items-center gap-2 border-b px-3 py-1.5">
-        <label className="flex items-center gap-2 text-sm">
+      {/* La bandeja es angosta: la casilla y los botones bajan de línea en vez de cortarse
+          (con "Nuevo hilo con acudientes" no cabían en una fila). */}
+      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-1.5">
+        <label className="flex items-center gap-2 text-sm whitespace-nowrap">
           <input type="checkbox" checked={soloNoLeidas} onChange={(e) => setSoloNoLeidas(e.target.checked)} />
           Solo no leídas
         </label>
-        {/* W.17.EST.1: el estudiante menor sin permiso solo responde (no ve "Nuevo mensaje"). */}
         {puedeIniciarConversaciones && (
-          <Button
-            type="button"
-            size="sm"
-            className="ml-auto"
-            onClick={() => setNuevoMensaje({ modo: "INDIVIDUAL", para: [] })}
-          >
-            <PlusIcon data-icon="inline-start" />
-            Nuevo mensaje
-          </Button>
-        )}
-        {/* Docente responsable de grupo o de enseñanza (M.2.HIL.2): solo si tiene grupos o ejecuciones. */}
-        {puedeIniciarConversaciones && (opcionesHilo.data?.length ?? 0) > 0 && (
-          <Button type="button" size="sm" variant="outline" color="primary" onClick={() => setNuevoHilo(true)}>
-            <PlusIcon data-icon="inline-start" />
-            Nuevo hilo con acudientes
-          </Button>
+          <div className="ml-auto flex flex-wrap justify-end gap-2">
+            {/* W.17.EST.1: el estudiante menor sin permiso solo responde (no ve "Nuevo mensaje"). */}
+            <Button type="button" size="sm" onClick={() => setNuevoMensaje({ modo: "INDIVIDUAL", para: [] })}>
+              <PlusIcon data-icon="inline-start" />
+              Nuevo mensaje
+            </Button>
+            {/* Docente responsable de grupo o de enseñanza (M.2.HIL.2): solo si tiene grupos o ejecuciones. */}
+            {(opcionesHilo.data?.length ?? 0) > 0 && (
+              <Button type="button" size="sm" variant="outline" color="primary" onClick={() => setNuevoHilo(true)}>
+                <PlusIcon data-icon="inline-start" />
+                Nuevo hilo con acudientes
+              </Button>
+            )}
+          </div>
         )}
       </div>
       <nav aria-label="Conversaciones" className="min-h-0 flex-1 overflow-y-auto py-2">
@@ -527,6 +532,7 @@ export function ChatSidebar({
             >
               {grupos.map(item)}
             </Seccion>
+            {comunicados.length > 0 && <Seccion titulo="Comunicados">{comunicados.map(item)}</Seccion>}
             <Seccion
               titulo="Foros"
               accion={puedeGestionar && <AgregarCanal onCreado={onSeleccionar} />}

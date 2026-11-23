@@ -84,13 +84,14 @@ interface RawMatriculaCore {
   fk_tperiodo_academico: number
   created_at: string
   estado_matricula_nombre: string
+  /** Regla 81 (V177): S sin autorizacion de datos; los bloques 2.2 a 2.9 llegan enmascarados. */
+  sin_autorizacion?: "S" | "N"
   // Pendiente en el back (docs/matricula/pendientes-back.md): por ahora solo lo trae el mock.
   tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
   tiene_complementaria?: "S" | "N"
   postulacion_registrada?: "S" | "N"
   retiro_solicitado_por?: string | null
   anulacion_pendiente?: "S" | "N"
-  sin_autorizacion?: "S" | "N"
   origen_adscripcion?: string | null
   // Bloques 2.1, 2.2 y 2.8 nuevos (pendientes-back, tarea 8): solo los trae el mock.
   fk_tlv_internado?: number | null
@@ -135,7 +136,7 @@ interface RawMatriculaArchivo {
   created_at: string
 }
 
-interface RawMatriculaDetail {
+export interface RawMatriculaDetail {
   matricula: RawMatriculaCore
   acudientes: RawMatriculaAcudiente[]
   estudiante: RawMatriculaEstudiante
@@ -157,20 +158,23 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
   const raw = await api.get<{ rows: { matricula: RawMatriculaDetail }[] } | { matricula: RawMatriculaDetail }>(
     `/eval-col/cobertura-academica/matricula/${id}`,
   )
-  const {
-    matricula: m,
-    acudientes,
-    estudiante: est,
-    socioeconomico: rawSocio,
-    archivos,
-  } = unwrapRow(raw).matricula
-  const socio = rawSocio ?? ({} as RawMatriculaSocioeconomico)
-
+  const ficha = unwrapRow(raw).matricula
   // `fk_tgrado` es el PK, no el "valor" del select: se resuelve contra los grados del período.
-  const grados = await fetchGrados(m.fk_tperiodo_academico)
-  const gradoValor = grados.find((g) => g.id === m.fk_tgrado)?.valor
+  const grados = await fetchGrados(ficha.matricula.fk_tperiodo_academico)
+  return toMatriculaDetailResult(ficha, grados.find((g) => g.id === ficha.matricula.fk_tgrado)?.valor)
+}
 
-  const guardianRaw = acudientes.find((a) => a.vinculo.acudiente === "S") ?? acudientes[0]
+/**
+ * Ficha del back (`fn_matricula_obtener_completa_interno`) → modelo del formulario. La reusa la
+ * ficha de una reserva de cupo (`/reservas-cupo/:ID/ficha`), que tiene la misma forma; en un
+ * inscrito sin matrícula anterior `matricula` llega vacío y `acudientes` con el de la inscripción.
+ */
+export function toMatriculaDetailResult(ficha: RawMatriculaDetail, gradoValor: number | undefined): MatriculaDetailResult {
+  const { matricula: m, acudientes = [], estudiante, socioeconomico: rawSocio, archivos } = ficha
+  const socio = rawSocio ?? ({} as RawMatriculaSocioeconomico)
+  const est = estudiante ?? ({} as RawMatriculaEstudiante)
+
+  const guardianRaw = acudientes.find((a) => a.vinculo?.acudiente === "S") ?? acudientes[0]
 
   const status = m.estado_matricula_nombre as MatriculaStatus
 

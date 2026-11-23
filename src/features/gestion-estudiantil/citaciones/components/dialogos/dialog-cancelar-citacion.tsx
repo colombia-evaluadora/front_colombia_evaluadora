@@ -32,8 +32,6 @@ export function DialogCancelarCitacion({ citacion: c, onClose }: Props) {
     },
   })
   const error = errorLargo(motivo, 1, 1000, "El motivo")
-  // El acudiente solo recibe aviso si la citación ya estaba programada (no si era Por programar).
-  const avisa = c.estado_valor !== "POR_PROGRAMAR"
 
   return (
     <DialogoOperacionShell
@@ -68,14 +66,11 @@ export function DialogCancelarCitacion({ citacion: c, onClose }: Props) {
         error={s.intento ? error : undefined}
         onChange={setMotivo}
       />
-      {avisa && (
-        <Alert variant="info">
-          <InfoIcon aria-hidden="true" />
-          <AlertDescription>
-            Se avisará a {c.acudiente_nombre ?? "el acudiente"} de la cancelación.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Regla 25: el acudiente recibe el aviso de la cancelación desde cualquier estado cancelable. */}
+      <Alert variant="info">
+        <InfoIcon aria-hidden="true" />
+        <AlertDescription>Se avisará a {c.acudiente_nombre ?? "el acudiente"} de la cancelación.</AlertDescription>
+      </Alert>
     </DialogoOperacionShell>
   )
 }

@@ -164,7 +164,11 @@ function NoAdmitirContenido({ opciones, onOpenChange, onDone }: AccionProps) {
   const porDocumentos = opciones.some((o) => o.documentosIncompletos)
 
   const form = useAppForm({
-    defaultValues: { motivo: porDocumentos ? "Documentación incompleta" : "" },
+    defaultValues: {
+      motivo: porDocumentos
+        ? (motivos.noAdmision.find((m) => m.label === "Documentación incompleta")?.value ?? "")
+        : "",
+    },
     validators: { onSubmit: noAdmitirSchema },
     onSubmit: ({ value }) =>
       noAdmitir.mutateAsync(
@@ -210,7 +214,7 @@ function NoAdmitirContenido({ opciones, onOpenChange, onDone }: AccionProps) {
               label="Motivo de no admisión"
               required
               placeholder="Seleccionar"
-              options={motivos.noAdmision.map((m) => ({ value: m, label: m }))}
+              options={motivos.noAdmision}
               description={
                 n > 1
                   ? "El mismo motivo para todas. Si los motivos son distintos, hágalo en lotes separados."
@@ -298,7 +302,7 @@ export function AnularInscripcionDialog({
                 label="Motivo de anulación"
                 required
                 placeholder="Seleccionar"
-                options={motivos.anulacion.map((m) => ({ value: m, label: m }))}
+                options={motivos.anulacion}
               />
             )}
           </form.AppField>

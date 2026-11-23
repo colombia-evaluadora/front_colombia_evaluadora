@@ -11,7 +11,7 @@ import { ESTADO_GESTION_COLOR, UMBRAL_GESTION_COLOR } from "@/features/gestion-e
 import { CausasMedidas } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/detalle/causas-medidas"
 import { HistorialGestion } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/detalle/historial-gestion"
 import { RutaProteccion } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/detalle/ruta-proteccion"
-import type { ResumenRemisionRuta } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/dialogos/dialogos-remision-ruta"
+import type { ResumenRemision } from "@/features/gestion-estudiantil/commons/components/remisiones/dialogos-remision"
 
 const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
 const mesAnio = (fecha: string) => formatFecha(fecha).slice(3)
@@ -20,8 +20,8 @@ interface Props {
   d: GestionAlertaDetalle
   onContacto: () => void
   onVerAnterior: (id: number) => void
-  onRegistrarGestion: (r: ResumenRemisionRuta) => void
-  onRegistrarRespuesta: (r: ResumenRemisionRuta) => void
+  onRegistrarGestion: (r: ResumenRemision) => void
+  onRegistrarRespuesta: (r: ResumenRemision) => void
 }
 
 /** Contenido del detalle de la gestión (G.8.GAL.2 y GAL.6). */

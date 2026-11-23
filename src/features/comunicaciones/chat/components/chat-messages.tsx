@@ -289,8 +289,11 @@ function ConfirmacionLectura({
 }) {
   if (!estado) return null
   const leido = estado === "LEIDO"
-  const Icono = estado === "ENVIADO" ? CheckIcon : ChecksIcon
   const c = m.confirmacion
+  // Grupal (§4.6 Acuses): "Visto por N" con el conteo agregado de comms-service (`vistoPor`), pida o
+  // no confirmación de lectura; si no llega, el de la confirmación.
+  const vistos = grupal ? (m.vistoPor ?? c?.leidos ?? 0) : 0
+  const Icono = estado === "ENVIADO" && vistos === 0 ? CheckIcon : ChecksIcon
   const detalle = c
     ? [
         `${ETIQUETA_LECTURA[estado]} · leído por ${c.leidos} de ${c.total}`,
@@ -300,17 +303,19 @@ function ConfirmacionLectura({
             : `${l.nombre}: ${l.entregadoEn ? "entregado" : "enviado"}`,
         ),
       ].join("\n")
-    : ETIQUETA_LECTURA[estado]
+    : vistos > 0
+      ? `Visto por ${vistos}`
+      : ETIQUETA_LECTURA[estado]
   return (
     <span
       title={detalle}
       data-lectura={estado}
       className={cn("-mr-1 -mb-1 flex items-center justify-end gap-1", leido ? "text-primary" : "text-muted-foreground")}
     >
-      {c && (
-        <span className="text-[11px]">
-          {grupal && c.leidos > 0 ? `Visto por ${c.leidos}` : ETIQUETA_LECTURA[estado]}
-        </span>
+      {vistos > 0 ? (
+        <span className="text-[11px]">Visto por {vistos}</span>
+      ) : (
+        c && <span className="text-[11px]">{ETIQUETA_LECTURA[estado]}</span>
       )}
       <Icono aria-hidden className="size-4" />
       <span className="sr-only">{c ? detalle : ETIQUETA_LECTURA[estado]}</span>

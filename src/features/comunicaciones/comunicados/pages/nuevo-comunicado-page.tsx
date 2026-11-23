@@ -55,6 +55,7 @@ import {
   numeroDeCampo,
   resumenConjunto,
   sinPeriodos,
+  soloFuncionariosInactivos,
   textoFiltros,
   textoPeriodo,
   type ErroresCampos,
@@ -113,7 +114,10 @@ function NuevoComunicadoContent() {
   // Cancelar vuelve al listado de Comunicados institucionales (de donde se entra), no a la mensajería.
   const volver = () => void navigate({ to: paths.app.comunicacionesComunicados.getHref() })
   const sucio = !!titulo || !!mensaje || archivos.length > 0 || conjuntos.some((c) => c.tipos.length > 0 || !!c.sede)
-  const bloqueado = conjuntos.some((c, i) => sinPeriodos(c, datos.current[i]))
+  // También si todos los funcionarios elegidos de un conjunto están Inactivos en el EE (Regla 101).
+  const bloqueado = conjuntos.some(
+    (c, i) => sinPeriodos(c, datos.current[i]) || soloFuncionariosInactivos(c, datos.current[i]),
+  )
   const mensajeLimpio = mensaje.trim()
   // Errores por id de control y en orden visual (conjuntos, Contenido, Publicación): el primero es
   // el que se enfoca. Se recalculan en cada render, así se van apagando al corregir.

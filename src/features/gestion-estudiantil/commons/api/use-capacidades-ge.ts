@@ -14,6 +14,8 @@ export interface CapacidadesGe {
   observador_puede_cargar_firmado: boolean
   observador_puede_reportar_salud_mental: boolean
   observador_puede_remitir: boolean
+  observador_puede_anular: boolean
+  observador_puede_ver_mis_reportes: boolean
   observaciones_puede_registrar: boolean
   actividades_puede_crear: boolean
   citaciones_puede_citar: boolean
@@ -33,9 +35,10 @@ export async function fetchCapacidadesGe(establecimientoId: number) {
  * Capacidades del usuario. El establecimiento sale de la cascada de opciones GE (la sede trae su
  * establecimiento). Mientras carga, o si falla, `data` queda `undefined`: las pantallas deshabilitan.
  */
-export function useCapacidadesGe() {
+export function useCapacidadesGe(establecimientoElegido?: number | null) {
   const sedes = useSedesGeQuery()
-  const establecimientoId = sedes.data?.[0]?.establecimientoId ?? null
+  // Sin establecimiento elegido (la mayoría de pantallas), el primero de las sedes del usuario.
+  const establecimientoId = establecimientoElegido ?? sedes.data?.[0]?.establecimientoId ?? null
   return useQuery({
     queryKey: capacidadesGeKeys.establecimiento(establecimientoId),
     queryFn: () => fetchCapacidadesGe(establecimientoId as number),

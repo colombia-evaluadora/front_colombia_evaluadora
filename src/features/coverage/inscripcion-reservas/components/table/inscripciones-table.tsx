@@ -1,7 +1,8 @@
 "use no memo"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { format } from "date-fns"
+import { toast } from "sonner"
 
 import { paths } from "@/config/paths"
 import {
@@ -61,7 +62,10 @@ import {
 } from "@/features/coverage/inscripcion-reservas/api/ui-mappings-inscripcion"
 import { GenerarListaSorteoDialog } from "@/features/coverage/inscripcion-reservas/components/dialogs/dialog-generar-lista-sorteo"
 import { CampoLectura } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
-import { createInscripcionesColumns } from "@/features/coverage/inscripcion-reservas/components/table/columns-inscripciones"
+import {
+  admisible as decidible,
+  createInscripcionesColumns,
+} from "@/features/coverage/inscripcion-reservas/components/table/columns-inscripciones"
 
 const TODAS = "__todas__"
 
@@ -108,6 +112,10 @@ function SelectSimple({
 const fechaCorta = (iso: string) => iso.split("-").reverse().join("/")
 
 /** Pestaña "Inscripciones" (Cobertura Educativa, Sección 3.3). */
+// Solo Pendientes y En lista de espera se deciden: sin ninguna, el lote no abre el diálogo.
+const sinDecidibles = (accion: string) =>
+  toast.info(`Ninguna de las opciones seleccionadas se puede ${accion}: ya están decididas.`)
+
 export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaInscritosRoute.useSearch()
   const navigate = coberturaInscritosRoute.useNavigate()
@@ -144,6 +152,11 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
 
   const sorteoEjecutado = grupo?.sorteoEjecutado ?? false
   const fechaSorteo = grupo ? fechaCorta(grupo.fechaCierre) : ""
+  // Igual que el back (Regla 28): cierre cumplido y, si desempata por sorteo, sorteo hecho.
+  const admisionAbierta =
+    !!grupo?.fechaCierre &&
+    grupo.fechaCierre <= format(new Date(), "yyyy-MM-dd") &&
+    (grupo.desempate !== "SORTEO" || sorteoEjecutado)
 
   // Un modal a la vez: por fila o desde la selección.
   const [porAdmitir, setPorAdmitir] = useState<OpcionInscripcion[]>([])
@@ -153,29 +166,35 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   const [porAmpliar, setPorAmpliar] = useState<InscripcionObjetivo | null>(null)
   const [porElegir, setPorElegir] = useState<InscripcionObjetivo | null>(null)
 
-  const columns = createInscripcionesColumns({
-    sorteoEjecutado,
-    fechaSorteo,
-    onAction: (accion, o) => {
-      setDesdeSeleccion(false)
-      switch (accion) {
-        case "VER_DETALLE":
-          return navigate({ to: paths.app.coberturaInscripcionDetalle.getHref(o.inscripcionId) })
-        case "EDITAR":
-          return navigate({ to: paths.app.coberturaInscripcionEditar.getHref(o.inscripcionId) })
-        case "ADMITIR":
-          return setPorAdmitir([o])
-        case "NO_ADMITIR":
-          return setPorNoAdmitir([o])
-        case "ANULAR":
-          return setPorAnular({ id: o.inscripcionId, numeroInscripcion: o.numeroInscripcion })
-        case "AMPLIAR":
-          return setPorAmpliar({ inscripcionId: o.inscripcionId, aspirante: o.aspirante, grado })
-        case "ELEGIR_OPCION":
-          return setPorElegir({ inscripcionId: o.inscripcionId, aspirante: o.aspirante, grado })
-      }
-    },
-  })
+  // Memo: sin él la tabla se rehace con cada tecla del buscador (setters y navigate son estables).
+  const columns = useMemo(
+    () =>
+      createInscripcionesColumns({
+        sorteoEjecutado,
+        admisionAbierta,
+        fechaSorteo,
+        onAction: (accion, o) => {
+          setDesdeSeleccion(false)
+          switch (accion) {
+            case "VER_DETALLE":
+              return navigate({ to: paths.app.coberturaInscripcionDetalle.getHref(o.inscripcionId) })
+            case "EDITAR":
+              return navigate({ to: paths.app.coberturaInscripcionEditar.getHref(o.inscripcionId) })
+            case "ADMITIR":
+              return setPorAdmitir([o])
+            case "NO_ADMITIR":
+              return setPorNoAdmitir([o])
+            case "ANULAR":
+              return setPorAnular({ id: o.inscripcionId, numeroInscripcion: o.numeroInscripcion })
+            case "AMPLIAR":
+              return setPorAmpliar({ inscripcionId: o.inscripcionId, aspirante: o.aspirante, grado })
+            case "ELEGIR_OPCION":
+              return setPorElegir({ inscripcionId: o.inscripcionId, aspirante: o.aspirante, grado })
+          }
+        },
+      }),
+    [sorteoEjecutado, admisionAbierta, fechaSorteo, grado, navigate],
+  )
 
   const { table, selectedIds, selectedRows, hasSelection, resetSelection } = useDataTable({
     columns,
@@ -318,18 +337,22 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
                   variant="outline"
                   color="destructive"
                   onClick={() => {
+                    const filas = selectedRows.filter(decidible)
+                    if (!filas.length) return sinDecidibles("no admitir")
                     setDesdeSeleccion(true)
-                    setPorNoAdmitir(selectedRows)
+                    setPorNoAdmitir(filas)
                   }}
                 >
                   <XCircleIcon data-icon="inline-start" />
                   No admitir
                 </Button>
                 <Button
-                  disabled={!sorteoEjecutado}
+                  disabled={!admisionAbierta}
                   onClick={() => {
+                    const filas = selectedRows.filter(decidible)
+                    if (!filas.length) return sinDecidibles("admitir")
                     setDesdeSeleccion(true)
-                    setPorAdmitir(selectedRows)
+                    setPorAdmitir(filas)
                   }}
                 >
                   <CheckCircleIcon data-icon="inline-start" />

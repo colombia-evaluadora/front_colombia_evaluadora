@@ -96,7 +96,7 @@ function CampoFecha({
 }
 
 /**
- * Campos de la actividad (G.5.ACT.NUE). Al modificar, Sede, Jornada y Período van bloqueados y no hay Estado
+ * Campos de la actividad (G.5.ACT.NUE). Al modificar, Sede y Jornada van bloqueadas y no hay Estado
  * (se cambia con Activar/Inactivar). Entidad y Supervisor externos solo existen en Servicio social.
  */
 export function FormularioActividad({ f }: { f: ActividadForm }) {
@@ -136,6 +136,22 @@ export function FormularioActividad({ f }: { f: ActividadForm }) {
 
       <div className="sm:col-span-2">
         <ComboOpciones
+          id="actividad-responsable"
+          label="Responsable"
+          required
+          size="default"
+          todos={false}
+          disabled={sinSedeJornada}
+          placeholder={sinSedeJornada ? "Elija sede y jornada primero" : "Seleccione"}
+          value={f.responsable}
+          options={f.responsableOpciones}
+          error={f.error("responsable")}
+          onChange={f.setResponsable}
+        />
+      </div>
+
+      <div className="sm:col-span-2">
+        <ComboOpciones
           id="actividad-sede"
           label="Sede educativa"
           required
@@ -162,33 +178,6 @@ export function FormularioActividad({ f }: { f: ActividadForm }) {
           options={f.jornadaOpciones}
           error={f.error("jornada")}
           onChange={f.elegirJornada}
-        />
-      </div>
-      <div className="sm:col-span-2">
-        <Field orientation="vertical" variant="outlined" className="gap-2">
-          <FieldLabel htmlFor="actividad-periodo">Período académico</FieldLabel>
-          <Input
-            id="actividad-periodo"
-            value={f.periodoNombre ?? (f.jornada ? "Sin período vigente" : "Se toma de la jornada")}
-            readOnly
-            disabled
-          />
-        </Field>
-      </div>
-
-      <div className="sm:col-span-6">
-        <ComboOpciones
-          id="actividad-responsable"
-          label="Responsable"
-          required
-          size="default"
-          todos={false}
-          disabled={sinSedeJornada}
-          placeholder={sinSedeJornada ? "Elija sede y jornada primero" : "Seleccione"}
-          value={f.responsable}
-          options={f.responsableOpciones}
-          error={f.error("responsable")}
-          onChange={f.setResponsable}
         />
       </div>
 
@@ -235,7 +224,7 @@ export function FormularioActividad({ f }: { f: ActividadForm }) {
           value={f.grados}
           disabled={sinSedeJornada}
           placeholder={sinSedeJornada ? "Elija sede y jornada primero" : "Seleccione"}
-          ayuda={f.esServicioSocial ? "Solo los grados del servicio social." : "Grados del período académico."}
+          ayuda={f.esServicioSocial ? "Solo los Grados del servicio social." : "Grados del período académico."}
           error={f.error("grados")}
           onChange={f.setGrados}
         />

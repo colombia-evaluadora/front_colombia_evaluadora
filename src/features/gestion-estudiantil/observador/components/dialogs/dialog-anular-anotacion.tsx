@@ -75,7 +75,7 @@ export function DialogAnularAnotacion({ anotacion, onClose }: DialogAnularAnotac
               <span className="font-semibold text-foreground">
                 {anotacion.codigo} · {anotacion.descripcion}
               </span>
-              <Badge variant="soft" color={colorDeTipo(anotacion.tipo_nombre)}>
+              <Badge variant="soft" color={colorDeTipo(anotacion.tipo_codigo)}>
                 {anotacion.tipo_nombre}
               </Badge>
               {anotacion.responsable_nombre && <span>· {anotacion.responsable_nombre}</span>}

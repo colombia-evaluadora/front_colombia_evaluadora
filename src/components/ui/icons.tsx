@@ -151,6 +151,7 @@ import {
   MdOutlinePeople,
   MdOutlinePermMedia,
   MdOutlinePersonAddAlt,
+  MdOutlineHowToReg,
   MdPlaylistAdd,
   MdOutlinePersonRemove,
   MdOutlinePhotoLibrary,
@@ -371,6 +372,8 @@ export const TrophyIcon = makeIcon(MdOutlineEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const PersonAddIcon = makeIcon(MdOutlinePersonAddAlt)
+/** Persona con visto: "Por confirmar" de Reservas de cupo. */
+export const PersonCheckIcon = makeIcon(MdOutlineHowToReg)
 export const ListPlusIcon = makeIcon(MdPlaylistAdd)
 export const PersonRemoveIcon = makeIcon(MdOutlinePersonRemove)
 export const PersonWalkIcon = makeIcon(MdOutlineDirectionsWalk)

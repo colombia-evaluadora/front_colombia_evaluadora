@@ -24,6 +24,7 @@ export function useActividadesLista() {
   const f = useActividadesFiltros(goToPage)
   const { irActividad, irEditar } = useNavegacionActividades()
   const [estadoDe, setEstadoDe] = useState<ActividadRow | null>(null)
+  const [inscribirEn, setInscribirEn] = useState<ActividadRow | null>(null)
 
   // El período no se manda: la cascada solo conoce períodos de evaluación y el listado ya ordena lo más reciente primero.
   const filters = useMemo(() => toActividadesFilters(f.search, f.filtros), [f.search, f.filtros])
@@ -33,6 +34,7 @@ export function useActividadesLista() {
     (fila: ActividadRow, accion: AccionActividad) => {
       if (accion === "ver") irActividad(fila.id)
       else if (accion === "modificar") irEditar(fila.id)
+      else if (accion === "inscribir") setInscribirEn(fila)
       else if (accion === "estado") setEstadoDe(fila)
     },
     [irActividad, irEditar],
@@ -54,5 +56,18 @@ export function useActividadesLista() {
     initialColumnVisibility: COLUMNAS_OCULTAS,
   })
 
-  return { f, query, table, pageIndex, pageSize, goToPage, setPageSize, estadoDe, cerrarEstado: () => setEstadoDe(null) }
+  return {
+    f,
+    query,
+    table,
+    pageIndex,
+    pageSize,
+    goToPage,
+    setPageSize,
+    filters,
+    estadoDe,
+    cerrarEstado: () => setEstadoDe(null),
+    inscribirEn,
+    cerrarInscribir: () => setInscribirEn(null),
+  }
 }
