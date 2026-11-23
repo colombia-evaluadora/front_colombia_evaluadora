@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
+  acceptDe,
   formatearFecha,
   formatearTamano,
   SOPORTE_ACCEPT,
@@ -78,6 +79,8 @@ export function SoportesReservaSection({
 
   function elegir(tipo: TipoSoporte) {
     destino.current = tipo
+    // La foto acepta otros tipos y tamaño que los demás soportes (bloque 2.2, V724).
+    if (inputRef.current) inputRef.current.accept = acceptDe(tipo)
     inputRef.current?.click()
   }
 
@@ -85,7 +88,7 @@ export function SoportesReservaSection({
     const tipo = destino.current
     if (inputRef.current) inputRef.current.value = ""
     if (!archivo || !tipo) return
-    const error = validarArchivoSoporte(archivo)
+    const error = validarArchivoSoporte(archivo, tipo)
     if (error) return onRechazo(error)
     onPendientes([
       ...pendientes,
