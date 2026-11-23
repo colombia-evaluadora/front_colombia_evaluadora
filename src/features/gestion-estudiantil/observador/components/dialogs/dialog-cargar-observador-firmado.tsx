@@ -24,26 +24,27 @@ import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { SoportesUpload } from "@/features/gestion-estudiantil/commons/components/soportes-upload"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
+import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
+import { SelectorEstudianteObservador } from "@/features/gestion-estudiantil/observador/components/selector-estudiante-observador"
+import type { EstudianteObservador } from "@/features/gestion-estudiantil/observador/api/types"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useCargarFirmado, useObservadorFirmadosQuery } from "@/features/gestion-estudiantil/observador/api/firmado"
 
 interface Props {
-  /** Estudiantes elegibles («Nombre · Grado/Grupo»). */
-  estudiantes: Opcion[]
-  periodos: Opcion[]
   /** Sin permiso o capacidad: el botón se deshabilita, no se oculta. */
   disabled?: boolean
 }
 
 interface Valores {
-  estudiante: string
+  estudiante: EstudianteObservador | null
   periodo: string
   fecha: Date | undefined
   archivos: File[]
 }
 
-const VACIO: Valores = { estudiante: "", periodo: "", fecha: undefined, archivos: [] }
+const TODO_EL_ANIO = "todo"
+
+const VACIO: Valores = { estudiante: null, periodo: "", fecha: undefined, archivos: [] }
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd")
 
@@ -68,7 +69,7 @@ async function abrirArchivo(fkArchivo: number) {
  * firmado de un estudiante para un período. Sube el PDF por file-service, lo registra y, al elegir
  * el estudiante, muestra los firmados que ya tiene, descargables.
  */
-export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled }: Props) {
+export function DialogCargarObservadorFirmado({ disabled }: Props) {
   const { data: user } = useUser()
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
@@ -80,7 +81,13 @@ export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled 
   }
   const errores = validar(v)
   const error = (k: keyof Valores) => (intento ? errores[k] : undefined)
-  const firmados = useObservadorFirmadosQuery(v.estudiante ? Number(v.estudiante) : undefined)
+  const firmados = useObservadorFirmadosQuery(v.estudiante?.fk_tmatricula)
+  // Los períodos salen de la sede y la jornada de la matrícula elegida, con «Todo el año».
+  const cascada = useOpcionesCascada(
+    v.estudiante ? String(v.estudiante.fk_tsede) : "",
+    v.estudiante?.fk_tlv_jornada != null ? String(v.estudiante.fk_tlv_jornada) : "",
+  )
+  const periodos = [...cascada.periodoOpciones, { value: TODO_EL_ANIO, label: "Todo el año" }]
 
   const reiniciar = () => {
     setV(VACIO)
@@ -103,8 +110,8 @@ export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled 
     setErrorBackend(null)
     if (Object.keys(errores).length > 0 || !v.fecha) return enfocarPrimerError()
     mut.mutate({
-      FK_MATRICULA: Number(v.estudiante),
-      FK_PERIODO_EVALUACION: v.periodo ? Number(v.periodo) : null,
+      FK_MATRICULA: v.estudiante!.fk_tmatricula,
+      FK_PERIODO_EVALUACION: v.periodo && v.periodo !== TODO_EL_ANIO ? Number(v.periodo) : null,
       FECHA_FIRMA: iso(v.fecha),
       archivo: v.archivos[0],
     })
@@ -130,19 +137,16 @@ export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled 
         <ErrorNoticeBanner error={errorBackend} />
 
         <div className="grid gap-4 pt-2 sm:grid-cols-2">
-          <ComboOpciones
-            id="firmado-estudiante"
-            className="gap-2 sm:col-span-2"
-            label="Estudiante"
-            required
-            todos={false}
-            placeholder="Seleccione"
-            value={v.estudiante}
-            options={estudiantes}
-            error={error("estudiante")}
-            onChange={(x) => cambiar("estudiante", x)}
-            description="Busca por nombre o documento."
-          />
+          <div className="sm:col-span-2">
+            <SelectorEstudianteObservador
+              idPrefix="firmado"
+              proposito="IMPRIMIR"
+              enabled={open}
+              value={v.estudiante}
+              error={error("estudiante")}
+              onChange={(x) => setV((prev) => ({ ...prev, estudiante: x, periodo: "" }))}
+            />
+          </div>
           <ComboOpciones
             id="firmado-periodo"
             label="Período"
@@ -151,6 +155,7 @@ export function DialogCargarObservadorFirmado({ estudiantes, periodos, disabled 
             placeholder="Seleccione"
             value={v.periodo}
             options={periodos}
+            disabled={!v.estudiante}
             error={error("periodo")}
             onChange={(x) => cambiar("periodo", x)}
             description="El período del observador que se firmó."

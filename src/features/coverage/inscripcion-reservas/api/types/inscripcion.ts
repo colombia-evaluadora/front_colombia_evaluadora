@@ -1,3 +1,4 @@
+import type { InscripcionSocioeconomico } from "@/features/coverage/inscripcion-reservas/api/types/socioeconomico"
 import type { CreateMatriculaInput } from "@/features/coverage/matricula/api/types/matricula"
 import type { AutorizacionEstablecimiento } from "@/features/autorizacion-datos/api/types"
 
@@ -107,6 +108,9 @@ export interface OpcionCupoInscripcion {
   establecimiento: string
   sede: string
   jornada: string
+  /** Ids guardados: Editar los reenvía sin pasar por la cascada, que tras el cierre ya no los lista. */
+  periodoId?: number
+  gradoId?: number
   numeroSorteo: string | null
   estado: EstadoOpcion
   /** null si los datos están restringidos (Regla 81). */
@@ -160,6 +164,8 @@ export interface InscripcionDetalle {
     email: string
   }
   soportes: SoporteInscripcion[]
+  /** Datos socioeconómicos guardados al inscribir; null si no hay o están restringidos. */
+  socioeconomico: InscripcionSocioeconomico | null
 }
 
 /** Opción elegida al editar: hasta tres, en orden de preferencia. */
@@ -167,6 +173,8 @@ export interface OpcionCupoInput {
   establecimiento: string
   sede: string
   jornada: string
+  /** Opción ya guardada: se envía tal cual. */
+  guardada?: { periodo: number; grado: number }
 }
 
 /** Body de Editar inscripción: los datos de la persona y el grado con sus opciones. */

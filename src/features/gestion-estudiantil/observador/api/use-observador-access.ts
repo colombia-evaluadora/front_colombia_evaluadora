@@ -1,28 +1,22 @@
-import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 import { useCapacidadesGe } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
 
-/** Anular (Regla 3): Supervisor de sede y Administrador del establecimiento (role_query de V545.7). */
-const ANULAR_ROLES = ["CEVAL-COORDINADOR", "CEVAL-RECTOR", "CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO", "CEVAL-SUPER_ADMINISTRADOR"]
-
 /**
  * Qué botones habilitar: permiso del menú OBSERVADOR y capacidades que decide el backend
- * (`/gestion-estudiantil/capacidades`). Mientras cargan, deshabilitado. El backend vuelve a
+ * (`/gestion-estudiantil/capacidades`). Mientras cargan, deshabilitado. Las acciones por fila
+ * (modificar, anular, abrir proceso) las trae cada fila con su `puede_*`. El backend vuelve a
  * validar cada acción con su gate y alcance.
  */
-export function useObservadorAccess() {
-  const { user } = useAuth()
-  const roles = user?.roles ?? []
+export function useObservadorAccess(establecimientoId?: number | null) {
   const permiso = useMenuPermission("OBSERVADOR")
-  const { data: cap } = useCapacidadesGe()
+  const { data: cap } = useCapacidadesGe(establecimientoId)
   return {
     puedeCrear: permiso.puedeCrear,
-    puedeEditar: permiso.puedeEditar,
-    puedeAnular: permiso.puedeEditar && ANULAR_ROLES.some((r) => roles.includes(r)),
+    puedeAnular: permiso.puedeVer && Boolean(cap?.observador_puede_anular),
     puedeRemitir: permiso.puedeVer && Boolean(cap?.observador_puede_remitir),
     puedeReportarSaludMental: permiso.puedeVer && Boolean(cap?.observador_puede_reportar_salud_mental),
-    veMisRemisiones: roles.includes("CEVAL-DOCENTE"),
+    veMisRemisiones: Boolean(cap?.observador_puede_ver_mis_reportes),
     puedeImprimir: permiso.puedeVer && Boolean(cap?.observador_puede_imprimir),
     puedeCargarFirmado: permiso.puedeCrear && Boolean(cap?.observador_puede_cargar_firmado),
   }

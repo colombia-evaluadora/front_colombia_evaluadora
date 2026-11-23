@@ -1,4 +1,6 @@
 import { useState } from "react"
+
+import { conSocioeconomico } from "@/features/coverage/inscripcion-reservas/api/types/socioeconomico"
 import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
@@ -12,7 +14,14 @@ import {
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CaretRightIcon, CheckCircleIcon, FloppyDiskIcon, XIcon } from "@/components/ui/icons"
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CaretRightIcon,
+  CheckCircleIcon,
+  FloppyDiskIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import {
   Dialog,
   DialogContent,
@@ -132,7 +141,7 @@ function valoresIniciales(d: InscripcionDetalle | null) {
   const e = d.estudiante
   const a = d.acudiente
   return {
-    ...base,
+    ...conSocioeconomico(base, d.socioeconomico),
     student: {
       ...base.student,
       documentType: e.tipoDocumento,
@@ -175,6 +184,8 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
   const editarMut = useEditarInscripcion()
   const crearMut = useCrearInscripcion()
   const editar = inscripcion ? editarMut : crearMut
+  // Editar solo quita y reordena opciones (3.3): agregar es Ampliar, y el grado no cambia.
+  const edicion = Boolean(inscripcion)
   // Al editar se abre la primera; al crear todas cerradas, guiadas por los pendientes.
   const [abiertas, setAbiertas] = useState<string[]>(inscripcion ? ["estudiante"] : [])
 
@@ -190,10 +201,12 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
   const { establecimientos, sedesDe, jornadasDe } = useCascadaOpciones(grado)
   const [opciones, setOpciones] = useState<OpcionCupoInput[]>(() =>
     inscripcion
-      ? inscripcion.opciones.map(({ establecimiento, sede, jornada }) => ({
+      ? inscripcion.opciones.map(({ establecimiento, sede, jornada, periodoId, gradoId }) => ({
           establecimiento,
           sede,
           jornada,
+          guardada:
+            periodoId != null && gradoId != null ? { periodo: periodoId, grado: gradoId } : undefined,
         }))
       : [vacia()],
   )
@@ -253,7 +266,12 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
   }
 
   const setOpcion = (i: number, patch: Partial<OpcionCupoInput>) =>
-    setOpciones(opciones.map((o, j) => (j === i ? { ...o, ...patch } : o)))
+    setOpciones(opciones.map((o, j) => (j === i ? { ...o, ...patch, guardada: undefined } : o)))
+  const mover = (i: number, d: -1 | 1) => {
+    const otra = [...opciones]
+    ;[otra[i], otra[i + d]] = [otra[i + d], otra[i]]
+    setOpciones(otra)
+  }
 
   function guardar() {
     setIntentado(true)
@@ -489,23 +507,38 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
                     options={grupo?.grados ?? [grado]}
                     onChange={setGrado}
                     invalid={intentado && !grado}
+                    disabled={edicion}
                   />
                 </Rejilla>
                 {opciones.map((o, i) => (
                   <fieldset key={i} className="grid gap-3">
                     <legend className="mb-3 flex w-full items-center justify-between text-sm font-medium">
                       Opción {i + 1}
-                      {opciones.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          color="neutral"
-                          size="sm"
-                          onClick={() => setOpciones(opciones.filter((_, j) => j !== i))}
-                        >
-                          <XIcon data-icon="inline-start" />
-                          Quitar
-                        </Button>
-                      )}
+                      <span className="flex gap-1">
+                        {edicion && i > 0 && (
+                          <Button variant="ghost" color="neutral" size="sm" onClick={() => mover(i, -1)}>
+                            <ArrowUpIcon data-icon="inline-start" />
+                            Subir
+                          </Button>
+                        )}
+                        {edicion && i < opciones.length - 1 && (
+                          <Button variant="ghost" color="neutral" size="sm" onClick={() => mover(i, 1)}>
+                            <ArrowDownIcon data-icon="inline-start" />
+                            Bajar
+                          </Button>
+                        )}
+                        {opciones.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            color="neutral"
+                            size="sm"
+                            onClick={() => setOpciones(opciones.filter((_, j) => j !== i))}
+                          >
+                            <XIcon data-icon="inline-start" />
+                            Quitar
+                          </Button>
+                        )}
+                      </span>
                     </legend>
                     <Rejilla>
                       <MatriculaSelectField
@@ -518,6 +551,7 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
                           setOpcion(i, { establecimiento, sede: "", jornada: "" })
                         }
                         invalid={intentado && !o.establecimiento}
+                        disabled={edicion}
                       />
                       <MatriculaSelectField
                         id={`opcion-${i}-sede`}
@@ -527,6 +561,7 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
                         options={conValor(sedesDe(o.establecimiento), o.sede)}
                         onChange={(sede) => setOpcion(i, { sede, jornada: "" })}
                         invalid={intentado && !o.sede}
+                        disabled={edicion}
                       />
                       <MatriculaSelectField
                         id={`opcion-${i}-jornada`}
@@ -536,11 +571,12 @@ function InscripcionForm({ inscripcion }: { inscripcion: InscripcionDetalle | nu
                         options={conValor(jornadasDe(o), o.jornada)}
                         onChange={(jornada) => setOpcion(i, { jornada })}
                         invalid={intentado && !o.jornada}
+                        disabled={edicion}
                       />
                     </Rejilla>
                   </fieldset>
                 ))}
-                {opciones.length < MAX_OPCIONES && (
+                {!edicion && opciones.length < MAX_OPCIONES && (
                   <Button
                     variant="outline"
                     color="neutral"

@@ -2,6 +2,7 @@ import { useRef, useState } from "react"
 import { useStore } from "@tanstack/react-form"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -162,7 +163,9 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
     <Dialog open onOpenChange={(o) => !o && cerrar()}>
       <DialogContent
         showCloseButton={false}
-        className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-xl"
+        // overflow-x-hidden: con overflow-y-auto el navegador también dejaba un scroll horizontal
+        // (el anillo de foco y los chips del campo Para sobresalen unos píxeles).
+        className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto sm:max-w-xl"
       >
         <DialogHeader>
           <DialogTitle>Nuevo mensaje</DialogTitle>
@@ -303,7 +306,14 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
             Cancelar
           </Button>
           <Button type="submit" form={FORM_ID} disabled={pendiente} aria-busy={pendiente}>
-            Enviar
+            {/* Enviar por separado crea un directo por persona (hasta 200) y puede tardar: sin el
+                indicador el diálogo parecía pegado. */}
+            {pendiente && <Spinner data-icon="inline-start" />}
+            {porSeparado.isPending
+              ? `Enviando a ${porSeparado.variables?.destinatarios.length ?? ""} personas…`
+              : pendiente
+                ? "Enviando…"
+                : "Enviar"}
           </Button>
         </DialogFooter>
       </DialogContent>

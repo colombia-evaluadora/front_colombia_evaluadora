@@ -11,6 +11,7 @@ import type { DepartmentOption } from "@/features/coverage/matricula/components/
 import type { PeriodoOpcionCupo } from "@/features/coverage/inscripcion-reservas/api/query/use-inscripciones-query"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { publicService } from "@/features/publico/consultar/api/consulta-publica"
+import { aSocioeconomico } from "@/features/coverage/inscripcion-reservas/api/types/socioeconomico"
 
 /**
  * Inscripción pública (U.2, sso V425/V426): filas públicas de query-service por
@@ -92,7 +93,8 @@ interface PersonaPublica {
 }
 
 export interface RegistroInput {
-  datos: Pick<CreateMatriculaInput, "student" | "studentContact" | "guardian" | "guardianContact">
+  datos: Pick<CreateMatriculaInput, "student" | "studentContact" | "guardian" | "guardianContact"> &
+    Partial<Pick<CreateMatriculaInput, "previousYear" | "originSector" | "conflictVictim" | "complementary" | "benefits">>
   correo: string
   codigo: string
   /** `{periodo, grado}` ya resueltos de la cascada. */
@@ -147,6 +149,13 @@ export function toRegistroParams(input: RegistroInput): Record<string, unknown> 
   if (input.paisOrigen) params["BODY.PAIS_ORIGEN"] = input.paisOrigen
   if (input.lenguaMaterna) params["BODY.LENGUA_MATERNA"] = input.lenguaMaterna
   if (input.condicionMigratoria) params["BODY.CONDICION_MIGRATORIA"] = input.condicionMigratoria
+  // Lo leen los criterios de prioridad (sso TINSCRIPCION_SOCIOECONOMICO).
+  const { previousYear, originSector, conflictVictim, complementary, benefits } = input.datos
+  if (previousYear && originSector && conflictVictim && complementary && benefits) {
+    params["BODY.SOCIOECONOMICO"] = JSON.stringify(
+      aSocioeconomico({ previousYear, originSector, conflictVictim, complementary, benefits }),
+    )
+  }
   return params
 }
 
