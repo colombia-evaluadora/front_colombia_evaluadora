@@ -10,7 +10,8 @@ import type { QueryClient } from "@tanstack/react-query"
 
 import { paths } from "@/config/paths"
 import { humanizeSlug } from "@/config/breadcrumbs"
-import { hasSession } from "@/lib/auth"
+import { hasSession, USER_QUERY_KEY } from "@/lib/auth"
+import type { AuthUser } from "@/lib/auth-mapper"
 import { NetworkSessionError } from "@/lib/network-error"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
@@ -78,6 +79,8 @@ import { administradoresSearchSchema } from "@/features/administration/administr
 import { supervisoresSearchSchema } from "@/features/administration/supervisores-territoriales/api/schema"
 import { chatSearchSchema } from "@/features/comunicaciones/chat/api/schema"
 import { comunicadosSearchSchema } from "@/features/comunicaciones/comunicados/api/schema"
+import { comunicadosTerritorialSearchSchema } from "@/features/comunicaciones/territorial/api/schema"
+import { esUsuarioTerritorial } from "@/features/comunicaciones/territorial/lib/rol-territorial"
 import { notificacionesSearchSchema } from "@/features/notificaciones/api/schema"
 import { pendientesSearchSchema } from "@/features/offline/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
@@ -2677,6 +2680,7 @@ export const chatRoute = createRoute({
 export const comunicadosTerritorialRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.comunicacionesComunicadosTerritorial.path,
+  validateSearch: comunicadosTerritorialSearchSchema,
   staticData: {
     breadcrumb: [
       {
@@ -2711,6 +2715,15 @@ export const comunicadosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.comunicacionesComunicados.path,
   validateSearch: comunicadosSearchSchema,
+  // QA 830: el Supervisor y el Administrador territorial no publican ni reciben por la bandeja
+  // institucional; un enlace viejo a esta ruta los lleva a su consulta territorial. La sesión ya la
+  // cargó el guard de /app, así que el usuario está en caché.
+  beforeLoad: ({ context }) => {
+    const user = context.queryClient.getQueryData<AuthUser | null>(USER_QUERY_KEY)
+    if (esUsuarioTerritorial(user?.roles)) {
+      throw redirect({ to: paths.app.comunicacionesComunicadosTerritorial.getHref(), replace: true })
+    }
+  },
   staticData: {
     breadcrumb: [{ label: "Comunicados institucionales", to: paths.app.comunicacionesComunicados.getHref() }],
   },

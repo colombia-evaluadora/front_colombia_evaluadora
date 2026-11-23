@@ -53,7 +53,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { toEmailInput } from "@/lib/text-input"
 import type { AuthResponse } from "@/types/api"
 
-const USER_QUERY_KEY = ["auth-user"]
+export const USER_QUERY_KEY = ["auth-user"]
 
 // El backend no expone un "/auth/me": la sesión se restaura pidiendo un
 // access token nuevo (el refresh token viaja en una cookie httpOnly, nunca
