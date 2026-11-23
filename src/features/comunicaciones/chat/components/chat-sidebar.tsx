@@ -215,7 +215,13 @@ export function ChatSidebar({
   const directos = visibles.filter((c) => c.tipo === "DIRECTO" && !c.archivada)
   const grupos = visibles.filter((c) => c.tipo === "GRUPO" && !c.archivada)
   // En el chat los CANAL se llaman "Foros".
-  const foros = visibles.filter((c) => c.tipo === "CANAL" && !c.archivada && !esAnterior(c))
+  // Los comunicados institucionales no son foros (Comunicaciones §3): sección propia.
+  const comunicados = visibles.filter(
+    (c) => c.tipo === "CANAL" && c.categoria === "ANUNCIO" && !c.archivada && !esAnterior(c),
+  )
+  const foros = visibles.filter(
+    (c) => c.tipo === "CANAL" && c.categoria !== "ANUNCIO" && !c.archivada && !esAnterior(c),
+  )
   const archivadas = visibles.filter((c) => c.archivada)
 
   const item = (c: Conversacion) => (
@@ -526,6 +532,7 @@ export function ChatSidebar({
             >
               {grupos.map(item)}
             </Seccion>
+            {comunicados.length > 0 && <Seccion titulo="Comunicados">{comunicados.map(item)}</Seccion>}
             <Seccion
               titulo="Foros"
               accion={puedeGestionar && <AgregarCanal onCreado={onSeleccionar} />}

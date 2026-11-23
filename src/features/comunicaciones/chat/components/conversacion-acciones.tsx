@@ -14,6 +14,7 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { ReportarDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { useCerrarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
 import { EliminarDeBandejaDialog } from "@/features/comunicaciones/chat/components/eliminar-de-bandeja-dialog"
+import { accionesBandeja, esComunicadoRecibido } from "@/features/comunicaciones/chat/lib/acciones-bandeja"
 import { MiembrosDialog } from "@/features/comunicaciones/chat/components/miembros-dialog"
 
 import {
@@ -134,7 +135,9 @@ export function ConversacionAcciones({
   const gestionaCanal =
     esCanal && (esCategoriaActividad(c.categoria) ? gestionaActividad(c, perfil) : (c.esAdmin ?? puedeGestionar))
   const creadorGrupo = c.tipo === "GRUPO" && !!(c.esCreador || c.esAdmin)
-  const destinoSalir = c.tipo === "GRUPO" ? "del grupo" : "del foro"
+  // Comunicado recibido: "Eliminar de mi bandeja", nunca "Salir del foro" (acciones-bandeja.ts).
+  const { eliminarDeBandeja, salir: destinoSalir } = accionesBandeja(c)
+  const comunicadoRecibido = esComunicadoRecibido(c)
   const onError = (error: unknown) => notify(getErrorMessage(error), { variant: "error" })
   const cerrar = () => setDialogo(null)
 
@@ -209,8 +212,8 @@ export function ConversacionAcciones({
             <WarningIcon />
             <span className="flex-1">Reportar conversación</span>
           </DropdownMenuItem>
-          {/* Solo mensajería (M.2.RET.2): comunicados, elecciones, encuestas y evaluaciones tienen su ciclo. */}
-          {c.categoria === "GENERAL" && !c.esBot && (
+          {/* Mensajería y comunicados recibidos (M.2.RET.2, §4.3): elecciones, encuestas y evaluaciones tienen su ciclo. */}
+          {eliminarDeBandeja && (
             <DropdownMenuItem className={cn(ITEM, "text-red")} onClick={() => setDialogo("ocultar")}>
               <EyeSlashIcon />
               <span className="flex-1">Eliminar de mi bandeja</span>
@@ -398,7 +401,7 @@ export function ConversacionAcciones({
             {c.archivada ? <UnarchiveIcon /> : <ArchiveIcon />}
             {c.archivada ? "Desarchivar" : "Archivar"}
           </DropdownMenuItem>
-          {esCanal && (
+          {destinoSalir && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem className={ITEM} onClick={() => setDialogo("salir")}>
@@ -445,6 +448,7 @@ export function ConversacionAcciones({
       <EliminarDeBandejaDialog
         open={dialogo === "ocultar"}
         conversacion={c.nombre}
+        comunicado={comunicadoRecibido}
         pendiente={ocultar.isPending}
         error={ocultar.isError ? ocultar.error : null}
         onClose={() => {
