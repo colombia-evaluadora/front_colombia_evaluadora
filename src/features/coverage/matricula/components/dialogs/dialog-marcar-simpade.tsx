@@ -26,8 +26,12 @@ export function DialogMarcarSimpade({ matricula, onClose }: { matricula: Matricu
   const { data: user } = useUser()
   const { establecimientoId } = useOpcionesCascada("", "")
   const funcionarios = useOpcionesFuncionariosQuery({ establecimiento: establecimientoId }).data ?? []
-  const [fecha, setFecha] = useState<Date | undefined>(() => new Date())
-  const [elegido, setElegido] = useState<string | null>(null)
+  // Ya marcada (RET.5): se corrige con los datos guardados.
+  const guardada = matricula.simpade
+  const [fecha, setFecha] = useState<Date | undefined>(() =>
+    guardada?.fechaIngreso ? new Date(`${guardada.fechaIngreso}T00:00:00`) : new Date(),
+  )
+  const [elegido, setElegido] = useState<string | null>(guardada?.funcionarioId ? String(guardada.funcionarioId) : null)
   const [intento, setIntento] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const nombre = `${matricula.firstName} ${matricula.lastName}`

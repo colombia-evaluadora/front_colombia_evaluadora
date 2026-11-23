@@ -96,7 +96,7 @@ export function CrearEvaluacionDialog({
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
-  // "Editar Evaluación" (diseño 4062:67466): mismos pasos; los participantes no cambian. Quien la
+  // "Editar evaluación" (diseño 4062:67466): mismos pasos; los participantes no cambian. Quien la
   // abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Evaluacion
   // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
@@ -287,7 +287,7 @@ export function CrearEvaluacionDialog({
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent showCloseButton={false} className={cn("flex max-h-[90dvh] flex-col", paso === 1 ? "sm:max-w-3xl" : "sm:max-w-lg")}>
           <DialogHeader>
-            <DialogTitle>{editar ? "Editar Evaluación" : "Crear una Evaluación"}</DialogTitle>
+            <DialogTitle>{editar ? "Editar evaluación" : "Crear una evaluación"}</DialogTitle>
             <p className="text-sm text-muted-foreground" aria-live="polite">
               Paso {paso} de 2 · {paso === 1 ? "Datos y preguntas" : "Estudiantes asignados"}
             </p>

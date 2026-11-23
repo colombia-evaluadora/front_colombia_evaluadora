@@ -13,7 +13,7 @@ export function SeccionDatosSesion({ form, periodoRotulo }: { form: SesionFormSt
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
-        Período Académico: <span className="text-foreground">{periodoRotulo}</span>
+        Período académico: <span className="text-foreground">{periodoRotulo}</span>
       </p>
       <div className="grid grid-cols-1 items-start gap-3 sm:max-w-2xl sm:grid-cols-2">
       <ComboOpciones

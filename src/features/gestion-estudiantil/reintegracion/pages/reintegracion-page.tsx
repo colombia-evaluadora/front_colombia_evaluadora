@@ -88,7 +88,7 @@ export function ReintegracionPage() {
   if (!isLoading && !puedeVer) {
     return (
       <Alert variant="destructive" className="m-4 w-auto">
-        <AlertDescription>No tiene acceso a la Ruta de Reintegración.</AlertDescription>
+        <AlertDescription>No tiene acceso a la Ruta de reintegración.</AlertDescription>
       </Alert>
     )
   }

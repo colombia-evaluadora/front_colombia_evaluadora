@@ -1,6 +1,9 @@
 import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
 import { useEstudianteExistenteQuery } from "@/features/coverage/matricula/api/query/use-estudiante-existente"
-import { VerificacionEstudianteExistente } from "@/features/coverage/matricula/components/verificacion-estudiante-existente"
+import {
+  AvisoGradoTraslado,
+  VerificacionEstudianteExistente,
+} from "@/features/coverage/matricula/components/verificacion-estudiante-existente"
 import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/hooks/use-matricula-validacion-opciones"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
@@ -196,16 +199,41 @@ function AddMatriculaPageContent() {
     traslado && values.academic.grade && values.academic.grade !== traslado.gradoValor,
   )
   const docPrecargado = useRef("")
+  // Lo que había escrito antes de precargar: si cambian el documento, se devuelve.
+  const antesPrecarga = useRef<Pick<
+    CreateMatriculaInput["student"],
+    "firstName" | "secondName" | "lastName" | "secondLastName" | "birthDate"
+  > | null>(null)
   useEffect(() => {
-    if (!estudianteExistente) return
     const doc = values.student.documentNumber.trim()
+    if (!estudianteExistente) {
+      // Otro documento (o uno que ya no es de un estudiante registrado): se
+      // borran los datos precargados y quedan los que había antes.
+      const previo = antesPrecarga.current
+      if (previo && docPrecargado.current !== doc) {
+        antesPrecarga.current = null
+        docPrecargado.current = ""
+        setValues((prev) => ({ ...prev, student: { ...prev.student, ...previo } }))
+      }
+      return
+    }
     if (docPrecargado.current === doc) return
     docPrecargado.current = doc
     const { firstName, secondName, lastName, secondLastName, birthDate } = estudianteExistente
-    setValues((prev) => ({
-      ...prev,
-      student: { ...prev.student, firstName, secondName, lastName, secondLastName, birthDate },
-    }))
+    setValues((prev) => {
+      // Solo la primera vez: al pasar de un estudiante registrado a otro se conserva lo original.
+      antesPrecarga.current ??= {
+        firstName: prev.student.firstName,
+        secondName: prev.student.secondName,
+        lastName: prev.student.lastName,
+        secondLastName: prev.student.secondLastName,
+        birthDate: prev.student.birthDate,
+      }
+      return {
+        ...prev,
+        student: { ...prev.student, firstName, secondName, lastName, secondLastName, birthDate },
+      }
+    })
   }, [estudianteExistente, values.student.documentNumber])
 
   // Matrícula activa duplicada: se consulta 600 ms después de la última tecla.
@@ -373,6 +401,8 @@ function AddMatriculaPageContent() {
   function resetForm() {
     const blank = conPredeterminados(createInitialMatriculaValues())
     setValues(blank)
+    antesPrecarga.current = null
+    docPrecargado.current = ""
     setFiles(createEmptySupportFiles())
     initialValuesRef.current = blank
     setMissingFields([])
@@ -575,17 +605,20 @@ function AddMatriculaPageContent() {
       <TableScreenBody>
         <MatriculaPendingContext value={pendingFields}>
         <div id={ADD_MATRICULA_FORM_ID} className="flex flex-col gap-4 [counter-reset:seccion]">
-          {estudianteExistente ? (
-            <VerificacionEstudianteExistente
-              estudiante={estudianteExistente}
-              documento={values.student.documentNumber.trim()}
-              gradoDistintoTraslado={gradoDistintoTraslado}
-              onUsarGradoTraslado={() =>
-                setValues((prev) => ({ ...prev, academic: { ...prev.academic, grade: traslado?.gradoValor ?? "", group: "" } }))
-              }
-            />
-          ) : null}
           <MatriculaFormBody
+            // AGR.2: el aviso del traslado va en el bloque 2; en el 1 queda el error corto del Grado.
+            avisoEstudiante={
+              traslado && gradoDistintoTraslado ? (
+                <AvisoGradoTraslado
+                  traslado={traslado}
+                  onUsarGradoTraslado={() =>
+                    setValues((prev) => ({ ...prev, academic: { ...prev.academic, grade: traslado.gradoValor, group: "" } }))
+                  }
+                />
+              ) : estudianteExistente ? (
+                <VerificacionEstudianteExistente estudiante={estudianteExistente} documento={values.student.documentNumber.trim()} />
+              ) : null
+            }
             values={values}
             onChange={setValues}
             // Una matrícula nueva solo va a sedes Activas (Regla 100).

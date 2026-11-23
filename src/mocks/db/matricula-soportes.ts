@@ -2,7 +2,7 @@
 // y los documentos requeridos del convenio de la complementaria por adscripción.
 import { origenAdscripcionDe, tipoDe } from "@/mocks/db/complementaria"
 
-type Tipo = "DOCUMENTO_IDENTIDAD" | "CERTIFICADO_ESTUDIOS" | "CERTIFICADO_MEDICO" | "HOJA_FIRMADA" | "OTRO"
+type Tipo = "FOTO" | "DOCUMENTO_IDENTIDAD" | "CERTIFICADO_ESTUDIOS" | "CERTIFICADO_MEDICO" | "HOJA_FIRMADA" | "OTRO"
 type Revision = "SIN_REVISAR" | "SOPORTADO" | "SOPORTADO_OBSERVACIONES" | "NO_SOPORTADO"
 
 export interface SoporteRow {
@@ -65,7 +65,7 @@ function semilla(): SoporteRow[] {
     fila("CERTIFICADO_MEDICO", "certificado-medico.pdf", 389_120, "SIN_REVISAR"),
     fila("OTRO", "carta-eps.pdf", 215_040, "SIN_REVISAR"),
     fila("OTRO", "remision-medica.pdf", 97_280, "SOPORTADO"),
-    fila("OTRO", "foto-carne.jpg", 153_600, "SIN_REVISAR"),
+    fila("FOTO", "foto-carne.jpg", 153_600, "SIN_REVISAR"),
   ]
 }
 

@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -35,6 +35,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" onClick={form.guardar} disabled={form.guardando}>
@@ -92,16 +93,16 @@ export function SesionFormPage({ periodo, sesionId }: { periodo?: number; sesion
         {!puedeGestionarComite ? (
           <Alert variant="info" className="m-6 w-auto">
             <InfoIcon aria-hidden="true" />
-            <AlertDescription>No tiene permiso para registrar sesiones del Comité.</AlertDescription>
+            <AlertDescription>No tiene permiso para registrar sesiones del comité.</AlertDescription>
           </Alert>
         ) : cargando ? (
           <Skeleton className="m-6 h-96" />
         ) : error || !actual || !comite.data || (sesionId != null && !sesion.data) ? (
-          <ErrorNoticeBanner error={error ?? true} fallback="No se encontró el Comité de este período." className="m-6" />
+          <ErrorNoticeBanner error={error ?? true} fallback="No se encontró el comité de este período." className="m-6" />
         ) : comite.data.fk_comite == null ? (
           <Alert variant="info" className="m-6 w-auto">
             <InfoIcon aria-hidden="true" />
-            <AlertDescription>Este período aún no tiene Comité: registre primero a sus integrantes.</AlertDescription>
+            <AlertDescription>Este período aún no tiene comité: registre primero a sus integrantes.</AlertDescription>
           </Alert>
         ) : (
           <SesionForm key={sesion.data?.id ?? "nueva"} periodo={actual} comite={comite.data} sesion={sesion.data ?? undefined} />

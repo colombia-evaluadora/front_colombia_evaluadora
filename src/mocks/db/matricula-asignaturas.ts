@@ -55,7 +55,7 @@ export function asignaturasDeMatricula(matriculaId: string): AsignaturaRow[] {
       tiene_registros: fila.registros,
       // EDI.1f: detalle de lo que impide desmatricular.
       registros: fila.registros
-        ? ["4 resultados en el Registro de Resultados", "La definitiva del Período 1"]
+        ? ["4 resultados en el Registro de resultados", "La definitiva del Período 1"]
         : [],
       media_tecnica_externa: estado.media ? "S" : "N",
       institucion_externa: estado.institucion,

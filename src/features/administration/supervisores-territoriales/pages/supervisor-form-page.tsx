@@ -59,7 +59,7 @@ export type ModoSupervisor = "nuevo" | "modificar" | "ver"
 
 /**
  * S.7.EDI.1 (nuevo), S.7.EDI.2 (modificar) y Ver detalle: pantalla propia
- * "Supervisores territoriales › [Nuevo Supervisor territorial o nombre]" (Sección 7.2).
+ * "Supervisores territoriales › [Nuevo supervisor territorial o nombre]" (Sección 7.2).
  */
 export function SupervisorFormPage({ modo }: { modo: ModoSupervisor }) {
   const { supervisorId } = useParams({ strict: false }) as { supervisorId?: string }
@@ -248,7 +248,7 @@ function SupervisorForm({
           <span className="flex flex-wrap items-center gap-2">
             <span>
               Supervisores territoriales <span className="text-muted-foreground">›</span>{" "}
-              {actual ? actual.nombre : "Nuevo Supervisor territorial"}
+              {actual ? actual.nombre : "Nuevo supervisor territorial"}
             </span>
             {actual?.activo && actual.pendienteActivacion && (
               <Badge variant="soft" color="warning">

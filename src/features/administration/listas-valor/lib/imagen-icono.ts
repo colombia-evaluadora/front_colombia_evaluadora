@@ -1,7 +1,7 @@
 import { ICONO_MAX_BYTES } from "@/features/administration/listas-valor/api/types/icono"
 
 export const IMAGEN_MENSAJES = {
-  formato: "Solo se admite un archivo SVG o PNG.",
+  formato: "Solo se admite un archivo SVG.",
   inseguro: "El SVG no es válido: no puede traer scripts ni enlaces externos.",
   incrustada: "El SVG no es válido: no puede traer imágenes incrustadas.",
   pesado: "La imagen supera el máximo de 100 KB.",
@@ -9,25 +9,15 @@ export const IMAGEN_MENSAJES = {
 } as const
 
 /**
- * Revisa el archivo antes de subirlo. El back solo ve nombre y peso en TARCHIVO
- * (`fn_icono_validar_archivo`): que sea cuadrado y, en un SVG, que no traiga
- * scripts ni enlaces externos se revisa aquí. Devuelve el primer problema o null.
+ * Revisa el archivo antes de subirlo (S.1.ICO.3: solo SVG, cuadrado, máx. 100 KB). El back solo ve nombre y
+ * peso en TARCHIVO (`fn_icono_validar_archivo`): que sea cuadrado y que no traiga scripts ni enlaces externos
+ * se revisa aquí. Devuelve el primer problema o null. Los PNG cargados antes siguen viéndose (IconoGuardado),
+ * pero ya no se aceptan nuevos.
  */
 export async function validarArchivoIcono(file: File): Promise<string | null> {
-  const nombre = file.name.toLowerCase()
   if (file.size > ICONO_MAX_BYTES) return IMAGEN_MENSAJES.pesado
-  if (nombre.endsWith(".svg")) return validarSvg(await file.text())
-  if (nombre.endsWith(".png")) return validarPng(new Uint8Array(await file.arrayBuffer()))
-  return IMAGEN_MENSAJES.formato
-}
-
-// Firma PNG y cabecera IHDR: ancho en los bytes 16-19, alto en 20-23.
-const FIRMA_PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-
-export function validarPng(bytes: Uint8Array): string | null {
-  if (bytes.length < 24 || FIRMA_PNG.some((b, i) => bytes[i] !== b)) return IMAGEN_MENSAJES.formato
-  const vista = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  return vista.getUint32(16) === vista.getUint32(20) ? null : IMAGEN_MENSAJES.noCuadrado
+  if (!file.name.toLowerCase().endsWith(".svg")) return IMAGEN_MENSAJES.formato
+  return validarSvg(await file.text())
 }
 
 export function validarSvg(texto: string): string | null {

@@ -194,13 +194,13 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
     // id↔clave de `MatriculaSupportFiles` se arma a mano ahí, no por índice.
     title: "Archivo de soporte",
     fields: [
-      { id: "file-student-photo", label: "Foto del Estudiante" },
-      { id: "file-medical-certificate", label: "Certificado Medico" },
-      { id: "file-student-id-document", label: "Documento de Identidad", defaultRequired: true },
-      { id: "file-other-documents", label: "Otros Documentos Relevantes" },
+      { id: "file-student-photo", label: "Foto del estudiante" },
+      { id: "file-medical-certificate", label: "Certificado médico" },
+      { id: "file-student-id-document", label: "Documento de identidad", defaultRequired: true },
+      { id: "file-other-documents", label: "Otros documentos relevantes" },
       {
         id: "file-previous-year-certificate",
-        label: "Certificado de Estudios del Año Anterior",
+        label: "Certificado de estudios del año anterior",
         defaultRequired: true,
       },
     ],

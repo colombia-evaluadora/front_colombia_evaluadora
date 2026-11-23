@@ -2,7 +2,7 @@ import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion
 import type { GuardarParametrosInput, ParametrosRiesgo } from "@/features/gestion-estudiantil/prevencion/api/types"
 
 export const AVISO_PARAMETROS =
-  "Estos valores rigen las alertas y el umbral de reintegración de todas las Sedes y Jornadas del establecimiento."
+  "Estos valores rigen las alertas y el umbral de reintegración de todas las sedes y jornadas del establecimiento."
 
 export type CampoEntero =
   | "inasistAlerta"
@@ -41,12 +41,12 @@ export const CAMPOS_ENTEROS: DefCampoEntero[] = [
   { campo: "areas", label: "Asignaturas reprobadas para alerta", min: 1, max: 20, predeterminado: 2 },
   { campo: "intervencion", label: "Inasistencias consecutivas de intervención", min: 3, max: 60, predeterminado: 5, ayuda: "Mayor que las inasistencias para alerta." },
   { campo: "reintConsec", label: "Inasistencias consecutivas de reintegración", min: 3, max: 60, predeterminado: 10, ayuda: "Mayor que las de intervención." },
-  { campo: "reintAlt", label: "Inasistencias alternadas de reintegración", min: 2, max: 100, predeterminado: 15, ayuda: "En el Período de Evaluación." },
+  { campo: "reintAlt", label: "Inasistencias alternadas de reintegración", min: 2, max: 100, predeterminado: 15, ayuda: "En el período de evaluación." },
   { campo: "plazoContacto", label: "Plazo de contacto (días hábiles)", min: 1, max: 10, predeterminado: 2 },
   { campo: "plazoIntervencion", label: "Plazo de intervención (días hábiles)", min: 1, max: 15, predeterminado: 3 },
   { campo: "plazoIncumplimiento", label: "Plazo de incumplimiento del plan (semanas)", min: 1, max: 12, predeterminado: 2 },
-  { campo: "anotaciones", label: "Anotaciones negativas para alerta", min: 1, max: 20, predeterminado: 3, ayuda: "En el Período de Evaluación." },
-  { campo: "compromisos", label: "Compromisos incumplidos para alerta", min: 1, max: 10, predeterminado: 1, ayuda: "En el Período Académico." },
+  { campo: "anotaciones", label: "Anotaciones negativas para alerta", min: 1, max: 20, predeterminado: 3, ayuda: "En el período de evaluación." },
+  { campo: "compromisos", label: "Compromisos incumplidos para alerta", min: 1, max: 10, predeterminado: 1, ayuda: "En el período académico." },
 ]
 
 export const CAIDA_RA_MIN = 0.1

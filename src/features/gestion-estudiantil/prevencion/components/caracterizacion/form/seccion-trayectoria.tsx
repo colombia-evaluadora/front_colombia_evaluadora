@@ -32,7 +32,7 @@ export function SeccionTrayectoria({ f }: { f: FormularioCaracterizacion }) {
     >
       <p className="text-sm text-muted-foreground">
         Solo lo que la plataforma no tiene: la repitencia, la asistencia, las asignaturas reprobadas y los antecedentes
-        disciplinarios salen de Cobertura Educativa, Gestión Académica y Convivencia.
+        disciplinarios salen de Cobertura educativa, Gestión académica y Convivencia.
       </p>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <CampoLista
@@ -206,7 +206,7 @@ export function SeccionTrayectoria({ f }: { f: FormularioCaracterizacion }) {
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="outline" color="neutral"
           disabled={!historialAcademico.habilitada || !f.vista}
           onClick={historialAcademico.abrir}
         >

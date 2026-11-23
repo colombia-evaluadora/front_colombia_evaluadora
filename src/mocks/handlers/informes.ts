@@ -476,7 +476,7 @@ export const informesHandlers = [
           informe: {
             desactualizado,
             mensaje: desactualizado
-              ? "Este informe fue emitido antes de que se aprobara una actividad de Recuperación; los valores mostrados pueden no reflejar la Nota Final o el resultado más reciente del estudiante."
+              ? "Este informe fue emitido antes de que se aprobara una actividad de Recuperación; los valores mostrados pueden no reflejar la nota final o el resultado más reciente del estudiante."
               : null,
             cambios: cambios.map(({ pkSolicitud, tipo, asignatura, fechaAprobacion }) => ({
               pkSolicitud,

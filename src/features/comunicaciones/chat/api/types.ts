@@ -225,6 +225,9 @@ export interface Mensaje {
   bot?: TarjetaBot | null
   // Mensaje propio que pidió confirmación de lectura: estado y receptores (comms-service).
   confirmacion?: ConfirmacionLectura | null
+  // Hilo con acudientes (Comunicaciones 4.5): el moderador lo ocultó. Llega sin texto ni adjuntos y se
+  // pinta "Mensaje oculto por el moderador"; el original queda en la base para auditoría.
+  ocultoPorModerador?: boolean
 }
 
 export type TipoMencion = "USUARIO" | "CANAL" | "TODOS"
@@ -742,4 +745,51 @@ export interface AlertasConversacion {
   campana: boolean
   sonido: boolean
   correo: boolean
+}
+
+// ── Hilo común del docente con acudientes (Comunicaciones 4.5, M.2.HIL.1-3) ──────────────────────
+// Es un GRUPO del chat: mensajes, bandeja y Reportar van por las rutas normales. Los participantes
+// (acudientes vigentes de las matrículas Cursando) los calcula comms-service.
+
+export type TipoOpcionHilo = "GRUPO" | "EJECUCION"
+
+/** Grupo (responsable de grupo) o [Ejecución] (responsable de enseñanza) desde el que se abre un hilo. */
+export interface OpcionHiloAcudientes {
+  tipo: TipoOpcionHilo
+  grupo: number
+  asignacion: number | null
+  nombre: string
+  // Acudientes vigentes que quedarían como participantes.
+  acudientes: number
+}
+
+/** Fila de la bandeja: "Grupo · N acudientes · hora". */
+export interface HiloAcudientesResumen {
+  conversacionId: number
+  grupo: string
+  acudientes: number
+  soloLectura: boolean
+}
+
+export interface SilenciadoHilo {
+  usuarioId: number
+  nombre: string
+  motivo: string
+  silenciadoEn: string
+}
+
+/** Encabezado: "{asunto}" + "N acudientes vigentes · Moderador: {nombre}". */
+export interface HiloAcudientes {
+  conversacionId: number
+  asunto: string
+  grupo: string
+  acudientes: number
+  moderador: { id: number; nombre: string }
+  esModerador: boolean
+  // Grupo, [Ejecución] o periodo cerrados: nadie escribe.
+  soloLectura: boolean
+  // El propio usuario está silenciado: ve pero no escribe.
+  silenciado: boolean
+  // Solo llega al moderador.
+  silenciados: SilenciadoHilo[]
 }

@@ -163,7 +163,7 @@ function SupervisoresTerritorialesPageContent() {
             <TableScreenActions>
               <Button color="primary" size="sm" onClick={nuevo}>
                 <ControlPointIcon data-icon="inline-start" />
-                Nuevo Supervisor territorial
+                Nuevo supervisor territorial
               </Button>
             </TableScreenActions>
           )}
@@ -180,10 +180,10 @@ function SupervisoresTerritorialesPageContent() {
           emptyMessage={
             sinRegistros ? (
               // Estado vacío de la Sección 7.2.
-              <span>No hay Supervisores territoriales.</span>
+              <span>No hay supervisores territoriales.</span>
             ) : (
               <span className="flex flex-col items-center gap-3">
-                No hay Supervisores territoriales que coincidan con la búsqueda y los filtros aplicados.
+                No hay supervisores territoriales que coincidan con la búsqueda y los filtros aplicados.
                 <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
                   <FunnelXIcon data-icon="inline-start" />
                   Limpiar filtros

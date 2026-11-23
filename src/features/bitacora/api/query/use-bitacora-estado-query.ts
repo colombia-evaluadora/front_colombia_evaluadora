@@ -14,6 +14,8 @@ interface EstadoRow {
   cambios: BitacoraCambio[] | null
   vista: string | null
   restauracion: { puede: "S" | "N"; motivo_bloqueo: string | null } | null
+  /** Pendiente de backend: cuándo y quién creó el registro eliminado (B.1.DET.1). */
+  creado?: { fecha: string; por: string } | null
 }
 
 const toEstado = (row: EstadoRow): BitacoraEstado => ({
@@ -22,6 +24,7 @@ const toEstado = (row: EstadoRow): BitacoraEstado => ({
   vista: row.vista,
   puede: row.restauracion?.puede === "S",
   motivoBloqueo: row.restauracion?.motivo_bloqueo ?? null,
+  creado: row.creado ?? null,
 })
 
 async function fetchEstado(ids: string[], establecimiento: string): Promise<BitacoraEstado[]> {

@@ -15,7 +15,7 @@ import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/co
 import { useEstadoDialogo } from "@/features/gestion-estudiantil/commons/hooks/use-estado-dialogo"
 import { ResumenCitacion } from "@/features/gestion-estudiantil/citaciones/components/dialogos/resumen-citacion"
 import { errorFechaFutura, errorLugar } from "@/features/gestion-estudiantil/citaciones/utils/formularios"
-import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { formatFechaHora12 } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 
 interface Props {
@@ -67,7 +67,7 @@ export function DialogReprogramarCitacion({ citacion: c, onClose }: Props) {
       <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>
-          Programación actual: {formatFechaHora(c.fecha_programada)}
+          Programación actual: {formatFechaHora12(c.fecha_programada)}
           {c.lugar ? ` · ${c.lugar}` : ""}. Quedará en el historial de la citación.
         </AlertDescription>
       </Alert>

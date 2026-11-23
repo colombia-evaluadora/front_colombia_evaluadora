@@ -97,7 +97,7 @@ function MatriculaDetailPageContent() {
             </Button>
           }
         >
-          Detalle de Matrícula
+          Detalle de matrícula
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

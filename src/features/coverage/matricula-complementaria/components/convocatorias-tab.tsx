@@ -122,9 +122,9 @@ const columns: ColumnDef<Convocatoria>[] = [
     id: "seleccionados",
     accessorFn: (r) => r.id,
     meta: { label: "Seleccionados / cupo" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Seleccionados / cupo" className="justify-end" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Seleccionados / cupo" className="justify-center" />,
     cell: ({ row }) => (
-      <span className="block text-right tabular-nums">
+      <span className="block text-center tabular-nums">
         {totalDe(row.original, "seleccionados")} / {totalDe(row.original, "cupo")}
       </span>
     ),

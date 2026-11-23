@@ -31,12 +31,15 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
+import { useUser } from "@/lib/auth"
+import { Input } from "@/components/ui/input"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   formatearFecha,
   formatearTamano,
   NOMBRE_SOPORTE,
   REVISION_SOPORTE,
+  acceptDe,
   SOPORTE_ACCEPT,
   SOPORTES_FIJOS,
   useCargarSoporte,
@@ -129,6 +132,7 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
 
   function elegirArchivo(tipo: TipoSoporte, id: number | null) {
     destino.current = { tipo, id }
+    if (inputRef.current) inputRef.current.accept = acceptDe(tipo)
     inputRef.current?.click()
   }
 
@@ -136,7 +140,7 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
     const d = destino.current
     if (inputRef.current) inputRef.current.value = ""
     if (!archivo || !d) return
-    const error = validarArchivoSoporte(archivo)
+    const error = validarArchivoSoporte(archivo, d.tipo)
     if (error) {
       notify(error, { variant: "error" })
       return
@@ -369,6 +373,9 @@ function DialogRevisarSoporte({ matriculaId, fila, onClose }: { matriculaId: str
   const [observacion, setObservacion] = useState(s.observacion ?? "")
   const [intento, setIntento] = useState(false)
   const [aviso, setAviso] = useState<Aviso>(null)
+  // Revisado por y fecha: automáticos, el usuario actual y hoy.
+  const { data: usuario } = useUser()
+  const [hoy] = useState(() => new Date().toISOString())
 
   const pideObservacion = resultado != null && resultado !== "SOPORTADO"
   const largo = observacion.trim().length
@@ -397,9 +404,15 @@ function DialogRevisarSoporte({ matriculaId, fila, onClose }: { matriculaId: str
           <DialogTitle>Revisar soporte — {fila.etiqueta}</DialogTitle>
         </DialogHeader>
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
-        <p className="text-sm text-muted-foreground">
-          {s.archivoNombre} · {formatearTamano(s.archivoTamano)}
-        </p>
+        <Field variant="outlined" className="gap-1.5">
+          <FieldLabel htmlFor="revisar-soporte-archivo">Soporte</FieldLabel>
+          <Input
+            id="revisar-soporte-archivo"
+            variant="outlined"
+            readOnly
+            value={`${s.archivoNombre} · ${formatearTamano(s.archivoTamano)}`}
+          />
+        </Field>
         <Field className="gap-1.5" data-invalid={(intento && resultado == null) || undefined}>
           <FieldLabel>
             Resultado<span data-required-mark="">*</span>
@@ -419,6 +432,15 @@ function DialogRevisarSoporte({ matriculaId, fila, onClose }: { matriculaId: str
           <FieldDescription>
             Soportado con observaciones cuando los nombres, la fecha de nacimiento o el número no coinciden con la matrícula.
           </FieldDescription>
+        </Field>
+        <Field variant="outlined" className="gap-1.5">
+          <FieldLabel htmlFor="revisar-soporte-revisado">Revisado por y fecha</FieldLabel>
+          <Input
+            id="revisar-soporte-revisado"
+            variant="outlined"
+            readOnly
+            value={`${usuario?.name ?? "—"} · ${formatearFecha(hoy)}`}
+          />
         </Field>
         <Field variant="outlined" className="gap-1.5" data-invalid={(intento && obsInvalida) || undefined}>
           <FieldLabel htmlFor="observacion-soporte">
@@ -462,7 +484,7 @@ function DialogReemplazarSoporte({ matriculaId, fila, onClose }: { matriculaId: 
   const cargar = useCargarSoporte(matriculaId)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [aviso, setAviso] = useState<Aviso>(null)
-  const errorArchivo = archivo ? validarArchivoSoporte(archivo) : null
+  const errorArchivo = archivo ? validarArchivoSoporte(archivo, fila.tipo) : null
 
   function reemplazar() {
     if (!archivo) {
@@ -496,12 +518,12 @@ function DialogReemplazarSoporte({ matriculaId, fila, onClose }: { matriculaId: 
           <input
             id="archivo-reemplazo"
             type="file"
-            accept={SOPORTE_ACCEPT}
+            accept={acceptDe(fila.tipo)}
             className="text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5"
             onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
           />
           <FieldDescription className={cn(errorArchivo && "text-red")}>
-            {errorArchivo ?? "PDF, JPG o PNG · máx. 10 MB."}
+            {errorArchivo ?? (fila.tipo === "FOTO" ? "JPG, PNG o SVG · máx. 2 MB." : "PDF, JPG o PNG · máx. 10 MB.")}
           </FieldDescription>
         </Field>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>

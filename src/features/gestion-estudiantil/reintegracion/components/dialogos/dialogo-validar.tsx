@@ -1,9 +1,8 @@
 import { useState } from "react"
 
-import { useNotify } from "@/components/notice/notice-context"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useNotify } from "@/components/notice/notice-context"
+import { FloppyDiskIcon } from "@/components/ui/icons"
 
 import { DialogoOperacionShell } from "@/features/gestion-estudiantil/commons/components/dialogo-operacion-shell"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
@@ -12,6 +11,7 @@ import { enfocarPrimerError, errorLargo } from "@/features/gestion-estudiantil/c
 import { useValidarCaso } from "@/features/gestion-estudiantil/reintegracion/api/mutations/casos"
 import type { CasoDetalle, DecisionValidacion } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import { ResumenCasoDialogo } from "@/features/gestion-estudiantil/reintegracion/components/dialogos/resumen-caso-dialogo"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const OBSERVACION_MIN = 10
 const OBSERVACION_MAX = 500
@@ -60,11 +60,9 @@ export function DialogoValidar({ caso: c, onClose }: { caso: CasoDetalle; onClos
       pending={mut.isPending}
       confirmar={{ label: "Guardar validación", icon: <FloppyDiskIcon data-icon="inline-start" />, onClick: guardar }}
     >
-      <Field orientation="vertical" variant="outlined" className="gap-2" role="group" aria-labelledby="validar-label">
-        <FieldLabel id="validar-label">Decisión*</FieldLabel>
+      <MarcoOpciones id="validar" label="Decisión" required>
         <RadioGroup
           aria-labelledby="validar-label"
-          className="flex h-11 flex-row items-center gap-6 pr-3 pl-3.5"
           value={decision}
           onValueChange={(v) => setDecision(v as DecisionValidacion)}
         >
@@ -77,7 +75,7 @@ export function DialogoValidar({ caso: c, onClose }: { caso: CasoDetalle; onClos
             Devolver
           </label>
         </RadioGroup>
-      </Field>
+      </MarcoOpciones>
       {devuelve && (
         <TextoLargo
           id="reintegracion-validar-observacion"

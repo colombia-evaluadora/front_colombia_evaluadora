@@ -36,8 +36,8 @@ export const curricularReferencesDb: CurricularReference[] = [
     subjectLabel: null,
     areas: [
       { id: 15, code: "", name: "Matemáticas" },
-      { id: 12, code: "", name: "Humanidades y Lengua Castellana" },
-      { id: 3, code: "", name: "Ciencias Naturales y Educación Ambiental" },
+      { id: 12, code: "", name: "Humanidades y lengua castellana" },
+      { id: 3, code: "", name: "Ciencias naturales y educación ambiental" },
     ],
     instrument: "Unidad temática",
     instrumentDescription: "Planes de área, rúbricas e informes de logro.",

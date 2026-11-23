@@ -47,19 +47,19 @@ export function validarEstrategia(v: ValoresEstrategia, periodo: LimitesFechas |
   const n = errorLargo(v.nombre, NOMBRE_MIN, NOMBRE_MAX, "El nombre")
   if (n) e.nombre = n
   if (!v.tipo) e.tipo = "El tipo de estrategia es obligatorio."
-  if (!v.periodo) e.periodo = "El Período Académico es obligatorio."
+  if (!v.periodo) e.periodo = "El período académico es obligatorio."
   if (!v.responsable) e.responsable = "El responsable es obligatorio."
 
   if (!v.inicio) e.inicio = "La fecha de inicio es obligatoria."
   else if (periodo?.desde && iso(v.inicio) < dia(periodo.desde))
-    e.inicio = `La fecha de inicio debe estar dentro del Período Académico (desde ${formatFecha(periodo.desde)}).`
+    e.inicio = `La fecha de inicio debe estar dentro del período académico (desde ${formatFecha(periodo.desde)}).`
   else if (periodo?.hasta && iso(v.inicio) > dia(periodo.hasta))
-    e.inicio = `La fecha de inicio debe estar dentro del Período Académico (hasta ${formatFecha(periodo.hasta)}).`
+    e.inicio = `La fecha de inicio debe estar dentro del período académico (hasta ${formatFecha(periodo.hasta)}).`
 
   if (v.fin) {
     if (v.inicio && iso(v.fin) <= iso(v.inicio)) e.fin = "La fecha de fin debe ser posterior a la de inicio."
     else if (periodo?.hasta && iso(v.fin) > dia(periodo.hasta))
-      e.fin = `La fecha de fin debe estar dentro del Período Académico (hasta ${formatFecha(periodo.hasta)}).`
+      e.fin = `La fecha de fin debe estar dentro del período académico (hasta ${formatFecha(periodo.hasta)}).`
   }
 
   if (v.fuente.trim().length > FUENTE_MAX) e.fuente = `La fuente de financiación admite hasta ${FUENTE_MAX} caracteres.`

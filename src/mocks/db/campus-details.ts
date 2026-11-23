@@ -35,7 +35,7 @@ export const SPECIALTY_CATALOG = [
   { id: 7, nombre: "Agropecuario", fk_caracter: 51854, caracter_nombre: "Técnico", es_otra: false },
   { id: 5, nombre: "Comercial", fk_caracter: 51854, caracter_nombre: "Técnico", es_otra: false },
   { id: 3, nombre: "Industrial", fk_caracter: 51854, caracter_nombre: "Técnico", es_otra: false },
-  { id: 8, nombre: "Promoción Social", fk_caracter: 51854, caracter_nombre: "Técnico", es_otra: false },
+  { id: 8, nombre: "Promoción social", fk_caracter: 51854, caracter_nombre: "Técnico", es_otra: false },
   { id: 4, nombre: "Otro", fk_caracter: 51854, caracter_nombre: "Técnico", es_otra: true },
   { id: 23, nombre: "Normalista", fk_caracter: 51911, caracter_nombre: "Normalista", es_otra: false },
 ]

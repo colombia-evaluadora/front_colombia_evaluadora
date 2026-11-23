@@ -4,6 +4,8 @@ import { BITACORA_MODULO_IDS, type BitacoraModulo } from "@/features/bitacora/ap
 
 /** Search params de la Bitácora. Fechas en `yyyy-MM-dd`; sin ellas, los últimos 30 días. */
 export const bitacoraSearchSchema = z.object({
+  /** Pestaña: Registros (por defecto) o Resumen por módulo (B.1.LIS.1a). */
+  vista: z.enum(["registros", "resumen"]).optional().catch(undefined),
   modulo: z.enum(BITACORA_MODULO_IDS as [BitacoraModulo, ...BitacoraModulo[]]).optional().catch(undefined),
   q: z.string().optional().catch(undefined),
   establecimiento: z.string().optional().catch(undefined),

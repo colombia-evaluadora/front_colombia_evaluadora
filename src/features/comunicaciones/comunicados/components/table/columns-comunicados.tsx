@@ -72,12 +72,12 @@ export function createComunicadosColumns({
     {
       id: "destinatarios",
       accessorFn: (row) => row.destinatarios ?? 0,
-      meta: { label: "Destinatarios", className: "text-right" },
+      meta: { label: "Destinatarios", className: "text-center" },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Destinatarios" className="justify-end" />
+        <DataTableColumnHeader column={column} title="Destinatarios" className="justify-center" />
       ),
       cell: ({ row }) => (
-        <span className="block text-right tabular-nums">
+        <span className="block text-center tabular-nums">
           {(row.original.destinatarios ?? 0).toLocaleString("es-CO")}
         </span>
       ),

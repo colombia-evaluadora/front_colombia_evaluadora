@@ -291,7 +291,7 @@ function mockFlag(nombre: string): boolean {
 }
 const ESCALA_SIN_NIVELES_ERROR = {
   code: "INVALID_VALUE",
-  message: "La escala de valoración \"Básica Primaria\" no tiene niveles activos",
+  message: "La escala de valoración \"Básica primaria\" no tiene niveles activos",
 }
 const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
 const UNIDAD_CONFIGURACION_ACTIVIDAD_URL =

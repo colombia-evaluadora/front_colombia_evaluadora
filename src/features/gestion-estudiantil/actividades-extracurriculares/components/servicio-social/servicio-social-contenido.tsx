@@ -96,12 +96,16 @@ export function ServicioSocialContenido({ detalle: d }: { detalle: ServicioSocia
           action={
             <Tooltip>
               <TooltipTrigger render={<span tabIndex={0} />}>
-                <Button size="sm" type="button" disabled={!cumplido} onClick={() => setCertificado(true)}>
+                <Button size="sm" type="button" disabled={!cumplido || !d.puede_certificar} onClick={() => setCertificado(true)}>
                   <FileTextIcon data-icon="inline-start" />
                   Certificado de servicio social
                 </Button>
               </TooltipTrigger>
-              {!cumplido && <TooltipContent>Disponible cuando el servicio social esté cumplido</TooltipContent>}
+              {!d.puede_certificar ? (
+                <TooltipContent>Solo el Supervisor de sede o el Administrador del establecimiento pueden certificar el servicio social</TooltipContent>
+              ) : (
+                !cumplido && <TooltipContent>Disponible cuando el servicio social esté cumplido</TooltipContent>
+              )}
             </Tooltip>
           }
           description={<BotonVolver onClick={() => irListado("servicio-social")} />}

@@ -31,11 +31,18 @@ export const solicitudRetiroHandlers = [
     await delay(250)
     const solicitud = solicitudDe(Number(params.id))
     if (!solicitud) return HttpResponse.json({ message: "La matrícula no tiene una solicitud de retiro." }, { status: 404 })
-    return HttpResponse.json({ rows: [{ solicitud }] })
+    // Destino: días sin anular desde el cierre sin retiro (SOL.7).
+    const dias_sin_anular = solicitud.rol === "DESTINO" ? 1 + (Number(params.id) % 4) : null
+    return HttpResponse.json({ rows: [{ solicitud: { ...solicitud, dias_sin_anular } }] })
   }),
 
-  http.post(`${BASE}/solicitud-retiro/retirar`, async ({ params }) => {
+  http.post(`${BASE}/solicitud-retiro/retirar`, async ({ params, request }) => {
     await delay(400)
+    const body = (await request.json().catch(() => ({}))) as { FECHA_RETIRO?: string }
+    const hoy = new Date().toISOString().slice(0, 10)
+    if (!body.FECHA_RETIRO || body.FECHA_RETIRO > hoy) {
+      return HttpResponse.json({ message: "La fecha de retiro es obligatoria y no puede ser futura." }, { status: 400 })
+    }
     const error = retirarPorSolicitud(Number(params.id))
     if (error) return HttpResponse.json({ message: error }, { status: 400 })
     return HttpResponse.json({ rows: [{ respuesta: { estado: "ATENDIDA" } }] })

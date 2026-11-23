@@ -148,7 +148,7 @@ export function useActividadForm(actividad?: ActividadDetalle) {
   if (!tipo) errores.tipo = "El tipo de actividad es obligatorio."
   if (!sede) errores.sede = "La sede es obligatoria."
   if (!jornada) errores.jornada = "La jornada es obligatoria."
-  else if (!edicion && periodo.id == null) errores.jornada = "La jornada no tiene un Período Académico vigente."
+  else if (!edicion && periodo.id == null) errores.jornada = "La jornada no tiene un período académico vigente."
   if (!responsable) errores.responsable = "El responsable es obligatorio."
   if (!inicio) errores.inicio = "La fecha de inicio es obligatoria."
   if (!fin) errores.fin = "La fecha de fin es obligatoria."

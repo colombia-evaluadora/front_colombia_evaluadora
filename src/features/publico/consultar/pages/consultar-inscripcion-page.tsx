@@ -31,6 +31,7 @@ export function ConsultarInscripcionPage() {
         points={PUNTOS}
         breadcrumb={BREADCRUMB}
         width="md"
+        backToHome
       >
         <FormularioConsulta
           onEncontrada={(i, c) => {
@@ -51,8 +52,19 @@ export function ConsultarInscripcionPage() {
       subtitle={SUBTITULO_ESTADO[estado ?? inscripcion.estado]}
       breadcrumb={BREADCRUMB}
       width="xl"
+      backToHome
     >
-      <ResultadoInscripcion inicial={inscripcion} credenciales={credenciales} onEstadoChange={setEstado} />
+      <ResultadoInscripcion
+        inicial={inscripcion}
+        credenciales={credenciales}
+        onEstadoChange={setEstado}
+        onNuevaConsulta={() => {
+          setInscripcion(null)
+          setEstado(null)
+          setCredenciales(null)
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        }}
+      />
     </PublicBand>
   )
 }

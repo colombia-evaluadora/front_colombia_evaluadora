@@ -53,7 +53,7 @@ function datos(body: Body) {
 }
 
 const buscar = (id: unknown) => administradoresDb.find((a) => a.pkAdministrador === Number(id))
-const NO_EXISTE = "No existe el Administrador territorial solicitado."
+const NO_EXISTE = "No existe el administrador territorial solicitado."
 
 export const administradoresTerritorialesHandlers = [
   http.get("/api/eval-col/catalogos/administradores-territoriales", async () => {

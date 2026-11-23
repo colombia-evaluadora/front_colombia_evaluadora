@@ -45,7 +45,7 @@ export function BloqueIntegrantes({ f }: { f: FormularioCaracterizacion }) {
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-medium">Acudiente de la matrícula</h3>
             <Badge variant="soft" color="info">
-              Cobertura Educativa
+              Cobertura educativa
             </Badge>
             <LockIcon aria-hidden="true" className="size-4 text-muted-foreground" />
           </div>

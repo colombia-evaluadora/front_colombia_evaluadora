@@ -129,7 +129,7 @@ function FichaContenido({ piar }: { piar: PiarDetalle }) {
           {piar.condicion && <>Condición: <span className="text-foreground">{piar.condicion}</span> (de la matrícula) · </>}
           Elaboración: <span className="text-foreground">{formatFecha(piar.fecha_elaboracion)}</span>
           {piar.elabora?.nombre && <> · Elabora: <span className="text-foreground">{piar.elabora.nombre}</span></>}
-          {piar.periodo_academico && <> · Período Académico: <span className="text-foreground">{piar.periodo_academico}</span></>}
+          {piar.periodo_academico && <> · Período académico: <span className="text-foreground">{piar.periodo_academico}</span></>}
           {version && <> · Versión: <span className="text-foreground">{version.numero}</span></>}
         </p>
         {piar.ve_sensible ? <Expediente ficha={ficha} /> : <VistaDocente ficha={ficha} />}

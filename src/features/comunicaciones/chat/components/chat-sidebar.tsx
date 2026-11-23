@@ -19,6 +19,12 @@ import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-acces
 import { ConfiguracionMensajeriaDialog, ModeracionDialog } from "@/features/comunicaciones/chat/components/moderacion-dialog"
 import { GearIcon } from "@/components/ui/icons"
 import { NuevoMensajeDialog } from "@/features/comunicaciones/chat/components/nuevo-mensaje-dialog"
+import { NuevoHiloAcudientesDialog } from "@/features/comunicaciones/chat/components/nuevo-hilo-acudientes-dialog"
+import {
+  useOpcionesHiloQuery,
+  useResumenHilo,
+} from "@/features/comunicaciones/chat/api/query/use-hilos-acudientes-query"
+import { contextoBandejaHilo } from "@/features/comunicaciones/chat/lib/hilo-acudientes"
 import type { ModoNuevoMensaje } from "@/features/comunicaciones/chat/lib/nuevo-mensaje"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -123,7 +129,8 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const { data: borradores = [] } = useBorradoresQuery()
   const totalBorradores = borradores.filter((b) => b.estado === "BORRADOR").length
-  const { puedeGestionar, reglaDirectoCon, puedeIniciarConversaciones } = useChatAccess()
+  const { puedeGestionar, reglaDirectoCon, puedeIniciarConversaciones, puedeSuspender, puedeRevisarReportes } =
+    useChatAccess()
   // PROVISIONAL: Supervisor de sede = coordinador, Administrador del establecimiento = rector.
   const roles = useAuth().user?.roles ?? []
   const esAdministrador = roles.includes("CEVAL-RECTOR")
@@ -158,6 +165,8 @@ export function ChatSidebar({
   // "Nuevo mensaje" (M.2.NUE.1): un solo diálogo para directo, por separado y grupo. Los "+" de
   // las secciones y el buscador de personas lo abren con el modo o la persona ya elegidos.
   const [nuevoMensaje, setNuevoMensaje] = useState<{ modo: ModoNuevoMensaje; para: Persona[] } | null>(null)
+  const [nuevoHilo, setNuevoHilo] = useState(false)
+  const opcionesHilo = useOpcionesHiloQuery()
   // Búsquedas recientes (diseño 4501:66442): por navegador, solo una comodidad.
   const [recientes, setRecientes] = useState<string[]>(leerRecientes)
   const [enfocado, setEnfocado] = useState(false)
@@ -266,6 +275,8 @@ export function ChatSidebar({
           <ModeracionDialog
             open
             esAdministrador={esAdministrador}
+            puedeSuspender={puedeSuspender}
+            puedeRevisarReportes={puedeRevisarReportes}
             reporteResaltado={reporteEnlazado}
             onClose={() => {
               setModeracion(false)
@@ -356,6 +367,13 @@ export function ChatSidebar({
           >
             <PlusIcon data-icon="inline-start" />
             Nuevo mensaje
+          </Button>
+        )}
+        {/* Docente responsable de grupo o de enseñanza (M.2.HIL.2): solo si tiene grupos o ejecuciones. */}
+        {puedeIniciarConversaciones && (opcionesHilo.data?.length ?? 0) > 0 && (
+          <Button type="button" size="sm" variant="outline" color="primary" onClick={() => setNuevoHilo(true)}>
+            <PlusIcon data-icon="inline-start" />
+            Nuevo hilo con acudientes
           </Button>
         )}
       </div>
@@ -518,6 +536,14 @@ export function ChatSidebar({
           </>
         )}
       </nav>
+      <NuevoHiloAcudientesDialog
+        open={nuevoHilo}
+        onClose={() => setNuevoHilo(false)}
+        onCreado={(id) => {
+          setTexto("")
+          onSeleccionar(id)
+        }}
+      />
       <NuevoMensajeDialog
         open={nuevoMensaje != null}
         modoInicial={nuevoMensaje?.modo}
@@ -655,6 +681,8 @@ function ItemConversacion({
   const { notify } = useNotify()
   const Icono = c.tipo === "GRUPO" ? UsersThreeIcon : ICONO_CATEGORIA[c.categoria]
   const conPendientes = c.noLeidos > 0 && !activa
+  const hilo = useResumenHilo(c.id)
+  const contexto = hilo ? contextoBandejaHilo(hilo) : contextoBandeja(c)
   return (
     <li
       className={cn(
@@ -719,7 +747,8 @@ function ItemConversacion({
               )}
             >
               {/* Con asunto (M.2.BAN.1): "N. Silva · 10:42" / "Grupo · 3 · Ayer" y luego la vista previa. */}
-              {contextoBandeja(c) ? `${contextoBandeja(c)} · ${lineaVistaPrevia(c)}` : lineaVistaPrevia(c)}
+              {/* Hilo con acudientes (4.5): "Grupo · N acudientes"; la hora va arriba. */}
+              {contexto ? `${contexto} · ${lineaVistaPrevia(c)}` : lineaVistaPrevia(c)}
             </span>
           </span>
         ) : (

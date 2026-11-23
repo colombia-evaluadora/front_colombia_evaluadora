@@ -314,7 +314,7 @@ function EvaluacionDetalle({ actividad }: { actividad: Actividad }) {
 
 function RubricaDetalle({ rubrica }: { rubrica: Actividad["rubrica"] }) {
   return (
-    <Section title="Definición de Rúbrica" className="mt-4">
+    <Section title="Definición de rúbrica" className="mt-4">
       {rubrica.criterios.length === 0 ? (
         <p className="text-muted-foreground text-sm">Esta actividad no tiene criterios definidos.</p>
       ) : (
@@ -352,7 +352,7 @@ function RubricaDetalle({ rubrica }: { rubrica: Actividad["rubrica"] }) {
 
 function ListaCotejoDetalle({ listaCotejo }: { listaCotejo: Actividad["listaCotejo"] }) {
   return (
-    <Section title="Definición de Lista de Cotejo" className="mt-4">
+    <Section title="Definición de lista de cotejo" className="mt-4">
       {listaCotejo.items.length === 0 ? (
         <p className="text-muted-foreground text-sm">Esta actividad no tiene ítems definidos.</p>
       ) : (
@@ -375,7 +375,7 @@ function ListaCotejoDetalle({ listaCotejo }: { listaCotejo: Actividad["listaCote
 function EscalaValoracionDetalle({ escala }: { escala: Actividad["escalaValoracion"] }) {
   const numerica = escala.tipo === "Numérica"
   return (
-    <Section title="Definición de Escala de Valoración" className="mt-4">
+    <Section title="Definición de escala de valoración" className="mt-4">
       {escala.criterios.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           Esta actividad no tiene escala de valoración definida.

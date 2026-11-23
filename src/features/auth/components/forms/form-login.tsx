@@ -160,7 +160,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   checked={field.state.value}
                   onCheckedChange={(checked) => field.handleChange(checked === true)}
                 />
-                <FieldLabel htmlFor={field.name} className="font-normal text-muted-foreground">
+                <FieldLabel htmlFor={field.name} className="text-sm font-normal tracking-normal normal-case text-muted-foreground">
                   Mantener sesión iniciada
                 </FieldLabel>
               </div>
@@ -193,7 +193,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                 onCheckedChange={(checked) => field.handleChange(checked === true)}
               />
               <div className="flex flex-col gap-1">
-                <FieldLabel htmlFor={field.name} className="font-normal text-muted-foreground">
+                <FieldLabel htmlFor={field.name} className="text-sm font-normal tracking-normal normal-case text-muted-foreground">
                   Este es un equipo compartido
                 </FieldLabel>
                 {!puedeElegirPersonal && (

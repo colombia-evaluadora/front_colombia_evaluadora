@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { LinkIcon } from "@/components/ui/icons"
+import { LinkIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
@@ -60,10 +60,11 @@ export function DialogVerReporte({ reporte, onClose, onVincular }: Props) {
           </div>
         )}
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" onClick={onClose}>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
-          <Button type="button" disabled={!r?.puede_vincular} onClick={onVincular}>
+          <Button size="sm" type="button" disabled={!r?.puede_vincular} onClick={onVincular}>
             <LinkIcon data-icon="inline-start" />
             Vincular reporte
           </Button>

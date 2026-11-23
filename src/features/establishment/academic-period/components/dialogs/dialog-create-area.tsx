@@ -156,7 +156,7 @@ export function CreateAreaDialog({ academicPeriodId, open, onOpenChange, onSaved
                     {invalid ? (
                       <FieldError errors={toFieldErrors(field.state.meta.errors)} />
                     ) : (
-                      <FieldDescription>Catálogo de Áreas oficiales.</FieldDescription>
+                      <FieldDescription>Catálogo de áreas oficiales.</FieldDescription>
                     )}
                   </Field>
                 )

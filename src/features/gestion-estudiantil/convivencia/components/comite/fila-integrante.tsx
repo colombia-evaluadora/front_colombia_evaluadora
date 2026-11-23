@@ -1,12 +1,11 @@
 import { DatePicker } from "@/components/date-picker"
-import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { CampoPersona } from "@/features/gestion-estudiantil/convivencia/components/comite/campo-persona"
+import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import type { ErrorFilaIntegrante, FilaIntegrante } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 interface Props {
@@ -95,17 +94,7 @@ export function FilaIntegranteForm({ fila, periodo, error, hastaEditable, inicio
         </Field>
       </div>
       {puedeEscribir && (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          className={bloqueada ? "invisible shrink-0" : "shrink-0"}
-          aria-label={`Quitar ${fila.cargo_nombre}`}
-          onClick={onQuitar}
-        >
-          <XIcon />
-        </Button>
+        <BotonQuitar label={`Quitar ${fila.cargo_nombre}`} onClick={onQuitar} className={bloqueada ? "invisible shrink-0" : "shrink-0"} />
       )}
     </div>
   )

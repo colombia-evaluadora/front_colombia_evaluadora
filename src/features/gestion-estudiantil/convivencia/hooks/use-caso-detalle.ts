@@ -7,6 +7,7 @@ import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia
 import { esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { resumenDeDetalle, type CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { useDialogosCaso } from "@/features/gestion-estudiantil/convivencia/components/dialogs/use-dialogos-caso"
+import { datosPendientesCaso } from "@/features/gestion-estudiantil/convivencia/utils/datos-pendientes"
 import type { AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
 
 /** Navegación y orquestación de diálogos del detalle del caso. */
@@ -15,7 +16,7 @@ export function useCasoDetalle(caso: CasoDetalle) {
   const router = useRouter()
   const canGoBack = useCanGoBack()
   const access = useConvivenciaAccess()
-  const { puedeCrear: puedeCitar } = useCitacionesAccess()
+  const { puedeCrearCitacion: puedeCitar, puedeCrearCompromiso } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
   const resumen = resumenDeDetalle(caso)
 
@@ -32,10 +33,17 @@ export function useCasoDetalle(caso: CasoDetalle) {
     else if (accion !== "ver") abrir(accion, resumen)
   }
 
+  const abierto = !esFinal(caso.estado_codigo)
+  // Sin manifestación, lugar o descripción el backend rechaza las acciones del protocolo.
+  const datosPendientes = abierto && caso.acceso_completo ? datosPendientesCaso(caso) : []
+
   return {
     access,
     puedeCitar,
-    abierto: !esFinal(caso.estado_codigo),
+    puedeCrearCompromiso,
+    abierto,
+    datosPendientes,
+    completarDatos: () => onAccionMenu("modificar"),
     abrirTipo: () => abrir("tipo", resumen),
     abrirAccion: () => abrir("accion", resumen),
     onAccionMenu,

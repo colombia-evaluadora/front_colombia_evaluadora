@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { LinkIcon, PaperclipIcon } from "@/components/ui/icons"
+import { LinkIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 
@@ -44,7 +44,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
         </DialogHeader>
         <NoticeBanner notice={f.notice} onClose={f.cerrarNotice} variant="error" />
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant="outline" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={f.vincularCaso}>
+          <Button type="button" size="sm" variant="outline" color="neutral" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={f.vincularCaso}>
             <IconoCarga cargando={f.agregando}><LinkIcon data-icon="inline-start" /></IconoCarga>
             Vincular soporte del caso
           </Button>
@@ -89,7 +89,10 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
           <VersionesAnteriores soportes={f.anteriores} />
         </div>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,7 +1,7 @@
 import { useMatriculaPeriodosAbiertosQuery } from "@/features/coverage/matricula/api/query/use-matricula-periodos-abiertos"
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { catalogLabelFor, catalogOptions } from "./catalog-utils"
-import { useEffect } from "react"
+import { useEffect, type ReactNode } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
@@ -32,6 +32,8 @@ interface AcademicSectionProps {
   especialidadBloqueo?: string
   /** Grado de origen del traslado (AGR.2): otro grado marca error. */
   gradoTraslado?: { valor: string; nombre: string } | null
+  /** Aviso dentro del bloque, antes de los campos (grado por traslado, AGR.2). */
+  aviso?: ReactNode
 }
 
 export function MatriculaAcademicSection({
@@ -45,6 +47,7 @@ export function MatriculaAcademicSection({
   tipoMatricula = "Principal",
   especialidadBloqueo,
   gradoTraslado,
+  aviso,
 }: AcademicSectionProps) {
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
@@ -100,7 +103,7 @@ export function MatriculaAcademicSection({
   const funcionarioNombre = new Map((funcionarios?.rows ?? []).map((f) => [String(f.id), f.name]))
 
   return (
-    <MatriculaFormSection title="Información de matrícula">
+    <MatriculaFormSection title="Información de matrícula" aviso={aviso}>
       <MatriculaSelectField
         id="matricula-campus"
         label="Sede"

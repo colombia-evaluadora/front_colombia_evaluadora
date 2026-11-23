@@ -70,6 +70,7 @@ import { convocatoriasHandlers } from "@/mocks/handlers/convocatorias"
 import { postulacionesHandlers } from "@/mocks/handlers/postulaciones"
 import { conveniosHandlers } from "@/mocks/handlers/convenios"
 import { promocionNivelacionHandlers } from "@/mocks/handlers/promocion-nivelacion"
+import { actualizacionDatosHandlers } from "@/mocks/handlers/actualizacion-datos"
 import { continuidadHandlers } from "@/mocks/handlers/continuidad"
 import { estudianteExistenteHandlers } from "@/mocks/handlers/estudiante-existente"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
@@ -81,6 +82,7 @@ import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planead
 import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 import { geOpcionesHandlers, informesHandlers } from "@/mocks/handlers/informes"
+import { comunicacionesHilosAcudientesHandlers } from "@/mocks/handlers/comunicaciones-hilos-acudientes"
 import { geCapacidadesHandlers } from "@/mocks/handlers/ge-capacidades"
 import {
   comunicacionesArchivosHandlers,
@@ -107,6 +109,7 @@ export const handlers = [
   ...postulacionesHandlers,
   ...conveniosHandlers,
   ...promocionNivelacionHandlers,
+  ...actualizacionDatosHandlers,
   ...continuidadHandlers,
   ...authHandlers,
   ...devicesHandlers,
@@ -204,6 +207,7 @@ export const handlers = [
   // Antes que el chat general: atiende los grupos y deja caer el resto.
   ...comunicacionesEspaciosHandlers,
   ...comunicacionesGruposHandlers,
+  ...comunicacionesHilosAcudientesHandlers,
   ...comunicacionesHandlers,
   ...notificacionesHandlers,
 ]

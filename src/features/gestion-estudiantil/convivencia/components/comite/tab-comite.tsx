@@ -30,7 +30,7 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
     return (
       <Alert variant="info">
         <InfoIcon aria-hidden="true" />
-        <AlertDescription>No hay períodos académicos para el Comité de Convivencia.</AlertDescription>
+        <AlertDescription>No hay períodos académicos para el comité de convivencia.</AlertDescription>
       </Alert>
     )
 
@@ -39,7 +39,7 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
       <div className="w-full">
         <ComboOpciones
           id="comite-periodo"
-          label="Período Académico"
+          label="Período académico"
           size="default"
           todos={false}
           value={String(actual.fk_periodo)}
@@ -51,12 +51,12 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
       {comite.isPending ? (
         <Skeleton className="h-64" />
       ) : comite.isError || !comite.data ? (
-        <ErrorNoticeBanner error={comite.error ?? true} fallback="No se pudo cargar el Comité." />
+        <ErrorNoticeBanner error={comite.error ?? true} fallback="No se pudo cargar el comité." />
       ) : comite.data.fk_comite == null ? (
         <Alert variant="info">
           <InfoIcon aria-hidden="true" />
           <AlertDescription className="flex flex-wrap items-center gap-3">
-            <span>Este período aún no tiene Comité de Convivencia.{puedeGestionarComite && " Registre a sus integrantes para empezar a documentar sesiones."}</span>
+            <span>Este período aún no tiene comité de convivencia.{puedeGestionarComite && " Registre a sus integrantes para empezar a documentar sesiones."}</span>
             {puedeGestionarComite && (
               <Button size="sm" onClick={() => nav.aIntegrantes(actual.fk_periodo)}>
                 <ControlPointIcon data-icon="inline-start" />
@@ -76,7 +76,7 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
             <Alert variant="warning">
               <WarningIcon aria-hidden="true" />
               <AlertDescription>
-                Hace más de dos meses que el Comité no realiza una sesión ordinaria.
+                Hace más de dos meses que el comité no realiza una sesión ordinaria.
               </AlertDescription>
             </Alert>
           )}

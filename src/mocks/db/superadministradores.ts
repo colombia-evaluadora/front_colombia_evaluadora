@@ -8,13 +8,13 @@ import type {
 // handler con el usuario del token.
 
 export const tiposDocumentoXlDb: TipoDocumentoXl[] = [
-  { pk: 51860, codigo: "CC", nombre: "Cédula de Ciudadanía", sigla: "CC", numerico: true },
-  { pk: 51892, codigo: "CE", nombre: "Cédula de Extranjería", sigla: "CE", numerico: false },
+  { pk: 51860, codigo: "CC", nombre: "Cédula de ciudadanía", sigla: "CC", numerico: true },
+  { pk: 51892, codigo: "CE", nombre: "Cédula de extranjería", sigla: "CE", numerico: false },
   { pk: 52116, codigo: "PA", nombre: "Pasaporte", sigla: "PA", numerico: false },
   {
     pk: 51867,
     codigo: "PPT",
-    nombre: "Permiso por Protección temporal",
+    nombre: "Permiso por protección temporal",
     sigla: "PPT",
     numerico: false,
   },

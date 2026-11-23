@@ -35,6 +35,8 @@ interface PasoConfirmacionProps {
   intentado: boolean
   /** Mensaje del último intento fallido. */
   errorCodigo: string | null
+  /** Pide otro código al correo del acudiente. */
+  onReenviar: () => void
 }
 
 /** Paso 5 · Resumen, autorización de datos y código enviado al correo del acudiente. */
@@ -49,6 +51,7 @@ export function PasoConfirmacion({
   bloqueado,
   intentado,
   errorCodigo,
+  onReenviar,
 }: PasoConfirmacionProps) {
   const [verTexto, setVerTexto] = useState(false)
   const [espera, setEspera] = useState(SEGUNDOS_REENVIO)
@@ -118,7 +121,10 @@ export function PasoConfirmacion({
           variant="link"
           className="sm:mt-7"
           disabled={espera > 0 || bloqueado}
-          onClick={() => setEspera(SEGUNDOS_REENVIO)}
+          onClick={() => {
+            setEspera(SEGUNDOS_REENVIO)
+            onReenviar()
+          }}
         >
           <EnvelopeIcon data-icon="inline-start" />
           {espera > 0 ? `Reenviar código (disponible en ${reloj})` : "Reenviar código"}

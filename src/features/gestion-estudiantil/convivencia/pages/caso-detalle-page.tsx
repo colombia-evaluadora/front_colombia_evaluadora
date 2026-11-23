@@ -10,6 +10,7 @@ import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/que
 import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { AccionesDetalle } from "@/features/gestion-estudiantil/convivencia/components/detalle/acciones-detalle"
+import { AvisoDatosPendientes } from "@/features/gestion-estudiantil/convivencia/components/detalle/aviso-datos-pendientes"
 import { AvisosCierre } from "@/features/gestion-estudiantil/convivencia/components/detalle/avisos-cierre"
 import { DatosCompletos } from "@/features/gestion-estudiantil/convivencia/components/detalle/datos-completos"
 import { VistaRestringida } from "@/features/gestion-estudiantil/convivencia/components/detalle/vista-restringida"
@@ -23,7 +24,7 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
       <TableScreenHeader>
         <TableScreenTitle
           description={
-            <Button variant="ghost" color="neutral" size="sm" className="-ml-3" onClick={detalle.volver}>
+            <Button variant="ghost" color="neutral" size="sm" onClick={detalle.volver}>
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a Convivencia
             </Button>
@@ -52,7 +53,14 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
       <TableScreenBody>
         <div className={caso.acceso_completo ? "flex flex-col gap-5 pb-6" : "flex flex-col gap-6 pb-6"}>
           {caso.acceso_completo ? (
-            <DatosCompletos caso={caso} />
+            <>
+              <AvisoDatosPendientes
+                pendientes={detalle.datosPendientes}
+                puedeCompletar={detalle.access.puedeGestionar}
+                onCompletar={detalle.completarDatos}
+              />
+              <DatosCompletos caso={caso} />
+            </>
           ) : (
             <>
               <AvisosCierre caso={caso} />

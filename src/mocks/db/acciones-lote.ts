@@ -39,7 +39,6 @@ if (sembrada)
 export function marcarSimpade(pk: number, fechaIngreso: string, funcionarioId: number): string | null {
   const r = retirosTraslado.get(pk)
   if (!r) return "La matrícula no tiene un retiro por traslado."
-  if (r.simpade) return "El retiro ya está marcado como ingresado al SIMPADE."
   r.simpade = { fechaIngreso, funcionarioId }
   return null
 }
@@ -97,7 +96,7 @@ export function reingresarLote(matriculas: { ID: number; FK_TGRUPO: number | nul
     const previa = previaReingreso(pk)
     if (!m || !previa) return falla(pk, "la matrícula no existe.")
     if (m.status !== "Retirado") return falla(pk, `está ${m.status}; solo se reingresa una matrícula Retirada.`)
-    if (!previa.periodo_abierto) return falla(pk, "su Período Académico ya está cerrado.")
+    if (!previa.periodo_abierto) return falla(pk, "su período académico ya está cerrado.")
     // Solo se bloquea el reingreso de la propia complementaria (Regla 12).
     if (previa.complementaria_sin_cupo && tipoDe(pk) === "COMPLEMENTARIA")
       return falla(pk, `no hay cupo libre en ${previa.complementaria_sin_cupo} para reingresar a la matrícula complementaria.`)
@@ -169,7 +168,8 @@ export function previaCambioGrado(pks: number[]) {
     grado_siguiente: grado < 11 ? grado + 1 : null,
     registros: pks.some((pk) => pk % 2 === 1) ? { actividades: 14, definitivas: ["P1"], clases: 32 } : null,
     con_registros: pks.filter((pk) => pk % 2 === 1).length,
-    complementaria: comp ? { ...comp, disponible_en_grado_siguiente: false } : null,
+    // Mock: la especialidad solo existe en el grado actual en jornada contraria
+    complementaria: comp ? { ...comp, grados_con_especialidad: [grado] } : null,
   }
 }
 

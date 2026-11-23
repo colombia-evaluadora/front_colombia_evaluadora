@@ -1,7 +1,7 @@
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { CamposReporteSaludMental } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/form/campos-reporte-salud-mental"
@@ -16,6 +16,7 @@ function ReporteContent() {
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" type="button" disabled={f.pending} onClick={f.guardar}>
