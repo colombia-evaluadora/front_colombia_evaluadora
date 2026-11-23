@@ -1,13 +1,19 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTableColumnHeader } from "@/components/data-table"
-
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import type { SesionFila } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_SESION, MenuAccionesSesion, type AccionSesion } from "@/features/gestion-estudiantil/convivencia/components/comite/menu-acciones-sesion"
 import { textoAsistentes } from "@/features/gestion-estudiantil/convivencia/utils/comite"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_SESIONES: MapaOrden = {
+  fecha: "fecha",
+  tipo: "tipo",
+}
 
 interface Opciones {
   puedeModificar: boolean
@@ -18,12 +24,9 @@ interface Opciones {
 export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): ColumnDef<SesionFila>[] {
   return [
     {
-      id: "fecha",
+      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "fecha", "Fecha"),
       accessorKey: "fecha",
-      enableSorting: false,
       enableHiding: false,
-      meta: { label: "Fecha" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
       cell: ({ row }) => (
         <span className="flex flex-col gap-0.5">
           <span className="font-medium">{formatFecha(row.original.fecha)}</span>
@@ -31,34 +34,22 @@ export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): Co
       ),
     },
     {
-      id: "tipo",
+      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "tipo", "Tipo"),
       accessorKey: "tipo_nombre",
-      enableSorting: false,
-      meta: { label: "Tipo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
     },
     {
-      id: "asistentes",
+      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "asistentes", "Asistentes"),
       accessorKey: "asistentes",
-      enableSorting: false,
-      meta: { label: "Asistentes" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Asistentes" />,
       cell: ({ row }) => textoAsistentes(row.original.asistentes, row.original.integrantes_vigentes),
     },
     {
-      id: "quorum",
+      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "quorum", "Quórum"),
       accessorKey: "con_quorum",
-      enableSorting: false,
-      meta: { label: "Quórum" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Quórum" />,
       cell: ({ row }) => <BadgeQuorum conQuorum={row.original.con_quorum} />,
     },
     {
-      id: "casos",
+      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "casos", "Casos tratados"),
       accessorKey: "casos_tratados",
-      enableSorting: false,
-      meta: { label: "Casos tratados" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Casos tratados" />,
     },
     {
       id: "actions",

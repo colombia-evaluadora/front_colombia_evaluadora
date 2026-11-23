@@ -187,3 +187,4 @@ Ruta base: `src/features/gestion-estudiantil/convivencia/`.
 - Opciones de sanciones vacías sin mensaje.
 - Candidatos fuera de esta rama con `Field outlined` envolviendo controles que no lo son (`siuce/*`, `si-no.tsx`, `datos-siuce-fields.tsx`).
 - Menús de casos y comité con `w-72 nowrap`.
+- Sesiones del Comité con orden por servidor (fecha, tipo; `ORDEN_SESIONES` en `columns-sesiones.tsx`).
