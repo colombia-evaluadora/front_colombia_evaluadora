@@ -28,7 +28,8 @@ import {
   IconoGuardado,
   IconoImagen,
 } from "@/features/administration/listas-valor/components/icono-imagen"
-import { EstadoField } from "@/features/administration/listas-valor/components/estado-field"
+import { MarcoOpciones } from "@/components/marco-opciones"
+import { Switch } from "@/components/ui/switch"
 import { validarArchivoIcono } from "@/features/administration/listas-valor/lib/imagen-icono"
 
 interface DialogSaveIconoProps {
@@ -134,8 +135,9 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
           </Field>
 
           <Field data-invalid={errorImagen || faltaImagen ? "true" : undefined}>
-            <FieldLabel htmlFor={`${formId}-imagen`}>
-              <span className="text-red">*</span> Imagen
+            {/* Sin mayúsculas y con el * rojo después del texto, como los demás labels. */}
+            <FieldLabel htmlFor={`${formId}-imagen`} className="text-sm font-medium normal-case">
+              Imagen*
             </FieldLabel>
             <button
               type="button"
@@ -166,18 +168,16 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
               <span className="text-sm">
                 {hayImagen ? "Arrastre o haga clic para reemplazar" : "Arrastre o haga clic para cargar"}
               </span>
-              <span className="text-xs text-muted-foreground">
-                SVG o PNG, cuadrada, máx. 100 KB
-              </span>
+              <span className="text-xs text-muted-foreground">Solo SVG, cuadrado, máx. 100 KB</span>
             </button>
             <p className="text-xs text-muted-foreground">
-              Aquí se ve con los colores del archivo. Al usarlo en una valoración, el SVG toma el color de la escala; el PNG conserva los suyos.
+              Aquí se ve con los colores del archivo. Al usarlo en una valoración toma el color de la escala.
             </p>
             <input
               ref={inputRef}
               id={`${formId}-imagen`}
               type="file"
-              accept=".svg,.png,image/svg+xml,image/png"
+              accept=".svg,image/svg+xml"
               className="sr-only"
               tabIndex={-1}
               onChange={(e) => {
@@ -188,12 +188,17 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
             <FieldError>{errorImagen ?? (faltaImagen ? required("La imagen", { femenino: true }) : undefined)}</FieldError>
           </Field>
 
-          <EstadoField
-            id={`${formId}-estado`}
-            de="icono"
-            checked={habilitado}
-            onChange={setHabilitado}
-          />
+          <MarcoOpciones
+            id={`${formId}-estado-marco`}
+            label="Estado"
+            required
+            descripcion="Inactivo: deja de ofrecerse, pero las valoraciones que ya lo usan lo conservan."
+          >
+            <label htmlFor={`${formId}-estado`} className="flex w-fit cursor-pointer items-center gap-3">
+              <Switch round id={`${formId}-estado`} checked={habilitado} onCheckedChange={setHabilitado} />
+              {habilitado ? "Activo" : "Inactivo"}
+            </label>
+          </MarcoOpciones>
         </form>
         <DialogFooter className="sm:items-center">
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>

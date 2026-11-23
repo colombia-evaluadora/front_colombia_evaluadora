@@ -337,7 +337,7 @@ function DialogCambiarGrupoLote({ matriculas, onOpenChange, onDone }: Props) {
           onChange={() => {}}
           opciones={[{ value: "actual", label: `${origen.campus} · ${origen.shift}` }]}
           disabled
-          descripcion="Los cambios de sede o jornada cambian de Período Académico: se hacen uno por uno, con el emparejamiento de notas."
+          descripcion="Los cambios de sede o jornada cambian de período académico: se hacen uno por uno, con el emparejamiento de notas."
         />
         <CampoSelect
           id="cambio-grupo-lote-grupo"

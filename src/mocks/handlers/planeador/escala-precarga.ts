@@ -63,7 +63,7 @@ function nivel(
 export function precargaEscalaMock() {
   if (sinEscalaMock()) return precargaSinEscalaMock()
   return {
-    contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: 3, escala: "Escala Básica Secundaria" },
+    contexto: { fkTasignatura: 1, fkTgrado: 6, fkTescala: 3, escala: "Escala básica secundaria" },
     formato: { valor: "CERO_CINCO", nombre: "De cero a cinco", esNumerico: true, notaMaxima: 5, decimales: 1 },
     tipoSugerido: "NUMERICA" as const,
     valorMaximo: 5,

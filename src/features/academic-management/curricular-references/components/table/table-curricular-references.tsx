@@ -121,8 +121,8 @@ export function CurricularReferencesDataTable() {
           isRowMuted={(row) => !(row.original as CurricularReference).active}
           emptyMessage={
             activeFilterCount > 0
-              ? "No hay Referentes que coincidan con la búsqueda y los filtros aplicados"
-              : "Aún no hay Referentes curriculares. Use + Nuevo Referente para crear el primero"
+              ? "No hay referentes que coincidan con la búsqueda y los filtros aplicados"
+              : "Aún no hay referentes curriculares. Use + Nuevo referente para crear el primero"
           }
           // Mensaje real del backend para distinguir permisos (403) de red.
           errorMessage={error ? getErrorMessage(error) : undefined}

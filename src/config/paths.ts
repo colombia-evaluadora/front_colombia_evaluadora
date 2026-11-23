@@ -201,6 +201,16 @@ export const paths = {
       path: "registro-de-actividad/bitacora",
       getHref: () => "/app/registro-de-actividad/bitacora",
     },
+    /** Bitácora · Documentos emitidos (B.8.LIS.1). Fuera de `bitacora/` para no chocar con `$modulo`. */
+    bitacoraDocumentos: {
+      path: "registro-de-actividad/documentos-emitidos",
+      getHref: () => "/app/registro-de-actividad/documentos-emitidos",
+    },
+    /** Un submenú de Bitácora por módulo (`establecimiento`, `cobertura-educativa`…). */
+    bitacoraModulo: {
+      path: "registro-de-actividad/bitacora/$modulo",
+      getHref: (modulo: string) => `/app/registro-de-actividad/bitacora/${modulo}`,
+    },
     rolesMenus: {
       path: "administracion/roles-menus",
       getHref: () => "/app/administracion/roles-menus",

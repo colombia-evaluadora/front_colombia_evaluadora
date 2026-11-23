@@ -187,7 +187,7 @@ function SuperadministradoresPageContent() {
                 onClick={() => setDialogo({ modo: "nuevo", superadministrador: null })}
               >
                 <ControlPointIcon data-icon="inline-start" />
-                Nuevo Superadministrador
+                Nuevo superadministrador
               </Button>
             </TableScreenActions>
           )}
@@ -205,7 +205,7 @@ function SuperadministradoresPageContent() {
           errorMessage={error ? getErrorMessage(error) : undefined}
           emptyMessage={
             <span className="flex flex-col items-center gap-3">
-              No hay Superadministradores que coincidan con la búsqueda y los filtros aplicados.
+              No hay superadministradores que coincidan con la búsqueda y los filtros aplicados.
               <Button size="sm" variant="outline" color="neutral" onClick={clearAllFilters}>
                 <FunnelXIcon data-icon="inline-start" />
                 Limpiar filtros

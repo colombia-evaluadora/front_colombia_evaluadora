@@ -22,17 +22,12 @@ import { useEstablishmentsOptionsQuery } from "@/features/establishment/institut
 import { useBitacoraSedesQuery } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
 import { useBitacoraEntidadesQuery } from "@/features/bitacora/api/query/use-bitacora-entidades-query"
 import {
-  BITACORA_ACCION_IDS,
   BITACORA_ACCIONES,
-  BITACORA_MODULO_IDS,
-  BITACORA_MODULOS,
+  accionesDe,
   moduloConSedeJornada,
-  type BitacoraModulo,
 } from "@/features/bitacora/api/types/bitacora"
-import { filtrosVacios, type BitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
+import { accionPorDefecto, filtrosVacios, type BitacoraFilters } from "@/features/bitacora/hooks/use-bitacora-filters"
 
-const MODULO_OPTIONS = BITACORA_MODULO_IDS.map((m) => ({ value: m, label: BITACORA_MODULOS[m] }))
-const ACCION_OPTIONS = BITACORA_ACCION_IDS.map((a) => ({ value: a, label: BITACORA_ACCIONES[a] }))
 const RANGO_INVALIDO = "La fecha Hasta no puede ser anterior a la fecha Desde."
 
 interface SearchBitacoraProps {
@@ -74,13 +69,25 @@ export function SearchBitacora({
   const entidadOptions = toEntidades(useBitacoraEntidadesQuery(filters.modulo).data)
   const entidadesDraft = toEntidades(useBitacoraEntidadesQuery(draft.modulo).data)
   const syntax: QuerySyntax<BitacoraFilters> = {
-    empty: { ...filtrosVacios(), modulo: filters.modulo, establecimiento: filters.establecimiento, desde: filters.desde, hasta: filters.hasta },
+    empty: {
+      ...filtrosVacios(),
+      modulo: filters.modulo,
+      establecimiento: filters.establecimiento,
+      desde: filters.desde,
+      hasta: filters.hasta,
+      // Vacío: sin el término «accion:» en la barra son todas las acciones (la URL lo guarda como [TODAS]).
+      accion: [],
+    },
     freeText: { key: "usuario", field: "q" },
     terms: [
       optionTerm("sede", "sede", sedes),
       optionTerm("jornada", "jornada", jornadas),
       optionTerm("entidad", "entidad", entidadOptions),
-      optionsTerm("accion", "accion", ACCION_OPTIONS),
+      optionsTerm(
+        "accion",
+        "accion",
+        accionesDe(filters.modulo).map((a) => ({ value: a, label: BITACORA_ACCIONES[a] })),
+      ),
     ],
   }
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
@@ -107,7 +114,13 @@ export function SearchBitacora({
 
   // "Limpiar filtros" del panel: conserva módulo, establecimiento y la búsqueda.
   function handleClearFilters() {
-    const next = { ...filtrosVacios(), modulo: draft.modulo, establecimiento: draft.establecimiento, q: freeText }
+    const next = {
+      ...filtrosVacios(),
+      modulo: draft.modulo,
+      establecimiento: draft.establecimiento,
+      q: freeText,
+      accion: accionPorDefecto(draft.modulo),
+    }
     setDraft(next)
     applyFilters(next)
   }
@@ -136,23 +149,7 @@ export function SearchBitacora({
         size="sm"
       >
         <div className="flex flex-col gap-3 px-4">
-          <Combo
-            id="bitacora-modulo"
-            label="Módulo *"
-            options={MODULO_OPTIONS}
-            value={draft.modulo}
-            // Cada módulo tiene sus entidades: al cambiarlo se quita la elegida.
-            // Comunicaciones no tiene sede ni jornada: no se arrastran las de otro módulo.
-            onChange={(v) =>
-              v &&
-              set({
-                modulo: v as BitacoraModulo,
-                entidad: "",
-                ...(moduloConSedeJornada(v as BitacoraModulo) ? {} : { sede: "", jornada: "" }),
-              })
-            }
-            obligatorio
-          />
+          {/* El módulo ya no es un filtro: es el submenú de Bitácora (la ruta). */}
           {esSuperAdmin && draft.modulo !== "ADMINISTRACION" && (
             <Combo
               id="bitacora-establecimiento"
@@ -213,7 +210,7 @@ export function SearchBitacora({
           {rangoInvalido && <FieldError>{RANGO_INVALIDO}</FieldError>}
           <fieldset className="grid grid-cols-2 gap-x-3 gap-y-2">
             <legend className="mb-2 text-sm font-medium">Acción</legend>
-            {BITACORA_ACCION_IDS.map((accion) => (
+            {accionesDe(draft.modulo).map((accion) => (
               <label key={accion} className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={draft.accion.includes(accion)}
@@ -229,7 +226,7 @@ export function SearchBitacora({
   )
 }
 
-function Combo({
+export function Combo({
   id,
   label,
   options,

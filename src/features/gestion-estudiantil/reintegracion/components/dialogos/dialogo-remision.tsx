@@ -1,11 +1,11 @@
 import { useState } from "react"
 
+import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field"
+import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon, PaperPlaneTiltIcon } from "@/components/ui/icons"
-import { Switch } from "@/components/ui/switch"
 import { parseDateValue } from "@/lib/date-value"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
@@ -20,6 +20,7 @@ import { useRegistrarRemision } from "@/features/gestion-estudiantil/reintegraci
 import { usePlazoRemisionesQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-remisiones-query"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import { ResumenCasoDialogo } from "@/features/gestion-estudiantil/reintegracion/components/dialogos/resumen-caso-dialogo"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 const MAX_RECORDATORIOS = 5
 
@@ -170,10 +171,12 @@ export function DialogoRemision({ caso: c, onClose }: { caso: CasoDetalle; onClo
           />
         </div>
         <div className="flex flex-col gap-2 sm:col-span-2">
-          <label className="flex h-11 items-center gap-3 text-sm">
-            <Switch round checked={ajusta} onCheckedChange={setAjusta} />
-            Ajustar la fecha esperada de respuesta
-          </label>
+          <MarcoOpciones id="remision-ajusta">
+            <label className="flex items-center gap-3">
+              <Switch round checked={ajusta} onCheckedChange={setAjusta} />
+              Ajustar la fecha esperada de respuesta
+            </label>
+          </MarcoOpciones>
           <FieldDescription>
             {plazo
               ? `Si no la ajusta, se propone desde la fecha de remisión más ${plazo.plazo_seguimiento_dias} días hábiles de seguimiento.`

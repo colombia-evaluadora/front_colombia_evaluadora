@@ -3,7 +3,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
@@ -26,6 +26,7 @@ export function FormularioAbrirConvivencia({ caso }: { caso: CasoDetalle }) {
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={guardando}>
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
               <Button size="sm" onClick={form.guardar} disabled={guardando}>
@@ -46,7 +47,7 @@ export function FormularioAbrirConvivencia({ caso }: { caso: CasoDetalle }) {
         <div className="flex flex-col gap-5 pb-6">
           <ErrorNoticeBanner error={form.error} />
           <SeccionDatosCaso form={form} />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3">
             <ComboOpciones
               id="caso-rol"
               label="Rol del estudiante en la situación"

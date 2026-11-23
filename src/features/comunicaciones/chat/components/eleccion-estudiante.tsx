@@ -66,7 +66,7 @@ function TarjetaCandidatos({ eleccion: e }: { eleccion: Eleccion }) {
   return (
     <section aria-labelledby="tarjeta-candidatos" className="mb-4 rounded-xl border bg-card p-4">
       <h3 id="tarjeta-candidatos" className="text-[15px] leading-snug font-semibold">
-        Tarjeta Candidato
+        Tarjeta candidato
       </h3>
       {/* Dos líneas como en Figma 4189:67308. */}
       <p className="mb-4 text-[13px] text-muted-foreground">

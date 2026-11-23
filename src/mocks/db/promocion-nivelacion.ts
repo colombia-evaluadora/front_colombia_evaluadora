@@ -62,9 +62,9 @@ const area = (nombre: string, abreviatura: string, ih: number, nota_final: numbe
 })
 
 const comunes = (extra: AreaRow[]) => [
-  area("Ciencias Sociales", "SOC", 4, 7.2, 4),
-  area("Educación Física", "EDF", 2, 8.5, 2),
-  area("Ética y Valores", "ETI", 1, 8.0, 3),
+  area("Ciencias sociales", "SOC", 4, 7.2, 4),
+  area("Educación física", "EDF", 2, 8.5, 2),
+  area("Ética y valores", "ETI", 1, 8.0, 3),
   ...extra,
 ]
 
@@ -91,7 +91,7 @@ const reprobados: ReprobadoRow[] = [
     sede: "1",
     jornada: "1",
     anio: 2026,
-    areas: comunes([area("Matemáticas", "MAT", 5, 5.1, 3), area("Ciencias Naturales", "NAT", 4, 5.4, 4)]),
+    areas: comunes([area("Matemáticas", "MAT", 5, 5.1, 3), area("Ciencias naturales", "NAT", 4, 5.4, 4)]),
     siguiente: "Año lectivo 2027",
     promovido: false,
   },
@@ -107,7 +107,7 @@ const reprobados: ReprobadoRow[] = [
     areas: comunes([
       area("Matemáticas", "MAT", 5, 4.2, 12),
       area("Humanidades", "HUM", 5, 5.0, 10),
-      area("Ciencias Naturales", "NAT", 4, 5.6, 9),
+      area("Ciencias naturales", "NAT", 4, 5.6, 9),
     ]),
     siguiente: null,
     promovido: false,
@@ -317,7 +317,7 @@ const promociones: PromocionRow[] = [
     areas: [
       {
         id: 3,
-        area: "Ciencias Naturales",
+        area: "Ciencias naturales",
         nota_final: 5.1,
         intentos: [
           {
@@ -451,7 +451,7 @@ export function ampliarPlazo(id: number, plazo: string): Resultado {
   const p = buscar(id)
   if (!p) return "La promoción no existe."
   if (plazo <= p.plazo) return "La nueva fecha debe ser posterior al plazo actual."
-  if (plazo > p.fin_periodo) return "La nueva fecha debe estar dentro del Período Académico de la matrícula promovida."
+  if (plazo > p.fin_periodo) return "La nueva fecha debe estar dentro del período académico de la matrícula promovida."
   p.plazo = plazo
   return null
 }

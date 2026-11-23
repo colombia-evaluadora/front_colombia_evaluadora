@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { TrashIcon } from "@/components/ui/icons"
+import { TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
@@ -51,6 +51,7 @@ export function PanelMotivoSoporte({
       <TextoLargo id="soporte-motivo" label="Motivo" required max={500} rows={3} value={motivo} onChange={onMotivo} error={errorMotivo} />
       <div className="flex justify-end gap-2">
         <Button type="button" size="sm" variant="outline" color="neutral" disabled={pending} onClick={onCancelar}>
+          <XIcon data-icon="inline-start" />
           Cancelar
         </Button>
         <Button type="button" size="sm" color={sustituir ? undefined : "destructive"} disabled={pending} onClick={onConfirmar}>

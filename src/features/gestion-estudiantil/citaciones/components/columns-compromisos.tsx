@@ -36,14 +36,15 @@ export function buildColumnsCompromisos({ onAccion }: ColumnasOpciones): ColumnD
       ...columna("estudiante", "Estudiante"),
       accessorKey: "estudiante_nombre",
       cell: ({ row }) => (
-        <span className="flex flex-col gap-0.5">
+        // Nombre y grado en una línea, separados por «·»; el grado en gris para que el nombre siga mandando.
+        <span>
           <Link
             to={paths.app.compromisoDetalle.getHref(row.original.id)}
             className="font-medium text-primary underline-offset-3 hover:underline"
           >
             {row.original.estudiante_nombre}
           </Link>
-          <span className="text-xs text-muted-foreground">{row.original.grado_grupo}</span>
+          {row.original.grado_grupo && <span className="text-muted-foreground"> · {row.original.grado_grupo}</span>}
         </span>
       ),
     },

@@ -39,7 +39,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 // Qué tiene el grupo, en el orden del diálogo "No se puede eliminar".
 function dependencyLines(d: GradeGroupDependencies) {
   const lines: string[] = []
-  if (d.matriculas > 0) lines.push(`${plural(d.matriculas, "matrícula", "matrículas")} en Cobertura Educativa`)
+  if (d.matriculas > 0) lines.push(`${plural(d.matriculas, "matrícula", "matrículas")} en Cobertura educativa`)
   if (d.asignaciones > 0)
     lines.push(plural(d.asignaciones, "asignación académica", "asignaciones académicas"))
   if (d.horarios > 0) lines.push(`Horario con ${plural(d.horarios, "clase asignada", "clases asignadas")}`)
@@ -52,7 +52,7 @@ function dependencyLines(d: GradeGroupDependencies) {
   if (registros.length > 0) {
     const texto =
       registros.length === 1 ? registros[0] : `${registros.slice(0, -1).join(", ")} y ${registros.at(-1)}`
-    lines.push(`Registros en Gestión Académica: ${texto}`)
+    lines.push(`Registros en Gestión académica: ${texto}`)
   }
   return lines
 }

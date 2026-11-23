@@ -55,7 +55,7 @@ export function buildColumnsObservaciones({ onAccion }: ColumnasOpciones): Colum
       accessorKey: "titulo",
       cell: ({ row }) => row.original.titulo || "—",
     },
-    { ...columna("periodo", "Período de Evaluación"), accessorKey: "periodo_nombre" },
+    { ...columna("periodo", "Período de evaluación"), accessorKey: "periodo_nombre" },
     {
       ...columna("registrado_por", "Registrado por"),
       accessorKey: "registrado_por_nombre",

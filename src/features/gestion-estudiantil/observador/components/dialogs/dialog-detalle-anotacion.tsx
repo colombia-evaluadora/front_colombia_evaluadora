@@ -1,6 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { XIcon } from "@/components/ui/icons"
 import {
   Dialog,
   DialogClose,
@@ -45,7 +46,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
               </Dato>
             </div>
             <Dato label="Responsable de enseñanza">{a.responsable_nombre}</Dato>
-            <Dato label="Período de Evaluación">{a.periodo_evaluacion_nombre}</Dato>
+            <Dato label="Período de evaluación">{a.periodo_evaluacion_nombre}</Dato>
             <Dato label="Preocupa la permanencia">{a.preocupa_permanencia ? "Sí" : "No"}</Dato>
             <Dato label="Requiere mediación">{a.requiere_mediacion ? "Sí" : "No"}</Dato>
             {a.anulada && (
@@ -58,6 +59,7 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
         )}
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </DialogClose>
         </DialogFooter>

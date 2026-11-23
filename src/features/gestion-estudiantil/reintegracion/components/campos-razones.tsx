@@ -11,6 +11,7 @@ import {
   OTRA_RAZON_MAX,
   type RazonesForm,
 } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 interface Props {
   /** Prefijo de ids únicos (el formulario puede convivir con un diálogo). */
@@ -36,9 +37,12 @@ export function CamposRazones({ id, opciones, value, onChange, errorOtraRazon, d
         {value.marcadas.length} {value.marcadas.length === 1 ? "marcada" : "marcadas"}
       </p>
       {grupos.map((g) => (
-        <fieldset key={g.dimension_valor} className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-semibold">{g.dimension_nombre}</legend>
-          <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+        <MarcoOpciones
+          key={g.dimension_valor}
+          id={`${id}-dimension-${g.dimension_valor}`}
+          label={g.dimension_nombre}
+          contentClassName="grid grid-cols-1 items-start gap-x-6 gap-y-2 py-3 sm:grid-cols-2 lg:grid-cols-3"
+        >
             {g.razones.map((r) => (
               <label key={r.fk_tlv_razon} className="flex items-start gap-2 text-sm">
                 <Checkbox
@@ -49,8 +53,7 @@ export function CamposRazones({ id, opciones, value, onChange, errorOtraRazon, d
                 {r.nombre}
               </label>
             ))}
-          </div>
-        </fieldset>
+        </MarcoOpciones>
       ))}
       {hayOtraMarcada(value, opciones) && (
         <TextoLargo

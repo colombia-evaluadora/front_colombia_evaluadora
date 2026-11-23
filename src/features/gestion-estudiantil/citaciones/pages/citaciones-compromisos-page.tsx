@@ -1,5 +1,6 @@
 "use no memo"
 
+import { useState } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -11,7 +12,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -40,6 +41,14 @@ import {
   useDialogosCitacion,
   useDialogosCompromiso,
 } from "@/features/gestion-estudiantil/citaciones/components/dialogos/use-dialogos-citaciones"
+import {
+  DialogNuevaCitacion,
+  type NuevaCitacionInicial,
+} from "@/features/gestion-estudiantil/citaciones/components/dialogos/dialog-nueva-citacion"
+import {
+  DialogNuevoCompromiso,
+  type NuevoCompromisoInicial,
+} from "@/features/gestion-estudiantil/citaciones/components/dialogos/dialog-nuevo-compromiso"
 import { SearchCitaciones } from "@/features/gestion-estudiantil/citaciones/components/search-citaciones"
 import { SearchCompromisos } from "@/features/gestion-estudiantil/citaciones/components/search-compromisos"
 import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
@@ -55,7 +64,7 @@ interface PestanaProps {
   cabecera: React.ReactNode
 }
 
-function PestanaCitaciones({ cabecera }: PestanaProps) {
+function PestanaCitaciones({ cabecera, onNuevoCompromiso }: PestanaProps & { onNuevoCompromiso: (citacion: number) => void }) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const f = useCitacionesFiltros(goToPage)
 
@@ -65,13 +74,11 @@ function PestanaCitaciones({ cabecera }: PestanaProps) {
     pageSize,
   })
 
-  const navigate = useNavigate() as unknown as Navegar
   const dialogosCitacion = useDialogosCitacion()
 
   const columns = buildColumnsCitaciones({
     onAccion: (citacion, accion) => {
-      if (accion === "compromiso")
-        navigate({ to: paths.app.compromisoNuevo.getHref(), search: { citacion: citacion.id } })
+      if (accion === "compromiso") onNuevoCompromiso(citacion.id)
       else dialogosCitacion.abrir(accion, citacion)
     },
   })
@@ -215,14 +222,41 @@ function PestanaCompromisos({ cabecera }: PestanaProps) {
 
 type Navegar = (opts: { to: string; search: Record<string, unknown>; replace?: boolean }) => void
 
-function CitacionesCompromisosContent() {
+interface ModalesIniciales {
+  /** Ruta /nueva: el listado con Nueva citación ya abierta. */
+  nuevaCitacion?: NuevaCitacionInicial
+  /** Ruta /nuevo-compromiso: el listado con Nuevo compromiso ya abierto. */
+  nuevoCompromiso?: NuevoCompromisoInicial
+}
+
+function CitacionesCompromisosContent({ nuevaCitacion, nuevoCompromiso }: ModalesIniciales) {
   const acceso = useCitacionesAccess()
+  const { notify } = useNotify()
+  // Desde el listado el modal se abre en el sitio; desde /nueva (Convivencia, Observador) llega ya abierto.
+  const [citacion, setCitacion] = useState<NuevaCitacionInicial | null>(nuevaCitacion ?? null)
+  const [compromiso, setCompromiso] = useState<NuevoCompromisoInicial | null>(nuevoCompromiso ?? null)
   const search = useSearch({ strict: false }) as { tab?: Pestana }
   const navigate = useNavigate() as unknown as Navegar
-  const pestana: Pestana = search.tab === "compromisos" ? "compromisos" : "citaciones"
+  const pestana: Pestana =
+    search.tab === "compromisos" || (nuevoCompromiso && !search.tab) ? "compromisos" : "citaciones"
 
   // Las pestañas viven en la URL; cambiar de una a otra reinicia la paginación.
   const irA = (tab: Pestana) => navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab } })
+
+  // Al cerrar el modal abierto por la ruta /nueva se vuelve a la URL del listado.
+  const cerrarCitacion = () => {
+    setCitacion(null)
+    if (nuevaCitacion) navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab: "citaciones" }, replace: true })
+  }
+  const cerrarCompromiso = () => {
+    setCompromiso(null)
+    if (nuevoCompromiso) navigate({ to: paths.app.citacionesCompromisos.getHref(), search: { tab: "compromisos" }, replace: true })
+  }
+  const citacionCreada = (mensaje: string) => {
+    if (nuevaCitacion) queueNotice(mensaje, { variant: "success" })
+    else notify(mensaje, { variant: "success" })
+    cerrarCitacion()
+  }
 
   const cabecera = (
     <>
@@ -232,13 +266,7 @@ function CitacionesCompromisosContent() {
             size="sm"
             disabled={!(pestana === "citaciones" ? acceso.puedeCrearCitacion : acceso.puedeCrearCompromiso)}
             onClick={() =>
-              navigate({
-                to:
-                  pestana === "citaciones"
-                    ? paths.app.citacionNueva.getHref()
-                    : paths.app.compromisoNuevo.getHref(),
-                search: {},
-              })
+              pestana === "citaciones" ? setCitacion({}) : setCompromiso({})
             }
           >
             <ControlPointIcon data-icon="inline-start" />
@@ -257,16 +285,22 @@ function CitacionesCompromisosContent() {
     </>
   )
 
-  return pestana === "compromisos" ? <PestanaCompromisos cabecera={cabecera} /> : <PestanaCitaciones cabecera={cabecera} />
+  return (
+    <>
+      {pestana === "compromisos" ? <PestanaCompromisos cabecera={cabecera} /> : <PestanaCitaciones cabecera={cabecera} onNuevoCompromiso={(id) => setCompromiso({ citacion: id })} />}
+      {citacion && <DialogNuevaCitacion {...citacion} onClose={cerrarCitacion} onCreada={citacionCreada} />}
+      {compromiso && <DialogNuevoCompromiso {...compromiso} onClose={cerrarCompromiso} />}
+    </>
+  )
 }
 
 /** Citaciones y compromisos (Gestión Estudiantil 4.1 y 4.2): citaciones al acudiente y sus compromisos. */
-export function CitacionesCompromisosPage() {
+export function CitacionesCompromisosPage({ nuevaCitacion, nuevoCompromiso }: ModalesIniciales = {}) {
   return (
     <NoticeProvider>
       <TableScreen>
         <TablePaginationProvider>
-          <CitacionesCompromisosContent />
+          <CitacionesCompromisosContent nuevaCitacion={nuevaCitacion} nuevoCompromiso={nuevoCompromiso} />
         </TablePaginationProvider>
       </TableScreen>
     </NoticeProvider>

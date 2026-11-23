@@ -41,9 +41,9 @@ describe("validarEstrategia", () => {
   })
 
   it("exige las fechas dentro del período y el fin posterior al inicio", () => {
-    expect(validarEstrategia({ ...valido, inicio: new Date(2025, 0, 1) }, periodo).inicio).toMatch(/dentro del Período/)
+    expect(validarEstrategia({ ...valido, inicio: new Date(2025, 0, 1) }, periodo).inicio).toMatch(/dentro del período/)
     expect(validarEstrategia({ ...valido, fin: new Date(2026, 10, 1) }, periodo).fin).toMatch(/posterior/)
-    expect(validarEstrategia({ ...valido, fin: new Date(2027, 5, 1) }, periodo).fin).toMatch(/dentro del Período/)
+    expect(validarEstrategia({ ...valido, fin: new Date(2027, 5, 1) }, periodo).fin).toMatch(/dentro del período/)
   })
 })
 

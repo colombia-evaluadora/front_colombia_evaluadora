@@ -26,7 +26,7 @@ export function AccionesDetalle({ caso, detalle }: Props) {
       {access.puedeSupervisar ? (
         <Button
           size="sm"
-          variant="outline"
+          variant="outline" color="neutral"
           nativeButton={false}
           render={<Link to={paths.app.convivenciaProcesoNuevo.getHref()} search={{ caso: caso.id } as never} />}
         >
@@ -34,16 +34,17 @@ export function AccionesDetalle({ caso, detalle }: Props) {
           Abrir proceso disciplinario
         </Button>
       ) : (
-        <Button size="sm" variant="outline" disabled>
+        <Button size="sm" variant="outline" color="neutral" disabled>
           <GavelIcon data-icon="inline-start" />
           Abrir proceso disciplinario
         </Button>
       )}
-      <Button size="sm" variant="outline" disabled={!(abierto && access.puedeSupervisar)} onClick={abrirTipo}>
+      <Button size="sm" variant="outline" color="neutral" disabled={!(abierto && access.puedeSupervisar)} onClick={abrirTipo}>
         <ArrowsDownUpIcon data-icon="inline-start" />
         Cambiar tipo
       </Button>
-      <Button size="sm" disabled={!(abierto && access.puedeGestionar)} onClick={abrirAccion}>
+      {/* Sin los datos del caso el backend rechaza la acción: el aviso del detalle dice qué falta. */}
+      <Button size="sm" disabled={!(abierto && access.puedeGestionar) || detalle.datosPendientes.length > 0} onClick={abrirAccion}>
         <ClipboardAddIcon data-icon="inline-start" />
         Registrar acción
       </Button>

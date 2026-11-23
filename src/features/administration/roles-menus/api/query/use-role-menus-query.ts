@@ -6,27 +6,44 @@ import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-ke
 
 export interface RoleMenuAssignment {
   id: number
+  /** `false`: la fila solo informa bloqueos de una vista que el rol no tiene. */
+  acceso: boolean
   soloLectura: boolean
   /** El SSO todavía no los devuelve: si faltan, salen de `soloLectura`. */
   guardar: boolean
   eliminar: boolean
+  /**
+   * Acciones que el rol no puede tener en la vista y no se activan desde la pantalla (roles
+   * territoriales, S.3.VRO.3/4). Pendiente de backend: hoy solo las trae el mock.
+   */
+  bloqueos?: ViewLocks
 }
 
-interface RoleMenuRow {
-  id: number
-  soloLectura?: boolean
+export interface ViewLocks {
   guardar?: boolean
   eliminar?: boolean
 }
 
+interface RoleMenuRow {
+  id: number
+  acceso?: boolean
+  soloLectura?: boolean
+  guardar?: boolean
+  eliminar?: boolean
+  bloqueos?: ViewLocks
+}
+
 function toAssignment(row: RoleMenuRow | number): RoleMenuAssignment {
-  if (typeof row === "number") return { id: row, soloLectura: false, guardar: true, eliminar: true }
+  if (typeof row === "number")
+    return { id: row, acceso: true, soloLectura: false, guardar: true, eliminar: true }
   const soloLectura = row.soloLectura ?? false
   return {
     id: row.id,
+    acceso: row.acceso ?? true,
     soloLectura,
     guardar: row.guardar ?? !soloLectura,
     eliminar: row.eliminar ?? !soloLectura,
+    ...(row.bloqueos ? { bloqueos: row.bloqueos } : {}),
   }
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
@@ -12,14 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Switch } from "@/components/ui/switch"
 import { getErrorMessage } from "@/lib/api-client"
 import type { SelectOption } from "@/lib/catalog-options"
 import { useAppForm } from "@/lib/forms"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { toSafeTextInput } from "@/lib/text-input"
-import { cn } from "@/lib/utils"
 
 import { useEstadoAreaOficial } from "@/features/administration/areas-oficiales/api/mutations/estado-area-oficial"
 import { useSaveAreaOficial } from "@/features/administration/areas-oficiales/api/mutations/save-area-oficial"
@@ -99,14 +99,17 @@ function SaveAreaOficialContent({
       !isEditing ||
       nombre !== area.nombre ||
       JSON.stringify([...value.niveles].sort()) !== JSON.stringify([...defaultValues.niveles].sort())
-    const cambiaEstado = isEditing && value.habilitada !== area.habilitada
+    // Una nueva nace activa en el back: si se pide Inactiva, se inactiva después de crearla.
+    const cambiaEstado = value.habilitada !== (area?.habilitada ?? true)
     try {
-      if (cambianDatos)
-        await save.mutateAsync({ id: area?.pkAreaOficial, nombre, niveles: value.niveles })
-      if (cambiaEstado)
-        await estado.mutateAsync({ id: area.pkAreaOficial, habilitada: value.habilitada })
+      let id = area?.pkAreaOficial
+      if (cambianDatos) {
+        const guardada = await save.mutateAsync({ id, nombre, niveles: value.niveles })
+        id = guardada?.pkAreaOficial ?? id
+      }
+      if (cambiaEstado && id != null) await estado.mutateAsync({ id, habilitada: value.habilitada })
       onClose()
-      if (cambianDatos || !cambiaEstado)
+      if (!isEditing || cambianDatos || !cambiaEstado)
         notify(isEditing ? SUCCESS_MESSAGES.areaOficial.updated : SUCCESS_MESSAGES.areaOficial.created)
       else
         notify(
@@ -163,27 +166,42 @@ function SaveAreaOficialContent({
           <form.AppField name="niveles">{() => <NivelesField options={niveles} />}</form.AppField>
           <form.AppField name="habilitada">
             {(f) => (
-              <EstadoSwitch
-                checked={f.state.value}
-                // Una nueva nace activa; el estado se cambia al modificar.
-                disabled={!isEditing}
-                onChange={(next) => f.handleChange(next)}
-              />
+              <MarcoOpciones
+                id="area-oficial-estado-marco"
+                label="Estado"
+                required
+                descripcion={
+                  f.state.value
+                    ? "Se ofrece en planes de estudio y referentes. Si la inactiva, deja de ofrecerse, pero lo que ya la tiene asociada la conserva."
+                    : "No se ofrece en planes de estudio ni referentes. Lo que ya la tiene asociada la conserva."
+                }
+              >
+                <label htmlFor="area-oficial-estado" className="flex w-fit cursor-pointer items-center gap-3">
+                  <Switch
+                    round
+                    id="area-oficial-estado"
+                    checked={f.state.value}
+                    onCheckedChange={(next) => f.handleChange(next)}
+                  />
+                  {f.state.value ? "Activa" : "Inactiva"}
+                </label>
+              </MarcoOpciones>
             )}
           </form.AppField>
         </form>
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </Button>
           <Button size="sm" type="submit" color="primary" form={FORM_ID} disabled={busy} aria-busy={busy}>
             {busy ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <FloppyDiskIcon data-icon="inline-start" />
             )}
             Guardar
-          </Button>
-          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -199,44 +217,3 @@ function SaveAreaOficialContent({
   )
 }
 
-/** Mismo aspecto que el estado de Listas de valor. */
-function EstadoSwitch({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean
-  disabled?: boolean
-  onChange: (checked: boolean) => void
-}) {
-  return (
-    <label
-      htmlFor="area-oficial-estado"
-      className={cn(
-        "flex items-start gap-3 rounded-md border px-3 py-2.5",
-        checked ? "border-border" : "border-dashed border-border bg-muted/40",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
-      )}
-    >
-      <Switch
-        id="area-oficial-estado"
-        size="sm"
-        round
-        className="mt-0.5"
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(next) => !disabled && onChange(next)}
-      />
-      <span className="flex flex-col gap-0.5 text-sm">
-        <span className={cn("font-medium", !checked && "text-muted-foreground")}>
-          {checked ? "Activa" : "Inactiva"}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {checked
-            ? "Se ofrece en Planes de Estudio y Referentes. Si la inactiva, deja de ofrecerse, pero lo que ya la tiene asociada la conserva."
-            : "No se ofrece en Planes de Estudio ni Referentes. Lo que ya la tiene asociada la conserva."}
-        </span>
-      </span>
-    </label>
-  )
-}

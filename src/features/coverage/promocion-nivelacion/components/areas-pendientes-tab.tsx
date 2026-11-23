@@ -94,7 +94,7 @@ function TablaAreas({ p, d }: { p: Promovido; d: DetallePromocion }) {
             <th className="px-3 py-1.5 font-medium">Área pendiente</th>
             <th className="px-3 py-1.5 font-medium">Estado</th>
             <th className="px-3 py-1.5 font-medium">Último registro</th>
-            <th className="px-3 py-1.5 text-right font-medium">Intentos</th>
+            <th className="px-3 py-1.5 text-center font-medium">Intentos</th>
             <th className="w-12 px-3 py-1.5">
               <span className="sr-only">Acciones</span>
             </th>
@@ -110,7 +110,7 @@ function TablaAreas({ p, d }: { p: Promovido; d: DetallePromocion }) {
                 </Badge>
               </td>
               <td className="px-3 py-1.5">{ultimoRegistro(a)}</td>
-              <td className="px-3 py-1.5 text-right tabular-nums">{a.intentos.length}</td>
+              <td className="px-3 py-1.5 text-center tabular-nums">{a.intentos.length}</td>
               <td className="px-3 py-1">
                 <AccionesArea area={a} onAbrir={setAbierto} />
               </td>

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,15 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, InfoIcon, MinusIcon, PlusIcon, WarningIcon } from "@/components/ui/icons"
+import {
+  FloppyDiskIcon,
+  InfoIcon,
+  LockIcon,
+  MinusIcon,
+  PlusIcon,
+  WarningIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import {
   Table,
   TableBody,
@@ -29,8 +38,17 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useUpdateRoleMenus } from "@/features/administration/roles-menus/api/mutations/update-role-menus"
 import { useMenuCatalogQuery } from "@/features/administration/roles-menus/api/query/use-menu-catalog-query"
 import { useRoleEmployeesCountQuery } from "@/features/administration/roles-menus/api/query/use-role-employees-count-query"
-import { withRequiredParents } from "@/features/administration/roles-menus/api/types/role-menu"
-import type { MenuNode, MenuTreeNode } from "@/features/administration/roles-menus/api/types/role-menu"
+import type { ViewLocks } from "@/features/administration/roles-menus/api/query/use-role-menus-query"
+import {
+  childrenMap,
+  parentMap,
+  withRequiredParents,
+} from "@/features/administration/roles-menus/api/types/role-menu"
+import type {
+  MenuChildNode,
+  MenuNode,
+  MenuTreeNode,
+} from "@/features/administration/roles-menus/api/types/role-menu"
 import {
   ACTION_LABELS,
   diffViews,
@@ -53,6 +71,8 @@ interface RoleViewsEditorProps {
   roleName: string
   tree: MenuTreeNode[]
   saved: RoleViews
+  /** Acciones bloqueadas para el rol en cada vista (roles territoriales, S.3.VRO.3/4). */
+  locks: Map<number, ViewLocks>
   /** Selector de rol: va en la misma fila que Cancelar y Guardar. */
   roleSelect: ReactNode
   /** Avisa a la página para que no deje cambiar de rol con cambios sin guardar. */
@@ -65,6 +85,7 @@ export function RoleViewsEditor({
   roleName,
   tree,
   saved,
+  locks,
   roleSelect,
   onDirtyChange,
 }: RoleViewsEditorProps) {
@@ -110,15 +131,31 @@ export function RoleViewsEditor({
     if (!menu || action === "acceso") return true
     return action === "guardar" ? menu.admiteGuardar : menu.admiteEliminar
   }
+  const locked = (id: number, action: ViewAction) =>
+    action !== "acceso" && Boolean(locks.get(id)?.[action])
 
-  function handleToggle(node: MenuNode | MenuTreeNode, action: ViewAction, checked: boolean) {
+  const parentOf = parentMap(tree)
+  const childrenOf = childrenMap(tree)
+  // Módulo fuera de la licencia (S.3.VRO.1c): toda su rama queda apagada y sin interruptores activos.
+  const fueraDeLicencia = new Set(tree.filter((group) => group.fueraDeLicencia).map((group) => group.id))
+  function enLicencia(id: number): boolean {
+    for (let p: number | null | undefined = id; p != null; p = parentOf.get(p)) {
+      if (fueraDeLicencia.has(p)) return false
+    }
+    return true
+  }
+  const tienePestanas = tree.some((group) =>
+    group.children.some((child) => (child.pestanas ?? []).length > 0),
+  )
+
+  function handleToggle(node: MenuNode, action: ViewAction, checked: boolean) {
     setDraft((prev) => {
-      // Guardar y Eliminar de un módulo se aplican a los submódulos que los tienen.
-      if (action !== "acceso" && "children" in node) {
-        return node.children.filter((child) => admits(child.id, action)).reduce(
-          (acc, child) => toggleAction(acc, tree, child.id, action, checked),
-          prev,
-        )
+      // Guardar y Eliminar de un módulo se aplican a los submódulos que los tienen y no están bloqueados.
+      const hijos = childrenOf.get(node.id) ?? []
+      if (action !== "acceso" && node.idParent == null && hijos.length > 0) {
+        return hijos
+          .filter((childId) => admits(childId, action) && !locked(childId, action))
+          .reduce((acc, childId) => toggleAction(acc, tree, childId, action, checked), prev)
       }
       return toggleAction(prev, tree, node.id, action, checked)
     })
@@ -147,6 +184,21 @@ export function RoleViewsEditor({
   const busy = updateRoleMenus.isPending || !puedeEditar
   const dirty = changes.length > 0
 
+  function cells(node: MenuNode, enRama: boolean) {
+    return ACTIONS.map((action) => (
+      <ActionCell
+        key={action}
+        label={`${ACTION_LABELS[action]} en ${node.name}`}
+        available={admits(node.id, action)}
+        checked={enRama && getPermission(draft, node.id)[action]}
+        changed={changed.has(`${node.id}-${action}`)}
+        disabled={busy || !enRama}
+        locked={locked(node.id, action) ? roleName : undefined}
+        onChange={(checked) => handleToggle(node, action, checked)}
+      />
+    ))
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -159,6 +211,7 @@ export function RoleViewsEditor({
             disabled={!dirty || busy}
             onClick={() => setDraft(saved)}
           >
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
@@ -172,30 +225,27 @@ export function RoleViewsEditor({
         </div>
       </div>
 
-      <Table containerClassName="max-h-[calc(100dvh-20rem)] min-h-64 overflow-y-auto">
+      <Table containerClassName="max-h-[calc(100dvh-24rem)] min-h-64 overflow-y-auto">
         <TableHeader className="sticky top-0 z-20 bg-background">
           <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
             <TableHead className="text-foreground">
               <span className="inline-flex items-center gap-1.5">
-                Módulo / submódulo
+                {tienePestanas ? "Módulo / submódulo / pestaña" : "Módulo / submódulo"}
                 <Tooltip>
                   <TooltipTrigger
-                    render={
-                      <button type="button" aria-label="Cómo funcionan las vistas base" />
-                    }
+                    render={<button type="button" aria-label="Cómo funcionan las vistas base" />}
                   >
                     <InfoIcon className="size-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    Es lo máximo que puede tener un funcionario con este rol. Quitar una vista o
-                    acción la quita a todos los funcionarios con el rol, en todos los
-                    establecimientos.
+                    Es lo máximo que puede tener un funcionario con este rol. Cada establecimiento
+                    puede restringirlo, pero no ampliarlo.
                   </TooltipContent>
                 </Tooltip>
               </span>
             </TableHead>
             {ACTIONS.map((action) => (
-              <TableHead key={action} className="w-40 text-foreground">
+              <TableHead key={action} className="w-40 text-center text-foreground">
                 {ACTION_LABELS[action]}
               </TableHead>
             ))}
@@ -204,22 +254,25 @@ export function RoleViewsEditor({
         <TableBody>
           {tree.map((group) => {
             const open = expanded.has(group.id)
+            const enRama = enLicencia(group.id)
             return (
               <Fragment key={group.id}>
-                <TableRow>
+                <TableRow className={enRama ? undefined : "opacity-55"}>
                   <TableCell>
-                    <span className="inline-flex items-center gap-2 font-semibold">
-                      <button
-                        type="button"
-                        aria-expanded={open}
-                        aria-label={`${open ? "Plegar" : "Desplegar"} ${group.name}`}
-                        className="grid size-5 place-items-center rounded-sm hover:bg-muted"
+                    <span className="inline-flex flex-wrap items-center gap-2 font-semibold">
+                      <ExpandButton
+                        open={open}
+                        name={group.name}
+                        disabled={group.children.length === 0}
                         onClick={() => toggleExpanded(group.id)}
-                      >
-                        {open ? <MinusIcon className="size-4" /> : <PlusIcon className="size-4" />}
-                      </button>
+                      />
                       <NodeIcon node={group} />
                       {group.name}
+                      {enRama ? null : (
+                        <Badge variant="soft" color="neutral">
+                          No incluido en la licencia
+                        </Badge>
+                      )}
                     </span>
                   </TableCell>
                   {ACTIONS.map((action) => (
@@ -231,33 +284,23 @@ export function RoleViewsEditor({
                         group.children.length === 0 ||
                         group.children.some((child) => admits(child.id, action))
                       }
-                      checked={moduleChecked(draft, group, action, admits)}
+                      checked={enRama && moduleChecked(draft, group, action, admits)}
                       changed={changed.has(`${group.id}-${action}`)}
-                      disabled={busy}
+                      disabled={busy || !enRama}
                       onChange={(checked) => handleToggle(group, action, checked)}
                     />
                   ))}
                 </TableRow>
                 {open
                   ? group.children.map((child) => (
-                      <TableRow key={child.id}>
-                        <TableCell className="pl-14">
-                          <span className="inline-flex items-center gap-2">
-                            {child.name}
-                          </span>
-                        </TableCell>
-                        {ACTIONS.map((action) => (
-                          <ActionCell
-                            key={action}
-                            label={`${ACTION_LABELS[action]} en ${child.name}`}
-                            available={admits(child.id, action)}
-                            checked={getPermission(draft, child.id)[action]}
-                            changed={changed.has(`${child.id}-${action}`)}
-                            disabled={busy}
-                            onChange={(checked) => handleToggle(child, action, checked)}
-                          />
-                        ))}
-                      </TableRow>
+                      <ChildRows
+                        key={child.id}
+                        child={child}
+                        open={expanded.has(child.id)}
+                        muted={!enRama}
+                        onToggleOpen={() => toggleExpanded(child.id)}
+                        renderCells={(node) => cells(node, enRama)}
+                      />
                     ))
                   : null}
               </Fragment>
@@ -265,6 +308,16 @@ export function RoleViewsEditor({
           })}
         </TableBody>
       </Table>
+
+      {/* Aviso fijo al pie (S.3.VRO.1): el alcance de quitar permisos. */}
+      <Alert variant="info">
+        <InfoIcon />
+        <AlertDescription>
+          {tienePestanas
+            ? "Quitar una vista, una pestaña o una acción al rol la quita a todos los funcionarios con ese rol, en todos los establecimientos."
+            : "Quitar una vista o acción al rol la quita a todos los funcionarios con ese rol, en todos los establecimientos."}
+        </AlertDescription>
+      </Alert>
 
       <ConfirmRemovalsDialog
         open={confirmOpen}
@@ -279,7 +332,6 @@ export function RoleViewsEditor({
     </div>
   )
 }
-
 
 /** Guardar y Eliminar del módulo resumen a sus submódulos: encendidos si alguno los tiene. */
 function moduleChecked(
@@ -297,8 +349,83 @@ function moduleChecked(
 }
 
 function NodeIcon({ node }: { node: MenuNode }) {
+  // Ícono cargado como archivo (S.3.CAT.3): se pinta la imagen; si no, el del catálogo de íconos.
+  if (node.icon?.startsWith("data:") || node.icon?.startsWith("http")) {
+    return <img src={node.icon} alt="" className="size-4 shrink-0" />
+  }
   const Icon = getNavIcon(node.icon)
   return <Icon className="size-4 shrink-0 text-muted-foreground" />
+}
+
+function ExpandButton({
+  open,
+  name,
+  disabled,
+  onClick,
+}: {
+  open: boolean
+  name: string
+  disabled?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-label={`${open ? "Plegar" : "Desplegar"} ${name}`}
+      disabled={disabled}
+      className="grid size-5 place-items-center rounded-sm hover:bg-muted disabled:invisible"
+      onClick={onClick}
+    >
+      {open ? <MinusIcon className="size-4" /> : <PlusIcon className="size-4" />}
+    </button>
+  )
+}
+
+/** Fila de un submódulo y, si está desplegado, las de sus pestañas con permiso propio (S.3.VRO.1a). */
+function ChildRows({
+  child,
+  open,
+  muted,
+  onToggleOpen,
+  renderCells,
+}: {
+  child: MenuChildNode
+  open: boolean
+  muted: boolean
+  onToggleOpen: () => void
+  renderCells: (node: MenuNode) => ReactNode
+}) {
+  const pestanas = child.pestanas ?? []
+  const conPestanas = pestanas.length > 0
+  return (
+    <>
+      <TableRow className={muted ? "opacity-55" : undefined}>
+        <TableCell className={conPestanas ? "pl-7" : "pl-14"}>
+          <span className={conPestanas ? "inline-flex items-center gap-2 font-medium" : "inline-flex items-center gap-2"}>
+            {conPestanas ? <ExpandButton open={open} name={child.name} onClick={onToggleOpen} /> : null}
+            {child.name}
+          </span>
+        </TableCell>
+        {renderCells(child)}
+      </TableRow>
+      {open
+        ? pestanas.map((tab) => (
+            <TableRow key={tab.id} className={muted ? "opacity-55" : undefined}>
+              <TableCell className="pl-20">
+                <span className="inline-flex items-center gap-2">
+                  {tab.name}
+                  <Badge variant="outline" color="neutral">
+                    Pestaña
+                  </Badge>
+                </span>
+              </TableCell>
+              {renderCells(tab)}
+            </TableRow>
+          ))
+        : null}
+    </>
+  )
 }
 
 interface ActionCellProps {
@@ -308,13 +435,15 @@ interface ActionCellProps {
   checked: boolean
   changed: boolean
   disabled: boolean
+  /** Nombre del rol si la acción está bloqueada para él: interruptor apagado y candado. */
+  locked?: string
   onChange: (checked: boolean) => void
 }
 
-function ActionCell({ label, available, checked, changed, disabled, onChange }: ActionCellProps) {
+function ActionCell({ label, available, checked, changed, disabled, locked, onChange }: ActionCellProps) {
   if (!available) {
     return (
-      <TableCell>
+      <TableCell className="text-center">
         <Tooltip>
           <TooltipTrigger
             render={<span className="text-muted-foreground" aria-label={`${label}: la vista no la tiene`} />}
@@ -326,18 +455,35 @@ function ActionCell({ label, available, checked, changed, disabled, onChange }: 
       </TableCell>
     )
   }
+  if (locked) {
+    return (
+      <TableCell className="text-center">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                tabIndex={0}
+                className="relative inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              />
+            }
+          >
+            <Switch round aria-label={`${label}: bloqueada`} checked={false} disabled />
+            {/* Fuera del flujo: el interruptor queda centrado igual que los demás. */}
+            <LockIcon className="absolute top-1/2 left-full ml-2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-64">
+            Bloqueada para el rol {locked}: no se puede activar desde esta pantalla.
+          </TooltipContent>
+        </Tooltip>
+      </TableCell>
+    )
+  }
   return (
-    <TableCell>
-      <span className="inline-flex items-center gap-2">
-        <Switch
-          round
-          aria-label={label}
-          checked={checked}
-          disabled={disabled}
-          onCheckedChange={onChange}
-        />
+    <TableCell className="text-center">
+      <span className="relative inline-flex">
+        <Switch round aria-label={label} checked={checked} disabled={disabled} onCheckedChange={onChange} />
         {changed ? (
-          <Badge variant="soft" color="warning">
+          <Badge variant="soft" color="warning" className="absolute top-1/2 left-full ml-2 -translate-y-1/2 whitespace-nowrap">
             Sin guardar
           </Badge>
         ) : null}
@@ -345,7 +491,6 @@ function ActionCell({ label, available, checked, changed, disabled, onChange }: 
     </TableCell>
   )
 }
-
 
 interface ConfirmRemovalsDialogProps {
   open: boolean
@@ -358,7 +503,7 @@ interface ConfirmRemovalsDialogProps {
   onConfirm: () => void
 }
 
-/** Confirmación al quitar permisos (Regla 16): qué se quita, dónde y a quién. */
+/** Confirmación al quitar permisos (S.3.VRO.2): qué se quita, dónde y a quién. */
 function ConfirmRemovalsDialog({
   open,
   onOpenChange,
@@ -414,6 +559,7 @@ function ConfirmRemovalsDialog({
         </p>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline" color="neutral" disabled={busy}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction color="destructive" disabled={busy} onClick={onConfirm}>
@@ -428,8 +574,11 @@ function ConfirmRemovalsDialog({
 function viewPath(tree: MenuTreeNode[], id: number): string {
   for (const group of tree) {
     if (group.id === id) return group.name
-    const child = group.children.find((it) => it.id === id)
-    if (child) return `${group.name} › ${child.name}`
+    for (const child of group.children) {
+      if (child.id === id) return `${group.name} › ${child.name}`
+      const tab = child.pestanas?.find((it) => it.id === id)
+      if (tab) return `${group.name} › ${child.name} › ${tab.name}`
+    }
   }
   return String(id)
 }

@@ -10,7 +10,7 @@ export const respondieron = new Map<number, Set<string>>()
 export const encuestas: Encuesta[] = [
   {
     conversacionId: 6,
-    nombre: "Encuesta Satisfacción",
+    nombre: "Encuesta satisfacción",
     descripcion: "Encuesta de satisfacción institucional.",
     fechaInicio: haceDias(5),
     fechaCierre: haceDias(-10),

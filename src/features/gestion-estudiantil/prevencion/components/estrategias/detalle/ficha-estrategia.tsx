@@ -12,7 +12,7 @@ export function FichaEstrategia({ estrategia: e }: { estrategia: EstrategiaDetal
     <section aria-label="Datos de la estrategia" className="rounded-lg border p-4">
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Dato label="Tipo de estrategia">{e.tipo_nombre}</Dato>
-        <Dato label="Período Académico">{e.periodo_nombre}</Dato>
+        <Dato label="Período académico">{e.periodo_nombre}</Dato>
         <Dato label="Fechas">{formatRangoFechas(e.fecha_inicio, e.fecha_fin)}</Dato>
         <Dato label="Responsable">{abreviarPersona(e.responsable_nombre)}</Dato>
         <Dato label="Fuente de financiación">{e.fuente_financiacion}</Dato>

@@ -228,7 +228,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
         {formativoReadOnly ? (
           <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
             <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
-            El Referente de este grado es Formativo: el cierre promueve siempre.
+            El referente de este grado es Formativo: el cierre promueve siempre.
           </p>
         ) : null}
         {form}
@@ -540,7 +540,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   <DecimalField
                     suffix="%"
                     field={field}
-                    label={`Porcentaje mínimo de Área/${subjectLabel}`}
+                    label={`Porcentaje mínimo de área/${subjectLabel.toLowerCase()}`}
                     required={applyAverageApproval}
                     disabled={!applyAverageApproval}
                     description={applyAverageApproval ? undefined : "Se habilita con Sí."}
@@ -550,7 +550,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
             </div>
           </FormSection>
 
-          <FormSection title={`Área/${subjectLabelPlural} obligatorias para la aprobación`}>
+          <FormSection title={`Área/${subjectLabelPlural.toLowerCase()} obligatorias para la aprobación`}>
             <form.Field name="requiredSubjects">
               {(field) => (
                 <form.Subscribe selector={(state) => state.values.curriculumNode}>
@@ -604,7 +604,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
           >
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Cambiar el Nodo curricular</AlertDialogTitle>
+                <AlertDialogTitle>Cambiar el nodo curricular</AlertDialogTitle>
                 <AlertDialogDescription>
                   Se quitarán {requiredCount === 1 ? "la" : `las ${requiredCount}`} obligatoria
                   {requiredCount === 1 ? "" : "s"} para la aprobación elegida

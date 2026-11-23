@@ -608,7 +608,7 @@ function MatriculaEditPageContent() {
           }
         >
           <span className="inline-flex flex-wrap items-center gap-2">
-            Editar Matrícula
+            Editar matrícula
             {restricciones?.tieneComplementaria ? <BadgeComplementaria /> : null}
             {restricciones?.tipo === "COMPLEMENTARIA" ? (
               <Badge variant="soft" color="secondary" className="rounded-full text-xs font-medium tracking-normal">

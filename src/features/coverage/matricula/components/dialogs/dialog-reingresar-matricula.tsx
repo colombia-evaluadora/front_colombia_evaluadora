@@ -217,7 +217,7 @@ export function DialogReingresar({
               </Aviso>
             ))}
             {cerradas.length ? (
-              <Aviso tono="advertencia" titulo="Solo se reingresa con el Período Académico Abierto.">
+              <Aviso tono="advertencia" titulo="Solo se reingresa con el período académico Abierto.">
                 Quite de la selección: {cerradas.map((p) => nombreDe(matriculaDe.get(p.matriculaId) as Matricula)).join(", ")}.
               </Aviso>
             ) : null}

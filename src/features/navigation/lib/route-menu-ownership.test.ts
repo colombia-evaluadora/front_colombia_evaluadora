@@ -126,6 +126,8 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/administracion/conservacion-datos/politicas/nueva": MENU.conservacionDatos,
   "/app/administracion/conservacion-datos/politicas/editar/$politicaId": MENU.conservacionDatos,
   "/app/registro-de-actividad/bitacora": MENU.registroActividad,
+  "/app/registro-de-actividad/bitacora/$modulo": MENU.registroActividad,
+  "/app/registro-de-actividad/documentos-emitidos": MENU.registroActividad,
 
   "/app/establecimiento-educativo/general": MENU.establecimiento,
   "/app/establecimiento-educativo/agregar": MENU.establecimiento,

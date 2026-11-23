@@ -76,7 +76,7 @@ function SuperadministradorContent(props: ContentProps) {
       <DialogContent showCloseButton={false} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {props.modo === "nuevo" ? "Nuevo Superadministrador" : "Superadministrador"}
+            {props.modo === "nuevo" ? "Nuevo superadministrador" : "Superadministrador"}
           </DialogTitle>
         </DialogHeader>
         {isError ? (
@@ -241,9 +241,9 @@ function SuperadministradorForm({
 
   const titulo =
     modo === "nuevo"
-      ? "Nuevo Superadministrador"
+      ? "Nuevo superadministrador"
       : modo === "modificar"
-        ? "Modificar Superadministrador"
+        ? "Modificar superadministrador"
         : (actual?.nombre ?? "Superadministrador")
   const tipoOptions = tipos.map((t) => ({ value: t.pk, label: `${t.sigla} · ${t.nombre}` }))
   const numerico = esNumerico(tipo)

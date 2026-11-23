@@ -177,7 +177,7 @@ export function ComunicadosTerritorialPage() {
                   <TableHead>Título</TableHead>
                   <TableHead>Publicado por</TableHead>
                   <TableHead>Tipos</TableHead>
-                  <TableHead className="text-right">Destinatarios</TableHead>
+                  <TableHead className="text-center">Destinatarios</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="w-10">
                     <span className="sr-only">Acciones</span>
@@ -194,7 +194,7 @@ export function ComunicadosTerritorialPage() {
                     <TableCell className="max-w-56 truncate" title={dirigidoA(c)}>
                       {dirigidoA(c)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{c.destinatarios}</TableCell>
+                    <TableCell className="text-center tabular-nums">{c.destinatarios}</TableCell>
                     <TableCell>
                       <Estado estado={c.estado} />
                     </TableCell>
