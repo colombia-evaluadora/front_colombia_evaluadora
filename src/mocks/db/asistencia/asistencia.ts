@@ -549,7 +549,7 @@ interface EstudianteBase {
 }
 
 /** Subconjunto determinístico por grupo (no todos los grupos tienen a todos los estudiantes). */
-function padronBaseGrupo(fkGrupo: number): EstudianteBase[] {
+export function padronBaseGrupo(fkGrupo: number): EstudianteBase[] {
   const offset = fkGrupo % ESTUDIANTES.length
   const count = 6 + (fkGrupo % 3)
   return Array.from({ length: count }, (_, i) => {
@@ -602,7 +602,7 @@ function claveRegistroManual(fkMatricula: number, fkGrupo: number, fkAsignatura:
   return `${fkMatricula}-${fkGrupo}-${fkAsignatura}-${fecha}-${bloque}`
 }
 
-const FUENTES_JUSTIFICACION: Record<number, string> = {
+export const FUENTES_JUSTIFICACION: Record<number, string> = {
   1: "Llamada del acudiente",
   2: "Mensaje del acudiente",
   3: "Aviso del establecimiento",
@@ -1024,7 +1024,7 @@ export function periodosEvaluacionGrupo(hoy = new Date()) {
     .filter((p) => p.fecha_inicio <= toIso(hoy))
 }
 
-function toIso(d: Date): string {
+export function toIso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
@@ -1073,4 +1073,14 @@ export function generarAsistenciaPorGrupo(grupo: number, periodo: number, asigna
     }
   }
   return filas
+}
+
+/** Solicitudes de otro origen (planilla diaria, TASISTENCIA_DIARIA) en la misma bandeja. */
+export function abrirSolicitudExterna(
+  fila: Omit<SolicitudAprobacionAsistencia, "pk_tsolicitud_aprobacion">,
+  aplicar: () => void,
+): number {
+  const pk = siguientePkSolicitud++
+  solicitudes.set(pk, { fila: { ...fila, pk_tsolicitud_aprobacion: pk }, aplicar })
+  return pk
 }

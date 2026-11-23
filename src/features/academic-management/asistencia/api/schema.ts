@@ -28,3 +28,13 @@ export const asistenciaManualSearchSchema = z.object({
 export type AsistenciaManualSearch = z.infer<typeof asistenciaManualSearchSchema>
 
 
+
+// Planilla diaria (Regla 115): sin grupo o fecha vuelve al calendario.
+export const asistenciaDiariaSearchSchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
+  sede: z.coerce.number().optional().catch(undefined),
+  grupo: z.coerce.number().optional().catch(undefined),
+  desde: z.enum(["calendario", "grupo"]).optional().catch(undefined),
+  periodo: z.coerce.number().optional().catch(undefined),
+})
+export type AsistenciaDiariaSearch = z.infer<typeof asistenciaDiariaSearchSchema>

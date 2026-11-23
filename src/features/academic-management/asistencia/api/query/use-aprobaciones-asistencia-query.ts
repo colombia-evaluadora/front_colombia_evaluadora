@@ -39,12 +39,14 @@ export function agruparPorSesion(solicitudes: SolicitudAprobacionAsistencia[]): 
   const porSesion = new Map<string, SesionSolicitudes>()
   for (const s of solicitudes) {
     const fecha = (s.fecha ?? s.valor_anterior?.fecha)?.slice(0, 10) ?? null
-    const clave = `${s.fk_tgrupo}|${s.fk_tasignatura}|${s.fk_tactividad}|${fecha}`
+    const diaria = s.tabla_objeto === "TASISTENCIA_DIARIA"
+    // La planilla diaria (sso V747) no tiene asignatura: es una tarjeta por grupo y día.
+    const clave = `${s.fk_tgrupo}|${diaria ? "diaria" : s.fk_tasignatura}|${s.fk_tactividad}|${fecha}`
     const sesion = porSesion.get(clave) ?? {
       clave,
       fkGrupo: s.fk_tgrupo,
       grupo: s.grupo,
-      materia: s.actividad ?? s.asignatura ?? "",
+      materia: s.actividad ?? s.asignatura ?? (diaria ? "Asistencia diaria" : ""),
       fecha,
       solicitante: s.solicitante,
       solicitudes: [],

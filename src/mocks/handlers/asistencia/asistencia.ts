@@ -15,6 +15,104 @@ import {
   soloMisClases,
 } from "@/mocks/db/asistencia/asistencia"
 import { correccionesNotaPendientes, resolverCorreccionesNota } from "@/mocks/db/comunicaciones"
+import {
+  bloquesDelDia,
+  calendarioDiario,
+  cambiarModoAsistencia,
+  esGrupoDiario,
+  gruposDiarios,
+  justificarDiaria,
+  modoAsistenciaGrupo,
+  planillaDiaria,
+  porGrupoDiario,
+  registrarDiaria,
+  subirSoporteDiario,
+} from "@/mocks/db/asistencia/asistencia-diaria"
+import { usuarioDe } from "@/mocks/handlers/comunicaciones-elecciones"
+import type { DiariaRegistrarRequest } from "@/features/academic-management/asistencia/api/types/asistencia-diaria"
+
+// Registra la planilla diaria quien no es solo docente (Responsable de grupo, coordinación, administración).
+function registraDiaria(request: Request): boolean {
+  const roles = usuarioDe(request)?.roles ?? []
+  return !(roles.includes("CEVAL-DOCENTE") && !roles.includes("CEVAL-DIRECTOR_GRUPO"))
+}
+
+const error22023 =(message: string, status = 400) => HttpResponse.json({ status: "error", message }, { status })
+
+// Planilla diaria (sso V748). Van antes que /asistencias/:id y /grupos/:id.
+const asistenciaDiariaHandlers = [
+  http.post("*/api/files/eval-col/asistencias/soporte", async ({ request }) => {
+    await delay(200)
+    const archivo = (await request.formData()).get("SOPORTE")
+    return HttpResponse.json({ rows: [{ pk_tarchivo: subirSoporteDiario(archivo instanceof File ? archivo.name : "soporte.pdf") }] })
+  }),
+
+  http.get("*/api/eval-col/asistencias/diaria/grupos", async ({ request }) => {
+    await delay(120)
+    return HttpResponse.json({ rows: gruposDiarios(registraDiaria(request)) })
+  }),
+
+  http.get("*/api/eval-col/asistencias/diaria/calendario", async ({ request }) => {
+    await delay(150)
+    // Como el back: solo los grupos donde el usuario registra la planilla.
+    if (!registraDiaria(request)) return HttpResponse.json({ rows: [] })
+    const url = new URL(request.url)
+    const hoy = url.searchParams.get("HOY") ?? new Date().toISOString().slice(0, 10)
+    return HttpResponse.json(calendarioDiario(Number(url.searchParams.get("ANIO")), Number(url.searchParams.get("MES")), hoy))
+  }),
+
+  http.get("*/api/eval-col/asistencias/diaria/planilla", async ({ request }) => {
+    await delay(200)
+    const url = new URL(request.url)
+    const filas = planillaDiaria(Number(url.searchParams.get("GRUPO")), url.searchParams.get("FECHA") ?? "")
+    return typeof filas === "string" ? error22023(filas) : HttpResponse.json({ rows: filas })
+  }),
+
+  http.get("*/api/eval-col/asistencias/diaria/bloques", async ({ request }) => {
+    await delay(100)
+    const url = new URL(request.url)
+    return HttpResponse.json(bloquesDelDia(Number(url.searchParams.get("GRUPO")), url.searchParams.get("FECHA") ?? ""))
+  }),
+
+  http.post("*/api/eval-col/asistencias/diaria/registrar", async ({ request }) => {
+    await delay(300)
+    const r = registrarDiaria((await request.json()) as DiariaRegistrarRequest)
+    // Como el back real: SELECT ... AS resultado, envuelto en rows.
+    return "status" in r ? error22023(r.message, r.status) : HttpResponse.json({ rows: [{ resultado: r }] })
+  }),
+
+  http.patch("*/api/eval-col/asistencias/diaria/:id/justificar", async ({ request, params }) => {
+    await delay(200)
+    const fallo = justificarDiaria(Number(params.id), (await request.json()) as { JUSTIFICACION?: string; FUENTE?: number })
+    if (fallo) return error22023(fallo.message, fallo.status)
+    return HttpResponse.json({ rows: [{ pk_tasistencia_diaria: Number(params.id) }] })
+  }),
+
+  http.get("*/api/eval-col/asistencias/diaria/por-grupo", async ({ request }) => {
+    await delay(250)
+    const url = new URL(request.url)
+    const filas = porGrupoDiario(Number(url.searchParams.get("GRUPO")), Number(url.searchParams.get("PERIODO")))
+    return typeof filas === "string" ? error22023(filas) : HttpResponse.json({ rows: filas })
+  }),
+
+  // Faltaba en el mock: sin él la pestaña Asistencia por grupo caía en el proxy (401 y cierre de sesión).
+  http.get("*/api/eval-col/asistencias/por-grupo/rotulo", async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [{ nombre_asignatura: "Asignatura" }] })
+  }),
+
+  http.get("*/api/eval-col/grupos/:id/modo-asistencia", async ({ params }) => {
+    await delay(150)
+    return HttpResponse.json({ rows: [modoAsistenciaGrupo(Number(params.id))] })
+  }),
+
+  http.patch("*/api/eval-col/grupos/:id/modo-asistencia", async ({ request, params }) => {
+    await delay(200)
+    const { MODO } = (await request.json()) as { MODO: string }
+    const r = cambiarModoAsistencia(Number(params.id), MODO)
+    return "status" in r ? error22023(r.message, r.status) : HttpResponse.json({ rows: [r] })
+  }),
+]
 
 import type {
   AsistenciaEditarRequest,
@@ -24,6 +122,8 @@ import type {
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 export const asistenciaHandlers = [
+  ...asistenciaDiariaHandlers,
+
   http.post("*/api/files/eval-col/tmp-icono-simbolo", async ({ request }) => {
     await delay(200)
 
@@ -43,7 +143,8 @@ export const asistenciaHandlers = [
     const mes = Number(url.searchParams.get("MES") ?? new Date().getMonth() + 1)
 
     const mias = url.searchParams.get("MIAS") === "true"
-    const todas = generarSesionesMes(sede, anio, mes)
+    // fn_asistencia_calendario deja fuera los grupos en modo Diaria (Regla 115).
+    const todas = generarSesionesMes(sede, anio, mes).filter((s) => !esGrupoDiario(s.fk_grupo))
     const sesiones: SesionCalendario[] = mias ? soloMisClases(todas) : todas
     // El backend manda el NOMBRE en `grado`/`jornada` y el código en
     // `grado_valor`/`jornada_valor`; el front los reacomoda al normalizar.

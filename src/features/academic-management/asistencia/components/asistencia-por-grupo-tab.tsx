@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router"
 import * as React from "react"
-import { createPortal } from "react-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { GearIcon, MagnifyingGlassIcon } from "@/components/ui/icons"
+import { GearIcon, InfoIcon, MagnifyingGlassIcon } from "@/components/ui/icons"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -37,7 +36,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { toSelectItemsMap } from "@/lib/catalog-options"
-import { exportarCsv as descargarCsv, nombreArchivoSeguro } from "@/lib/csv"
 import { cn } from "@/lib/utils"
 
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
@@ -46,12 +44,21 @@ import {
   useAsistenciaPorGrupoQuery,
   usePeriodosGrupoQuery,
   useRotuloAsignaturaGrupo,
-  type AsistenciaPorGrupo,
   type CeldaAsistencia,
   type EstudianteGrupo,
   type SesionGrupo,
   type TotalesEstudiante,
 } from "@/features/academic-management/asistencia/api/query/use-asistencia-por-grupo-query"
+import {
+  useAsistenciaDiariaGruposQuery,
+  useAsistenciaDiariaPorGrupoQuery,
+} from "@/features/academic-management/asistencia/api/query/use-asistencia-diaria-query"
+import { etiquetaGrupo, totalesPorDia } from "@/features/academic-management/asistencia/utils/asistencia-diaria"
+import {
+  armarReportePorGrupo,
+  type ReportePorGrupo,
+  type TotalPorGrupo,
+} from "@/features/academic-management/asistencia/utils/reporte-por-grupo"
 
 export const TODAS_ASIGNATURAS = "todas"
 
@@ -61,16 +68,9 @@ export interface FiltrosPorGrupo {
   periodo?: number
 }
 
-/** Lo que el encabezado de la página necesita para Imprimir y Exportar. */
-export interface ReportePorGrupo {
-  titulo: string
-  subtitulo: string
-  columnas: string[]
-  filas: string[][]
-  leyenda: string
-}
+export type { ReportePorGrupo }
 
-type Total = "fallas" | "justificadas" | "retrasos" | "porcentaje"
+type Total = TotalPorGrupo
 const TOTALES: { id: Total; corto: string; largo: string; ayuda: string }[] = [
   { id: "fallas", corto: "Fallas", largo: "Fallas", ayuda: "Sesiones con No asistió" },
   {
@@ -161,8 +161,16 @@ export function AsistenciaPorGrupoTab({
     },
     sede != null,
   )
+  // Regla 115: el calendario por clase deja fuera los grupos Diaria; salen de /asistencias/diaria/grupos
+  // (docente: solo sus asignaturas y sin registrar; Responsable de grupo o nivel <= 2: todas).
+  const { data: diarios = [] } = useAsistenciaDiariaGruposQuery(sede)
   const grupos = new Map<number, string>()
   for (const c of clases) grupos.set(c.fk_grupo, `${c.grado}${c.grupo}`)
+  for (const d of diarios) if (!grupos.has(d.fk_tgrupo)) grupos.set(d.fk_tgrupo, etiquetaGrupo(d))
+  const grupoDiario = diarios.find((d) => d.fk_tgrupo === filtros.grupo)
+  const esDiaria = grupoDiario != null
+  // En un grupo Diaria quien no registra (el docente) ve solo su asignatura.
+  const soloSuAsignatura = soloLasQueDicta || (esDiaria && !grupoDiario.puede_registrar)
   const opcionesGrupo = [...grupos]
     .map(([value, label]) => ({ value: String(value), label }))
     .sort((a, b) => a.label.localeCompare(b.label, "es", { numeric: true }))
@@ -171,9 +179,10 @@ export function AsistenciaPorGrupoTab({
     if (c.fk_grupo === filtros.grupo && !c.es_formativa)
       asignaturas.set(c.fk_asignatura, c.asignatura)
   }
+  for (const a of grupoDiario?.asignaturas ?? []) asignaturas.set(a.fk_tasignatura, a.asignatura)
   const rotuloAsignatura = useRotuloAsignaturaGrupo(filtros.grupo)
   const opcionesAsignatura = [
-    ...(soloLasQueDicta ? [] : [{ value: TODAS_ASIGNATURAS, label: opcionTodas(rotuloAsignatura) }]),
+    ...(soloSuAsignatura ? [] : [{ value: TODAS_ASIGNATURAS, label: opcionTodas(rotuloAsignatura) }]),
     ...[...asignaturas]
       .map(([value, label]) => ({ value: String(value), label }))
       .sort((a, b) => a.label.localeCompare(b.label, "es")),
@@ -187,7 +196,7 @@ export function AsistenciaPorGrupoTab({
   const asignatura =
     filtros.asignatura != null
       ? String(filtros.asignatura)
-      : soloLasQueDicta
+      : soloSuAsignatura
         ? opcionesAsignatura[0]?.value
         : undefined
   const todas = asignatura === TODAS_ASIGNATURAS
@@ -216,16 +225,26 @@ export function AsistenciaPorGrupoTab({
   const nombreAsignatura = opcionesAsignatura.find((o) => o.value === asignatura)?.label
   const nombrePeriodo = opcionesPeriodo.find((o) => o.value === String(periodo))?.label
 
-  // El reporte siempre lleva a todos los estudiantes del filtro, no solo la página.
+  // Grupo Diaria: el docente consulta en solo lectura; con todas las asignaturas, el día cuenta una vez.
+  const lecturaDiaria = esDiaria && !grupoDiario.puede_registrar
+  const { data: diasDiarios } = useAsistenciaDiariaPorGrupoQuery(
+    listo && esDiaria && todas && !lecturaDiaria ? { GRUPO: filtros.grupo!, PERIODO: periodo! } : null,
+  )
+  const totalesDiarios = diasDiarios ? totalesPorDia(diasDiarios) : undefined
+
+  // Imprimir/Exportar: el servicio de reportes arma la tabla con los mismos filtros, búsqueda y totales visibles.
   const reporte =
-    listo && data && data.sesiones.length > 0
-      ? armarReporte(
-          data,
-          estudiantes,
-          todas,
-          `${nombreGrupo ?? ""} · ${nombreAsignatura ?? ""}`,
-          nombrePeriodo ?? "",
-        )
+    listo && data && data.sesiones.length > 0 && estudiantes.length > 0
+      ? armarReportePorGrupo({
+          grupo: filtros.grupo!,
+          periodo: periodo!,
+          asignatura: todas ? undefined : Number(asignatura),
+          busqueda: texto,
+          ocultos,
+          grupoNombre: nombreGrupo ?? "",
+          areaNombre: nombreAsignatura ?? "",
+          periodoNombre: nombrePeriodo ?? "",
+        })
       : null
   const claveReporte = reporte ? JSON.stringify(reporte) : null
   React.useEffect(() => {
@@ -234,6 +253,22 @@ export function AsistenciaPorGrupoTab({
 
   return (
     <div className="flex flex-col gap-4">
+      {lecturaDiaria && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm"
+        >
+          <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" />
+          <p className="flex-1">
+            <b>{nombreGrupo}</b> registra la asistencia por día (modo Diaria): la registra el Responsable de grupo.
+            Usted la consulta en solo lectura, solo con su asignatura ({nombreAsignatura ?? rotuloAsignatura}), sin
+            abrir la planilla.
+          </p>
+          <Badge variant="soft" color="neutral">
+            Solo lectura
+          </Badge>
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         <div className="grid gap-4 sm:grid-cols-3">
           <Filtro
@@ -313,6 +348,7 @@ export function AsistenciaPorGrupoTab({
                 sesiones={data.sesiones}
                 estudiantes={visibles}
                 totales={totales}
+                totalesDiarios={totalesDiarios}
               />
             ) : (
               <MatrizSesiones
@@ -320,7 +356,9 @@ export function AsistenciaPorGrupoTab({
                 estudiantes={visibles}
                 totales={totales}
                 planilla={
-                  puedeAbrirPlanilla && sede != null ? { sede, grupo: filtros.grupo!, periodo } : null
+                  puedeAbrirPlanilla && sede != null && !lecturaDiaria
+                    ? { sede, grupo: filtros.grupo!, periodo, diaria: esDiaria }
+                    : null
                 }
               />
             )}
@@ -504,7 +542,8 @@ function MatrizSesiones({
   sesiones: SesionGrupo[]
   estudiantes: EstudianteGrupo[]
   totales: typeof TOTALES
-  planilla: { sede: number; grupo: number; periodo?: number } | null
+  /** `diaria`: el grupo registra por día y la fecha abre la planilla diaria (Regla 115). */
+  planilla: { sede: number; grupo: number; periodo?: number; diaria?: boolean } | null
 }) {
   // Una columna por día: el back ya junta los bloques (la cascada de Llegó tarde es un Retraso).
   return (
@@ -530,24 +569,42 @@ function MatrizSesiones({
                   <Tooltip>
                     <TooltipTrigger
                       render={
-                        <Link
-                          to={paths.app.asistenciaManual.getHref()}
-                          search={{
-                            fecha: s.fecha,
-                            sede: planilla.sede,
-                            grupo: planilla.grupo,
-                            asignatura: s.fkAsignatura,
-                            desde: "grupo",
-                            periodo: planilla.periodo,
-                          }}
-                          className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-primary"
-                        />
+                        planilla.diaria ? (
+                          <Link
+                            to={paths.app.asistenciaDiaria.getHref()}
+                            search={{
+                              fecha: s.fecha,
+                              sede: planilla.sede,
+                              grupo: planilla.grupo,
+                              desde: "grupo",
+                              periodo: planilla.periodo,
+                            }}
+                            className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                          />
+                        ) : (
+                          <Link
+                            to={paths.app.asistenciaManual.getHref()}
+                            search={{
+                              fecha: s.fecha,
+                              sede: planilla.sede,
+                              grupo: planilla.grupo,
+                              asignatura: s.fkAsignatura,
+                              desde: "grupo",
+                              periodo: planilla.periodo,
+                            }}
+                            className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+                          />
+                        )
                       }
                     >
                       {etiqueta}
                     </TooltipTrigger>
                     <TooltipContent>
-                      {s.registrada ? "Abrir la planilla" : "Registrar esta sesión"}
+                      {planilla.diaria
+                        ? "Abrir la planilla diaria"
+                        : s.registrada
+                          ? "Abrir la planilla"
+                          : "Registrar esta sesión"}
                     </TooltipContent>
                   </Tooltip>
                 ) : (
@@ -603,10 +660,13 @@ function MatrizAsignaturas({
   sesiones,
   estudiantes,
   totales,
+  totalesDiarios,
 }: {
   sesiones: SesionGrupo[]
   estudiantes: EstudianteGrupo[]
   totales: typeof TOTALES
+  /** Grupo Diaria: totales del estudiante por día (/asistencias/diaria/por-grupo). */
+  totalesDiarios?: Map<number, TotalesEstudiante>
 }) {
   const asignaturas = agruparPorAsignatura(sesiones)
   return (
@@ -662,7 +722,10 @@ function MatrizAsignaturas({
                 </TableCell>
               )
             })}
-            <CeldasTotales t={totalesEstudiante(e, sesiones)} totales={totales} />
+            <CeldasTotales
+              t={totalesDiarios?.get(e.fkMatricula) ?? totalesEstudiante(e, sesiones)}
+              totales={totales}
+            />
           </TableRow>
         ))}
       </TableBody>
@@ -700,137 +763,6 @@ function Leyenda({ todas }: { todas: boolean }) {
         Sesión sin registrar
       </li>
     </ul>
-  )
-}
-
-function armarReporte(
-  data: AsistenciaPorGrupo,
-  estudiantes: EstudianteGrupo[],
-  todas: boolean,
-  titulo: string,
-  periodo: string,
-): ReportePorGrupo {
-  const totalesFila = (t: TotalesEstudiante) => TOTALES.map((c) => textoTotal(t, c.id))
-  const pendientes = data.sesiones.filter((s) => !s.registrada).map((s) => fechaCorta(s.fecha))
-  if (todas) {
-    const asignaturas = agruparPorAsignatura(data.sesiones)
-    return {
-      titulo,
-      subtitulo: periodo,
-      columnas: ["Estudiante", ...asignaturas.map((a) => a.nombre), ...TOTALES.map((t) => t.largo)],
-      filas: estudiantes.map((e) => [
-        e.nombre,
-        ...asignaturas.map((a) => {
-          const t = totalesEstudiante(e, a.sesiones)
-          return `${t.fallas} · ${t.retrasos}`
-        }),
-        ...totalesFila(totalesEstudiante(e, data.sesiones)),
-      ]),
-      leyenda: "Cada asignatura: fallas · retrasos del período.",
-    }
-  }
-  return {
-    titulo,
-    subtitulo: periodo,
-    columnas: [
-      "Estudiante",
-      ...data.sesiones.map((s) => fechaCorta(s.fecha)),
-      ...TOTALES.map((t) => t.largo),
-    ],
-    filas: estudiantes.map((e) => [
-      e.nombre,
-      ...data.sesiones.map((s) => (s.registrada ? letra(e.celdas.get(s.id)) : "")),
-      ...totalesFila(totalesEstudiante(e, data.sesiones)),
-    ]),
-    leyenda:
-      "A Asistió · N No asistió · N·J No asistió, justificada · T Llegó tarde · — No estaba en el grupo en esa fecha" +
-      (pendientes.length > 0
-        ? ` · Sin marca: sesión sin registrar (${pendientes.join(", ")})`
-        : ""),
-  }
-}
-
-/** Excel abre el CSV con `;` y BOM sin mezclar tildes ni columnas. */
-export function exportarCsv(reporte: ReportePorGrupo) {
-  descargarCsv(
-    nombreArchivoSeguro(`asistencia ${reporte.titulo} ${reporte.subtitulo}.csv`, "·"),
-    reporte.columnas,
-    reporte.filas,
-  )
-}
-
-/** Hoja de impresión: se monta en `body` y, al imprimir, es lo único visible. */
-export function ImpresionPorGrupo({
-  reporte,
-  institucion,
-  sede,
-}: {
-  reporte: ReportePorGrupo
-  institucion: string
-  sede: string
-}) {
-  const ahora = new Date()
-  return createPortal(
-    <div className="asistencia-impresion hidden bg-white text-[11px] text-neutral-900 print:block">
-      <style>{`@media print {
-  @page { size: landscape; margin: 12mm; }
-  body > *:not(.asistencia-impresion) { display: none !important; }
-}`}</style>
-      <header className="flex items-start justify-between border-t-4 border-[#0a1f6b] pt-3 pb-2">
-        <div>
-          <p className="text-base font-bold text-[#0a1f6b]">{institucion}</p>
-          <p className="text-neutral-600">{sede}</p>
-        </div>
-        <p className="text-right text-neutral-600">
-          Generado el
-          <br />
-          <b className="text-neutral-900">{ahora.toLocaleDateString("es-CO")}</b>{" "}
-          {ahora.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-        </p>
-      </header>
-      <div className="border-t border-neutral-300 py-3 text-center">
-        <h1 className="text-sm font-bold tracking-wide text-[#0a1f6b]">
-          Asistencia {reporte.titulo}
-        </h1>
-        <p className="text-neutral-600">{reporte.subtitulo}</p>
-      </div>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            {reporte.columnas.map((c, i) => (
-              <th
-                key={i}
-                className={cn(
-                  "border border-white bg-[#0a1f6b] px-2 py-1 font-semibold text-white",
-                  i === 0 ? "text-left" : "text-center",
-                )}
-              >
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {reporte.filas.map((f, i) => (
-            <tr key={i}>
-              {f.map((v, j) => (
-                <td
-                  key={j}
-                  className={cn(
-                    "border border-neutral-300 px-2 py-1",
-                    j === 0 ? "text-left" : "text-center",
-                  )}
-                >
-                  {v}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="mt-2 text-neutral-600">{reporte.leyenda}</p>
-    </div>,
-    document.body,
   )
 }
 

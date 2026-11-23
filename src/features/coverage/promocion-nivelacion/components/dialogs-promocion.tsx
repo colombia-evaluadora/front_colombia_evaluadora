@@ -184,6 +184,9 @@ export function DialogPromover({ reprobados, onClose, onHecho }: { reprobados: R
   // La fecha del acta no puede ser anterior al cierre académico más tardío de la selección.
   const cierre = aptos.map((p) => p.fechaCierre).sort().at(-1)
   const minActa = cierre ? parseDateValue(cierre) : undefined
+  // El plazo es uno solo para la selección: no pasa del fin del período siguiente más temprano (el de la reserva; V729).
+  const tope = aptos.map((p) => p.finPeriodoSiguiente).filter(Boolean).sort().at(0)
+  const maxPlazo = tope ? parseDateValue(tope) : undefined
 
   const errores = {
     acta: !acta.trim() ? "El acta es obligatoria." : undefined,
@@ -198,7 +201,9 @@ export function DialogPromover({ reprobados, onClose, onHecho }: { reprobados: R
       ? "El plazo para nivelar es obligatorio."
       : fechaActa && plazo <= fechaActa
         ? "El plazo debe ser posterior a la fecha del acta."
-        : undefined,
+        : maxPlazo && plazo > maxPlazo
+          ? `El plazo no puede pasar del fin del período académico siguiente (${formatoFecha(tope ?? "")}).`
+          : undefined,
   }
   const uno = reprobados.length === 1
 
@@ -296,6 +301,7 @@ export function DialogPromover({ reprobados, onClose, onHecho }: { reprobados: R
                   value={plazo}
                   onChange={setPlazo}
                   minDate={fechaActa}
+                  maxDate={maxPlazo}
                   error={intento ? errores.plazo : undefined}
                   ayuda="El mismo para todas sus áreas pendientes."
                 />

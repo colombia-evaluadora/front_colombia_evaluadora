@@ -17,6 +17,8 @@ import {
 } from "@/features/academic-management/asistencia/api/query/use-asistencia-dias-inhabiles-query"
 import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, ESTADO_SESION_LABELS, esFechaFutura, formatGrado, formatHora, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover, AsistenciaGrupoDrillDown } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
+import type { EntradaDiaria } from "@/features/academic-management/asistencia/utils/asistencia-diaria"
+import { toIsoDate } from "@/features/academic-management/asistencia/lib/fechas"
 
 export interface AsistenciaDayEntry {
   id: string
@@ -54,6 +56,8 @@ interface AsistenciaMonthGridProps {
   locale?: Locale
   manualSede: number
   restrictedView: boolean
+  /** Regla 115: una entrada "Asistencia diaria" por día y grupo en modo Diaria. */
+  diarias?: Map<number, EntradaDiaria[]>
 }
 
 const MESES = Array.from({ length: 12 }, (_, i) =>
@@ -67,13 +71,14 @@ export function AsistenciaMonthGrid({
   locale = es,
   manualSede,
   restrictedView,
+  diarias = SIN_DIARIAS,
 }: AsistenciaMonthGridProps) {
   const defaultClassNames = getDefaultClassNames()
   const year = month.getFullYear()
 
   return (
     <MonthGridContext.Provider
-      value={{ events, inhabiles, manualSede, restrictedView }}
+      value={{ events, inhabiles, manualSede, restrictedView, diarias }}
     >
       <div
         data-slot="asistencia-month-grid"
@@ -125,8 +130,68 @@ export function AsistenciaMonthGrid({
 // Day estable: definido inline, DayPicker remontaba cada celda (y cerraba el popover) en cada render.
 const MonthGridContext = React.createContext<Omit<AsistenciaMonthGridProps, "month" | "locale"> | null>(null)
 
+const SIN_DIARIAS = new Map<number, EntradaDiaria[]>()
+
+/** Planilla diaria de un grupo: `Volver` regresa al Calendario. */
+function hrefDiaria(entrada: EntradaDiaria, sede: number) {
+  return {
+    to: paths.app.asistenciaDiaria.getHref(),
+    search: { fecha: entrada.fecha, sede, grupo: entrada.fkGrupo, desde: "calendario" as const },
+  }
+}
+
+/** Futuro sin estado: «Asistencia diaria · Sexto 02»; hasta hoy lleva Registrada o Pendiente. */
+function tituloDiaria(entrada: EntradaDiaria): string {
+  const base = `Asistencia diaria · ${entrada.etiqueta}`
+  return entrada.estado === "SIN_ESTADO" ? base : `${base} · ${ESTADO_SESION_LABELS[entrada.estado].title}`
+}
+
+function FilaDiaria({ entrada }: { entrada: EntradaDiaria }) {
+  const EstadoIcon = ESTADO_SESION_ICON[entrada.estado]
+  return (
+    <li className="flex min-w-0 shrink-0 items-center gap-1 text-xs leading-tight" title={tituloDiaria(entrada)}>
+      {entrada.estado !== "SIN_ESTADO" && (
+        <EstadoIcon className={cn("size-3 shrink-0", ESTADO_SESION_COLOR[entrada.estado])} />
+      )}
+      <span className="min-w-0 flex-1 truncate">
+        <span className="font-semibold">Asistencia diaria</span> · {entrada.etiqueta}
+      </span>
+    </li>
+  )
+}
+
+/** Enlace del día a la planilla diaria; los días futuros no se eligen. */
+function DiariaDelDia({ entrada, sede }: { entrada: EntradaDiaria; sede: number }) {
+  const EstadoIcon = ESTADO_SESION_ICON[entrada.estado]
+  if (entrada.estado === "SIN_ESTADO") {
+    return (
+      <li className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+        Asistencia diaria · {entrada.etiqueta}
+      </li>
+    )
+  }
+  const { to, search } = hrefDiaria(entrada, sede)
+  return (
+    <li>
+      <Link
+        to={to}
+        search={search}
+        title={ESTADO_SESION_LABELS[entrada.estado].title}
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[entrada.estado])} />
+        <span className="min-w-0 flex-1 truncate">
+          <span className="font-medium">Asistencia diaria</span> · {entrada.etiqueta}
+        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">{ESTADO_SESION_LABELS[entrada.estado].title}</span>
+        <CaretRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
+      </Link>
+    </li>
+  )
+}
+
 function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
-  const { events, inhabiles, manualSede, restrictedView } =
+  const { events, inhabiles, manualSede, restrictedView, diarias } =
     React.useContext(MonthGridContext)!
     const date = day.date
     const isOutside = Boolean(modifiers.outside)
@@ -134,6 +199,8 @@ function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
     const items = isOutside ? [] : (events.get(date.getDate()) ?? [])
     const inhabilesDia = isOutside ? [] : (inhabiles.get(date.getDate()) ?? [])
     const motivoInhabil = textoInhabil(inhabilesDia)
+    // El día inhábil no se elige aunque el back mandara una entrada.
+    const diariasDia = isOutside || motivoInhabil ? [] : (diarias?.get(date.getDate()) ?? [])
     return (
       <td
         {...tdProps}
@@ -169,8 +236,11 @@ function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
                   {motivoInhabil}
                 </span>
               )}
-              {items.length > 0 && (
+              {(items.length > 0 || diariasDia.length > 0) && (
                 <ul className="flex min-h-0 min-w-0 flex-1 flex-col gap-0.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {diariasDia.map((d) => (
+                    <FilaDiaria key={`diaria-${d.fkGrupo}`} entrada={d} />
+                  ))}
                   {restrictedView
                     ?
                       gradosDelDia(items).map(({ grado, jornada, cantidad, estado }) => {
@@ -223,9 +293,19 @@ function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
               )}
             </div>
           )
-          if (items.length === 0) return cellBody
+          if (items.length === 0 && diariasDia.length === 0) return cellBody
 
-          if (restrictedView) {
+          // Solo la planilla diaria (grupo Diaria sin clases por asignatura propias): un enlace directo.
+          if (items.length === 0 && diariasDia.length === 1 && diariasDia[0].estado !== "SIN_ESTADO") {
+            const { to, search } = hrefDiaria(diariasDia[0], manualSede)
+            return (
+              <Link to={to} search={search} className="block h-full w-full min-w-0 text-left" aria-label="Abrir la planilla diaria">
+                {cellBody}
+              </Link>
+            )
+          }
+
+          if (restrictedView && items.length > 0) {
             return (
               <AsistenciaDayCellRectorPopover items={items} seguimientoSede={manualSede}>{cellBody}</AsistenciaDayCellRectorPopover>
             )
@@ -234,6 +314,8 @@ function GridDay({ day, modifiers, className, ...tdProps }: DayProps) {
           return (
             <DayCellPopover
               items={items}
+              diarias={diariasDia}
+              fechaDia={toIsoDate(date)}
               manualSede={manualSede}
             >
               {cellBody}
@@ -332,20 +414,23 @@ function ClaseDelDia({ item, sede }: { item: AsistenciaDayEntry; sede: number })
 
 interface DayCellPopoverProps {
   items: AsistenciaDayEntry[]
+  /** Regla 115: planillas diarias del día (grupos en modo Diaria). */
+  diarias?: EntradaDiaria[]
+  fechaDia?: string
   manualSede: number
   children: React.ReactNode
 }
 
 /** Sección 7: al elegir un día, si tiene una sola clase se abre su planilla;
  *  si tiene varias, se elige la clase. */
-function DayCellPopover({ items, manualSede, children }: DayCellPopoverProps) {
+function DayCellPopover({ items, diarias = [], fechaDia, manualSede, children }: DayCellPopoverProps) {
   const [open, setOpen] = React.useState(false)
-  const fecha = items[0]?.fecha
+  const fecha = items[0]?.fecha ?? diarias[0]?.fecha ?? fechaDia
   const futura = Boolean(fecha) && esFechaFutura(fecha)
   const misClases = items.filter((item) => item.puedeEditar)
   const clasesDelGrupo = items.filter((item) => !item.puedeEditar)
 
-  if (!futura && misClases.length === 1 && clasesDelGrupo.length === 0) {
+  if (!futura && misClases.length === 1 && clasesDelGrupo.length === 0 && diarias.length === 0) {
     const { to, search } = hrefPlanilla(misClases[0], manualSede)
     return (
       <Link
@@ -388,6 +473,13 @@ function DayCellPopover({ items, manualSede, children }: DayCellPopoverProps) {
           </p>
         ) : (
           <div className="flex max-h-96 flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {diarias.length > 0 && (
+              <ul className="flex flex-col">
+                {diarias.map((d) => (
+                  <DiariaDelDia key={d.fkGrupo} entrada={d} sede={manualSede} />
+                ))}
+              </ul>
+            )}
             {misClases.length > 0 && (
               <ul className="flex flex-col">
                 {misClases.map((item) => (
