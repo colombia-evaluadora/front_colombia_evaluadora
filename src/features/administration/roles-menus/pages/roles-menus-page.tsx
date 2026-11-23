@@ -66,16 +66,22 @@ function RolesMenusPageContent() {
 
   // Asignados sin padre activo: el backend rechaza la lista entera si viajan.
   const savedViews: RoleViews = useMemo(() => {
+    const assigned = roleMenus.filter((menu) => menu.acceso)
     const { known } = partitionKnownMenus(
-      roleMenus.map((menu) => menu.id),
+      assigned.map((menu) => menu.id),
       tree,
     )
     return new Map(
-      roleMenus
+      assigned
         .filter((menu) => known.includes(menu.id))
         .map((menu) => [menu.id, { acceso: true, guardar: menu.guardar, eliminar: menu.eliminar }]),
     )
   }, [roleMenus, tree])
+  // Acciones bloqueadas para el rol (roles territoriales): no se activan desde la pantalla.
+  const locks = useMemo(
+    () => new Map(roleMenus.filter((menu) => menu.bloqueos).map((menu) => [menu.id, menu.bloqueos!])),
+    [roleMenus],
+  )
   // Con cambios sin guardar no se cambia de rol: se perderían sin aviso.
   const [viewsDirty, setViewsDirty] = useState(false)
 
@@ -189,6 +195,7 @@ function RolesMenusPageContent() {
                     roleName={roleName}
                     tree={tree}
                     saved={savedViews}
+                    locks={locks}
                     roleSelect={roleSelect}
                     onDirtyChange={setViewsDirty}
                   />

@@ -1,4 +1,8 @@
-import type { MenuTreeNode } from "@/features/administration/roles-menus/api/types/role-menu"
+import {
+  childrenMap,
+  parentMap,
+  type MenuTreeNode,
+} from "@/features/administration/roles-menus/api/types/role-menu"
 
 /** Acciones de una vista para un rol (Administración del Sistema, Sección 4.2). */
 export interface ViewPermission {
@@ -28,9 +32,10 @@ export function getPermission(views: RoleViews, id: number): ViewPermission {
  * Cambia una acción y mantiene la coherencia:
  *  - Guardar o Eliminar sin Acceso no existen: prenderlos prende Acceso y
  *    apagar Acceso los apaga.
- *  - El Acceso de un módulo se aplica a todos sus submódulos.
- *  - Dar Acceso a un submódulo da Acceso a su módulo (el backend rechaza un
- *    hijo sin su padre).
+ *  - El Acceso de un módulo se aplica a todos sus submódulos (y el de un
+ *    submódulo, a sus pestañas).
+ *  - Dar Acceso a un submódulo o a una pestaña da Acceso a sus ancestros (el
+ *    backend rechaza un hijo sin su padre).
  */
 export function toggleAction(
   views: RoleViews,
@@ -51,13 +56,20 @@ export function toggleAction(
 
   set(id, { [action]: checked })
 
-  const group = tree.find((node) => node.id === id)
-  if (group && action === "acceso") {
-    group.children.forEach((child) => set(child.id, { acceso: checked }))
+  if (action === "acceso") {
+    const childrenOf = childrenMap(tree)
+    const cascade = (menuId: number) =>
+      (childrenOf.get(menuId) ?? []).forEach((childId) => {
+        set(childId, { acceso: checked })
+        cascade(childId)
+      })
+    cascade(id)
   }
 
-  const parent = tree.find((node) => node.children.some((child) => child.id === id))
-  if (parent && getPermission(next, id).acceso) set(parent.id, { acceso: true })
+  if (getPermission(next, id).acceso) {
+    const parentOf = parentMap(tree)
+    for (let p = parentOf.get(id); p != null; p = parentOf.get(p)) set(p, { acceso: true })
+  }
 
   return next
 }

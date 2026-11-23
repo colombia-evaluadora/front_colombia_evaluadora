@@ -7,7 +7,18 @@ import type { RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 export interface MockMenu extends RouteResponseDto {
   visible?: boolean
   planId?: number | null
+  /** Módulo fuera de la licencia (Vistas por rol, S.3.VRO.1c). */
+  fueraDeLicencia?: boolean
 }
+
+// Pestañas con permiso propio de Inscripciones (Vistas por rol, S.3.VRO.1a): `type` TAB, cuelgan del
+// submódulo y no se pintan en el menú lateral. En el backend real no existen todavía.
+const PESTANAS_INSCRIPCIONES: [number, string][] = [
+  [90, "Reservas de cupo"],
+  [91, "Inscripciones"],
+  [92, "Configuración"],
+  [93, "Entidad territorial"],
+]
 
 // Bitácora con un submenú por módulo, como en el prototipo (B.1.LIS.1). En el backend real hay que crear
 // estos ítems; mientras no existan, la Bitácora se abre desde Registro de actividad.
@@ -74,6 +85,19 @@ export const navigationMenu: MockMenu[] = [
     idParent: 12,
     roleIds: [1, 2],
   },
+  ...PESTANAS_INSCRIPCIONES.map(
+    ([id, name], i): MockMenu => ({
+      id,
+      name,
+      icon: "",
+      path: `/app/cobertura/inscritos#${id}`,
+      menuOrder: i,
+      type: "TAB",
+      idParent: 13,
+      visible: false,
+      roleIds: [1, 2],
+    }),
+  ),
   {
     id: 14,
     name: "Pre-matrícula",
@@ -425,6 +449,8 @@ export const navigationMenu: MockMenu[] = [
     type: "GROUP",
     idParent: null,
     roleIds: [1, 2, 3],
+    // Ejemplo de módulo que el cliente no contrató (S.3.VRO.1c).
+    fueraDeLicencia: true,
   },
   {
     id: 42,

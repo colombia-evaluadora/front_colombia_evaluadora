@@ -28,10 +28,48 @@ export interface MenuNode {
   /** Si se pinta en el menú lateral. Los menús viejos no lo traen: se asume `true`. */
   visible?: boolean
   planId?: number | null
+  /**
+   * Módulo fuera de la licencia del cliente (S.3.VRO.1c): se ve en la matriz con su etiqueta y sin
+   * permisos. Pendiente de backend: hoy solo lo trae el mock.
+   */
+  fueraDeLicencia?: boolean
+}
+
+/** Tipo de las pestañas con permiso propio (S.3.VRO.1a): cuelgan de un submódulo. */
+export const TIPO_PESTANA = "TAB"
+
+export const esPestana = (menu: Pick<MenuNode, "type">) => menu.type === TIPO_PESTANA
+
+/** Submódulo con sus pestañas (vacío si no tiene). */
+export interface MenuChildNode extends MenuNode {
+  pestanas?: MenuNode[]
 }
 
 export interface MenuTreeNode extends MenuNode {
-  children: MenuNode[]
+  children: MenuChildNode[]
+}
+
+/** Padre de cada menú del árbol (módulo → null; submódulo → módulo; pestaña → submódulo). */
+export function parentMap(tree: MenuTreeNode[]): Map<number, number | null> {
+  const parentOf = new Map<number, number | null>()
+  for (const group of tree) {
+    parentOf.set(group.id, null)
+    for (const child of group.children) {
+      parentOf.set(child.id, group.id)
+      for (const tab of child.pestanas ?? []) parentOf.set(tab.id, child.id)
+    }
+  }
+  return parentOf
+}
+
+/** Hijos directos de cada menú del árbol. */
+export function childrenMap(tree: MenuTreeNode[]): Map<number, number[]> {
+  const childrenOf = new Map<number, number[]>()
+  for (const group of tree) {
+    childrenOf.set(group.id, group.children.map((child) => child.id))
+    for (const child of group.children) childrenOf.set(child.id, (child.pestanas ?? []).map((tab) => tab.id))
+  }
+  return childrenOf
 }
 
 export interface UpdateRoleMenusResult {
@@ -124,11 +162,7 @@ export function partitionKnownMenus(
   assignedIds: number[],
   tree: MenuTreeNode[],
 ): { known: number[]; unknown: number[] } {
-  const inTree = new Set<number>()
-  for (const group of tree) {
-    inTree.add(group.id)
-    for (const child of group.children) inTree.add(child.id)
-  }
+  const inTree = new Set(parentMap(tree).keys())
 
   const known: number[] = []
   const unknown: number[] = []
@@ -136,17 +170,16 @@ export function partitionKnownMenus(
   return { known, unknown }
 }
 export function withRequiredParents(assignedIds: number[], tree: MenuTreeNode[]): number[] {
-  const parentOf = new Map<number, number | null>()
-  for (const group of tree) {
-    parentOf.set(group.id, null)
-    for (const child of group.children) parentOf.set(child.id, group.id)
-  }
+  const parentOf = parentMap(tree)
 
   const next: number[] = []
   const seen = new Set<number>()
   for (const id of assignedIds) {
-    const parentId = parentOf.get(id)
-    if (parentId != null && !seen.has(parentId)) {
+    // Ancestros que falten, del más alto al más cercano (una pestaña trae su submódulo y su módulo).
+    const ancestors: number[] = []
+    for (let p = parentOf.get(id); p != null; p = parentOf.get(p)) ancestors.unshift(p)
+    for (const parentId of ancestors) {
+      if (seen.has(parentId)) continue
       next.push(parentId)
       seen.add(parentId)
     }
@@ -158,7 +191,8 @@ export function withRequiredParents(assignedIds: number[], tree: MenuTreeNode[])
 }
 
 /**
- * Arma el árbol de dos niveles (grupo → ítems) que pinta la pantalla.
+ * Arma el árbol de dos niveles (grupo → ítems) que pinta la pantalla, más las
+ * pestañas con permiso propio de cada ítem (S.3.VRO.1a).
  *
  * Dos niveles NO es una limitación a corregir: es la invariante del backend.
  * `fn_upsert_menu` rechaza explícitamente crear un tercer nivel (ERRCODE
@@ -172,8 +206,12 @@ export function withRequiredParents(assignedIds: number[], tree: MenuTreeNode[])
  * `fn_list_available_menus` ahora solo devuelve menús con la cadena de
  * ancestros activa—. `partitionKnownMenus` los sigue filtrando igual, como red
  * de seguridad.
+ *
+ * Las pestañas (`type` = `TAB`) son la única excepción: cuelgan de un ítem y
+ * no navegan. Pendiente de backend: hoy solo las trae el mock; sin ellas el
+ * árbol queda igual que antes.
  */
-export function buildMenuTree(menus: MenuNode[]): MenuTreeNode[] {
+export function buildMenuTree<T extends MenuNode>(menus: T[]): (T & { children: (T & { pestanas: T[] })[] })[] {
   const byOrder = (a: MenuNode, b: MenuNode) => a.menuOrder - b.menuOrder
 
   return menus
@@ -181,7 +219,13 @@ export function buildMenuTree(menus: MenuNode[]): MenuTreeNode[] {
     .sort(byOrder)
     .map((root) => ({
       ...root,
-      children: menus.filter((menu) => menu.idParent === root.id).sort(byOrder),
+      children: menus
+        .filter((menu) => menu.idParent === root.id && !esPestana(menu))
+        .sort(byOrder)
+        .map((child) => ({
+          ...child,
+          pestanas: menus.filter((menu) => menu.idParent === child.id && esPestana(menu)).sort(byOrder),
+        })),
     }))
 }
 
