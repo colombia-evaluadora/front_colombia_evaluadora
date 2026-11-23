@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useState } from "react"
+import type { SortingState } from "@tanstack/react-table"
 import { useNavigate } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
@@ -10,10 +11,12 @@ import { useAtencionesQuery, useRemisionesQuery } from "@/features/gestion-estud
 import { FILTROS_VACIOS, type OrientacionFiltros } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { DialogAnularOrientacion, type AnulacionOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/dialogs/dialog-anular-orientacion"
 import { SearchOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/search/search-orientacion"
-import { buildColumnsAtenciones } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-atenciones"
-import { buildColumnsRemisiones } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-remisiones"
+import { buildColumnsAtenciones, ORDEN_ATENCIONES } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-atenciones"
+import { buildColumnsRemisiones, ORDEN_REMISIONES } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/columns-remisiones"
 import { TablaOrientacion } from "@/features/gestion-estudiantil/inclusion/orientacion/components/table/tabla-orientacion"
 import { descargarFicha, descargarRemision } from "@/features/gestion-estudiantil/inclusion/orientacion/api/descargas"
+import { conOrdenServidor, ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import { columnasGestionables } from "@/features/gestion-estudiantil/inclusion/utils/columnas-gestionables"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
@@ -27,8 +30,10 @@ export function TabOrientacion({ puedeRegistrar, puedeAnular }: { puedeRegistrar
   const [pagR, setPagR] = useState({ i: 0, s: 10 })
   const [pagA, setPagA] = useState({ i: 0, s: 10 })
 
-  const remisiones = useRemisionesQuery({ search, filtros, pageIndex: pagR.i, pageSize: pagR.s })
-  const atenciones = useAtencionesQuery({ search, filtros, pageIndex: pagA.i, pageSize: pagA.s })
+  const [ordenR, setOrdenR] = useState<SortingState>([])
+  const [ordenA, setOrdenA] = useState<SortingState>([])
+  const remisiones = useRemisionesQuery({ search, filtros, pageIndex: pagR.i, pageSize: pagR.s, orden: ordenServidor(ordenR, ORDEN_REMISIONES) })
+  const atenciones = useAtencionesQuery({ search, filtros, pageIndex: pagA.i, pageSize: pagA.s, orden: ordenServidor(ordenA, ORDEN_ATENCIONES) })
   const hayFiltros = Boolean(search) || Object.values(filtros).some(Boolean)
   const descargar = async (p: Promise<ExportResult>) => {
     const r = await p
@@ -56,14 +61,19 @@ export function TabOrientacion({ puedeRegistrar, puedeAnular }: { puedeRegistrar
       />
       <TablaOrientacion
         titulo="Remisiones"
-        columns={buildColumnsRemisiones({
+        columns={conOrdenServidor(columnasGestionables(buildColumnsRemisiones({
           puedeRegistrar,
           puedeAnular,
           onAnular: (r) => setAnular({ tipo: "remision", id: r.id, estudiante: r.estudiante_nombre }),
           onDescargar: (r) => descargar(descargarRemision(r.id)),
           onRegistrar: (r) =>
             navigate({ to: paths.app.atencionNueva.getHref(), search: { matricula: r.fk_tmatricula, remision: r.id, motivo: r.fk_tlv_motivo, estudiante: r.estudiante_nombre } }),
-        })}
+        })), ORDEN_REMISIONES)}
+        sorting={ordenR}
+        setSorting={(s) => {
+          setOrdenR(s)
+          setPagR((p) => ({ ...p, i: 0 }))
+        }}
         rows={remisiones.data?.rows ?? []}
         rowId={(r) => String(r.id)}
         pageIndex={pagR.i}
@@ -80,14 +90,19 @@ export function TabOrientacion({ puedeRegistrar, puedeAnular }: { puedeRegistrar
       />
       <TablaOrientacion
         titulo="Atenciones"
-        columns={buildColumnsAtenciones({
+        columns={conOrdenServidor(columnasGestionables(buildColumnsAtenciones({
           puedeRegistrar,
           puedeAnular,
           onAnular: (a) => setAnular({ tipo: "atencion", id: a.id, estudiante: a.estudiante_nombre }),
           onDescargar: (a) => descargar(descargarFicha(a.id)),
           onVer: (a) => navigate({ to: paths.app.atencionFicha.getHref(a.id), search: { ver: true } }),
           onModificar: (a) => navigate({ to: paths.app.atencionFicha.getHref(a.id) }),
-        })}
+        })), ORDEN_ATENCIONES)}
+        sorting={ordenA}
+        setSorting={(s) => {
+          setOrdenA(s)
+          setPagA((p) => ({ ...p, i: 0 }))
+        }}
         rows={atenciones.data?.rows ?? []}
         rowId={(a) => String(a.id)}
         pageIndex={pagA.i}

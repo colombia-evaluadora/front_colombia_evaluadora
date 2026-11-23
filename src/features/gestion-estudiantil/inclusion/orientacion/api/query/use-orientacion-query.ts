@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import type { RemisionDetalle } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/remision-form"
 import { orientacionKeys } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query-keys"
 import type { AtencionDetalle, AtencionRow, MiRemisionRow, OrientacionFiltros, RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
@@ -15,10 +16,11 @@ interface Params {
   filtros: OrientacionFiltros
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
-async function listar<T extends { total_count: number }>(ruta: string, filters: unknown, pageIndex: number, pageSize: number) {
-  const rows = await evalCol.postRows<T>(`${BASE}/${ruta}/query`, { FILTERS: filters, PAGEINDEX: pageIndex, PAGESIZE: pageSize })
+async function listar<T extends { total_count: number }>(ruta: string, filters: unknown, pageIndex: number, pageSize: number, orden?: OrdenServidor) {
+  const rows = await evalCol.postRows<T>(`${BASE}/${ruta}/query`, { FILTERS: filters, ...orden, PAGEINDEX: pageIndex, PAGESIZE: pageSize })
   const totalCount = rows[0]?.total_count ?? 0
   return { rows, totalCount, pageCount: toPageCount(totalCount, pageSize) }
 }
@@ -28,7 +30,7 @@ const comunes = ({ search, filtros }: Params) => ({ SEARCH: search.trim() || nul
 export function useRemisionesQuery(p: Params) {
   return useQuery({
     queryKey: orientacionKeys.lista("remisiones", p),
-    queryFn: () => listar<RemisionRow>("remisiones", { ...comunes(p), FK_ESTADO: id(p.filtros.estado), FK_MATRICULA: null }, p.pageIndex, p.pageSize),
+    queryFn: () => listar<RemisionRow>("remisiones", { ...comunes(p), FK_ESTADO: id(p.filtros.estado), FK_MATRICULA: null }, p.pageIndex, p.pageSize, p.orden),
     placeholderData: keepPreviousData,
   })
 }
@@ -36,7 +38,7 @@ export function useRemisionesQuery(p: Params) {
 export function useAtencionesQuery(p: Params) {
   return useQuery({
     queryKey: orientacionKeys.lista("atenciones", p),
-    queryFn: () => listar<AtencionRow>("atenciones", { ...comunes(p), FK_MODALIDAD: id(p.filtros.modalidad), FK_ORIGEN: id(p.filtros.origen) }, p.pageIndex, p.pageSize),
+    queryFn: () => listar<AtencionRow>("atenciones", { ...comunes(p), FK_MODALIDAD: id(p.filtros.modalidad), FK_ORIGEN: id(p.filtros.origen) }, p.pageIndex, p.pageSize, p.orden),
     placeholderData: keepPreviousData,
   })
 }
