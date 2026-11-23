@@ -17,7 +17,7 @@ export const MSG_SIN_ESTUDIANTES = "Seleccione al menos un estudiante."
 export const MSG_OBSERVACION_MIN = "La observación debe tener mínimo 5 caracteres."
 export const MSG_OBSERVACION_MAX = "La observación no puede superar 1000 caracteres."
 export const MSG_FECHA_SIN_PERIODO =
-  "La fecha seleccionada no pertenece a un Período de Evaluación disponible para el estudiante."
+  "La fecha seleccionada no pertenece a un período de evaluación disponible para el estudiante."
 export const MSG_SIN_DISPONIBLES =
   "No hay estudiantes disponibles para los Grados/Grupos seleccionados dentro de su alcance."
 
@@ -48,7 +48,7 @@ export function errorPeriodo(resumen: ResumenObservacion[] | undefined): string 
   if (!resumen?.length) return undefined
   if (resumen.some((r) => r.fk_tperiodo_evaluacion == null)) return MSG_FECHA_SIN_PERIODO
   const cerrado = resumen.find((r) => !r.periodo_calificable)
-  return cerrado ? `El Período de Evaluación ${cerrado.periodo_nombre} no está Calificable.` : undefined
+  return cerrado ? `El período de evaluación ${cerrado.periodo_nombre} no está Calificable.` : undefined
 }
 
 /** «Período de Evaluación: Período 1.» bajo la Fecha; con varios grupos en períodos distintos, cada uno con su grupo. */
@@ -56,8 +56,8 @@ export function textoPeriodo(resumen: ResumenObservacion[] | undefined): string 
   const conPeriodo = (resumen ?? []).filter((r) => r.periodo_nombre)
   if (!conPeriodo.length) return undefined
   const nombres = [...new Set(conPeriodo.map((r) => r.periodo_nombre as string))]
-  if (nombres.length === 1) return `Período de Evaluación: ${nombres[0]}.`
-  return `Período de Evaluación: ${conPeriodo.map((r) => `${r.periodo_nombre} (${r.grado_grupo})`).join(", ")}.`
+  if (nombres.length === 1) return `Período de evaluación: ${nombres[0]}.`
+  return `Período de evaluación: ${conPeriodo.map((r) => `${r.periodo_nombre} (${r.grado_grupo})`).join(", ")}.`
 }
 
 /** «Esta observación se aplicará a [N] estudiantes de [Grupo].» (G.7.ACC.1), con todos los grupos elegidos. */

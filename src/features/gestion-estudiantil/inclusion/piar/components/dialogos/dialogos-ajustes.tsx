@@ -129,7 +129,7 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
           descripcion={`${dialogo.ajuste.asignatura_nombre ?? "Transversal"} · ${dialogo.ajuste.ajuste}`}
           confirmar="Registrar"
           campos={[
-            { name: "periodo", label: "Período de Evaluación", kind: "select", required: true, options: periodos, ancho: true },
+            { name: "periodo", label: "Período de evaluación", kind: "select", required: true, options: periodos, ancho: true },
             texto("avance", "Avance", 2000, { required: true, min: 10 }),
           ]}
           onSubmit={(v) => ejecutar("post", `/ajustes/${dialogo.ajuste.id}/seguimientos`, { FK_PERIODO_EVALUACION: Number(v.periodo), AVANCE: v.avance })}

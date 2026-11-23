@@ -316,7 +316,7 @@ export function EditarActividadForm({
         actividadId={actividad.id}
       />
       <Card className="gap-4 p-4">
-        <h3 className="text-base font-semibold">Contexto Académico y Estudiantes</h3>
+        <h3 className="text-base font-semibold">Contexto académico y estudiantes</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <AsignaturaGradoSection
             form={form}
@@ -355,7 +355,7 @@ export function EditarActividadForm({
         />
       </Card>
       <Card className="gap-6 p-4">
-        <h3 className="text-base font-semibold">Recursos y Materiales</h3>
+        <h3 className="text-base font-semibold">Recursos y materiales</h3>
         <MaterialesSection form={form} disabled={disabled} />
         <RecursosSection
           form={form}

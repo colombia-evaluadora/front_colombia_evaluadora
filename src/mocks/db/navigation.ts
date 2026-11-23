@@ -13,12 +13,12 @@ export interface MockMenu extends RouteResponseDto {
 // estos ítems; mientras no existan, la Bitácora se abre desde Registro de actividad.
 const BITACORA_SUBMENUS: [number, string, string][] = [
   [81, "Establecimiento", "establecimiento"],
-  [82, "Cobertura Educativa", "cobertura-educativa"],
-  [83, "Gestión Académica", "gestion-academica"],
-  [84, "Gestión Estudiantil", "gestion-estudiantil"],
-  [87, "Evaluación del Desempeño", "evaluacion-del-desempeno"],
+  [82, "Cobertura educativa", "cobertura-educativa"],
+  [83, "Gestión académica", "gestion-academica"],
+  [84, "Gestión estudiantil", "gestion-estudiantil"],
+  [87, "Evaluación del desempeño", "evaluacion-del-desempeno"],
   [85, "Comunicaciones", "comunicaciones"],
-  [86, "Administración del Sistema", "administracion-del-sistema"],
+  [86, "Administración del sistema", "administracion-del-sistema"],
 ]
 
 export const navigationMenu: MockMenu[] = [
@@ -76,7 +76,7 @@ export const navigationMenu: MockMenu[] = [
   },
   {
     id: 14,
-    name: "Pre-Matricula",
+    name: "Pre-matrícula",
     icon: "",
     path: "/app/cobertura/pre-matricula",
     menuOrder: 1,

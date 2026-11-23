@@ -212,7 +212,7 @@ function PeriodosTable() {
   const columns: ColumnDef<PeriodoInscripcionConfig>[] = [
     {
       id: "periodo",
-      header: "Período Académico",
+      header: "Período académico",
       cell: ({ row }) => <span className={wrap}>{nombrePeriodo(row.original)}</span>,
     },
     {

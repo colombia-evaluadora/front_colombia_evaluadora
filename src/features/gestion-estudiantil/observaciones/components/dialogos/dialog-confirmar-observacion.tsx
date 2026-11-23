@@ -29,7 +29,7 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
   const boletin =
     periodos.length === 1
       ? `Saldrá en su boletín del ${periodos[0]} y la verán sus acudientes.`
-      : "Saldrá en el boletín del Período de Evaluación de cada grupo y la verán sus acudientes."
+      : "Saldrá en el boletín del período de evaluación de cada grupo y la verán sus acudientes."
 
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onCancelar()}>

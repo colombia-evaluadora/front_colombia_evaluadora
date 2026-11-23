@@ -17,11 +17,11 @@ function seed(id: number, areaId: number, nombreInterno: string, abreviacion: st
 // Asignaturas de las áreas sembradas del período 1.
 export const subjectsDb: SubjectRecord[] = [
   seed(1, 1, "Matemáticas", "MAT", 15),
-  seed(2, 2, "Lengua Castellana", "LEN", 12),
+  seed(2, 2, "Lengua castellana", "LEN", 12),
   seed(3, 2, "Inglés", "ING", 14),
   seed(4, 3, "Biología", "BIO", 3),
   seed(5, 3, "Química", "QUI", 17),
-  seed(6, 4, "Ciencias Sociales", "SOC", 4),
+  seed(6, 4, "Ciencias sociales", "SOC", 4),
 ]
 
 // El backend asigna el id al crear; el front no debe generarlo.

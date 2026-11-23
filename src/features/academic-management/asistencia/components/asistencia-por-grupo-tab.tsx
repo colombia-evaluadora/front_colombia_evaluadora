@@ -293,7 +293,7 @@ export function AsistenciaPorGrupoTab({
       </div>
 
       {!listo ? (
-        <Vacio>Elija el Grado/Grupo y la asignatura para ver la asistencia.</Vacio>
+        <Vacio>Elija el grado/grupo y la asignatura para ver la asistencia.</Vacio>
       ) : isError ? (
         <Vacio className="text-red">{getErrorMessage(error)}</Vacio>
       ) : isPending ? (

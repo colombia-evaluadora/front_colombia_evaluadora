@@ -41,7 +41,7 @@ export function filasObservaciones(
     filas.push({
       id: PERIODO_FINAL,
       asignatura: "General",
-      periodo: "Resultado final del Período Académico",
+      periodo: "Resultado final del período académico",
       observacion: final.observacion ?? "",
       sinRegistro: final.sin_registro,
     })

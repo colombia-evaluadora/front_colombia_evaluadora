@@ -12,7 +12,7 @@ export function BloqueContexto({ contexto }: { contexto: ContextoAcompanamiento 
       <Dato label="Documento">{t(c.documento)}</Dato>
       <Dato label="Sede">{t(c.sede_nombre)}</Dato>
       <Dato label="Jornada">{t(c.jornada_nombre)}</Dato>
-      <Dato label="Período Académico">{t(c.periodo_academico)}</Dato>
+      <Dato label="Período académico">{t(c.periodo_academico)}</Dato>
       <Dato label="Grado/Grupo">{t(c.grado_grupo)}</Dato>
       <Dato label="Estado de matrícula">
         {t(c.estado_matricula_nombre) && <BadgeEstadoMatricula nombre={t(c.estado_matricula_nombre)} />}

@@ -93,16 +93,16 @@ export function SesionFormPage({ periodo, sesionId }: { periodo?: number; sesion
         {!puedeGestionarComite ? (
           <Alert variant="info" className="m-6 w-auto">
             <InfoIcon aria-hidden="true" />
-            <AlertDescription>No tiene permiso para registrar sesiones del Comité.</AlertDescription>
+            <AlertDescription>No tiene permiso para registrar sesiones del comité.</AlertDescription>
           </Alert>
         ) : cargando ? (
           <Skeleton className="m-6 h-96" />
         ) : error || !actual || !comite.data || (sesionId != null && !sesion.data) ? (
-          <ErrorNoticeBanner error={error ?? true} fallback="No se encontró el Comité de este período." className="m-6" />
+          <ErrorNoticeBanner error={error ?? true} fallback="No se encontró el comité de este período." className="m-6" />
         ) : comite.data.fk_comite == null ? (
           <Alert variant="info" className="m-6 w-auto">
             <InfoIcon aria-hidden="true" />
-            <AlertDescription>Este período aún no tiene Comité: registre primero a sus integrantes.</AlertDescription>
+            <AlertDescription>Este período aún no tiene comité: registre primero a sus integrantes.</AlertDescription>
           </Alert>
         ) : (
           <SesionForm key={sesion.data?.id ?? "nueva"} periodo={actual} comite={comite.data} sesion={sesion.data ?? undefined} />

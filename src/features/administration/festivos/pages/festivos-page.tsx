@@ -154,7 +154,7 @@ function FestivosPageContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description="Días inhábiles en el Calendario Académico de todos los establecimientos. Los cambios se aplican a los períodos que aún no han comenzado.">
+        <TableScreenTitle description="Días inhábiles en el Calendario académico de todos los establecimientos. Los cambios se aplican a los períodos que aún no han comenzado.">
           Festivos
         </TableScreenTitle>
         <TableScreenToolbar>

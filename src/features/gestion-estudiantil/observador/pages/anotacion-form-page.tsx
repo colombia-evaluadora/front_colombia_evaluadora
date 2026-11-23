@@ -278,7 +278,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Tipo, Tipo de situación, Responsable de enseñanza y Período de Evaluación no se digitan.
+              Tipo, Tipo de situación, Responsable de enseñanza y Período de evaluación no se digitan.
             </p>
           </div>
 

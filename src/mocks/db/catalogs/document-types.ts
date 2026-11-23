@@ -7,56 +7,56 @@ export const DOCUMENT_TYPES: CatalogItem[] = [
   {
     id: 1,
     code: "CCa",
-    name: "Certificado Cabildo",
+    name: "Certificado cabildo",
   },
   {
     id: 2,
     code: "CC",
-    name: "Cédula de Ciudadanía",
+    name: "Cédula de ciudadanía",
   },
   {
     id: 3,
     code: "CC",
-    name: "Cédula de Ciudadanía v2",
+    name: "Cédula de ciudadanía v2",
   },
   {
     id: 4,
     code: "CE",
-    name: "Cédula de Extranjería ó Identificación de Extranjería",
+    name: "Cédula de extranjería ó identificación de extranjería",
   },
   {
     id: 5,
     code: "NUIP",
-    name: "Número Unico de Identificación Personal (NUIP)",
+    name: "Número único de identificación personal (NUIP)",
   },
   {
     id: 6,
     code: "NIP",
-    name: "Número de Identificación Personal (NIP)",
+    name: "Número de identificación personal (NIP)",
   },
   {
     id: 7,
     code: "NES",
-    name: "Número de Identificación establecido por la Secretaría de Educación",
+    name: "Número de identificación establecido por la Secretaría de Educación",
   },
   {
     id: 8,
     code: "RC",
-    name: "Registro Civil de Nacimiento",
+    name: "Registro civil de nacimiento",
   },
   {
     id: 9,
     code: "TI",
-    name: "Tarjeta de Identidad",
+    name: "Tarjeta de identidad",
   },
   {
     id: 10,
     code: "PPT",
-    name: "Permiso por Protección temporal",
+    name: "Permiso por protección temporal",
   },
   {
     id: 11,
     code: "PEP",
-    name: "Permiso Especial de Permanencia",
+    name: "Permiso especial de permanencia",
   },
 ]

@@ -255,7 +255,7 @@ export function DetailPreMatriculaDialog({
         className="flex sm:max-w-5xl max-h-[90vh] flex-col overflow-hidden p-0"
       >
         <DialogHeader className="shrink-0 flex-row items-center justify-between px-6 pt-6">
-          <DialogTitle>Pre-Matrícula</DialogTitle>
+          <DialogTitle>Pre-matrícula</DialogTitle>
           <div className="flex items-center gap-1">
             {editing ? (
               <>

@@ -74,7 +74,7 @@ function RelacionesAlumnoGrupoContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          description="Máximo de estudiantes por grupo según el nivel educativo y la zona de la Sede. Solo advierte cuando el Cupo de un grupo lo supera."
+          description="Máximo de estudiantes por grupo según el nivel educativo y la zona de la sede. Solo advierte cuando el cupo de un grupo lo supera."
           action={
             puedeEditar && (
               <Button

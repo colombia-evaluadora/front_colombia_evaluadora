@@ -24,7 +24,7 @@ export function RecuadroIntegrantes({ comite, puedeGestionar, onAdministrar }: P
     <div className="flex flex-col gap-3">
       <div className="overflow-hidden rounded-lg border border-border bg-background">
         <SeccionPlegable
-          titulo={`Integrantes del Comité (${vigentes.length})`}
+          titulo={`Integrantes del comité (${vigentes.length})`}
           accion={
             puedeGestionar && (
               <Button type="button" size="sm" variant="outline" color="neutral" onClick={onAdministrar}>

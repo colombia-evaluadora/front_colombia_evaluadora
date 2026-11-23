@@ -48,9 +48,9 @@ export const ADAPTACION_TIPO_LABELS: Record<string, string> = {
 
 export const VERSION_MODIFICADA_LABELS: Record<string, string> = {
   no: "No",
-  archivo: "Sí, Adjuntar plantilla (archivo)",
-  enlace: "Sí, Adjuntar plantilla (enlace)",
-  biblioteca: "Sí, Adjuntar plantilla (biblioteca)",
+  archivo: "Sí, adjuntar plantilla (archivo)",
+  enlace: "Sí, adjuntar plantilla (enlace)",
+  biblioteca: "Sí, adjuntar plantilla (biblioteca)",
 }
 
 export const TIPO_EVIDENCIA_ESPERADA_LABELS: Record<string, string> = {

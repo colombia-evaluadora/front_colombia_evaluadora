@@ -381,7 +381,7 @@ export function DialogRenovarConvenio({ convenio: c, onOpenChange }: { convenio:
                 invalido={invalido}
               />
               <FieldDescription className={cn(invalido && "text-red")}>
-                {invalido ? "Elija al menos un período." : "Por defecto, los equivalentes de la misma Sede y Jornada."}
+                {invalido ? "Elija al menos un período." : "Por defecto, los equivalentes de la misma sede y jornada."}
               </FieldDescription>
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">

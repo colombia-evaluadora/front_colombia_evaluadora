@@ -21,9 +21,9 @@ import { errorLargo } from "@/features/gestion-estudiantil/commons/utils/validac
 const PASOS_POR_TIPO: Record<string, string> = {
   TIPO_I: "Reunión con las partes y mediación · Solución acordada · Seguimiento",
   TIPO_II:
-    "Atención en salud (si hubo daño) · Información a los acudientes · Medida de protección · Acción restaurativa · Información al Comité · Reporte al SIUCE · Seguimiento",
+    "Atención en salud (si hubo daño) · Información a los acudientes · Medida de protección · Acción restaurativa · Información al comité · Reporte al SIUCE · Seguimiento",
   TIPO_III:
-    "Atención en salud (si aplica) · Información a los acudientes · Información a la Policía de Infancia y Adolescencia · Citación al Comité · Medida de protección · Reporte al SIUCE · Seguimiento",
+    "Atención en salud (si aplica) · Información a los acudientes · Información a la Policía de Infancia y Adolescencia · Citación al comité · Medida de protección · Reporte al SIUCE · Seguimiento",
 }
 
 const siuceDe = (d: CasoDetalle | undefined): DatosSiuce =>

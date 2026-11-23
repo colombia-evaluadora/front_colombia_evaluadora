@@ -152,7 +152,7 @@ function ConfigPeriodoForm({ periodo }: { periodo: PeriodoInscripcionConfig }) {
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2">
                 <CampoLectura
                   id="periodo"
-                  label="Período Académico"
+                  label="Período académico"
                   value={`${nombrePeriodo(periodo)} · Ciclo ${periodo.ciclo}`}
                 />
                 <form.AppField name="fechaLiberacionReservas">
@@ -215,7 +215,7 @@ function ConfigPeriodoForm({ periodo }: { periodo: PeriodoInscripcionConfig }) {
               </form.Field>
 
               <Aviso tono="info">
-                Usa la Fecha límite de matrícula y Habilitar reserva de cupos del Período Académico
+                Usa la Fecha límite de matrícula y Habilitar reserva de cupos del período académico
                 (módulo Establecimiento).
               </Aviso>
               <p className="text-xs text-muted-foreground">

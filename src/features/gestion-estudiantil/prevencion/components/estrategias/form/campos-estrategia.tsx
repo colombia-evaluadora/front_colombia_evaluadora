@@ -50,7 +50,7 @@ export function CamposEstrategia({ f, bloqueado }: { f: Form; bloqueado: boolean
       <div className="md:col-span-2 xl:col-span-1">
         <ComboOpciones
           id="estrategia-periodo"
-          label="Período Académico"
+          label="Período académico"
           required
           size="default"
           todos={false}

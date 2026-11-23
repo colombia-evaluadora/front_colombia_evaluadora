@@ -7,7 +7,7 @@ const haceDias = (n: number) => new Date(Date.now() - n * DIA).toISOString()
 export const evaluaciones: Evaluacion[] = [
   {
     conversacionId: 7,
-    nombre: "Examen Matemáticas",
+    nombre: "Examen matemáticas",
     descripcion: "Fracciones y porcentajes, grado séptimo.",
     fechaInicio: haceDias(1),
     fechaCierre: haceDias(-7),

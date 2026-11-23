@@ -40,7 +40,7 @@ export function SugerenciasPorPuesto({ sugerencias, periodo, onOtorgar, puedeOto
         <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <h2 id="sugerencias-titulo" className="text-base font-semibold">
-              Sugerencias por Puesto{nombrePeriodo ? ` · ${nombrePeriodo}` : ""}
+              Sugerencias por puesto{nombrePeriodo ? ` · ${nombrePeriodo}` : ""}
             </h2>
             <Tooltip>
               <TooltipTrigger
@@ -51,7 +51,7 @@ export function SugerenciasPorPuesto({ sugerencias, periodo, onOtorgar, puedeOto
                 <InfoIcon />
               </TooltipTrigger>
               <TooltipContent>
-                Estudiantes con Puesto 1 de cada Grado/Grupo en el último período cerrado. Si hay empate, salen todos.
+                Estudiantes con puesto 1 de cada grado/grupo en el último período cerrado. Si hay empate, salen todos.
               </TooltipContent>
             </Tooltip>
           </div>

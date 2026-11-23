@@ -51,7 +51,7 @@ export type ModoAdministrador = "nuevo" | "modificar" | "ver"
 
 /**
  * S.11.EDI.1 (nuevo), S.11.EDI.2 (modificar) y Ver detalle: pantalla propia
- * "Administradores territoriales › [Nuevo Administrador territorial o nombre]" (Sección 7.3).
+ * "Administradores territoriales › [Nuevo administrador territorial o nombre]" (Sección 7.3).
  */
 export function AdministradorFormPage({ modo }: { modo: ModoAdministrador }) {
   const { administradorId } = useParams({ strict: false }) as { administradorId?: string }
@@ -228,7 +228,7 @@ function AdministradorForm({
           <span className="flex flex-wrap items-center gap-2">
             <span>
               Administradores territoriales <span className="text-muted-foreground">›</span>{" "}
-              {actual ? actual.nombre : "Nuevo Administrador territorial"}
+              {actual ? actual.nombre : "Nuevo administrador territorial"}
             </span>
             {actual?.activo && actual.pendienteActivacion && (
               <Badge variant="soft" color="warning">

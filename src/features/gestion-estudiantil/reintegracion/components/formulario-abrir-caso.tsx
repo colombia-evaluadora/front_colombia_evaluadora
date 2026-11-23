@@ -70,7 +70,7 @@ export function FormularioAbrirCaso({ f }: { f: ReturnType<typeof useAbrirCasoFo
           onChange={f.setProfesional}
         />
         <p className="text-xs text-muted-foreground">
-          Con rol Profesional de trabajo social activo en la Sede y Jornada de la matrícula.
+          Con rol Profesional de trabajo social activo en la sede y jornada de la matrícula.
         </p>
       </div>
       <MarcoOpciones

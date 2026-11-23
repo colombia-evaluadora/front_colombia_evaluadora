@@ -101,7 +101,7 @@ function EncuestaInstitucionalDialog({
   open: boolean
   onClose: () => void
   onCreada: (conversacionId: number) => void
-  // "Editar Encuesta" (diseño 4060:63421): mismos pasos; los participantes no cambian. Quien la
+  // "Editar encuesta" (diseño 4060:63421): mismos pasos; los participantes no cambian. Quien la
   // abre la monta con `key` para que los valores iniciales se lean una vez.
   editar?: Encuesta
   // Borrador retomado desde "Borradores y enviados" (montado con `key`). Con `editar`, son los
@@ -232,7 +232,7 @@ function EncuestaInstitucionalDialog({
       <Dialog open={open} onOpenChange={(o) => !o && void intentarCerrar()}>
         <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editar ? "Editar Encuesta" : "Crear una Encuesta"}</DialogTitle>
+            <DialogTitle>{editar ? "Editar encuesta" : "Crear una encuesta"}</DialogTitle>
           </DialogHeader>
           <ErrorNoticeBanner
             error={crear.isError ? crear.error : autoguardado.estado === "error" ? true : null}
@@ -255,7 +255,7 @@ function EncuestaInstitucionalDialog({
                     label="Nombre"
                     required
                     maxLength={80} showCounter
-                    placeholder="Por ejemplo, Encuesta Satisfacción"
+                    placeholder="Por ejemplo, Encuesta satisfacción"
                   />
                 )}
               </datos.AppField>
