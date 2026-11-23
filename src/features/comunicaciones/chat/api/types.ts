@@ -50,6 +50,9 @@ export interface Conversacion {
   // Comunicaciones §4.6: otra persona lo retiró del grupo. Queda en la bandeja en solo lectura con lo
   // que recibió hasta su retiro (comms-service no le entrega nada posterior); no escribe.
   retirado?: boolean
+  // Directo (no el asistente): la otra persona (`users.id_user`, mismo id que `/personas`). Lo usa el
+  // aviso de conversaciones existentes de «Nuevo mensaje» (QA 106). null en el resto.
+  contraparteId?: number | null
   // Igual con el marcador de entrega (comms-service, `GREATEST(entregado, leído)` por miembro): un
   // mensaje propio con id menor o igual ya llegó a un cliente de todos (✓✓ gris, como WhatsApp).
   // Llega en vivo con `conversacion.entrega`.

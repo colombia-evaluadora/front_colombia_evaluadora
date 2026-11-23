@@ -23,8 +23,9 @@ import {
 import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { useDisponibilidadDirectosQuery } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
 import {
+  avisoConversacionesExistentes,
   conversacionesExistentesPorPersona,
-  type HiloExistente,
+  type AvisoExistentes,
 } from "@/features/comunicaciones/chat/lib/conversaciones-existentes"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { SelectorPersonas } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
@@ -184,14 +185,16 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
   const directos =
     useDisponibilidadDirectosQuery(conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.esBot).map((c) => c.id))
       .data ?? []
-  const existentes =
-    modo === "GRUPAL"
-      ? new Map<number, HiloExistente[]>()
-      : conversacionesExistentesPorPersona(
-          conversaciones,
-          directos,
-          para.map((p) => p.id),
-        )
+  // QA 106: se recalcula en cada render, así que sigue al Para y al modo (Grupal no muestra nada).
+  const aviso = avisoConversacionesExistentes(
+    modo,
+    para,
+    conversacionesExistentesPorPersona(
+      conversaciones,
+      directos,
+      para.map((p) => p.id),
+    ),
+  )
 
   const elegirArchivos = (lista: FileList | null) => {
     const { archivos: siguientes, error } = agregarAdjuntos(archivos, Array.from(lista ?? []))
@@ -235,9 +238,7 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
               )}
             </form.AppField>
 
-            {existentes.size > 0 && (
-              <AvisoConversacionesExistentes para={para} existentes={existentes} onAbrir={abrirExistente} />
-            )}
+            {aviso && <AvisoConversacionesExistentes aviso={aviso} onAbrir={abrirExistente} />}
 
             <form.AppField
               name="modo"
@@ -420,57 +421,60 @@ function CampoPara({
   )
 }
 
-const MAX_ASUNTOS_AVISO = 3
+const MAX_ASUNTOS_AVISO = 2
 
 /**
- * Aviso informativo bajo "Para": quien escribe ya tiene directos con las personas elegidas. No
- * bloquea (cada "Nuevo mensaje" crea un hilo por asunto, SSO #1006); cada asunto abre ese hilo.
+ * Aviso informativo bajo "Para" (QA 106). Individual: una línea con el texto, los asuntos como
+ * enlaces (si caben; se truncan) y «Abrir» a la derecha, que abre el más reciente. Enviar por
+ * separado: los nombres de quienes ya tienen conversación. No bloquea (cada envío crea un hilo por
+ * asunto, SSO #1006). Abrir pasa por el ConfirmDiscardDialog si hay asunto, mensaje o adjuntos.
  */
-function AvisoConversacionesExistentes({
-  para,
-  existentes,
-  onAbrir,
-}: {
-  para: Persona[]
-  existentes: Map<number, HiloExistente[]>
-  onAbrir: (id: number) => void
-}) {
-  const conHilos = para.filter((p) => existentes.has(p.id))
-  const unSoloHilo = conHilos.length === 1 && existentes.get(conHilos[0].id)?.length === 1
+function AvisoConversacionesExistentes({ aviso, onAbrir }: { aviso: AvisoExistentes; onAbrir: (id: number) => void }) {
   return (
-    <div role="status" className="flex gap-3 rounded-md border border-primary-stroke bg-primary-22 px-4 py-2 text-sm">
-      <InfoIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-      <div className="min-w-0 flex-1 space-y-1">
-        {conHilos.map((p) => {
-          const hilos = existentes.get(p.id) ?? []
-          const visibles = hilos.slice(0, MAX_ASUNTOS_AVISO)
-          const resto = hilos.length - visibles.length
-          return (
-            <p key={p.id}>
-              {hilos.length === 1 ? "Ya tiene 1 conversación con " : `Ya tiene ${hilos.length} conversaciones con `}
-              <strong>{p.nombre}</strong>:{" "}
-              {visibles.map((h, i) => (
+    <div role="status" className="flex items-center gap-3 rounded-md border border-primary-stroke bg-primary-22 px-4 py-2 text-sm">
+      <InfoIcon className="size-5 shrink-0 text-primary" />
+      {aviso.tipo === "INDIVIDUAL" ? (
+        <>
+          <p className="min-w-0 flex-1 truncate">
+            {aviso.texto}
+            {aviso.hilos.length > 1 &&
+              aviso.hilos.slice(0, MAX_ASUNTOS_AVISO).map((h, i) => (
                 <span key={h.id}>
-                  {i > 0 && ", "}
+                  {i === 0 ? " " : ", "}
                   <button
                     type="button"
                     onClick={() => onAbrir(h.id)}
-                    className="font-semibold break-words text-primary underline underline-offset-2 hover:no-underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    title={h.asunto}
+                    className="font-semibold text-primary underline underline-offset-2 hover:no-underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                   >
                     {h.asunto}
                   </button>
                 </span>
               ))}
-              {resto > 0 && ` y ${resto} más`}.
-            </p>
-          )
-        })}
-        <p>
-          {unSoloHilo
-            ? "Puede continuarla o crear una nueva con otro asunto."
-            : "Puede continuar una de ellas o crear una nueva con otro asunto."}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            color="primary"
+            className="shrink-0"
+            onClick={() => onAbrir(aviso.hilos[0].id)}
+          >
+            Abrir
+          </Button>
+        </>
+      ) : (
+        <p className="min-w-0 flex-1">
+          Ya tiene conversación con{" "}
+          {aviso.nombres.map((n, i) => (
+            <span key={`${n}-${i}`}>
+              {i > 0 && (i === aviso.nombres.length - 1 ? " y " : ", ")}
+              <strong>{n}</strong>
+            </span>
+          ))}
+          .
         </p>
-      </div>
+      )}
     </div>
   )
 }
