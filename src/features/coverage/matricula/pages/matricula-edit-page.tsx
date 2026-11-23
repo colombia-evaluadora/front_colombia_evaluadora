@@ -334,7 +334,13 @@ function MatriculaEditPageContent() {
   function performSave(onSaved?: () => void) {
     if (!values || !data?.details || saving) return
 
-    const { pkUsuarioEstudiante, pkUsuarioAcudiente } = data.details
+    const { pkUsuarioAcudiente } = data.details
+    // Sin autorizacion (Regla 81) o por adscripcion el contacto del estudiante llega enmascarado y en
+    // solo lectura: no se envia al usuario, o se guardarian los asteriscos.
+    const pkUsuarioEstudiante =
+      data.details.restricciones?.sinAutorizacion || data.details.restricciones?.origenAdscripcion
+        ? null
+        : data.details.pkUsuarioEstudiante
     const originalGuardianDocument = initialGuardianDocument
     const guardianReplaced =
       originalGuardianDocument != null &&
