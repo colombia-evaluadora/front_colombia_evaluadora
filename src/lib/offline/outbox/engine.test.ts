@@ -22,7 +22,7 @@ import {
 } from "@/lib/offline/outbox/engine"
 import { OUTBOX_WINDOW_MS } from "@/lib/offline/outbox/policy"
 import { registerOutboxHandler } from "@/lib/offline/outbox/registry"
-import { __resetOutboxStoreForTests, outboxStore, setOutboxUser } from "@/lib/offline/outbox/store"
+import { __resetOutboxStoreForTests, outboxStore, patchOp, setOutboxUser } from "@/lib/offline/outbox/store"
 import type { SendCtx } from "@/lib/offline/outbox/types"
 
 interface Celda {
@@ -126,6 +126,14 @@ describe("enqueue", () => {
     await enqueue("test.celda", { pk: 1, valor: 5, baseVersion: "v9" })
     expect(ops()).toHaveLength(1)
     expect(ops()[0].payload).toEqual({ pk: 1, valor: 5, baseVersion: "v1" })
+  })
+
+  it("no fusiona con una op que viajó en un paquete USB (conserva su Idempotency-Key)", async () => {
+    const first = await enqueue("test.celda", { pk: 1, valor: 3, baseVersion: "v1" })
+    await patchOp(first.id, { sharedViaPackage: "exported" })
+    await enqueue("test.celda", { pk: 1, valor: 5, baseVersion: "v1" })
+    expect(ops()).toHaveLength(2)
+    expect(ops()[0]).toMatchObject({ id: first.id, idempotencyKey: first.idempotencyKey, payload: { valor: 3 } })
   })
 
   it("rechaza visible pasados 14 días sin autenticarse", async () => {

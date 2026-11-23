@@ -124,6 +124,9 @@ export async function exportSyncPackage(sub: string, passphrase: string): Promis
     publicKey: await crypto.subtle.exportKey("jwk", pair.publicKey),
     signature: b64(signature),
   }
+  // Marca en ESTE equipo: si recupera internet las envía igual (por si el
+  // paquete nunca se importó), con la misma clave, pero ya no se fusionan.
+  await putOps(ops.map((op) => ({ ...op, sharedViaPackage: "exported" as const })))
   return { blob: new Blob([JSON.stringify(file)], { type: "application/json" }), count: ops.length }
 }
 
@@ -164,6 +167,7 @@ export async function importSyncPackage(text: string, passphrase: string, curren
       ...op,
       userSub: currentSub,
       seq: nextSeq(),
+      sharedViaPackage: "imported",
       status: "pending",
       attempts: 0,
       nextAttemptAt: now,

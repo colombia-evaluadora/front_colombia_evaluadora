@@ -10,6 +10,8 @@ import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/u
 import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { formatDate } from "@/features/planeador/lib/format-date"
+import { periodosDelGrupo } from "@/features/planeador/lib/periodos-del-grupo"
+import { usePlaneadorDocenteScope } from "@/features/planeador/hooks/use-planeador-docente-scope"
 
 /** `grupo_codigo` viene `null` en los datos reales — `grupo_nombre` ("01",
  *  "302", …) es el que sí trae valor, así que se prioriza acá. */
@@ -65,7 +67,11 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
 
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
-  const { data: periodos = [] } = usePlaneadorPeriodosEvaluacionQuery()
+  const { data: todosLosPeriodos = [] } = usePlaneadorPeriodosEvaluacionQuery()
+  const { periodoId: periodoAcademicoId } = usePlaneadorDocenteScope()
+  // Solo los periodos de evaluación del periodo académico del grupo (ver
+  // `periodosDelGrupo`): el endpoint trae los de todos los años/jornadas.
+  const periodos = periodosDelGrupo(todosLosPeriodos, periodoAcademicoId)
 
   // La columna Grado sale de `docentes/grado-asignatura` (grado↔asignatura
   // que dicta el docente), no de `docentes/grupos`: son dos universos
