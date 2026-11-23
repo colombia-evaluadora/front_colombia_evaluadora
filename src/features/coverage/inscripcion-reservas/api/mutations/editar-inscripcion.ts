@@ -15,6 +15,7 @@ import {
   inscripcionesKeys,
   type PeriodoOpcionCupo,
 } from "@/features/coverage/inscripcion-reservas/api/query/use-inscripciones-query"
+import { aSocioeconomico } from "@/features/coverage/inscripcion-reservas/api/types/socioeconomico"
 import type {
   EditarInscripcionInput,
   OpcionCupoInput,
@@ -28,8 +29,9 @@ export async function resolverOpcion(o: OpcionCupoInput, grado: string, n = 1) {
 }
 
 async function resolverOpciones(input: EditarInscripcionInput) {
-  const periodos = await fetchOpcionesCupo()
-  return input.opciones.map((o, i) => resolverEn(periodos, o, input.grado, i + 1))
+  const nuevas = input.opciones.some((o) => !o.guardada)
+  const periodos = nuevas ? await fetchOpcionesCupo() : []
+  return input.opciones.map((o, i) => o.guardada ?? resolverEn(periodos, o, input.grado, i + 1))
 }
 
 function resolverEn(
@@ -97,6 +99,8 @@ const camposComunes = (
   PAIS_ORIGEN: input.paisOrigen || null,
   LENGUA_MATERNA: input.lenguaMaterna || null,
   CONDICION_MIGRATORIA: input.condicionMigratoria || null,
+  // Lo leen los criterios de prioridad (sso TINSCRIPCION_SOCIOECONOMICO).
+  SOCIOECONOMICO: JSON.stringify(aSocioeconomico(input.datos)),
   // JSONB viaja como texto JSON.
   OPCIONES: JSON.stringify(opciones),
 })

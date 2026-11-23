@@ -240,7 +240,7 @@ function AsistenteInscripcion({
     setErrorGeneral(null)
     try {
       const r = await registrarInscripcion({
-        datos: { student: s, studentContact: datos.studentContact, guardian: g, guardianContact: contacto },
+        datos: { ...datos, student: s, guardian: g, guardianContact: contacto },
         correo: contacto.email,
         codigo,
         opciones: opciones.map((o) => resolverOpcionPublica(periodos, grado, o)!),

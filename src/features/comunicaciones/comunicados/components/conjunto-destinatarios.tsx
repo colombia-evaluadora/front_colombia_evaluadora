@@ -425,8 +425,9 @@ export function ConjuntoDestinatarios({
             <p className="font-medium">No se puede publicar para esta audiencia</p>
             <p>
               La sede {etiquetaDe(datos?.sedes, c.sede)}, jornada {etiquetaDe(datos?.jornadas, c.jornada)} no tiene
-              períodos Abiertos (se excluyen los Cerrados y los de Inscripciones). El filtro no se amplía: elija otra
-              jornada o quite Estudiantes y Acudientes de este conjunto.
+              períodos Abiertos (se excluyen los Cerrados y los de Inscripciones), así que no se puede enviar a
+              Estudiantes ni Acudientes. El filtro no se amplía: elija otra jornada o quite Estudiantes y Acudientes de
+              este conjunto; a Funcionarios sí se puede enviar.
             </p>
           </div>
         </div>
