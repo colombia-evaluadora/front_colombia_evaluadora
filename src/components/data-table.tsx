@@ -316,6 +316,11 @@ export function DataTable({
                       active &&
                         !insideSubRow &&
                         "bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))] hover:bg-[color-mix(in_srgb,var(--muted)_28%,var(--card))]",
+                      // Los campos editables de esa fila, en blanco sobre el gris (los inputs son transparentes);
+                      // los deshabilitados conservan su gris.
+                      active &&
+                        !insideSubRow &&
+                        "[&_.border-input:not(:disabled):not([data-disabled])]:bg-card",
                       resaltadas.has(row.id) && "animate-[resaltar-fila_3.5s_ease-out]",
                     )}
                     data-resaltada={resaltadas.has(row.id) || undefined}

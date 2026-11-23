@@ -24,7 +24,8 @@ function tramos(c: Cortes): Tramo[] {
       situacion: "Preextraedad",
       desde: c.preextraedadDesde,
       hasta: c.extraedadDesde - 1,
-      clase: "bg-yellow-22 text-yellow",
+      // Texto oscuro: el amarillo sobre su relleno casi no se leía.
+      clase: "bg-yellow-22 text-yellow-foreground",
     },
     { situacion: "Extraedad", desde: c.extraedadDesde, hasta: null, clase: "bg-orange-22 text-orange" },
   ]
@@ -46,6 +47,11 @@ function rangoCorto(t: Tramo, edad: number) {
   return `${edad + t.desde}–${edad + t.hasta}`
 }
 
+/** «año» para un solo año (+1, −1); «años» en los demás casos. */
+function unidad(t: Tramo) {
+  return t.desde != null && t.desde === t.hasta && Math.abs(t.desde) === 1 ? "año" : "años"
+}
+
 /** Ancho de cada tramo: los cerrados según sus años, los abiertos fijos. */
 const peso = (t: Tramo) => (t.desde == null || t.hasta == null ? 2 : t.hasta - t.desde + 1.5)
 
@@ -57,10 +63,13 @@ const peso = (t: Tramo) => (t.desde == null || t.hasta == null ? 2 : t.hasta - t
 export function EscalaSituacion({
   cortes,
   edad,
+  sinCalcular,
   className,
 }: {
   cortes: Cortes
   edad?: number
+  /** Agrega la marca Sin calcular (falta un parámetro), como en la referencia del md. Solo sin `edad`. */
+  sinCalcular?: boolean
   className?: string
 }) {
   const grado = edad != null
@@ -72,9 +81,10 @@ export function EscalaSituacion({
       {tramos(cortes).map((t) => (
         <li
           key={t.situacion}
-          style={{ flexGrow: peso(t) }}
+          // En la referencia (sin edad) los tramos van del mismo ancho: los nombres tienen que caber.
+          style={{ flexGrow: grado ? peso(t) : 1 }}
           className={cn(
-            "flex min-w-0 basis-0 flex-col justify-center px-2",
+            "flex min-w-0 basis-0 flex-col justify-center px-2 [overflow-wrap:anywhere]",
             grado ? "py-1" : "py-2.5",
             t.clase,
           )}
@@ -86,14 +96,20 @@ export function EscalaSituacion({
             </span>
           ) : (
             <>
-              <span className="truncate text-xs font-semibold">{t.situacion}</span>
-              <span className="truncate text-xs tabular-nums opacity-80">
-                {rango(t, formatDiferencia)} años
+              <span className="text-xs font-semibold">{t.situacion}</span>
+              <span className="text-xs tabular-nums opacity-80">
+                {rango(t, formatDiferencia)} {unidad(t)}
               </span>
             </>
           )}
         </li>
       ))}
+      {sinCalcular && !grado && (
+        <li style={{ flexGrow: 1 }} className="flex min-w-0 basis-0 [overflow-wrap:anywhere] flex-col justify-center bg-muted-22 px-2 py-2.5 text-muted-foreground">
+          <span className="text-xs font-semibold">Sin calcular</span>
+          <span className="text-xs">falta un parámetro</span>
+        </li>
+      )}
     </ol>
   )
 }

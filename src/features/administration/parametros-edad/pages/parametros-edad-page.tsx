@@ -70,7 +70,7 @@ function ParametrosEdadContent() {
             <ErrorNoticeBanner error={error} />
           ) : isPending ? (
             <div className="flex flex-col gap-8">
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+              <div className="grid gap-6 xl:grid-cols-2">
                 <Skeleton className="h-48" />
                 <Skeleton className="h-48" />
               </div>
@@ -79,7 +79,8 @@ function ParametrosEdadContent() {
           ) : (
             <>
               {/* Primero la política (cortes y fecha de corte); debajo, cómo cae en cada grado. */}
-              <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+              {/* Las dos tarjetas con el mismo alto. */}
+              <div className="grid gap-6 xl:grid-cols-2">
                 <TablaCortesDefecto
                   cortes={data.cortesDefecto}
                   puedeEditar={puedeEditar}

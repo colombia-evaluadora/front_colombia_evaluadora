@@ -4,11 +4,12 @@ import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
-import { Badge } from "@/components/ui/badge"
+import { TituloConAyuda } from "@/components/titulo-con-ayuda"
 
 import type { ListaValor } from "@/features/administration/listas-valor/api/types/lista-valor"
 import {
   CORTES,
+  formatDiferencia,
   type Cortes,
   type CortesGrado,
   type EdadGrado,
@@ -63,7 +64,6 @@ export function TablaEdades({
     preextraedadDesde: f.preextraedadDesde ?? defecto.preextraedadDesde,
     extraedadDesde: f.extraedadDesde ?? defecto.extraedadDesde,
   })
-  const tienePropios = (f: CortesGrado) => CORTES.some((c) => f[c.campo] != null)
 
   const columns: ColumnDef<FilaParametro<EdadGrado>>[] = [
     {
@@ -72,19 +72,7 @@ export function TablaEdades({
       meta: { label: "Grado" },
       enableHiding: false,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
-      cell: ({ row }) => {
-        const f = row.original.fila!
-        return (
-          <span className="inline-flex items-center gap-2">
-            {f.nombre}
-            {tienePropios(f) && (
-              <Badge variant="outline" color="warning">
-                Cortes propios
-              </Badge>
-            )}
-          </span>
-        )
-      },
+      cell: ({ row }) => row.original.fila!.nombre,
     },
     {
       id: "edad",
@@ -98,6 +86,32 @@ export function TablaEdades({
         <span className="block text-center tabular-nums">{row.original.fila!.edad} años</span>
       ),
     },
+    // Cortes propios del grado, como en el md: «—» = rige el corte por defecto.
+    ...CORTES.map(
+      (c): ColumnDef<FilaParametro<EdadGrado>> => ({
+        id: c.campo,
+        accessorFn: (r) => r.fila?.[c.campo] ?? null,
+        meta: { label: c.label },
+        enableHiding: false,
+        enableSorting: false,
+        header: () => (
+          <span className="flex justify-center">
+            <TituloConAyuda
+              titulo={c.label}
+              ayuda={`Corte propio del grado, en años de diferencia. «—»: rige el corte por defecto (${formatDiferencia(defecto[c.campo])}).`}
+            />
+          </span>
+        ),
+        cell: ({ row }) => {
+          const v = row.original.fila![c.campo]
+          return (
+            <span className="block text-center tabular-nums">
+              {v == null ? <span className="text-muted-foreground">—</span> : formatDiferencia(v)}
+            </span>
+          )
+        },
+      }),
+    ),
     {
       id: "situacion",
       meta: { label: "Edad cumplida por situación" },
@@ -106,7 +120,7 @@ export function TablaEdades({
       header: () => "Edad cumplida por situación",
       cell: ({ row }) => {
         const f = row.original.fila!
-        return <EscalaSituacion cortes={vigentes(f)} edad={f.edad} className="min-w-72" />
+        return <EscalaSituacion cortes={vigentes(f)} edad={f.edad} className="min-w-56" />
       },
     },
     {
@@ -133,11 +147,12 @@ export function TablaEdades({
     <>
       <TablaParametros
         titulo="Edad recomendada por grado"
-        agregarLabel="Grado"
+        agregarLabel="Agregar grado"
+        agregarBloqueado={libres.length === 0 ? "Todos los grados ya tienen edad recomendada." : undefined}
         columns={columns}
         data={ordenadas.map((f) => ({ id: f.grado, fila: f }))}
         editandoId={null}
-        emptyMessage="Aún no hay edades recomendadas. Use + Grado para agregar la primera."
+        emptyMessage="Aún no hay edades recomendadas. Use Agregar grado para agregar la primera."
         puedeAgregar={puedeEditar && libres.length > 0}
         onAgregar={() => setDialogo({ fila: null })}
         onSubmit={sinEnvio}

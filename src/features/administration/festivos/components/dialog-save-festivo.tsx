@@ -31,7 +31,7 @@ import {
   type Festivo,
   type TipoFecha,
 } from "@/features/administration/festivos/api/types"
-import { MesDiaField } from "@/features/administration/festivos/components/mes-dia-field"
+import { MesDiaField } from "@/components/mes-dia-field"
 import {
   fechaFestivo,
   fechaTexto,

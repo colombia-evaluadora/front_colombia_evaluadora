@@ -5,6 +5,7 @@ import type { ColumnDef, SortingState } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -37,6 +38,7 @@ const sinCambio = () => {}
 export function TablaParametros<T>({
   titulo,
   agregarLabel,
+  agregarBloqueado,
   columns,
   data,
   editandoId,
@@ -45,9 +47,12 @@ export function TablaParametros<T>({
   onAgregar,
   onSubmit,
   valorOrden,
+  enmarcada,
 }: {
   titulo: string
   agregarLabel?: string
+  /** Por qué no se puede agregar (p. ej. todos los grados ya tienen valor): tooltip del botón apagado. */
+  agregarBloqueado?: string
   columns: ColumnDef<FilaParametro<T>>[]
   /** Filas en el orden de la lista de valores (el de por defecto). */
   data: FilaParametro<T>[]
@@ -59,6 +64,8 @@ export function TablaParametros<T>({
   onSubmit: (e: React.FormEvent) => void
   /** Valor por el que se ordena cada columna ordenable. */
   valorOrden: (fila: T, columna: string) => string | number
+  /** Dentro de un recuadro, como la tarjeta de Cortes por defecto que va a su lado. */
+  enmarcada?: boolean
 }) {
   // `useDataTable` ordena en manual: el orden se resuelve acá, en el navegador.
   const [sorting, setSorting] = useState<SortingState>([])
@@ -92,20 +99,16 @@ export function TablaParametros<T>({
   })
 
   return (
-    <form onSubmit={onSubmit} aria-label={titulo} className="flex min-w-0 flex-col gap-3">
+    <form onSubmit={onSubmit} aria-label={titulo} className={cn("flex min-w-0 flex-col gap-3", enmarcada && "rounded-md border p-4")}>
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-base font-semibold">{titulo}</h2>
         {agregarLabel && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
+          <BotonAgregar
+            label={agregarLabel}
             disabled={!puedeAgregar}
+            motivo={agregarBloqueado}
             onClick={onAgregar}
-          >
-            <ControlPointIcon data-icon="inline-start" />
-            {agregarLabel}
-          </Button>
+          />
         )}
       </div>
       <DataTable
@@ -117,6 +120,36 @@ export function TablaParametros<T>({
         isRowActive={(row) => row.id === editandoId}
       />
     </form>
+  )
+}
+
+/** Botón de alta de la sección. Apagado con motivo: el tooltip dice por qué (un botón deshabilitado
+ *  no recibe el hover, por eso el disparador es el `span` que lo envuelve). */
+function BotonAgregar({
+  label,
+  disabled,
+  motivo,
+  onClick,
+}: {
+  label: string
+  disabled: boolean
+  motivo?: string
+  onClick?: () => void
+}) {
+  const boton = (
+    <Button type="button" color="primary" size="sm" disabled={disabled} onClick={onClick}>
+      <ControlPointIcon data-icon="inline-start" />
+      {label}
+    </Button>
+  )
+  if (!disabled || !motivo) return boton
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span tabIndex={0} className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50" />}>
+        {boton}
+      </TooltipTrigger>
+      <TooltipContent>{motivo}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -236,7 +269,7 @@ export function SelectFila({
         size="sm"
         id={id}
         aria-label={label}
-        className={cn("h-8 w-full max-w-56", className)}
+        className={cn("h-10 w-full max-w-56", className)}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -257,8 +290,9 @@ function toEnteroConSigno(value: string) {
   return (negativo ? "-" : "") + value.replace(/\D/g, "").slice(0, 2)
 }
 
-/** Input de un corte en la fila en edición. */
+/** Campo de un corte (±años), con label flotante y 40 px como el resto de los formularios. */
 export function InputCorte({
+  id,
   label,
   value,
   placeholder,
@@ -266,6 +300,7 @@ export function InputCorte({
   autoFocus,
   onChange,
 }: {
+  id: string
   label: string
   value: string
   placeholder?: string
@@ -274,18 +309,23 @@ export function InputCorte({
   onChange: (value: string) => void
 }) {
   return (
-    <Input
-      inputMode="numeric"
-      autoFocus={autoFocus}
-      aria-label={label}
-      aria-invalid={invalido}
-      variant="outlined"
-      size="sm"
-      placeholder={placeholder}
-      className="ml-auto h-8 w-16 text-right tabular-nums"
-      value={value}
-      onChange={(e) => onChange(toEnteroConSigno(e.target.value))}
-    />
+    <Field variant="outlined" data-invalid={invalido || undefined}>
+      <FieldLabel htmlFor={id}>
+        {label}
+        <span data-required-mark="">*</span>
+      </FieldLabel>
+      <Input
+        id={id}
+        inputMode="numeric"
+        autoFocus={autoFocus}
+        aria-invalid={invalido}
+        variant="outlined"
+        placeholder={placeholder}
+        className="h-10 tabular-nums"
+        value={value}
+        onChange={(e) => onChange(toEnteroConSigno(e.target.value))}
+      />
+    </Field>
   )
 }
 
