@@ -6,13 +6,10 @@ import { Input } from "@/components/ui/input"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
-import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { CamposRazones } from "@/features/gestion-estudiantil/reintegracion/components/campos-razones"
 import type { useAbrirCasoForm } from "@/features/gestion-estudiantil/reintegracion/hooks/use-abrir-caso-form"
 import { MOTIVO_APERTURA_MAX } from "@/features/gestion-estudiantil/reintegracion/utils/razones"
 import { MarcoOpciones } from "@/components/marco-opciones"
-
-const hoy = () => new Date().toISOString().slice(0, 10)
 
 /** Campos de «Abrir caso» (G.9.ABR.1). Origen y Fecha de apertura son de solo lectura: los fija el sistema. */
 export function FormularioAbrirCaso({ f }: { f: ReturnType<typeof useAbrirCasoForm> }) {
@@ -39,11 +36,11 @@ export function FormularioAbrirCaso({ f }: { f: ReturnType<typeof useAbrirCasoFo
       </div>
       <Field orientation="vertical" variant="outlined" className="gap-2">
         <FieldLabel htmlFor="reintegracion-abrir-origen">Origen</FieldLabel>
-        <Input id="reintegracion-abrir-origen" value="Apertura manual" readOnly disabled />
+        <Input id="reintegracion-abrir-origen" value={f.origenNombre} readOnly disabled />
       </Field>
       <Field orientation="vertical" variant="outlined" className="gap-2">
         <FieldLabel htmlFor="reintegracion-abrir-fecha">Fecha de apertura</FieldLabel>
-        <Input id="reintegracion-abrir-fecha" value={formatFecha(hoy())} readOnly disabled />
+        <Input id="reintegracion-abrir-fecha" value={f.fechaApertura} readOnly disabled />
       </Field>
       <div className="sm:col-span-2">
         <TextoLargo
@@ -61,17 +58,17 @@ export function FormularioAbrirCaso({ f }: { f: ReturnType<typeof useAbrirCasoFo
         <ComboOpciones
           id="reintegracion-abrir-profesional"
           label="Profesional de trabajo social"
+          required
           size="default"
-          todos="Sin asignar"
+          todos={false}
           disabled={!f.matricula}
-          placeholder={f.matricula ? "Sin asignar" : "Elija un estudiante primero"}
+          placeholder={f.matricula ? "Seleccione" : "Elija un estudiante primero"}
           value={f.profesional}
           options={f.profesionalOpciones}
+          error={f.error("profesional")}
+          description="Con rol Profesional de trabajo social activo en la Sede y Jornada de la matrícula."
           onChange={f.setProfesional}
         />
-        <p className="text-xs text-muted-foreground">
-          Con rol Profesional de trabajo social activo en la sede y jornada de la matrícula.
-        </p>
       </div>
       <MarcoOpciones
         id="reintegracion-abrir-alta"
@@ -84,7 +81,7 @@ export function FormularioAbrirCaso({ f }: { f: ReturnType<typeof useAbrirCasoFo
         </label>
       </MarcoOpciones>
       <div className="sm:col-span-2">
-        <SeccionPlegable titulo="Razones del abandono" subtitulo="Opcionales" encuadrada comoSeccion contentClassName="p-4">
+        <SeccionPlegable titulo="Razones del abandono" subtitulo="Opcionales al abrir el caso; se piden al pasar a Diagnóstico" encuadrada comoSeccion contentClassName="p-4">
           <CamposRazones
             id="reintegracion-abrir"
             opciones={f.razonesOpciones}

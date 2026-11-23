@@ -219,3 +219,28 @@ export function descarta(c: Conjunto, nivel: Nivel): boolean {
       return c.todosEstudiantes || c.estudiantes.length > 0
   }
 }
+
+/** `total` de una opción de Funcionarios: 1 = Inactivo en el EE (Regla 101, el estado del listado de Funcionarios). */
+export const esFuncionarioInactivo = (o: OpcionSeleccion) => o.total === 1
+
+/**
+ * Funcionarios que el conjunto alcanzaría (por roles y selección), una vez por persona: la cascada
+ * trae una fila por rol. Los Inactivos en el EE no reciben el comunicado (comms los excluye).
+ */
+export function funcionariosDelConjunto(c: Conjunto, datos: Cascada | undefined) {
+  if (!c.tipos.includes("FUNCIONARIOS") || !datos) return { activos: [], inactivos: [] }
+  const porRol = datos.funcionarios.filter((f) => c.todosRoles || (f.detalle != null && c.roles.includes(f.detalle)))
+  const elegidos =
+    c.seleccionFuncionarios === SELECCION_ESPECIFICOS ? porRol.filter((f) => c.funcionarios.includes(f.valor)) : porRol
+  const unicos = [...new Map(elegidos.map((f) => [f.valor, f])).values()]
+  return {
+    activos: unicos.filter((f) => !esFuncionarioInactivo(f)),
+    inactivos: unicos.filter(esFuncionarioInactivo),
+  }
+}
+
+/** Todos los funcionarios elegidos están Inactivos: el conjunto no llegaría a ningún funcionario. */
+export const soloFuncionariosInactivos = (c: Conjunto, datos: Cascada | undefined) => {
+  const { activos, inactivos } = funcionariosDelConjunto(c, datos)
+  return inactivos.length > 0 && activos.length === 0
+}

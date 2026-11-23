@@ -1,62 +1,90 @@
-import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
-import { Badge } from "@/components/ui/badge"
+import { useCallback, useMemo, useState } from "react"
+
+import { DataTable } from "@/components/data-table"
+import { useNotify } from "@/components/notice/notice-context"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { getErrorMessage } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 
-import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import {
+  DialogoGestionRemision,
+  DialogoRespuestaRemision,
+  type ResumenRemision,
+} from "@/features/gestion-estudiantil/commons/components/remisiones/dialogos-remision"
 import { useRemisionesQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-remisiones-query"
+import type { RemisionRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
+import { buildColumnsRemisiones } from "@/features/gestion-estudiantil/reintegracion/components/detalle/columns-remisiones"
+import { DialogoDetalleRemision } from "@/features/gestion-estudiantil/reintegracion/components/dialogos/dialogo-detalle-remision"
+import { useTablaLocal } from "@/features/gestion-estudiantil/reintegracion/hooks/use-tabla-local"
 
-/** Pestaña Remisiones (§10.4), de solo lectura: el registro y la gestión llegan con sus diálogos. */
+const getRowId = (f: RemisionRow) => String(f.id)
+const SIN_FILAS: RemisionRow[] = []
+
+type Abierto = { accion: "ver" | "respuesta" | "gestion"; fila: RemisionRow } | null
+
+const resumenDe = (r: RemisionRow): ResumenRemision => ({
+  id: r.id,
+  entidad_nombre: r.entidad_nombre,
+  fecha_remision: r.fecha_remision,
+  fecha_esperada: r.fecha_esperada,
+  estado_etiqueta: r.estado_etiqueta,
+  vencida: r.vencida,
+})
+
+/**
+ * Pestaña Remisiones (§10.4, G.9.REM.2): tabla con Ver detalle, Registrar respuesta, Registrar gestión y
+ * Descargar remisión externa por fila; las de escritura se habilitan con las banderas de la fila.
+ */
 export function TabRemisiones({ casoId }: { casoId: number }) {
+  const { notify } = useNotify()
   const q = useRemisionesQuery(casoId)
-  const filas = q.data ?? []
+  const [abierto, setAbierto] = useState<Abierto>(null)
+  const [descargando, setDescargando] = useState<number | null>(null)
+
+  const descargar = useCallback(
+    async (fila: RemisionRow) => {
+      setDescargando(fila.id)
+      const r = await downloadReport("remision-externa", { format: "pdf", filters: { FK_REMISION: fila.id } })
+      setDescargando(null)
+      if (r.status !== "ok") notify(r.message, { variant: "error" })
+    },
+    [notify],
+  )
+
+  const columns = useMemo(
+    () =>
+      buildColumnsRemisiones({
+        onVer: (fila) => setAbierto({ accion: "ver", fila }),
+        onResponder: (fila) => setAbierto({ accion: "respuesta", fila }),
+        onGestion: (fila) => setAbierto({ accion: "gestion", fila }),
+        onDescargar: descargar,
+        descargando,
+      }),
+    [descargar, descargando],
+  )
+  const table = useTablaLocal({
+    columns,
+    data: q.data ?? SIN_FILAS,
+    getRowId,
+    storageKey: "reintegracion-remisiones-column-visibility",
+  })
+  const cerrar = useCallback(() => setAbierto(null), [])
 
   if (q.isPending) return <Skeleton className="my-4 h-32" />
-  if (q.isError) return <ErrorNoticeBanner error={q.error} className="my-4" />
 
   return (
     <div className="py-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Fecha de remisión</TableHead>
-            <TableHead>Entidad</TableHead>
-            <TableHead>Motivo</TableHead>
-            <TableHead>Fecha esperada</TableHead>
-            <TableHead>Estado</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filas.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
-                El caso aún no tiene remisiones.
-              </TableCell>
-            </TableRow>
-          ) : (
-            filas.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell>{formatFecha(r.fecha_remision)}</TableCell>
-                <TableCell>{r.entidad_nombre}</TableCell>
-                <TableCell className="max-w-96 whitespace-normal">{r.motivo}</TableCell>
-                <TableCell>{formatFecha(r.fecha_esperada) || "—"}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap items-center gap-1">
-                    <Badge variant="soft" color={r.estado === "RESPONDIDA" ? "success" : "info"}>
-                      <span>{r.estado_etiqueta}</span>
-                    </Badge>
-                    {r.vencida && (
-                      <Badge variant="soft" color="destructive">
-                        <span>Vencida</span>
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      <DataTable
+        table={table}
+        isPending={false}
+        isError={q.isError}
+        onRetry={q.refetch}
+        errorMessage={q.error ? getErrorMessage(q.error) : undefined}
+        emptyMessage="El caso aún no tiene remisiones."
+      />
+      {abierto?.accion === "ver" && <DialogoDetalleRemision remision={abierto.fila} onClose={cerrar} />}
+      {abierto?.accion === "respuesta" && <DialogoRespuestaRemision remision={resumenDe(abierto.fila)} onClose={cerrar} />}
+      {abierto?.accion === "gestion" && <DialogoGestionRemision remision={resumenDe(abierto.fila)} onClose={cerrar} />}
     </div>
   )
 }

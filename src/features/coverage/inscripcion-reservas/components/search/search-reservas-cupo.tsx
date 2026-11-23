@@ -3,7 +3,10 @@ import { useEffect, useState } from "react"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { MatriculaSelectField } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 
-import { useReservasCupoCatalogosQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
+import {
+  ciclosDe,
+  useReservasCupoCatalogosQuery,
+} from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import {
   ESTADO_RESERVA_UI,
   ESTADO_TRASLADO_LABELS,
@@ -14,18 +17,21 @@ import {
   type ReservasCupoFilters,
 } from "@/features/coverage/inscripcion-reservas/api/types/reserva-cupo"
 
-type Avanzados = Pick<
-  ReservasCupoFilters,
-  "sede" | "jornada" | "grado" | "estado" | "estadoTraslado"
->
-
-const CAMPOS = ["sede", "jornada", "grado", "estado", "estadoTraslado"] as const
+const CAMPOS = ["ciclo", "sede", "jornada", "grado", "estado", "estadoTraslado"] as const
+type Avanzados = Pick<ReservasCupoFilters, (typeof CAMPOS)[number]>
 
 interface SearchReservasCupoProps {
   filters: ReservasCupoFilters
   onSearch: (q: string) => void
   onApply: (values: Avanzados) => void
   onClearAll: () => void
+}
+
+/** Sin repetir valores: varias filas de períodos comparten sede o jornada. */
+function unicos(items: { value: string; label: string }[]) {
+  return [...new Map(items.map((i) => [i.value, i])).values()].sort((a, b) =>
+    a.label.localeCompare(b.label, "es"),
+  )
 }
 
 /** Buscador por nombre o documento + panel con los filtros de la Sección 3.2. */
@@ -54,18 +60,26 @@ export function SearchReservasCupo({
     setOpen(next)
   }
 
+  const periodos = catalogos?.periodos ?? []
   const opciones: Record<
     (typeof CAMPOS)[number],
     { label: string; items: { value: string; label: string }[] }
   > = {
-    sede: { label: "Sede", items: (catalogos?.sedes ?? []).map((v) => ({ value: v, label: v })) },
+    ciclo: {
+      label: "Período",
+      items: ciclosDe(periodos).map((c) => ({ value: c.id, label: c.nombre })),
+    },
+    sede: {
+      label: "Sede",
+      items: unicos(periodos.map((p) => ({ value: String(p.fkTsede), label: p.sede }))),
+    },
     jornada: {
       label: "Jornada",
-      items: (catalogos?.jornadas ?? []).map((v) => ({ value: v, label: v })),
+      items: unicos(periodos.map((p) => ({ value: String(p.fkTlvJornada), label: p.jornada }))),
     },
     grado: {
       label: "Grado",
-      items: (catalogos?.grados ?? []).map((v) => ({ value: v, label: v })),
+      items: (catalogos?.grados ?? []).map((g) => ({ value: g.codigo, label: g.nombre })),
     },
     estado: {
       label: "Estado",
@@ -80,6 +94,7 @@ export function SearchReservasCupo({
   return (
     <SearchQueryBar
       id="reservas-cupo-search"
+      label={null}
       placeholder="Buscar por nombre o documento"
       value={texto}
       onValueChange={setTexto}
