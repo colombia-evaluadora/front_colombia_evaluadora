@@ -309,14 +309,13 @@ matriculaDb.slice(0, 2).forEach((m, i) => {
     categoria: "SISTEMA",
     titulo: "Aviso del sistema",
     cuerpo_corto: `${estudiante} lleva 30 días calendario sin asistir. Si corresponde, registre su retiro con el motivo de la novedad Inasistencia continua de más de 30 días calendario sin justificación válida.`,
-    deep_link: `/app/cobertura/matricula/detalle/${m.id}`,
+    deep_link: `/app/cobertura/matricula/detalle/${m.id}?accion=retirar`,
     prioridad: "NORMAL",
     creada_en: new Date(Date.now() - (i + 2) * 60 * 60_000).toISOString(),
     leida_en: null,
     actores: null,
     conteo: null,
     contexto: `Matrícula · ${m.group}`,
-    acciones: [{ etiqueta: "Retirar", deep_link: `/app/cobertura/matricula?search=${m.documentNumber}` }],
     archivada: false,
   })
 })
