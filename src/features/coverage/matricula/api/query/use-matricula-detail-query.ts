@@ -217,6 +217,7 @@ export function toMatriculaDetailResult(ficha: RawMatriculaDetail, gradoValor: n
       campus: m.sede_nombre,
       campusId: m.fk_tsede != null ? String(m.fk_tsede) : "",
       shift: m.jornada_nombre,
+      periodoId: toIdString(m.fk_tperiodo_academico),
       grade: toIdString(gradoValor ?? m.fk_tgrado),
       group: toIdString(m.fk_tgrupo),
       status,
