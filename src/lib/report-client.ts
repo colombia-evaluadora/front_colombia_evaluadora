@@ -65,6 +65,7 @@ export type ReportKey =
   | "inscripcion-lista-sorteo"
   | "prevencion-indicadores"
   | "prevencion-indicadores"
+  | "prevencion-simpade"
   | "prevencion-embarazo-siuce"
   | "prevencion-consumo-siuce"
   | "citacion-documento"
