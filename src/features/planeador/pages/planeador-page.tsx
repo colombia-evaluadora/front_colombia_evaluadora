@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { PendingCreations } from "@/features/planeador/components/pending-creations"
 
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
+import { PlanillasAuxiliaresButton } from "@/features/planeador/components/dialogs/dialog-planillas-auxiliares"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
@@ -331,7 +332,16 @@ function PlaneadorPageContent() {
     // `min-h` es el piso para pantallas bajas (ahí sí scrollea la página). Bajo `md` todo vuelve al flujo normal.
     <TableScreen className="md:h-[calc(100dvh-4.5rem)] md:min-h-[40rem] md:flex-none">
       <TableScreenHeader>
-        <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
+        <TableScreenTitle
+          action={
+            <div className="flex items-center gap-2">
+              <PlanillasAuxiliaresButton />
+              <PrepareOfflineButton />
+            </div>
+          }
+        >
+          Planeador
+        </TableScreenTitle>
         <DatosDelBadge updatedAt={miasUpdatedAt} ttl={TTL_OFFLINE.grupo} className="mx-(--screen-spacing) mt-2" />
         <PlaneadorTabs />
 

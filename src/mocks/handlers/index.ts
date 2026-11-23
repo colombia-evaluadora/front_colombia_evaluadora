@@ -78,6 +78,7 @@ import { curricularStatementsHandlers } from "@/mocks/handlers/academic-manageme
 import { planeadorHandlers } from "@/mocks/handlers/planeador"
 import { planeadorDocentesHandlers } from "@/mocks/handlers/planeador/docentes"
 import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
+import { planillasAuxiliaresHandlers } from "@/mocks/handlers/planeador/planillas-auxiliares"
 import { planeadorValidacionCoordinadorHandlers } from "@/mocks/handlers/planeador/validacion-coordinador"
 import { planeadorEscalaPrecargaHandlers } from "@/mocks/handlers/planeador/escala-precarga"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
@@ -175,6 +176,7 @@ export const handlers = [
   // Antes de `planeadorHandlers`: MSW usa el primer match.
   ...planeadorEscalaPrecargaHandlers,
   ...planeadorValidacionCoordinadorHandlers,
+  ...planillasAuxiliaresHandlers,
   ...planeadorHandlers,
   ...planeadorDocentesHandlers,
   ...planeadorPlanillaHandlers,
