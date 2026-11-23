@@ -16,6 +16,7 @@ const id = (value: string) => (value ? Number(value) : null)
 export function toObservadorFilters(search: string, filtros: ObservadorFiltros): ObservadorQueryFilters {
   return {
     SEARCH: search.trim() || null,
+    FK_ESTABLECIMIENTO: id(filtros.establecimiento),
     FK_SEDE: id(filtros.sede),
     FK_JORNADA: id(filtros.jornada),
     FK_GRUPO: id(filtros.grupo),

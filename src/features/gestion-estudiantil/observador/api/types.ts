@@ -32,6 +32,14 @@ export interface AnotacionRow {
   anulado_en: string | null
   motivo_anulacion: string | null
   anulado_por_nombre: string | null
+  /** POSITIVO, NEGATIVO o NEUTRO: el color del tipo no se decide por la etiqueta. */
+  tipo_codigo: string | null
+  fk_tproceso_disciplinario: number | null
+  puede_abrir_proceso: boolean
+  /** Caso de convivencia que creó la anotación (Regla 8), si lo hay. */
+  fk_tcaso_convivencia: number | null
+  puede_modificar: boolean
+  puede_anular: boolean
   total_count?: number
 }
 
@@ -45,10 +53,41 @@ export interface CodigoAnotacion {
   fk_tlv_situacion: number | null
   situacion_codigo: "TIPO_I" | "TIPO_II" | "TIPO_III" | null
   situacion_nombre: string | null
+  tipo_codigo?: string | null
+}
+
+/** Fila de `GET /gestion-estudiantil/observador/opciones/estudiantes`. */
+export interface EstudianteObservador {
+  fk_tmatricula: number
+  estudiante_nombre: string
+  estudiante_documento: string | null
+  fk_tgrupo: number
+  grado_grupo: string
+  fk_tsede: number
+  sede_nombre: string | null
+  fk_tlv_jornada: number | null
+  jornada_nombre: string | null
+  fk_testablecimiento: number
+}
+
+/** Fila de `GET /gestion-estudiantil/observador/opciones/grupos`. */
+export interface GrupoObservador {
+  fk_tgrupo: number
+  grado_grupo: string
+  fk_tgrado: number
+  fk_tsede: number
+  fk_tlv_jornada: number
+}
+
+/** Fila de `GET /gestion-estudiantil/observador/opciones/responsables`. */
+export interface ResponsableObservador {
+  fk_tfuncionario: number
+  nombre: string
 }
 
 /** Filtros del listado tal como los guarda la pantalla (ids como texto; vacío = sin filtro). */
 export interface ObservadorFiltros {
+  establecimiento: string
   sede: string
   jornada: string
   grupo: string
@@ -59,6 +98,7 @@ export interface ObservadorFiltros {
 }
 
 export const FILTROS_VACIOS: ObservadorFiltros = {
+  establecimiento: "",
   sede: "",
   jornada: "",
   grupo: "",
@@ -71,6 +111,7 @@ export const FILTROS_VACIOS: ObservadorFiltros = {
 /** `FILTERS` del listado y del export: mismos nombres que los binds de V545.7. */
 export interface ObservadorQueryFilters {
   SEARCH: string | null
+  FK_ESTABLECIMIENTO: number | null
   FK_SEDE: number | null
   FK_JORNADA: number | null
   FK_GRUPO: number | null
@@ -98,4 +139,5 @@ export interface AnotacionActualizarInput {
   preocupaPermanencia: boolean
 }
 
-export type TipoImpresion = "COMPORTAMIENTOS" | "COMPLETO"
+/** VALOR de la Lista de Valores TIPO_OBSERVADOR_FIRMAR (COMPORTAMIENTOS, COMPLETO). */
+export type TipoImpresion = string

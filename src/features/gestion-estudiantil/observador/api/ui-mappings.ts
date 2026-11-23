@@ -1,6 +1,8 @@
-/** Positivo en éxito y Negativo en error, como en la vista Observador (G.1.LIS.1). */
-export function colorDeTipo(tipo: string | null | undefined): "success" | "destructive" {
-  return tipo?.toLowerCase().startsWith("positivo") ? "success" : "destructive"
+/** Color del tipo por su código (POSITIVO, NEGATIVO, NEUTRO), no por la etiqueta de la lista. */
+export function colorDeTipo(tipoCodigo: string | null | undefined): "success" | "destructive" | "info" {
+  if (tipoCodigo === "POSITIVO") return "success"
+  if (tipoCodigo === "NEGATIVO") return "destructive"
+  return "info"
 }
 
 export const MENSAJES = {

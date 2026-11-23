@@ -25,12 +25,10 @@ interface ColumnasOpciones {
   onVer: (row: AnotacionRow) => void
   onModificar: (row: AnotacionRow) => void
   onAnular: (row: AnotacionRow) => void
-  puedeEditar: boolean
+  /** Anular también exige la capacidad de la página; la fila trae su propio `puede_anular`. */
   puedeAnular: boolean
   puedeRemitir: boolean
   puedeReportarSaludMental: boolean
-  /** Supervisor de sede y Administrador del establecimiento (Convivencia). */
-  puedeAbrirProceso: boolean
   onAbrirProceso: (row: AnotacionRow) => void
   onRemitir: (row: AnotacionRow) => void
   /** Sección 9.6: abre el reporte de Prevención con el estudiante de la fila. */
@@ -43,11 +41,9 @@ export function buildColumnsAnotaciones({
   onVer,
   onModificar,
   onAnular,
-  puedeEditar,
   puedeAnular,
   puedeRemitir,
   puedeReportarSaludMental,
-  puedeAbrirProceso,
   onAbrirProceso,
   onRemitir,
   onReportarSaludMental,
@@ -58,7 +54,6 @@ export function buildColumnsAnotaciones({
       id: "fecha",
       accessorKey: "fecha",
       enableSorting: false,
-      enableHiding: false,
       meta: { label: "Fecha" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
       cell: ({ row }) => formatFecha(row.original.fecha),
@@ -67,7 +62,6 @@ export function buildColumnsAnotaciones({
       id: "estudiante",
       accessorKey: "estudiante_nombre",
       enableSorting: false,
-      enableHiding: false,
       meta: { label: "Estudiante" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Estudiante" />,
       cell: ({ row }) => (
@@ -88,7 +82,7 @@ export function buildColumnsAnotaciones({
       meta: { label: "Tipo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
       cell: ({ row }) => (
-        <Badge variant="soft" color={colorDeTipo(row.original.tipo_nombre)}>
+        <Badge variant="soft" color={colorDeTipo(row.original.tipo_codigo)}>
           {row.original.tipo_nombre}
         </Badge>
       ),
@@ -97,7 +91,6 @@ export function buildColumnsAnotaciones({
       id: "codigo",
       accessorKey: "codigo",
       enableSorting: false,
-      enableHiding: false,
       meta: { label: "Código y descripción" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Código y descripción" />,
       cell: ({ row }) => (
@@ -147,7 +140,7 @@ export function buildColumnsAnotaciones({
       cell: ({ row }) => {
         const a = row.original
         const vigente = !a.anulada
-        // Las acciones se ven siempre; se deshabilitan si no aplican. Modifica solo quien la registró.
+        // Las acciones se ven siempre; se deshabilitan si no aplican (cada fila trae sus `puede_*`).
         return (
           <AccionesFila
             etiqueta={`Acciones de la anotación de ${a.estudiante_nombre}`}
@@ -157,10 +150,10 @@ export function buildColumnsAnotaciones({
                 id: "modificar",
                 label: "Modificar",
                 icon: <PencilIcon />,
-                disabled: !(puedeEditar && vigente && a.es_propia),
+                disabled: !(vigente && a.puede_modificar),
                 onSelect: () => onModificar(a),
               },
-              { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente), onSelect: () => onAnular(a) },
+              { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !(puedeAnular && vigente && a.puede_anular), onSelect: () => onAnular(a) },
               // Salud mental abre el reporte de Prevención (§9.6; el backend decide el alcance). Proceso disciplinario:
               // solo en una anotación Negativa vigente (G.1.LIS.3); abre el formulario con el estudiante y la anotación.
               { id: "salud", label: "Reportar salud mental", icon: <BrainIcon />, disabled: !puedeReportarSaludMental, onSelect: () => onReportarSaludMental(a) },
@@ -174,9 +167,9 @@ export function buildColumnsAnotaciones({
               { id: "remitir", label: "Remitir a orientación", icon: <PersonIcon />, disabled: !puedeRemitir, onSelect: () => onRemitir(a) },
               {
                 id: "disciplinario",
-                label: "Abrir proceso disciplinario",
+                label: a.fk_tproceso_disciplinario != null ? "Ver proceso disciplinario" : "Abrir proceso disciplinario",
                 icon: <GavelIcon />,
-                disabled: !(puedeAbrirProceso && vigente && colorDeTipo(a.tipo_nombre) === "destructive"),
+                disabled: !(a.fk_tproceso_disciplinario != null || (vigente && a.puede_abrir_proceso)),
                 onSelect: () => onAbrirProceso(a),
               },
             ]}
