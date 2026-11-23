@@ -8,7 +8,7 @@ import { paths } from "@/config/paths"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { ArrowCounterClockwiseIcon, BellIcon,ChatCircleTextIcon, CloudOffIcon, GearIcon, InboxIcon, InfoIcon } from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, BellIcon,ChatCircleTextIcon, CloudOffIcon, GearIcon, InfoIcon, BellSlashIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
@@ -211,9 +211,9 @@ export function CampanaNotificaciones() {
             <Empty className="py-8">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
-                  <InboxIcon />
+                  <BellSlashIcon />
                 </EmptyMedia>
-                <EmptyTitle>No tiene notificaciones</EmptyTitle>
+                <EmptyTitle className="text-base normal-case tracking-normal">No tiene notificaciones</EmptyTitle>
               </EmptyHeader>
             </Empty>
           ) : (

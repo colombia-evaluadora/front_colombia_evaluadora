@@ -18,7 +18,7 @@ import { OfflineEmptyState } from "@/components/offline/offline-empty-state"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { ArchiveIcon, ChatReadIcon, ChatUnreadIcon, ChecksIcon, GearIcon, InboxIcon } from "@/components/ui/icons"
+import { ArchiveIcon, ChatReadIcon, ChatUnreadIcon, ChecksIcon, GearIcon, InboxIcon, BellSlashIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table"
@@ -152,10 +152,11 @@ function NotificacionesContent() {
             <Empty className="rounded-lg bg-muted-22 py-8">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
-                  <InboxIcon />
+                  {activeFilterCount > 0 || filters.texto ? <InboxIcon /> : <BellSlashIcon />}
                 </EmptyMedia>
-                <EmptyTitle>
-                  {activeFilterCount > 0 || filters.texto ? "No hay notificaciones" : "No tienes notificaciones"}
+                {/* Prototipo M.1.CAM.2: campana tachada y el texto en mayúscula inicial, no en versalitas. */}
+                <EmptyTitle className="text-base normal-case tracking-normal">
+                  {activeFilterCount > 0 || filters.texto ? "No hay notificaciones" : "No tiene notificaciones"}
                 </EmptyTitle>
                 <EmptyDescription>
                   {activeFilterCount > 0 || filters.texto
