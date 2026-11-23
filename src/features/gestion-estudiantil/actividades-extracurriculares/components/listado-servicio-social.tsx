@@ -9,29 +9,34 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor, type OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   toServicioSocialFilters,
   useServicioSocialQuery,
 } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query/use-servicio-social-query"
 import type { ServicioSocialQueryFilters } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
-import { buildColumnsServicioSocial } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/columns-servicio-social"
+import { buildColumnsServicioSocial, ORDEN_SERVICIO_SOCIAL } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/columns-servicio-social"
 import { SearchServicioSocial } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/search-servicio-social"
 import { useNavegacionActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-navegacion-actividades"
 import { useServicioSocialFiltros } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-servicio-social-filtros"
+
+/** Sede y Jornada van ocultas de entrada; «Columnas visibles» las ofrece. */
+const COLUMNAS_OCULTAS = { sede: false, jornada: false }
 
 /** Pestaña Servicio social (G.5.SOC.LIS): un estudiante por fila con sus horas y su estado. */
 export function ListadoServicioSocial({
   onFiltersChange,
 }: {
-  onFiltersChange: (f: ServicioSocialQueryFilters) => void
+  onFiltersChange: (f: ServicioSocialQueryFilters, orden: OrdenServidor) => void
 }) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const f = useServicioSocialFiltros(goToPage)
   const { irServicioSocial } = useNavegacionActividades()
 
   const filters = useMemo(() => toServicioSocialFilters(f.search, f.filtros), [f.search, f.filtros])
-  useEffect(() => onFiltersChange(filters), [filters, onFiltersChange])
-  const query = useServicioSocialQuery({ filters, pageIndex, pageSize })
+  const orden = useMemo(() => ordenServidor(sorting, ORDEN_SERVICIO_SOCIAL), [sorting])
+  useEffect(() => onFiltersChange(filters, orden), [filters, orden, onFiltersChange])
+  const query = useServicioSocialQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_SERVICIO_SOCIAL) }, pageIndex, pageSize })
   const columns = useMemo(
     () => buildColumnsServicioSocial({ onVer: (fila) => irServicioSocial(fila.id) }),
     [irServicioSocial],
@@ -49,6 +54,7 @@ export function ListadoServicioSocial({
     sorting,
     setSorting,
     columnVisibilityStorageKey: "servicio-social-column-visibility",
+    initialColumnVisibility: COLUMNAS_OCULTAS,
   })
 
   const { data, isPending, isError, error, refetch } = query

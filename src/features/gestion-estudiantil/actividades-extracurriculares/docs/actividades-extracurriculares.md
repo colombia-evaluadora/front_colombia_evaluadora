@@ -180,3 +180,4 @@ Como Rector, base local, 2026-11-13.
 - **B3 Banderas para retirar, registrar sesión y certificado.** Suposición vigente: retirar y nueva sesión usan `puede_inscribir` más el estado del caso; el certificado se habilita con estado CUMPLIDO y el gate del backend decide el rol.
 - **Etiqueta de auditoría.** El servidor registra la etiqueta genérica «Actividades extracurriculares: modifica una actividad» en todas las operaciones. El front la sustituye con `utils/avisos.ts`. Pedir al backend una etiqueta por operación.
 - **Período académico.** Se resuelve desde `/gestion-estudiantil/opciones/jornadas` (`use-periodo-academico-query.ts`). Confirmar que es la fuente correcta para el período de la actividad.
+- Orden por servidor (`ORDEN`/`DIR`) en Actividades y Servicio social: solo las columnas con clave (`ORDEN_ACTIVIDADES`, `ORDEN_SERVICIO_SOCIAL`) llevan encabezado ordenable. Servicio social suma Sede y Jornada (`sede_nombre`, `jornada_nombre`), ocultas por defecto.
