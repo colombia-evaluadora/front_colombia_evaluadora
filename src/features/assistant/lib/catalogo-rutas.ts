@@ -388,6 +388,50 @@ export const CATALOGO_RUTAS: RutaCatalogo[] = [
     accion: "ver",
     params: { enrollmentId: "Id de la inscripción" },
   },
+  // ─── Administración: conservación de datos ───────────────────────────────
+  {
+    codigo: "conservacion.pestanas",
+    menu: "CONSERVACION_DATOS",
+    ruta: "/app/administracion/conservacion-datos",
+    descripcion:
+      "Conservación de datos: políticas, ampliaciones de plazo del establecimiento, registros vencidos (solo Superadministrador) y archivo histórico.",
+    accion: "ver",
+    search: {
+      tab: "politicas, ampliaciones, vencidos o archivo",
+      q: "Archivo histórico: estudiante (nombre o documento)",
+      establecimiento: "Archivo histórico: PK del establecimiento",
+      tipo: "Archivo histórico: tipo de registro",
+      anio: "Archivo histórico: año",
+    },
+  },
+  {
+    codigo: "conservacion.politica.agregar",
+    menu: "CONSERVACION_DATOS",
+    ruta: "/app/administracion/conservacion-datos/politicas/nueva",
+    descripcion: "Formulario de una política de conservación nueva (solo Superadministrador).",
+    accion: "crear",
+  },
+  {
+    codigo: "conservacion.politica.editar",
+    menu: "CONSERVACION_DATOS",
+    ruta: "/app/administracion/conservacion-datos/politicas/editar/$politicaId",
+    descripcion: "Modificar una política de conservación (solo Superadministrador).",
+    accion: "editar",
+    params: { politicaId: "pkPolitica de la política (GET /conservacion-datos/politicas)" },
+  },
+  {
+    codigo: "conservacion.vencido.detalle",
+    menu: "CONSERVACION_DATOS",
+    ruta: "/app/administracion/conservacion-datos/vencidos/detalle/$politica/$establecimiento",
+    descripcion:
+      "Detalle de un lote de registros vencidos: un tipo de registro en un establecimiento (solo Superadministrador). Solo consulta.",
+    accion: "ver",
+    params: {
+      politica: "pkPolitica del lote (GET /conservacion-datos/vencidos)",
+      establecimiento: "pkEstablecimiento del lote (GET /conservacion-datos/vencidos)",
+    },
+    search: PAGINACION,
+  },
 ]
 
 export function rutaDelCatalogo(codigo: string): RutaCatalogo | undefined {
