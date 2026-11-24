@@ -33,6 +33,7 @@ import {
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { StorageStatusCard } from "@/components/offline/storage-status-card"
 import { PinSetupCard } from "@/components/offline/pin-setup-card"
+import { InstallAppNotice } from "@/components/offline/install-app-notice"
 import { useUser } from "@/lib/auth"
 import { formatBytes } from "@/lib/offline/storage-status"
 import { getDeviceMode } from "@/lib/offline/query-persister"
@@ -55,9 +56,6 @@ const FRESHNESS_CLASS: Record<PrepareFreshness, string> = {
   envejeciendo: "text-yellow",
   vieja: "text-red",
 }
-
-const SHARED_DEVICE_COPY =
-  'Este equipo está en modo compartido: no se guardan datos para usar sin conexión. Si es tu equipo personal y estás en el piloto, desmarca "Este es un equipo compartido" al iniciar sesión.'
 
 /** Alcance para roles sin grupos propios (super admin, rector, coordinación). */
 const MENU_SCOPE_COPY =
@@ -324,12 +322,15 @@ function PrepareStatus({
 
 /**
  * "Preparar para usar sin conexión" (plan offline §7.9, D-6/D-14). Un solo
- * botón principal: "Preparar todo" (todo el año) o "Continuar" si quedó una
- * corrida a medias. La corrida es un TRABAJO EN SEGUNDO PLANO
+ * botón principal: "Preparar este equipo" (todo el año, sin archivos: lo más
+ * útil para un docente que no quiere decidir nada) o "Continuar" si quedó una
+ * corrida a medias. Retroalimentación de soporte (2026-11): el público son
+ * docentes con poca experiencia tecnológica, así que periodos, archivos y
+ * "Volver a descargar todo" quedan en "Opciones avanzadas", cerrado. La corrida es un TRABAJO EN SEGUNDO PLANO
  * (`prepare-job.ts`): el diálogo se cierra enseguida y el progreso,
  * "Cancelar" y el aviso de fin viven en el header (`OfflineDataStatus`);
  * reabrir el diálogo muestra el progreso. Grupos/asignaturas/periodos,
- * archivos y "automático" van en "Opciones"; los selectores solo aparecen si
+ * archivos y "automático" van en "Opciones avanzadas"; los selectores solo aparecen si
  * el usuario tiene grupos propios (super admin, rector o coordinación no los
  * tienen: se guarda lo de su menú).
  */
@@ -407,12 +408,12 @@ export function PrepareOfflineDialog({
   }
 
   const primaryLabel = forzar
-    ? "Forzar todo"
+    ? "Volver a descargar todo"
     : reanudable
     ? "Continuar"
     : personalizada
       ? "Preparar selección"
-      : "Preparar todo"
+      : "Preparar este equipo"
   const nGrupos = opciones.grupos.length
   const scope = cargandoOpciones
     ? "Revisando qué hay para guardar…"
@@ -426,18 +427,13 @@ export function PrepareOfflineDialog({
         <DialogHeader className="min-w-0 shrink-0 pr-8">
           <DialogTitle>Preparar para usar sin conexión</DialogTitle>
           <DialogDescription>
-            Guarda en este equipo lo necesario para trabajar sin internet. Corre en segundo plano:
-            puedes seguir usando la app mientras tanto.
+            Guarda en este equipo lo que necesita para trabajar sin internet. Solo pulse «Preparar
+            este equipo»: tarda unos minutos y puede seguir usando la plataforma mientras tanto.
           </DialogDescription>
         </DialogHeader>
 
         <div className="scrollbar-slim -mx-6 flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-6 text-sm">
-          {shared && (
-            <Alert>
-              <WarningIcon className="text-yellow" />
-              <AlertDescription>{SHARED_DEVICE_COPY}</AlertDescription>
-            </Alert>
-          )}
+          {shared && <InstallAppNotice />}
           {!shared && onlineOnly.disabled && !enCurso && (
             <Alert>
               <CloudOffIcon />
@@ -488,7 +484,7 @@ export function PrepareOfflineDialog({
                     />
                   }
                 >
-                  Opciones
+                  Opciones avanzadas
                   <CaretDownIcon
                     data-icon="inline-end"
                     className="transition-transform group-data-[panel-open]:rotate-180"
@@ -554,8 +550,8 @@ export function PrepareOfflineDialog({
                     />
                   )}
                   <OptionCheckbox
-                    label="Forzar todo"
-                    hint="Vuelve a descargar todo aunque ya esté al día. Úsalo solo si algo se ve desactualizado: tarda varios minutos."
+                    label="Volver a descargar todo"
+                    hint="Úselo solo si algo se ve desactualizado. Tarda más que la preparación normal."
                     checked={forzar}
                     disabled={disabled}
                     onChange={setForzar}

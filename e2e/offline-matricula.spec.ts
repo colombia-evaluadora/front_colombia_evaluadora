@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // P6 (política de datos de menores, decidida para Cobertura): la LISTA de
 // matrícula se consulta sin red, solo lectura y con datos básicos. Después de
@@ -104,10 +105,9 @@ test("matrícula: preparar → sin red se consulta la lista con datos básicos; 
   // dependencias) y devolver al login: se reintenta.
   await expect(async () => {
     if (new URL(page.url()).pathname !== "/login") await page.goto("/login")
-    await page.getByLabel("Correo electrónico").fill(USUARIO)
+    await page.getByLabel("Correo o número de documento").fill(USUARIO)
     await page.getByLabel("Contraseña", { exact: true }).fill("password")
-    const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-    if (await compartido.isChecked()) await compartido.click()
+    await usarComoEquipoPersonal(page)
     await page.getByRole("button", { name: "Ingresar" }).click()
     // La app terminó de arrancar (sesión, menú) antes de navegar por el router.
     await expect(page.getByRole("button", { name: "Cuenta de usuario" })).toBeVisible({ timeout: 45_000 })
@@ -125,7 +125,7 @@ test("matrícula: preparar → sin red se consulta la lista con datos básicos; 
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: "Preparar todo" }).click()
+  await dialog.getByRole("button", { name: "Preparar este equipo" }).click()
   await expect(dialog).toBeHidden()
   await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
   // El persister escribe con throttle de 1 s.

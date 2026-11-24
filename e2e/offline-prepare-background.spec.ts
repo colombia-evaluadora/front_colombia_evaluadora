@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // "Preparar sin conexión" como trabajo en SEGUNDO PLANO: se arranca, el
 // diálogo se cierra enseguida, el docente sigue navegando (las pantallas
@@ -24,10 +25,9 @@ async function login(page: Page, email: string) {
       }),
   )
   await page.reload()
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.waitForLoadState("networkidle")
@@ -115,7 +115,7 @@ test("Preparar corre en segundo plano: se cierra el diálogo, se navega y el hea
   test.setTimeout(480_000)
   await login(page, "docente@example.com")
   const dialog = await openPrepareDialog(page)
-  await dialog.getByRole("button", { name: "Preparar todo" }).click()
+  await dialog.getByRole("button", { name: "Preparar este equipo" }).click()
   // El diálogo se cierra enseguida: no bloquea nada.
   await expect(dialog).toBeHidden()
 
@@ -175,10 +175,10 @@ for (const [ancho, alto] of [
     await page.setViewportSize({ width: ancho, height: alto })
     await login(page, "docente@example.com")
     const dialog = await openPrepareDialog(page)
-    await expect(dialog.getByRole("button", { name: "Preparar todo" })).toBeEnabled({
+    await expect(dialog.getByRole("button", { name: "Preparar este equipo" })).toBeEnabled({
       timeout: 30_000,
     })
-    // Solo "Cerrar" + la acción principal (más el botón X del diálogo y "Opciones").
+    // Solo "Cerrar" + la acción principal (más "Opciones avanzadas").
     await expect(
       dialog.getByRole("button", { name: /Preparar todo el año|Continuar preparación/ }),
     ).toHaveCount(0)
@@ -189,7 +189,7 @@ for (const [ancho, alto] of [
     expect(parseFloat(borde)).toBeGreaterThan(0)
     await shot(page, `bg-dialogo-${ancho}`)
     await expectNoHorizontalOverflow(page)
-    await dialog.getByRole("button", { name: "Opciones" }).click()
+    await dialog.getByRole("button", { name: "Opciones avanzadas" }).click()
     await expect(dialog.getByRole("group", { name: "Grupos" })).toBeVisible()
     await expectNoHorizontalOverflow(page)
     await shot(page, `bg-dialogo-${ancho}-opciones`)
@@ -202,7 +202,7 @@ test("super admin: sin selectores vacíos, una línea con lo que se guardará", 
   await login(page, "admin@example.com")
   const dialog = await openPrepareDialog(page)
   await expect(dialog.getByText(/Se guardará todo lo de tu menú/)).toBeVisible({ timeout: 30_000 })
-  await dialog.getByRole("button", { name: "Opciones" }).click()
+  await dialog.getByRole("button", { name: "Opciones avanzadas" }).click()
   await expect(dialog.getByText("Sin opciones.")).toHaveCount(0)
   await expect(dialog.getByRole("group", { name: "Grupos" })).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
