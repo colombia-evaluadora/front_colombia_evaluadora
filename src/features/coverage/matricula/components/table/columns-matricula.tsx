@@ -82,8 +82,6 @@ export function MatriculaStatusBadge({ status }: { status: string }) {
 
 /** Columnas que el prototipo deja fuera de la vista inicial; siguen en el menú de columnas. */
 export const MATRICULA_INITIAL_VISIBILITY = {
-  firstName: false,
-  lastName: false,
   institution: false,
   campus: false,
   shift: false,
@@ -182,20 +180,6 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
       </div>
     ),
     enableHiding: false,
-  },
-  {
-    id: "firstName",
-    accessorKey: "firstName",
-    meta: { label: "Nombres" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Nombres" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.firstName}</span>,
-  },
-  {
-    id: "lastName",
-    accessorKey: "lastName",
-    meta: { label: "Apellidos" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Apellidos" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.lastName}</span>,
   },
   {
     id: "institution",
