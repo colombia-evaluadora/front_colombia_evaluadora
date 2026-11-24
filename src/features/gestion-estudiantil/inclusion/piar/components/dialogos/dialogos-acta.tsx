@@ -50,7 +50,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
             otra: fila?.otra_calidad,
             compromisos: fila?.compromisos,
             firmar: fila && !fila.debe_firmar ? "NO" : "SI",
-            firma: firmas.find((f) => f.codigo === (fila?.estado_firma ?? "PENDIENTE"))?.value,
+            firma: dialogo.firmando ? firmo : firmas.find((f) => f.codigo === (fila?.estado_firma ?? "PENDIENTE"))?.value,
             fecha_firma: fila?.fecha_firma,
             externo_nombre: fila?.tipo_persona === "PERSONA_EXTERNA" ? fila.nombre : "",
             externo_id: fila?.externo_identificacion,

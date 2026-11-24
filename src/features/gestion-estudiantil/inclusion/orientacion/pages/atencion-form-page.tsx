@@ -1,5 +1,9 @@
 import { useState } from "react"
-import { useParams } from "@tanstack/react-router"
+import { useNavigate, useParams } from "@tanstack/react-router"
+import { paths } from "@/config/paths"
+import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks/use-opciones-cascada"
+import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
+import { useHistorialQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-tablero-query"
 import { useAtencionQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import type { AtencionDetalle } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 
@@ -45,6 +49,14 @@ export function AtencionFormPage() {
 function AtencionFormContenido({ detalle, estado }: { detalle: AtencionDetalle | undefined; estado: { isPending: boolean; error: unknown } }) {
   const a = useAtencionForm(detalle, estado)
   const { form } = a
+  const navigate = useNavigate()
+  // Matrícula de la atención: la del detalle o la elegida en el formulario.
+  const matriculaId = a.detalle ? a.detalle.estudiante.fk_tmatricula : a.matricula ? Number(a.matricula) : undefined
+  const { establecimientoId } = useOpcionesCascada("", "")
+  const accesoPrevencion = useAccesoPrevencionQuery(establecimientoId).data
+  // Valorar el riesgo se decide por estudiante (`puede_valorar` del historial de Prevención).
+  const puedeValorar = useHistorialQuery(matriculaId, matriculaId != null).data?.puede_valorar === true
+  const estudianteTexto = a.estudianteFijo ?? a.estudiantes.find((m) => String(m.fk_tmatricula) === a.matricula)?.estudiante_nombre
   const [externa, setExterna] = useState(false)
   const [gestion, setGestion] = useState<{ accion: "gestion" | "respuesta"; remision: ResumenRemision } | null>(null)
   const [errorDescarga, setErrorDescarga] = useState<string | null>(null)
@@ -71,6 +83,8 @@ function AtencionFormContenido({ detalle, estado }: { detalle: AtencionDetalle |
         <TableScreenTitle
           action={
             <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" color="neutral" disabled={!matriculaId || !puedeValorar} onClick={() => navigate({ to: paths.app.prevencionValorar.getHref(), search: { matricula: matriculaId } })}>Crear valoración del riesgo</Button>
+              <Button size="sm" variant="outline" color="neutral" disabled={!matriculaId || !accesoPrevencion?.puede_reportar_salud_mental} onClick={() => navigate({ to: paths.app.prevencionSaludMentalNuevo.getHref(), search: { matricula: matriculaId, estudiante: estudianteTexto } })}>Registrar señal de salud mental</Button>
               <Button size="sm" variant="outline" color="neutral" onClick={a.volver}>{a.soloLectura ? "Volver" : "Cancelar"}</Button>
               {!a.soloLectura && (
                 <Button size="sm" disabled={a.guardando} onClick={() => form.handleSubmit()}>
