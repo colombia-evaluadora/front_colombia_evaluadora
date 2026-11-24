@@ -148,7 +148,7 @@ function toMatricula(row: MatriculaListRow): Matricula {
     retiroSolicitado: row.retiro_solicitado === "S",
     retiroSolicitadoPor: row.retiro_solicitado_por?.trim() || null,
     retiroTraslado:
-      row.retiro_traslado === "S" ? { acta: row.acta_retiro ?? "", fecha: row.fecha_retiro ?? "" } : null,
+      row.retiro_traslado === "S" ? { acta: row.acta_retiro ?? "", fecha: row.fecha_retiro?.slice(0, 10) ?? "" } : null,
     simpadeIngresado: row.simpade_ingresado === "S",
     simpade:
       row.simpade_ingresado === "S" && row.simpade_fecha_ingreso
