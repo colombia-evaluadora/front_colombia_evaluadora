@@ -21,7 +21,8 @@ export const MATRICULA_CATALOG_CATEGORIA = {
   frecuenciaDomicilio: "FRECUENCIA_DOMICILIO",
   tipoDocumento: "TIPO_DOCUMENTO",
   genero: "GENERO",
-  metodologia: "METODOLOGIA",
+  // Lo que guarda el grupo (TGRUPO.FK_TLV_MODELO_PEDAGOGICO) y filtra fn_matricula_listar.
+  metodologia: "MODELO_PEDAGOGICO",
   internado: "INTERNADO",
   pais: "PAIS",
   lenguaMaterna: "LENGUA_MATERNA",
