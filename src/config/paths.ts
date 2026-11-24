@@ -297,14 +297,10 @@ export const paths = {
       path: "administracion/conservacion-datos",
       getHref: () => "/app/administracion/conservacion-datos",
     },
-    conservacionPoliticaNueva: {
-      path: "administracion/conservacion-datos/politicas/nueva",
-      getHref: () => "/app/administracion/conservacion-datos/politicas/nueva",
-    },
-    conservacionPoliticaEditar: {
-      path: "administracion/conservacion-datos/politicas/editar/$politicaId",
-      getHref: (politicaId: number | string) =>
-        `/app/administracion/conservacion-datos/politicas/editar/${politicaId}`,
+    conservacionVencidoDetalle: {
+      path: "administracion/conservacion-datos/vencidos/detalle/$politicaId/$establecimientoId",
+      getHref: (politicaId: number | string, establecimientoId: number | string) =>
+        `/app/administracion/conservacion-datos/vencidos/detalle/${politicaId}/${establecimientoId}`,
     },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",

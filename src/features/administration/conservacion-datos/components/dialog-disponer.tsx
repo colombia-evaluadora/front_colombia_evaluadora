@@ -1,5 +1,6 @@
 import { useRef, useState } from "react"
 
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -8,6 +9,7 @@ import { CharacterCounter } from "@/components/ui/character-counter"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   ArchiveIcon,
+  EyeSlashIcon,
   FileUploadOutlinedIcon,
   InfoIcon,
   LockIcon,
@@ -16,7 +18,9 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { Input, inputTriggerVariants, inputVariants } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
@@ -26,6 +30,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useDisponer } from "@/features/administration/conservacion-datos/api/mutations/conservacion-mutations"
 import { ACTA_MAX_BYTES } from "@/features/administration/conservacion-datos/api/schema"
 import {
+  ALMACENAMIENTO_NO_RESPONDE,
   ARCHIVAR_NO_DISPONIBLE,
   DISPOSICION_LABELS,
   type Disposicion,
@@ -43,10 +48,13 @@ export function DialogDisponer({
   vencido,
   almacenamientoArchivo,
   onClose,
+  onDispuesto,
 }: {
   vencido: Vencido
   almacenamientoArchivo: boolean
   onClose: () => void
+  /** Tras disponer, en lugar del aviso y cerrar (p. ej. el detalle del lote vuelve a Vencidos). */
+  onDispuesto?: () => void
 }) {
   const { notify } = useNotify()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -65,6 +73,7 @@ export function DialogDisponer({
   const disponer = useDisponer({
     mutationConfig: {
       onSuccess: () => {
+        if (onDispuesto) return onDispuesto()
         notify(SUCCESS_MESSAGES.loteVencido.created)
         onClose()
       },
@@ -75,7 +84,7 @@ export function DialogDisponer({
   const motivoLimpio = motivo.trim()
   const errores = {
     disposicion: disposicion ? null : "Seleccione la disposición.",
-    acta: errorActa ?? (acta ? null : required("El acta")),
+    acta: errorActa ?? (acta ? null : required("El acta", { femenino: true })),
     motivo:
       motivoLimpio.length === 0
         ? required("El motivo")
@@ -125,12 +134,16 @@ export function DialogDisponer({
 
         <div className="grid gap-5 sm:grid-cols-2">
           {archivarBloqueado ? (
-            <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
-              <legend className="mb-1.5 text-sm">
-                Disposición<span className="text-red"> *</span>
-              </legend>
+            <MarcoOpciones
+              id="disponer-disposicion"
+              label="Disposición"
+              required
+              className="sm:col-span-2"
+              error={intentado ? (errores.disposicion ?? undefined) : undefined}
+              descripcion={ALMACENAMIENTO_NO_RESPONDE}
+            >
               <RadioGroup
-                className="flex gap-6"
+                aria-labelledby="disponer-disposicion-label"
                 value={disposicion ?? ""}
                 onValueChange={(v) => setDisposicion(v as Disposicion)}
               >
@@ -145,57 +158,68 @@ export function DialogDisponer({
                     <RadioGroupItem value="ARCHIVAR" disabled />
                     Archivar
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-72">{ARCHIVAR_NO_DISPONIBLE}</TooltipContent>
+                  <TooltipContent className="max-w-72">{ALMACENAMIENTO_NO_RESPONDE}</TooltipContent>
                 </Tooltip>
               </RadioGroup>
-              <p className="text-xs text-muted-foreground">
-                La política indica Archivar, pero el almacenamiento del archivo histórico no está configurado.
-              </p>
-              {intentado && errores.disposicion ? <p className="text-xs text-red">{errores.disposicion}</p> : null}
-            </fieldset>
+            </MarcoOpciones>
           ) : (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm">Disposición</span>
-              <div className="flex h-10 items-center justify-between rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground">
-                {DISPOSICION_LABELS[vencido.disposicion]}
-                <LockIcon className="size-4" aria-hidden />
+            // Reglas de UI: campo de solo lectura con label flotante y candado (como en Criterios de prioridad).
+            <Field variant="outlined" data-disabled>
+              <FieldLabel htmlFor="disponer-disposicion">
+                Disposición<span data-required-mark="">*</span>
+              </FieldLabel>
+              <div className="relative">
+                <Input
+                  id="disponer-disposicion"
+                  value={DISPOSICION_LABELS[vencido.disposicion]}
+                  disabled
+                  readOnly
+                  className="pr-9"
+                />
+                <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
               </div>
-              <p className="text-xs text-muted-foreground">La de la política.</p>
-            </div>
+              <FieldDescription>La de la política.</FieldDescription>
+            </Field>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm">
-              Acta<span className="text-red"> *</span>
-            </span>
+          {/* Carga del acta como un campo más: label flotante sobre el borde, 40 px, ícono de carga a la derecha. */}
+          <Field variant="outlined" data-invalid={(intentado || errorActa) && errores.acta ? true : undefined}>
+            <FieldLabel htmlFor="disponer-acta">
+              Acta<span data-required-mark="">*</span>
+            </FieldLabel>
             <input
               ref={inputRef}
               type="file"
               accept="application/pdf,.pdf"
-              className="sr-only"
+              // `hidden` y no `sr-only`: absoluto, se salía por la derecha y le ponía scroll horizontal al modal.
+              className="hidden"
               tabIndex={-1}
               onChange={(e) => {
                 elegirActa(e.target.files?.[0])
                 e.target.value = ""
               }}
             />
-            <Button
+            <button
               type="button"
-              variant="outline"
-              color="neutral"
-              className="justify-start overflow-hidden"
-              aria-invalid={intentado && errores.acta ? true : undefined}
+              id="disponer-acta"
+              aria-invalid={(intentado || errorActa) && errores.acta ? true : undefined}
+              className={cn(
+                inputVariants({ variant: "outlined" }),
+                inputTriggerVariants({ variant: "outlined" }),
+                "flex items-center gap-2 text-left",
+                !acta && "text-muted-foreground",
+              )}
               onClick={() => inputRef.current?.click()}
             >
-              <FileUploadOutlinedIcon data-icon="inline-start" />
-              <span className="truncate">{acta ? acta.name : "Cargar acta"}</span>
-            </Button>
+              <span className="min-w-0 flex-1 truncate">{acta ? acta.name : "Cargar PDF"}</span>
+              <FileUploadOutlinedIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+            </button>
             {(intentado || errorActa) && errores.acta ? (
-              <p className="text-xs text-red">{errores.acta}</p>
+              <FieldError>{errores.acta}</FieldError>
             ) : (
-              <p className="text-xs text-muted-foreground">Solo PDF, hasta 10 MB.</p>
+              <FieldDescription>Solo PDF, hasta 10 MB.</FieldDescription>
             )}
-          </div>
+          </Field>
 
           <Field
             variant="outlined"
@@ -203,7 +227,7 @@ export function DialogDisponer({
             data-invalid={intentado && errores.motivo ? true : undefined}
           >
             <FieldLabel htmlFor="disponer-motivo">
-              Motivo<span className="text-red"> *</span>
+              Motivo<span data-required-mark="">*</span>
             </FieldLabel>
             <Textarea
               id="disponer-motivo"
@@ -238,7 +262,8 @@ export function DialogDisponer({
           </Alert>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" size="sm" disabled={disponer.isPending} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -251,6 +276,8 @@ export function DialogDisponer({
           >
             {disponer.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : disposicion === "ANONIMIZAR" ? (
+              <EyeSlashIcon data-icon="inline-start" />
             ) : (
               <ArchiveIcon data-icon="inline-start" />
             )}

@@ -2,7 +2,7 @@ import { setupServer } from "msw/node"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
-import { vencidosDb } from "@/mocks/db/conservacion-datos"
+import { conservacionConfigDb, vencidosDb } from "@/mocks/db/conservacion-datos"
 
 const server = setupServer(...conservacionDatosHandlers)
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }))
@@ -45,11 +45,14 @@ describe("mock de Conservación de datos", () => {
       return f
     }
     const url = "http://localhost/api/files/eval-col/conservacion-datos/vencidos/disponer"
+    // Sin almacenamiento (S.12.VEN.2): Archivar falla y solo se puede anonimizar.
+    conservacionConfigDb.almacenamientoArchivo = false
     expect((await fetch(url, { method: "POST", body: form() })).status).toBe(400)
     const ok = await fetch(url, { method: "POST", body: form("ANONIMIZAR") })
     expect(ok.status).toBe(200)
     expect((await ok.json()).rows[0].resultado.disposicion).toBe("ANONIMIZAR")
     expect(vencidosDb.some((v) => v.pkPolitica === 3)).toBe(false)
+    conservacionConfigDb.almacenamientoArchivo = true
   })
 
   it("la descarga trae una huella que coincide con el archivo", async () => {
