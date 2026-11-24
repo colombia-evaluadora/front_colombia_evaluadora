@@ -182,3 +182,4 @@ El Motivo no aparece en el documento de la citación: la especificación lo excl
 - Colección Postman del módulo.
 - Fuera de alcance: portal del acudiente (W.10 y W.11) y plantillas de correo por tipo de aviso.
 - Vista de detalle de citación (no definida en la especificación).
+- Orden por servidor (`BODY.ORDEN`/`BODY.DIR`) en citaciones y compromisos: `ORDEN_CITACIONES` y `ORDEN_COMPROMISOS` en sus `columns-*.tsx`; cambiar el orden vuelve a la página 0.

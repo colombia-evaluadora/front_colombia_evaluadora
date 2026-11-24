@@ -211,3 +211,4 @@ Verificado el 2026-11-13.
 - Fase 3 hecha: modales de acciones, acta de retiro en vista imprimible y Abrir caso de convivencia.
 - Pestaña Ficha con caracterización (confirmada, sin diligenciar, actualizar como Rector, Trabajo social y Orientación).
 - Verificación: `tsc -b` sin errores, oxlint sin hallazgos, vitest unit 1379/1379.
+- Orden por servidor en la bandeja de casos (`ORDEN_CASOS_REINTEGRACION`: estudiante, apertura, profesional, estado, días).

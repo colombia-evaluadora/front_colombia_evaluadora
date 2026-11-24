@@ -395,6 +395,12 @@ export interface OpcionEstrategia {
   ya_es_beneficiario: boolean
 }
 
+/** `GET /acompanamientos/opciones/estados`: estados de cada pestaña para el filtro Estado. */
+export interface OpcionesEstadosAcomp {
+  acompanamiento: { valor: EstadoAcompanamiento; nombre: string }[]
+  reporte_consumo: { valor: EstadoReporteConsumo; nombre: string }[]
+}
+
 export interface OpcionResponsable {
   fk_tfuncionario: number
   nombre: string

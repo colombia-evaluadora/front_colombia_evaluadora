@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   TableScreenBody,
   TableScreenHeader,
@@ -27,7 +28,7 @@ import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevenc
 import type { ValoracionRow } from "@/features/gestion-estudiantil/prevencion/api/types"
 import { DialogExportarSimpade } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/dialog-exportar-simpade"
 import { useDialogosPrevencion } from "@/features/gestion-estudiantil/prevencion/components/dialogos/use-dialogos-prevencion"
-import { buildColumnsValoraciones } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/columns-valoraciones"
+import { buildColumnsValoraciones, ORDEN_VALORACIONES } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/columns-valoraciones"
 import type { AccionValoracion } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/menu-acciones-valoracion"
 import { SearchValoraciones } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/search-valoraciones"
 
@@ -50,7 +51,7 @@ export function ValoracionesTab({ tabs }: Props) {
     () => (f.establecimientoId == null ? null : toValoracionesFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const { data, isPending, isError, error, refetch } = useValoracionesQuery({ filters, pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = useValoracionesQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_VALORACIONES) }, pageIndex, pageSize })
 
   const onAccion = useCallback(
     (fila: ValoracionRow, accion: AccionValoracion) => {

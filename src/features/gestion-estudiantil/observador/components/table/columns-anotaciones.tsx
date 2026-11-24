@@ -1,6 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import {
   BrainIcon,
@@ -12,11 +11,23 @@ import {
   ProhibitIcon,
 } from "@/components/ui/icons"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_ANOTACIONES: MapaOrden = {
+  fecha: "fecha",
+  estudiante: "estudiante",
+  grupo: "grupo",
+  tipo: "tipo",
+  codigo: "codigo",
+  responsable: "responsable",
+}
 
 /** Ver, Modificar, Anular, Reportar salud mental, Remitir y Abrir proceso disciplinario (orden de la guía de diseño). */
 const ACCIONES_ANOTACION = 7
@@ -51,36 +62,24 @@ export function buildColumnsAnotaciones({
 }: ColumnasOpciones): ColumnDef<AnotacionRow>[] {
   return [
     {
-      id: "fecha",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "fecha", "Fecha"),
       accessorKey: "fecha",
-      enableSorting: false,
-      meta: { label: "Fecha" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
       cell: ({ row }) => formatFecha(row.original.fecha),
     },
     {
-      id: "estudiante",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "estudiante", "Estudiante"),
       accessorKey: "estudiante_nombre",
-      enableSorting: false,
-      meta: { label: "Estudiante" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Estudiante" />,
       cell: ({ row }) => (
 <span className="font-medium">{row.original.estudiante_nombre}</span>
       ),
     },
     {
-      id: "grupo",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "grupo", "Grado/Grupo"),
       accessorKey: "grado_grupo",
-      enableSorting: false,
-      meta: { label: "Grado/Grupo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Grado/Grupo" />,
     },
     {
-      id: "tipo",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "tipo", "Tipo"),
       accessorKey: "tipo_nombre",
-      enableSorting: false,
-      meta: { label: "Tipo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo" />,
       cell: ({ row }) => (
         <Badge variant="soft" color={colorDeTipo(row.original.tipo_codigo)}>
           {row.original.tipo_nombre}
@@ -88,11 +87,8 @@ export function buildColumnsAnotaciones({
       ),
     },
     {
-      id: "codigo",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "codigo", "Código y descripción"),
       accessorKey: "codigo",
-      enableSorting: false,
-      meta: { label: "Código y descripción" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Código y descripción" />,
       cell: ({ row }) => (
         // `min-w-64`: la columna ya no absorbe el sobrante de la tabla, y sin un mínimo cortaba
         // en la primera palabra posible. Código y descripción van en una línea; solo una descripción
@@ -111,18 +107,12 @@ export function buildColumnsAnotaciones({
       ),
     },
     {
-      id: "responsable",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "responsable", "Responsable de enseñanza"),
       accessorKey: "responsable_nombre",
-      enableSorting: false,
-      meta: { label: "Responsable de enseñanza" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Responsable de enseñanza" />,
     },
     {
-      id: "estado",
+      ...columnaOrden<AnotacionRow>(ORDEN_ANOTACIONES, "estado", "Estado"),
       accessorKey: "anulada",
-      enableSorting: false,
-      meta: { label: "Estado" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       // Solo cuando aplica: una anotación vigente no lleva estado (G.1.LIS.1).
       cell: ({ row }) =>
         row.original.anulada ? (

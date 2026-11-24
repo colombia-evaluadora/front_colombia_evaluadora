@@ -36,6 +36,7 @@ export const prevencionKeys = {
     gestionAlertas: (establecimiento: number | "none") => [...all, "opciones", "gestion-alertas", establecimiento] as const,
     acompAtenciones: (matricula: number | "none") => [...all, "opciones", "acomp-atenciones", matricula] as const,
     acompResponsables: <P>(params: P) => [...all, "opciones", "acomp-responsables", params] as const,
+    acompEstados: (establecimiento: number | "none") => [...all, "opciones", "acomp-estados", establecimiento] as const,
     acompContexto: (matricula: number | "none") => [...all, "opciones", "acomp-contexto", matricula] as const,
     acompAbiertos: (matricula: number | "none") => [...all, "opciones", "acomp-abiertos", matricula] as const,
     estudiantes: <P>(params: P) => [...all, "opciones", "estudiantes", params] as const,

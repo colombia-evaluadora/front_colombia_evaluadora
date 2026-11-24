@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { TableScreenBody, TableScreenToolbar } from "@/components/layout/table-screen"
 import { useNotify } from "@/components/notice/notice-context"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import { ORDEN_CODIGOS } from "@/features/gestion-estudiantil/catalogo-anotaciones/components/table/columns-codigos"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -60,6 +62,7 @@ export function CatalogoTab({ tabs, establecimiento, cargandoEstablecimiento, ac
     filtros,
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_CODIGOS),
   })
 
   const cambiarEstado = useCambiarEstadoCodigo()

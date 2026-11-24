@@ -23,6 +23,7 @@ import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-p
 import { getErrorMessage } from "@/lib/api-client"
 import { paths } from "@/config/paths"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { toObservadorFilters, useAnotacionesQuery } from "@/features/gestion-estudiantil/observador/api/query/use-anotaciones-query"
 import { useResponsablesObservadorQuery } from "@/features/gestion-estudiantil/observador/api/query/use-opciones-observador-query"
 import { useCodigosAnotacionQuery } from "@/features/gestion-estudiantil/observador/api/query/use-codigos-anotacion-query"
@@ -30,7 +31,7 @@ import { useOpcionesCascada } from "@/features/gestion-estudiantil/commons/hooks
 import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { useObservadorAccess } from "@/features/gestion-estudiantil/observador/api/use-observador-access"
 import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/features/gestion-estudiantil/observador/api/types"
-import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
+import { buildColumnsAnotaciones, ORDEN_ANOTACIONES } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
 import { SearchAnotaciones } from "@/features/gestion-estudiantil/observador/components/search/search-anotaciones"
 import { DialogAnularAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-anular-anotacion"
 import { DialogDetalleAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-detalle-anotacion"
@@ -84,6 +85,7 @@ function ObservadorContent() {
     filters: queryFilters,
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_ANOTACIONES),
   })
   const rows = data?.rows ?? []
 
@@ -186,7 +188,7 @@ function ObservadorContent() {
           <TableScreenActions>
             <DialogImprimirObservador disabled={!access.puedeImprimir} />
             <DialogCargarObservadorFirmado disabled={!access.puedeCargarFirmado} />
-            <DialogExportarAnotaciones filters={queryFilters} />
+            <DialogExportarAnotaciones filters={queryFilters} orden={ordenServidor(sorting, ORDEN_ANOTACIONES)} />
             {access.puedeCrear && (
               <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
                 <ControlPointIcon data-icon="inline-start" />

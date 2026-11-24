@@ -2,6 +2,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { ObservacionRow } from "@/features/gestion-estudiantil/observaciones/api/types"
 import { accionesObservacion } from "@/features/gestion-estudiantil/observaciones/api/ui-mappings"
@@ -13,14 +15,16 @@ interface ColumnasOpciones {
   onAccion: (observacion: ObservacionRow, accion: DialogoObservacion) => void
 }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el backend no tiene parámetro de orden (siempre la más reciente primero), así que
-  // no se ofrece el menú con flechas. «Columnas visibles» sigue ocultándolas.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_OBSERVACIONES: MapaOrden = {
+  fecha: "fecha",
+  grado_grupo: "grupo",
+  titulo: "titulo",
+  periodo: "periodo",
+  registrado_por: "registrado",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<ObservacionRow>(ORDEN_OBSERVACIONES, id, titulo)
 
 /**
  * Columnas del listado (G.7.LIS.1): Fecha · Grado/Grupo · Dirigida a · Título · Registrado por. El Estado

@@ -499,3 +499,4 @@ Comprobaciones:
 **(n) Administración › Lista de valores.** Debe mostrar «Del SIMPADE» como interruptor en el tipo de estrategia.
 
 **(o) Reintegración (#992).** Cablear `caracterizacion_disponible`.
+- Orden por servidor (`QUERY.ORDEN`/`QUERY.DIR`) en Tablero, Valoraciones, Salud mental, Estrategias, Caracterización, Embarazo, Consumo y Reportes recibidos: mapa `ORDEN_*` junto a cada `columns-*.tsx` y `ordenServidor` de `commons/utils/orden-servidor.tsx`.

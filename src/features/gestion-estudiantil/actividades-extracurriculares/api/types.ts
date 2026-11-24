@@ -149,6 +149,8 @@ export interface ServicioSocialRow {
   estudiante_nombre: string
   estudiante_documento: string
   grado_grupo: string
+  sede_nombre: string | null
+  jornada_nombre: string | null
   fk_tgrado: number
   horas: number
   horas_requeridas: number

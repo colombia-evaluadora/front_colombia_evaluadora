@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { ExportDialog } from "@/components/export-dialog"
@@ -14,6 +14,7 @@ import { TablePaginationProvider } from "@/hooks/use-table-pagination"
 
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useCapacidadesGe } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { useExportarActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/mutations/exportar"
 import type {
   ActividadesQueryFilters,
@@ -36,7 +37,8 @@ function ActividadesContent() {
   const puedeCrearActividad = puedeCrear && Boolean(cap?.actividades_puede_crear)
   const pestana: Pestana = tab === "servicio-social" ? "servicio-social" : "actividades"
   // Filtros aplicados de la pestaña visible: cada listado los publica al montarse y al cambiarlos.
-  const [filtros, setFiltros] = useState<ActividadesQueryFilters | ServicioSocialQueryFilters | null>(null)
+  const [aplicado, setAplicado] = useState<{ filters: ActividadesQueryFilters | ServicioSocialQueryFilters; orden: OrdenServidor | undefined } | null>(null)
+  const setFiltros = useCallback((filters: ActividadesQueryFilters | ServicioSocialQueryFilters, orden: OrdenServidor | undefined) => setAplicado({ filters, orden }), [])
   const exportar = useExportarActividades()
 
   return (
@@ -53,8 +55,8 @@ function ActividadesContent() {
                     ? "Elige un formato para descargar las actividades con los filtros aplicados."
                     : "Elige un formato para descargar el servicio social con los filtros aplicados."
                 }
-                disabled={filtros == null}
-                onExport={(format) => exportar.mutateAsync({ pestana, filters: filtros!, format })}
+                disabled={aplicado == null}
+                onExport={(format) => exportar.mutateAsync({ pestana, filters: aplicado!.filters, orden: aplicado!.orden, format })}
               />
               <Button size="sm" type="button" disabled={!puedeCrearActividad} onClick={irNueva}>
                 <ControlPointIcon data-icon="inline-start" />

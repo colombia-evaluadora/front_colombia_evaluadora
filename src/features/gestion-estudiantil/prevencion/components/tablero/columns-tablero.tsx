@@ -3,6 +3,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { TableroRow } from "@/features/gestion-estudiantil/prevencion/api/types"
 import {
@@ -25,13 +27,14 @@ interface ColumnasOpciones {
   onAccion: (fila: TableroRow, accion: AccionTablero) => void
 }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el backend no tiene parámetro de orden, así que no se ofrece el menú con flechas.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_TABLERO: MapaOrden = {
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  plan: "plan",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<TableroRow>(ORDEN_TABLERO, id, titulo)
 
 /** Columnas del Tablero de alertas (G.8.TAB.1). Sede y Jornada van ocultas de entrada. */
 export function buildColumnsTablero({ sedePorGrupo, jornadaPorGrupo, onAccion }: ColumnasOpciones): ColumnDef<TableroRow>[] {

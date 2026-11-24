@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   TableScreen,
   TableScreenBody,
@@ -23,7 +24,7 @@ import {
   useObservacionesQuery,
 } from "@/features/gestion-estudiantil/observaciones/api/query/use-observaciones-query"
 import type { ObservacionRow } from "@/features/gestion-estudiantil/observaciones/api/types"
-import { buildColumnsObservaciones } from "@/features/gestion-estudiantil/observaciones/components/columns-observaciones"
+import { buildColumnsObservaciones, ORDEN_OBSERVACIONES } from "@/features/gestion-estudiantil/observaciones/components/columns-observaciones"
 import {
   useDialogosObservaciones,
   type DialogoObservacion,
@@ -44,7 +45,7 @@ function ObservacionesContent() {
     () => (f.establecimientoId == null ? null : toObservacionesFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const { data, isPending, isError, error, refetch } = useObservacionesQuery({ filters, pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = useObservacionesQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_OBSERVACIONES) }, pageIndex, pageSize })
 
   const onAccion = useCallback(
     (observacion: ObservacionRow, accion: DialogoObservacion) => abrir(accion, observacion),

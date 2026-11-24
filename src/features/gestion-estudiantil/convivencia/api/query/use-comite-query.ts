@@ -12,6 +12,7 @@ import type {
   SesionDetalle,
   SesionFila,
 } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { comiteKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 import { desenvolver, queryString } from "@/features/gestion-estudiantil/commons/api/jsonb"
 
@@ -50,19 +51,20 @@ export interface SesionesParams {
   filters: { FK_TLV_TIPO?: number | null }
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
-export const fetchSesionesComite = async ({ comite, filters, pageIndex, pageSize }: SesionesParams) => {
-  const rows = await evalCol.postRows<SesionFila>(`${BASE}/${comite}/sesiones/query`, { filters, pageIndex, pageSize })
+export const fetchSesionesComite = async ({ comite, filters, pageIndex, pageSize, orden }: SesionesParams) => {
+  const rows = await evalCol.postRows<SesionFila>(`${BASE}/${comite}/sesiones/query`, { filters, pageIndex, pageSize, ...orden })
   const totalCount = rows[0]?.total_count ?? 0
   return { rows, totalCount, pageCount: toPageCount(totalCount, pageSize) }
 }
 
 /** `POST /comite/:ID/sesiones/query`: sesiones del Comité, paginadas. */
-export function useSesionesQuery({ comite, filters, pageIndex, pageSize }: SesionesParams) {
+export function useSesionesQuery({ comite, filters, pageIndex, pageSize, orden }: SesionesParams) {
   return useQuery({
-    queryKey: comiteKeys.sesiones({ comite, filters, pageIndex, pageSize }),
-    queryFn: () => fetchSesionesComite({ comite, filters, pageIndex, pageSize }),
+    queryKey: comiteKeys.sesiones({ comite, filters, pageIndex, pageSize, orden }),
+    queryFn: () => fetchSesionesComite({ comite, filters, pageIndex, pageSize, orden }),
     enabled: comite != null,
     placeholderData: keepPreviousData,
   })

@@ -140,26 +140,11 @@ export const ESTADO_ACOMP_COLOR: Record<EstadoAcompanamiento, BadgeColor> = {
   ANULADO: "destructive",
 }
 
-/** Opciones del filtro Estado: no hay endpoint que las dé (pendiente de backend). Única copia. */
-export const ESTADOS_ACOMP_FILTRO: { value: EstadoAcompanamiento; label: string }[] = [
-  { value: "ABIERTO", label: "Abierto" },
-  { value: "EN_SEGUIMIENTO", label: "En seguimiento" },
-  { value: "CERRADO", label: "Cerrado" },
-  { value: "ANULADO", label: "Anulado" },
-]
-
 export const ESTADO_REPORTE_CONSUMO_COLOR: Record<EstadoReporteConsumo, BadgeColor> = {
   PENDIENTE_REVISION: "warning",
   RECIBIDO: "info",
   ATENDIDO: "muted",
 }
-
-/** Opciones del filtro Estado de Reportes recibidos (pendiente de backend). Única copia. */
-export const ESTADOS_REPORTE_CONSUMO_FILTRO: { value: EstadoReporteConsumo; label: string }[] = [
-  { value: "PENDIENTE_REVISION", label: "Pendiente de revisión" },
-  { value: "RECIBIDO", label: "Recibido" },
-  { value: "ATENDIDO", label: "Atendido" },
-]
 
 /** Nombre de cada tipo de acompañamiento en títulos y encabezados (§9.9, §9.10). */
 export const TITULO_ACOMP: Record<TipoAcompanamiento, string> = {

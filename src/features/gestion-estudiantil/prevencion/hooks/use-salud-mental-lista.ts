@@ -5,12 +5,13 @@ import { useCallback, useMemo } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   toSaludMentalFilters,
   useSaludMentalQuery,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-salud-mental-query"
 import type { SenalSMRow } from "@/features/gestion-estudiantil/prevencion/api/types"
-import { buildColumnsSaludMental } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/columns-salud-mental"
+import { buildColumnsSaludMental, ORDEN_SALUD_MENTAL } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/columns-salud-mental"
 import { useDialogosSaludMental } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/dialogos/use-dialogos-salud-mental"
 import type { AccionSenalSM } from "@/features/gestion-estudiantil/prevencion/components/salud-mental/acciones-senal"
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
@@ -35,7 +36,7 @@ export function useSaludMentalLista() {
     () => (f.establecimientoId == null ? null : toSaludMentalFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const query = useSaludMentalQuery({ filters, pageIndex, pageSize })
+  const query = useSaludMentalQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_SALUD_MENTAL) }, pageIndex, pageSize })
 
   const sedePorId = useMemo(
     () => new Map(ambito.sedeOpciones.map((s) => [Number(s.value), s.label] as const)),
