@@ -29,6 +29,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
   const tiposCambio = useCatalogo("TIPO_CAMBIO_PIAR")
   const personas = useParticipantesOpcionQuery(piar.id, dialogo?.tipo === "participante" || dialogo?.tipo === "antecedente").data ?? []
   const version = piar.version_actual
+  const versionFirma = dialogo.tipo === "participante" && dialogo.version ? dialogo.version : version?.id
   const comunes = { onClose, abierto: true }
 
   switch (dialogo.tipo) {
@@ -72,7 +73,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
             const esExterno = v.tipo === externo
             const persona = esExterno ? null : fila ?? personas[Number(v.persona)]
             if (!fila && persona && persona.tipo_persona !== codigoTipo(v.tipo)) throw new Error("La persona elegida no corresponde al tipo de persona.")
-            return ejecutar("post", `/versiones/${version?.id}/participantes`, {
+            return ejecutar("post", `/versiones/${versionFirma}/participantes`, {
               PARTICIPANTE: fila?.id ?? null,
               FK_IPO_PERSONA: Number(v.tipo),
               FK_FUNCIONARIO: persona?.fk_tfuncionario ?? null,

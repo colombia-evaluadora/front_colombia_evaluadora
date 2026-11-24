@@ -19,6 +19,8 @@ interface Props {
   puedeSeguimiento?: boolean
   /** Las acciones se ven pero no responden (sin `puede_modificar` / sin `puede_registrar_seguimiento`). */
   bloqueado?: boolean
+  /** `puede_registrar_expediente`: la evidencia directa se registra también en Vigente. */
+  evidenciaBloqueada?: boolean
   seguimientoBloqueado?: boolean
   sensible: boolean
   onDialogo: (d: Dialogo) => void
@@ -47,7 +49,7 @@ function PeriodosSeguimiento({ ajuste, piarId }: { ajuste: Ajuste; piarId: numbe
   ))
 }
 
-export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar, puedeSeguimiento = puedeEditar, bloqueado = false, seguimientoBloqueado = false, sensible, onDialogo }: Props) {
+export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar, puedeSeguimiento = puedeEditar, bloqueado = false, evidenciaBloqueada = bloqueado, seguimientoBloqueado = false, sensible, onDialogo }: Props) {
   return (
     <article className="grid gap-3 rounded-lg border border-border p-4 text-sm">
       <header className="flex flex-wrap items-center gap-2">
@@ -81,7 +83,7 @@ export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar
             <span className="flex flex-wrap items-center gap-2">
               <Evidencias ajuste={ajuste} />
               {!ajuste.evidencias?.length && !puedeEditar && <span className="text-muted-foreground">Sin evidencia directa</span>}
-              {puedeEditar && !ajuste.por_mapear && <BotonSeccion disabled={bloqueado} onClick={() => onDialogo({ tipo: "evidencia", ajuste })}>Registrar evidencia</BotonSeccion>}
+              {puedeEditar && !ajuste.por_mapear && <BotonSeccion disabled={evidenciaBloqueada} onClick={() => onDialogo({ tipo: "evidencia", ajuste })}>Registrar evidencia</BotonSeccion>}
             </span>
           </Par>
         )}

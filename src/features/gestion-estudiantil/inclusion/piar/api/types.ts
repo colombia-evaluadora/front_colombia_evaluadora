@@ -193,6 +193,9 @@ export interface PiarDetalle {
   puede_registrar_copia_familia?: boolean
   puede_anular?: boolean
   puede_registrar_seguimiento?: boolean
+  puede_modificar_actividades?: boolean
+  puede_registrar_resultado_actividad?: boolean
+  puede_registrar_expediente?: boolean
   puede_emitir?: boolean
 }
 
@@ -222,6 +225,8 @@ export interface VersionHistorial {
   creada_en: string
   acta_nombre: string | null
   puede_cargar_documento?: boolean
+  /** Firmantes que faltan en una versión Pendiente de acuerdo (p. ej. ORIENTACION, DOCENTE). */
+  firmantes_faltantes?: string[] | null
   autor: string | null
   conclusion: { sintesis: string; recomendaciones: string; fecha_conclusion: string; fecha_proxima_revision: string; responsable: string | null } | null
   actualizaciones: Actualizacion[]

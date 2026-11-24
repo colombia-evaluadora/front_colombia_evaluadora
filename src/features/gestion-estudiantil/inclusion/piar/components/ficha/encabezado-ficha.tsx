@@ -53,9 +53,9 @@ export function EncabezadoFicha({ ficha }: { ficha: FichaPiar }) {
                   <DotsThreeVerticalIcon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled={!piar.puede_modificar || !piar.ajustes.length} onClick={() => setDialogo({ tipo: "evidencia" })}><PaperclipIcon />Registrar evidencia directa</DropdownMenuItem>
-                  <DropdownMenuItem disabled={!piar.puede_modificar} onClick={() => setDialogo({ tipo: "antecedente" })}><ClipboardTextIcon />Registrar antecedente</DropdownMenuItem>
-                  <DropdownMenuItem disabled={!piar.puede_modificar} onClick={() => setDialogo({ tipo: "externo" })}><FileUploadOutlinedIcon />Incorporar informe externo</DropdownMenuItem>
+                  <DropdownMenuItem disabled={!piar.puede_registrar_expediente || !piar.ajustes.length} onClick={() => setDialogo({ tipo: "evidencia" })}><PaperclipIcon />Registrar evidencia directa</DropdownMenuItem>
+                  <DropdownMenuItem disabled={!piar.puede_registrar_expediente} onClick={() => setDialogo({ tipo: "antecedente" })}><ClipboardTextIcon />Registrar antecedente</DropdownMenuItem>
+                  <DropdownMenuItem disabled={!piar.puede_registrar_expediente} onClick={() => setDialogo({ tipo: "externo" })}><FileUploadOutlinedIcon />Incorporar informe externo</DropdownMenuItem>
                   <DropdownMenuItem disabled={!piar.puede_anular} onClick={() => setDialogo({ tipo: "anular" })}><ProhibitIcon />Anular PIAR</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => documento(descargarPlan(piar.id))}><FileTextIcon />Generar borrador del PIAR</DropdownMenuItem>
