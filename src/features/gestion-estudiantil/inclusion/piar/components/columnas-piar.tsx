@@ -8,7 +8,7 @@ import { paths } from "@/config/paths"
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { PiarRow } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
-import { COLOR_ESTADO, esEditable } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { COLOR_ESTADO } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 
 /** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → clave de ORDEN. */
@@ -22,7 +22,7 @@ export const ORDEN_PIAR: MapaOrden = {
 }
 
 interface Opciones {
-  access: { puedeGestionar: boolean; veAvisoSinPiar: boolean }
+  access: { veAvisoSinPiar: boolean }
   prefetch: (id: number) => void
   irFicha: (row: PiarRow, accion?: "acta" | "cerrar") => void
 }
@@ -80,21 +80,20 @@ export function buildColumnasPiar({ access, prefetch, irFicha }: Opciones): Colu
       size: anchoAccionesFila(4),
       cell: ({ row }) => {
         const r = row.original
-        const editable = access.puedeGestionar && esEditable(r.estado_codigo)
         return (
           <AccionesFila
             etiqueta={`Acciones de ${r.estudiante_nombre}`}
             acciones={[
               { id: "ver", label: "Ver detalle", icon: <EyeIcon />, onSelect: () => irFicha(r) },
-              { id: "modificar", label: "Modificar", icon: <PencilIcon />, disabled: !editable, onSelect: () => irFicha(r) },
+              { id: "modificar", label: "Modificar", icon: <PencilIcon />, disabled: !r.puede_modificar, onSelect: () => irFicha(r) },
               {
                 id: "acta",
                 label: "Cargar acta",
                 icon: <FileUploadOutlinedIcon />,
-                disabled: !(access.puedeGestionar && r.estado_codigo === "BORRADOR"),
+                disabled: !r.puede_cargar_acta,
                 onSelect: () => irFicha(r, "acta"),
               },
-              { id: "cerrar", label: "Cerrar", icon: <LockIcon />, disabled: !editable, onSelect: () => irFicha(r, "cerrar") },
+              { id: "cerrar", label: "Cerrar", icon: <LockIcon />, disabled: !r.puede_cerrar, onSelect: () => irFicha(r, "cerrar") },
             ]}
           />
         )

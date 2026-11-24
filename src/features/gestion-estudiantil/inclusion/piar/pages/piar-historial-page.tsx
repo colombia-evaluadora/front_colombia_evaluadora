@@ -13,7 +13,6 @@ import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/format
 import { descargarActualizacion } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import { usePiarHistorialQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
-import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import { AvisoPiar, EnlaceArchivo } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
@@ -76,8 +75,7 @@ export function PiarHistorialPage() {
   const { piarId } = useParams({ strict: false }) as { piarId: string }
   const { data, isPending, error, refetch } = usePiarHistorialQuery(Number(piarId))
   const ejecutar = useEjecutarPiar()
-  const { puedeGestionar } = usePiarAccess()
-  const [soporte, setSoporte] = useState(false)
+    const [soporte, setSoporte] = useState(false)
   const filas = aFilas(data?.versiones ?? [])
   const pendiente = data?.versiones?.find((v) => v.estado.codigo === "PENDIENTE_ACUERDO")
 
@@ -102,7 +100,7 @@ export function PiarHistorialPage() {
           <AvisoPiar>
             <span className="flex flex-wrap items-center gap-3">
               La versión {pendiente.numero} sigue pendiente de acuerdo hasta que se cargue el documento de actualización firmado.
-              {puedeGestionar && <Button size="xs" variant="outline" color="neutral" onClick={() => setSoporte(true)}>Cargar documento firmado</Button>}
+              <Button size="xs" variant="outline" color="neutral" disabled={!(pendiente.puede_cargar_documento || pendiente.actualizaciones.some((u) => u.puede_cargar_documento))} onClick={() => setSoporte(true)}>Cargar documento firmado</Button>
             </span>
           </AvisoPiar>
         )}

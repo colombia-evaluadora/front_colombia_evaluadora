@@ -8,6 +8,7 @@ import { useParticipantesOpcionQuery } from "@/features/gestion-estudiantil/incl
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import type { DialogoProps } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { nulo, texto } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
+import { noPosteriorAHoy } from "@/features/gestion-estudiantil/inclusion/piar/utils/validaciones-piar"
 import { claveElemento, textosFaltantes } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 const CAMPOS_AJUSTE = [
@@ -65,7 +66,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
             texto("compromisos", "Compromisos asumidos", 2000),
             { name: "firmar", label: "Debe firmar", kind: "select", required: true, options: [{ value: "SI", label: "Sí" }, { value: "NO", label: "No" }] },
             { name: "firma", label: "Estado de firma", kind: "select", options: firmas, visible: (v) => v.firmar === "SI" },
-            { name: "fecha_firma", label: "Fecha de firma", kind: "fecha", required: true, visible: (v) => v.firmar === "SI" && v.firma === firmo },
+            { name: "fecha_firma", label: "Fecha de firma", kind: "fecha", required: true, validar: (v) => noPosteriorAHoy(v, "La fecha de firma"), visible: (v) => v.firmar === "SI" && v.firma === firmo },
           ]}
           onSubmit={(v, archivos) => {
             const esExterno = v.tipo === externo
@@ -96,7 +97,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
         <FormDialogPiar
           {...comunes}
           titulo={`Activar PIAR — ${estudiante}`}
-          descripcion="Al cargar el acta de acuerdo firmada, el PIAR pasa de Borrador a Vigente. Si la copia aún no se entregó, deje la entrega vacía: el sistema la recordará a los 5 días hábiles."
+          descripcion="Al cargar el acta de acuerdo firmada, el PIAR pasa de Borrador a Vigente. Si la copia a la familia aún no se entregó, deje la entrega vacía: el sistema la recordará a los 5 días hábiles."
           confirmar="Activar PIAR"
           archivos={{ label: "Acta de acuerdo firmada", max: 1, required: true, ayuda: "PDF o imagen, máximo 10 MB." }}
           campos={[
@@ -123,7 +124,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
             </DialogHeader>
             <p className="text-sm">Para activarlo falta:</p>
             <ul className="grid gap-2 text-sm">
-              {textosFaltantes(piar.activacion_faltantes).map((f) => (
+              {textosFaltantes(piar.activacion_faltantes, piar).map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <WarningCircleIcon className="mt-0.5 size-4 shrink-0 text-yellow" />
                   {f}
@@ -164,7 +165,7 @@ export function DialogosActa({ piar, dialogo, onClose }: DialogoProps) {
           confirmar="Registrar cambio"
           archivos={{ label: "Documento de actualización firmado", max: 1, ayuda: "En un cambio sustancial, la versión queda pendiente hasta cargarlo." }}
           campos={[
-            { name: "tipo", label: "Tipo de cambio", kind: "select", required: true, options: tiposCambio },
+            { name: "tipo", label: "Tipo de cambio", kind: "radio", ancho: true, required: true, options: tiposCambio },
             { name: "aplica", label: "Aplica desde", kind: "fecha", required: true },
             { name: "ajuste", label: "Ajuste que cambia", kind: "select", options: piar.ajustes.map((x) => ({ value: String(x.id), label: `${x.asignatura_nombre ?? "Transversal"} · ${x.ajuste}` })), visible: (v) => v.tipo === sustancial },
             { name: "campo", label: "Campo del ajuste", kind: "select", required: (v) => Boolean(v.ajuste), visible: (v) => Boolean(v.ajuste), options: CAMPOS_AJUSTE },

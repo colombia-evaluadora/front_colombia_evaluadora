@@ -33,7 +33,7 @@ function DatosExistentesMatricula({ m }: { m: MatriculaDisponible }) {
       <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">Datos existentes del estudiante <LockIcon className="size-4 text-muted-foreground" aria-label="Información sensible" /></h2>
       <ListaDatos>
         <Par label="Identificación">{m.documento ?? "—"}</Par>
-        <Par label="Matrícula">{[m.grado_grupo, m.jornada, m.sede].filter(Boolean).join(" · ")}</Par>
+        <Par label="Matrícula">{[m.grado_grupo, m.jornada, m.sede, m.periodo_nombre && `Período Académico ${m.periodo_nombre}`].filter(Boolean).join(" · ")}</Par>
         <Par label="Acudiente">{m.acudiente ?? "—"}</Par>
         <Par label="Hogar">{m.convive_acudiente == null ? "Sin registrar" : si(m.convive_acudiente) ? "Convive con el acudiente" : "No convive con el acudiente"}</Par>
         <Par label="Trayectoria">{m.fecha_ingreso ? `En el establecimiento desde ${formatFecha(m.fecha_ingreso)}` : "Sin fecha de ingreso"}{si(m.repitente) ? "; repite el grado" : ""}</Par>
@@ -142,7 +142,7 @@ export function PiarNuevoPage() {
             </span>
           </AvisoPiar>
         )}
-        {elegido?.tiene_condicion && <p className="text-sm text-muted-foreground">Condición: {elegido.condicion} (de la matrícula, solo lectura)</p>}
+        {elegido && <p className="text-sm text-muted-foreground">Condición: {elegido.condicion ?? "—"} · Talento: {elegido.talento ?? "—"} (de la matrícula, solo lectura)</p>}
         {elegido && !elegido.tiene_condicion && (
           <TextoLargo id="piar-justificacion" label="Justificación del PIAR sin condición registrada" required max={1000} value={justificacion} onChange={setJustificacion} />
         )}

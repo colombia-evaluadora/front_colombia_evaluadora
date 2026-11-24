@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { hoyIso } from "@/features/gestion-estudiantil/inclusion/piar/utils/validaciones-piar"
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 
 export const CAMPOS_VACIOS = {
@@ -32,6 +33,12 @@ export const esquemaDatos = z.object({
   apoyos: z.string(),
   productos: z.string(),
   valoracion: minimo10("La valoración pedagógica"),
+}).superRefine((v, ctx) => {
+  if (v.fecha && v.fecha > hoyIso()) ctx.addIssue({ code: "custom", path: ["fecha"], message: "La fecha de elaboración no puede ser posterior a hoy." })
+  if (v.expectativas_estudiante.trim() && !v.fuente_estudiante.trim())
+    ctx.addIssue({ code: "custom", path: ["fuente_estudiante"], message: "La fuente de las expectativas del estudiante es obligatoria." })
+  if (v.expectativas_familia.trim() && !v.fuente_familia.trim())
+    ctx.addIssue({ code: "custom", path: ["fuente_familia"], message: "La fuente de las expectativas de la familia es obligatoria." })
 })
 
 const nulo = (v: string) => v.trim() || null

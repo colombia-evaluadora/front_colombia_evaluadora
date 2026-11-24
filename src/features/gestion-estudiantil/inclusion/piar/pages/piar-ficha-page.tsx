@@ -29,7 +29,7 @@ import { TarjetaAjuste } from "@/features/gestion-estudiantil/inclusion/piar/com
 import { AvisoPiar, ListaDatos, Par, Vacio } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import { useFichaPiar, type FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
-import { esEditable, progresoBloques } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { progresoBloques } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 function AvisosFicha({ piar }: { piar: PiarDetalle }) {
   const porMapear = piar.ajustes.filter((a) => a.por_mapear).length
@@ -38,8 +38,11 @@ function AvisosFicha({ piar }: { piar: PiarDetalle }) {
   const borrador = piar.estado.codigo === "BORRADOR"
   return (
     <>
-      {borrador && piar.fk_tpiar_origen != null && (
-        <AvisoPiar>PIAR de un estudiante trasladado: {porMapear} ajustes sin asignatura (Por mapear) y {pendientes} asignaturas pendientes de revisión. No se puede activar hasta resolverlos.</AvisoPiar>
+      {borrador && piar.fk_tpiar_origen != null && (porMapear > 0 || pendientes > 0) && (
+        <AvisoPiar>
+          PIAR de un estudiante trasladado:{" "}
+          {[porMapear > 0 && `${porMapear} ${porMapear === 1 ? "ajuste sin asignatura (Por mapear)" : "ajustes sin asignatura (Por mapear)"}`, pendientes > 0 && `${pendientes} ${pendientes === 1 ? "asignatura pendiente" : "asignaturas pendientes"} de revisión`].filter(Boolean).join(" y ")}. No se puede activar hasta resolverlos.
+        </AvisoPiar>
       )}
       {borrador && piar.fk_tpiar_origen == null && progreso && progreso.faltan.length > 0 && (
         <AvisoPiar tipo="info">{progreso.completos} de {progreso.total} bloques completos. Falta: {progreso.faltan.join(", ")}.</AvisoPiar>
@@ -50,7 +53,9 @@ function AvisosFicha({ piar }: { piar: PiarDetalle }) {
           <Link className="text-primary hover:underline" to={paths.app.piarFicha.getHref(piar.origen.id)}>
             {piar.origen.establecimiento} · {piar.origen.periodo}
           </Link>{" "}
-          (en consulta, solo lectura).
+          (en consulta, solo lectura)
+          {piar.condicion && ` · Condición: ${piar.condicion}`}
+          {piar.datos_existentes?.fecha_ingreso && ` · Nueva matrícula: ${formatFecha(piar.datos_existentes.fecha_ingreso)}`}.
         </AvisoPiar>
       )}
       {piar.solo_consulta && <AvisoPiar tipo="info">Este PIAR es de otro establecimiento: solo se consulta (Regla 15).</AvisoPiar>}
@@ -61,14 +66,14 @@ function AvisosFicha({ piar }: { piar: PiarDetalle }) {
 
 /** FIC.4: el docente solo recibe sus ajustes y su seguimiento (Regla 1). */
 function VistaDocente({ ficha }: { ficha: FichaPiar }) {
-  const { piar, access, estado, setDialogo } = ficha
+  const { piar, setDialogo } = ficha
   const asignaturas = [...new Set(piar.ajustes.map((a) => a.asignatura_nombre).filter(Boolean))].join(", ")
   return (
     <>
       <p className="text-sm">Usted ve los ajustes de sus asignaturas en este PIAR: {asignaturas || "ninguna"}.</p>
       <div className="grid gap-3">
         {piar.ajustes.map((a, i) => (
-          <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} piarId={piar.id} editaAjuste={false} sensible={false} puedeEditar={access.puedeEditarAjustes && esEditable(estado)} onDialogo={setDialogo} />
+          <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} piarId={piar.id} editaAjuste={false} sensible={false} puedeEditar puedeSeguimiento bloqueado seguimientoBloqueado={!piar.puede_registrar_seguimiento} onDialogo={setDialogo} />
         ))}
         {!piar.ajustes.length && <Vacio>No tiene ajustes en sus asignaturas.</Vacio>}
       </div>
@@ -129,7 +134,7 @@ function FichaContenido({ piar }: { piar: PiarDetalle }) {
           {piar.condicion && <>Condición: <span className="text-foreground">{piar.condicion}</span> (de la matrícula) · </>}
           Elaboración: <span className="text-foreground">{formatFecha(piar.fecha_elaboracion)}</span>
           {piar.elabora?.nombre && <> · Elabora: <span className="text-foreground">{piar.elabora.nombre}</span></>}
-          {piar.periodo_academico && <> · Período académico: <span className="text-foreground">{piar.periodo_academico}</span></>}
+          {piar.periodo_academico && <> · Período Académico: <span className="text-foreground">{piar.periodo_academico}</span></>}
           {version && <> · Versión: <span className="text-foreground">{version.numero}</span></>}
         </p>
         {piar.ve_sensible ? <Expediente ficha={ficha} /> : <VistaDocente ficha={ficha} />}

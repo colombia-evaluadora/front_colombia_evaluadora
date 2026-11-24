@@ -15,6 +15,11 @@ interface Props {
   /** Agregar, modificar y quitar: solo en Borrador (fn_piar_validar_ajuste). */
   editaAjuste: boolean
   puedeEditar: boolean
+  /** `puede_registrar_seguimiento` del expediente; sin él, el seguimiento sigue a `puedeEditar`. */
+  puedeSeguimiento?: boolean
+  /** Las acciones se ven pero no responden (sin `puede_modificar` / sin `puede_registrar_seguimiento`). */
+  bloqueado?: boolean
+  seguimientoBloqueado?: boolean
   sensible: boolean
   onDialogo: (d: Dialogo) => void
 }
@@ -42,7 +47,7 @@ function PeriodosSeguimiento({ ajuste, piarId }: { ajuste: Ajuste; piarId: numbe
   ))
 }
 
-export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar, sensible, onDialogo }: Props) {
+export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar, puedeSeguimiento = puedeEditar, bloqueado = false, seguimientoBloqueado = false, sensible, onDialogo }: Props) {
   return (
     <article className="grid gap-3 rounded-lg border border-border p-4 text-sm">
       <header className="flex flex-wrap items-center gap-2">
@@ -51,11 +56,11 @@ export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar
         <span className="text-muted-foreground">· {ajuste.tipo_adaptacion.nombre}</span>
         {editaAjuste && (
           <span className="ml-auto flex items-center gap-1">
-            {ajuste.por_mapear && sensible && <BotonSeccion onClick={() => onDialogo({ tipo: "asignar", ajuste, indice })}>Asignar asignatura</BotonSeccion>}
-            <Button size="icon-xs" variant="ghost" color="neutral" aria-label="Modificar ajuste" onClick={() => onDialogo({ tipo: "ajuste", ajuste })}>
+            {ajuste.por_mapear && sensible && <BotonSeccion disabled={bloqueado} onClick={() => onDialogo({ tipo: "asignar", ajuste, indice })}>Asignar asignatura</BotonSeccion>}
+            <Button size="icon-xs" variant="ghost" color="neutral" aria-label="Modificar ajuste" disabled={bloqueado} onClick={() => onDialogo({ tipo: "ajuste", ajuste })}>
               <PencilIcon />
             </Button>
-            {sensible && <BotonQuitar onClick={() => onDialogo({ tipo: "quitarAjuste", ajuste })} />}
+            {sensible && <BotonQuitar disabled={bloqueado} onClick={() => onDialogo({ tipo: "quitarAjuste", ajuste })} />}
           </span>
         )}
       </header>
@@ -76,7 +81,7 @@ export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar
             <span className="flex flex-wrap items-center gap-2">
               <Evidencias ajuste={ajuste} />
               {!ajuste.evidencias?.length && !puedeEditar && <span className="text-muted-foreground">Sin evidencia directa</span>}
-              {puedeEditar && !ajuste.por_mapear && <BotonSeccion onClick={() => onDialogo({ tipo: "evidencia", ajuste })}>Registrar evidencia</BotonSeccion>}
+              {puedeEditar && !ajuste.por_mapear && <BotonSeccion disabled={bloqueado} onClick={() => onDialogo({ tipo: "evidencia", ajuste })}>Registrar evidencia</BotonSeccion>}
             </span>
           </Par>
         )}
@@ -84,7 +89,7 @@ export function TarjetaAjuste({ ajuste, indice, piarId, editaAjuste, puedeEditar
           <Par label="Seguimiento">
             <span className="flex flex-wrap items-center gap-2">
               <PeriodosSeguimiento ajuste={ajuste} piarId={piarId} />
-              {puedeEditar && <BotonSeccion onClick={() => onDialogo({ tipo: "seguimiento", ajuste })}>Registrar</BotonSeccion>}
+              {puedeSeguimiento && <BotonSeccion disabled={seguimientoBloqueado} onClick={() => onDialogo({ tipo: "seguimiento", ajuste })}>Registrar</BotonSeccion>}
             </span>
           </Par>
         )}
