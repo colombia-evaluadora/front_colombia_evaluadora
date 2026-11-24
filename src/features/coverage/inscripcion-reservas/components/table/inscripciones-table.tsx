@@ -120,7 +120,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaInscritosRoute.useSearch()
   const navigate = coberturaInscritosRoute.useNavigate()
   const pagination = useTablePagination()
-  const { data: grupo, grupos } = useGrupoAdmisionQuery(search.inscGrupo)
+  const { data: grupo, grupos, isPending: gruposPending } = useGrupoAdmisionQuery(search.inscGrupo)
 
   // El grado es obligatorio: sin uno en la URL se toma el primero del grupo.
   const grado = search.inscGrado ?? grupo?.grados[0] ?? ""
@@ -206,7 +206,10 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   })
 
   const jornadaLabel = search.inscJornada ?? "todas las jornadas"
-  const emptyMessage = `No hay opciones por admitir en ${grado} · ${jornadaLabel}. Cuando se liberen cupos, las opciones en lista de espera se pueden admitir aquí.`
+  // Sin grupo de admisión la lista nunca se pide: se avisa en vez de dejar el esqueleto.
+  const emptyMessage = !grupo
+    ? "No hay grupos de admisión configurados para el período de inscripciones. Créalos en la pestaña Configuración."
+    : `No hay opciones por admitir en ${grado} · ${jornadaLabel}. Cuando se liberen cupos, las opciones en lista de espera se pueden admitir aquí.`
 
   return (
     <TableScreen>
@@ -214,9 +217,11 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
         {encabezado}
 
         <div className="grid gap-3 px-(--screen-spacing) pt-4">
-          <Badge variant="soft" color="neutral" className="text-xs font-medium tracking-normal">
-            Cupos disponibles: {data?.cuposDisponibles ?? "…"}
-          </Badge>
+          {grupo && (
+            <Badge variant="soft" color="neutral" className="text-xs font-medium tracking-normal">
+              Cupos disponibles: {data?.cuposDisponibles ?? "…"}
+            </Badge>
+          )}
           <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
             {grupos.length > 1 ? (
               <SelectSimple
@@ -384,7 +389,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
       <TableScreenBody>
         <DataTable
           table={table}
-          isPending={isPending}
+          isPending={gruposPending || (!!grupo && isPending)}
           isError={isError}
           onRetry={refetch}
           emptyMessage={emptyMessage}
