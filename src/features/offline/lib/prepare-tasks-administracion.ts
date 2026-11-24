@@ -76,7 +76,7 @@ import { fetchEstado } from "@/features/bitacora/api/query/use-bitacora-estado-q
 import { fetchBitacora, type BitacoraParams } from "@/features/bitacora/api/query/use-bitacora-query"
 import { fetchSedes } from "@/features/bitacora/api/query/use-bitacora-sedes-query"
 import { BITACORA_MODULO_IDS, BITACORA_MODULO_SLUG, type BitacoraModulo } from "@/features/bitacora/api/types/bitacora"
-import { accionPorDefecto, filtrosVacios } from "@/features/bitacora/lib/filtros-por-defecto"
+import { accionPorDefecto, filtrosVacios, recordarDiaPreparado } from "@/features/bitacora/lib/filtros-por-defecto"
 // Comunicaciones
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { fetchComunicado } from "@/features/comunicaciones/chat/api/query/use-comunicado-query"
@@ -335,6 +335,7 @@ function bitacoraTasks(queryClient: QueryClient, esSuperAdmin: boolean): Prepare
     menuIncludes(queryClient, paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG[m])),
   )
   if (modulos.length === 0) return []
+  recordarDiaPreparado()
   const deModulos = (establecimiento: string) =>
     modulos.flatMap((m) => bitacoraModuloTasks(m, esSuperAdmin, establecimiento))
   return [

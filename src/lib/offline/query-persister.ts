@@ -37,7 +37,7 @@ import { hydrate, type DehydratedState, type Query, type QueryClient } from "@ta
 import type { RecordedRequest } from "@/lib/offline/conditional-requests"
 import { hashString } from "@/lib/offline/content-hash"
 import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
-import { isEncrypted, isVaultLocked, loadVault, openString, sealString } from "@/lib/offline/vault"
+import { isEncrypted, isVaultLocked, vaultStore, loadVault, openString, sealString } from "@/lib/offline/vault"
 import {
   deleteMeta,
   getDb,
@@ -69,6 +69,8 @@ export interface OfflineQueryOptions {
   /** Tiempo máximo (ms) que se restaura desde `dataUpdatedAt`. */
   ttl: number
   scope?: "user"
+  /** Solo se guarda con el PIN creado (cifrado) y nunca se vuelve a pedir sola. */
+  requierePin?: boolean
 }
 
 export interface OfflineQueryMeta {
@@ -338,6 +340,8 @@ export function parsePersisted(json: string): unknown {
 function toRow(query: Query, userSub: string, now: number): PersistedQueryRow | null {
   const meta = query.meta as OfflineQueryMeta | undefined
   const offline = meta?.offline
+  // Módulos sensibles: solo cifrados. Sin PIN no se guardan.
+  if (offline?.requierePin && vaultStore.get() !== "abierta") return null
   if (!offline || query.state.status !== "success" || query.state.data === undefined) return null
   const data = meta.persistSelect ? meta.persistSelect(query.state.data) : query.state.data
   let json: string

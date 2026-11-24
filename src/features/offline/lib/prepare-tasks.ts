@@ -18,6 +18,8 @@ import {
 } from "@/lib/offline/query-meta"
 import { CATALOGS } from "@/lib/catalogs"
 // Planeador
+import { coberturaTasks } from "@/features/offline/lib/prepare-tasks-cobertura"
+import { gestionEstudiantilTasks } from "@/features/offline/lib/prepare-tasks-gestion-estudiantil"
 import { administracionTasks } from "@/features/offline/lib/prepare-tasks-administracion"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
@@ -807,11 +809,13 @@ export async function fetchPrepareOptions(queryClient: QueryClient): Promise<Pre
  * Además de lo elegido, refresca las queries persistibles (`meta.offline`)
  * que ya están en memoria: lo que el docente abrió en esta sesión con filtros
  * propios (otra página, otra búsqueda) se reusa con su key y `queryFn` exactas.
+ * Lo que se guarda por defecto (`requierePin`) NO: abrir un PIAR, una remisión o
+ * una señal deja registro de consulta, y repetirla sola sería auditoría falsa.
  */
 export function cachedOfflineTasks(queryClient: QueryClient, seeded: Set<string>): PrepareTask[] {
   return queryClient
     .getQueryCache()
-    .findAll({ predicate: (query) => Boolean(query.meta?.offline) && !seeded.has(query.queryHash) && Boolean(query.options.queryFn) })
+    .findAll({ predicate: (query) => Boolean(query.meta?.offline) && !query.meta?.offline?.requierePin && !seeded.has(query.queryHash) && Boolean(query.options.queryFn) })
     .map((query) => ({
       queryKey: query.queryKey,
       meta: query.meta,
@@ -858,5 +862,7 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
   tasks.push(...establecimientoTasks(queryClient, input.roles))
   tasks.push(...matriculaTasks(queryClient))
   tasks.push(...administracionTasks(queryClient, input.roles))
+  tasks.push(...coberturaTasks(queryClient, input.roles))
+  tasks.push(...gestionEstudiantilTasks(queryClient, input.roles))
   return tasks
 }

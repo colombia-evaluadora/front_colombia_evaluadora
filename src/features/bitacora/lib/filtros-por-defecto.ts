@@ -1,6 +1,7 @@
 import { subDays } from "date-fns"
 
-import { formatDateValue } from "@/lib/date-value"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
+import { connectivityStore } from "@/lib/offline/connectivity"
 import type { BitacoraModulo } from "@/features/bitacora/api/types/bitacora"
 
 // Fuera del hook para poder usarlos sin importar el router (la preparación sin conexión arma la misma key).
@@ -26,9 +27,30 @@ export interface BitacoraFilters {
 /** Acción con que abre un módulo: Administración del Sistema, en sus accesos. */
 export const accionPorDefecto = (modulo: BitacoraModulo): string[] => (modulo === "ADMINISTRACION" ? ["ACCESO"] : [])
 
+const CLAVE_HASTA = "ce-bitacora-hasta"
+
+/** La preparación anota con qué día descargó (la key de la consulta lleva las fechas). */
+export function recordarDiaPreparado() {
+  try {
+    localStorage.setItem(CLAVE_HASTA, formatDateValue(new Date()))
+  } catch {
+    // Sin almacenamiento: sin red se verá solo lo de hoy.
+  }
+}
+
+/** Sin red, el día de la última preparación: con "hoy" no coincidiría con lo guardado. */
+function hoyOPreparado(): Date {
+  if (connectivityStore.getState().status !== "offline") return new Date()
+  try {
+    return parseDateValue(localStorage.getItem(CLAVE_HASTA) ?? "") ?? new Date()
+  } catch {
+    return new Date()
+  }
+}
+
 /** Por defecto, los últimos 30 días. */
 export function rangoPorDefecto() {
-  const hoy = new Date()
+  const hoy = hoyOPreparado()
   return { desde: formatDateValue(subDays(hoy, 30)), hasta: formatDateValue(hoy) }
 }
 

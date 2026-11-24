@@ -54,5 +54,5 @@ export function conMetaPorDefecto<T extends { queryKey?: readonly unknown[]; met
   options: T,
 ): T {
   if (options.meta?.offline || !esModuloPersistible(options.queryKey)) return options
-  return { ...options, meta: { ...options.meta, offline: { ttl: OFFLINE_TTL.roster } } }
+  return { ...options, meta: { ...options.meta, offline: { ttl: OFFLINE_TTL.roster, requierePin: true } } }
 }
