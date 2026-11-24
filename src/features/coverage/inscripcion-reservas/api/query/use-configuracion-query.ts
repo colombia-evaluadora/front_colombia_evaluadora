@@ -69,62 +69,74 @@ const toPeriodoConfig = (p: PeriodoInscripcionRow): PeriodoInscripcionConfig => 
   anio: Number(p.anio),
 })
 
+export async function fetchGruposAdmisionConfig() {
+  const ee = await fetchEstablecimientoId()
+  return ee == null ? [] : (await fetchGruposAdmisionRows(ee)).map(toGrupoConfig)
+}
+
 export function useGruposAdmisionConfigQuery() {
   return useQuery({
     queryKey: configuracionKeys.grupos,
-    queryFn: async () => {
-      const ee = await fetchEstablecimientoId()
-      return ee == null ? [] : (await fetchGruposAdmisionRows(ee)).map(toGrupoConfig)
-    },
+    queryFn: fetchGruposAdmisionConfig,
   })
+}
+
+export async function fetchGrupoAdmisionConfig(id: string) {
+  return toGrupoConfig(
+    datos(await evalCol.getRow<{ datos: GrupoAdmisionRow }>(`${CONFIG}/grupos/${id}`)),
+  )
 }
 
 export function useGrupoAdmisionConfigQuery(id: string) {
   return useQuery({
     queryKey: configuracionKeys.grupo(id),
-    queryFn: async () =>
-      toGrupoConfig(
-        datos(await evalCol.getRow<{ datos: GrupoAdmisionRow }>(`${CONFIG}/grupos/${id}`)),
-      ),
+    queryFn: () => fetchGrupoAdmisionConfig(id),
     enabled: Boolean(id),
   })
+}
+
+export async function fetchPeriodosConfig() {
+  const ee = await fetchEstablecimientoId()
+  if (ee == null) return []
+  const [row] = await evalCol.getRows<{ datos: PeriodoInscripcionRow[] }>(
+    `${CONFIG}/establecimiento/${ee}/periodos`,
+  )
+  return (row ? datos(row) : []).map(toPeriodoConfig)
 }
 
 export function usePeriodosConfigQuery() {
   return useQuery({
     queryKey: configuracionKeys.periodos,
-    queryFn: async () => {
-      const ee = await fetchEstablecimientoId()
-      if (ee == null) return []
-      const [row] = await evalCol.getRows<{ datos: PeriodoInscripcionRow[] }>(
-        `${CONFIG}/establecimiento/${ee}/periodos`,
-      )
-      return (row ? datos(row) : []).map(toPeriodoConfig)
-    },
+    queryFn: fetchPeriodosConfig,
   })
+}
+
+export async function fetchPeriodoConfig(id: string) {
+  return toPeriodoConfig(
+    datos(await evalCol.getRow<{ datos: PeriodoInscripcionRow }>(`${CONFIG}/periodos/${id}`)),
+  )
 }
 
 export function usePeriodoConfigQuery(id: string) {
   return useQuery({
     queryKey: configuracionKeys.periodo(id),
-    queryFn: async () =>
-      toPeriodoConfig(
-        datos(await evalCol.getRow<{ datos: PeriodoInscripcionRow }>(`${CONFIG}/periodos/${id}`)),
-      ),
+    queryFn: () => fetchPeriodoConfig(id),
     enabled: Boolean(id),
   })
+}
+
+export async function fetchCatalogosConfiguracion(): Promise<CatalogosConfiguracion> {
+  const c = await fetchCatalogosInscripcion()
+  const str = (l: { id: number; nombre: string }[]) =>
+    l.map((i) => ({ id: String(i.id), nombre: i.nombre }))
+  return { criterios: str(c.criterios), documentos: str(c.documentos) }
 }
 
 /** Criterios activos y documentos requeribles: el formulario trabaja con ids en texto. */
 export function useCatalogosConfiguracionQuery() {
   return useQuery({
     queryKey: configuracionKeys.catalogos,
-    queryFn: async (): Promise<CatalogosConfiguracion> => {
-      const c = await fetchCatalogosInscripcion()
-      const str = (l: { id: number; nombre: string }[]) =>
-        l.map((i) => ({ id: String(i.id), nombre: i.nombre }))
-      return { criterios: str(c.criterios), documentos: str(c.documentos) }
-    },
+    queryFn: fetchCatalogosConfiguracion,
     staleTime: Infinity,
   })
 }

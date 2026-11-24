@@ -36,7 +36,7 @@ const RAICES = new Set([
   "curricular-references", "curricular-reference", "curricular-evidences", "curricular-statements",
   "curricular-reference-grades", "curricular-reference-areas",
   // Catálogos
-  "catalogs", "select-category",
+  "catalogs", "select-category", "sede-jornadas-activas",
 ])
 
 /** Lecturas con efectos: consultar el Archivo deja registro en la Bitácora (V595); nunca se refrescan solas. */

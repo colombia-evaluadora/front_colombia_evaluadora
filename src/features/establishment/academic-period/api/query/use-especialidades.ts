@@ -12,7 +12,7 @@ interface EspecialidadesResponse {
 // `GET /eval-col/areas/:ID/especialidades` (`fn_especialidad_enfasis_listar`,
 // id_query 41). Pese al nombre del path, el `:ID` es el período académico —
 // el backend resuelve el establecimiento a partir de él (confirmado).
-async function fetchEspecialidades(
+export async function fetchEspecialidades(
   academicPeriodId?: number
 ): Promise<EspecialidadOption[]> {
   if (academicPeriodId == null) return []
