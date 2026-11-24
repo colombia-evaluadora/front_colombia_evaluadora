@@ -79,7 +79,16 @@ export function MatriculaAcademicSection({
   const jornadaId = value.shift ? jornadasActivas?.find((j) => j.nombre === value.shift)?.id : undefined
   const { data: periodoResuelto } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
   // Periodo (modalidad y ciclo): los Abiertos de la sede y jornada (Regla 54). Con uno solo queda elegido.
-  const { data: periodos = [] } = useMatriculaPeriodosAbiertosQuery(sedeId ?? null, jornadaId ?? null)
+  const { data: periodos = [], isSuccess: periodosCargados } = useMatriculaPeriodosAbiertosQuery(sedeId ?? null, jornadaId ?? null)
+  const todosVencidos = periodos.length > 0 && periodos.every((p) => p.vencido)
+  const avisoPeriodo =
+    !periodosCargados || academicDisabled
+      ? undefined
+      : periodos.length === 0
+        ? "No hay períodos abiertos en esta sede y jornada."
+        : todosVencidos
+          ? "La fecha límite de matrícula de sus períodos ya pasó."
+          : undefined
   const periodoElegido = value.periodoId || (periodos.length === 1 && !periodos[0].vencido ? periodos[0].value : "")
   const periodoId = periodoElegido ? Number(periodoElegido) : periodoResuelto
   const etiquetaPeriodo = new Map(periodos.map((p) => [p.value, p.label]))
@@ -149,6 +158,7 @@ export function MatriculaAcademicSection({
         placeholder={!value.shift ? "Elija la jornada primero" : "Elija un período"}
         disabled={academicDisabled || !value.shift}
         invalid={invalidFields.includes("matricula-periodo")}
+        description={avisoPeriodo}
         onChange={(periodo) => onChange({ ...value, periodoId: periodo, grade: "", group: "" })}
       />
       <MatriculaSelectField
@@ -159,7 +169,8 @@ export function MatriculaAcademicSection({
         options={(dependentCatalogs?.grades ?? []).map((grado) => String(grado.valor))}
         labelFor={(option) => gradoNombreByValor.get(option) ?? option}
         placeholder={!periodoElegido ? "Elija el período primero" : "Seleccionar"}
-        disabled={academicDisabled || !value.shift}
+        // Sin período elegido (o solo vencidos) no se elige grado; Editar ya trae el grado y no se bloquea.
+        disabled={academicDisabled || !value.shift || (!periodoElegido && !value.grade)}
         invalid={invalidFields.includes("matricula-grade") || errorTraslado != null}
         description={errorTraslado ?? undefined}
         onChange={(grade) => onChange({ ...value, grade, group: "" })}
