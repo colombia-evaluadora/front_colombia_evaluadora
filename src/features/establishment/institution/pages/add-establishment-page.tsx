@@ -408,6 +408,11 @@ export function AddEstablishmentPage() {
       {/* El encabezado es sticky: Cancelar y Guardar quedan a mano en todo el formulario. */}
       <TableScreenHeader>
         <TableScreenTitle
+          ruta={
+            <Link to={listHref} search={(prev) => prev} className="hover:text-foreground">
+              Establecimientos educativos
+            </Link>
+          }
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button
@@ -434,16 +439,7 @@ export function AddEstablishmentPage() {
             </div>
           }
         >
-          <span className="flex min-w-0 items-baseline gap-2">
-            <Link
-              to={listHref}
-              search={(prev) => prev}
-              className="shrink-0 text-sm font-normal text-muted-foreground hover:text-foreground"
-            >
-              Establecimientos educativos ›
-            </Link>
-            <span className="truncate">{isEditMode ? "Editar establecimiento" : "Nuevo establecimiento"}</span>
-          </span>
+          {isEditMode ? "Editar establecimiento" : "Nuevo establecimiento"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

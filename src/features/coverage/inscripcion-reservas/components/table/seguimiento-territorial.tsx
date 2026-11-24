@@ -554,6 +554,7 @@ function OrientarForm({
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Entidad territorial › Seguimiento"
           action={
             <div className="flex gap-2">
               <Button
@@ -576,12 +577,7 @@ function OrientarForm({
             </div>
           }
         >
-          <span className="grid gap-1">
-            <span className="text-sm font-normal text-muted-foreground">
-              Entidad territorial › Seguimiento ›
-            </span>
-            {TITULO_ORIENTAR[motivo]}
-          </span>
+          {TITULO_ORIENTAR[motivo]}
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>

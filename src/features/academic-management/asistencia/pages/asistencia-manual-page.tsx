@@ -136,8 +136,8 @@ function AsistenciaManualContent({
     return texto.charAt(0).toUpperCase() + texto.slice(1).replace(",", "")
   })()
   const titulo = sesionElegida
-    ? `Asistencias › ${sesionElegida.grado}${sesionElegida.grupo} · ${nombreSesion(sesionElegida)} · ${fechaTitulo}`
-    : `Asistencias › ${fechaTitulo}`
+    ? `${sesionElegida.grado}${sesionElegida.grupo} · ${nombreSesion(sesionElegida)} · ${fechaTitulo}`
+    : fechaTitulo
   // Solo hay una pestaña montada a la vez (el panel oculto se desmonta y pierde lo marcado).
   const controlRef = React.useRef<SesionControl | null>(null)
   const [tabPendiente, setTabPendiente] = React.useState<string | null>(null)
@@ -188,6 +188,7 @@ function AsistenciaManualContent({
       <TableScreen>
         <TableScreenHeader>
           <TableScreenTitle
+            ruta="Asistencias"
             action={
               <div className="flex items-center gap-2">
                 <Button
@@ -205,7 +206,7 @@ function AsistenciaManualContent({
               </div>
             }
           >
-            <span className="flex items-center gap-2">
+            <span className="inline-flex flex-wrap items-center gap-2">
               {titulo}
               {sesionElegida && esSoloLectura(sesionElegida) && (
                 <Badge variant="soft" color="neutral">

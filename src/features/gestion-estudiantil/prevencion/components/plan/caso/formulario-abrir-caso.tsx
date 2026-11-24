@@ -23,6 +23,7 @@ export function FormularioAbrirCaso({ plan }: { plan: PlanDetalle }) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={guardando}>
@@ -38,7 +39,7 @@ export function FormularioAbrirCaso({ plan }: { plan: PlanDetalle }) {
             </div>
           }
         >
-          <span className="whitespace-normal">Prevención › Abrir caso de convivencia · {plan.estudiante_nombre}</span>
+          Abrir caso de convivencia · {plan.estudiante_nombre}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

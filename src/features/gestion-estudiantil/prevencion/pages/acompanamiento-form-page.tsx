@@ -17,13 +17,14 @@ function FormContent(props: { tipo?: TipoAcompanamiento; acompId?: number }) {
   const f = useAcompanamientoForm(props)
   const d = f.detalle
   const titulo = f.editar
-    ? `Prevención › ${TITULO_ACOMP[f.tipo]}${d ? ` · ${d.contexto.estudiante_nombre ?? ""}` : ""}`
-    : `Prevención › Nuevo ${TITULO_ACOMP[f.tipo].charAt(0).toLowerCase()}${TITULO_ACOMP[f.tipo].slice(1)}`
+    ? `${TITULO_ACOMP[f.tipo]}${d ? ` · ${d.contexto.estudiante_nombre ?? ""}` : ""}`
+    : `Nuevo ${TITULO_ACOMP[f.tipo].charAt(0).toLowerCase()}${TITULO_ACOMP[f.tipo].slice(1)}`
 
   return (
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
@@ -38,7 +39,7 @@ function FormContent(props: { tipo?: TipoAcompanamiento; acompId?: number }) {
             </div>
           }
         >
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
+          <span className="inline-flex flex-wrap items-center gap-2">
             {titulo}
             {d && <BadgeEstadoAcomp estado={d.estado} nombre={d.estado_nombre} />}
           </span>

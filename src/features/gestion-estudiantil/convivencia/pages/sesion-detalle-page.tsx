@@ -27,6 +27,7 @@ function Contenido({ sesion, periodo, etiqueta }: { sesion: SesionDetalle; perio
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Convivencia › Comité"
           action={
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={d.descargar} disabled={d.descargando}>
@@ -40,8 +41,8 @@ function Contenido({ sesion, periodo, etiqueta }: { sesion: SesionDetalle; perio
             </div>
           }
         >
-          <span className="flex flex-wrap items-center gap-2">
-            Convivencia › Comité › Sesión del {formatFecha(dia(sesion.fecha))}
+          <span className="inline-flex flex-wrap items-center gap-2">
+            Sesión del {formatFecha(dia(sesion.fecha))}
             <BadgeQuorum conQuorum={sesion.con_quorum} />
           </span>
         </TableScreenTitle>

@@ -64,6 +64,7 @@ function Contenido() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Matrícula complementaria"
           action={
             <div className="flex gap-2">
               <Button
@@ -91,7 +92,7 @@ function Contenido() {
           }
         >
           <span className="inline-flex flex-wrap items-center gap-2">
-            Matrícula complementaria › Convocatoria {c?.anio ?? ""} › Seleccionar
+            Seleccionar — Convocatoria {c?.anio ?? ""}
             {c ? <Marca {...ESTADO_CONVOCATORIA[c.estado]} /> : null}
           </span>
         </TableScreenTitle>

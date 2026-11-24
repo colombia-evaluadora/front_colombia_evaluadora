@@ -44,6 +44,7 @@ export function PantallaCaracterizacion({ detalle, modo }: Props) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
@@ -65,8 +66,8 @@ export function PantallaCaracterizacion({ detalle, modo }: Props) {
             </div>
           }
         >
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-            {`Prevención › Caracterización familiar · ${e.estudiante.nombre} · ${e.estudiante.grado_grupo}`}
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {`Caracterización familiar · ${e.estudiante.nombre} · ${e.estudiante.grado_grupo}`}
             <BadgeEstadoCaracterizacion estado={e.estado} nombre={e.estado_nombre} />
           </span>
         </TableScreenTitle>

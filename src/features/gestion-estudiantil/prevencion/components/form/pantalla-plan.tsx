@@ -22,6 +22,8 @@ import { OBJETIVO_MAX } from "@/features/gestion-estudiantil/prevencion/utils/fo
 
 interface Props {
   modo: ModoPlan
+  /** Miga del encabezado (sin el «›» final). */
+  ruta: string
   titulo: string
   matricula: number
   establecimiento: number | null
@@ -35,7 +37,7 @@ interface Props {
  * Pantalla de Nuevo plan y Modificar plan (G.8.TAB.6): encabezado con Cancelar y Guardar, objetivo, fechas y las
  * acciones repetibles en una sección plegable. Se monta con el catálogo de tipos ya cargado.
  */
-export function PantallaPlan({ modo, titulo, matricula, establecimiento, origen, onClose }: Props) {
+export function PantallaPlan({ modo, ruta, titulo, matricula, establecimiento, origen, onClose }: Props) {
   const { tipos, tipoOpciones, tipoPorCodigo, responsableOpciones, responsableActual, onBuscarResponsable, estrategiaOpciones, estrategiasNoDisponibles, recordarResponsable } =
     useOpcionesPlan({ modo, matricula, establecimiento })
 
@@ -58,6 +60,7 @@ export function PantallaPlan({ modo, titulo, matricula, establecimiento, origen,
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta={ruta}
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={form.pending} onClick={onClose}>
@@ -73,7 +76,7 @@ export function PantallaPlan({ modo, titulo, matricula, establecimiento, origen,
             </div>
           }
         >
-          <span className="whitespace-normal">{titulo}</span>
+          {titulo}
         </TableScreenTitle>
       </TableScreenHeader>
 

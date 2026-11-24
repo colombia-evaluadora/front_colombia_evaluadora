@@ -338,6 +338,7 @@ function PlanillaDiaria({
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Asistencias"
           action={
             <div className="flex items-center gap-2">
               <Button
@@ -354,7 +355,7 @@ function PlanillaDiaria({
             </div>
           }
         >
-          {`Asistencias › ${etiqueta ? `${etiqueta} · ` : ""}Asistencia diaria · ${fechaTitulo(fecha)}`}
+          {`${etiqueta ? `${etiqueta} · ` : ""}Asistencia diaria · ${fechaTitulo(fecha)}`}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

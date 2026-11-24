@@ -31,6 +31,7 @@ export function ReservaEntranteDetalle({ reserva: r }: { reserva: ReservaEntrant
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Inscripción y reservas"
           action={
             <Button
               type="button"
@@ -45,7 +46,7 @@ export function ReservaEntranteDetalle({ reserva: r }: { reserva: ReservaEntrant
             </Button>
           }
         >
-          Inscripción y reservas › Traslado entrante — {r.estudiante.nombre}
+          Traslado entrante — {r.estudiante.nombre}
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>

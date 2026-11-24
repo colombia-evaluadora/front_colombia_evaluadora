@@ -13,6 +13,7 @@ function AbrirCasoContent() {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Reintegración"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
@@ -28,7 +29,7 @@ function AbrirCasoContent() {
             </div>
           }
         >
-          Reintegración › Abrir caso
+          Abrir caso
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>

@@ -446,6 +446,11 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta={
+            <Link to={listHref} search={search} className="hover:text-foreground">
+              Funcionarios
+            </Link>
+          }
           action={
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               {mode === "edit" && ficha?.canCorrectIdentity ? (
@@ -508,11 +513,8 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
             </div>
           }
         >
-          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-            <Link to={listHref} search={search} className="shrink-0 text-sm font-normal text-muted-foreground hover:text-foreground">
-              Funcionarios ›
-            </Link>
-            <span className="truncate">{nombreCompleto}</span>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {nombreCompleto}
             {ficha ? (
               <Badge {...ESTADO_FUNCIONARIO_BADGE[ficha.status]}>{ESTADO_FUNCIONARIO_LABELS[ficha.status]}</Badge>
             ) : null}

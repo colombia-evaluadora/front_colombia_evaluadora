@@ -41,7 +41,7 @@ export function PostulacionFormPage() {
       {id != null && !postulacion.data ? (
         <TableScreen>
           <TableScreenHeader>
-            <TableScreenTitle>Matrícula complementaria › Cambiar cupo</TableScreenTitle>
+            <TableScreenTitle ruta="Matrícula complementaria">Cambiar cupo</TableScreenTitle>
           </TableScreenHeader>
           <TableScreenBody>
             {postulacion.isError ? (
@@ -146,6 +146,7 @@ function Formulario({ postulacion: p }: { postulacion: Postulacion | undefined }
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Matrícula complementaria"
           action={
             <div className="flex gap-2">
               <Button
@@ -165,7 +166,7 @@ function Formulario({ postulacion: p }: { postulacion: Postulacion | undefined }
           }
         >
           <span className="inline-flex flex-wrap items-center gap-2">
-            Matrícula complementaria › {editar ? `Cambiar cupo — Postulación ${p.numero}` : "Nueva postulación"}
+            {editar ? `Cambiar cupo — Postulación ${p.numero}` : "Nueva postulación"}
             {editar ? <Marca {...ESTADO_OPCION[p.estado]} /> : null}
           </span>
         </TableScreenTitle>

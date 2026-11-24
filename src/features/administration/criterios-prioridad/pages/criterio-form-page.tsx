@@ -189,6 +189,7 @@ function CriterioForm({
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Criterios de prioridad"
           action={
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={cancelar}>
@@ -220,11 +221,8 @@ function CriterioForm({
             </div>
           }
         >
-          <span className="flex flex-wrap items-center gap-2">
-            <span>
-              Criterios de prioridad <span className="text-muted-foreground">›</span>{" "}
-              {criterio ? criterio.nombre : "Nuevo criterio"}
-            </span>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {criterio ? criterio.nombre : "Nuevo criterio"}
             {enUso && (
               <Badge variant="soft" color="info">
                 En uso

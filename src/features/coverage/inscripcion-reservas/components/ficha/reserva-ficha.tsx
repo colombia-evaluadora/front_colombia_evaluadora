@@ -277,6 +277,7 @@ function FichaFormulario({ ficha, modo }: { ficha: Ficha; modo: ModoFicha }) {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Inscripción y reservas"
           action={
             <div className="flex flex-wrap justify-end gap-2">
               <Button
@@ -322,7 +323,7 @@ function FichaFormulario({ ficha, modo }: { ficha: Ficha; modo: ModoFicha }) {
           }
         >
           <span className="inline-flex flex-wrap items-center gap-2">
-            Inscripción y reservas › {asignar ? "Asignar grupo" : "Ver detalle"} — {reserva.estudiante}
+            {asignar ? "Asignar grupo" : "Ver detalle"} — {reserva.estudiante}
             <EstadoReservaBadge estado={reserva.estado} />
           </span>
         </TableScreenTitle>

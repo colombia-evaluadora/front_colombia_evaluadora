@@ -19,6 +19,7 @@ function ActividadFormContent({ actividad }: { actividad?: ActividadDetalle }) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Actividades"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
@@ -34,7 +35,7 @@ function ActividadFormContent({ actividad }: { actividad?: ActividadDetalle }) {
             </div>
           }
         >
-          {actividad ? `Actividades › ${actividad.nombre} › Modificar` : "Actividades › Nueva actividad"}
+          {actividad ? `Modificar — ${actividad.nombre}` : "Nueva actividad"}
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>

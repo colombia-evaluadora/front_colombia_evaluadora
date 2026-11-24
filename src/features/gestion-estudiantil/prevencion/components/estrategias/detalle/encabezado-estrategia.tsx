@@ -19,6 +19,7 @@ export function EncabezadoEstrategia({ estrategia: e, d }: Props) {
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Prevención"
         action={
           <div className="flex shrink-0 items-center gap-2">
             <Button size="sm" type="button" variant="outline" color="neutral" disabled={!e.puede_agregar_beneficiarios} onClick={d.abrirAgregar}>
@@ -53,8 +54,8 @@ export function EncabezadoEstrategia({ estrategia: e, d }: Props) {
         }
         description={<BotonVolver onClick={d.volver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Prevención › Estrategia · {e.nombre}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Estrategia · {e.nombre}
           <BadgeEstadoEstrategia estado={e.estado} nombre={e.estado_nombre} />
         </span>
       </TableScreenTitle>

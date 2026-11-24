@@ -90,14 +90,21 @@ function TableScreenHeader({ children, className }: { children: ReactNode; class
  * `action` es para lo que acompaña al título en su misma línea (ej. el "Volver"
  * de las operaciones de auditoría). Las acciones sobre la tabla —agregar,
  * exportar— no van acá sino en `TableScreenActions`, junto al buscador.
+ *
+ * `ruta` es la miga de las pantallas que cuelgan de otra (formularios, detalles): el nivel o los niveles
+ * anteriores, sin el «›» final (lo pone el componente). Va en texto pequeño gris y el título en negrita,
+ * en la misma línea si cabe; si el título es largo, la ruta queda arriba (diseño de Figma, nov-2026). La
+ * etiqueta de estado va en `children`, junto al título.
  */
 function TableScreenTitle({
   children,
+  ruta,
   description,
   action,
   className,
 }: {
   children: ReactNode
+  ruta?: ReactNode
   description?: ReactNode
   action?: ReactNode
   className?: string
@@ -114,7 +121,17 @@ function TableScreenTitle({
           dinámico largo (p. ej. un "instrumento" sin espacios) se recorta
           con "…" en vez de desbordar la fila. */}
       <div className="min-w-0">
-        <h1 className="font-heading truncate text-2xl font-bold">{children}</h1>
+        {ruta ? (
+          // Ruta y título en un solo `flex-wrap`: si no caben juntos, el título baja y la ruta queda arriba.
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+            <span className="text-sm text-muted-foreground">
+              {ruta} <span aria-hidden="true">›</span>
+            </span>
+            <h1 className="font-heading min-w-0 text-2xl font-bold [overflow-wrap:anywhere]">{children}</h1>
+          </div>
+        ) : (
+          <h1 className="font-heading truncate text-2xl font-bold">{children}</h1>
+        )}
         {/* Texto: una línea truncada. Un nodo (p. ej. el botón «Volver a …», de 40px)
             va sin truncar: el overflow oculto del texto lo recortaba por arriba y abajo. */}
         {typeof description === "string" ? (

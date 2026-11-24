@@ -18,6 +18,7 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Convivencia"
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
@@ -33,7 +34,7 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
             </div>
           }
         >
-          Convivencia › Abrir proceso disciplinario
+          Abrir proceso disciplinario
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

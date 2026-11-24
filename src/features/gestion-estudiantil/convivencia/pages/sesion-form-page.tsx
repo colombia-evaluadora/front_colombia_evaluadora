@@ -32,6 +32,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Convivencia › Comité"
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
@@ -45,7 +46,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
             </div>
           }
         >
-          {sesion ? `Convivencia › Comité › Sesión ${sesion.numero} › Modificar` : "Convivencia › Comité › Nueva sesión"}
+          {sesion ? `Modificar — Sesión ${sesion.numero}` : "Nueva sesión"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

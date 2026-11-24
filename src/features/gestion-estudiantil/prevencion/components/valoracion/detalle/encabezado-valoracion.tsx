@@ -20,6 +20,7 @@ export function EncabezadoValoracion({ valoracion: v, d }: Props) {
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Prevención"
         action={
           <div className="flex shrink-0 items-center gap-2">
             {v.fk_tprevencion_plan != null && (
@@ -39,8 +40,8 @@ export function EncabezadoValoracion({ valoracion: v, d }: Props) {
         }
         description={<BotonVolver onClick={d.volver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Prevención › Valoración · {v.estudiante_nombre} · {v.grado_grupo}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Valoración · {v.estudiante_nombre} · {v.grado_grupo}
           <Badge variant="soft" color={NIVEL_COLOR[v.nivel_valor]}>
             <span>{v.nivel_nombre}</span>
           </Badge>
