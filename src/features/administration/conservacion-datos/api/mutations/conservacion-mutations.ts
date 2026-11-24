@@ -103,23 +103,15 @@ export function useSaveAmpliacion({
 }
 
 /**
- * Lote completo por file-service (el acta viaja como ACTA). La disposición la
- * pone el back desde la política; DISPOSICION solo cambia Archivar por
- * Anonimizar mientras no haya almacenamiento.
+ * Lote completo por file-service (el acta viaja como ACTA). La disposición no
+ * se elige: el back aplica siempre la de la política (Sección 6.4).
  */
-async function disponer(v: {
-  pkPolitica: number
-  pkEstablecimiento: number
-  disposicion: Disposicion
-  acta: File
-  motivo: string
-}) {
+async function disponer(v: { pkPolitica: number; pkEstablecimiento: number; acta: File; motivo: string }) {
   await postMultipart(
     `/files/eval-col${BASE}/vencidos/disponer`,
     {
       PK_POLITICA: v.pkPolitica,
       PK_ESTABLECIMIENTO: v.pkEstablecimiento,
-      DISPOSICION: v.disposicion,
       MOTIVO: v.motivo,
     },
     { ACTA: v.acta },
@@ -153,6 +145,17 @@ function guardarBlob(blob: Blob, nombre: string) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
+/** La huella calculada del archivo descargado no es la guardada al archivar. */
+export class HuellaNoCoincideError extends Error {
+  guardada: string
+  calculada: string
+  constructor(guardada: string, calculada: string) {
+    super(HUELLA_NO_COINCIDE)
+    this.guardada = guardada
+    this.calculada = calculada
+  }
+}
+
 /**
  * El back deja el acceso en la Bitácora y devuelve dónde está el archivo y su
  * huella; aquí se descarga y se compara la SHA-256 antes de entregarlo.
@@ -170,7 +173,13 @@ export function useDescargarArchivo() {
       const respuesta = await fetch(resultado.ubicacion)
       if (!respuesta.ok) throw new Error("No se pudo descargar el archivo.")
       const blob = await respuesta.blob()
-      if ((await sha256(blob)) !== resultado.huella) throw new Error(HUELLA_NO_COINCIDE)
+      const calculada = await sha256(blob)
+      if (calculada !== resultado.huella) {
+        // El archivo no se entrega y el intento queda en la Bitácora; si ese
+        // registro falla, la ventana igual se muestra.
+        await evalCol.postRow(`${BASE}/archivo/${pkArchivo}/huella-no-coincide`).catch(() => undefined)
+        throw new HuellaNoCoincideError(resultado.huella, calculada)
+      }
       guardarBlob(blob, `archivo-${pkArchivo}`)
     },
   })

@@ -23,6 +23,9 @@ async function resultado<T>(url: string, vacio: T) {
 
 export const fetchConservacionConfig = () => resultado<ConservacionConfig>("/config", { almacenamientoArchivo: false })
 export const fetchModulos = () => resultado<ModuloOpcion[]>("/modulos", [])
+/** Los que el usuario puede elegir: todos para el Superadministrador, los suyos para el resto. */
+export const fetchEstablecimientosConservacion = () =>
+  resultado<{ id: number; name: string }[]>("/establecimientos", [])
 export const fetchPoliticas = () => resultado<Politica[]>("/politicas", [])
 export const fetchPolitica = async (id: number) =>
   (await evalCol.getRow<Resultado<Politica>>(`${CONSERVACION_BASE}/politicas/${id}`)).resultado
@@ -82,11 +85,11 @@ export function useVencidosQuery(enabled = true) {
   })
 }
 
-export function useDetalleVencidoQuery(vencido: Vencido | null) {
+export function useDetalleVencidoQuery(pkPolitica: number, pkEstablecimiento: number) {
   return useQuery({
-    queryKey: conservacionKeys.detalleVencido(vencido?.pkPolitica ?? 0, vencido?.pkEstablecimiento ?? 0),
-    queryFn: () => fetchDetalleVencido(vencido?.pkPolitica as number, vencido?.pkEstablecimiento as number),
-    enabled: vencido != null,
+    queryKey: conservacionKeys.detalleVencido(pkPolitica, pkEstablecimiento),
+    queryFn: () => fetchDetalleVencido(pkPolitica, pkEstablecimiento),
+    enabled: pkPolitica > 0 && pkEstablecimiento > 0,
   })
 }
 
@@ -119,5 +122,13 @@ export function useArchivoQuery(params: ArchivoParams) {
       return row.resultado
     },
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useEstablecimientosConservacionQuery() {
+  return useQuery({
+    queryKey: conservacionKeys.establecimientos,
+    queryFn: fetchEstablecimientosConservacion,
+    staleTime: 1000 * 60 * 5,
   })
 }

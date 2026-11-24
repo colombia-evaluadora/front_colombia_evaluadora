@@ -71,7 +71,10 @@ import { citacionesSearchSchema, origenDeSearch, origenSearchSchema } from "@/fe
 import { observadorSearchSchema } from "@/features/gestion-estudiantil/observador/api/schema"
 import { areasOficialesSearchSchema } from "@/features/administration/areas-oficiales/api/schema"
 import { festivosSearchSchema } from "@/features/administration/festivos/api/schema"
-import { conservacionSearchSchema } from "@/features/administration/conservacion-datos/api/schema"
+import {
+  conservacionSearchSchema,
+  vencidoDetalleSearchSchema,
+} from "@/features/administration/conservacion-datos/api/schema"
 import { bitacoraSearchSchema } from "@/features/bitacora/api/schema"
 import { BITACORA_MODULOS, BITACORA_MODULO_SLUG, moduloDeSlug } from "@/features/bitacora/api/types/bitacora"
 import { criteriosPrioridadSearchSchema } from "@/features/administration/criterios-prioridad/api/schema"
@@ -291,6 +294,11 @@ const ConservacionDatosPage = lazyRouteComponent(
 const PoliticaFormPage = lazyRouteComponent(
   () => import("@/features/administration/conservacion-datos/pages/politica-form-page"),
   "PoliticaFormPage"
+)
+
+const VencidoDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/conservacion-datos/pages/vencido-detalle-page"),
+  "VencidoDetallePage"
 )
 
 const EstablishmentDetailPage = lazyRouteComponent(
@@ -1371,6 +1379,21 @@ export const conservacionPoliticaEditarRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Modificar política" }],
   },
   component: PoliticaFormPage,
+})
+
+export const conservacionVencidoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.conservacionVencidoDetalle.path,
+  validateSearch: vencidoDetalleSearchSchema,
+  staticData: {
+    breadcrumb: [
+      ADMINISTRACION_CRUMB,
+      CONSERVACION_CRUMB,
+      { label: "Vencidos", to: `${paths.app.conservacionDatos.getHref()}?tab=vencidos` },
+      { label: "Detalle del lote" },
+    ],
+  },
+  component: VencidoDetallePage,
 })
 
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
@@ -2972,6 +2995,7 @@ const routeTree = rootRoute.addChildren([
     conservacionDatosRoute,
     conservacionPoliticaNuevaRoute,
     conservacionPoliticaEditarRoute,
+    conservacionVencidoDetalleRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

@@ -306,6 +306,11 @@ export const paths = {
       getHref: (politicaId: number | string) =>
         `/app/administracion/conservacion-datos/politicas/editar/${politicaId}`,
     },
+    conservacionVencidoDetalle: {
+      path: "administracion/conservacion-datos/vencidos/detalle/$politica/$establecimiento",
+      getHref: (politica: number | string, establecimiento: number | string) =>
+        `/app/administracion/conservacion-datos/vencidos/detalle/${politica}/${establecimiento}`,
+    },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
       getHref: () => "/app/establecimiento-educativo/periodos",

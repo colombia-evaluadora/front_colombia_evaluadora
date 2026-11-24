@@ -32,24 +32,23 @@ describe("mock de Conservación de datos", () => {
     expect((await r.json()).message).toBe("El plazo del establecimiento no puede ser menor que el plazo mínimo.")
   })
 
-  it("Disponer: Archivar sin almacenamiento falla y Anonimizar vacía el lote", async () => {
-    const lote = vencidosDb.find((v) => v.pkPolitica === 3)
-    expect(lote).toBeDefined()
-    const form = (disposicion?: string) => {
+  it("Disponer aplica la disposición de la política: Archivar sin almacenamiento falla, Anonimizar vacía el lote", async () => {
+    const form = (pkPolitica: number) => {
+      const lote = vencidosDb.find((v) => v.pkPolitica === pkPolitica)
       const f = new FormData()
-      f.set("PK_POLITICA", "3")
+      f.set("PK_POLITICA", String(pkPolitica))
       f.set("PK_ESTABLECIMIENTO", String(lote?.pkEstablecimiento))
-      f.set("MOTIVO", "Mensajes que cumplieron su plazo.")
+      f.set("MOTIVO", "Registros que cumplieron su plazo.")
       f.set("ACTA", new File(["%PDF"], "acta.pdf", { type: "application/pdf" }))
-      if (disposicion) f.set("DISPOSICION", disposicion)
       return f
     }
     const url = "http://localhost/api/files/eval-col/conservacion-datos/vencidos/disponer"
-    expect((await fetch(url, { method: "POST", body: form() })).status).toBe(400)
-    const ok = await fetch(url, { method: "POST", body: form("ANONIMIZAR") })
+    expect((await fetch(url, { method: "POST", body: form(3) })).status).toBe(400)
+    expect(vencidosDb.some((v) => v.pkPolitica === 3)).toBe(true)
+    const ok = await fetch(url, { method: "POST", body: form(1) })
     expect(ok.status).toBe(200)
     expect((await ok.json()).rows[0].resultado.disposicion).toBe("ANONIMIZAR")
-    expect(vencidosDb.some((v) => v.pkPolitica === 3)).toBe(false)
+    expect(vencidosDb.some((v) => v.pkPolitica === 1)).toBe(false)
   })
 
   it("la descarga trae una huella que coincide con el archivo", async () => {

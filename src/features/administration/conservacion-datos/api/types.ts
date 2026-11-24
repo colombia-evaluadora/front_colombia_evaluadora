@@ -45,11 +45,14 @@ export interface Vencido {
   disposicion: Disposicion
 }
 
+/** Un registro del lote en Ver detalle. Fechas yyyy-MM-dd. */
 export interface RegistroVencido {
+  pkRegistro: number
   estudiante: string
   documento: string
-  anio: number
-  vencidoDesde: string
+  /** La de creación del registro en su fuente. */
+  fechaRegistro: string
+  vence: string
 }
 
 /** Fila del índice del archivo histórico. */

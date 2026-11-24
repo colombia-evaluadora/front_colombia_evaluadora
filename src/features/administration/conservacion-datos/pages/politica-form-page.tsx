@@ -44,6 +44,8 @@ import {
 } from "@/features/administration/conservacion-datos/api/types"
 
 const FORM_ID = "politica-form"
+// Fuentes de TCONSERVACION_FUENTE (V591): el back enlaza la política por nombre.
+const TIPOS_CON_FUENTE = "«Observador» y «Casos de convivencia»"
 const LISTADO = paths.app.conservacionDatos.getHref()
 
 /** S.12.POL.2 (nueva) y S.12.POL.3 (modificar): misma pantalla, distinto origen de datos. */
@@ -157,6 +159,11 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
                 showCounter
                 transform={toTipoRegistroInput}
                 placeholder="Ej. Observador"
+                description={
+                  politica && !politica.permanente && !politica.conFuente
+                    ? `La plataforma aún no lee los registros de este tipo: no vencerá. Hoy vencen ${TIPOS_CON_FUENTE}.`
+                    : `Hoy la plataforma sabe hacer vencer ${TIPOS_CON_FUENTE}; con otro nombre, la política no vence.`
+                }
               />
             )}
           </form.AppField>

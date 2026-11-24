@@ -20,6 +20,14 @@ export const conservacionSearchSchema = z.object({
 
 export type ConservacionSearch = z.infer<typeof conservacionSearchSchema>
 
+/** Página y orden de Ver detalle de un lote vencido. */
+export const vencidoDetalleSearchSchema = conservacionSearchSchema.pick({
+  page: true,
+  pageSize: true,
+  sortBy: true,
+  sortDir: true,
+})
+
 /** Letras, números, espacio, guion y apóstrofo, como los rótulos de Referentes curriculares. */
 export const TIPO_REGISTRO_PATTERN = /^[A-Za-z0-9ÁÉÍÓÚáéíóúÜüÑñ '’-]*$/
 export const toTipoRegistroInput = (v: string) => v.replace(/[^A-Za-z0-9ÁÉÍÓÚáéíóúÜüÑñ '’-]/g, "").replace(/^s+/, "").replace(/s{2,}/g, " ")

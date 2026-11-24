@@ -16,11 +16,15 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 import { toPageCount } from "@/lib/pagination"
 import { conservacionDatosRoute } from "@/router"
-import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 
-import { useDescargarArchivo } from "@/features/administration/conservacion-datos/api/mutations/conservacion-mutations"
+import {
+  HuellaNoCoincideError,
+  useDescargarArchivo,
+} from "@/features/administration/conservacion-datos/api/mutations/conservacion-mutations"
+import { DialogHuellaNoCoincide } from "@/features/administration/conservacion-datos/components/dialog-huella-no-coincide"
 import {
   useArchivoQuery,
+  useEstablecimientosConservacionQuery,
   usePoliticasQuery,
 } from "@/features/administration/conservacion-datos/api/query/use-conservacion-queries"
 import type { ConservacionSearch } from "@/features/administration/conservacion-datos/api/schema"
@@ -42,7 +46,9 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
   const paginacion = useTablePagination()
   const [texto, setTexto] = useState(search.q ?? "")
 
-  const establecimientos = useEstablishmentsOptionsQuery(esSuperAdmin)
+  const establecimientos = useEstablecimientosConservacionQuery()
+  // El filtro de establecimiento solo tiene sentido con más de uno para elegir.
+  const conFiltroEe = esSuperAdmin || (establecimientos.data?.length ?? 0) > 1
   const politicas = usePoliticasQuery()
   const tipos = [...new Set((politicas.data ?? []).map((p) => p.tipoRegistro))].sort((a, b) => a.localeCompare(b, "es"))
 
@@ -62,8 +68,19 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
   const hayFiltros = Boolean(search.q || search.establecimiento || search.tipo || search.anio)
 
   const descargar = useDescargarArchivo()
-  const bajar = (pkArchivo: number, tipo: "archivo" | "acta") =>
-    descargar.mutate({ pkArchivo, tipo }, { onError: (err) => notify(getErrorMessage(err), { variant: "error" }) })
+  const [huellaFallida, setHuellaFallida] = useState<{ archivo: Archivado; error: HuellaNoCoincideError } | null>(
+    null,
+  )
+  const bajar = (archivo: Archivado, tipo: "archivo" | "acta") =>
+    descargar.mutate(
+      { pkArchivo: archivo.pkArchivo, tipo },
+      {
+        onError: (err) =>
+          err instanceof HuellaNoCoincideError
+            ? setHuellaFallida({ archivo, error: err })
+            : notify(getErrorMessage(err), { variant: "error" }),
+      },
+    )
 
   const columns: ColumnDef<Archivado>[] = [
     {
@@ -116,7 +133,7 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
           size="sm"
           className="px-0"
           disabled={descargar.isPending}
-          onClick={() => bajar(row.original.pkArchivo, "acta")}
+          onClick={() => bajar(row.original, "acta")}
         >
           <FilePdfIcon data-icon="inline-start" />
           PDF
@@ -135,13 +152,13 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
               label: "Descargar archivo",
               icon: <FileDownloadOutlinedIcon />,
               disabled: descargar.isPending,
-              onClick: () => bajar(row.original.pkArchivo, "archivo"),
+              onClick: () => bajar(row.original, "archivo"),
             },
             {
               label: "Ver acta",
               icon: <FilePdfIcon />,
               disabled: descargar.isPending,
-              onClick: () => bajar(row.original.pkArchivo, "acta"),
+              onClick: () => bajar(row.original, "acta"),
             },
           ]}
         />
@@ -187,7 +204,7 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
             </div>
           </Field>
         </form>
-        {esSuperAdmin ? (
+        {conFiltroEe ? (
           <Filtro
             label="Establecimiento"
             buscable
@@ -248,6 +265,14 @@ export function ArchivoTab({ esSuperAdmin }: { esSuperAdmin: boolean }) {
         pageSize={paginacion.pageSize}
         onPageSizeChange={paginacion.setPageSize}
       />
+      {huellaFallida ? (
+        <DialogHuellaNoCoincide
+          archivo={huellaFallida.archivo}
+          guardada={huellaFallida.error.guardada}
+          calculada={huellaFallida.error.calculada}
+          onClose={() => setHuellaFallida(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -55,6 +55,7 @@ import {
   fetchAmpliaciones,
   fetchConservacionConfig,
   fetchDetalleVencido,
+  fetchEstablecimientosConservacion,
   fetchModulos,
   fetchPolitica,
   fetchPoliticas,
@@ -237,10 +238,13 @@ function conservacionTasks(esSuperAdmin: boolean): PrepareTask[] {
           .map((p) => seed(conservacionKeys.politica(p.pkPolitica), () => fetchPolitica(p.pkPolitica), meta(), opcional)),
     }),
     seed(conservacionKeys.modulos, fetchModulos, meta(), opcional),
+    // Ampliaciones abre en el primer establecimiento que el usuario puede elegir.
+    seed(conservacionKeys.establecimientos, fetchEstablecimientosConservacion, meta(), {
+      optional: true,
+      then: (ees) => (ees[0] ? [ampliaciones(ees[0].id)] : []),
+    }),
     ...(esSuperAdmin
       ? [
-          // La pestaña abre en el primer establecimiento.
-          establecimientosTask((primero) => (primero == null ? [] : [ampliaciones(primero)])),
           seed(conservacionKeys.config, fetchConservacionConfig, meta(), opcional),
           seed(conservacionKeys.vencidos, fetchVencidos, meta(), {
             optional: true,
@@ -257,7 +261,7 @@ function conservacionTasks(esSuperAdmin: boolean): PrepareTask[] {
                 ),
           }),
         ]
-      : [ampliaciones(null)]),
+      : []),
   ]
 }
 
