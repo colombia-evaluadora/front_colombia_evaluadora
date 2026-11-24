@@ -424,18 +424,6 @@ export function useGenerarHojas() {
   })
 }
 
-/** Si la constancia lleva numeración (Configuración de Reportes): ofrece generar como borrador. */
-export function useConfiguracionConstanciaQuery() {
-  return useQuery({
-    queryKey: [...matriculaKeys.all, "constancia-configuracion"],
-    queryFn: async () => {
-      const row = await evalCol.getRow<{ numeracion: boolean }>(`${BASE}/constancias/configuracion`)
-      return { numeracion: row.numeracion }
-    },
-    staleTime: 5 * 60_000,
-  })
-}
-
 export interface GenerarConstanciasInput {
   matriculaIds: string[]
   dirigidaA: string

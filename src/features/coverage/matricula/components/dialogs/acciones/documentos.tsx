@@ -21,7 +21,6 @@ import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
 import {
-  useConfiguracionConstanciaQuery,
   useGenerarCarnes,
   useGenerarConstancias,
   useGenerarHojas,
@@ -43,8 +42,8 @@ const DIRIGIDA_DEFAULT = "A quien interese"
 
 /**
  * Generar constancia(s) de estudio (Sección 2.17, Regla 58): un solo «Dirigida a»
- * para todas y un solo PDF. Solo matrículas Cursando. Con numeración se puede
- * generar como borrador (sin número, con marca BORRADOR y sin QR).
+ * para todas y un solo PDF. Solo matrículas Cursando. Como borrador sale sin
+ * número, con la marca BORRADOR y sin QR.
  */
 export function DialogGenerarConstancias({
   matriculas,
@@ -56,7 +55,6 @@ export function DialogGenerarConstancias({
   onDone?: () => void
 }) {
   const { notify } = useNotify()
-  const { data: config } = useConfiguracionConstanciaQuery()
   const generar = useGenerarConstancias()
   const [dirigidaA, setDirigidaA] = useState(DIRIGIDA_DEFAULT)
   const [borrador, setBorrador] = useState(true)
@@ -69,7 +67,7 @@ export function DialogGenerarConstancias({
   function confirmar() {
     if (!valido) return
     generar.mutate(
-      { matriculaIds: matriculas.map((m) => m.id), dirigidaA: dirigidaA.trim(), borrador: Boolean(config?.numeracion) && borrador },
+      { matriculaIds: matriculas.map((m) => m.id), dirigidaA: dirigidaA.trim(), borrador },
       {
         onSuccess: () => {
           notify(uno ? `Se generó la constancia de estudio de ${nombreDe(matriculas[0])}.` : `Se generaron ${matriculas.length} constancias de estudio.`)
@@ -90,39 +88,39 @@ export function DialogGenerarConstancias({
         </DialogHeader>
         <NoticeBanner notice={error} onClose={() => setError(null)} variant="error" />
 
-        <Field variant="outlined" className="gap-1.5" data-invalid={!valido || undefined}>
-          <FieldLabel htmlFor="constancia-dirigida">
-            Dirigida a<span data-required-mark="">*</span>
-          </FieldLabel>
-          <Input
-            id="constancia-dirigida"
-            variant="outlined"
-            maxLength={DIRIGIDA_MAX}
-            value={dirigidaA}
-            aria-invalid={!valido}
-            onChange={(e) => setDirigidaA(e.target.value)}
-          />
-          <FieldDescription className={cn(!valido && "text-red")}>
-            {valido ? "Se puede cambiar; p. ej. el nombre de la entidad que la pide." : `Entre ${DIRIGIDA_MIN} y ${DIRIGIDA_MAX} caracteres.`}
+        <div className="grid gap-4 sm:grid-cols-[1fr_11rem]">
+          <Field variant="outlined" className="gap-1.5" data-invalid={!valido || undefined}>
+            <FieldLabel htmlFor="constancia-dirigida">
+              Dirigida a<span data-required-mark="">*</span>
+            </FieldLabel>
+            <Input
+              id="constancia-dirigida"
+              variant="outlined"
+              maxLength={DIRIGIDA_MAX}
+              value={dirigidaA}
+              aria-invalid={!valido}
+              onChange={(e) => setDirigidaA(e.target.value)}
+            />
+            <FieldDescription className={cn(!valido && "text-red")}>
+              {valido ? "Se puede cambiar; p. ej. el nombre de la entidad que la pide." : `Entre ${DIRIGIDA_MIN} y ${DIRIGIDA_MAX} caracteres.`}
+            </FieldDescription>
+          </Field>
+          <Field variant="outlined" className="gap-1.5">
+            <FieldLabel htmlFor="constancia-expedicion">Fecha de expedición</FieldLabel>
+            <Input id="constancia-expedicion" variant="outlined" value={new Date().toLocaleDateString("es-CO")} disabled />
+          </Field>
+        </div>
+
+        <Field className="gap-1.5">
+          <FieldLabel htmlFor="constancia-borrador">Generar como borrador</FieldLabel>
+          <div className="flex items-center gap-2">
+            <Switch id="constancia-borrador" checked={borrador} onCheckedChange={setBorrador} />
+            <span className="text-sm">{borrador ? "Sí" : "No"}</span>
+          </div>
+          <FieldDescription>
+            Como borrador no se asigna número y el documento sale con la marca BORRADOR, sin código QR.
           </FieldDescription>
         </Field>
-
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 text-sm">
-          <dt className="text-muted-foreground">Fecha de expedición</dt>
-          <dd>{new Date().toLocaleDateString("es-CO")}</dd>
-        </dl>
-
-        {config?.numeracion ? (
-          <label className="flex cursor-pointer items-start gap-3 text-sm">
-            <Switch checked={borrador} onCheckedChange={setBorrador} className="mt-0.5" />
-            <span>
-              <span className="font-medium">Generar como borrador</span>
-              <span className="block text-muted-foreground">
-                No consume número y sale con la marca BORRADOR, sin código QR.
-              </span>
-            </span>
-          </label>
-        ) : null}
 
         <DialogFooter>
           <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
