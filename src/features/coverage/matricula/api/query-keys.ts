@@ -28,6 +28,7 @@ export const matriculaKeys = {
   origenNota: (id: number | string | undefined, notaId: number | null) =>
     [...detalleAll, id, "notas-homologadas", "origen", notaId] as const,
   snapshotPendiente: (id: number | string | undefined) => [...detalleAll, id, "snapshot-pendiente"] as const,
+  capacidades: [...all, "capacidades"] as const,
   estudianteExistente: (documento: string) => [...all, "estudiante-existente", documento] as const,
   previaReactivar: (id: number | string | undefined) => [...detalleAll, id, "reactivar-previa"] as const,
   solicitudRetiro: (id: number | string | undefined) => [...detalleAll, id, "solicitud-retiro"] as const,

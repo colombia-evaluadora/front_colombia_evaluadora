@@ -26,6 +26,10 @@ import { DialogRetirar } from "@/features/coverage/matricula/components/dialogs/
 import { DialogReingresar } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
 import { DialogReactivarMatricula } from "@/features/coverage/matricula/components/dialogs/dialog-reactivar-matricula"
 import { DialogCambiarGrupo } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grupo"
+import {
+  useMatriculaCapacidades,
+  type MatriculaCapacidades,
+} from "@/features/coverage/matricula/api/query/use-matricula-capacidades"
 import { DialogCambiarGrado } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grado"
 import { DialogReactivarLote } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-reactivar-lote"
 import { DialogGenerarCarnes, DialogGenerarConstancias } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
@@ -48,6 +52,8 @@ interface Definicion {
   /** null si sirve para toda la selección; si no, por qué no se ofrece. */
   bloqueo: (sel: Matricula[]) => string | null
   editar?: boolean
+  /** Solo Administrador o Gestor del establecimiento, no el Supervisor de sede (manual §2). */
+  capacidad?: keyof MatriculaCapacidades
 }
 
 const ACCIONES: Definicion[] = [
@@ -75,6 +81,7 @@ const ACCIONES: Definicion[] = [
     label: () => "Reactivar",
     Icon: ArrowCounterClockwiseIcon,
     editar: true,
+    capacidad: "reactivar",
     bloqueo: (sel) =>
       sel.length === 1
         ? ESTADOS_REACTIVABLES.includes(sel[0].status)
@@ -101,6 +108,7 @@ const ACCIONES: Definicion[] = [
     label: (n) => (n === 1 ? "Cambiar de grado" : "Corregir grado"),
     Icon: ArrowsDownUpIcon,
     editar: true,
+    capacidad: "cambiarGrado",
     bloqueo: (sel) =>
       !sel.every((m) => cursando(m) && libre(m))
         ? "Solo se cambian matrículas Cursando sin solicitud pendiente."
@@ -129,6 +137,7 @@ const ACCIONES: Definicion[] = [
  */
 export function BarraLote({ selected, resetSelection }: { selected: Matricula[]; resetSelection: () => void }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const capacidades = useMatriculaCapacidades()
   const { notify } = useNotify()
   const [abierta, setAbierta] = useState<Accion | null>(null)
   const hojas = useGenerarHojas()
@@ -164,7 +173,7 @@ export function BarraLote({ selected, resetSelection }: { selected: Matricula[];
         Quitar selección
       </Button>
       <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-        {ACCIONES.filter((a) => !a.editar || puedeEditar).map(({ accion, label, Icon, bloqueo }) => {
+        {ACCIONES.filter((a) => (!a.editar || puedeEditar) && (!a.capacidad || capacidades[a.capacidad])).map(({ accion, label, Icon, bloqueo }) => {
           const motivo = bloqueo(selected)
           return conAyuda(
             accion,
