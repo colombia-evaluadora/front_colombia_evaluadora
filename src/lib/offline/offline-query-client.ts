@@ -45,6 +45,8 @@ import {
   type QueryObserverOptions,
 } from "@tanstack/react-query"
 
+import { conMetaPorDefecto } from "@/lib/offline/modulos-persistibles"
+
 /** Marca de las opciones cuyo `networkMode` decide este módulo (y no la query). */
 export const AUTO_NETWORK_MODE = "offlineAutoNetworkMode"
 
@@ -101,7 +103,7 @@ export class OfflineAwareQueryClient extends QueryClient {
       | QueryObserverOptions<TQueryFnData, TError, TData, TQueryData, TQueryKey, TPageParam>
       | DefaultedQueryObserverOptions<TQueryFnData, TError, TData, TQueryData, TQueryKey>,
   ): DefaultedQueryObserverOptions<TQueryFnData, TError, TData, TQueryData, TQueryKey> {
-    const defaulted = super.defaultQueryOptions(options)
+    const defaulted = conMetaPorDefecto(super.defaultQueryOptions(options))
     const query = defaulted.queryHash ? this.getQueryCache().get(defaulted.queryHash) : undefined
     return applyAutoNetworkMode(defaulted, query?.state.data !== undefined)
   }
