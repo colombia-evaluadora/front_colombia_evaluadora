@@ -15,6 +15,7 @@ import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 import { conOrdenServidor, ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import { columnasGestionables } from "@/features/gestion-estudiantil/inclusion/utils/columnas-gestionables"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
 import { useGradosFiltroQuery, usePiarListaQuery, usePrefetchPiar, useSinPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
@@ -67,7 +68,9 @@ function PiarListaContent() {
   const prefetch = usePrefetchPiar()
 
   const { tab } = useSearch({ strict: false }) as { tab?: Pestana }
-  const [pestana, setPestana] = useState<Pestana>(tab ?? (access.veListado ? "piar" : "informe"))
+  const [elegida, setPestana] = useState<Pestana | null>(tab ?? null)
+  // Sin pestaña elegida, la primera a la que el usuario tiene acceso (llega con `/inclusion/acceso`).
+  const pestana: Pestana = elegida ?? (access.veListado ? "piar" : access.veInforme ? "informe" : "piar")
   const [search, setSearch] = useState("")
   const [filtros, setFiltros] = useState<PiarFiltros>(FILTROS_VACIOS)
 
@@ -84,7 +87,7 @@ function PiarListaContent() {
   const irFicha = (row: PiarRow, accion?: "acta" | "cerrar") =>
     navigate({ to: paths.app.piarFicha.getHref(row.id), search: accion ? { accion } : {} })
 
-  const columns = conOrdenServidor(buildColumnasPiar({ access, prefetch, irFicha }), ORDEN_PIAR)
+  const columns = conOrdenServidor(columnasGestionables(buildColumnasPiar({ access, prefetch, irFicha })), ORDEN_PIAR)
 
   const { table } = useDataTable({
     columns,
@@ -109,14 +112,12 @@ function PiarListaContent() {
         <TableScreenTitle
           action={
             pestana === "piar" ? (
-              access.puedeGestionar && (
-                <Button size="sm" render={<Link to={paths.app.piarNuevo.getHref()} />} nativeButton={false}>
-                  <ControlPointIcon data-icon="inline-start" />
-                  Nuevo PIAR
-                </Button>
-              )
-            ) : pestana === "orientacion" && access.registraAtencion ? (
-              <Button size="sm" render={<Link to={paths.app.atencionNueva.getHref()} />} nativeButton={false}>
+              <Button size="sm" disabled={!access.puedeCrearPiar} onClick={() => navigate({ to: paths.app.piarNuevo.getHref() })}>
+                <ControlPointIcon data-icon="inline-start" />
+                Nuevo PIAR
+              </Button>
+            ) : pestana === "orientacion" ? (
+              <Button size="sm" disabled={!access.puedeCrearAtencion} onClick={() => navigate({ to: paths.app.atencionNueva.getHref() })}>
                 <ControlPointIcon data-icon="inline-start" />
                 Nueva atención
               </Button>
@@ -145,7 +146,7 @@ function PiarListaContent() {
       {pestana !== "piar" ? (
         <TableScreenBody>
           <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-            {pestana === "orientacion" ? <TabOrientacion puedeRegistrar={access.registraAtencion} puedeAnular={access.puedeAnular} /> : <TabInforme />}
+            {pestana === "orientacion" ? <TabOrientacion /> : <TabInforme />}
           </Suspense>
         </TableScreenBody>
       ) : (
