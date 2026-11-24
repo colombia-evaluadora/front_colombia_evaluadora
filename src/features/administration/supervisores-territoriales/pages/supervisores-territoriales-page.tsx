@@ -1,7 +1,6 @@
 "use no memo"
 
 import { useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import {
@@ -26,7 +25,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { CheckIcon, ControlPointIcon, SpinnerIcon, XIcon, FunnelXIcon } from "@/components/ui/icons"
-import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
@@ -42,6 +40,10 @@ import {
   establecimientosTexto,
   type SupervisorTerritorial,
 } from "@/features/administration/supervisores-territoriales/api/types/supervisor"
+import {
+  DialogSupervisor,
+  type ModoSupervisor,
+} from "@/features/administration/supervisores-territoriales/components/dialog-supervisor"
 import { createSupervisoresColumns } from "@/features/administration/supervisores-territoriales/components/columns-supervisores"
 import {
   useSupervisoresFilters,
@@ -85,7 +87,6 @@ function valorOrdenable(s: SupervisorTerritorial, columna: string) {
 
 function SupervisoresTerritorialesPageContent() {
   const { notify } = useNotify()
-  const navigate = useNavigate()
   // Administrador territorial y, de respaldo, el Superadministrador: acceso y guardado, sin Eliminar (V329.1).
   const permisos = useMenuPermission("SUPERVISORES_TERRITORIALES")
   const { filters, applyFilters, clearAllFilters, activeFilterCount } = useSupervisoresFilters()
@@ -105,6 +106,8 @@ function SupervisoresTerritorialesPageContent() {
   const pagina = ordenados.slice(pageIndex * paginacion.pageSize, (pageIndex + 1) * paginacion.pageSize)
 
   const [aInactivar, setAInactivar] = useState<SupervisorTerritorial | null>(null)
+  // Nuevo, Modificar y Ver detalle en un modal (como Superadministradores).
+  const [dialogo, setDialogo] = useState<{ modo: ModoSupervisor; pk: number | null } | null>(null)
   const [pendiente, setPendiente] = useState<number | null>(null)
 
   const estado = useEstadoSupervisor({
@@ -127,8 +130,8 @@ function SupervisoresTerritorialesPageContent() {
   const columns = createSupervisoresColumns({
     puedeEditar: permisos.puedeEditar,
     pendiente,
-    onVer: (s) => navigate({ to: paths.app.supervisorTerritorialDetalle.getHref(s.pkSupervisor) }),
-    onModificar: (s) => navigate({ to: paths.app.supervisorTerritorialModificar.getHref(s.pkSupervisor) }),
+    onVer: (s) => setDialogo({ modo: "ver", pk: s.pkSupervisor }),
+    onModificar: (s) => setDialogo({ modo: "modificar", pk: s.pkSupervisor }),
     // Activar va directo; inactivar corta el acceso de alguien: se confirma.
     onEstado: (s) => (s.activo ? setAInactivar(s) : cambiarEstado(s, true)),
   })
@@ -143,7 +146,7 @@ function SupervisoresTerritorialesPageContent() {
     columnVisibilityStorageKey: "supervisores-territoriales-column-visibility",
   })
 
-  const nuevo = () => navigate({ to: paths.app.supervisorTerritorialNuevo.getHref() })
+  const nuevo = () => setDialogo({ modo: "nuevo", pk: null })
   const sinRegistros = !isPending && !isError && lista.length === 0
 
   return (
@@ -237,6 +240,16 @@ function SupervisoresTerritorialesPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {dialogo ? (
+        <DialogSupervisor
+          key={`${dialogo.modo}-${dialogo.pk ?? "nuevo"}`}
+          modo={dialogo.modo}
+          pkSupervisor={dialogo.pk}
+          puedeEditar={permisos.puedeEditar}
+          onClose={() => setDialogo(null)}
+          onModificar={(pk) => setDialogo({ modo: "modificar", pk })}
+        />
+      ) : null}
     </TableScreen>
   )
 }

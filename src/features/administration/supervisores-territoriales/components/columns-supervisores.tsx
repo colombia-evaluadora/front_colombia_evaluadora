@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
+import { TituloConAyuda } from "@/components/titulo-con-ayuda"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircleIcon, EyeIcon, PencilIcon, ProhibitIcon } from "@/components/ui/icons"
@@ -68,7 +69,8 @@ export function createSupervisoresColumns({
     {
       id: "dependencia",
       accessorFn: (row) => row.dependencia ?? "",
-      meta: { label: "Dependencia" },
+      // Texto largo: puede partirse en dos líneas para que Estado y las acciones quepan sin scroll (como Lista de valores).
+      meta: { label: "Dependencia", className: "min-w-40 whitespace-normal" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Dependencia" />,
       cell: ({ row }) => row.original.dependencia || <span className="text-muted-foreground">—</span>,
     },
@@ -76,19 +78,27 @@ export function createSupervisoresColumns({
       id: "establecimientos",
       accessorFn: establecimientosTexto,
       meta: { label: "Establecimientos a cargo" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Establecimientos a cargo" />,
+      // «Estab.» con ⓘ, como el prototipo (S.7.LIS.1): más angosta, deja lugar a Estado. Columna de
+      // números: encabezado y celdas centrados (CLAUDE.md §13).
+      header: ({ column }) => (
+        <span className="flex items-center justify-center gap-1">
+          <DataTableColumnHeader column={column} title="Estab." />
+          <TituloConAyuda titulo="Estab." ayuda="Cantidad de establecimientos a cargo, o Todos.">
+            <></>
+          </TituloConAyuda>
+        </span>
+      ),
       cell: ({ row }) => {
         const s = row.original
         return (
           <span
-            className="tabular-nums"
+            className="block text-center tabular-nums"
             title={s.todosEstablecimientos ? "Todos, también los que se creen después" : s.establecimientos.map((e) => e.nombre).join(", ")}
           >
             {establecimientosTexto(s)}
           </span>
         )
       },
-      size: 120,
     },
     {
       id: "activo",
