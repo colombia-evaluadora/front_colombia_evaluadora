@@ -48,7 +48,7 @@ export async function findMatriculaUsuarioPorDocumento(
     secondName: row.segundo_nombre ?? "",
     lastName: row.primer_apellido,
     secondLastName: row.segundo_apellido ?? "",
-    birthDate: row.fecha_nacimiento ?? "",
+    birthDate: row.fecha_nacimiento?.slice(0, 10) ?? "",
     gender: row.fk_tlv_genero != null ? String(row.fk_tlv_genero) : "",
     phone: row.telefono ?? "",
     email: row.correo_electronico ?? "",

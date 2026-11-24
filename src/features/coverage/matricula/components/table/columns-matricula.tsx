@@ -37,8 +37,9 @@ import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
-function formatEnrollmentDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" })
+// El back manda medianoche UTC («2026-09-16T00:00:00.000Z»): con `new Date` en hora de Bogotá salía el día anterior.
+function formatFecha(iso: string | null | undefined): string {
+  return iso ? iso.slice(0, 10).split("-").reverse().join("/") : ""
 }
 
 function MatriculaGradeCell({ grade }: { grade: number }) {
@@ -246,7 +247,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     meta: { label: "Fecha de matrícula" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha de matrícula" />,
     cell: ({ row }) => (
-      <span className="tabular-nums">{formatEnrollmentDate(row.original.enrollmentDate)}</span>
+      <span className="tabular-nums">{formatFecha(row.original.enrollmentDate)}</span>
     ),
   },
   {
@@ -267,6 +268,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     accessorKey: "birthDate",
     meta: { label: "Fecha de nacimiento" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha de nacimiento" />,
+    cell: ({ row }) => <span className="tabular-nums">{formatFecha(row.original.birthDate)}</span>,
   },
   {
     id: "address",

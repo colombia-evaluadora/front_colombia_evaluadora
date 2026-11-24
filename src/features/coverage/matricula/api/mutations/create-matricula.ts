@@ -167,7 +167,7 @@ async function createMatricula({
     pkUsuarioAcudiente,
   })
 
-  const raw = await postMultipart<RawCreateMatriculaResponse>(
+  const respuesta = await postMultipart<RawCreateMatriculaResponse | { rows: RawCreateMatriculaResponse[] }>(
     "/eval-col/cobertura-academica/matricula",
     body,
     {
@@ -178,6 +178,9 @@ async function createMatricula({
     },
   )
 
+  // El back responde { rows: [fila] }; el mock, la fila sola. Sin esto el alta iba a /detalle/undefined/editar.
+  const raw = "rows" in respuesta ? respuesta.rows[0] : respuesta
+  if (raw?.pk_tmatricula == null) throw new Error("La matrícula se guardó, pero el servidor no devolvió su número.")
   const matriculaId = String(raw.pk_tmatricula)
   const subidas = await Promise.allSettled(
     files.otherDocuments.map((file) => addMatriculaDocumento(matriculaId, file)),
