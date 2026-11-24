@@ -115,7 +115,7 @@ async function limpiarEquipo(page: Page) {
 }
 
 async function ingresar(page: Page, email: string) {
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()

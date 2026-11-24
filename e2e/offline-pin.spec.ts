@@ -15,7 +15,7 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
         req.onsuccess = req.onerror = req.onblocked = () => resolve()
       }),
   )
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()

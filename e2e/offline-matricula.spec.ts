@@ -105,7 +105,7 @@ test("matrícula: preparar → sin red se consulta la lista con datos básicos; 
   // dependencias) y devolver al login: se reintenta.
   await expect(async () => {
     if (new URL(page.url()).pathname !== "/login") await page.goto("/login")
-    await page.getByLabel("Correo electrónico").fill(USUARIO)
+    await page.getByLabel("Correo o número de documento").fill(USUARIO)
     await page.getByLabel("Contraseña", { exact: true }).fill("password")
     await usarComoEquipoPersonal(page)
     await page.getByRole("button", { name: "Ingresar" }).click()

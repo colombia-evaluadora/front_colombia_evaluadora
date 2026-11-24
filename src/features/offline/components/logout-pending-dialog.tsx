@@ -58,9 +58,11 @@ export function LogoutPendingDialog({
               : "Elige qué hacer con ellos antes de cerrar sesión."}
           </DialogDescription>
         </DialogHeader>
-        {!confirmDiscard && !shared && (
+        {!confirmDiscard && (
           <p className="text-muted-foreground text-sm">
-            "Salir y conservar": se enviarán la próxima vez que inicies sesión con esta cuenta en este navegador.
+            {shared
+              ? "\"Salir y conservar\": se hicieron en la app instalada y se enviarán cuando la abra con esta cuenta y con internet."
+              : "\"Salir y conservar\": se enviarán la próxima vez que inicies sesión con esta cuenta en este navegador."}
           </p>
         )}
         {error && <p className="text-red text-sm">{error}</p>}
@@ -79,15 +81,14 @@ export function LogoutPendingDialog({
               <Button variant="outline" color="destructive" disabled={busy != null} onClick={() => setConfirmDiscard(true)}>
                 Descartar y salir
               </Button>
-              {!shared && (
-                <Button variant="outline" color="neutral" disabled={busy != null} onClick={onLogout}>
-                  Salir y conservar en este equipo
-                </Button>
-              )}
+              {/* En la pestaña (compartida) los pendientes son de la app instalada: nunca obligar a descartarlos. */}
+              <Button variant="outline" color="neutral" disabled={busy != null} onClick={onLogout}>
+                Salir y conservar en este equipo
+              </Button>
               <Button
                 variant="fill"
                 color="primary"
-                disabled={busy != null || offline}
+                disabled={busy != null || offline || shared}
                 title={offline ? "Necesitas conexión para esta acción." : undefined}
                 onClick={() => void sincronizarYSalir()}
               >

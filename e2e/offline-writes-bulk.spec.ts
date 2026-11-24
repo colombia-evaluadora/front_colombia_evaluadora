@@ -46,7 +46,7 @@ async function counts(page: Page): Promise<Record<string, number>> {
 
 async function login(page: Page) {
   await page.goto("/login?redirectTo=%2Fapp%2Fplaneador%2Fplanilla")
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()

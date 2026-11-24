@@ -18,7 +18,7 @@ const SERVER_DOWN_COPY = "No pudimos comunicarnos con el servidor"
 
 async function login(page: Page) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(ACTIVIDADES)}`)
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/planeador"))

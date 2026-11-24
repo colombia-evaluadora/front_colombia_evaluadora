@@ -38,7 +38,7 @@ export async function emularAppInstalada(target: Page | BrowserContext) {
 export async function usarComoEquipoPersonal(page: Page) {
   const instalada = await page.evaluate(() => window.matchMedia("(display-mode: standalone)").matches)
   if (instalada) return
-  const correo = page.getByLabel("Correo electrónico")
+  const correo = page.getByLabel("Correo o número de documento")
   const clave = page.getByLabel("Contraseña", { exact: true })
   const email = await correo.inputValue()
   const password = await clave.inputValue()

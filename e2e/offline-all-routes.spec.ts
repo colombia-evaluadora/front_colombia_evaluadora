@@ -53,7 +53,7 @@ test(`${usuario}: ninguna ruta muestra el empty state sin red tras preparar`, as
         req.onsuccess = req.onerror = req.onblocked = () => resolve()
       }),
   )
-  await page.getByLabel("Correo electrónico").fill(usuario)
+  await page.getByLabel("Correo o número de documento").fill(usuario)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()

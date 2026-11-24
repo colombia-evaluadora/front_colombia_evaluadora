@@ -55,7 +55,7 @@ async function persistedRows(page: Page): Promise<string[]> {
 
 async function login(page: Page, email: string, { shared }: { shared: boolean }) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(ACTIVIDADES)}`)
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   // Web en pestaña = compartido (por defecto); app instalada = personal.
   if (!shared) await usarComoEquipoPersonal(page)
@@ -79,6 +79,9 @@ async function openAccountMenu(page: Page) {
 async function logout(page: Page) {
   await openAccountMenu(page)
   await page.getByRole("menuitem", { name: "Cerrar sesión" }).click()
+  // App instalada: confirma antes de salir (conserva los datos, D-12).
+  const confirmar = page.getByRole("dialog").getByRole("button", { name: "Cerrar sesión", exact: true })
+  await confirmar.click({ timeout: 5_000 }).catch(() => undefined)
   await page.waitForURL((url) => url.pathname === "/login", { timeout: 15_000 })
 }
 
@@ -155,13 +158,13 @@ test("6.2 equipo personal: preparar, sin red, recargar y navegar con datos guard
   ).toBeVisible({ timeout: 15_000 })
   await shot(page, "f1-e-solo-en-linea")
 
-  // Logout sin red (§7.8): limpia igual las filas del usuario.
+  // Logout sin red en la app instalada (D-12): bloquea y CONSERVA las filas.
   await page.evaluate(() => {
     history.pushState({}, "", "/app/planeador/actividades")
     dispatchEvent(new PopStateEvent("popstate"))
   })
   await logout(page)
-  await expect.poll(async () => (await persistedRows(page)).length, { timeout: 10_000 }).toBe(0)
+  expect((await persistedRows(page)).length).toBeGreaterThan(0)
   await shot(page, "f1-f-logout-sin-red")
   await setApiFault(page, null)
 })
@@ -200,11 +203,8 @@ test("otro usuario en el mismo navegador no lee las filas del anterior", async (
   expect(rows.every((s) => s === "docente@example.com" || s === "user@example.com")).toBe(true)
   await expect(page.getByText(/^Datos del /)).toHaveCount(0)
 
-  // Logout online del segundo usuario: borra solo lo suyo.
+  // Logout del segundo usuario: no toca lo del docente (app instalada: conserva, D-12).
   await logout(page)
-  await expect
-    .poll(async () => (await persistedRows(page)).filter((s) => s === "user@example.com").length)
-    .toBe(0)
   expect((await persistedRows(page)).filter((s) => s === "docente@example.com")).toHaveLength(docenteRows)
 })
 
@@ -259,7 +259,7 @@ test("vista solo en línea sin red: empty state 'Esta sección necesita conexió
 test("web en pestaña = equipo compartido: sin pregunta y con aviso para instalar la app", async ({ page }) => {
   await page.goto("/login")
   await expect(page.getByRole("checkbox", { name: "Este es un equipo compartido" })).toHaveCount(0)
-  await expect(page.getByText("Para usar la plataforma sin internet, instale la aplicación en su equipo personal.")).toBeVisible()
+  await expect(page.getByText("Para usar la plataforma sin internet, instale la aplicación en su equipo personal.")).toBeVisible({ timeout: 30_000 })
 })
 
 test("Preparar desde el header: elegir grupos/asignaturas/periodos y sin red el botón queda deshabilitado", async ({

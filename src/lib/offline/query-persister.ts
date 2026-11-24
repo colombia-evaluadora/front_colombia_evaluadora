@@ -47,6 +47,7 @@ import {
   type DeviceMode,
   type PersistedQueryRow,
 } from "@/lib/offline/db"
+import { isInstalledPwa } from "@/lib/offline/install-detection"
 
 /** Subirlo cuando cambie la forma de cualquier dato persistido. */
 export const SCHEMA_VERSION = 1
@@ -221,6 +222,24 @@ export function getDeviceMode(): DeviceMode {
   return deviceMode
 }
 
+/**
+ * La app instalada y una pestaña del mismo navegador comparten IndexedDB. Esta
+ * marca dice que lo guardado es de la app instalada: la pestaña (equipo
+ * compartido) no lo usa, pero tampoco lo borra al entrar o salir.
+ */
+const INSTALLED_OWNER_KEY = "device-mode-owner"
+
+/** ¿Esta pestaña convive con los datos de la app instalada? (entonces no se tocan). */
+export async function tabSharesInstalledData(): Promise<boolean> {
+  if (isInstalledPwa() || !isIndexedDbAvailable()) return false
+  try {
+    return (await getMeta<string>(INSTALLED_OWNER_KEY)) === "installed"
+  } catch {
+    // Ante la duda no se borra: puede haber meses de datos preparados.
+    return true
+  }
+}
+
 export function getActivePersistUser(): string | null {
   return activeUser
 }
@@ -239,7 +258,10 @@ export function initOfflinePersistence(): Promise<void> {
       if (!isIndexedDbAvailable()) return
       try {
         const stored = await getMeta<DeviceMode>(DEVICE_MODE_KEY)
-        deviceMode = stored === "personal" ? "personal" : DEFAULT_DEVICE_MODE
+        // Lo guardado como personal antes de la marca, abierto ya desde la app.
+        if (stored === "personal" && isInstalledPwa()) await setMeta(INSTALLED_OWNER_KEY, "installed")
+        const esDeLaApp = await tabSharesInstalledData()
+        deviceMode = stored === "personal" && !esDeLaApp ? "personal" : DEFAULT_DEVICE_MODE
       } catch {
         deviceMode = DEFAULT_DEVICE_MODE
       }
@@ -254,9 +276,15 @@ export function initOfflinePersistence(): Promise<void> {
  */
 export async function setDeviceMode(mode: DeviceMode): Promise<void> {
   deviceMode = mode
+  // En la pestaña "compartido" vale solo para ella: los datos son de la app instalada.
+  if (await tabSharesInstalledData()) return
   if (mode === "compartido") clearArchivos()
   if (!isIndexedDbAvailable()) return
   await setMeta(DEVICE_MODE_KEY, mode)
+  if (isInstalledPwa()) {
+    if (mode === "personal") await setMeta(INSTALLED_OWNER_KEY, "installed")
+    else await deleteMeta(INSTALLED_OWNER_KEY)
+  }
   if (mode === "compartido") {
     cancelPendingWrites()
     resetWriteState()

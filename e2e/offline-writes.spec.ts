@@ -47,17 +47,17 @@ async function outboxStatuses(page: Page): Promise<string[]> {
 
 async function login(page: Page) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(ASISTENCIA)}`)
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
 }
 
-/** Abre el primer día con clases del calendario y usa "Marcar todo como Asistió". */
+/** Abre el primer día con clases del calendario y usa "Todos asistieron". */
 async function marcarTodos(page: Page) {
   await page.locator("[role=gridcell] button").first().click({ timeout: 30_000 })
-  const boton = page.getByRole("button", { name: "Marcar todo como Asistió" }).first()
+  const boton = page.getByRole("button", { name: "Todos asistieron" }).first()
   await expect(boton).toBeEnabled({ timeout: 30_000 })
   await boton.click()
 }

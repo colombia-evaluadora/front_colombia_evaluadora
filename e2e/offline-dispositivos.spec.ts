@@ -137,7 +137,7 @@ test("equipo registrado: sincroniza sin contraseña, se revoca con borrado y bor
   const page = await context.newPage()
   await limpiar(page)
 
-  await page.getByLabel("Correo electrónico").fill(USUARIO)
+  await page.getByLabel("Correo o número de documento").fill(USUARIO)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
@@ -197,7 +197,7 @@ test("unidad editada sin red y cambiada por otro: conflicto por VERSION y 'Conse
   test.setTimeout(150_000)
   await limpiar(page)
   await page.goto(`/login?redirectTo=${encodeURIComponent("/app/planeador/unidades")}`)
-  await page.getByLabel("Correo electrónico").fill(USUARIO)
+  await page.getByLabel("Correo o número de documento").fill(USUARIO)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()

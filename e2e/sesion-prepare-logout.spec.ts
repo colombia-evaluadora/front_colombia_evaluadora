@@ -22,7 +22,7 @@ async function login(page: Page, email: string, init?: () => void) {
   )
   if (init) await page.evaluate(init)
   await page.reload()
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
@@ -72,7 +72,7 @@ test("logout a mitad de Preparar: 0 requests después y a lo sumo un toast", asy
   expect(await countSessionToasts(page)).toBeLessThanOrEqual(1)
 
   // Al volver a entrar, la corrida quedó para "Continuar" (detenida por la sesión).
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
