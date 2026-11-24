@@ -23,7 +23,7 @@
  * - `buster = "${userSub}:${SCHEMA_VERSION}"`: subir `SCHEMA_VERSION` en un
  *   deploy invalida todo lo persistido.
  * - Escrituras agrupadas con throttle de 1 s; una entrada > 2 MB no se guarda;
- *   presupuesto de 50 MB por usuario con expulsión LRU (vencidas primero).
+ *   presupuesto de 200 MB por usuario con expulsión LRU (vencidas primero).
  * - En modo "equipo compartido" (o sin usuario activo) no se escribe nada.
  * - Solo se escribe lo que CAMBIÓ (`add-offline-preparar-incremental`): cada
  *   fila guarda la huella (`hashString`) de su JSON; si una query vuelve a
@@ -37,7 +37,7 @@ import { hydrate, type DehydratedState, type Query, type QueryClient } from "@ta
 import type { RecordedRequest } from "@/lib/offline/conditional-requests"
 import { hashString } from "@/lib/offline/content-hash"
 import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
-import { isEncrypted, isVaultLocked, loadVault, openString, sealString } from "@/lib/offline/vault"
+import { isEncrypted, isVaultLocked, vaultStore, loadVault, openString, sealString } from "@/lib/offline/vault"
 import {
   deleteMeta,
   getDb,
@@ -54,7 +54,7 @@ export const SCHEMA_VERSION = 1
 
 export const PERSIST_THROTTLE_MS = 1000
 export const MAX_ENTRY_BYTES = 2 * 1024 * 1024
-export const USER_BUDGET_BYTES = 50 * 1024 * 1024
+export const USER_BUDGET_BYTES = 200 * 1024 * 1024
 
 const DAY_MS = 864e5
 
@@ -69,6 +69,8 @@ export interface OfflineQueryOptions {
   /** Tiempo máximo (ms) que se restaura desde `dataUpdatedAt`. */
   ttl: number
   scope?: "user"
+  /** Solo se guarda con el PIN creado (cifrado) y nunca se vuelve a pedir sola. */
+  requierePin?: boolean
 }
 
 export interface OfflineQueryMeta {
@@ -338,6 +340,8 @@ export function parsePersisted(json: string): unknown {
 function toRow(query: Query, userSub: string, now: number): PersistedQueryRow | null {
   const meta = query.meta as OfflineQueryMeta | undefined
   const offline = meta?.offline
+  // Módulos sensibles: solo cifrados. Sin PIN no se guardan.
+  if (offline?.requierePin && vaultStore.get() !== "abierta") return null
   if (!offline || query.state.status !== "success" || query.state.data === undefined) return null
   const data = meta.persistSelect ? meta.persistSelect(query.state.data) : query.state.data
   let json: string

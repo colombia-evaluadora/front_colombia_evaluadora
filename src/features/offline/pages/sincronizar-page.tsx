@@ -54,7 +54,7 @@ export function SincronizarPage() {
     if (fase !== "sincronizando" || summary.syncing) return
     setFase("refrescando")
     void queryClient
-      .refetchQueries({ predicate: (query) => Boolean(query.meta?.offline), type: "all" })
+      .refetchQueries({ predicate: (query) => Boolean(query.meta?.offline) && !query.meta?.offline?.requierePin, type: "all" })
       .catch(() => undefined)
       .finally(() => setFase("terminado"))
   }, [fase, summary.syncing, queryClient])

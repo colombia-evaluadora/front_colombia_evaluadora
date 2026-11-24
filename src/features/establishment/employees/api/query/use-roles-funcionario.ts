@@ -47,15 +47,17 @@ const toRolAsignado = (row: RolAsignadoRow): RolAsignado => ({
   canRestrict: row.puede_permisos === true,
 })
 
+export async function fetchRolesFuncionario(funcionarioId: number, establishmentId: number) {
+  const rows = await evalCol.getRows<RolAsignadoRow>(
+    `/establecimientos/funcionarios/${funcionarioId}/roles?establecimiento=${establishmentId}`,
+  )
+  return rows.map(toRolAsignado)
+}
+
 export function useRolesFuncionarioQuery(funcionarioId: number | null, establishmentId: number | null) {
   return useQuery({
     queryKey: employeeKeys.roles(funcionarioId, establishmentId),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<RolAsignadoRow>(
-        `/establecimientos/funcionarios/${funcionarioId}/roles?establecimiento=${establishmentId}`,
-      )
-      return rows.map(toRolAsignado)
-    },
+    queryFn: () => fetchRolesFuncionario(funcionarioId as number, establishmentId as number),
     enabled: funcionarioId != null && establishmentId != null,
   })
 }
@@ -113,14 +115,16 @@ export const toPermisoVista = (row: PermisoVistaRow): PermisoVista => ({
   delete: row.eliminar === true,
 })
 
+export async function fetchPermisosRol(asignacionId: number) {
+  const rows = await evalCol.getRows<PermisoVistaRow>(`/establecimientos/funcionarios/roles/${asignacionId}/permisos`)
+  return rows.map(toPermisoVista)
+}
+
 /** Árbol de vistas del rol asignado, módulos antes que sus submódulos. */
 export function usePermisosRolQuery(funcionarioId: number | null, asignacionId: number | null) {
   return useQuery({
     queryKey: employeeKeys.permisosRol(funcionarioId, asignacionId),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<PermisoVistaRow>(`/establecimientos/funcionarios/roles/${asignacionId}/permisos`)
-      return rows.map(toPermisoVista)
-    },
+    queryFn: () => fetchPermisosRol(asignacionId as number),
     enabled: asignacionId != null,
   })
 }

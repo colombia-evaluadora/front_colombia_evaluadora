@@ -200,7 +200,7 @@ describe("getOfflineBannerMessage", () => {
     )
   })
   it("offline en vista solo en línea", () => {
-    expect(getOfflineBannerMessage({ status: "offline", since }, "/app/cobertura/reserva-de-cupo")).toBe(
+    expect(getOfflineBannerMessage({ status: "offline", since }, "/app/mis-dispositivos")).toBe(
       "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador, Planilla, Asistencia, Informes y Referentes.",
     )
   })

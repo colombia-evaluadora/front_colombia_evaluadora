@@ -17,6 +17,8 @@ const CAPACIDADES: CapacidadesGe = {
 
 /** Capacidades de página de Gestión Estudiantil: una fila con todo habilitado. */
 export const geCapacidadesHandlers = [
+  // Sin datos de prueba: lista vacía, para que Preparar no la cuente como falla.
+  http.get("/api/eval-col/gestion-estudiantil/observaciones-sugerencias", () => HttpResponse.json({ rows: [] })),
   http.get("/api/eval-col/gestion-estudiantil/capacidades", async () => {
     await delay(80)
     return HttpResponse.json({ rows: [CAPACIDADES] })

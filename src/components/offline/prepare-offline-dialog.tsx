@@ -32,6 +32,7 @@ import {
 } from "@/components/offline/prepare-offline-plan"
 import { OnlineOnlyTooltip } from "@/components/offline/online-only-tooltip"
 import { StorageStatusCard } from "@/components/offline/storage-status-card"
+import { vaultStore } from "@/lib/offline/vault"
 import { PinSetupCard } from "@/components/offline/pin-setup-card"
 import { InstallAppNotice } from "@/components/offline/install-app-notice"
 import { useUser } from "@/lib/auth"
@@ -381,7 +382,10 @@ export function PrepareOfflineDialog({
 
   const enCurso = snapshot.running || snapshot.remote != null
   const reanudable = !enCurso && hasResumableCheckpoint()
-  const disabled = shared || onlineOnly.disabled || enCurso
+  // PIN obligatorio: sin él no se descarga nada al equipo.
+  const vault = useSyncExternalStore(vaultStore.subscribe, vaultStore.get, () => "sin-pin" as const)
+  const sinPin = !shared && vault === "sin-pin"
+  const disabled = shared || sinPin || onlineOnly.disabled || enCurso
   const cargandoOpciones = options.fetchStatus === "fetching" && options.isPending
   const lastPrepare = snapshot.lastPrepareAt
 
@@ -427,13 +431,14 @@ export function PrepareOfflineDialog({
         <DialogHeader className="min-w-0 shrink-0 pr-8">
           <DialogTitle>Preparar para usar sin conexión</DialogTitle>
           <DialogDescription>
-            Guarda en este equipo lo que necesita para trabajar sin internet. Solo pulse «Preparar
-            este equipo»: tarda unos minutos y puede seguir usando la plataforma mientras tanto.
+            Guarda en este equipo lo que necesita para trabajar sin internet. Tarda unos minutos y
+            puede seguir usando la plataforma mientras tanto.
           </DialogDescription>
         </DialogHeader>
 
         <div className="scrollbar-slim -mx-6 flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-6 text-sm">
           {shared && <InstallAppNotice />}
+          {sinPin && !onlineOnly.disabled && <PinSetupCard onCreated={iniciar} />}
           {!shared && onlineOnly.disabled && !enCurso && (
             <Alert>
               <CloudOffIcon />
@@ -462,7 +467,7 @@ export function PrepareOfflineDialog({
             </p>
           )}
 
-          {!shared && !onlineOnly.disabled && (
+          {!shared && !sinPin && !onlineOnly.disabled && (
             <>
               <p className="text-muted-foreground" data-slot="prepare-scope">
                 {scope}
@@ -570,15 +575,14 @@ export function PrepareOfflineDialog({
             </>
           )}
 
-          {!shared && <StorageStatusCard />}
-          {!shared && <PinSetupCard />}
+          {!shared && !sinPin && <StorageStatusCard />}
         </div>
 
         <DialogFooter className="min-w-0 shrink-0">
           <Button variant="outline" color="neutral" onClick={() => onOpenChange(false)}>
-            Cerrar
+            {sinPin ? "Ahora no" : "Cerrar"}
           </Button>
-          {!shared && !enCurso && (
+          {!shared && !sinPin && !enCurso && (
             <Button disabled={disabled || cargandoOpciones} onClick={iniciar}>
               {primaryLabel}
             </Button>

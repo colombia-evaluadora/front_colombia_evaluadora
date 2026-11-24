@@ -2,22 +2,14 @@ import { useQuery } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { WarningIcon } from "@/components/ui/icons"
-import { evalCol } from "@/lib/eval-col-client"
+import { fetchSolicitudesPendientes } from "@/features/coverage/matricula/api/query/fetch-solicitudes-pendientes"
 import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
-
-interface ConteoRow {
-  retiros_sin_responder: number
-  anulaciones_pendientes: number
-}
 
 /** Conteo de la Sección 2.2, en las Sedes y Jornadas del usuario. Cuelga de la lista: se refresca al responder. */
 function useSolicitudesPendientesQuery() {
   return useQuery({
     queryKey: matriculaKeys.solicitudesPendientes(),
-    queryFn: async () => {
-      const row = await evalCol.getRow<ConteoRow>("/matricula/solicitudes-pendientes")
-      return { retiros: row.retiros_sin_responder ?? 0, anulaciones: row.anulaciones_pendientes ?? 0 }
-    },
+    queryFn: fetchSolicitudesPendientes,
   })
 }
 

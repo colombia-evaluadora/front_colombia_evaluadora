@@ -36,21 +36,23 @@ export interface SaludMentalParams {
   pageSize: number
 }
 
+export const fetchSaludMental = async (params: SaludMentalParams) => {
+  const rows = await evalCol.getRows<SenalSMRow>(
+    `${BASE_PREVENCION}/salud-mental${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /salud-mental`: señales que la persona ve, más recientes primero; `total_count` viene en cada fila. */
 export function useSaludMentalQuery(params: SaludMentalParams) {
   return useQuery({
     queryKey: prevencionKeys.saludMental(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<SenalSMRow>(
-        `${BASE_PREVENCION}/salud-mental${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchSaludMental(params),
     enabled: params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,

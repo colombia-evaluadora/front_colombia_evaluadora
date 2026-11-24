@@ -41,6 +41,18 @@ export interface ObservacionesParams {
   pageSize: number
 }
 
+export const fetchObservaciones = async (params: ObservacionesParams) => {
+  const rows = await evalCol.getRows<ObservacionRow>(
+    `${BASE_OBSERVACIONES}${queryString({
+      ...params.filters,
+      LIMITE: params.pageSize,
+      OFFSET: params.pageIndex * params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /**
  * `GET /observaciones-sugerencias`: el alcance lo aplica el backend (el Responsable de grupo ve las de
  * sus grupos; Rector y Coordinador, las de su sede); las anuladas vienen marcadas. Pagina con
@@ -49,30 +61,22 @@ export interface ObservacionesParams {
 export function useObservacionesQuery(params: ObservacionesParams) {
   return useQuery({
     queryKey: observacionesKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<ObservacionRow>(
-        `${BASE_OBSERVACIONES}${queryString({
-          ...params.filters,
-          LIMITE: params.pageSize,
-          OFFSET: params.pageIndex * params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchObservaciones(params),
     enabled: params.filters != null,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchObservacion = (observacionId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_OBSERVACIONES}/${observacionId}`)
+    .then((r) => desenvolver<ObservacionDetalle>(r[0], "datos", "No se encontró la observación solicitada."))
+
 /** `GET /observaciones-sugerencias/:ID`: la fila con conteo, período y anulación, en la columna `datos`. */
 export function useObservacionQuery(observacionId: number | undefined) {
   return useQuery({
     queryKey: observacionesKeys.detalle(observacionId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_OBSERVACIONES}/${observacionId}`)
-        .then((r) => desenvolver<ObservacionDetalle>(r[0], "datos", "No se encontró la observación solicitada.")),
+    queryFn: () => fetchObservacion(observacionId),
     enabled: observacionId != null,
   })
 }

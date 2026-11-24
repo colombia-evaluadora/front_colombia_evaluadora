@@ -15,7 +15,8 @@ import { CloudAlertIcon, CloudCheckIcon, CloudOffIcon, CloudSyncIcon } from "@/c
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Progress } from "@/components/ui/progress"
 import { getOfflineMode } from "@/lib/offline/offline-mode"
-import { getDeviceMode } from "@/lib/offline/query-persister"
+import { hasVault } from "@/lib/offline/vault"
+import { getActivePersistUser, getDeviceMode } from "@/lib/offline/query-persister"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
 import { hasResumableCheckpoint,
@@ -106,6 +107,20 @@ export function OfflineDataStatus() {
   const hace = useHaceCuanto(snapshot.lastPrepareAt)
   useEffect(() => listenPrepareChannel(), [])
   useCompletionToast(snapshot, () => setOpen(true))
+  // Sin PIN nada se prepara solo: se invita una vez por sesión (se puede dejar para después).
+  useEffect(() => {
+    if (getDeviceMode() !== "personal" || getOfflineMode() === "off" || onlineOnly.disabled) return
+    const t = setTimeout(() => {
+      const sub = getActivePersistUser()
+      if (!sub || sessionStorage.getItem("ce-pin-invitado")) return
+      void hasVault(sub).then((tiene) => {
+        if (tiene) return
+        sessionStorage.setItem("ce-pin-invitado", "1")
+        setOpen(true)
+      })
+    }, 4_000)
+    return () => clearTimeout(t)
+  }, [onlineOnly.disabled])
   if (getDeviceMode() !== "personal" || getOfflineMode() === "off") return null
 
   const enCurso = snapshot.running || snapshot.remote != null

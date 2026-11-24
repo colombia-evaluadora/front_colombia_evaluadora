@@ -16,7 +16,7 @@ const SESSION_STATUS_OPTIONS: SessionStatusOption[] = [
   { key: "closed", label: "Cerrada" },
 ]
 
-function fetchAuditSessionStatuses(): Promise<SessionStatusOption[]> {
+export function fetchAuditSessionStatuses(): Promise<SessionStatusOption[]> {
   if (!env.ENABLE_API_MOCKING) return Promise.resolve(SESSION_STATUS_OPTIONS)
   return api.get("/audit-session-statuses")
 }

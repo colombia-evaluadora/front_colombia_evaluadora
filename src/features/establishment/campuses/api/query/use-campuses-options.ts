@@ -47,7 +47,7 @@ function toCampus(row: RealCampusOptionRow): Campus {
   }
 }
 
-async function fetchCampusesOptions(): Promise<Campus[]> {
+export async function fetchCampusesOptions(): Promise<Campus[]> {
   if (env.ENABLE_API_MOCKING) {
     const result: CampusesOptionsResult = await api.get("/establishments/campuses/options")
     return result.rows

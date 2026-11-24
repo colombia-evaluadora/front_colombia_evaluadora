@@ -141,6 +141,13 @@ const toFicha = (raw: Extract<FichaRaw, { entrante: false }>): ReservaFicha => {
   }
 }
 
+export async function fetchReservaFicha(id: string): Promise<ReservaFichaResult> {
+  const [row] = await evalCol.getRows<{ datos: FichaRaw }>(`${RESERVAS_BASE}/${id}/ficha`)
+  const raw = row?.datos
+  if (!raw) throw new Error("No se encontró la reserva de cupo.")
+  return raw.entrante ? { entrante: true, reserva: raw.reserva } : toFicha(raw)
+}
+
 /**
  * Ver detalle y Asignar grupo (3.6): la ficha de matrícula de la reserva con la forma del detalle
  * de matrícula (`GET /reservas-cupo/:ID/ficha`, V510).
@@ -148,12 +155,7 @@ const toFicha = (raw: Extract<FichaRaw, { entrante: false }>): ReservaFicha => {
 export function useReservaFichaQuery(id: string) {
   return useQuery({
     queryKey: reservaKeys.ficha(id),
-    queryFn: async (): Promise<ReservaFichaResult> => {
-      const [row] = await evalCol.getRows<{ datos: FichaRaw }>(`${RESERVAS_BASE}/${id}/ficha`)
-      const raw = row?.datos
-      if (!raw) throw new Error("No se encontró la reserva de cupo.")
-      return raw.entrante ? { entrante: true, reserva: raw.reserva } : toFicha(raw)
-    },
+    queryFn: () => fetchReservaFicha(id),
     enabled: Boolean(id),
   })
 }

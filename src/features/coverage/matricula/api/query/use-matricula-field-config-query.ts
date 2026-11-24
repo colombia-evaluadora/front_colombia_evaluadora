@@ -44,7 +44,7 @@ export function toMatriculaFieldConfig(row: MatriculaFieldConfigRow): MatriculaF
 }
 
 // Sin establecimiento responde el único que administra (22023 si son varios).
-async function fetchMatriculaFieldConfig(establecimientoId: number | null): Promise<MatriculaFieldConfig> {
+export async function fetchMatriculaFieldConfig(establecimientoId: number | null): Promise<MatriculaFieldConfig> {
   const query = establecimientoId != null ? `?FK_ESTABLECIMIENTO=${establecimientoId}` : ""
   const [row] = await evalCol.getRows<{ config: MatriculaFieldConfigRow }>(
     `/matricula/configuracion${query}`,
