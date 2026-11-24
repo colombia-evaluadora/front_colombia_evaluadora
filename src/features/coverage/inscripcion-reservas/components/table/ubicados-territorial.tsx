@@ -363,7 +363,7 @@ function LiberarDialog({
           <Button
             type="submit"
             form="liberar-ubicacion-form"
-            color="destructive"
+            color="primary"
             disabled={liberar.isPending}
           >
             {liberar.isPending ? (

@@ -562,7 +562,7 @@ function ConfirmRemovalsDialog({
             <XIcon data-icon="inline-start" />
             Cancelar
           </AlertDialogCancel>
-          <AlertDialogAction color="destructive" disabled={busy} onClick={onConfirm}>
+          <AlertDialogAction color="primary" disabled={busy} onClick={onConfirm}>
             Confirmar cambio
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -93,6 +93,8 @@ export function CampusesDataTable({ title, action }: CampusesDataTableProps) {
 
       <TableScreenBody>
         <DataTable
+          // Inactivos atenuados (reglas de UI); los íconos del hover quedan al 100%.
+          isRowMuted={(row) => row.original.status === "I"}
           table={table}
           isPending={isPending}
           isError={isError}

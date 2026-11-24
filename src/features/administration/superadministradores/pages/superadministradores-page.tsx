@@ -24,7 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, ControlPointIcon, SpinnerIcon, XIcon, FunnelXIcon } from "@/components/ui/icons"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckIcon, ControlPointIcon, ProhibitIcon, SpinnerIcon, WarningIcon, XIcon, FunnelXIcon } from "@/components/ui/icons"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage, isConflictError } from "@/lib/api-client"
@@ -92,6 +93,8 @@ function SuperadministradoresPageContent() {
   const { data: lista = [], isPending, isError, error, refetch } = useSuperadministradoresQuery()
 
   const filtrados = lista.filter((s) => coincide(s, filters))
+  // S.6.LIS.1a: con un solo activo, aviso fijo (no bloquea nada); desaparece al crear otro.
+  const unSoloActivo = !isPending && lista.filter((s) => s.activo).length === 1
   const [orden] = paginacion.sorting
   const ordenados = orden
     ? [...filtrados].sort((a, b) => {
@@ -195,6 +198,14 @@ function SuperadministradoresPageContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
+        {unSoloActivo ? (
+          <Alert variant="warning" className="mb-4">
+            <WarningIcon aria-hidden="true" />
+            <AlertDescription>
+              Solo hay un Superadministrador activo. Cree otro para poder recuperar la cuenta si pierde el acceso.
+            </AlertDescription>
+          </Alert>
+        ) : null}
         {/* Sin estado vacío de catálogo: siempre hay al menos uno (Sección 7). Solo
             el de una búsqueda sin coincidencias. */}
         <DataTable
@@ -203,6 +214,8 @@ function SuperadministradoresPageContent() {
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
+          // Inactivos atenuados; los íconos del hover quedan al 100%.
+          isRowMuted={(row) => !row.original.activo}
           emptyMessage={
             <span className="flex flex-col items-center gap-3">
               No hay superadministradores que coincidan con la búsqueda y los filtros aplicados.
@@ -261,7 +274,7 @@ function SuperadministradoresPageContent() {
               {estado.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
-                <CheckIcon data-icon="inline-start" />
+                <ProhibitIcon data-icon="inline-start" />
               )}
               Inactivar
             </AlertDialogAction>
@@ -272,11 +285,16 @@ function SuperadministradoresPageContent() {
       <AlertDialog open={bloqueo != null} onOpenChange={(open) => !open && setBloqueo(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>No se puede inactivar a {bloqueo?.nombre}</AlertDialogTitle>
+            {/* Aviso de bloqueo (CLAUDE.md §13): ícono rojo junto al título y un solo «Entendido». */}
+            <AlertDialogTitle className="flex items-center gap-2.5">
+              <ProhibitIcon aria-hidden className="size-6 shrink-0 text-red" />
+              No se puede inactivar a {bloqueo?.nombre}
+            </AlertDialogTitle>
             <AlertDialogDescription>{bloqueo?.mensaje}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction color="primary" onClick={() => setBloqueo(null)}>
+              <CheckIcon data-icon="inline-start" />
               Entendido
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -605,7 +605,7 @@ function CerrarSinRetiroDialog({
           <Button
             type="submit"
             form="cerrar-sin-retiro-form"
-            color="destructive"
+            color="primary"
             disabled={cerrar.isPending}
           >
             {cerrar.isPending && <Spinner data-icon="inline-start" />}

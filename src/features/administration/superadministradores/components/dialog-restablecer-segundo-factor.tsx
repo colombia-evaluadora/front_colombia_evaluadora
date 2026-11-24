@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { WarningIcon, XIcon } from "@/components/ui/icons"
+import { KeyIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { getErrorMessage } from "@/lib/api-client"
 import { useRestablecerSegundoFactor } from "@/features/cuenta/api/cuenta"
 import type { Superadministrador } from "@/features/administration/superadministradores/api/types/superadministrador"
@@ -59,15 +60,28 @@ export function DialogRestablecerSegundoFactor({
             <AlertDescription>{getErrorMessage(restablecer.error)}</AlertDescription>
           </Alert>
         )}
+        {/* Como el Motivo de los demás modales: label flotante con *, recuadro y contador n / 500 (S.6.FAC.1). */}
         <Field variant="outlined">
-          <FieldLabel htmlFor="motivo-2fa">Motivo</FieldLabel>
-          <Textarea id="motivo-2fa" value={motivo} maxLength={500} onChange={(e) => setMotivo(e.target.value)} />
-          <FieldDescription>Entre 10 y 500 caracteres.</FieldDescription>
+          <FieldLabel htmlFor="motivo-2fa">
+            Motivo<span data-required-mark="">*</span>
+          </FieldLabel>
+          <Textarea
+            id="motivo-2fa"
+            rows={3}
+            value={motivo}
+            maxLength={500}
+            className={TEXTAREA_OUTLINED}
+            onChange={(e) => setMotivo(e.target.value)}
+          />
+          <span className="flex justify-between gap-2">
+            <FieldDescription>Entre 10 y 500 caracteres.</FieldDescription>
+            <CharacterCounter value={motivo} max={500} />
+          </span>
         </Field>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline" color="neutral" disabled={restablecer.isPending}><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <Button
-            color="destructive"
+            color="primary"
             disabled={!valido || restablecer.isPending || !s}
             onClick={() =>
               s &&
@@ -82,7 +96,8 @@ export function DialogRestablecerSegundoFactor({
               )
             }
           >
-            {restablecer.isPending && <Spinner data-icon="inline-start" />}
+            {/* El mismo ícono de la acción en la tabla (llave). */}
+            {restablecer.isPending ? <Spinner data-icon="inline-start" /> : <KeyIcon data-icon="inline-start" />}
             Confirmar restablecimiento
           </Button>
         </AlertDialogFooter>

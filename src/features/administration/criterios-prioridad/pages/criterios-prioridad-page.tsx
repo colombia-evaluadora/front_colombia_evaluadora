@@ -153,6 +153,8 @@ function CriteriosPrioridadPageContent() {
 
       <TableScreenBody>
         <DataTable
+          // Inactivos atenuados (reglas de UI); los íconos del hover quedan al 100%.
+          isRowMuted={(row) => !row.original.habilitado}
           table={table}
           isPending={isPending}
           isError={isError}

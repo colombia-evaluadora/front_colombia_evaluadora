@@ -72,6 +72,17 @@ export const authHandlers = [
       uri: "otpauth://totp/Control%20Escolar:demo?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=Control%20Escolar",
     }),
   ),
+  // Restablecer el segundo factor de otro Superadministrador (S.6.FAC.1): sin mock salía al backend real.
+  // Valida el motivo como el back (10 a 500) y responde vacío, como el endpoint real.
+  http.post("/api/auth/segundo-factor/restablecer", async ({ request }) => {
+    await delay(300)
+    const body = (await request.json()) as { correo?: string; motivo?: string }
+    const motivo = body.motivo?.trim() ?? ""
+    if (motivo.length < 10 || motivo.length > 500) {
+      return HttpResponse.json({ message: "El motivo debe tener entre 10 y 500 caracteres." }, { status: 400 })
+    }
+    return new HttpResponse(null, { status: 204 })
+  }),
   http.post("/api/auth/segundo-factor/activar/confirmar", () =>
     HttpResponse.json({
       codigosRespaldo: ["K4P7-Q2XM9", "T8RW-3NVZ6", "M2HC-7YPQ4", "B6FJ-9KXT2", "W3QD-5MRP8",

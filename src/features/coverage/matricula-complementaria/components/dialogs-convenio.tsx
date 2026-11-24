@@ -268,7 +268,6 @@ export function DialogRechazarConvenio({ convenio: c, onOpenChange }: { convenio
         <Botones
           onCancel={() => onOpenChange(false)}
           pending={rechazar.isPending}
-          destructivo
           label="Rechazar"
           icon={<XIcon data-icon="inline-start" />}
           onConfirm={() => {
@@ -312,7 +311,6 @@ export function DialogFinalizarConvenio({ convenio: c, onOpenChange }: { conveni
         <Botones
           onCancel={() => onOpenChange(false)}
           pending={finalizar.isPending}
-          destructivo
           label="Finalizar"
           icon={<ProhibitIcon data-icon="inline-start" />}
           onConfirm={() => {

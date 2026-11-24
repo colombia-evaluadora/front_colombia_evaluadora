@@ -197,7 +197,6 @@ export function DialogLiberarCupo({ postulacion: p, onOpenChange }: { postulacio
         <Pie
           onCancel={() => onOpenChange(false)}
           pending={liberar.isPending}
-          destructivo
           label="Liberar cupo"
           icon={<PersonRemoveIcon data-icon="inline-start" />}
           onConfirm={() =>

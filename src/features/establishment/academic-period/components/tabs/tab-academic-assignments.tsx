@@ -200,6 +200,8 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
 
       <DataTable
+        // Inactivos atenuados (reglas de UI); los íconos del hover quedan al 100%.
+        isRowMuted={(row) => row.original.status !== "A"}
         table={table}
         isPending={isPending}
         isError={isError}

@@ -59,6 +59,7 @@ function DialogMotivo({
   icono,
   exito,
   enviar,
+  destructivo = false,
 }: Omit<DialogProps, "reserva"> & {
   titulo: ReactNode
   subtitulo: ReactNode
@@ -67,6 +68,8 @@ function DialogMotivo({
   motivos: OpcionCatalogo[]
   efecto?: ReactNode
   boton: string
+  /** Rojo solo si borra o apaga (CLAUDE.md §13): el retiro; liberar y rechazar son decisiones (azul). */
+  destructivo?: boolean
   icono: ReactNode
   exito: string
   enviar: {
@@ -136,7 +139,7 @@ function DialogMotivo({
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
-          <Button type="submit" form={FORM_ID} color="destructive" disabled={enviar.isPending}>
+          <Button type="submit" form={FORM_ID} color={destructivo ? "destructive" : "primary"} disabled={enviar.isPending}>
             {enviar.isPending ? <Spinner data-icon="inline-start" /> : icono}
             {boton}
           </Button>
@@ -218,6 +221,7 @@ export function RegistrarRetiroDialog({ reserva, ...props }: DialogProps) {
         </Aviso>
       }
       boton="Registrar retiro"
+      destructivo
       icono={<PersonRemoveIcon data-icon="inline-start" />}
       exito={`Se registró el retiro de ${r.estudiante}.`}
       enviar={{

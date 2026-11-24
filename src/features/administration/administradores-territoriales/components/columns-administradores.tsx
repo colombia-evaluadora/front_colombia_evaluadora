@@ -47,7 +47,7 @@ export function createAdministradoresColumns({
         const s = row.original
         return (
           <span className="flex flex-wrap items-center gap-1.5 font-medium">
-            <span className={s.activo ? undefined : "text-muted-foreground"}>{s.nombre}</span>
+            <span>{s.nombre}</span>
             {s.activo && s.pendienteActivacion && (
               <Badge variant="soft" color="warning">
                 Pendiente de activación
@@ -82,7 +82,7 @@ export function createAdministradoresColumns({
             Activo
           </Badge>
         ) : (
-          <Badge variant="outline" color="neutral">
+          <Badge variant="soft" color="neutral">
             Inactivo
           </Badge>
         ),

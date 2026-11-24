@@ -299,7 +299,7 @@ function DialogValidarActividad({
           <Button
             type="button"
             variant={declinando ? "fill" : "outline"}
-            color="destructive"
+            color="primary"
             size="sm"
             disabled={resolver.isPending || soloEnLinea.disabled}
             title={soloEnLinea.tooltip ?? undefined}

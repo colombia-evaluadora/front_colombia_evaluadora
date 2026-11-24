@@ -105,8 +105,7 @@ export function createAcademicAssignmentColumns({
             Activa
           </Badge>
         ) : (
-          <Badge variant="outline" color="neutral">
-            <span aria-hidden className="size-1.5 rounded-full bg-current" />
+          <Badge variant="soft" color="neutral">
             Inactiva
           </Badge>
         ),

@@ -164,7 +164,7 @@ function SilenciarDialog({
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
-          <Button type="submit" form={id} color="destructive" disabled={silenciar.isPending} aria-busy={silenciar.isPending}>
+          <Button type="submit" form={id} color="primary" disabled={silenciar.isPending} aria-busy={silenciar.isPending}>
             Silenciar
           </Button>
         </DialogFooter>

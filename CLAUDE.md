@@ -500,5 +500,6 @@ Las definió el equipo de diseño (ajustadas a lo acordado en §7): el prototipo
 - Interruptores, radios y grupos de casillas: dentro de `MarcoOpciones` (`src/components/marco-opciones.tsx`).
 - Modales de formulario: **sin X en la esquina si el pie tiene Cancelar/Volver** (`showCloseButton={false}`); la X solo en modales sin botón de cierre en el pie. Cancelar con `XIcon` (outline neutral) y el primario azul a la derecha; nota «Los campos marcados con * son obligatorios» en la línea de los botones.
 - Campos de solo lectura con candado; contador «n / máx» en los campos con límite.
+- Color del botón principal: **rojo (`color="destructive"`) solo si borra o apaga un registro**: Eliminar, Borrar, Quitar, Remover, Anular, Inactivar, Desactivar, Revocar, Suspender, Retirar (matrícula, miembro, mensaje, soporte), Desvincular y los «Salir sin guardar» que descartan cambios. **Todo lo demás va azul (`primary`)**, aunque no se pueda deshacer: Disponer, Restablecer segundo factor, Aprobar, Rechazar, Declinar, Liberar, Finalizar, Confirmar. Lo que advierte que no hay vuelta atrás es el texto del modal, no el color.
 - Avisos de bloqueo: ícono rojo junto al título, nombres en negrita y un solo botón primario «Entendido».
 - Ítems destructivos de un menú desplegable: `DropdownMenuItem variant="destructive"` (rojo).

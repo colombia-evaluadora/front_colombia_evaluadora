@@ -62,7 +62,7 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       meta: { label: "Estado" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       cell: ({ row }) => (
-        <Badge variant="soft" color={row.original.habilitado ? "success" : "muted"}>
+        <Badge variant="soft" color={row.original.habilitado ? "success" : "neutral"}>
           {row.original.habilitado ? "Activo" : "Inactivo"}
         </Badge>
       ),
