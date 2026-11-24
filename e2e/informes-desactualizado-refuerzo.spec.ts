@@ -23,7 +23,7 @@ async function shot(page: Page, name: string) {
 
 async function login(page: Page, email: string, to: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(to)}`)
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))

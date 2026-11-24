@@ -10,6 +10,7 @@ import {
   activatePersistUser,
   clearUserData,
   flushPersistQueue,
+  getDeviceMode,
   getLastUserSub,
   initOfflinePersistence,
   makeBuster,
@@ -338,4 +339,43 @@ describe("cifrado en reposo con PIN (D-8)", () => {
     expect(fresh.getQueryData(["planeador", "x"])).toEqual({ nota: 4.5 })
     vault.__resetVaultForTests()
   }, 30_000)
+})
+
+describe("app instalada y pestaña en el mismo navegador", () => {
+  const instalada = (si: boolean) =>
+    vi.stubGlobal("window", { matchMedia: (q: string) => ({ matches: si && q === "(display-mode: standalone)" }) })
+
+  beforeEach(resetDb)
+  afterEach(() => vi.unstubAllGlobals())
+
+  async function modoGuardado() {
+    return (await getDb()).get("meta", "device-mode-owner")
+  }
+
+  it("entrar por la pestaña no borra lo guardado por la app", async () => {
+    instalada(true)
+    await setDeviceMode("personal")
+    await saveOnlineSession({ sub: A, name: "A", email: A, roles: [] } as never)
+    expect(await modoGuardado()).toBeTruthy()
+
+    instalada(false)
+    __resetPersisterForTests()
+    await initOfflinePersistence()
+    expect(getDeviceMode()).toBe("compartido")
+    await setDeviceMode("compartido")
+    expect(await (await getDb()).count("session")).toBe(1)
+
+    instalada(true)
+    __resetPersisterForTests()
+    await initOfflinePersistence()
+    expect(getDeviceMode()).toBe("personal")
+  })
+
+  it("sin app instalada, entrar como compartido sigue borrando todo", async () => {
+    instalada(false)
+    await setDeviceMode("personal")
+    await saveOnlineSession({ sub: A, name: "A", email: A, roles: [] } as never)
+    await setDeviceMode("compartido")
+    expect(await (await getDb()).count("session")).toBe(0)
+  })
 })

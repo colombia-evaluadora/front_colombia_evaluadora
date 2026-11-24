@@ -7,14 +7,16 @@ import { reintegracionKeys } from "@/features/gestion-estudiantil/reintegracion/
 import { BASE_REINTEGRACION } from "@/features/gestion-estudiantil/reintegracion/api/query/use-casos-query"
 import type { PermisosReintegracion } from "@/features/gestion-estudiantil/reintegracion/api/types"
 
+export const fetchPermisosReintegracion = (establecimiento: number | null) =>
+  evalCol
+    .getRows<PermisosReintegracion>(`${BASE_REINTEGRACION}/permisos${queryString({ ESTABLECIMIENTO: establecimiento })}`)
+    .then((r) => r[0] ?? { puede_abrir: false })
+
 /** `GET /permisos`: `puede_abrir` decide el botón «+ Abrir caso». */
 export function usePermisosReintegracionQuery(establecimiento: number | null) {
   return useQuery({
     queryKey: reintegracionKeys.permisos(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<PermisosReintegracion>(`${BASE_REINTEGRACION}/permisos${queryString({ ESTABLECIMIENTO: establecimiento })}`)
-        .then((r) => r[0] ?? { puede_abrir: false }),
+    queryFn: () => fetchPermisosReintegracion(establecimiento),
     enabled: establecimiento != null,
     retry: false,
     staleTime: 60_000,

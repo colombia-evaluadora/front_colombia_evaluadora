@@ -23,12 +23,12 @@ test("recarga sin red sirve el app shell desde el precache", async ({ page, cont
   await expect
     .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
     .toBe(true)
-  await expect(page.getByLabel("Correo electrónico")).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByLabel("Correo o número de documento")).toBeVisible({ timeout: 30_000 })
 
   await context.setOffline(true)
   await page.reload()
   await expect(page).toHaveTitle("Colombia Evaluadora")
-  await expect(page.getByLabel("Correo electrónico")).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByLabel("Correo o número de documento")).toBeVisible({ timeout: 30_000 })
 
   // Navegación profunda que nunca se visitó: el fallback responde index.html.
   await page.goto("/verificar/b/ABC123")

@@ -44,6 +44,8 @@ export const planeadorKeys = {
     lista: () => [...actividadesAll, "lista"] as const,
     /** Rail por día (`/actividades/mias`). */
     mias: <P>(params: P) => [...actividadesAll, "mias", params] as const,
+    /** Listado completo guardado para armar el rail de cualquier día sin red. */
+    miasTodas: <P>(params: P) => [...actividadesAll, "mias-todas", params] as const,
     /** Calendario mensual (`/actividades/calendario`). */
     calendario: <P>(params: P) => [...actividadesAll, "calendario", params] as const,
     /** Cards de resumen (`/actividades/stats`). */

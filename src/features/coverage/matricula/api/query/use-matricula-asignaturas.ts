@@ -33,19 +33,21 @@ export interface MatriculaAsignaturasData {
   institucionExterna: string
 }
 
+export async function fetchMatriculaAsignaturas(matriculaId: string): Promise<MatriculaAsignaturasData> {
+  const rows = await evalCol.getRows<AsignaturaRow>(`/cobertura-academica/matricula/${matriculaId}/asignaturas`)
+  // La media técnica viene repetida en cada fila; sin plan no hay filas.
+  return {
+    asignaturas: rows.map(toAsignatura),
+    mediaTecnicaExterna: rows[0]?.media_tecnica_externa === "S",
+    institucionExterna: rows[0]?.institucion_externa ?? "",
+  }
+}
+
 /** Bloque 15 de una matrícula ya creada (fn_matricula_asignaturas_listar). */
 export function useMatriculaAsignaturasQuery(matriculaId: string | undefined) {
   return useQuery({
     queryKey: matriculaKeys.asignaturas(matriculaId),
-    queryFn: async (): Promise<MatriculaAsignaturasData> => {
-      const rows = await evalCol.getRows<AsignaturaRow>(`/cobertura-academica/matricula/${matriculaId}/asignaturas`)
-      // La media técnica viene repetida en cada fila; sin plan no hay filas.
-      return {
-        asignaturas: rows.map(toAsignatura),
-        mediaTecnicaExterna: rows[0]?.media_tecnica_externa === "S",
-        institucionExterna: rows[0]?.institucion_externa ?? "",
-      }
-    },
+    queryFn: () => fetchMatriculaAsignaturas(matriculaId as string),
     enabled: Boolean(matriculaId),
   })
 }

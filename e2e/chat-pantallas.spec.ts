@@ -28,7 +28,7 @@ async function login(page: Page, email: string, primera = true) {
 }
 
 async function ingresarUnaVez(page: Page, email: string) {
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
   if ((await compartido.count()) && (await compartido.isChecked()) && (await compartido.isEnabled())) {

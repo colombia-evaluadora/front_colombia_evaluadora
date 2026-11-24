@@ -19,23 +19,28 @@ const BASE = "/gestion-estudiantil/convivencia/comite"
 const LIMITE = 50
 const MIN_BUSQUEDA_ESTUDIANTE = 2
 
+export const fetchPeriodosComite = () =>
+  evalCol.getRows<PeriodoComite>(`${BASE}/periodos`)
+
 /** `GET /comite/periodos`: períodos del establecimiento, primero los abiertos. */
 export function usePeriodosComiteQuery() {
   return useQuery({
     queryKey: comiteKeys.periodos(),
-    queryFn: () => evalCol.getRows<PeriodoComite>(`${BASE}/periodos`),
+    queryFn: fetchPeriodosComite,
     staleTime: 60_000,
   })
 }
+
+export const fetchComite = (periodo: number | null | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE}/periodo/${periodo}`)
+    .then((r) => desenvolver<ComiteDetalle>(r[0], "comite", "No se encontró el comité del período."))
 
 /** `GET /comite/periodo/:PERIODO`: integrantes, cargos vacíos y avisos del Comité del período. */
 export function useComiteQuery(periodo: number | null | undefined) {
   return useQuery({
     queryKey: comiteKeys.detalle(periodo ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE}/periodo/${periodo}`)
-        .then((r) => desenvolver<ComiteDetalle>(r[0], "comite", "No se encontró el comité del período.")),
+    queryFn: () => fetchComite(periodo),
     enabled: periodo != null,
   })
 }
@@ -47,28 +52,32 @@ export interface SesionesParams {
   pageSize: number
 }
 
+export const fetchSesionesComite = async ({ comite, filters, pageIndex, pageSize }: SesionesParams) => {
+  const rows = await evalCol.postRows<SesionFila>(`${BASE}/${comite}/sesiones/query`, { filters, pageIndex, pageSize })
+  const totalCount = rows[0]?.total_count ?? 0
+  return { rows, totalCount, pageCount: toPageCount(totalCount, pageSize) }
+}
+
 /** `POST /comite/:ID/sesiones/query`: sesiones del Comité, paginadas. */
 export function useSesionesQuery({ comite, filters, pageIndex, pageSize }: SesionesParams) {
   return useQuery({
     queryKey: comiteKeys.sesiones({ comite, filters, pageIndex, pageSize }),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<SesionFila>(`${BASE}/${comite}/sesiones/query`, { filters, pageIndex, pageSize })
-      const totalCount = rows[0]?.total_count ?? 0
-      return { rows, totalCount, pageCount: toPageCount(totalCount, pageSize) }
-    },
+    queryFn: () => fetchSesionesComite({ comite, filters, pageIndex, pageSize }),
     enabled: comite != null,
     placeholderData: keepPreviousData,
   })
 }
 
+export const fetchSesionComite = (id: number | null | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE}/sesiones/${id}`)
+    .then((r) => desenvolver<SesionDetalle>(r[0], "sesion", "No se encontró la sesión."))
+
 /** `GET /comite/sesiones/:ID`: detalle de una sesión (ver y editar). */
 export function useSesionQuery(id: number | null | undefined) {
   return useQuery({
     queryKey: comiteKeys.sesion(id ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE}/sesiones/${id}`)
-        .then((r) => desenvolver<SesionDetalle>(r[0], "sesion", "No se encontró la sesión.")),
+    queryFn: () => fetchSesionComite(id),
     enabled: id != null,
   })
 }

@@ -154,7 +154,7 @@ function toIdString(value: number | null | undefined): string {
   return value != null ? String(value) : ""
 }
 
-async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> {
+export async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> {
   const raw = await api.get<{ rows: { matricula: RawMatriculaDetail }[] } | { matricula: RawMatriculaDetail }>(
     `/eval-col/cobertura-academica/matricula/${id}`,
   )
@@ -217,6 +217,7 @@ export function toMatriculaDetailResult(ficha: RawMatriculaDetail, gradoValor: n
       campus: m.sede_nombre,
       campusId: m.fk_tsede != null ? String(m.fk_tsede) : "",
       shift: m.jornada_nombre,
+      periodoId: toIdString(m.fk_tperiodo_academico),
       grade: toIdString(gradoValor ?? m.fk_tgrado),
       group: toIdString(m.fk_tgrupo),
       status,

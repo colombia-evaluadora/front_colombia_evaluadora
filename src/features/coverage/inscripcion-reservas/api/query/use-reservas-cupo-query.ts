@@ -115,7 +115,7 @@ export function toReservasCupoFilters(
   }
 }
 
-async function fetchReservasCupo(
+export async function fetchReservasCupo(
   ee: number,
   params: ReservasCupoQueryRequest,
   periodos: PeriodoInscripciones[],
@@ -167,7 +167,7 @@ interface CatalogosRow {
   }
 }
 
-async function fetchCatalogos(ee: number): Promise<ReservasCupoCatalogos> {
+export async function fetchReservasCupoCatalogos(ee: number): Promise<ReservasCupoCatalogos> {
   const { datos } = await evalCol.getRow<CatalogosRow>(
     `${RESERVAS_BASE}/establecimiento/${ee}/catalogos`,
   )
@@ -186,7 +186,7 @@ export function useReservasCupoCatalogosQuery() {
   const { data: ee } = useEstablecimientoReservasQuery()
   return useQuery({
     queryKey: reservasCupoKeys.catalogos(ee ?? "none"),
-    queryFn: () => fetchCatalogos(ee as number),
+    queryFn: () => fetchReservasCupoCatalogos(ee as number),
     enabled: ee != null,
     staleTime: 5 * 60_000,
   })

@@ -13,7 +13,7 @@ test.describe.configure({ timeout: 240_000 })
 
 async function login(page: Page, to: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(to)}`)
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))

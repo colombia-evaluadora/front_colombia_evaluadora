@@ -17,6 +17,15 @@
 import { deleteMeta, getMeta, isIndexedDbAvailable, setMeta } from "@/lib/offline/db"
 
 export const PIN_MIN_LENGTH = 6
+/** Los PIN nuevos tienen exactamente 6 dígitos (casillas); los viejos pueden tener hasta 12. */
+export const PIN_LENGTH = 6
+
+/** Repetidos (111111), seguidos (123456, 654321) o en bloque (121212, 123123): los primeros que se prueban. */
+export function isEasyPin(pin: string): boolean {
+  const pasos = new Set([...pin].slice(1).map((c, i) => Number(c) - Number(pin[i])))
+  if (pasos.size === 1 && [0, 1, -1].includes([...pasos][0])) return true
+  return /^(\d\d)\1+$/.test(pin) || /^(\d\d\d)\1$/.test(pin)
+}
 export const MAX_PIN_ATTEMPTS = 10
 const ITERATIONS = 310_000
 const PREFIX = "enc1:"
@@ -27,6 +36,8 @@ interface VaultRecord {
   iterations: number
   iv: string
   wrapped: string
+  /** Cantidad de dígitos; ausente en los creados antes de las casillas. */
+  length?: number
 }
 
 export type VaultState = "sin-pin" | "bloqueada" | "abierta"
@@ -102,6 +113,11 @@ export async function hasVault(sub: string): Promise<boolean> {
   return (await getMeta<VaultRecord>(vaultKey(sub)).catch(() => undefined)) != null
 }
 
+/** ¿El PIN guardado es de 6 casillas? (los viejos, de largo desconocido, usan el campo libre). */
+export async function isBoxedPin(sub: string): Promise<boolean> {
+  return (await getMeta<VaultRecord>(vaultKey(sub)).catch(() => undefined))?.length === PIN_LENGTH
+}
+
 /** Crea el PIN y deja la bóveda abierta. */
 export async function createVault(sub: string, pin: string): Promise<void> {
   if (!isValidPin(pin)) throw new Error(`El PIN debe tener al menos ${PIN_MIN_LENGTH} dígitos.`)
@@ -110,7 +126,7 @@ export async function createVault(sub: string, pin: string): Promise<void> {
   const kek = await deriveKek(pin, salt, ITERATIONS)
   const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])
   const wrapped = await crypto.subtle.wrapKey("raw", key, kek, { name: "AES-GCM", iv })
-  const record: VaultRecord = { v: 1, salt: b64(salt), iterations: ITERATIONS, iv: b64(iv), wrapped: b64(wrapped) }
+  const record: VaultRecord = { v: 1, salt: b64(salt), iterations: ITERATIONS, iv: b64(iv), wrapped: b64(wrapped), length: pin.length }
   await setMeta(vaultKey(sub), record)
   await deleteMeta(failsKey(sub))
   // En memoria se conserva una copia NO extraíble.

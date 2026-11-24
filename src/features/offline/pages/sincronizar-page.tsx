@@ -54,7 +54,7 @@ export function SincronizarPage() {
     if (fase !== "sincronizando" || summary.syncing) return
     setFase("refrescando")
     void queryClient
-      .refetchQueries({ predicate: (query) => Boolean(query.meta?.offline), type: "all" })
+      .refetchQueries({ predicate: (query) => Boolean(query.meta?.offline) && !query.meta?.offline?.requierePin, type: "all" })
       .catch(() => undefined)
       .finally(() => setFase("terminado"))
   }, [fase, summary.syncing, queryClient])
@@ -84,7 +84,7 @@ export function SincronizarPage() {
           {fase === "terminado" ? "Sincronizar de nuevo" : "Sincronizar ahora"}
         </Button>
         <Button variant="outline" color="primary" disabled={offline} onClick={() => setPrepareOpen(true)}>
-          Preparar todo para trabajar sin conexión
+          Preparar este equipo
         </Button>
       </div>
       {offline && <p className="text-muted-foreground text-sm">Necesitas conexión para sincronizar.</p>}

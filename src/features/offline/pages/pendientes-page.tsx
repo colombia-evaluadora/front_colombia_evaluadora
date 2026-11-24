@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { PENDIENTE_APROBACION_NOTE } from "@/lib/offline/pending-approval"
 import { Link } from "@tanstack/react-router"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -12,6 +13,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowCounterClockwiseIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -195,7 +197,17 @@ export function PendientesPage() {
                         {d?.titulo ?? op.kind}
                       </button>
                       {d?.detalle && <p className="text-muted-foreground text-xs">{d.detalle}</p>}
-                      {op.resultNote && <p className="text-xs">{op.resultNote}</p>}
+                      {op.resultNote && (
+                        <p
+                          className={
+                            op.resultNote === PENDIENTE_APROBACION_NOTE
+                              ? "text-xs font-medium text-orange"
+                              : "text-xs"
+                          }
+                        >
+                          {op.resultNote}
+                        </p>
+                      )}
                       {detalle === op.id && (
                         <div className="mt-1 text-xs">
                           <p className="break-words">{legible(op.payload)}</p>
@@ -220,6 +232,11 @@ export function PendientesPage() {
                         <span className="text-green text-xs">Sincronizado</span>
                       ) : (
                         <PendingStatusBadge status={op.status} />
+                      )}
+                      {op.sharedViaPackage && (
+                        <Badge variant="soft" color="neutral" className="ml-1">
+                          {op.sharedViaPackage === "exported" ? "Enviado por USB" : "Recibido por USB"}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="tabular-nums">{op.attempts}</TableCell>

@@ -51,7 +51,7 @@ export function toFuncionariosFilters(establishmentId: number, filters: Funciona
   }
 }
 
-async function fetchFuncionarios(params: FuncionariosQueryParams) {
+export async function fetchFuncionarios(params: FuncionariosQueryParams) {
   const rows = await evalCol.postRows<FuncionarioRow>("/establecimientos/funcionarios/query", {
     filters: toFuncionariosFilters(params.establishmentId, params.filters),
     sorting: toSingleSort(params.sorting),

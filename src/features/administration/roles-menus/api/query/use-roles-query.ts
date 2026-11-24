@@ -5,7 +5,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { Role } from "@/features/administration/roles-menus/api/types/role-menu"
 import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
 
-function fetchRoles(): Promise<Role[]> {
+export function fetchRoles(): Promise<Role[]> {
   return evalCol.getRows<Role>("/roles")
 }
 

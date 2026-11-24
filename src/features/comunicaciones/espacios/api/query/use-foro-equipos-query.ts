@@ -47,18 +47,24 @@ export interface FiltrosBusqueda {
 const base = (id: number) => `/comunicaciones/espacios/${id}`
 const conEquipo = (equipo: number | null) => (equipo ? `?equipo=${equipo}` : "")
 
+export const fetchTemas = (id: number, equipo: number | null) =>
+  evalCol.getRows<Tema>(`${base(id)}/foro/temas${conEquipo(equipo)}`)
+export const fetchTema = async (id: number, tema: number) =>
+  (await evalCol.getRows<TemaDetalle>(`${base(id)}/foro/temas/${tema}`))[0]
+export const fetchEquipos = (id: number) => evalCol.getRows<Equipo>(`${base(id)}/equipos`)
+
 export function useTemasQuery(id: number, equipo: number | null) {
   return useQuery({
-    queryKey: [...espaciosKeys.espacio(id), "temas", equipo],
-    queryFn: () => evalCol.getRows<Tema>(`${base(id)}/foro/temas${conEquipo(equipo)}`),
+    queryKey: espaciosKeys.temas(id, equipo),
+    queryFn: () => fetchTemas(id, equipo),
     refetchInterval: SONDEO_ESPACIO_MS,
   })
 }
 
 export function useTemaQuery(id: number, tema: number | null) {
   return useQuery({
-    queryKey: [...espaciosKeys.espacio(id), "tema", tema],
-    queryFn: async () => (await evalCol.getRows<TemaDetalle>(`${base(id)}/foro/temas/${tema}`))[0],
+    queryKey: espaciosKeys.tema(id, tema),
+    queryFn: () => fetchTema(id, tema as number),
     enabled: tema !== null,
     refetchInterval: SONDEO_ESPACIO_MS,
   })
@@ -66,8 +72,8 @@ export function useTemaQuery(id: number, tema: number | null) {
 
 export function useEquiposQuery(id: number, activo = true) {
   return useQuery({
-    queryKey: [...espaciosKeys.espacio(id), "equipos"],
-    queryFn: () => evalCol.getRows<Equipo>(`${base(id)}/equipos`),
+    queryKey: espaciosKeys.equipos(id),
+    queryFn: () => fetchEquipos(id),
     enabled: activo,
   })
 }

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { postMultipart } from "@/lib/files"
 import { downloadReport } from "@/lib/report-client"
+import { fetchSedeJornadasActivas } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { invalidarMatriculas, matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 
 // Acciones de la fila y de la barra de lote (C.1.LOT.1–8): la misma acción
@@ -189,9 +190,14 @@ export function useGruposDestinoQuery(params: { sedeId: string; jornada: string;
   return useQuery({
     queryKey: [...matriculaKeys.loteAll, "grupos-destino", params],
     queryFn: async (): Promise<GrupoDestino[]> => {
+      // El back pide la jornada por id; la fila y el modal la traen por nombre.
+      const jornadaId = /^\d+$/.test(params.jornada)
+        ? params.jornada
+        : (await fetchSedeJornadasActivas(Number(params.sedeId))).find((j) => j.nombre === params.jornada)?.id
+      if (jornadaId == null) return []
       const q = new URLSearchParams({
         FK_SEDE: params.sedeId,
-        JORNADA: params.jornada,
+        JORNADA: String(jornadaId),
         GRADO: String(params.grado),
         ...(params.periodoId ? { FK_PERIODO: String(params.periodoId) } : {}),
       })

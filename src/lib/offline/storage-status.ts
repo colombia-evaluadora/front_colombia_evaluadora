@@ -8,6 +8,8 @@
  * docente que pasa meses sin red eso es perder todo lo capturado: por eso la
  * UI avisa fuerte cuando no está persistido y guía la instalación.
  */
+import { isInstalledPwa } from "@/lib/offline/install-detection"
+
 export interface StorageStatus {
   /** `null` = el navegador no expone la API. */
   persisted: boolean | null
@@ -22,21 +24,9 @@ export interface StorageStatus {
 /** Aviso de cuota desde este porcentaje de uso. */
 export const QUOTA_WARN_RATIO = 0.8
 
-/** `display-mode` de una app instalada (ventana propia, sin la barra del navegador). */
-const INSTALLED_DISPLAY_MODES = ["standalone", "fullscreen", "minimal-ui"] as const
-
-/**
- * ¿La app corre INSTALADA (pantalla de inicio / ventana propia)? Chromium y
- * Firefox lo exponen con `display-mode`; Safari iOS con `navigator.standalone`.
- */
-export function isInstalledPwa(): boolean {
-  if (typeof window === "undefined") return false
-  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
-  return (
-    standalone ||
-    INSTALLED_DISPLAY_MODES.some((mode) => window.matchMedia?.(`(display-mode: ${mode})`).matches === true)
-  )
-}
+// La detección vive en `install-detection.ts` (fuente única); se reexporta
+// para los importadores existentes.
+export { isInstalledPwa }
 
 export function isIos(): boolean {
   if (typeof navigator === "undefined") return false

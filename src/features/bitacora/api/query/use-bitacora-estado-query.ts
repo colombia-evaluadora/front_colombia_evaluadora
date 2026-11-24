@@ -27,7 +27,7 @@ const toEstado = (row: EstadoRow): BitacoraEstado => ({
   creado: row.creado ?? null,
 })
 
-async function fetchEstado(ids: string[], establecimiento: string): Promise<BitacoraEstado[]> {
+export async function fetchEstado(ids: string[], establecimiento: string): Promise<BitacoraEstado[]> {
   if (env.ENABLE_API_MOCKING) return estadoMock(ids)
   const response = await api.query<RowsEnvelope<EstadoRow>>("/sso-admin/audit/bitacora/estado", {
     IDS: ids,

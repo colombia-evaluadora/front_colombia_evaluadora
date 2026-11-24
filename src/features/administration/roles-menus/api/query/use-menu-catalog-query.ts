@@ -6,7 +6,7 @@ import type { MenuCatalogNode } from "@/features/administration/roles-menus/api/
 import { roleMenuKeys } from "@/features/administration/roles-menus/api/query-keys"
 
 /** Catálogo con los menús inactivos: lo que administra la pestaña Módulos y submódulos. */
-function fetchMenuCatalog(): Promise<MenuCatalogNode[]> {
+export function fetchMenuCatalog(): Promise<MenuCatalogNode[]> {
   return evalCol.getRows<MenuCatalogNode>("/menus/catalogo")
 }
 

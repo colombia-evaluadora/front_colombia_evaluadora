@@ -23,23 +23,36 @@ export const espaciosKeys = {
   detalle: (id: number) => ["espacios", id, "detalle"] as const,
   participantes: (id: number, equipo: number | null) => ["espacios", id, "participantes", equipo] as const,
   materiales: (id: number) => ["espacios", id, "materiales"] as const,
+  temas: (id: number, equipo: number | null) => ["espacios", id, "temas", equipo] as const,
+  tema: (id: number, tema: number | null) => ["espacios", id, "tema", tema] as const,
+  equipos: (id: number) => ["espacios", id, "equipos"] as const,
   chat: (id: number, equipo: number | null) => ["espacios", id, "chat", equipo] as const,
   configuracion: (actividad: number) => ["espacios", "actividad", actividad] as const,
 }
 
 const base = (id: number) => `/comunicaciones/espacios/${id}`
 
+const conEquipo = (equipo: number | null) => (equipo ? `?equipo=${equipo}` : "")
+
+export const fetchEspacios = () => evalCol.getRows<EspacioResumen>("/comunicaciones/espacios")
+export const fetchEspacio = async (id: number) => (await evalCol.getRows<EspacioDetalle>(base(id)))[0]
+export const fetchParticipantes = (id: number, equipo: number | null) =>
+  evalCol.getRows<Participante>(`${base(id)}/participantes${conEquipo(equipo)}`)
+export const fetchMateriales = (id: number) => evalCol.getRows<MaterialEspacio>(`${base(id)}/materiales`)
+export const fetchChatEspacio = (id: number, equipo: number | null) =>
+  evalCol.getRows<Participacion>(`${base(id)}/chat/mensajes${conEquipo(equipo)}`)
+
 export function useEspaciosQuery() {
   return useQuery({
     queryKey: espaciosKeys.lista(),
-    queryFn: () => evalCol.getRows<EspacioResumen>("/comunicaciones/espacios"),
+    queryFn: fetchEspacios,
   })
 }
 
 export function useEspacioQuery(id: number) {
   return useQuery({
     queryKey: espaciosKeys.detalle(id),
-    queryFn: async () => (await evalCol.getRows<EspacioDetalle>(base(id)))[0],
+    queryFn: () => fetchEspacio(id),
     refetchInterval: SONDEO_ESPACIO_MS,
   })
 }
@@ -57,21 +70,21 @@ export function useParticipantesQuery(id: number, equipo: number | null, activo 
   return useQuery({
     enabled: activo,
     queryKey: espaciosKeys.participantes(id, equipo),
-    queryFn: () => evalCol.getRows<Participante>(`${base(id)}/participantes${equipo ? `?equipo=${equipo}` : ""}`),
+    queryFn: () => fetchParticipantes(id, equipo),
   })
 }
 
 export function useMaterialesQuery(id: number) {
   return useQuery({
     queryKey: espaciosKeys.materiales(id),
-    queryFn: () => evalCol.getRows<MaterialEspacio>(`${base(id)}/materiales`),
+    queryFn: () => fetchMateriales(id),
   })
 }
 
 export function useChatEspacioQuery(id: number, equipo: number | null) {
   return useQuery({
     queryKey: espaciosKeys.chat(id, equipo),
-    queryFn: () => evalCol.getRows<Participacion>(`${base(id)}/chat/mensajes${equipo ? `?equipo=${equipo}` : ""}`),
+    queryFn: () => fetchChatEspacio(id, equipo),
     refetchInterval: SONDEO_ESPACIO_MS,
   })
 }

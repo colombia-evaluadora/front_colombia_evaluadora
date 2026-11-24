@@ -46,35 +46,41 @@ export function useGradosFiltroQuery() {
   })
 }
 
-export function usePiarListaQuery(params: { search: string; filtros: PiarFiltros; pageIndex: number; pageSize: number; orden?: OrdenServidor }, enabled = true) {
+type PiarListaParams = { search: string; filtros: PiarFiltros; pageIndex: number; pageSize: number; orden?: OrdenServidor }
+
+export const fetchPiarLista = async (params: PiarListaParams) => {
+  const rows = await evalCol.postRows<PiarRow>(`${PIAR}/query`, {
+    FILTERS: toPiarFilters(params.search, params.filtros),
+    ...params.orden,
+    PAGEINDEX: params.pageIndex,
+    PAGESIZE: params.pageSize,
+  })
+  const totalCount = rows[0]?.total_count ?? 0
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
+export function usePiarListaQuery(params: PiarListaParams, enabled = true) {
   return useQuery({
     enabled,
     queryKey: piarKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<PiarRow>(`${PIAR}/query`, {
-        FILTERS: toPiarFilters(params.search, params.filtros),
-        ...params.orden,
-        PAGEINDEX: params.pageIndex,
-        PAGESIZE: params.pageSize,
-      })
-      const totalCount = rows[0]?.total_count ?? 0
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchPiarLista(params),
     placeholderData: keepPreviousData,
   })
+}
+
+export const fetchSinPiar = (sede: string, jornada: string) => {
+  const q = new URLSearchParams()
+  if (sede) q.set("FK_SEDE", sede)
+  if (jornada) q.set("FK_JORNADA", jornada)
+  const qs = q.toString()
+  return evalCol.getRows<SinPiarRow>(`${PIAR}/aviso-sin-piar${qs ? `?${qs}` : ""}`)
 }
 
 export function useSinPiarQuery(sede = "", jornada = "", enabled = true) {
   return useQuery({
     enabled,
     queryKey: piarKeys.aviso(sede, jornada),
-    queryFn: () => {
-      const q = new URLSearchParams()
-      if (sede) q.set("FK_SEDE", sede)
-      if (jornada) q.set("FK_JORNADA", jornada)
-      const qs = q.toString()
-      return evalCol.getRows<SinPiarRow>(`${PIAR}/aviso-sin-piar${qs ? `?${qs}` : ""}`)
-    },
+    queryFn: () => fetchSinPiar(sede, jornada),
     staleTime: 60_000,
   })
 }
@@ -90,7 +96,7 @@ export function useMatriculasDisponiblesQuery(search: string) {
 }
 
 /** Las funciones que devuelven JSONB llegan como `{ resultado }` en una sola fila. */
-const piarQueryOptions = (piarId: number) => ({
+export const piarQueryOptions = (piarId: number) => ({
   queryKey: piarKeys.detalle(piarId),
   queryFn: () => evalCol.getRow<{ resultado: PiarDetalle }>(`${PIAR}/${piarId}`).then((r) => r.resultado),
 })

@@ -78,12 +78,15 @@ export function useGruposObservadorQuery(
   })
 }
 
+export const fetchResponsablesObservador = (qs: string) =>
+  evalCol.getRows<ResponsableObservador>(`${BASE}/responsables?${qs}`)
+
 /** `GET /gestion-estudiantil/observador/opciones/responsables`: funcionarios del alcance para el filtro. */
 export function useResponsablesObservadorQuery(params: { establecimiento?: number; sede?: number; search?: string }) {
   const qs = toQueryString({ SEARCH: params.search, ESTABLECIMIENTO: params.establecimiento, SEDE: params.sede })
   return useQuery({
     queryKey: observadorKeys.opciones("responsables", qs),
-    queryFn: () => evalCol.getRows<ResponsableObservador>(`${BASE}/responsables?${qs}`),
+    queryFn: () => fetchResponsablesObservador(qs),
     staleTime: 1000 * 60,
   })
 }

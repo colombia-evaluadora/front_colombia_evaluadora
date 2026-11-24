@@ -14,7 +14,7 @@ Rama: `feature/CU-86e3yf6pt-FRONT-G-estudiantil-Convivencia-escolar-proceso-disc
 
 Probado en navegador: ciclo completo descargos → decisión Sancionar → notificación presencial → reposición Modifica → apelación Confirma → En firme → ajustar fechas → cumplimiento → Cerrado; y descargos → Archivar.
 
-Fuera de alcance del front: PDFs del backend (no existen) y confirmación del acudiente en el portal (no existe).
+Fuera de alcance del front: confirmación del acudiente en el portal (no existe).
 
 ## Rutas
 
@@ -181,7 +181,7 @@ Ruta base: `src/features/gestion-estudiantil/convivencia/`.
 ## Pendiente
 
 - Descargos «No» sin probar en navegador (requiere plazo vencido).
-- PDFs del backend (comunicación de cargos, acta de descargos, resolución). Las entradas de documentos siguen deshabilitadas.
+- Documentos (comunicación de cargos, acta de descargos, resolución): ya tienen endpoint (V721, V722) y `items-documentos.tsx` los habilita según `documentos` del detalle.
 - Confirmación del acudiente en el portal (no existe en el backend).
 - Mensaje de X-Mensaje del backend genérico (etiquetas V590) que pisa el mensaje del contrato.
 - Opciones de sanciones vacías sin mensaje.

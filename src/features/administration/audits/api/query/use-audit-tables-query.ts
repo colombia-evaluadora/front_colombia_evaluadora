@@ -17,7 +17,7 @@ import type {
 import { toPaginated } from "@/lib/pagination"
 import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
-interface UseAuditTablesQueryParams {
+export interface UseAuditTablesQueryParams {
   filters: AuditTablesQueryRequest["filters"]
   sorting: AuditTablesQueryRequest["sorting"]
   pageIndex: number
@@ -46,7 +46,7 @@ function toAuditTable(row: RealAuditTableRow): AuditTable {
   }
 }
 
-async function fetchAuditTables(
+export async function fetchAuditTables(
   params: UseAuditTablesQueryParams,
 ): Promise<AuditTablesQueryResponse> {
   const path = apiPath("/audit-tables/query", "/audit-tables/query", AUDIT_API_PREFIX)
