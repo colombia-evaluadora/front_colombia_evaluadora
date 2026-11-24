@@ -172,6 +172,8 @@ export const campusSpecialtySchema = z
     specialtyId: z.number().nullable().refine((v) => v != null, { message: required("La especialidad", { femenino: true }) }),
     ownName: z.string(),
     status: z.enum(["A", "I"]),
+    description: z.string().max(1000, maxLength(1000, "La descripción")),
+    activities: z.string().max(1000, maxLength(1000, "Las actividades para conocerla")),
     /** Solo para validar: si la especialidad elegida es "Otra". */
     isOther: z.boolean(),
   })

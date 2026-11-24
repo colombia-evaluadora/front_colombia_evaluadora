@@ -20,6 +20,8 @@ interface RealCampusSpecialtyRow {
   nombre_propio: string | null
   es_otra: boolean
   estado: CampusStatus
+  descripcion: string | null
+  actividades: string | null
 }
 
 /** Fila de `GET /establecimientos/sedes/especialidades/catalogo`. */
@@ -41,6 +43,8 @@ export function toCampusSpecialty(row: RealCampusSpecialtyRow): CampusSpecialty 
     ownName: row.nombre_propio,
     isOther: row.es_otra === true,
     status: row.estado === "I" ? "I" : "A",
+    description: row.descripcion ?? null,
+    activities: row.actividades ?? null,
   }
 }
 

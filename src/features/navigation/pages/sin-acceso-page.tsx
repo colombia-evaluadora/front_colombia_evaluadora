@@ -6,6 +6,7 @@ import { useUser } from "@/lib/auth"
 import { useConnectivity } from "@/lib/offline/use-connectivity"
 
 import { Button } from "@/components/ui/button"
+import { CerrarSesionButton } from "@/components/layout/cerrar-sesion-button"
 import { LockIcon } from "@/components/ui/icons"
 import {
   getFirstNavUrl,
@@ -25,9 +26,9 @@ import {
 export function SinAccesoPage() {
   const { data: items, dataUpdatedAt } = useNavItemsQuery()
   const firstUrl = items ? getFirstNavUrl(items) : null
-  // Menú ya cargado y vacío (p. ej. rector sin sede asignada, ver
-  // `fn_list_my_menus`): no es "este módulo", es que no puede entrar a ninguno.
-  // Cerrar sesión sigue disponible en el pie del sidebar.
+  // Menú ya cargado y vacío (funcionario sin roles, rector sin sede asignada, ver
+  // `fn_list_my_menus` y `lib/sin-roles.ts`): no es "este módulo", es que no puede
+  // entrar a ninguno. Cerrar sesión va también en la pantalla, no solo en el menú de cuenta.
   const sinMenu = items?.length === 0
   // Sin red el guard decide con el menú persistido (hasta 30 días): si al
   // docente le asignaron el módulo después, todavía no lo ve.
@@ -39,11 +40,11 @@ export function SinAccesoPage() {
     <section className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card p-10 text-center text-card-foreground">
       <LockIcon aria-hidden className="size-10 text-muted-foreground" />
       <h1 className="font-heading text-2xl font-semibold">
-        {sinMenu ? "No tienes permisos" : "No tienes acceso a este módulo"}
+        {sinMenu ? "No tienes roles ni permisos asignados" : "No tienes acceso a este módulo"}
       </h1>
       <p className="max-w-md text-muted-foreground">
         {sinMenu
-          ? "Tu usuario no tiene módulos habilitados. Si crees que es un error, contacta al administrador."
+          ? "Solicita la asignación de tus roles al administrador de tu establecimiento. Cuando te los asignen, vuelve a iniciar sesión."
           : "Tu rol no tiene permiso para ver esta sección. Si crees que es un error, contacta al administrador."}
       </p>
       {showStaleMenuHint && (
@@ -52,6 +53,11 @@ export function SinAccesoPage() {
           {format(dataUpdatedAt, "d 'de' MMMM 'de' yyyy", { locale: es })}. Si te asignaron este
           módulo hace poco, conéctate para actualizarlo.
         </p>
+      )}
+      {sinMenu && (
+        <div className="mt-2">
+          <CerrarSesionButton variant="fill" color="primary" />
+        </div>
       )}
       {firstUrl && (
         <Button size="sm" render={<Link to={firstUrl} />} nativeButton={false} className="mt-2">

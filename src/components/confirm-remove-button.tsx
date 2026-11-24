@@ -21,6 +21,8 @@ interface ConfirmRemoveButtonProps {
   onConfirm: () => void | boolean | Promise<void | boolean>
   disabled?: boolean
   size?: React.ComponentProps<typeof Button>["size"]
+  /** `destructive` deja el ícono en rojo, como pide la regla de acciones de fila. */
+  color?: "neutral" | "destructive"
   className?: string
 }
 
@@ -32,6 +34,7 @@ export function ConfirmRemoveButton({
   onConfirm,
   disabled,
   size = "icon-sm",
+  color = "neutral",
   className,
 }: ConfirmRemoveButtonProps) {
   const [open, setOpen] = useState(false)
@@ -54,7 +57,7 @@ export function ConfirmRemoveButton({
           <Button
             type="button"
             variant="ghost"
-            color="neutral"
+            color={color}
             size={size}
             disabled={disabled}
             className={className}

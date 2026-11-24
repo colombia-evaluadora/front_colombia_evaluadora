@@ -1,9 +1,13 @@
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
-import { ControlPointIcon, FileTextIcon, InfoIcon } from "@/components/ui/icons"
+import { ControlPointIcon, EyeIcon, FileDownloadOutlinedIcon, FileTextIcon, InfoIcon } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { actionsOverlayClass } from "@/components/table-row-actions"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 import { formatBytes } from "@/lib/image-file"
 
@@ -28,9 +32,49 @@ interface AnexosSectionProps {
   onRemovePending: (key: number) => void
 }
 
-async function abrirAnexo(fileId: number) {
+/** Descarga por un enlace temporal: la URL es del mismo origen (`/api/...` o `blob:`), así que `download` se respeta. */
+function descargarUrl(url: string, fileName: string) {
+  const a = document.createElement("a")
+  a.href = url
+  a.download = fileName
+  a.rel = "noopener"
+  document.body.append(a)
+  a.click()
+  a.remove()
+}
+
+/**
+ * Ver y descargar (Regla 81). Los anexos guardados piden un token de vista a file-service; los
+ * pendientes del alta todavía no se subieron y se abren desde el archivo elegido (URL `blob:`,
+ * que se libera un minuto después para no cortar la pestaña que lo está cargando).
+ */
+async function verAnexo(fileId: number) {
   const { url } = await fetchArchivoViewUrl(fileId)
   window.open(url, "_blank", "noopener,noreferrer")
+}
+
+async function descargarAnexo(fileId: number, fileName: string) {
+  const { url } = await fetchArchivoViewUrl(fileId)
+  descargarUrl(url, fileName)
+}
+
+function conArchivoLocal(file: File, accion: (url: string) => void) {
+  const url = URL.createObjectURL(file)
+  accion(url)
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+function AccionIcono({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={label} onClick={onClick} />}
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 /** Documentos anexos del funcionario (Regla 81): cada establecimiento ve, agrega y quita los suyos. */
@@ -43,8 +87,14 @@ export function AnexosSection({
   onRemove,
   onRemovePending,
 }: AnexosSectionProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const empty = annexes.length === 0 && pending.length === 0
+
+  // La pantalla tiene su NoticeProvider: los errores de axios no salen solos.
+  const intentar = (accion: () => Promise<void>) => {
+    accion().catch((error) => notify(getErrorMessage(error), { variant: "error" }))
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -71,57 +121,75 @@ export function AnexosSection({
                 <TableHead>Nombre documento</TableHead>
                 <TableHead>Descripción</TableHead>
                 <TableHead>Archivo</TableHead>
-                {readOnly ? null : <TableHead className="w-12" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               {annexes.map((annex) => (
-                <TableRow key={annex.id}>
+                <TableRow key={annex.id} className="group/row">
                   <TableCell>{annex.name}</TableCell>
                   <TableCell className="whitespace-normal">{annex.description}</TableCell>
-                  <TableCell>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 text-primary hover:underline"
-                      onClick={() => void abrirAnexo(annex.fileId)}
-                    >
-                      <FileTextIcon className="size-4" aria-hidden />
+                  <TableCell className="relative">
+                    <span className="inline-flex items-center gap-1.5">
+                      <FileTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                       {annex.fileName}
                       {annex.size != null ? ` · ${formatBytes(annex.size)}` : ""}
-                    </button>
+                    </span>
+                    <div className={actionsOverlayClass(false, "background")}>
+                      <AccionIcono label="Ver archivo" onClick={() => intentar(() => verAnexo(annex.fileId))}>
+                        <EyeIcon />
+                      </AccionIcono>
+                      <AccionIcono
+                        label="Descargar archivo"
+                        onClick={() => intentar(() => descargarAnexo(annex.fileId, annex.fileName))}
+                      >
+                        <FileDownloadOutlinedIcon />
+                      </AccionIcono>
+                      {readOnly ? null : (
+                        <ConfirmRemoveButton
+                          label="Eliminar documento"
+                          title="Eliminar documento anexo"
+                          description={`Se quitará «${annex.name}» de los documentos del funcionario.`}
+                          color="destructive"
+                          onConfirm={() => onRemove(annex.id)}
+                        />
+                      )}
+                    </div>
                   </TableCell>
-                  {readOnly ? null : (
-                    <TableCell>
-                      <ConfirmRemoveButton
-                        label="Eliminar documento"
-                        title="Eliminar documento anexo"
-                        description={`Se quitará «${annex.name}» de los documentos del funcionario.`}
-                        onConfirm={() => onRemove(annex.id)}
-                      />
-                    </TableCell>
-                  )}
                 </TableRow>
               ))}
               {pending.map((annex) => (
-                <TableRow key={`pendiente-${annex.key}`}>
+                <TableRow key={`pendiente-${annex.key}`} className="group/row">
                   <TableCell>{annex.name}</TableCell>
                   <TableCell className="whitespace-normal">{annex.description}</TableCell>
-                  <TableCell>
+                  <TableCell className="relative">
                     <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                      <FileTextIcon className="size-4" aria-hidden />
+                      <FileTextIcon className="size-4 shrink-0" aria-hidden />
                       {annex.file.name} · {formatBytes(annex.file.size)} · se carga al guardar
                     </span>
+                    <div className={actionsOverlayClass(false, "background")}>
+                      <AccionIcono
+                        label="Ver archivo"
+                        onClick={() => conArchivoLocal(annex.file, (url) => window.open(url, "_blank", "noopener,noreferrer"))}
+                      >
+                        <EyeIcon />
+                      </AccionIcono>
+                      <AccionIcono
+                        label="Descargar archivo"
+                        onClick={() => conArchivoLocal(annex.file, (url) => descargarUrl(url, annex.file.name))}
+                      >
+                        <FileDownloadOutlinedIcon />
+                      </AccionIcono>
+                      {readOnly ? null : (
+                        <ConfirmRemoveButton
+                          label="Quitar documento"
+                          title="Quitar documento anexo"
+                          description={`Se quitará «${annex.name}».`}
+                          color="destructive"
+                          onConfirm={() => onRemovePending(annex.key)}
+                        />
+                      )}
+                    </div>
                   </TableCell>
-                  {readOnly ? null : (
-                    <TableCell>
-                      <ConfirmRemoveButton
-                        label="Quitar documento"
-                        title="Quitar documento anexo"
-                        description={`Se quitará «${annex.name}».`}
-                        onConfirm={() => onRemovePending(annex.key)}
-                      />
-                    </TableCell>
-                  )}
                 </TableRow>
               ))}
             </TableBody>

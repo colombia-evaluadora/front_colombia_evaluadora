@@ -101,7 +101,7 @@ describe("hasRepeatedName", () => {
 })
 
 describe("campusSpecialtySchema", () => {
-  const base = { characterId: 51854, specialtyId: 4, ownName: "", status: "A" as const, isOther: true }
+  const base = { characterId: 51854, specialtyId: 4, ownName: "", status: "A" as const, description: "", activities: "", isOther: true }
 
   it("con Otra exige nombre propio de 3 a 100 caracteres", () => {
     expect(messages(campusSpecialtySchema.safeParse(base)).ownName).toMatch(/obligatorio/)
@@ -111,5 +111,13 @@ describe("campusSpecialtySchema", () => {
 
   it("sin Otra el nombre propio no se pide", () => {
     expect(campusSpecialtySchema.safeParse({ ...base, specialtyId: 5, isOther: false }).success).toBe(true)
+  })
+
+  it("descripción y actividades para conocerla son opcionales, hasta 1000 caracteres", () => {
+    const sinOtra = { ...base, specialtyId: 5, isOther: false }
+    expect(campusSpecialtySchema.safeParse({ ...sinOtra, description: "a".repeat(1000), activities: "b".repeat(1000) }).success).toBe(true)
+    const largo = messages(campusSpecialtySchema.safeParse({ ...sinOtra, description: "a".repeat(1001), activities: "b".repeat(1001) }))
+    expect(largo.description).toBeDefined()
+    expect(largo.activities).toBeDefined()
   })
 })

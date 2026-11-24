@@ -11,7 +11,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { CheckIcon, PencilIcon, PlusIcon, ProhibitIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  PauseCircleIcon,
+  PencilIcon,
+  PlayCircleIcon,
+  PlusIcon,
+  ProhibitIcon,
+  SpinnerIcon,
+  TrashIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { actionsOverlayClass } from "@/components/table-row-actions"
@@ -20,7 +30,11 @@ import { getErrorMessage, isConflictError } from "@/lib/api-client"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useCampusSpecialtiesQuery } from "@/features/establishment/campuses/api/query/use-campus-specialties"
-import { useDeleteCampusSpecialty } from "@/features/establishment/campuses/api/mutations/specialties"
+import {
+  toCampusSpecialtyValues,
+  useDeleteCampusSpecialty,
+  useSaveCampusSpecialty,
+} from "@/features/establishment/campuses/api/mutations/specialties"
 import type { CampusSpecialty } from "@/features/establishment/campuses/api/types/campus"
 import { CampusStatusBadge } from "@/features/establishment/campuses/components/campus-badges"
 import { SpecialtyDialog } from "@/features/establishment/campuses/components/specialties/specialty-dialog"
@@ -121,11 +135,91 @@ function DeleteSpecialtyDialog({
   )
 }
 
+/**
+ * Inactivar / Activar (3.2): reenvía el ítem con el otro estado. Inactiva, deja de ofrecerse
+ * en los selectores de asignaturas y matrícula; lo que ya la tiene la conserva.
+ */
+function ChangeSpecialtyStatusDialog({
+  campusId,
+  item,
+  onClose,
+}: {
+  campusId: number
+  item: CampusSpecialty | null
+  onClose: () => void
+}) {
+  const { notify } = useNotify()
+  const inactivar = item?.status === "A"
+  const label = inactivar ? "Inactivar" : "Activar"
+  const name = item ? (item.ownName ?? item.specialtyName) : ""
+  const mutation = useSaveCampusSpecialty({
+    mutationConfig: {
+      onSuccess: () => {
+        notify(inactivar ? SUCCESS_MESSAGES.campusSpecialty.deactivated! : SUCCESS_MESSAGES.campusSpecialty.activated!)
+        onClose()
+      },
+      onError: (error) => {
+        onClose()
+        notify(getErrorMessage(error), { variant: "error" })
+      },
+    },
+  })
+
+  return (
+    <AlertDialog open={item != null} onOpenChange={(open) => !open && !mutation.isPending && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {label} la especialidad {name}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {inactivar
+              ? "La especialidad dejará de aparecer en los selectores de asignaturas y matrícula. Las asignaturas y matrículas que ya la tienen la conservan."
+              : "La especialidad volverá a aparecer en los selectores de asignaturas y matrícula."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={mutation.isPending}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            color={inactivar ? "destructive" : "primary"}
+            disabled={mutation.isPending}
+            aria-busy={mutation.isPending}
+            onClick={(event) => {
+              // Se cierra al terminar, no al hacer clic.
+              event.preventDefault()
+              if (!item) return
+              mutation.mutate({
+                campusId,
+                specialtyItemId: item.id,
+                values: { ...toCampusSpecialtyValues(item), status: inactivar ? "I" : "A" },
+                isOther: item.isOther,
+              })
+            }}
+          >
+            {mutation.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : inactivar ? (
+              <PauseCircleIcon data-icon="inline-start" />
+            ) : (
+              <PlayCircleIcon data-icon="inline-start" />
+            )}
+            {label}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 /** Catálogo de especialidades de la sede (sección 3.2, Regla 86). */
 export function CampusSpecialtiesSection({ campusId, readOnly }: CampusSpecialtiesSectionProps) {
   const { data: items = [], isPending, isError, error } = useCampusSpecialtiesQuery(campusId)
   const [editing, setEditing] = useState<CampusSpecialty | "new" | null>(null)
   const [deleting, setDeleting] = useState<CampusSpecialty | null>(null)
+  const [changingStatus, setChangingStatus] = useState<CampusSpecialty | null>(null)
 
   return (
     <div className="flex flex-col gap-3">
@@ -202,6 +296,23 @@ export function CampusSpecialtiesSection({ campusId, readOnly }: CampusSpecialti
                                 variant="ghost"
                                 color="neutral"
                                 size="icon-sm"
+                                aria-label={`${item.status === "A" ? "Inactivar" : "Activar"} especialidad`}
+                                onClick={() => setChangingStatus(item)}
+                              />
+                            }
+                          >
+                            {item.status === "A" ? <PauseCircleIcon /> : <PlayCircleIcon />}
+                          </TooltipTrigger>
+                          <TooltipContent>{item.status === "A" ? "Inactivar" : "Activar"}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                color="destructive"
+                                size="icon-sm"
                                 aria-label="Eliminar especialidad"
                                 onClick={() => setDeleting(item)}
                               />
@@ -230,6 +341,7 @@ export function CampusSpecialtiesSection({ campusId, readOnly }: CampusSpecialti
             onOpenChange={(open) => !open && setEditing(null)}
           />
           <DeleteSpecialtyDialog campusId={campusId} item={deleting} onClose={() => setDeleting(null)} />
+          <ChangeSpecialtyStatusDialog campusId={campusId} item={changingStatus} onClose={() => setChangingStatus(null)} />
         </>
       )}
     </div>

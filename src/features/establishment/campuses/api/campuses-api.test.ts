@@ -171,7 +171,7 @@ describe("catálogo de especialidades de la sede", () => {
     await saveCampusSpecialty({
       campusId,
       specialtyItemId: null,
-      values: { characterId: otra.characterId, specialtyId: otra.id, ownName: "Agroindustria", status: "A" },
+      values: { characterId: otra.characterId, specialtyId: otra.id, ownName: "Agroindustria", status: "A", description: "", activities: "" },
       isOther: true,
     })
     const items = await fetchCampusSpecialties(campusId)
@@ -181,7 +181,7 @@ describe("catálogo de especialidades de la sede", () => {
       saveCampusSpecialty({
         campusId,
         specialtyItemId: null,
-        values: { characterId: otra.characterId, specialtyId: otra.id, ownName: "agroindustria", status: "A" },
+        values: { characterId: otra.characterId, specialtyId: otra.id, ownName: "agroindustria", status: "A", description: "", activities: "" },
         isOther: true,
       }),
     ).rejects.toSatisfy((error) => status(error) === 409)

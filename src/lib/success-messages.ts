@@ -103,6 +103,8 @@ export const SUCCESS_MESSAGES = {
     created: "La especialidad se agregó al catálogo de la sede.",
     updated: "La especialidad se actualizó correctamente.",
     deleted: "La especialidad se eliminó del catálogo de la sede.",
+    activated: "La especialidad se activó correctamente.",
+    deactivated: "La especialidad se inactivó correctamente.",
   },
   employee: {
     created: "El funcionario se creó correctamente.",
