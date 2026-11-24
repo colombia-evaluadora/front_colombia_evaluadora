@@ -635,7 +635,7 @@ function ListasValorPageContent() {
                       ) : null}
                       <div className="flex flex-wrap items-center gap-2 pt-1 empty:hidden">
                         {!categoria.habilitada && (
-                          <Badge variant="outline" color="neutral">
+                          <Badge variant="soft" color="neutral">
                             Inactiva: sus valores no salen en los formularios
                           </Badge>
                         )}

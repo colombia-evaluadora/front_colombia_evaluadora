@@ -38,7 +38,7 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
                   Activa
                 </Badge>
               ) : (
-                <Badge variant="outline" color="neutral">
+                <Badge variant="soft" color="neutral">
                   Inactiva
                 </Badge>
               )}

@@ -53,7 +53,7 @@ export function createCriteriosPrioridadColumns({
         return (
           <span className="flex flex-col gap-0.5">
             <span className="flex flex-wrap items-center gap-1.5 font-medium">
-              <span className={criterio.habilitado ? undefined : "text-muted-foreground"}>
+              <span>
                 {criterio.nombre}
               </span>
               {criterio.enUso && (
@@ -98,7 +98,7 @@ export function createCriteriosPrioridadColumns({
             Activo
           </Badge>
         ) : (
-          <Badge variant="outline" color="neutral">
+          <Badge variant="soft" color="neutral">
             Inactivo
           </Badge>
         ),

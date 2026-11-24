@@ -112,6 +112,8 @@ export function EmployeeRolesPage() {
 
       <TableScreenBody>
         <DataTable
+          // Inactivos atenuados (reglas de UI); los íconos del hover quedan al 100%.
+          isRowMuted={(row) => row.original.status !== "ACTIVO"}
           table={table}
           isPending={roles.isPending || establecimiento.cargando}
           isError={roles.isError || ficha.isError}

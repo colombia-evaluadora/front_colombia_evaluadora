@@ -31,7 +31,7 @@ function texto<T>(id: string, titulo: string, valor: (f: T) => string, extra: Pa
 function estado<T extends Fila>(): ColumnDef<T> {
   return texto<T>("estado", "Estado", (f) => (f.habilitado ? "Activo" : "Inactivo"), {
     cell: ({ row }) => (
-      <Badge variant="soft" color={row.original.habilitado ? "success" : "muted"}>
+      <Badge variant="soft" color={row.original.habilitado ? "success" : "neutral"}>
         {row.original.habilitado ? "Activo" : "Inactivo"}
       </Badge>
     ),
