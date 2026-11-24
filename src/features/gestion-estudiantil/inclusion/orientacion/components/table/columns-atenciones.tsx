@@ -6,6 +6,17 @@ import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { AtencionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → clave de ORDEN. */
+export const ORDEN_ATENCIONES: MapaOrden = {
+  fecha: "fecha",
+  estudiante: "estudiante",
+  modalidad: "modalidad",
+  origen: "origen",
+  motivo: "motivo",
+  proxima: "proxima_cita",
+}
 
 interface Opciones {
   puedeRegistrar: boolean

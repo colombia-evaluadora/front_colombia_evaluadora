@@ -1,6 +1,6 @@
 "use no memo"
 
-import { lazy, Suspense, useEffect, useState } from "react"
+import { lazy, Suspense, useState } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
@@ -14,13 +14,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
+import { conOrdenServidor, ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
-import { usePiarListaQuery, usePrefetchPiar, useSinPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
+import { useGradosFiltroQuery, usePiarListaQuery, usePrefetchPiar, useSinPiarQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { FILTROS_VACIOS, type PiarFiltros, type PiarRow } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { BusquedaPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/busqueda-piar"
-import { buildColumnasPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/columnas-piar"
+import { buildColumnasPiar, ORDEN_PIAR } from "@/features/gestion-estudiantil/inclusion/piar/components/columnas-piar"
 import { AvisoPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 
 type Pestana = "piar" | "orientacion" | "informe"
@@ -71,29 +72,19 @@ function PiarListaContent() {
   const [filtros, setFiltros] = useState<PiarFiltros>(FILTROS_VACIOS)
 
 
-  const { data, isPending, isError, error, refetch } = usePiarListaQuery({ search, filtros, pageIndex, pageSize }, access.veListado)
+  const { data, isPending, isError, error, refetch } = usePiarListaQuery({ search, filtros, pageIndex, pageSize, orden: ordenServidor(sorting, ORDEN_PIAR) }, access.veListado)
 
   const aplicar = (next: PiarFiltros) => {
     setFiltros(next)
     goToPage(0)
   }
 
-  // Grados: los que van apareciendo en el listado, como los responsables del Observador.
-  const [grados, setGrados] = useState<{ value: string; label: string }[]>([])
-  useEffect(() => {
-    const nuevas = data?.rows ?? []
-    if (!nuevas.length) return
-    setGrados((prev) => {
-      const m = new Map(prev.map((o) => [o.value, o.label]))
-      for (const r of nuevas) if (r.fk_tgrado) m.set(String(r.fk_tgrado), r.grado_nombre)
-      return [...m].map(([value, label]) => ({ value, label }))
-    })
-  }, [data])
+  const grados = useGradosFiltroQuery()
 
   const irFicha = (row: PiarRow, accion?: "acta" | "cerrar") =>
     navigate({ to: paths.app.piarFicha.getHref(row.id), search: accion ? { accion } : {} })
 
-  const columns = buildColumnasPiar({ access, prefetch, irFicha })
+  const columns = conOrdenServidor(buildColumnasPiar({ access, prefetch, irFicha }), ORDEN_PIAR)
 
   const { table } = useDataTable({
     columns,
@@ -148,7 +139,7 @@ function PiarListaContent() {
           </div>
         )}
         {pestana === "piar" && <TableScreenToolbar>
-          <BusquedaPiar search={search} filtros={filtros} onSearch={setSearch} onFiltros={aplicar} grados={grados} />
+          <BusquedaPiar search={search} filtros={filtros} onSearch={setSearch} onFiltros={aplicar} grados={grados.data ?? []} />
         </TableScreenToolbar>}
       </TableScreenHeader>
       {pestana !== "piar" ? (

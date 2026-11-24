@@ -1,11 +1,16 @@
 import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { SearchQueryBar } from "@/components/search/search-query-bar"
+import { optionTerm, textTerm } from "@/components/search/query-syntax"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-import type { ProcesosFiltros } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
+import { PROCESOS_FILTROS_VACIOS, type ProcesosFiltros } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
-import { useSearchProcesos } from "@/features/gestion-estudiantil/convivencia/hooks/use-search-procesos"
+import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import {
+  useSearchFiltros,
+  type SearchFiltrosProps,
+} from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 
 export interface OpcionesFiltrosProcesos {
@@ -16,53 +21,37 @@ export interface OpcionesFiltrosProcesos {
   responsables: Opcion[]
 }
 
-export interface SearchProcesosProps {
-  search: string
-  onSearchChange: (value: string) => void
-  filters: ProcesosFiltros
-  applyFilters: (values: ProcesosFiltros) => void
-  onClearAll: () => void
-  /** El panel pide las opciones del borrador (la jornada depende de la sede elegida). */
-  onDraftChange: (draft: ProcesosFiltros) => void
+export interface SearchProcesosProps extends SearchFiltrosProps<ProcesosFiltros> {
   opciones: OpcionesFiltrosProcesos
+}
+
+/** `dd/mm/aaaa` escrito en el buscador → `yyyy-MM-dd`; otra cosa, sin filtro todavía. */
+function fechaEscrita(texto: string): string | undefined {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto.trim())
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : undefined
 }
 
 /** Buscador del listado de procesos (G.2.PRD.LIS.2): texto libre y el panel de filtros. */
 export function SearchProcesos(props: SearchProcesosProps) {
-  const {
-    open,
-    setOpen,
-    draft,
-    setDraft,
-    queryText,
-    setQueryText,
-    badgeCount,
-    activeFilterCount,
-    handleApply,
-    handleClearFilters,
-    handleClearAll,
-  } = useSearchProcesos(props)
   const { opciones } = props
-
+  const s = useSearchFiltros<ProcesosFiltros>({
+    ...props,
+    vacios: PROCESOS_FILTROS_VACIOS,
+    terms: [
+      optionTerm("sede", "sede", opciones.sedes),
+      optionTerm("jornada", "jornada", opciones.jornadas),
+      optionTerm("estado", "estado", opciones.estados),
+      optionTerm("responsable", "responsable", opciones.responsables),
+      optionTerm("instancia", "instancia", opciones.instancias),
+      textTerm("desde", "desde", { format: formatFecha, parse: fechaEscrita }),
+      textTerm("hasta", "hasta", { format: formatFecha, parse: fechaEscrita }),
+    ],
+  })
+  const { draft, setDraft } = s
   const sinSede = !draft.sede
 
   return (
-    <SearchQueryBar
-      id="procesos-search"
-      label={null}
-      placeholder="Buscar por estudiante o número de proceso"
-      value={queryText}
-      onValueChange={setQueryText}
-      onClearAll={handleClearAll}
-      onClearFilters={handleClearFilters}
-      activeFilterCount={activeFilterCount}
-      badgeCount={badgeCount}
-      open={open}
-      onOpenChange={setOpen}
-      onApply={handleApply}
-      size="lg"
-      className="sm:w-full max-w-xl"
-    >
+    <BarraBusquedaFiltros id="procesos-search" placeholder="Buscar por estudiante o número de proceso" estado={s}>
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
         <Combo
           id="procesos-sede"
@@ -77,7 +66,7 @@ export function SearchProcesos(props: SearchProcesosProps) {
           value={draft.jornada}
           options={opciones.jornadas}
           disabled={sinSede}
-          placeholder={sinSede ? "Elegí Sede primero" : "Todos"}
+          placeholder={sinSede ? "Elija una sede primero" : "Todos"}
           onChange={(jornada) => setDraft({ ...draft, jornada })}
         />
         <Combo
@@ -120,6 +109,6 @@ export function SearchProcesos(props: SearchProcesosProps) {
           />
         </Field>
       </div>
-    </SearchQueryBar>
+    </BarraBusquedaFiltros>
   )
 }

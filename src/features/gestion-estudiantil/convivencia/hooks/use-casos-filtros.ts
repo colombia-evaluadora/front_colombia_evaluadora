@@ -1,13 +1,11 @@
 "use no memo"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
-import { type Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
-import { FILTROS_VACIOS, SIN_GESTOR, type CasoRow, type ConvivenciaFiltros } from "@/features/gestion-estudiantil/convivencia/api/types"
-import type { OpcionesFiltros } from "@/features/gestion-estudiantil/convivencia/components/search/search-casos"
-import { acumularGestores } from "@/features/gestion-estudiantil/convivencia/utils/gestores"
+import { FILTROS_VACIOS, type ConvivenciaFiltros } from "@/features/gestion-estudiantil/convivencia/api/types"
+import { useGestoresFiltroQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 
 /** Búsqueda, filtros aplicados y borrador del panel, y las opciones de cada filtro del listado de casos. */
@@ -19,6 +17,7 @@ export function useCasosFiltros(goToPage: (page: number) => void) {
   const opciones = useOpcionesGrupos(convivenciaKeys.all, borrador.sede, "")
   const tipos = useCatalogo("TIPO_SITUACION")
   const estados = useCatalogo("ESTADO_CASO_CONVIVENCIA")
+  const gestores = useGestoresFiltroQuery()
 
   return {
     search,
@@ -40,17 +39,6 @@ export function useCasosFiltros(goToPage: (page: number) => void) {
       goToPage(0)
     },
     onDraftChange: setBorrador,
-    opciones: { sedes: opciones.sedeOpciones, jornadas: opciones.jornadaOpciones, tipos, estados },
+    opciones: { sedes: opciones.sedeOpciones, jornadas: opciones.jornadaOpciones, tipos, estados, gestores: gestores.data ?? [] },
   }
-}
-
-/** Gestores: los que van apareciendo en el listado; no hay un catálogo propio (§ 5b). */
-export function useGestoresDelListado(rows: CasoRow[] | undefined): OpcionesFiltros["gestores"] {
-  const [gestores, setGestores] = useState<Opcion[]>([])
-  useEffect(() => {
-    const nuevas = rows ?? []
-    if (!nuevas.length) return
-    setGestores((prev) => acumularGestores(prev, nuevas))
-  }, [rows])
-  return [{ value: SIN_GESTOR, label: "Sin gestor" }, ...gestores]
 }

@@ -9,6 +9,17 @@ import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { PiarRow } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { COLOR_ESTADO, esEditable } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → clave de ORDEN. */
+export const ORDEN_PIAR: MapaOrden = {
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  condicion: "condicion",
+  estado: "estado",
+  ajustes: "ajustes",
+  pendientes: "pendientes",
+}
 
 interface Opciones {
   access: { puedeGestionar: boolean; veAvisoSinPiar: boolean }

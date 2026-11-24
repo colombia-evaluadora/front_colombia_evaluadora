@@ -10,6 +10,18 @@ import type { CasoRow } from "@/features/gestion-estudiantil/convivencia/api/typ
 import { SIN_ACCESO } from "@/features/gestion-estudiantil/convivencia/utils/access"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_CASO, MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → clave de ORDEN. */
+export const ORDEN_CASOS: MapaOrden = {
+  fecha_hechos: "fecha_hechos",
+  fecha_conocimiento: "fecha_conocimiento",
+  tipo: "tipo",
+  manifestacion: "manifestacion",
+  estudiantes: "estudiantes",
+  gestor: "gestor",
+  estado: "estado",
+}
 
 interface ColumnasOpciones {
   access: ConvivenciaAccess
