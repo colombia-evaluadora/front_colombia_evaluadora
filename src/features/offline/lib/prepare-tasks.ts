@@ -309,6 +309,8 @@ function vistaActividadesTasks(pares: ActividadTabPair[] | undefined, meses: { a
       return seed(planeadorKeys.actividades.calendario(params), () => fetchActividadesCalendario(params), offlineMeta(TTL_OFFLINE.grupo))
     }),
     railTasks(pares, hoy, "ambos", ROTULO_DIAS_VECINOS),
+    // Cualquier otro día del rail se arma sin red con el listado completo.
+    seed(planeadorKeys.actividades.miasTodas(stats), () => fetchTodasLasActividadesMias(stats), offlineMeta(TTL_OFFLINE.grupo)),
   ]
 }
 

@@ -11,14 +11,14 @@ import {
 } from "@/components/offline/prepare-offline-dialog"
 import { prepareFreshness, type PrepareFreshness } from "@/components/offline/prepare-offline-plan"
 import { Button } from "@/components/ui/button"
-import { CloudCheckIcon, CloudOffIcon, CloudSyncIcon } from "@/components/ui/icons"
+import { CloudAlertIcon, CloudCheckIcon, CloudOffIcon, CloudSyncIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Progress } from "@/components/ui/progress"
 import { getOfflineMode } from "@/lib/offline/offline-mode"
 import { getDeviceMode } from "@/lib/offline/query-persister"
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
 import { cn } from "@/lib/utils"
-import {
+import { hasResumableCheckpoint,
   cancelPrepare,
   listenPrepareChannel,
   prepareStore,
@@ -121,9 +121,12 @@ export function OfflineDataStatus() {
     Icon = CloudSyncIcon
     tono = "text-blue"
   } else if (snapshot.lastPrepareAt != null && hace) {
-    texto = `Datos guardados: ${hace}`
-    Icon = CloudCheckIcon
-    tono = TONO[prepareFreshness(snapshot.lastPrepareAt)]
+    // Con elementos que fallaron no se puede decir "guardados" en verde. El
+    // checkpoint sobrevive a la recarga: solo se borra en una corrida completa.
+    const faltantes = snapshot.failed.length > 0 || hasResumableCheckpoint()
+    texto = faltantes ? `Datos guardados con faltantes: ${hace}` : `Datos guardados: ${hace}`
+    Icon = faltantes ? CloudAlertIcon : CloudCheckIcon
+    tono = faltantes ? "text-yellow" : TONO[prepareFreshness(snapshot.lastPrepareAt)]
   } else {
     texto = "Datos sin guardar"
   }
