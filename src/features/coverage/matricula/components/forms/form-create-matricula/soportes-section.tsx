@@ -106,6 +106,8 @@ export function armarFilas(soportes: Soporte[]): FilaSoporte[] {
 interface SoportesSectionProps {
   matriculaId: string
   editable: boolean
+  /** Revisar soporte sin poder adjuntar ni reemplazar: Ver detalle (manual §5.4). Por defecto, igual que `editable`. */
+  revisable?: boolean
   /** Complementaria por adscripción: suma los documentos requeridos del convenio. */
   porAdscripcion?: boolean
 }
@@ -115,7 +117,7 @@ interface SoportesSectionProps {
  * revisión. Cada operación se guarda al momento, no con el botón Guardar de la
  * matrícula; la revisión nunca impide la matrícula.
  */
-export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion = false }: SoportesSectionProps) {
+export function MatriculaSoportesSection({ matriculaId, editable, revisable = editable, porAdscripcion = false }: SoportesSectionProps) {
   const { notify } = useNotify()
   const soportesQuery = useSoportesQuery(matriculaId)
   const cargar = useCargarSoporte(matriculaId)
@@ -236,13 +238,17 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
                             <EyeIcon /> Ver archivo
                           </DropdownMenuItem>
                           {editable ? (
+                            <DropdownMenuItem disabled={!cargado} onClick={() => setReemplazando(fila)}>
+                              <UploadSimpleIcon /> Reemplazar
+                            </DropdownMenuItem>
+                          ) : null}
+                          {revisable ? (
+                            <DropdownMenuItem disabled={!cargado} onClick={() => setRevisando(fila)}>
+                              <CheckIcon /> Revisar soporte
+                            </DropdownMenuItem>
+                          ) : null}
+                          {editable ? (
                             <>
-                              <DropdownMenuItem disabled={!cargado} onClick={() => setReemplazando(fila)}>
-                                <UploadSimpleIcon /> Reemplazar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem disabled={!cargado} onClick={() => setRevisando(fila)}>
-                                <CheckIcon /> Revisar soporte
-                              </DropdownMenuItem>
                               {fila.tipo === "OTRO" ? (
                                 <>
                                   <DropdownMenuSeparator />

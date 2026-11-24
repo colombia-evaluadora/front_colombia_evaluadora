@@ -1,3 +1,4 @@
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useEffect } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -47,6 +48,7 @@ function MatriculaDetailPageContent() {
   const gradeLabel = useMatriculaGradeLabel()
   const { notify } = useNotify()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
+  const { puedeEditar: puedeEditarSoportes } = useMenuPermission("MATRICULA")
   // La configuración de campos es la del colegio de la sede de la matrícula.
   const colegio = useEstablecimientoDeSede({
     sedeId: data?.details?.sedeId,
@@ -138,10 +140,11 @@ function MatriculaDetailPageContent() {
                     Boolean(data.matricula.sinAutorizacion) || Boolean(data.details?.restricciones?.origenAdscripcion)
                   }
                 />
-                {/* Solo lectura: adjuntar, reemplazar y revisar se hacen en Editar (EDI.1h). */}
+                {/* Adjuntar y reemplazar se hacen en Editar; revisar, también aquí (manual §5.4). */}
                 <MatriculaSoportesSection
                   matriculaId={data.matricula.id}
                   editable={false}
+                  revisable={puedeEditarSoportes}
                   porAdscripcion={
                     data.details?.restricciones?.tipo === "COMPLEMENTARIA" && Boolean(data.details?.restricciones?.origenAdscripcion)
                   }
