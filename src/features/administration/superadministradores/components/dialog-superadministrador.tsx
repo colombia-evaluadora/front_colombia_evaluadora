@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useStore } from "@tanstack/react-form"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckIcon, InfoIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { getErrorMessage } from "@/lib/api-client"
@@ -93,7 +94,7 @@ function SuperadministradorContent(props: ContentProps) {
           </div>
         )}
         <DialogFooter>
-          <Button size="sm" type="button" variant="fill" color="neutral" onClick={props.onClose}>
+          <Button size="sm" type="button" variant="outline" color="neutral" onClick={props.onClose}>
             <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
@@ -103,9 +104,10 @@ function SuperadministradorContent(props: ContentProps) {
   )
 }
 
-function toValues(s: Superadministrador | null): SuperadministradorFormValues {
+/** Alta: Cédula de ciudadanía (CC) por defecto, como el prototipo (S.6.EDI.1). */
+function toValues(s: Superadministrador | null, tipos: TipoDocumentoXl[]): SuperadministradorFormValues {
   return {
-    tipoDocumento: s?.tipoDocumento?.pk ?? 0,
+    tipoDocumento: s ? (s.tipoDocumento?.pk ?? 0) : (tipos.find((t) => t.sigla === "CC")?.pk ?? 0),
     numeroDocumento: s?.numeroDocumento ?? "",
     primerNombre: s?.primerNombre ?? "",
     segundoNombre: s?.segundoNombre ?? "",
@@ -131,7 +133,7 @@ function SuperadministradorForm({
 
   const soloLectura = modo === "ver"
   const esNumerico = (pk: number) => tipos.find((t) => t.pk === pk)?.numerico ?? false
-  const defaultValues = toValues(actual)
+  const defaultValues = toValues(actual, tipos)
 
   const save = useSaveSuperadministrador()
   const estado = useEstadoSuperadministrador()
@@ -200,6 +202,8 @@ function SuperadministradorForm({
     const cambiaEstado = actual != null && value.activo !== actual.activo
     try {
       let aviso: { message: string; variant: "success" | "warning" } | null = null
+      // Alta como Inactivo (S.6.EDI.1 tiene Estado): se crea y luego se inactiva, como en Festivos.
+      let creadoId: number | null = null
       if (cambianDatos) {
         const result = await save.mutateAsync({
           id: actual?.pkSuperadministrador,
@@ -212,9 +216,10 @@ function SuperadministradorForm({
           correo: toEmailInput(value.correo).toLowerCase(),
         })
         aviso = superadministradorSaveNotice(result, actual == null)
+        if (actual == null && !value.activo) creadoId = result.superadministrador.pkSuperadministrador
       }
-      if (cambiaEstado) {
-        await estado.mutateAsync({ id: actual.pkSuperadministrador, activo: value.activo })
+      if (cambiaEstado || creadoId != null) {
+        await estado.mutateAsync({ id: creadoId ?? actual!.pkSuperadministrador, activo: value.activo })
         aviso ??= {
           message: value.activo
             ? SUCCESS_MESSAGES.superadministrador.activated
@@ -250,7 +255,8 @@ function SuperadministradorForm({
 
   return (
     <Dialog open onOpenChange={(next) => !next && requestClose()}>
-      <DialogContent className="sm:max-w-2xl" inert={confirmDiscardOpen}>
+      {/* Sin X: el pie ya tiene Cancelar/Cerrar (CLAUDE.md §13). */}
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             {titulo}
@@ -270,8 +276,8 @@ function SuperadministradorForm({
         {modo === "nuevo" && (
           <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
             <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
-            Se enviará al correo un enlace para que establezca su contraseña. Si la persona ya tiene
-            una cuenta activa en la plataforma, conserva la suya.
+            Se enviará un enlace de un solo uso, válido por 48 horas, para que establezca su
+            contraseña. Si la persona ya tiene una cuenta activa en la plataforma, conserva la suya.
           </p>
         )}
         {yaEs && (
@@ -403,20 +409,22 @@ function SuperadministradorForm({
               </form.AppField>
             </FormDisabledProvider>
           </FormDisabledProvider>
-          {modo !== "nuevo" && (
-            <form.AppField name="activo">
-              {() => (
-                <EstadoSuperadministrador
-                  disabled={soloLectura || Boolean(actual?.esUsted)}
-                  bloqueo={actual?.esUsted ? NO_PUEDE_INACTIVARSE_MENSAJE : undefined}
-                />
-              )}
-            </form.AppField>
-          )}
+          {/* También al crear, como el prototipo (S.6.EDI.1). */}
+          <form.AppField name="activo">
+            {() => (
+              <EstadoSuperadministrador
+                disabled={soloLectura || Boolean(actual?.esUsted)}
+                bloqueo={actual?.esUsted ? NO_PUEDE_INACTIVARSE_MENSAJE : undefined}
+              />
+            )}
+          </form.AppField>
         </form>
 
         {/* Cancelar/Cerrar primero; el primario al final (CLAUDE.md §13). */}
-        <DialogFooter>
+        <DialogFooter className="sm:items-center">
+          {!soloLectura && (
+            <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          )}
           <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             {soloLectura ? "Cerrar" : "Cancelar"}
@@ -445,7 +453,7 @@ function SuperadministradorForm({
               {busy ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
-                <CheckIcon data-icon="inline-start" />
+                <FloppyDiskIcon data-icon="inline-start" />
               )}
               Guardar
             </Button>
@@ -464,39 +472,40 @@ function SuperadministradorForm({
   )
 }
 
-/** Activo / Inactivo, con el efecto de inactivar (Sección 7). */
+/**
+ * Activo / Inactivo, con el efecto de inactivar (Sección 7). Interruptor dentro del recuadro de
+ * opciones con label flotante y * (reglas de UI), y la explicación debajo.
+ */
 function EstadoSuperadministrador({ disabled, bloqueo }: { disabled?: boolean; bloqueo?: string }) {
   const field = useFieldContext<boolean>()
   const checked = Boolean(useStore(field.store, (s) => s.value))
   return (
-    <label
-      htmlFor="superadministrador-estado"
-      className={cn(
-        "flex items-start gap-3 rounded-md border px-3 py-2.5 sm:col-span-2",
-        checked ? "border-border" : "border-dashed border-border bg-muted/40",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
-      )}
+    <MarcoOpciones
+      id="superadministrador-estado-marco"
+      label="Estado"
+      required
+      className="sm:col-span-2"
+      descripcion={
+        bloqueo ??
+        (checked
+          ? "Puede ingresar y administrar la plataforma. Si lo inactiva, pierde el acceso y se cierran sus sesiones."
+          : "No puede ingresar a la plataforma.")
+      }
     >
-      <Switch
-        id="superadministrador-estado"
-        size="sm"
-        round
-        className="mt-0.5"
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(next) => !disabled && field.handleChange(next)}
-      />
-      <span className="flex flex-col gap-0.5 text-sm">
-        <span className={cn("font-medium", !checked && "text-muted-foreground")}>
-          {checked ? "Activo" : "Inactivo"}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {bloqueo ??
-            (checked
-              ? "Puede ingresar y administrar la plataforma. Si lo inactiva, pierde el acceso y se cierran sus sesiones."
-              : "No puede ingresar a la plataforma.")}
-        </span>
-      </span>
-    </label>
+      <label
+        htmlFor="superadministrador-estado"
+        className={cn("flex items-center gap-2", disabled ? "cursor-not-allowed" : "cursor-pointer")}
+      >
+        <Switch
+          id="superadministrador-estado"
+          size="sm"
+          round
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={(next) => !disabled && field.handleChange(next)}
+        />
+        <span className={cn(!checked && "text-muted-foreground")}>{checked ? "Activo" : "Inactivo"}</span>
+      </label>
+    </MarcoOpciones>
   )
 }
