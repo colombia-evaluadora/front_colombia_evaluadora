@@ -40,21 +40,23 @@ export interface EstrategiasParams {
   pageSize: number
 }
 
+export const fetchEstrategias = async (params: EstrategiasParams) => {
+  const rows = await evalCol.getRows<EstrategiaRow>(
+    `${BASE_PREVENCION}/estrategias${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /estrategias`: las que la persona ve, más recientes primero; `total_count` viene en cada fila. */
 export function useEstrategiasQuery(params: EstrategiasParams) {
   return useQuery({
     queryKey: prevencionKeys.estrategias(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<EstrategiaRow>(
-        `${BASE_PREVENCION}/estrategias${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchEstrategias(params),
     enabled: params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,
@@ -66,19 +68,21 @@ export interface EstrategiaPagina {
   pageSize: number
 }
 
+export const fetchEstrategia = (estrategiaId: number | undefined, pagina: EstrategiaPagina) =>
+  evalCol
+    .getRows<Record<string, unknown>>(
+      `${BASE_PREVENCION}/estrategias/${estrategiaId}${queryString({
+        PAGEINDEX: pagina.pageIndex,
+        PAGESIZE: pagina.pageSize,
+      })}`,
+    )
+    .then((r) => desenvolver<EstrategiaDetalle>(r[0], "datos", "No se encontró la estrategia."))
+
 /** `GET /estrategias/:ID` → columna `datos`; los beneficiarios vienen paginados. */
 export function useEstrategiaQuery(estrategiaId: number | undefined, pagina: EstrategiaPagina, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.estrategia(estrategiaId ?? "none", pagina),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(
-          `${BASE_PREVENCION}/estrategias/${estrategiaId}${queryString({
-            PAGEINDEX: pagina.pageIndex,
-            PAGESIZE: pagina.pageSize,
-          })}`,
-        )
-        .then((r) => desenvolver<EstrategiaDetalle>(r[0], "datos", "No se encontró la estrategia.")),
+    queryFn: () => fetchEstrategia(estrategiaId, pagina),
     enabled: enabled && estrategiaId != null,
     retry: false,
     placeholderData: (prev) => prev,

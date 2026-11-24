@@ -10,6 +10,9 @@ import type {
   OpcionGrupoObservacion,
 } from "@/features/gestion-estudiantil/observaciones/api/types"
 
+export const fetchOpcionesGruposObservacion = (para: "REGISTRAR" | "FILTRO") =>
+  evalCol.getRows<OpcionGrupoObservacion>(`${BASE_OBSERVACIONES}/opciones/grupos${queryString({ PARA: para })}`)
+
 /**
  * `GET /observaciones-sugerencias/opciones/grupos`. `REGISTRAR`: los grupos que el usuario dirige (el
  * selector del formulario); `FILTRO`: los de su alcance de lectura.
@@ -17,8 +20,7 @@ import type {
 export function useOpcionesGruposObservacionQuery(para: "REGISTRAR" | "FILTRO", enabled = true) {
   return useQuery({
     queryKey: observacionesKeys.opciones.grupos(para),
-    queryFn: () =>
-      evalCol.getRows<OpcionGrupoObservacion>(`${BASE_OBSERVACIONES}/opciones/grupos${queryString({ PARA: para })}`),
+    queryFn: () => fetchOpcionesGruposObservacion(para),
     enabled,
     staleTime: 5 * 60_000,
   })

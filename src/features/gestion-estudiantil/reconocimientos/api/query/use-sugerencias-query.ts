@@ -13,6 +13,15 @@ export interface SugerenciasParams {
   jornada: number | null
 }
 
+export const fetchSugerencias = (params: SugerenciasParams) =>
+  evalCol.getRows<SugerenciaPuesto>(
+    `${BASE_RECONOCIMIENTOS}/sugerencias${queryString({
+      ESTABLECIMIENTO: params.establecimiento,
+      SEDE: params.sede,
+      JORNADA: params.jornada,
+    })}`,
+  )
+
 /**
  * `GET /reconocimientos/sugerencias`: Puesto 1 del último período cerrado. Solo RECTOR y COORDINADOR:
  * para el resto el backend responde 403, así que `enabled` debe ser false y no se reintenta.
@@ -20,14 +29,7 @@ export interface SugerenciasParams {
 export function useSugerenciasQuery(params: SugerenciasParams, enabled: boolean) {
   return useQuery({
     queryKey: reconocimientosKeys.sugerencias(params),
-    queryFn: () =>
-      evalCol.getRows<SugerenciaPuesto>(
-        `${BASE_RECONOCIMIENTOS}/sugerencias${queryString({
-          ESTABLECIMIENTO: params.establecimiento,
-          SEDE: params.sede,
-          JORNADA: params.jornada,
-        })}`,
-      ),
+    queryFn: () => fetchSugerencias(params),
     enabled: enabled && params.establecimiento != null,
     retry: false,
   })
