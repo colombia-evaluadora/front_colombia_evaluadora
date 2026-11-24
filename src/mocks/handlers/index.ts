@@ -49,6 +49,8 @@ import { inscripcionesConfiguracionHandlers } from "@/mocks/handlers/inscripcion
 import { autorizacionDatosHandlers } from "@/mocks/handlers/autorizacion-datos"
 import { inscripcionPublicaHandlers } from "@/mocks/handlers/inscripcion-publica"
 import { inscripcionesHandlers } from "@/mocks/handlers/inscripciones"
+import { reservasCupoHandlers } from "@/mocks/handlers/reservas-cupo"
+import { sinMockHandlers } from "@/mocks/handlers/sin-mock"
 import { entidadTerritorialHandlers } from "@/mocks/handlers/entidad-territorial"
 import { rolesHandlers } from "@/mocks/handlers/roles"
 import { plansHandlers } from "@/mocks/handlers/plans"
@@ -157,6 +159,7 @@ export const handlers = [
   ...autorizacionDatosHandlers,
   ...inscripcionPublicaHandlers,
   ...inscripcionesHandlers,
+  ...reservasCupoHandlers,
   ...entidadTerritorialHandlers,
   ...reservationsHandlers,
   ...establishmentHandlers,
@@ -208,4 +211,6 @@ export const handlers = [
   ...comunicacionesHilosAcudientesHandlers,
   ...comunicacionesHandlers,
   ...notificacionesHandlers,
+  // Siempre el último: lo que ningún mock atendió no sale al backend real (ver sin-mock.ts).
+  ...sinMockHandlers,
 ]
