@@ -104,3 +104,17 @@ export function useEstudiantesAtencionQuery(search: string, enabled: boolean) {
     staleTime: 30_000,
   })
 }
+
+/** Funcionarios que pueden firmar la ficha impresa (5.2): del alcance de quien registra, con sus roles; hasta 50 por búsqueda. */
+export function useFuncionariosFirmanteQuery(search: string, enabled: boolean) {
+  return useQuery({
+    queryKey: orientacionKeys.funcionarios(search),
+    queryFn: () =>
+      evalCol.getRows<{ fk_tfuncionario: number; nombre: string; roles: string | null }>(
+        `${BASE}/opciones/funcionarios${search.trim() ? `?SEARCH=${encodeURIComponent(search.trim())}` : ""}`,
+      ),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  })
+}

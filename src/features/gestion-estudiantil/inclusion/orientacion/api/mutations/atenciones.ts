@@ -29,6 +29,16 @@ export function useRemisionExterna(atencionId: number) {
   })
 }
 
+/** `POST /atenciones/:ID/presuncion-bap` (V711/V712): MOTIVO de 10 a 1000; responde `{id, mensaje}`. */
+export function useMarcarPresuncionBap() {
+  const invalidar = useInvalidar()
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) =>
+      evalCol.postRow<{ id?: number; mensaje?: string; datos?: { id: number; mensaje: string } }>(`${BASE}/${id}/presuncion-bap`, { MOTIVO: motivo }),
+    onSuccess: invalidar,
+  })
+}
+
 export function useAnularAtencion() {
   const invalidar = useInvalidar()
   return useMutation({
