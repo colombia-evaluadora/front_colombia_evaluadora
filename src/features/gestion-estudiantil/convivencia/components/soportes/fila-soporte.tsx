@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowsLeftRightIcon, EyeIcon } from "@/components/ui/icons"
 
 import type { SoporteAccion } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
-import { formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { formatFecha, formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
 import { formatPeso } from "@/features/gestion-estudiantil/convivencia/utils/soportes"
 
@@ -21,8 +21,11 @@ export function FilaSoporte({ soporte: s, soloLectura, onVer, onSustituir, onRet
     <li className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate font-medium">{s.nombre}</span>
+        <span className="text-xs text-muted-foreground">{[s.tipo, formatPeso(s.peso)].filter(Boolean).join(" · ")}</span>
         <span className="text-xs text-muted-foreground">
-          {[s.tipo, formatPeso(s.peso), [s.autor, formatFechaHora(s.fecha)].filter(Boolean).join(" · ")].filter(Boolean).join(" · ")}
+          {s.vinculado
+            ? `Soporte general del caso (Sección 3.1) · vinculado por ${s.autor ?? "—"} · ${formatFecha(s.fecha)}`
+            : [s.autor, formatFechaHora(s.fecha)].filter(Boolean).join(" · ")}
         </span>
       </div>
       <Badge variant="soft" color={s.vinculado ? "info" : "success"}>

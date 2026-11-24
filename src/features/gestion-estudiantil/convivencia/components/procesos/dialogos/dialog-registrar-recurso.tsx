@@ -106,7 +106,7 @@ export function DialogRegistrarRecurso({ proceso: p, onClose }: Props) {
       </div>
       <CampoOpcionUnica id="recurso-presentado" label="Presentado por" value={v.presentacion} options={presentaciones} error={e.presentacion} onChange={(presentacion) => set({ presentacion })} />
       <TextoLargo id="recurso-argumentos" label="Argumentos" required max={5000} rows={4} value={v.argumentos} error={e.argumentos} onChange={(argumentos) => set({ argumentos })} />
-      <CampoArchivo label="Escrito del recurso*" archivos={v.escrito} error={e.escrito} onChange={(escrito) => set({ escrito })} />
+      <CampoArchivo label="Escrito del recurso*" ayuda="PDF o imagen; máximo 10 MB." archivos={v.escrito} error={e.escrito} onChange={(escrito) => set({ escrito })} />
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <ComboOpciones

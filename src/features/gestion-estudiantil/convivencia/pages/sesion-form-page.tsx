@@ -52,13 +52,18 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
 
       <TableScreenBody>
         <div className="flex flex-col gap-5 pb-6">
-          <SeccionDatosSesion form={form} periodoRotulo={rotuloPeriodo(periodo)} />
+          <SeccionDatosSesion
+            form={form}
+            periodoRotulo={rotuloPeriodo(periodo)}
+            inicio={periodo.fecha_inicio.slice(0, 10)}
+            fin={periodo.fecha_fin.slice(0, 10)}
+          />
           <SeccionAsistentes form={form} />
           <SeccionInvitados form={form} />
           <SeccionCasosTratados form={form} comite={comite.fk_comite as number} periodo={periodo.fk_periodo} />
           <TextoLargo
             id="sesion-otros"
-            label="Otros temas"
+            label="Otros temas tratados"
             rows={4}
             max={LIM.otros}
             value={v.otros}

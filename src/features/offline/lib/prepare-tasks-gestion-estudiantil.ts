@@ -62,7 +62,6 @@ import {
 } from "@/features/gestion-estudiantil/convivencia/api/query/use-procesos-query"
 import { PROCESOS_FILTROS_VACIOS } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { FILTROS_VACIOS as CONVIVENCIA_VACIOS } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { COMITE_VER_ROLES } from "@/features/gestion-estudiantil/convivencia/utils/access"
 // Citaciones y compromisos
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import {
@@ -361,7 +360,7 @@ function comiteTasks(): PrepareTask[] {
   ]
 }
 
-function convivenciaTasks(roles: readonly string[]): PrepareTask[] {
+function convivenciaTasks(): PrepareTask[] {
   return [
     listadoFiltrado(convivenciaKeys.lista, fetchCasos, toConvivenciaFilters("", CONVIVENCIA_VACIOS), {
       fila: (c) => [
@@ -388,8 +387,8 @@ function convivenciaTasks(roles: readonly string[]): PrepareTask[] {
       "TIPO_AGRESION",
       "EVENTO_GENERADOR",
     ),
-    conSedes((sedes) => [capacidades(sedes[0].establecimientoId)]),
-    ...(COMITE_VER_ROLES.some((r) => roles.includes(r)) ? comiteTasks() : []),
+    // El Comité se precarga solo si el backend dice que el usuario lo ve (comite_puede_ver).
+    conSedes((sedes) => [capacidades(sedes[0].establecimientoId, (cap) => (cap?.comite_puede_ver ? comiteTasks() : []))]),
   ]
 }
 

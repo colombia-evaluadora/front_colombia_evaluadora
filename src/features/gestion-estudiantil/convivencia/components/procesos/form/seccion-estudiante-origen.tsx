@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/fields/subjects-multi-select"
 import { useEstudiantesProcesoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-proceso-apertura-query"
+import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import type { ProcesoFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-proceso-form"
@@ -34,20 +35,27 @@ function CampoEstudiante({ form }: { form: ProcesoFormState }) {
 
   const opciones = useMemo(() => {
     const filas = origen.desdeCaso
-      ? (estudiantesCaso.data ?? []).map((e) => ({ id: e.fk_tmatricula, label: [e.nombre, e.grado_grupo].filter(Boolean).join(" · ") }))
+      ? (estudiantesCaso.data ?? []).map((e) => ({
+          id: e.fk_tmatricula,
+          label: [e.nombre, e.grado_grupo, e.proceso_numero != null && `ya tiene el proceso ${e.proceso_numero}`].filter(Boolean).join(" · "),
+          acudiente: e.acudiente_nombre,
+        }))
       : (buscados.data ?? []).map((e) => ({
           id: e.fk_tmatricula,
           label: [e.nombre, e.documento, e.grado_grupo].filter(Boolean).join(" · "),
+          acudiente: e.acudiente_nombre,
         }))
-    const lista = filas.map((f) => ({ value: String(f.id), label: f.label }))
+    const lista = filas.map((f) => ({ value: String(f.id), label: f.label, acudiente: f.acudiente }))
     // El elegido sigue visible aunque la búsqueda actual ya no lo traiga.
     if (v.matricula && !lista.some((o) => o.value === v.matricula))
-      lista.unshift({ value: v.matricula, label: nombreElegido || `Matrícula ${v.matricula}` })
+      lista.unshift({ value: v.matricula, label: nombreElegido || `Matrícula ${v.matricula}`, acudiente: null })
     return lista
   }, [origen.desdeCaso, estudiantesCaso.data, buscados.data, v.matricula, nombreElegido])
 
-  if (origen.desdeAnotacion) {
-    return <CampoLectura id="proceso-estudiante" label="Estudiante" value={nombreElegido || `Matrícula ${v.matricula}`} />
+  // Desde una anotación o desde el modal del caso (G.2.CAS.DIS.2) el estudiante ya está elegido: solo lectura.
+  if (origen.estudianteFijo) {
+    const delCaso = opciones.find((o) => o.value === v.matricula)?.label.split(" · ")[0]
+    return <CampoLectura id="proceso-estudiante" label="Estudiante" value={nombreElegido || delCaso || `Matrícula ${v.matricula}`} />
   }
 
   const placeholder = origen.desdeCaso
@@ -68,14 +76,17 @@ function CampoEstudiante({ form }: { form: ProcesoFormState }) {
       options={opciones}
       error={errores.matricula}
       onInputChange={origen.desdeCaso ? undefined : (t) => t !== nombreElegido && setTexto(t)}
-      onChange={(value) => elegirEstudiante(value, opciones.find((o) => o.value === value)?.label.split(" · ")[0] ?? "")}
+      onChange={(value) => {
+        const o = opciones.find((x) => x.value === value)
+        elegirEstudiante(value, o?.label.split(" · ")[0] ?? "", o?.acudiente)
+      }}
     />
   )
 }
 
 /** Anotaciones de origen: selección múltiple entre las negativas no anuladas del estudiante. */
 function CampoAnotaciones({ form }: { form: ProcesoFormState }) {
-  const { v, set, origen, origenes, errores } = form
+  const { v, elegirAnotaciones, origen, origenes, errores } = form
   const sinEstudiante = !v.matricula
   const fijas = origen.desdeAnotacion
   const anotaciones = origenes.data?.anotaciones
@@ -105,7 +116,7 @@ function CampoAnotaciones({ form }: { form: ProcesoFormState }) {
         placeholder={placeholder}
         emptyMessage="El estudiante no tiene anotaciones negativas disponibles."
         disabled={sinEstudiante || origenes.isPending || fijas}
-        onChange={(anotaciones) => set({ anotaciones })}
+        onChange={elegirAnotaciones}
       />
       {errores.origen && <FieldError>{errores.origen}</FieldError>}
     </Field>
@@ -116,8 +127,10 @@ function CampoAnotaciones({ form }: { form: ProcesoFormState }) {
 function CampoCaso({ form }: { form: ProcesoFormState }) {
   const { v, set, origen, origenes } = form
   const casos = origenes.data?.casos ?? []
-  const etiqueta = (c: { numero: string; fecha_hechos: string; tipo_nombre: string }) =>
-    `${c.numero} · ${formatFecha(c.fecha_hechos)} · ${c.tipo_nombre}`
+  const manifestaciones = useCatalogo("MANIFESTACION_SITUACION")
+  const manifestacion = nombreDe(manifestaciones, form.casoOrigen.data?.fk_tlv_manifestacion)
+  const etiqueta = (c: { id: number; numero: string; fecha_hechos: string; tipo_nombre: string }) =>
+    [c.numero, formatFecha(c.fecha_hechos), c.tipo_nombre, form.casoOrigen.data?.id === c.id ? manifestacion : null].filter(Boolean).join(" · ")
   if (origen.desdeCaso) {
     const c = casos.find((x) => String(x.id) === v.caso)
     return <CampoLectura id="proceso-caso" label="Caso de origen" value={c ? etiqueta(c) : `Caso ${v.caso}`} />

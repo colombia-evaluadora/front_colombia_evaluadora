@@ -50,7 +50,7 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
           description={
             <Button variant="ghost" color="neutral" size="sm" onClick={volver}>
               <ArrowLeftIcon data-icon="inline-start" />
-              Volver a Convivencia
+              Volver
             </Button>
           }
           action={
@@ -72,7 +72,7 @@ function ProcesoDetalleContent({ proceso: p }: { proceso: ProcesoDetalle }) {
               {p.estado.nombre}
             </Badge>
             <span className="text-base font-normal text-muted-foreground">
-              {p.estudiante.nombre}
+              {[p.estudiante.nombre, p.estudiante.grado_grupo].filter(Boolean).join(" · ")}
               {p.fecha_en_firme && ` · En firme desde el ${formatFecha(p.fecha_en_firme)}`}
             </span>
           </span>

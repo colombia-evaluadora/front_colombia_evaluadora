@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import {
   actualizarCasoInput,
+  corregirFechasInput,
   crearCasoInput,
   desdeCaso,
   fechasDe,
@@ -111,6 +112,44 @@ describe("fechasDe", () => {
     const a = valido({ fechaConocida: false, fechaHechos: "2026-01-01" })
     const b = valido({ fechaConocida: false, fechaHechos: "" })
     expect(fechasDe(a)).toBe(fechasDe(b))
+  })
+})
+
+describe("número del caso en el SIUCE (F3)", () => {
+  it("se carga al modificar y arranca vacío al crear", () => {
+    expect(desdeCaso(undefined).numeroSiuce).toBe("")
+    expect(desdeCaso({ ...caso, numero_siuce: "SIUCE-2027-003918" }).numeroSiuce).toBe("SIUCE-2027-003918")
+  })
+
+  it("admite hasta 50 caracteres", () => {
+    expect(validarCaso(valido({ numeroSiuce: "x".repeat(50) }), ctx).numeroSiuce).toBeUndefined()
+    expect(validarCaso(valido({ numeroSiuce: "x".repeat(51) }), ctx).numeroSiuce).toMatch(/hasta 50 caracteres/)
+  })
+
+  it("viaja recortado y vacío como null (en el PUT lo quita)", () => {
+    expect(crearCasoInput(valido({ numeroSiuce: " S-1 " }), false).datos.NUMERO_SIUCE).toBe("S-1")
+    expect(crearCasoInput(valido({ numeroSiuce: "  " }), false).datos.NUMERO_SIUCE).toBeNull()
+    expect(actualizarCasoInput(caso, { ...desdeCaso(caso), numeroSiuce: "" }, false, false).datos.NUMERO_SIUCE).toBeNull()
+  })
+})
+
+describe("corregirFechasInput (G.2.CAS.GES.3)", () => {
+  it("manda solo fechas, hora y motivo a POST /fechas", () => {
+    const v = { ...desdeCaso(caso), motivo: " Se aclaró el día " }
+    expect(corregirFechasInput(40, v)).toEqual({
+      casoId: 40,
+      FECHA_CONOCIMIENTO: "2026-01-10",
+      FECHA_HECHOS_CONOCIDA: true,
+      FECHA_HECHOS: "2026-01-09",
+      HORA_HECHOS_CONOCIDA: true,
+      HORA_HECHOS: "08:30",
+      MOTIVO: "Se aclaró el día",
+    })
+  })
+
+  it("con la fecha desconocida no manda fecha ni hora", () => {
+    const v = { ...desdeCaso(caso), fechaConocida: false, motivo: "No se pudo confirmar" }
+    expect(corregirFechasInput(40, v)).toMatchObject({ FECHA_HECHOS_CONOCIDA: false, FECHA_HECHOS: null, HORA_HECHOS_CONOCIDA: null, HORA_HECHOS: null })
   })
 })
 

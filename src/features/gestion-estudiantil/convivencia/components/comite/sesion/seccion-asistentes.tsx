@@ -1,3 +1,4 @@
+import { FieldError } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
@@ -10,7 +11,7 @@ export function SeccionAsistentes({ form }: { form: SesionFormState }) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-background">
       <SeccionPlegable
-        titulo="Asistentes"
+        titulo="Asistentes*"
       >
         {!v.fecha ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">Elija la fecha para ver los integrantes vigentes ese día.</p>
@@ -39,6 +40,7 @@ export function SeccionAsistentes({ form }: { form: SesionFormState }) {
               </span>
               <BadgeQuorum conQuorum={quorum} />
             </p>
+            {form.errores.asistentes && <FieldError>{form.errores.asistentes}</FieldError>}
           </div>
         )}
       </SeccionPlegable>

@@ -66,7 +66,12 @@ export function SeccionHistorial({ caso }: { caso: CasoDetalle }) {
       {soportes && (
         <DialogSoportesAccion
           accion={soportes}
-          caso={{ numero: caso.numero, cerrado: esFinal(caso.estado_codigo), tieneSoporte: Boolean(caso.fk_tarchivo_soporte) }}
+          caso={{
+            numero: caso.numero,
+            cerrado: esFinal(caso.estado_codigo),
+            tieneSoporte: Boolean(caso.fk_tarchivo_soporte),
+            soporte: caso.soporte ?? null,
+          }}
           open
           onOpenChange={(o) => !o && setSoportes(null)}
         />

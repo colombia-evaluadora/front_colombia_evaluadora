@@ -1,3 +1,6 @@
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { InfoIcon } from "@/components/ui/icons"
+
 import { esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { SeccionCierre } from "@/features/gestion-estudiantil/convivencia/components/detalle/seccion-cierre"
@@ -15,6 +18,15 @@ import { SeccionSiuceDetalle } from "@/features/gestion-estudiantil/convivencia/
 export function DatosCompletos({ caso }: { caso: CasoDetalle }) {
   return (
     <>
+      {caso.acciones_inconsistentes && (
+        <Alert variant="warning">
+          <InfoIcon aria-hidden="true" />
+          <AlertDescription>
+            Hay acciones registradas con fecha anterior a la fecha de los hechos aclarada después: revíselas. Su historial no se
+            reescribe.
+          </AlertDescription>
+        </Alert>
+      )}
       <SeccionCierre caso={caso} />
       <SeccionDatosCasoDetalle caso={caso} />
       <SeccionSiuceDetalle caso={caso} />

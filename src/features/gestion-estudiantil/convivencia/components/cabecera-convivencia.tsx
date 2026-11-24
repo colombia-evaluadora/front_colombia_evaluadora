@@ -20,6 +20,19 @@ interface Props {
   onExportarSiuce: () => void
 }
 
+/** Botón de cabecera que navega: siempre visible y deshabilitado si el usuario no tiene el permiso. */
+function BotonConEnlace({ habilitado, to, children }: { habilitado: boolean; to: string; children: React.ReactNode }) {
+  return habilitado ? (
+    <Button size="sm" render={<Link to={to} />} nativeButton={false}>
+      {children}
+    </Button>
+  ) : (
+    <Button size="sm" disabled>
+      {children}
+    </Button>
+  )
+}
+
 /** Título, acciones y pestañas de Convivencia: las acciones cambian con la pestaña. */
 export function CabeceraConvivencia({ pestana, onPestana, access, periodo, onExportarSiuce }: Props) {
   const nav = useComiteNavegacion()
@@ -29,37 +42,37 @@ export function CabeceraConvivencia({ pestana, onPestana, access, periodo, onExp
         action={
           <div className="flex flex-wrap items-center gap-2">
             {pestana === "comite" ? (
-              access.puedeGestionarComite && (
-                <>
-                  <Button size="sm" variant="outline" color="neutral" onClick={() => nav.aIntegrantes(periodo)}>
-                    <UsersThreeIcon data-icon="inline-start" />
-                    Integrantes
-                  </Button>
-                  <Button size="sm" onClick={() => nav.aSesionNueva(periodo)}>
-                    <ControlPointIcon data-icon="inline-start" />
-                    Nueva sesión
-                  </Button>
-                </>
-              )
-            ) : pestana === "procesos" ? (
-              access.puedeSupervisar && (
-                <Button size="sm" render={<Link to={paths.app.convivenciaProcesoNuevo.getHref()} />} nativeButton={false}>
-                  <ControlPointIcon data-icon="inline-start" />
-                  Abrir proceso
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  color="neutral"
+                  disabled={!access.puedeGestionarComite}
+                  onClick={() => nav.aIntegrantes(periodo)}
+                >
+                  <UsersThreeIcon data-icon="inline-start" />
+                  Integrantes
                 </Button>
-              )
+                <Button size="sm" disabled={!access.puedeGestionarComite} onClick={() => nav.aSesionNueva(periodo)}>
+                  <ControlPointIcon data-icon="inline-start" />
+                  Nueva sesión
+                </Button>
+              </>
+            ) : pestana === "procesos" ? (
+              <BotonConEnlace habilitado={access.puedeAbrirProceso} to={paths.app.convivenciaProcesoNuevo.getHref()}>
+                <ControlPointIcon data-icon="inline-start" />
+                Abrir proceso
+              </BotonConEnlace>
             ) : (
               <>
                 <Button size="sm" variant="outline" color="neutral" disabled={!access.puedeExportarSiuce} onClick={onExportarSiuce}>
                   <FileDownloadOutlinedIcon data-icon="inline-start" />
                   Exportar para el SIUCE
                 </Button>
-                {access.puedeCrear && (
-                  <Button size="sm" render={<Link to={paths.app.convivenciaNuevo.getHref()} />} nativeButton={false}>
-                    <ControlPointIcon data-icon="inline-start" />
-                    Nuevo caso
-                  </Button>
-                )}
+                <BotonConEnlace habilitado={access.puedeCrear} to={paths.app.convivenciaNuevo.getHref()}>
+                  <ControlPointIcon data-icon="inline-start" />
+                  Nuevo caso
+                </BotonConEnlace>
               </>
             )}
           </div>

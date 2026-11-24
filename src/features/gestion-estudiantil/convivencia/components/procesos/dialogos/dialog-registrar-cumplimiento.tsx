@@ -89,7 +89,7 @@ export function DialogRegistrarCumplimiento({ proceso: p, sancionId, onClose }: 
           onChange={setElegida}
         />
       )}
-      <CampoOpcionUnica id="cumplimiento-resultado" label="Resultado" value={resultado} options={RESULTADOS} error={e.resultado} onChange={setResultado} />
+      <CampoOpcionUnica id="cumplimiento-resultado" label="Cumplimiento" value={resultado} options={RESULTADOS} error={e.resultado} onChange={setResultado} />
       <TextoLargo id="cumplimiento-observacion" label="Observación" required max={1000} rows={3} value={observacion} error={e.observacion} onChange={setObservacion} />
       {sancion && (
         <Alert variant="info">

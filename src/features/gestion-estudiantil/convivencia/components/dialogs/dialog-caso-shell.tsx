@@ -19,7 +19,7 @@ import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
 
 /** Chips de tipo, estado y gestor actual bajo el título del modal (que ya dice «— Caso N»). */
-export function ResumenCaso({ caso }: { caso: CasoResumen }) {
+export function ResumenCaso({ caso, extra }: { caso: CasoResumen; extra?: ReactNode }) {
   return (
     <span className="flex flex-wrap items-center gap-2">
       {/* En <span>: Badge pasa a minúsculas un texto suelto y «Tipo II» quedaría «Tipo ii». */}
@@ -36,12 +36,15 @@ export function ResumenCaso({ caso }: { caso: CasoResumen }) {
           Sin gestor
         </Badge>
       )}
+      {extra && <span>· {extra}</span>}
     </span>
   )
 }
 
 interface DialogCasoShellProps {
   caso: CasoResumen | null
+  /** Dato extra al final de la línea de resumen (p. ej. «Afectados: …»). */
+  resumenExtra?: ReactNode
   titulo: string
   onClose: () => void
   error: unknown
@@ -54,6 +57,7 @@ interface DialogCasoShellProps {
 /** Estructura común: título «X — Caso N», resumen, error del backend en ErrorNoticeBanner y pie Cancelar/Confirmar. */
 export function DialogCasoShell({
   caso,
+  resumenExtra,
   titulo,
   onClose,
   error,
@@ -71,7 +75,7 @@ export function DialogCasoShell({
           </DialogTitle>
           {caso && (
             <DialogDescription render={<div />}>
-              <ResumenCaso caso={caso} />
+              <ResumenCaso caso={caso} extra={resumenExtra} />
             </DialogDescription>
           )}
         </DialogHeader>

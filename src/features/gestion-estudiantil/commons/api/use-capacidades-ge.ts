@@ -20,6 +20,11 @@ export interface CapacidadesGe {
   actividades_puede_crear: boolean
   citaciones_puede_citar: boolean
   citaciones_puede_crear_compromiso: boolean
+  convivencia_puede_crear_caso: boolean
+  convivencia_puede_exportar_siuce: boolean
+  convivencia_puede_abrir_proceso: boolean
+  comite_puede_ver: boolean
+  comite_puede_gestionar: boolean
 }
 
 export const capacidadesGeKeys = {

@@ -3,11 +3,10 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 
-import type { ConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { COLOR_ESTADO, esFinal, fechaHechosTexto } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoRow } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { SIN_ACCESO } from "@/features/gestion-estudiantil/convivencia/utils/access"
+import { banderasDe, SIN_BANDERAS } from "@/features/gestion-estudiantil/convivencia/utils/access"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_CASO, MenuAccionesCaso, type AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
 import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
@@ -24,14 +23,15 @@ export const ORDEN_CASOS: MapaOrden = {
 }
 
 interface ColumnasOpciones {
-  access: ConvivenciaAccess
   puedeCitar: boolean
   puedeCrearCompromiso: boolean
   onAccion: (caso: CasoRow, accion: AccionCaso) => void
 }
 
+const restringido = (r: CasoRow) => r.confidencial && !r.acceso_completo
+
 /** Columnas del listado de casos (G.2.CAS.LIS.1). */
-export function buildColumnsCasos({ access, puedeCitar, puedeCrearCompromiso, onAccion }: ColumnasOpciones): ColumnDef<CasoRow>[] {
+export function buildColumnsCasos({ puedeCitar, puedeCrearCompromiso, onAccion }: ColumnasOpciones): ColumnDef<CasoRow>[] {
   return [
     {
       id: "fecha_hechos",
@@ -144,11 +144,11 @@ export function buildColumnsCasos({ access, puedeCitar, puedeCrearCompromiso, on
             numero: row.original.numero,
             estado_codigo: row.original.estado_codigo,
             sinGestor: !row.original.fk_tfuncionario_gestor,
+            // Caso Tipo II/III visto por quien solo lo reportó (Regla 1): solo Ver detalle; el backend negaría el resto.
+            banderas: restringido(row.original) ? SIN_BANDERAS : banderasDe(row.original),
           }}
-          // Caso Tipo II/III visto por quien solo lo reportó (Regla 1): solo Ver detalle; el backend negaría el resto.
-          access={row.original.confidencial && !row.original.acceso_completo ? SIN_ACCESO : access}
-          puedeCitar={puedeCitar}
-          puedeCrearCompromiso={puedeCrearCompromiso}
+          puedeCitar={puedeCitar && !restringido(row.original)}
+          puedeCrearCompromiso={puedeCrearCompromiso && !restringido(row.original)}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),

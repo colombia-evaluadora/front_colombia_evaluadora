@@ -10,7 +10,7 @@ const siNo = (v: boolean | null | undefined) => (v == null ? "" : v ? "Sí" : "N
 /** Descargos: si el estudiante los presentó (versión, acta, pruebas) o la constancia de que no. */
 export function EtapaDescargosProceso({ etapa }: { etapa: EtapaDescargos }) {
   return (
-    <EtapaProceso titulo="Descargos" alcanzada={etapa.alcanzada} resumen={formatFecha(etapa.fecha)}>
+    <EtapaProceso titulo="2. Descargos" alcanzada={etapa.alcanzada} resumen={formatFecha(etapa.fecha)}>
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Dato label="Presentó descargos">{siNo(etapa.presento)}</Dato>
         {etapa.presento && <Dato label="Fecha de la diligencia">{formatFecha(etapa.fecha_diligencia)}</Dato>}

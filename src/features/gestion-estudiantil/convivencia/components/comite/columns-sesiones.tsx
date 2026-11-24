@@ -34,7 +34,7 @@ export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): Co
       ),
     },
     {
-      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "tipo", "Tipo"),
+      ...columnaOrden<SesionFila>(ORDEN_SESIONES, "tipo", "Tipo de sesión"),
       accessorKey: "tipo_nombre",
     },
     {

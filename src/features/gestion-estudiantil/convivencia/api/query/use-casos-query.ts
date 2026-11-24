@@ -116,13 +116,20 @@ export function useGestoresCasoQuery(casoId: number | undefined) {
   })
 }
 
-/** `POST /gestor-previsto`: a quién quedará asignado el caso que se está creando. */
-export function useGestorPrevistoQuery(tipoId: number | null, matriculas: number[]) {
+/**
+ * `POST /gestor-previsto`: a quién quedará asignado el caso que se está creando. `vinculado` marca el caso abierto
+ * desde un plan (Regla 24): un docente que lo abre no queda como gestor.
+ */
+export function useGestorPrevistoQuery(tipoId: number | null, matriculas: number[], vinculado = false) {
   return useQuery({
-    queryKey: convivenciaKeys.gestorPrevisto(tipoId ?? "none", matriculas),
+    queryKey: convivenciaKeys.gestorPrevisto(tipoId ?? "none", matriculas, vinculado),
     queryFn: () =>
       evalCol
-        .postRows<GestorPrevisto>(`${BASE}/gestor-previsto`, { FK_TLV_TIPO: tipoId, FK_MATRICULAS: matriculas })
+        .postRows<GestorPrevisto>(`${BASE}/gestor-previsto`, {
+          FK_TLV_TIPO: tipoId,
+          FK_MATRICULAS: matriculas,
+          VINCULADO: vinculado,
+        })
         .then((r) => r[0] ?? null),
     enabled: tipoId != null && matriculas.length > 0,
   })

@@ -93,6 +93,19 @@ async function registrarAccion({ casoId, soportes, ...body }: AccionInput & { so
   return evalCol.postRow(`${caso(casoId)}/acciones`, { ...body, FK_ARCHIVOS: archivos })
 }
 
+export interface CorregirFechasInput {
+  casoId: number
+  FECHA_CONOCIMIENTO: string
+  FECHA_HECHOS_CONOCIDA: boolean
+  FECHA_HECHOS: string | null
+  HORA_HECHOS_CONOCIDA: boolean | null
+  HORA_HECHOS: string | null
+  MOTIVO: string
+}
+
+/** `POST /casos/:ID/fechas`: solo fechas, hora y motivo (no reenvía el resto del caso como el PUT). */
+const corregirFechas = ({ casoId, ...body }: CorregirFechasInput) => evalCol.postRow(`${caso(casoId)}/fechas`, body)
+
 const asignarGestor = (i: { casoId: number; funcionarioId: number }) =>
   evalCol.postRow(`${caso(i.casoId)}/gestor`, { FK_FUNCIONARIO: i.funcionarioId })
 
@@ -138,6 +151,8 @@ export const useActualizarCaso = ({ mutationConfig }: Cfg<typeof actualizarCaso>
   useConvivenciaMutation(actualizarCaso, mutationConfig)
 export const useRegistrarAccion = ({ mutationConfig }: Cfg<typeof registrarAccion> = {}) =>
   useConvivenciaMutation(registrarAccion, mutationConfig)
+export const useCorregirFechasCaso = ({ mutationConfig }: Cfg<typeof corregirFechas> = {}) =>
+  useConvivenciaMutation(corregirFechas, mutationConfig)
 export const useAsignarGestor = ({ mutationConfig }: Cfg<typeof asignarGestor> = {}) =>
   useConvivenciaMutation(asignarGestor, mutationConfig)
 export const useCambiarTipo = ({ mutationConfig }: Cfg<typeof cambiarTipo> = {}) =>

@@ -55,7 +55,7 @@ export function EtapaRecursos({ proceso }: { proceso: ProcesoDetalle }) {
   const e = proceso.etapas.recursos
   return (
     <EtapaProceso
-      titulo="Recursos"
+      titulo="4. Recursos"
       alcanzada={e.alcanzada}
       resumen={
         e.por_resolver > 0 ? (

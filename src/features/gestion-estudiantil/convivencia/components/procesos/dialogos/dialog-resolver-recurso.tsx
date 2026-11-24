@@ -108,7 +108,7 @@ export function DialogResolverRecurso({ proceso: p, recurso: r, onClose }: Props
       {codigoResultado === "MODIFICA" && (
         <ConstructorSanciones filas={v.sanciones} onChange={setSanciones} catalogo={catalogo} limites={limites} errores={e} intento={intento} obligatorio />
       )}
-      <CampoArchivo label="Acto firmado*" archivos={v.acto} error={e.acto} onChange={(acto) => set({ acto })} />
+      <CampoArchivo label="Acto firmado*" soloPdf ayuda="PDF." archivos={v.acto} error={e.acto} onChange={(acto) => set({ acto })} />
       {aviso && (
         <Alert variant="info">
           <InfoIcon aria-hidden="true" />

@@ -81,7 +81,7 @@ Las mutaciones de etapa invalidan todo `convivenciaKeys.all`, porque el listado 
 
 - Los permisos de cada fila vienen del backend en los `puede_*` (`ProcesoAcciones`): `puede_ver_detalle`, `puede_descargos`, `puede_no_presentar`, `puede_decidir`, `puede_notificar`, `puede_recurso`, `puede_resolver`, `puede_ajustar`, `puede_cumplimiento`, `puede_anular`. El front no repite reglas de estado ni de rol.
 - El menú de fila (`components/procesos/menu-acciones-proceso.tsx`) muestra todas las acciones; las que el backend niega aparecen deshabilitadas.
-- El botón "+ Abrir proceso" (`cabecera-convivencia.tsx`) solo se muestra si `access.puedeSupervisar`, es decir, coordinador o rector.
+- El botón "+ Abrir proceso" (`cabecera-convivencia.tsx`) siempre se muestra y queda deshabilitado sin `access.puedeAbrirProceso` (capacidad `convivencia_puede_abrir_proceso` de `GET /gestion-estudiantil/capacidades`).
 - Ver detalle navega a `/procesos/:id`. Anular abre el diálogo de anulación con motivo obligatorio.
 - El detalle tiene un único menú ⋮ con las acciones de etapa y los documentos (`ItemsDocumentos`). Las entradas de documentos van deshabilitadas porque los PDF aún no existen.
 

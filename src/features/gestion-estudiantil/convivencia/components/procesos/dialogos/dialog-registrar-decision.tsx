@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
-import { GavelIcon } from "@/components/ui/icons"
+import { GavelIcon, InfoIcon } from "@/components/ui/icons"
 import { formatDateValue } from "@/lib/date-value"
 
 import { useRegistrarDecision } from "@/features/gestion-estudiantil/convivencia/api/mutations/procesos-etapas"
@@ -142,7 +143,28 @@ export function DialogRegistrarDecision({ proceso: p, onClose }: Props) {
           obligatorio
         />
       )}
-      <CampoArchivo label="Acto de decisión firmado*" archivos={v.acto} error={e.acto} onChange={(acto) => set({ acto })} />
+      <CampoArchivo
+        label="Acto de decisión firmado*"
+        soloPdf
+        ayuda="PDF; la resolución o el acta de la instancia."
+        archivos={v.acto}
+        error={e.acto}
+        onChange={(acto) => set({ acto })}
+      />
+      {resultadoCodigo && (
+        <Alert variant="info">
+          <InfoIcon aria-hidden="true" />
+          <AlertDescription>
+            {sanciona
+              ? `El proceso pasará a Decidido y se notificará la decisión a ${p.acudiente?.nombre ?? "el acudiente"} en el portal y por correo.`
+              : `El proceso pasará a Archivado, sin sanciones, y se avisará a ${p.acudiente?.nombre ?? "el acudiente"} en el portal y por correo.`}
+          </AlertDescription>
+        </Alert>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Conciliación previa: si el establecimiento concilió con las partes antes de decidir, se registra como un Acta de compromiso de tipo
+        Convivencia del estudiante (Compromisos); no es una etapa del proceso ni cambia sus estados o plazos.
+      </p>
     </DialogProcesoShell>
   )
 }

@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { ArrowsLeftRightIcon, PencilIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon } from "@/components/ui/icons"
 
 import type { ComiteDetalle, IntegranteComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
@@ -13,11 +13,10 @@ import { dia } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 interface Props {
   comite: ComiteDetalle
   puedeGestionar: boolean
-  onAdministrar: () => void
 }
 
 /** «Integrantes del Comité» en el orden en que llegan: Cargo, Nombre, Desde y Reemplazar (G.2.COM.SES.1). */
-export function RecuadroIntegrantes({ comite, puedeGestionar, onAdministrar }: Props) {
+export function RecuadroIntegrantes({ comite, puedeGestionar }: Props) {
   const [reemplazando, setReemplazando] = useState<IntegranteComite | null>(null)
   const vigentes = comite.integrantes.filter((i) => i.vigente)
   return (
@@ -25,14 +24,6 @@ export function RecuadroIntegrantes({ comite, puedeGestionar, onAdministrar }: P
       <div className="overflow-hidden rounded-lg border border-border bg-background">
         <SeccionPlegable
           titulo={`Integrantes del comité (${vigentes.length})`}
-          accion={
-            puedeGestionar && (
-              <Button type="button" size="sm" variant="outline" color="neutral" onClick={onAdministrar}>
-                <PencilIcon data-icon="inline-start" />
-                Administrar integrantes
-              </Button>
-            )
-          }
         >
           {vigentes.length === 0 ? (
             <p className="px-4 py-3 text-sm text-muted-foreground">No hay integrantes vigentes.</p>
@@ -62,7 +53,7 @@ export function RecuadroIntegrantes({ comite, puedeGestionar, onAdministrar }: P
           )}
         </SeccionPlegable>
       </div>
-      <AvisoCargosVacios cargos={comite.cargos_vacios} accion={puedeGestionar ? "Agréguelos en Administrar integrantes." : undefined} />
+      <AvisoCargosVacios cargos={comite.cargos_vacios} accion={puedeGestionar ? "Agréguelos en Integrantes." : undefined} />
       <DialogReemplazarIntegrante integrante={reemplazando} periodo={comite.fk_periodo} onClose={() => setReemplazando(null)} />
     </div>
   )
