@@ -143,7 +143,8 @@ export function usePreviaReingresoQuery(matriculaIds: string[]) {
       const rows = await evalCol.postRows<PreviaReingresoRow>(`${BASE}/reingresar/previa`, { IDS: ids(matriculaIds) })
       return rows.map((r) => ({
         matriculaId: String(r.pk_matricula),
-        fechaRetiro: r.fecha_retiro,
+        // Timestamp en el back: se recorta a yyyy-MM-dd para mostrarla y compararla con la fecha de reingreso.
+        fechaRetiro: r.fecha_retiro?.slice(0, 10) ?? "",
         grupoActual: r.grupo_actual,
         sinCupo: r.sin_cupo,
         cuposLibres: r.cupos_libres,

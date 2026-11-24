@@ -183,6 +183,7 @@ const OPTIONAL_MATRICULA_FIELD_GETTERS: Record<string, (values: CreateMatriculaI
   "complementary-ars": (v) => v.complementary.ars,
   "complementary-special-conditions": (v) => v.complementary.specialConditions,
   "complementary-talent": (v) => v.complementary.talent,
+  "complementary-srpa": (v) => v.complementary.srpa ?? "",
   "benefits-subsidized": (v) => v.benefits.subsidized,
   "benefits-funding-source": (v) => v.benefits.fundingSource,
   "benefits-head-household-student": (v) => v.benefits.headOfHouseholdStudent,

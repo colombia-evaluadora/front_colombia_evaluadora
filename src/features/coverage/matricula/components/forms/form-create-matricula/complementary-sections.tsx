@@ -38,6 +38,7 @@ export function MatriculaComplementarySection({
       "complementary-ars",
       "complementary-special-conditions",
       "complementary-talent",
+      "complementary-srpa",
     ])
   ) {
     return null
@@ -132,36 +133,42 @@ export function MatriculaComplementarySection({
         description="Solo con diagnóstico del sector salud; el soporte es el certificado médico."
         onChange={(trastorno) => onChange({ ...value, trastorno })}
       />
-      <MatriculaSelectField
-        id="complementary-srpa"
-        label="Situación en el SRPA"
-        value={value.srpa ?? ""}
-        options={catalogOptions(srpa)}
-        labelFor={catalogLabelFor(srpa)}
-        description="Dato sensible: solo lo ven el Administrador y el Gestor administrativo del establecimiento."
-        onChange={(s) =>
-          onChange({ ...value, srpa: s, ...(s && !srpaNoAplica(s) ? {} : { srpaInicio: "", srpaFin: "" }) })
-        }
-      />
-      <MatriculaDateField
-        id="complementary-srpa-start"
-        label="Fecha de inicio de la medida"
-        required={conMedida}
-        invalid={invalidFields.includes("complementary-srpa-start")}
-        value={value.srpaInicio ?? ""}
-        maxDate={new Date()}
-        disabled={!conMedida}
-        onChange={(srpaInicio) => onChange({ ...value, srpaInicio })}
-      />
-      <MatriculaDateField
-        id="complementary-srpa-end"
-        label="Fecha de fin de la medida"
-        invalid={invalidFields.includes("complementary-srpa-end")}
-        value={value.srpaFin ?? ""}
-        minDate={value.srpaInicio ? new Date(`${value.srpaInicio}T00:00:00`) : undefined}
-        disabled={!conMedida}
-        onChange={(srpaFin) => onChange({ ...value, srpaFin })}
-      />
+      {isFieldVisible(fieldSettings, "complementary-srpa") && (
+        <>
+          <MatriculaSelectField
+            id="complementary-srpa"
+            label="Situación en el SRPA"
+            required={isFieldRequired(fieldSettings, "complementary-srpa")}
+            invalid={invalidFields.includes("complementary-srpa")}
+            value={value.srpa ?? ""}
+            options={catalogOptions(srpa)}
+            labelFor={catalogLabelFor(srpa)}
+            description="Dato sensible: solo lo ven el Administrador y el Gestor administrativo del establecimiento."
+            onChange={(s) =>
+              onChange({ ...value, srpa: s, ...(s && !srpaNoAplica(s) ? {} : { srpaInicio: "", srpaFin: "" }) })
+            }
+          />
+          <MatriculaDateField
+            id="complementary-srpa-start"
+            label="Fecha de inicio de la medida"
+            required={conMedida}
+            invalid={invalidFields.includes("complementary-srpa-start")}
+            value={value.srpaInicio ?? ""}
+            maxDate={new Date()}
+            disabled={!conMedida}
+            onChange={(srpaInicio) => onChange({ ...value, srpaInicio })}
+          />
+          <MatriculaDateField
+            id="complementary-srpa-end"
+            label="Fecha de fin de la medida"
+            invalid={invalidFields.includes("complementary-srpa-end")}
+            value={value.srpaFin ?? ""}
+            minDate={value.srpaInicio ? new Date(`${value.srpaInicio}T00:00:00`) : undefined}
+            disabled={!conMedida}
+            onChange={(srpaFin) => onChange({ ...value, srpaFin })}
+          />
+        </>
+      )}
     </MatriculaFormSection>
   )
 }

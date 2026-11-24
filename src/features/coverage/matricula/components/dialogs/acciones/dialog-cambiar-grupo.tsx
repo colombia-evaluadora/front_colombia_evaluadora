@@ -84,6 +84,12 @@ function DialogCambiarGrupoIndividual({
 
   const uno = matriculas.length === 1
   const grupoDestino = grupos.find((g) => g.id === grupoId)
+  const opcionesGrupo = grupos
+    .filter((g) => g.codigo !== origen.group || !uno)
+    .map((g) => ({ value: String(g.id), label: `${g.codigo} (${plural(g.capacidad - g.ocupados, "cupo", "cupos")})` }))
+  // Sin destino: se dice por qué, en vez de una lista vacía sin explicación.
+  const sinGrupos = Boolean(jornada) && !cargandoGrupos && opcionesGrupo.length === 0
+  const motivoSinGrupos = `No hay otro grupo de ${gradeLabel(origen.grade)} con cupo en esta sede y jornada. Pruebe con otra jornada o sede.`
   const conComplementaria = matriculas.filter((m) => complementarias?.get(m.id))
   const choqueComplementaria = conComplementaria
     .map((m) => complementarias?.get(m.id))
@@ -180,16 +186,17 @@ function DialogCambiarGrupoIndividual({
                   required
                   value={grupo}
                   onChange={setGrupo}
-                  opciones={grupos
-                    .filter((g) => g.codigo !== origen.group || !uno)
-                    .map((g) => ({ value: String(g.id), label: `${g.codigo} (${plural(g.capacidad - g.ocupados, "cupo", "cupos")})` }))}
+                  opciones={opcionesGrupo}
                   invalido={intentado && !grupo}
                   disabled={!jornada}
-                  placeholder={cargandoGrupos ? "Cargando…" : "Seleccione"}
+                  placeholder={cargandoGrupos ? "Cargando…" : sinGrupos ? "Sin grupos disponibles" : "Seleccione"}
+                  vacio={motivoSinGrupos}
                   descripcion={
-                    intentado && !grupo
-                      ? "Elija el grupo destino."
-                      : `Grupos de ${gradeLabel(origen.grade)} del mismo período con cupo.`
+                    sinGrupos
+                      ? motivoSinGrupos
+                      : intentado && !grupo
+                        ? "Elija el grupo destino."
+                        : `Grupos de ${gradeLabel(origen.grade)} del mismo período con cupo.`
                   }
                 />
               </div>
@@ -301,6 +308,8 @@ function DialogCambiarGrupoLote({ matriculas, onOpenChange, onDone }: Props) {
     .filter((g) => g.capacidad - g.ocupados >= matriculas.filter((m) => m.group !== g.codigo).length)
     .filter((g) => !(origenes.size === 1 && origenes.has(g.codigo)))
   const destino = grupos.find((g) => String(g.id) === grupo)
+  const sinGrupos = !isFetching && Boolean(sedeId) && opciones.length === 0
+  const motivoSinGrupos = `No hay otro grupo de ${gradeLabel(origen.grade)} con cupo para los ${n} en esta sede y jornada.`
 
   function confirmar() {
     setIntentado(true)
@@ -347,11 +356,14 @@ function DialogCambiarGrupoLote({ matriculas, onOpenChange, onDone }: Props) {
           onChange={setGrupo}
           opciones={opciones.map((g) => ({ value: String(g.id), label: `${g.codigo} · ${g.ocupados} de ${g.capacidad}` }))}
           invalido={intentado && !grupo}
-          placeholder={isFetching ? "Cargando…" : "Seleccione"}
+          placeholder={isFetching ? "Cargando…" : sinGrupos ? "Sin grupos disponibles" : "Seleccione"}
+          vacio={motivoSinGrupos}
           descripcion={
-            intentado && !grupo
-              ? "Elija el grupo destino."
-              : `Grupos de ${gradeLabel(origen.grade)} del mismo período con cupo para los ${n}.`
+            sinGrupos
+              ? motivoSinGrupos
+              : intentado && !grupo
+                ? "Elija el grupo destino."
+                : `Grupos de ${gradeLabel(origen.grade)} del mismo período con cupo para los ${n}.`
           }
         />
         {destino ? (
