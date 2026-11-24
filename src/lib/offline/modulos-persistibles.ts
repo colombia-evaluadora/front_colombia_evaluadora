@@ -39,7 +39,13 @@ const RAICES = new Set([
   "catalogs", "select-category",
 ])
 
+/** Lecturas con efectos: consultar el Archivo deja registro en la Bitácora (V595); nunca se refrescan solas. */
+function tieneEfectos(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === "conservacion-datos" && queryKey[1] === "archivo"
+}
+
 export function esModuloPersistible(queryKey: readonly unknown[] | undefined): boolean {
+  if (queryKey && tieneEfectos(queryKey)) return false
   return typeof queryKey?.[0] === "string" && RAICES.has(queryKey[0])
 }
 

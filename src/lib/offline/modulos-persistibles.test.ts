@@ -9,6 +9,9 @@ describe("conMetaPorDefecto", () => {
   it.each(["auth-user", "segundo-factor", "archivo", "verificacion-boletin", "devices"])("nunca guarda %s", (raiz) => {
     expect(conMetaPorDefecto<Parameters<typeof conMetaPorDefecto>[0]>({ queryKey: [raiz, "x"] }).meta).toBeUndefined()
   })
+  it("no guarda ni refresca el Archivo de conservación (deja registro en la Bitácora)", () => {
+    expect(conMetaPorDefecto<Parameters<typeof conMetaPorDefecto>[0]>({ queryKey: ["conservacion-datos", "archivo", {}] }).meta).toBeUndefined()
+  })
   it("respeta la meta propia", () => {
     const o = { queryKey: ["matricula"], meta: { offline: { ttl: 5 } } }
     expect(conMetaPorDefecto(o)).toBe(o)

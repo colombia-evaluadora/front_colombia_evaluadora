@@ -18,6 +18,7 @@ import {
 } from "@/lib/offline/query-meta"
 import { CATALOGS } from "@/lib/catalogs"
 // Planeador
+import { administracionTasks } from "@/features/offline/lib/prepare-tasks-administracion"
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
 import { fetchMatriculasGrupo } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
@@ -856,5 +857,6 @@ export function buildPrepareTasks(queryClient: QueryClient, input: BuildPrepareT
   if (menuIncludes(queryClient, "/app/comunicaciones/chat")) tasks.push(...comunicacionesTasks())
   tasks.push(...establecimientoTasks(queryClient, input.roles))
   tasks.push(...matriculaTasks(queryClient))
+  tasks.push(...administracionTasks(queryClient, input.roles))
   return tasks
 }
