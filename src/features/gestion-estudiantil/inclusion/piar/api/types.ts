@@ -3,12 +3,11 @@ export type EstadoPiar = "BORRADOR" | "VIGENTE" | "REVISION_CONCLUIDA" | "CERRAD
 export interface PiarFiltros {
   sede: string
   jornada: string
-  grupo: string
   grado: string
   estado: string
 }
 
-export const FILTROS_VACIOS: PiarFiltros = { sede: "", jornada: "", grupo: "", grado: "", estado: "" }
+export const FILTROS_VACIOS: PiarFiltros = { sede: "", jornada: "", grado: "", estado: "" }
 
 /** Fila de `fn_piar_listar_interno` (V601). */
 export interface PiarRow {

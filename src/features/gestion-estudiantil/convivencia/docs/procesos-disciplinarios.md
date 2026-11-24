@@ -188,3 +188,5 @@ Ruta base: `src/features/gestion-estudiantil/convivencia/`.
 - Candidatos fuera de esta rama con `Field outlined` envolviendo controles que no lo son (`siuce/*`, `si-no.tsx`, `datos-siuce-fields.tsx`).
 - Menús de casos y comité con `w-72 nowrap`.
 - Sesiones del Comité con orden por servidor (fecha, tipo; `ORDEN_SESIONES` en `columns-sesiones.tsx`).
+
+- Panel de filtros: el campo «Contiene las palabras» (arriba, ancho completo) vive en `BarraBusquedaFiltros` y se sincroniza con el texto libre de la barra; el gestor del filtro de Casos sale de `GET /casos/opciones/gestores-filtro`.

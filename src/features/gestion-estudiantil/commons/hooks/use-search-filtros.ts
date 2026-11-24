@@ -34,6 +34,8 @@ export function useSearchFiltros<F extends object>({
 }: Options<F>) {
   const [open, setOpen] = useState(false)
   const [draft, setDraftState] = useState(filters)
+  // «Contiene las palabras» del panel: el texto libre de la barra, en borrador hasta pulsar Buscar.
+  const [draftSearch, setDraftSearch] = useState(search)
 
   function setDraft(next: F) {
     setDraftState(next)
@@ -48,23 +50,31 @@ export function useSearchFiltros<F extends object>({
     // Al abrir, el borrador arranca de lo aplicado.
   }, [open, filters, onDraftChange])
 
+  useEffect(() => {
+    setDraftSearch(search)
+  }, [open, search])
+
   // Un filtro multivalor vacío (`[]`) es truthy: cuenta solo si tiene elegidos.
   const badgeCount = Object.values(filters).filter((v) => (Array.isArray(v) ? v.length > 0 : Boolean(v))).length
   const activeFilterCount = badgeCount + (search ? 1 : 0)
 
   function handleApply() {
+    onSearchChange(draftSearch)
     applyFilters(draft)
     setOpen(false)
   }
 
   function handleClearFilters() {
     setDraft(vacios)
+    setDraftSearch("")
+    onSearchChange("")
     applyFilters(vacios)
   }
 
   function handleClearAll() {
     onClearAll()
     setDraft(vacios)
+    setDraftSearch("")
     setOpen(false)
   }
 
@@ -90,6 +100,8 @@ export function useSearchFiltros<F extends object>({
     setOpen,
     draft,
     setDraft,
+    draftSearch,
+    setDraftSearch,
     queryText,
     setQueryText,
     badgeCount,

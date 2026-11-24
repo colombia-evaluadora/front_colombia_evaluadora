@@ -9,6 +9,7 @@ import type {
   ProcesosFiltros,
   ProcesosQueryFilters,
 } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 
 const BASE = "/gestion-estudiantil/convivencia/procesos"
@@ -31,11 +32,13 @@ export interface ProcesosParams {
   filters: ProcesosQueryFilters
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
 export const fetchProcesos = async (params: ProcesosParams) => {
   const rows = await evalCol.postRows<ProcesoRow>(`${BASE}/query`, {
     FILTERS: params.filters,
+    ...params.orden,
     PAGEINDEX: params.pageIndex,
     PAGESIZE: params.pageSize,
   })
