@@ -39,32 +39,15 @@ describe("isOfflineWithoutData", async () => {
 describe("isOnlineOnlyPath", async () => {
   const { isOnlineOnlyPath } = await import("@/lib/offline/online-only-paths")
 
-  it("marca las vistas solo en línea del plan §8 y deja pasar las offline", () => {
-    expect(isOnlineOnlyPath("/app/cobertura/reserva-de-cupo")).toBe(true)
-    expect(isOnlineOnlyPath("/app/registro-de-actividad/sesiones")).toBe(true)
-    expect(isOnlineOnlyPath("/app/planeador/actividades")).toBe(false)
-    expect(isOnlineOnlyPath("/app/asistencia")).toBe(false)
-    expect(isOnlineOnlyPath("/app/coberturas")).toBe(false)
+  it("todos los módulos se consultan sin red", () => {
+    for (const p of ["cobertura/matricula/detalle/5", "gestion-estudiantil/observador", "administracion/roles-menus", "registro-de-actividad/sesiones", "establecimiento-educativo/funcionarios", "planeador/actividades", "asistencia"])
+      expect(isOnlineOnlyPath("/app/" + p)).toBe(false)
   })
 
-  it("P6: deja consultar sin red solo la lista de matrícula; el resto de cobertura sigue solo en línea", () => {
-    expect(isOnlineOnlyPath("/app/cobertura/matricula")).toBe(false)
-    expect(isOnlineOnlyPath("/app/cobertura/matricula/")).toBe(false)
-    expect(isOnlineOnlyPath("/app/cobertura/matricula/detalle/5")).toBe(true)
-    expect(isOnlineOnlyPath("/app/cobertura/matricula/detalle/5/editar")).toBe(true)
-    expect(isOnlineOnlyPath("/app/cobertura/matricula/agregar")).toBe(true)
-    expect(isOnlineOnlyPath("/app/cobertura/matricula/configuracion")).toBe(true)
-    expect(isOnlineOnlyPath("/app/cobertura/pre-matricula")).toBe(true)
-    expect(isOnlineOnlyPath("/app/cobertura/inscritos")).toBe(true)
-    expect(isOnlineOnlyPath("/app/cobertura/reserva-de-cupo")).toBe(true)
-  })
-
-  it("deja consultar periodos, horario y asignaciones sin red (Fase 4), pero no agregar ni el resto de establecimiento", () => {
-    expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos")).toBe(false)
+  it("los formularios sin cola y Mis dispositivos siguen en línea", () => {
+    for (const p of ["cobertura/matricula/agregar", "cobertura/matricula/detalle/5/editar", "gestion-estudiantil/convivencia/comite/sesion/nueva", "comunicaciones/comunicados/nuevo", "establecimiento-educativo/periodos/agregar", "mis-dispositivos"])
+      expect(isOnlineOnlyPath("/app/" + p)).toBe(true)
     expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos/12/editar")).toBe(false)
-    expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos/agregar")).toBe(true)
-    expect(isOnlineOnlyPath("/app/establecimiento-educativo/sedes")).toBe(false)
-    expect(isOnlineOnlyPath("/app/establecimiento-educativo/funcionarios")).toBe(true)
-    expect(isOnlineOnlyPath("/app/administracion/roles-menus")).toBe(true)
+    expect(isOnlineOnlyPath("/app/planeador/actividades/nueva")).toBe(false)
   })
 })

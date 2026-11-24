@@ -71,28 +71,32 @@ export interface FiltrosComunicados {
 /** Prefijo de todas las páginas del listado: lo invalidan anular, cancelar y modificar. */
 export const comunicadosGestionKey = ["comunicados-gestion"] as const
 
+export const comunicadosGestionListaKey = (filtros: FiltrosComunicados) => [...comunicadosGestionKey, filtros] as const
+
+export async function fetchComunicadosGestion(filtros: FiltrosComunicados): Promise<PaginaComunicados> {
+  const params = new URLSearchParams({
+    pestana: filtros.pestana,
+    page: String(filtros.page),
+    pageSize: String(filtros.pageSize),
+  })
+  if (filtros.q?.trim()) params.set("q", filtros.q.trim())
+  if (filtros.estado) params.set("estado", filtros.estado)
+  if (filtros.desde) params.set("desde", filtros.desde)
+  // Solo con valor: el backend anterior no los conoce y los ignora si faltan.
+  if (filtros.emisor?.trim()) params.set("emisor", filtros.emisor.trim())
+  if (filtros.tipo) params.set("tipo", filtros.tipo)
+  if (filtros.sortBy) {
+    params.set("sortBy", filtros.sortBy)
+    params.set("sortDir", filtros.sortDir ?? "asc")
+  }
+  const [pagina] = await evalCol.getRows<PaginaComunicados>(`${RUTA}?${params.toString()}`)
+  return pagina ?? { items: [], totalCount: 0, pageCount: 0 }
+}
+
 export function useComunicadosGestionQuery(filtros: FiltrosComunicados) {
   return useQuery({
-    queryKey: [...comunicadosGestionKey, filtros],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        pestana: filtros.pestana,
-        page: String(filtros.page),
-        pageSize: String(filtros.pageSize),
-      })
-      if (filtros.q?.trim()) params.set("q", filtros.q.trim())
-      if (filtros.estado) params.set("estado", filtros.estado)
-      if (filtros.desde) params.set("desde", filtros.desde)
-      // Solo con valor: el backend anterior no los conoce y los ignora si faltan.
-      if (filtros.emisor?.trim()) params.set("emisor", filtros.emisor.trim())
-      if (filtros.tipo) params.set("tipo", filtros.tipo)
-      if (filtros.sortBy) {
-        params.set("sortBy", filtros.sortBy)
-        params.set("sortDir", filtros.sortDir ?? "asc")
-      }
-      const [pagina] = await evalCol.getRows<PaginaComunicados>(`${RUTA}?${params.toString()}`)
-      return pagina ?? { items: [], totalCount: 0, pageCount: 0 }
-    },
+    queryKey: comunicadosGestionListaKey(filtros),
+    queryFn: () => fetchComunicadosGestion(filtros),
     placeholderData: keepPreviousData,
   })
 }
@@ -119,6 +123,13 @@ export interface SeguimientoComunicado {
 export const seguimientoComunicadoKey = (conversacionId: number) =>
   [...comunicadosGestionKey, "seguimiento", conversacionId] as const
 
+export async function fetchSeguimientoComunicado(conversacionId: number) {
+  const [fila] = await evalCol.getRows<SeguimientoComunicado>(
+    `/comunicaciones/conversaciones/${conversacionId}/comunicado/seguimiento`,
+  )
+  return fila ? { ...fila, personas: fila.personas ?? [] } : null
+}
+
 /**
  * GET /comunicaciones/conversaciones/{id}/comunicado/seguimiento. Mientras el backend no lo tenga
  * desplegado responde 404: el detalle cae a los contadores del propio comunicado (sin romperse).
@@ -126,12 +137,7 @@ export const seguimientoComunicadoKey = (conversacionId: number) =>
 export function useSeguimientoComunicadoQuery(conversacionId: number, enabled: boolean) {
   return useQuery({
     queryKey: seguimientoComunicadoKey(conversacionId),
-    queryFn: async () => {
-      const [fila] = await evalCol.getRows<SeguimientoComunicado>(
-        `/comunicaciones/conversaciones/${conversacionId}/comunicado/seguimiento`,
-      )
-      return fila ? { ...fila, personas: fila.personas ?? [] } : null
-    },
+    queryFn: () => fetchSeguimientoComunicado(conversacionId),
     enabled: enabled && Number.isFinite(conversacionId),
   })
 }

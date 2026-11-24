@@ -55,11 +55,14 @@ export function useOpcionesProfesionalesQuery(sede: number | null, jornada: numb
   })
 }
 
+export const fetchOpcionesLista = (lista: ListaReintegracion) =>
+  evalCol.getRows<OpcionLista>(`${BASE_REINTEGRACION}/opciones/listas/${lista}`)
+
 /** `GET /opciones/listas/:LISTA`: ORIGEN, MOTIVO_CIERRE, TIPO_INTERVENCION o RESULTADO_INTERVENCION. */
 export function useOpcionesListaQuery(lista: ListaReintegracion, enabled = true) {
   return useQuery({
     queryKey: reintegracionKeys.opciones.lista(lista),
-    queryFn: () => evalCol.getRows<OpcionLista>(`${BASE_REINTEGRACION}/opciones/listas/${lista}`),
+    queryFn: () => fetchOpcionesLista(lista),
     enabled,
     staleTime: 5 * 60_000,
   })

@@ -22,41 +22,59 @@ export const actualizacionKeys = {
   pendientes: [...all, "solicitudes", "pendientes"] as const,
 }
 
+export async function fetchConfiguracionActualizacion() {
+  return camelizar<ConfiguracionActualizacion>(await evalCol.getRow(`${BASE}/configuracion`))
+}
+
 export function useConfiguracionQuery() {
   return useQuery({
     queryKey: actualizacionKeys.configuracion,
-    queryFn: async () => camelizar<ConfiguracionActualizacion>(await evalCol.getRow(`${BASE}/configuracion`)),
+    queryFn: fetchConfiguracionActualizacion,
   })
 }
 
+type FiltrosSolicitudes = Pick<ActualizacionDatosSearch, "q" | "estado">
+type Pagina = { pageIndex: number; pageSize: number }
+
 /** Filtros de la lista; los reusa el export (mismos que la tabla). */
-export const filtrosSolicitudes = (s: ActualizacionDatosSearch) => ({
+export const filtrosSolicitudes = (s: FiltrosSolicitudes) => ({
   SEARCH: s.q || null,
   ESTADO: s.estado === "TODOS" ? null : (s.estado ?? "PENDIENTE"),
 })
 
 type Fila = Record<string, unknown> & { total_count: number }
 
-export function useSolicitudesQuery(s: ActualizacionDatosSearch, p: { pageIndex: number; pageSize: number }) {
-  const body = { ...filtrosSolicitudes(s), PAGE_INDEX: p.pageIndex, PAGE_SIZE: p.pageSize }
+/** Body de la lista: es también su key. */
+export const cuerpoSolicitudes = (s: FiltrosSolicitudes, p: Pagina) => ({
+  ...filtrosSolicitudes(s),
+  PAGE_INDEX: p.pageIndex,
+  PAGE_SIZE: p.pageSize,
+})
+
+export async function fetchSolicitudes(body: ReturnType<typeof cuerpoSolicitudes>) {
+  const rows = await evalCol.postRows<Fila>(`${BASE}/solicitudes/query`, body)
+  return toPaginated(rows, { pageSize: body.PAGE_SIZE, map: (r) => camelizar<SolicitudCorreccion>(r) })
+}
+
+export function useSolicitudesQuery(s: ActualizacionDatosSearch, p: Pagina) {
+  const body = cuerpoSolicitudes(s, p)
   return useQuery({
     queryKey: actualizacionKeys.lista(body),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Fila>(`${BASE}/solicitudes/query`, body)
-      return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<SolicitudCorreccion>(r) })
-    },
+    queryFn: () => fetchSolicitudes(body),
     placeholderData: keepPreviousData,
   })
+}
+
+export async function fetchPendientesCount() {
+  const rows = await evalCol.postRows<Fila>(`${BASE}/solicitudes/query`, { SEARCH: null, ESTADO: "PENDIENTE", PAGE_INDEX: 0, PAGE_SIZE: 1 })
+  return Number(rows[0]?.total_count ?? 0)
 }
 
 /** Número de la pestaña: las Pendientes, con el mismo listado y una fila. */
 export function usePendientesCountQuery() {
   return useQuery({
     queryKey: actualizacionKeys.pendientes,
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Fila>(`${BASE}/solicitudes/query`, { SEARCH: null, ESTADO: "PENDIENTE", PAGE_INDEX: 0, PAGE_SIZE: 1 })
-      return Number(rows[0]?.total_count ?? 0)
-    },
+    queryFn: fetchPendientesCount,
   })
 }
 

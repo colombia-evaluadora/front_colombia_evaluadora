@@ -18,6 +18,9 @@ const BASE = "/gestion-estudiantil/convivencia/opciones"
 const unicas = (pares: Array<[number, string]>): Opcion[] =>
   [...new Map(pares).entries()].map(([id, label]) => ({ value: String(id), label }))
 
+export const fetchOpcionesGrupos = () =>
+  evalCol.getRows<GrupoOpcion>(`${BASE}/grupos`)
+
 /**
  * Sede → Jornada → Grupo del período vigente. La cascada de Informes exige el menú INFORMES, que
  * orientación y trabajo social no tienen, así que se usa el endpoint de opciones de Convivencia.
@@ -27,7 +30,7 @@ const unicas = (pares: Array<[number, string]>): Opcion[] =>
 export function useOpcionesGrupos(claveModulo: QueryKey, sede: string, jornada: string) {
   const { data = [] } = useQuery({
     queryKey: [...claveModulo, "opciones-grupos"],
-    queryFn: () => evalCol.getRows<GrupoOpcion>(`${BASE}/grupos`),
+    queryFn: fetchOpcionesGrupos,
     staleTime: 5 * 60_000,
   })
   const enSede = sede ? data.filter((g) => String(g.fk_tsede) === sede) : []

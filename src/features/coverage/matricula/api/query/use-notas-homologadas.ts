@@ -82,16 +82,18 @@ const toOrigen = (raw: RawOrigenNota): OrigenNota => ({
   actividades: (raw.actividades ?? []).map((a) => ({ ...a, nota: Number(a.nota) })),
 })
 
+export async function fetchNotasHomologadas(matriculaId: string) {
+  const row = await evalCol.getRow<{ notas_homologadas: RawSnapshot[] | null }>(
+    `/cobertura-academica/matricula/${matriculaId}/notas-homologadas`,
+  )
+  return (row.notas_homologadas ?? []).map(toSnapshot)
+}
+
 /** Pestaña Notas homologadas de Ver detalle (Sección 4.2). */
 export function useNotasHomologadasQuery(matriculaId: string | undefined) {
   return useQuery({
     queryKey: matriculaKeys.notasHomologadas(matriculaId),
-    queryFn: async () => {
-      const row = await evalCol.getRow<{ notas_homologadas: RawSnapshot[] | null }>(
-        `/cobertura-academica/matricula/${matriculaId}/notas-homologadas`,
-      )
-      return (row.notas_homologadas ?? []).map(toSnapshot)
-    },
+    queryFn: () => fetchNotasHomologadas(matriculaId as string),
     enabled: Boolean(matriculaId),
   })
 }

@@ -33,31 +33,35 @@ export interface ProcesosParams {
   pageSize: number
 }
 
+export const fetchProcesos = async (params: ProcesosParams) => {
+  const rows = await evalCol.postRows<ProcesoRow>(`${BASE}/query`, {
+    FILTERS: params.filters,
+    PAGEINDEX: params.pageIndex,
+    PAGESIZE: params.pageSize,
+  })
+  const totalCount = rows[0]?.total_count ?? 0
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `POST /procesos/query`: el alcance y los `puede_*` los calcula el backend. */
 export function useProcesosQuery(params: ProcesosParams) {
   return useQuery({
     queryKey: procesosKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<ProcesoRow>(`${BASE}/query`, {
-        FILTERS: params.filters,
-        PAGEINDEX: params.pageIndex,
-        PAGESIZE: params.pageSize,
-      })
-      const totalCount = rows[0]?.total_count ?? 0
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchProcesos(params),
     placeholderData: (prev) => prev,
   })
 }
+
+export const fetchResponsablesFiltro = () =>
+  evalCol
+    .getRows<{ id: number; nombre: string }>(`${BASE}/opciones/responsables-filtro`)
+    .then((r): Opcion[] => r.map((p) => ({ value: String(p.id), label: p.nombre })))
 
 /** `GET /procesos/opciones/responsables-filtro`: responsables de los procesos visibles. */
 export function useResponsablesFiltroQuery() {
   return useQuery({
     queryKey: procesosKeys.responsables(),
-    queryFn: () =>
-      evalCol
-        .getRows<{ id: number; nombre: string }>(`${BASE}/opciones/responsables-filtro`)
-        .then((r): Opcion[] => r.map((p) => ({ value: String(p.id), label: p.nombre }))),
+    queryFn: fetchResponsablesFiltro,
     staleTime: 60_000,
   })
 }

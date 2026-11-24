@@ -35,16 +35,22 @@ export const promocionKeys = {
 
 const nulo = (v: string | undefined) => (v ? Number(v) : null)
 
+export async function fetchOpcionesPromocion() {
+  return camelizar<OpcionesPromocion>(await evalCol.getRow(`${BASE}/opciones`))
+}
+
 export function useOpcionesPromocionQuery() {
   return useQuery({
     queryKey: promocionKeys.opciones,
-    queryFn: async () => camelizar<OpcionesPromocion>(await evalCol.getRow(`${BASE}/opciones`)),
+    queryFn: fetchOpcionesPromocion,
     staleTime: 5 * 60_000,
   })
 }
 
+type FiltrosPromocion = Omit<PromocionSearch, "tab" | "page" | "pageSize">
+
 /** Filtros de cada pestaña; los reusa el export (mismos que la tabla). */
-export const filtrosReprobados = (s: PromocionSearch) => ({
+export const filtrosReprobados = (s: FiltrosPromocion) => ({
   SEARCH: s.q || null,
   ANIO: s.anio ?? null,
   PERIODO: nulo(s.periodo),
@@ -54,7 +60,7 @@ export const filtrosReprobados = (s: PromocionSearch) => ({
   GRUPO: nulo(s.grupo),
 })
 
-export const filtrosPendientes = (s: PromocionSearch) => ({
+export const filtrosPendientes = (s: FiltrosPromocion) => ({
   SEARCH: s.q || null,
   ANIO: s.anio ?? null,
   SEDE: nulo(s.sede),
@@ -64,22 +70,35 @@ export const filtrosPendientes = (s: PromocionSearch) => ({
 
 type Pagina = { pageIndex: number; pageSize: number }
 
+/** Body de la lista: es también su key. */
+export const cuerpoReprobados = (s: FiltrosPromocion, p: Pagina) => ({
+  ...filtrosReprobados(s),
+  PAGE_INDEX: p.pageIndex,
+  PAGE_SIZE: p.pageSize,
+})
+
+export async function fetchReprobados(body: ReturnType<typeof cuerpoReprobados>) {
+  const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/reprobados/query`, body)
+  return toPaginated(rows, { pageSize: body.PAGE_SIZE, map: (r) => camelizar<Reprobado>(r) })
+}
+
 export function useReprobadosQuery(s: PromocionSearch, p: Pagina) {
-  const body = { ...filtrosReprobados(s), PAGE_INDEX: p.pageIndex, PAGE_SIZE: p.pageSize }
+  const body = cuerpoReprobados(s, p)
   return useQuery({
     queryKey: promocionKeys.reprobados(body),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/reprobados/query`, body)
-      return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Reprobado>(r) })
-    },
+    queryFn: () => fetchReprobados(body),
     placeholderData: keepPreviousData,
   })
+}
+
+export async function fetchAreasDelAnio(matriculaId: number) {
+  return camelizar<AreaDelAnio[]>(await evalCol.getRows(`${BASE}/reprobados/${matriculaId}/areas`))
 }
 
 export function useAreasDelAnioQuery(matriculaId: number) {
   return useQuery({
     queryKey: promocionKeys.areasDelAnio(matriculaId),
-    queryFn: async () => camelizar<AreaDelAnio[]>(await evalCol.getRows(`${BASE}/reprobados/${matriculaId}/areas`)),
+    queryFn: () => fetchAreasDelAnio(matriculaId),
   })
 }
 
@@ -91,22 +110,35 @@ export function usePreviaPromoverQuery(ids: number[]) {
   })
 }
 
+/** Body de la lista: es también su key. */
+export const cuerpoPendientes = (s: FiltrosPromocion, p: Pagina) => ({
+  ...filtrosPendientes(s),
+  PAGE_INDEX: p.pageIndex,
+  PAGE_SIZE: p.pageSize,
+})
+
+export async function fetchPendientes(body: ReturnType<typeof cuerpoPendientes>) {
+  const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/pendientes/query`, body)
+  return toPaginated(rows, { pageSize: body.PAGE_SIZE, map: (r) => camelizar<Promovido>(r) })
+}
+
 export function usePendientesQuery(s: PromocionSearch, p: Pagina) {
-  const body = { ...filtrosPendientes(s), PAGE_INDEX: p.pageIndex, PAGE_SIZE: p.pageSize }
+  const body = cuerpoPendientes(s, p)
   return useQuery({
     queryKey: promocionKeys.pendientes(body),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/pendientes/query`, body)
-      return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Promovido>(r) })
-    },
+    queryFn: () => fetchPendientes(body),
     placeholderData: keepPreviousData,
   })
+}
+
+export async function fetchDetallePromocion(promocionId: number) {
+  return camelizar<DetallePromocion>(await evalCol.getRow(`${BASE}/pendientes/${promocionId}`))
 }
 
 export function useDetallePromocionQuery(promocionId: number) {
   return useQuery({
     queryKey: promocionKeys.detalle(promocionId),
-    queryFn: async () => camelizar<DetallePromocion>(await evalCol.getRow(`${BASE}/pendientes/${promocionId}`)),
+    queryFn: () => fetchDetallePromocion(promocionId),
   })
 }
 

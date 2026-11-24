@@ -28,20 +28,22 @@ export interface ContinuidadParams {
   pageSize: number
 }
 
+export async function fetchContinuidad(p: ContinuidadParams) {
+  const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
+    SEARCH: p.search || null,
+    FK_CONVOCATORIA: p.convocatoria ?? null,
+    ESTADO: p.estado ?? null,
+    ESPECIALIDAD: p.especialidad || null,
+    PAGE_INDEX: p.pageIndex,
+    PAGE_SIZE: p.pageSize,
+  })
+  return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Continuidad>(r) })
+}
+
 export function useContinuidadQuery(p: ContinuidadParams) {
   return useQuery({
     queryKey: continuidadKeys.lista(p),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
-        SEARCH: p.search || null,
-        FK_CONVOCATORIA: p.convocatoria ?? null,
-        ESTADO: p.estado ?? null,
-        ESPECIALIDAD: p.especialidad || null,
-        PAGE_INDEX: p.pageIndex,
-        PAGE_SIZE: p.pageSize,
-      })
-      return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Continuidad>(r) })
-    },
+    queryFn: () => fetchContinuidad(p),
     placeholderData: keepPreviousData,
   })
 }

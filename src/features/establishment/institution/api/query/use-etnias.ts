@@ -24,7 +24,7 @@ interface RealEtniaRow {
   etiqueta: string
 }
 
-async function fetchEtnias(): Promise<CatalogItem[]> {
+export async function fetchEtnias(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return []
   }

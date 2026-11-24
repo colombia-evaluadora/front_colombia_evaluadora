@@ -14,7 +14,7 @@ interface RealDisabilityTypeRow {
   nombre: string
 }
 
-async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
+export async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
   // TDISCAPACIDAD no es TLISTA_VALOR: no lo cubre el catálogo genérico
   // `/select/:categoria` (ver use-catalogs.ts) — tiene su propia tabla,
   // igual que TMUNICIPIO y TPROPIEDAD_JURIDICA (ver V58 en el SSO).

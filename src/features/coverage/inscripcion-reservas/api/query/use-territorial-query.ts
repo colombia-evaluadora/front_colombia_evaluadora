@@ -33,9 +33,11 @@ export const territorialKeys = {
   seguimiento: [...all, "seguimiento"] as const,
   seguimientoDetalle: (id: number | "none") => [...all, "seguimiento", id] as const,
   redistribucion: [...all, "redistribucion"] as const,
+  redistribucionLista: <P>(params: P) => [...all, "redistribucion", "lista", params] as const,
   opcionesUbicacion: (id: number | "none") => [...all, "redistribucion", id, "opciones"] as const,
   ubicados: [...all, "ubicados"] as const,
   cuposContratados: [...all, "cupos-contratados"] as const,
+  cuposContratadosLista: <P>(params: P) => [...all, "cupos-contratados", "lista", params] as const,
   orientaciones: [...all, "orientaciones"] as const,
   solicitudesRetiro: [...all, "solicitudes-retiro"] as const,
 }
@@ -51,84 +53,101 @@ export const TEMAS_ORIENTACION = [
   "Otro",
 ]
 
+export async function fetchContextoTerritorial() {
+  try {
+    return datos(
+      await evalCol.getRow<{ datos: ContextoTerritorial | null }>(
+        `${TERRITORIAL_BASE}/contexto`,
+      ),
+    )
+  } catch (e) {
+    const status = (e as { response?: { status?: number } })?.response?.status
+    if (isNotFoundError(e) || status === 403) return null
+    throw e
+  }
+}
+
 /** Rol territorial del usuario y sus establecimientos; null si no es territorial (la pestaña no se muestra). */
 export function useContextoTerritorialQuery() {
   return useQuery({
     queryKey: territorialKeys.contexto,
     // Solo un 403/404 (no es territorial o el endpoint aún no existe) oculta la pestaña; un fallo
     // de red o un 500 quedan como error para que se reintente y no escondan la pestaña en caché.
-    queryFn: async () => {
-      try {
-        return datos(
-          await evalCol.getRow<{ datos: ContextoTerritorial | null }>(
-            `${TERRITORIAL_BASE}/contexto`,
-          ),
-        )
-      } catch (e) {
-        const status = (e as { response?: { status?: number } })?.response?.status
-        if (isNotFoundError(e) || status === 403) return null
-        throw e
-      }
-    },
+    queryFn: fetchContextoTerritorial,
     staleTime: Infinity,
   })
+}
+
+export async function fetchProyeccion() {
+  return datos(
+    await evalCol.getRow<{ datos: ProyeccionEstablecimiento[] }>(
+      `${TERRITORIAL_BASE}/proyeccion`,
+    ),
+  )
 }
 
 export function useProyeccionQuery() {
   return useQuery({
     queryKey: territorialKeys.proyeccion,
-    queryFn: async () =>
-      datos(
-        await evalCol.getRow<{ datos: ProyeccionEstablecimiento[] }>(
-          `${TERRITORIAL_BASE}/proyeccion`,
-        ),
-      ),
+    queryFn: fetchProyeccion,
   })
+}
+
+export async function fetchProyeccionDetalle(id: number) {
+  return datos(
+    await evalCol.getRow<{ datos: ProyeccionDetalle }>(`${TERRITORIAL_BASE}/proyeccion/${id}`),
+  )
 }
 
 export function useProyeccionDetalleQuery(id: number | undefined) {
   return useQuery({
     queryKey: territorialKeys.proyeccionDetalle(id ?? "none"),
     enabled: Boolean(id),
-    queryFn: async () =>
-      datos(
-        await evalCol.getRow<{ datos: ProyeccionDetalle }>(`${TERRITORIAL_BASE}/proyeccion/${id}`),
-      ),
+    queryFn: () => fetchProyeccionDetalle(id as number),
   })
+}
+
+export async function fetchCalendariosCobertura() {
+  return datos(
+    await evalCol.getRow<{ datos: CalendarioCobertura[] }>(`${TERRITORIAL_BASE}/calendarios`),
+  )
 }
 
 export function useCalendariosQuery() {
   return useQuery({
     queryKey: territorialKeys.calendarios,
-    queryFn: async () =>
-      datos(
-        await evalCol.getRow<{ datos: CalendarioCobertura[] }>(`${TERRITORIAL_BASE}/calendarios`),
-      ),
+    queryFn: fetchCalendariosCobertura,
   })
+}
+
+export async function fetchSeguimiento() {
+  return datos(
+    await evalCol.getRow<{ datos: SeguimientoEstablecimiento[] }>(
+      `${TERRITORIAL_BASE}/seguimiento`,
+    ),
+  )
 }
 
 export function useSeguimientoQuery() {
   return useQuery({
     queryKey: territorialKeys.seguimiento,
-    queryFn: async () =>
-      datos(
-        await evalCol.getRow<{ datos: SeguimientoEstablecimiento[] }>(
-          `${TERRITORIAL_BASE}/seguimiento`,
-        ),
-      ),
+    queryFn: fetchSeguimiento,
   })
+}
+
+export async function fetchSeguimientoDetalle(establecimientoId: number) {
+  return datos(
+    await evalCol.getRow<{ datos: SeguimientoDetalle }>(
+      `${TERRITORIAL_BASE}/seguimiento/${establecimientoId}`,
+    ),
+  )
 }
 
 export function useSeguimientoDetalleQuery(establecimientoId: number | undefined) {
   return useQuery({
     queryKey: territorialKeys.seguimientoDetalle(establecimientoId ?? "none"),
     enabled: Boolean(establecimientoId),
-    queryFn: async () =>
-      datos(
-        await evalCol.getRow<{ datos: SeguimientoDetalle }>(
-          `${TERRITORIAL_BASE}/seguimiento/${establecimientoId}`,
-        ),
-      ),
+    queryFn: () => fetchSeguimientoDetalle(establecimientoId as number),
   })
 }
 
@@ -159,7 +178,7 @@ export async function fetchRedistribucion(p: RedistribucionParams = {}) {
 
 export function useRedistribucionQuery(params: RedistribucionParams = {}) {
   return useQuery({
-    queryKey: [...territorialKeys.redistribucion, "lista", params] as const,
+    queryKey: territorialKeys.redistribucionLista(params),
     queryFn: () => fetchRedistribucion(params),
     placeholderData: (prev) => prev,
   })
@@ -178,11 +197,14 @@ export function useOpcionesUbicacionQuery(inscripcionId: number | undefined) {
   })
 }
 
+export async function fetchUbicados() {
+  return datos(await evalCol.getRow<{ datos: UbicadoSinGrupo[] }>(`${TERRITORIAL_BASE}/ubicados`))
+}
+
 export function useUbicadosQuery() {
   return useQuery({
     queryKey: territorialKeys.ubicados,
-    queryFn: async () =>
-      datos(await evalCol.getRow<{ datos: UbicadoSinGrupo[] }>(`${TERRITORIAL_BASE}/ubicados`)),
+    queryFn: fetchUbicados,
   })
 }
 
@@ -193,36 +215,45 @@ export interface CuposContratadosParams {
   pageSize?: number
 }
 
+export async function fetchCuposContratados(params: CuposContratadosParams = {}) {
+  return datos(
+    await evalCol.postRow<{ datos: Paginado<CupoContratadoGrupo> }>(
+      `${TERRITORIAL_BASE}/consulta/cupos-contratados`,
+      cuerpoPagina({ SEARCH: params.q, FK_ESTABLECIMIENTO: params.establecimientoId }, params),
+    ),
+  )
+}
+
 export function useCuposContratadosQuery(params: CuposContratadosParams = {}) {
   return useQuery({
-    queryKey: [...territorialKeys.cuposContratados, "lista", params] as const,
-    queryFn: async () =>
-      datos(
-        await evalCol.postRow<{ datos: Paginado<CupoContratadoGrupo> }>(
-          `${TERRITORIAL_BASE}/consulta/cupos-contratados`,
-          cuerpoPagina({ SEARCH: params.q, FK_ESTABLECIMIENTO: params.establecimientoId }, params),
-        ),
-      ),
+    queryKey: territorialKeys.cuposContratadosLista(params),
+    queryFn: () => fetchCuposContratados(params),
     placeholderData: (prev) => prev,
   })
+}
+
+export async function fetchOrientaciones() {
+  return datos(await evalCol.getRow<{ datos: Orientacion[] }>(`${TERRITORIAL_BASE}/orientaciones`))
 }
 
 export function useOrientacionesQuery() {
   return useQuery({
     queryKey: territorialKeys.orientaciones,
-    queryFn: async () =>
-      datos(await evalCol.getRow<{ datos: Orientacion[] }>(`${TERRITORIAL_BASE}/orientaciones`)),
+    queryFn: fetchOrientaciones,
   })
+}
+
+export async function fetchSolicitudesRetiro() {
+  return datos(
+    await evalCol.getRow<{ datos: SolicitudRetiro[] }>(
+      `${TERRITORIAL_BASE}/solicitudes-retiro`,
+    ),
+  )
 }
 
 export function useSolicitudesRetiroQuery() {
   return useQuery({
     queryKey: territorialKeys.solicitudesRetiro,
-    queryFn: async () =>
-      datos(
-        await evalCol.getRow<{ datos: SolicitudRetiro[] }>(
-          `${TERRITORIAL_BASE}/solicitudes-retiro`,
-        ),
-      ),
+    queryFn: fetchSolicitudesRetiro,
   })
 }
