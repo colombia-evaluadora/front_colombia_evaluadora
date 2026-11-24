@@ -25,6 +25,7 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Convivencia"
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
@@ -38,7 +39,7 @@ function CasoForm({ caso }: { caso?: CasoDetalle }) {
             </div>
           }
         >
-          {caso ? `Convivencia › Caso ${caso.numero} › Modificar` : "Convivencia › Nuevo caso"}
+          {caso ? `Modificar — Caso ${caso.numero}` : "Nuevo caso"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

@@ -29,6 +29,7 @@ export function PantallaEstrategia({ estrategia }: { estrategia?: EstrategiaDeta
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
@@ -44,8 +45,8 @@ export function PantallaEstrategia({ estrategia }: { estrategia?: EstrategiaDeta
             </div>
           }
         >
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-            {estrategia ? `Prevención › Estrategia · ${estrategia.nombre}` : "Prevención › Nueva estrategia"}
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {estrategia ? `Estrategia · ${estrategia.nombre}` : "Nueva estrategia"}
             {estrategia && <BadgeEstadoEstrategia estado={estrategia.estado} nombre={estrategia.estado_nombre} />}
           </span>
         </TableScreenTitle>

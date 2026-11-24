@@ -39,6 +39,7 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" disabled={!h?.puede_valorar} onClick={() => irValorar(matricula)}>
@@ -88,7 +89,7 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
             </Button>
           }
         >
-          <span className="whitespace-normal">{h ? `Prevención › Historial · ${nombre}${gradoGrupo ? ` · ${gradoGrupo}` : ""}` : "Prevención › Historial"}</span>
+          {h ? `Historial · ${nombre}${gradoGrupo ? ` · ${gradoGrupo}` : ""}` : "Historial"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

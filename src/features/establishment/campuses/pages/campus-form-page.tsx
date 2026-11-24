@@ -389,6 +389,11 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
       {/* El encabezado es sticky: las acciones quedan a mano en todo el formulario. */}
       <TableScreenHeader>
         <TableScreenTitle
+          ruta={
+            <Link to={listHref} className="hover:text-foreground">
+              Sedes educativas
+            </Link>
+          }
           action={
             <div className="flex shrink-0 items-center gap-2">
               {readOnly ? (
@@ -429,11 +434,8 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
             </div>
           }
         >
-          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-            <Link to={listHref} className="shrink-0 text-sm font-normal text-muted-foreground hover:text-foreground">
-              Sedes educativas ›
-            </Link>
-            <span className="truncate">{title}</span>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {title}
             {principal ? <PrincipalBadge /> : null}
             {campus?.status === "I" ? <CampusStatusBadge status="I" /> : null}
           </span>

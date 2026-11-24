@@ -35,7 +35,8 @@ function PlanNuevoContent({ matricula, valoracion }: { matricula?: number; valor
         matricula,
         origen: o ? { id: o.id, fecha: o.fecha, nivelNombre: o.nivel_nombre, nivelValor: o.nivel_valor } : null,
       }}
-      titulo={`Prevención › Nuevo plan · ${historial.data.estudiante_nombre}`}
+      ruta="Prevención"
+      titulo={`Nuevo plan · ${historial.data.estudiante_nombre}`}
       matricula={matricula}
       establecimiento={establecimientoId}
       origen={o ? { fecha: o.fecha, nivelNombre: o.nivel_nombre, nivelValor: o.nivel_valor } : null}
@@ -68,7 +69,8 @@ function PlanEditarContent({ planId }: { planId: number }) {
   return (
     <PantallaPlan
       modo={{ modo: "modificar", plan: p }}
-      titulo={`Prevención › Modificar plan · ${p.estudiante_nombre}`}
+      ruta="Prevención"
+      titulo={`Modificar plan · ${p.estudiante_nombre}`}
       matricula={p.fk_tmatricula}
       establecimiento={establecimientoId}
       origen={p.valoracion ? { fecha: p.valoracion.fecha, nivelNombre: p.valoracion.nivel_nombre, nivelValor: p.valoracion.nivel_valor } : null}

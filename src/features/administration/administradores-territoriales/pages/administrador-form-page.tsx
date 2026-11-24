@@ -194,6 +194,7 @@ function AdministradorForm({
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Administradores territoriales"
           action={
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={cancelar}>
@@ -225,11 +226,8 @@ function AdministradorForm({
             </div>
           }
         >
-          <span className="flex flex-wrap items-center gap-2">
-            <span>
-              Administradores territoriales <span className="text-muted-foreground">›</span>{" "}
-              {actual ? actual.nombre : "Nuevo administrador territorial"}
-            </span>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {actual ? actual.nombre : "Nuevo administrador territorial"}
             {actual?.activo && actual.pendienteActivacion && (
               <Badge variant="soft" color="warning">
                 Pendiente de activación

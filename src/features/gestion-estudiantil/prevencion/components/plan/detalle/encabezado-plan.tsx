@@ -20,6 +20,7 @@ export function EncabezadoPlan({ plan: p, d }: Props) {
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Prevención"
         action={
           <div className="flex shrink-0 items-center gap-2">
             <Button size="sm" type="button" variant="outline" color="neutral" disabled={!p.puede_marcar} onClick={() => d.marcar("SUPERADO")}>
@@ -82,8 +83,8 @@ export function EncabezadoPlan({ plan: p, d }: Props) {
         }
         description={<BotonVolver onClick={d.volver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Prevención › Plan de acompañamiento · {d.estudiante} · {p.grado_grupo}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Plan de acompañamiento · {d.estudiante} · {p.grado_grupo}
           <Badge variant="soft" color={ESTADO_PLAN_COLOR[p.estado]}>
             <span>{ESTADO_PLAN_ETIQUETA[p.estado]}</span>
           </Badge>

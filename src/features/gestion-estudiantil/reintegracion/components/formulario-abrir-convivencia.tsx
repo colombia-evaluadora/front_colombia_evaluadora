@@ -23,6 +23,7 @@ export function FormularioAbrirConvivencia({ caso }: { caso: CasoDetalle }) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Reintegración"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={guardando}>
@@ -38,7 +39,7 @@ export function FormularioAbrirConvivencia({ caso }: { caso: CasoDetalle }) {
             </div>
           }
         >
-          <span className="whitespace-normal">Reintegración › Abrir caso de convivencia · {caso.estudiante_nombre}</span>
+          Abrir caso de convivencia · {caso.estudiante_nombre}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

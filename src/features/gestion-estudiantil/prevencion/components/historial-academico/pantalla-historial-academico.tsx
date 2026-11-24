@@ -23,10 +23,8 @@ export function PantallaHistorialAcademico({ matricula }: { matricula: number })
   return (
     <>
       <TableScreenHeader>
-        <TableScreenTitle description={<BotonVolver texto="Volver al expediente" onClick={h.volverAlExpediente} />}>
-          <span className="whitespace-normal">
-            {op ? `Prevención › Historial académico · ${nombre} · ${op.grado_grupo}` : "Prevención › Historial académico"}
-          </span>
+        <TableScreenTitle ruta="Prevención" description={<BotonVolver texto="Volver al expediente" onClick={h.volverAlExpediente} />}>
+          {op ? `Historial académico · ${nombre} · ${op.grado_grupo}` : "Historial académico"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

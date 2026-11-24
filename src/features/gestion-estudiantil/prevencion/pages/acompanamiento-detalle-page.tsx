@@ -27,11 +27,12 @@ function Encabezado({ d, abrir }: { d: AcompanamientoDetalle; abrir: (x: Dialogo
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Prevención"
         action={<AccionesFila modo="menu" etiqueta="Acciones del acompañamiento" acciones={acciones} />}
         description={<BotonVolver onClick={volver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Prevención › {TITULO_ACOMP[d.tipo]} · {d.contexto.estudiante_nombre} · {d.contexto.grado_grupo}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {TITULO_ACOMP[d.tipo]} · {d.contexto.estudiante_nombre} · {d.contexto.grado_grupo}
           <BadgeEstadoAcomp estado={d.estado} nombre={d.estado_nombre} />
         </span>
       </TableScreenTitle>

@@ -30,6 +30,7 @@ export function EncabezadoSenal({ senal: s, d }: Props) {
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Prevención"
         action={
           <div className="flex shrink-0 items-center gap-2">
             {s.puede_valorar && (
@@ -53,8 +54,8 @@ export function EncabezadoSenal({ senal: s, d }: Props) {
         }
         description={<BotonVolver onClick={d.volver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Prevención › Señal de salud mental · {s.estudiante_nombre} · {s.grado_grupo}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Señal de salud mental · {s.estudiante_nombre} · {s.grado_grupo}
           <BadgeEstadoSenal estado={s.estado} nombre={s.estado_nombre} />
         </span>
       </TableScreenTitle>

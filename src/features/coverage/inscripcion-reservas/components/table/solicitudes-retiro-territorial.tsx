@@ -361,6 +361,7 @@ export function SolicitudRetiroVista({ id }: { id: number }) {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Inscripción y reservas › Solicitudes de retiro"
           action={
             <div className="flex flex-wrap gap-2">
               {botonVolver}
@@ -383,14 +384,9 @@ export function SolicitudRetiroVista({ id }: { id: number }) {
             </div>
           }
         >
-          <span className="grid gap-1">
-            <span className="text-sm font-normal text-muted-foreground">
-              Inscripción y reservas › Solicitudes de retiro ›
-            </span>
-            <span className="flex items-center gap-3">
-              {s?.estudiante ?? "Solicitud de retiro"}
-              {s && <EstadoBadge estado={s.estado} />}
-            </span>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {s?.estudiante ?? "Solicitud de retiro"}
+            {s && <EstadoBadge estado={s.estado} />}
           </span>
         </TableScreenTitle>
       </TableScreenHeader>

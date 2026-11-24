@@ -137,9 +137,9 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="min-w-0 truncate">Comunicados institucionales › Modificar comunicado</span>
+        <TableScreenTitle ruta="Comunicados institucionales">
+          <span className="inline-flex flex-wrap items-center gap-2">
+            Modificar comunicado
             {c.estado && (
               <span className="shrink-0 text-sm font-normal">
                 <EstadoComunicadoBadge estado={c.estado} />

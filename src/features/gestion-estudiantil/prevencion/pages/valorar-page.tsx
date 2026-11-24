@@ -25,6 +25,7 @@ function ValorarContent({ matricula: matriculaInicial }: { matricula?: number })
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={volver}>
@@ -40,7 +41,7 @@ function ValorarContent({ matricula: matriculaInicial }: { matricula?: number })
             </div>
           }
         >
-          Prevención › Valorar riesgo
+          Valorar riesgo
         </TableScreenTitle>
       </TableScreenHeader>
 

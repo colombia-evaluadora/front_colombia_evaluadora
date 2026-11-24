@@ -31,11 +31,12 @@ function Encabezado({ d, abrir }: { d: GestionAlertaDetalle; abrir: (x: DialogoG
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Gestión de alertas"
         action={<AccionesFila modo="menu" etiqueta="Acciones de la gestión" acciones={acciones} />}
         description={<BotonVolver onClick={volver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Gestión de alertas › {d.estudiante_nombre} · {d.grado_grupo}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {d.estudiante_nombre} · {d.grado_grupo}
           <Badge variant="soft" color={ESTADO_GESTION_COLOR[d.estado]}>
             <span>{d.estado_nombre}</span>
           </Badge>

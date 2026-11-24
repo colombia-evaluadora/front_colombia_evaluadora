@@ -30,6 +30,7 @@ export function EncabezadoActividad({ actividad: a, pestana, onVolver, onModific
   return (
     <TableScreenHeader>
       <TableScreenTitle
+        ruta="Actividades"
         action={
           <div className="flex shrink-0 items-center gap-2">
             <Button size="sm" type="button" variant="outline" color="neutral" disabled={!a.puede_editar} onClick={onModificar}>
@@ -63,8 +64,8 @@ export function EncabezadoActividad({ actividad: a, pestana, onVolver, onModific
         }
         description={<BotonVolver onClick={onVolver} />}
       >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-          Actividades › {a.nombre}
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {a.nombre}
           <Badge variant="soft" color="primary">
             <span>{a.tipo_nombre}</span>
           </Badge>

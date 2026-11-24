@@ -116,6 +116,7 @@ export function ServicioSocialContenido({ detalle: d }: { detalle: ServicioSocia
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Servicio social"
           action={
             <Tooltip>
               <TooltipTrigger render={<span tabIndex={0} />}>
@@ -136,8 +137,8 @@ export function ServicioSocialContenido({ detalle: d }: { detalle: ServicioSocia
           }
           description={<BotonVolver onClick={() => irListado("servicio-social")} />}
         >
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-normal">
-            Servicio social › {d.estudiante} · {d.grado_grupo}
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {d.estudiante} · {d.grado_grupo}
             <Badge variant="soft" color={ESTADO_SERVICIO_SOCIAL_COLOR[d.estado]}>
               <span>{ESTADO_SERVICIO_SOCIAL_ETIQUETA[d.estado]}</span>
             </Badge>

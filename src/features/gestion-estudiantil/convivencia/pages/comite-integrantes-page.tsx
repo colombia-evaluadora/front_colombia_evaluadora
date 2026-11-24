@@ -33,6 +33,7 @@ function Contenido({ periodo, periodos, comite, onPeriodo }: ContenidoProps) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Convivencia › Comité"
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={form.volver} disabled={form.guardando}>
@@ -47,7 +48,7 @@ function Contenido({ periodo, periodos, comite, onPeriodo }: ContenidoProps) {
             </div>
           }
         >
-          {form.existe ? "Convivencia › Comité › Integrantes" : "Convivencia › Comité › Registrar integrantes"}
+          {form.existe ? "Integrantes" : "Registrar integrantes"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

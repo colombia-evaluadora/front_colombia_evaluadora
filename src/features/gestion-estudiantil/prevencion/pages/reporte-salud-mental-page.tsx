@@ -13,6 +13,7 @@ function ReporteContent() {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Prevención"
           action={
             <div className="flex shrink-0 items-center gap-2">
               <Button size="sm" type="button" variant="outline" color="neutral" disabled={f.pending} onClick={f.volver}>
@@ -28,7 +29,7 @@ function ReporteContent() {
             </div>
           }
         >
-          Prevención › Nuevo reporte de salud mental
+          Nuevo reporte de salud mental
         </TableScreenTitle>
       </TableScreenHeader>
       <TableScreenBody>

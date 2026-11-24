@@ -165,6 +165,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
     <>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta="Observador"
           action={
             <div className="flex gap-2">
               <Button size="sm" variant="outline" color="neutral" onClick={volver} disabled={guardando}>
@@ -178,7 +179,7 @@ function AnotacionForm({ anotacion }: { anotacion?: AnotacionRow }) {
             </div>
           }
         >
-          {editar ? "Observador › Modificar anotación" : "Observador › Nueva anotación"}
+          {editar ? "Modificar anotación" : "Nueva anotación"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

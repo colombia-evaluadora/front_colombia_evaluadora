@@ -172,6 +172,11 @@ export function EmployeeRolePermissionsPage() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          ruta={
+            <Link to={rolesHref} search={rolesSearch} className="hover:text-foreground">
+              Roles y permisos
+            </Link>
+          }
           action={
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               <Button
@@ -203,12 +208,7 @@ export function EmployeeRolePermissionsPage() {
             </div>
           }
         >
-          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-            <Link to={rolesHref} search={rolesSearch} className="shrink-0 text-sm font-normal text-muted-foreground hover:text-foreground">
-              Roles y permisos ›
-            </Link>
-            <span className="truncate">Permisos{titulo ? ` — ${titulo}` : ""}</span>
-          </span>
+          Permisos{titulo ? ` — ${titulo}` : ""}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
