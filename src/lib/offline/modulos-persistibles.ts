@@ -19,7 +19,7 @@ const RAICES = new Set([
   "actualizacion-datos", "enrollments", "entidad-territorial", "inscripcion-configuracion", "inscripciones",
   "matricula", "matricula-complementaria", "pre-matricula", "promocion-nivelacion", "reservas-cupo", "reservations",
   // Administración
-  "administradores-territoriales", "areas-oficiales", "audits", "audit-tables", "bitacora",
+  "administradores-territoriales", "areas-oficiales", "audits", "audit-tables", "audit-operation-types", "audit-session-statuses", "bitacora",
   "conservacion-datos", "criterios-prioridad", "festivos", "listas-valor", "menus",
   "parametros-edad", "plans", "relaciones-alumno-grupo", "role-menus", "roles",
   "superadministradores", "supervisores-territoriales",

@@ -165,27 +165,37 @@ export const procesosKeys = {
   mios: () => ["procesos", "mios"] as const,
   detalle: (id: number) => ["procesos", "detalle", id] as const,
   eleccion: (id: number, parte: string) => ["procesos", "eleccion", id, parte] as const,
+  cursos: () => ["procesos", "cursos"] as const,
+  jornadas: () => ["procesos", "jornadas"] as const,
 }
 
+export const fetchProcesos = () => evalCol.getRows<ProcesoFila>(BASE)
+export const fetchMisProcesos = () => evalCol.getRows<MiProceso>(`${BASE}/mios`)
+export const fetchProceso = async (id: number) => (await evalCol.getRows<Proceso>(`${BASE}/${id}`))[0] ?? null
+export const fetchParteEleccion = <T>(eleccion: number, parte: string) =>
+  evalCol.getRows<T>(`${BASE}/elecciones/${eleccion}/${parte}`)
+export const fetchCursos = () => evalCol.getRows<string>(`${BASE}/cursos`)
+export const fetchJornadas = () => evalCol.getRows<{ id: number; nombre: string }>("/comunicaciones/elecciones/jornadas")
+
 export function useProcesosQuery() {
-  return useQuery({ queryKey: procesosKeys.lista(), queryFn: () => evalCol.getRows<ProcesoFila>(BASE) })
+  return useQuery({ queryKey: procesosKeys.lista(), queryFn: fetchProcesos })
 }
 
 export function useMisProcesosQuery() {
-  return useQuery({ queryKey: procesosKeys.mios(), queryFn: () => evalCol.getRows<MiProceso>(`${BASE}/mios`) })
+  return useQuery({ queryKey: procesosKeys.mios(), queryFn: fetchMisProcesos })
 }
 
 export function useProcesoQuery(id: number) {
   return useQuery({
     queryKey: procesosKeys.detalle(id),
-    queryFn: async () => (await evalCol.getRows<Proceso>(`${BASE}/${id}`))[0] ?? null,
+    queryFn: () => fetchProceso(id),
   })
 }
 
 function useParteEleccion<T>(eleccion: number, parte: string, enabled = true) {
   return useQuery({
     queryKey: procesosKeys.eleccion(eleccion, parte),
-    queryFn: () => evalCol.getRows<T>(`${BASE}/elecciones/${eleccion}/${parte}`),
+    queryFn: () => fetchParteEleccion<T>(eleccion, parte),
     enabled,
   })
 }
@@ -199,7 +209,7 @@ export const useReclamacionesQuery = (e: number) => useParteEleccion<Reclamacion
 export const useDesignacionesQuery = (e: number) => useParteEleccion<Designacion>(e, "designaciones")
 
 export function useCursosQuery() {
-  return useQuery({ queryKey: ["procesos", "cursos"], queryFn: () => evalCol.getRows<string>(`${BASE}/cursos`), staleTime: Infinity })
+  return useQuery({ queryKey: procesosKeys.cursos(), queryFn: fetchCursos, staleTime: Infinity })
 }
 
 export function usePersonasQuery(tipo: "ESTUDIANTES" | "ACUDIENTES" | "FUNCIONARIOS", enabled = true) {
@@ -212,8 +222,8 @@ export function usePersonasQuery(tipo: "ESTUDIANTES" | "ACUDIENTES" | "FUNCIONAR
 
 export function useJornadasQuery() {
   return useQuery({
-    queryKey: ["procesos", "jornadas"],
-    queryFn: () => evalCol.getRows<{ id: number; nombre: string }>("/comunicaciones/elecciones/jornadas"),
+    queryKey: procesosKeys.jornadas(),
+    queryFn: fetchJornadas,
     staleTime: Infinity,
   })
 }

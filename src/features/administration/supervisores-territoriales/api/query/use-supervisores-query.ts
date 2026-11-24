@@ -10,7 +10,7 @@ import type {
 } from "@/features/administration/supervisores-territoriales/api/types/supervisor"
 
 // Son pocos: orden y página se resuelven en el front, como en Superadministradores.
-async function fetchSupervisores() {
+export async function fetchSupervisores() {
   const [row] = await evalCol.getRows<Resultado<SupervisorTerritorial[]>>("/supervisores-territoriales")
   return row?.resultado ?? []
 }
@@ -19,7 +19,7 @@ export function useSupervisoresQuery() {
   return useQuery({ queryKey: supervisorKeys.lista, queryFn: fetchSupervisores })
 }
 
-async function fetchSupervisor(id: number) {
+export async function fetchSupervisor(id: number) {
   const [row] = await evalCol.getRows<Resultado<SupervisorTerritorial>>(`/supervisores-territoriales/${id}`)
   if (!row) throw new Error("No existe el supervisor territorial solicitado.")
   return row.resultado
@@ -33,7 +33,7 @@ export function useSupervisorQuery(id: number | null) {
   })
 }
 
-async function fetchCatalogos() {
+export async function fetchCatalogos() {
   const [row] = await evalCol.getRows<Resultado<CatalogosSupervisor>>("/catalogos/supervisores-territoriales")
   return row?.resultado ?? { tiposDocumento: [], establecimientos: [] }
 }

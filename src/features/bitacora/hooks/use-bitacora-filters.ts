@@ -1,54 +1,13 @@
-import { subDays } from "date-fns"
-
-import { formatDateValue } from "@/lib/date-value"
 import { paths } from "@/config/paths"
 import { bitacoraModuloRoute } from "@/router"
 
-import { BITACORA_MODULO_SLUG, moduloDeSlug, type BitacoraModulo } from "@/features/bitacora/api/types/bitacora"
+import { BITACORA_MODULO_SLUG, moduloDeSlug } from "@/features/bitacora/api/types/bitacora"
+import { accionPorDefecto, filtrosVacios, type BitacoraFilters } from "@/features/bitacora/lib/filtros-por-defecto"
 
-/** Filtros en la forma del buscador (strings; vacío = sin filtro). */
-export interface BitacoraFilters {
-  modulo: BitacoraModulo
-  q: string
-  /** pk del establecimiento; solo lo elige el Superadministrador. */
-  establecimiento: string
-  /** pk de la sede. */
-  sede: string
-  /** `pk_lista_valor` de la jornada. */
-  jornada: string
-  /** Código de la entidad. */
-  entidad: string
-  /** Códigos de acción (`MODIFICAR`, …). */
-  accion: string[]
-  desde: string
-  hasta: string
-}
+export { accionPorDefecto, filtrosVacios, rangoPorDefecto, type BitacoraFilters } from "@/features/bitacora/lib/filtros-por-defecto"
 
 /** Marca de «todas las acciones» en la URL (solo hace falta donde el valor por defecto no es «todas»). */
 const TODAS = "TODAS"
-
-/** Acción con que abre un módulo: Administración del Sistema, en sus accesos. */
-export const accionPorDefecto = (modulo: BitacoraModulo): string[] => (modulo === "ADMINISTRACION" ? ["ACCESO"] : [])
-
-/** Por defecto, los últimos 30 días. */
-export function rangoPorDefecto() {
-  const hoy = new Date()
-  return { desde: formatDateValue(subDays(hoy, 30)), hasta: formatDateValue(hoy) }
-}
-
-/** Módulo, establecimiento y fechas son obligatorios: se cambian, pero no se quitan. */
-export function filtrosVacios(): BitacoraFilters {
-  return {
-    modulo: "ESTABLECIMIENTO",
-    q: "",
-    establecimiento: "",
-    sede: "",
-    jornada: "",
-    entidad: "",
-    accion: [],
-    ...rangoPorDefecto(),
-  }
-}
 
 export function useBitacoraFilters() {
   const search = bitacoraModuloRoute.useSearch()

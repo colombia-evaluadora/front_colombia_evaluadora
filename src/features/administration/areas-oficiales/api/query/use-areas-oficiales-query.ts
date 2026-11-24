@@ -12,7 +12,7 @@ import type {
 // resuelven en el front, como en Listas de valor. Así también se distingue
 // "catálogo vacío" de "nada coincide" sin otra consulta. El endpoint acepta
 // ?BUSCAR=&NIVEL=&HABILITADA= si algún día hace falta filtrar en el back.
-async function fetchAreasOficiales() {
+export async function fetchAreasOficiales() {
   const [row] = await evalCol.getRows<Resultado<AreaOficial[]>>("/areas-oficiales")
   return row?.resultado ?? []
 }
