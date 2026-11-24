@@ -39,34 +39,38 @@ export interface ReconocimientosParams {
   pageSize: number
 }
 
+export const fetchReconocimientos = async (params: ReconocimientosParams) => {
+  const rows = await evalCol.getRows<ReconocimientoRow>(
+    `${BASE_RECONOCIMIENTOS}${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /reconocimientos`: el alcance lo aplica el backend; `total_count` viene repetido en cada fila. */
 export function useReconocimientosQuery(params: ReconocimientosParams) {
   return useQuery({
     queryKey: reconocimientosKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<ReconocimientoRow>(
-        `${BASE_RECONOCIMIENTOS}${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchReconocimientos(params),
     enabled: params.filters != null,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchReconocimiento = (reconocimientoId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_RECONOCIMIENTOS}/${reconocimientoId}`)
+    .then((r) => desenvolver<ReconocimientoDetalle>(r[0], "datos", "No se encontró el reconocimiento solicitado."))
+
 /** `GET /reconocimientos/:ID`: la fila con actividad, soporte y anulación, en la columna `datos`. */
 export function useReconocimientoQuery(reconocimientoId: number | undefined) {
   return useQuery({
     queryKey: reconocimientosKeys.detalle(reconocimientoId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_RECONOCIMIENTOS}/${reconocimientoId}`)
-        .then((r) => desenvolver<ReconocimientoDetalle>(r[0], "datos", "No se encontró el reconocimiento solicitado.")),
+    queryFn: () => fetchReconocimiento(reconocimientoId),
     enabled: reconocimientoId != null,
   })
 }

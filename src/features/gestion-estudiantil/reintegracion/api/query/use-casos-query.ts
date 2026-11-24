@@ -36,35 +36,39 @@ export interface CasosParams {
   pageSize: number
 }
 
+export const fetchCasosReintegracion = async (params: CasosParams) => {
+  const rows = await evalCol.getRows<CasoRow>(
+    `${BASE_REINTEGRACION}/casos${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /casos`: bandeja paginada en el servidor; `total_count` viene repetido en cada fila. */
 export function useCasosQuery(params: CasosParams) {
   return useQuery({
     queryKey: reintegracionKeys.casos(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<CasoRow>(
-        `${BASE_REINTEGRACION}/casos${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchCasosReintegracion(params),
     enabled: params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchCasoReintegracion = (casoId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_REINTEGRACION}/casos/${casoId}`)
+    .then((r) => desenvolver<CasoDetalle>(r[0], "datos", "No se encontró el caso de reintegración."))
+
 /** `GET /casos/:ID` → columna `datos`. Abrir el caso deja traza de consulta: no se cachea. */
 export function useCasoQuery(casoId: number | undefined) {
   return useQuery({
     queryKey: reintegracionKeys.caso(casoId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_REINTEGRACION}/casos/${casoId}`)
-        .then((r) => desenvolver<CasoDetalle>(r[0], "datos", "No se encontró el caso de reintegración.")),
+    queryFn: () => fetchCasoReintegracion(casoId),
     enabled: casoId != null,
     retry: false,
     staleTime: 0,

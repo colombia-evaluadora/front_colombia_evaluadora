@@ -39,46 +39,52 @@ export interface ValoracionesParams {
   pageSize: number
 }
 
+export const fetchValoraciones = async (params: ValoracionesParams) => {
+  const rows = await evalCol.getRows<ValoracionRow>(
+    `${BASE_PREVENCION}/valoraciones${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /valoraciones`: valoraciones y planes dentro del alcance, más recientes primero. */
 export function useValoracionesQuery(params: ValoracionesParams) {
   return useQuery({
     queryKey: prevencionKeys.valoraciones(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<ValoracionRow>(
-        `${BASE_PREVENCION}/valoraciones${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchValoraciones(params),
     enabled: params.filters != null,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchValoracion = (valoracionId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/valoraciones/${valoracionId}`)
+    .then((r) => desenvolver<ValoracionDetalle>(r[0], "datos", "No se encontró la valoración solicitada."))
+
 /** `GET /valoraciones/:ID` → columna `datos`. */
 export function useValoracionQuery(valoracionId: number | undefined) {
   return useQuery({
     queryKey: prevencionKeys.valoracion(valoracionId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/valoraciones/${valoracionId}`)
-        .then((r) => desenvolver<ValoracionDetalle>(r[0], "datos", "No se encontró la valoración solicitada.")),
+    queryFn: () => fetchValoracion(valoracionId),
     enabled: valoracionId != null,
   })
 }
+
+export const fetchPlan = (planId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/planes/${planId}`)
+    .then((r) => desenvolver<PlanDetalle>(r[0], "datos", "No se encontró el plan solicitado."))
 
 /** `GET /planes/:ID` → columna `datos`. */
 export function usePlanQuery(planId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.plan(planId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/planes/${planId}`)
-        .then((r) => desenvolver<PlanDetalle>(r[0], "datos", "No se encontró el plan solicitado.")),
+    queryFn: () => fetchPlan(planId),
     enabled: planId != null && enabled,
   })
 }

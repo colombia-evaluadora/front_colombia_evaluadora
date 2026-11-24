@@ -7,11 +7,14 @@ import { reintegracionKeys } from "@/features/gestion-estudiantil/reintegracion/
 import { BASE_REINTEGRACION } from "@/features/gestion-estudiantil/reintegracion/api/query/use-casos-query"
 import type { IntervencionDetalle, IntervencionRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
 
+export const fetchIntervenciones = (casoId: number | undefined) =>
+  evalCol.getRows<IntervencionRow>(`${BASE_REINTEGRACION}/casos/${casoId}/intervenciones`)
+
 /** `GET /casos/:ID/intervenciones`: por fecha de realización (o programada) y luego id. */
 export function useIntervencionesQuery(casoId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: reintegracionKeys.intervenciones(casoId ?? "none"),
-    queryFn: () => evalCol.getRows<IntervencionRow>(`${BASE_REINTEGRACION}/casos/${casoId}/intervenciones`),
+    queryFn: () => fetchIntervenciones(casoId),
     enabled: enabled && casoId != null,
     retry: false,
   })

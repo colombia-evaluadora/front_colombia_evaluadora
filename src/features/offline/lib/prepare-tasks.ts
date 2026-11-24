@@ -1,11 +1,12 @@
 // Cada tarea usa la MISMA key, queryFn y meta que la pantalla: otra key es otra query y sin red no aparece.
 // Lo que depende del rol (puede dar 403) va como opcional.
 // Matrícula (P6): solo la lista por defecto, recortada a datos básicos (`MATRICULA_OFFLINE_FIELDS`).
-import type { QueryClient, QueryKey } from "@tanstack/react-query"
+import type { QueryClient } from "@tanstack/react-query"
 
 import type { PlanillaTarget, PrepareSelection } from "@/components/offline/prepare-offline-plan"
 import { buildPlanillaTargets } from "@/components/offline/prepare-offline-plan"
 import type { PrepareContext, PrepareTask } from "@/features/offline/lib/prepare-engine"
+import { menuIncludes, seed, type SeedOptions } from "@/features/offline/lib/prepare-seed"
 import { prepareQuery } from "@/features/offline/lib/prepare-query"
 import { cacheArchivo } from "@/lib/offline/file-cache"
 import {
@@ -14,11 +15,8 @@ import {
   estudiantesMeta,
   offlineMeta,
   proveedorMeta,
-  type AppQueryMeta,
 } from "@/lib/offline/query-meta"
 import { CATALOGS } from "@/lib/catalogs"
-import { navigationKeys } from "@/features/navigation/api/query-keys"
-import { canAccessPath, getMenuUrls } from "@/features/navigation/lib/route-access"
 // Planeador
 import { planeadorKeys } from "@/features/planeador/api/query-keys"
 import { toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
@@ -157,38 +155,7 @@ import { fetchMatriculaCampuses } from "@/features/coverage/matricula/api/query/
 
 // ---- Piezas -----------------------------------------------------------------
 
-interface SeedOptions<T> {
-  /** Si falla no cuenta como error (endpoint que depende del rol, dato accesorio). */
-  optional?: boolean
-  /** Tareas que salen de la respuesta (listas → detalle de cada elemento). */
-  then?: (data: T) => PrepareTask[]
-}
-
-/**
- * Pide una query con la key/fn/meta de la pantalla. Lo fresco no se pide y lo
- * que el servidor confirma sin cambios (304) no se baja (`prepareQuery`).
- */
-export function seed<T>(
-  queryKey: QueryKey,
-  queryFn: () => Promise<T>,
-  meta: AppQueryMeta,
-  { optional, then }: SeedOptions<T> = {},
-): PrepareTask {
-  return {
-    queryKey,
-    meta,
-    optional,
-    expands: then != null,
-    run: async (queryClient: QueryClient, ctx: PrepareContext) => {
-      const data = await prepareQuery(queryClient, ctx, {
-        queryKey,
-        meta,
-        fetch: () => queryClient.fetchQuery({ queryKey, queryFn, meta, staleTime: 0 }),
-      })
-      return then?.(data as T)
-    },
-  }
-}
+export { menuIncludes, seed }
 
 /** Categoría de `TLISTA_VALOR` con la misma key que usan las pantallas. */
 function seedListaValor(categoria: string, options?: SeedOptions<unknown>): PrepareTask {
@@ -232,13 +199,6 @@ export function mesesDelRango(
   }
   if (meses.length === 0) meses.push({ anio: now.getFullYear(), mes: now.getMonth() + 1 })
   return meses
-}
-
-/** ¿El menú del usuario (guardado en el cache) abre esta ruta? */
-function menuIncludes(queryClient: QueryClient, pathname: string): boolean {
-  const menu = queryClient.getQueryData<{ url: string; items?: { url: string }[] }[]>(navigationKeys.menu)
-  if (!menu) return false
-  return canAccessPath(pathname, getMenuUrls(menu))
 }
 
 const PLANEADOR_PATH = "/app/planeador/actividades"
