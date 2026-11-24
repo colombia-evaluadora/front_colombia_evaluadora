@@ -1,5 +1,6 @@
-import type { ColumnDef } from "@tanstack/react-table"
+import type { Column, ColumnDef } from "@tanstack/react-table"
 
+import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -15,12 +16,25 @@ import {
   type AccionGestion,
 } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/acciones-gestion"
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`, V698): id de columna → valor de ORDEN. */
+export const ORDEN_GESTION_ALERTAS: Record<string, string> = {
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  umbral: "umbral",
+  plazo: "plazo",
+}
+
+const columna = (id: string, titulo: string) => {
+  const ordenable = id in ORDEN_GESTION_ALERTAS
+  return {
+    id,
+    enableSorting: ordenable,
+    meta: { label: titulo },
+    header: ordenable
+      ? ({ column }: { column: Column<GestionAlertaRow, unknown> }) => <DataTableColumnHeader column={column} title={titulo} />
+      : () => <div className="text-sm font-medium">{titulo}</div>,
+  }
+}
 
 /** Responsable abreviado; si no hay persona, su rol; Sin responsable va como marca. */
 const responsable = (f: GestionAlertaRow) =>
