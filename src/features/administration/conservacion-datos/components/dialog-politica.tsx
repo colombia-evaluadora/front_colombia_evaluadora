@@ -1,35 +1,22 @@
 import { useState } from "react"
-import { useNavigate, useParams } from "@tanstack/react-router"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
-import {
-  TableScreen,
-  TableScreenBody,
-  TableScreenHeader,
-  TableScreenTitle,
-} from "@/components/layout/table-screen"
-import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
-import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
-import { FormSectionHeading } from "@/components/form-section-heading"
+import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
+import { isFieldInvalid, useAppForm } from "@/lib/forms"
 import { toDigitsOnly } from "@/lib/text-input"
-import { useAppForm } from "@/lib/forms"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { cn } from "@/lib/utils"
+import { useGuardedDialog } from "@/features/establishment/academic-period/hooks/use-guarded-dialog"
 
 import { useSavePolitica } from "@/features/administration/conservacion-datos/api/mutations/conservacion-mutations"
-import {
-  useModulosQuery,
-  usePoliticaQuery,
-} from "@/features/administration/conservacion-datos/api/query/use-conservacion-queries"
+import { useModulosQuery } from "@/features/administration/conservacion-datos/api/query/use-conservacion-queries"
 import {
   politicaFormSchema,
   toTipoRegistroInput,
@@ -44,33 +31,15 @@ import {
 } from "@/features/administration/conservacion-datos/api/types"
 
 const FORM_ID = "politica-form"
-const LISTADO = paths.app.conservacionDatos.getHref()
 
-/** S.12.POL.2 (nueva) y S.12.POL.3 (modificar): misma pantalla, distinto origen de datos. */
-export function PoliticaFormPage() {
-  const { politicaId } = useParams({ strict: false }) as { politicaId?: string }
-  const id = politicaId ? Number(politicaId) : null
-  const { data, isPending, isError, error } = usePoliticaQuery(id)
-
-  return (
-    <NoticeProvider>
-      {id == null ? (
-        <PoliticaForm politica={null} />
-      ) : isError ? (
-        <ErrorNoticeBanner error={error} />
-      ) : isPending ? (
-        <Skeleton className="h-72" />
-      ) : (
-        <PoliticaForm key={data.pkPolitica} politica={data} />
-      )}
-    </NoticeProvider>
-  )
-}
-
-function PoliticaForm({ politica }: { politica: Politica | null }) {
-  const navigate = useNavigate()
+/**
+ * Nueva política y Modificar (S.12.POL.2 / POL.3) en un modal, a pedido: el md los pone en una pantalla
+ * propia. Mismo formulario para los dos: tipo de registro, módulo, permanente, plazo mínimo, desde cuándo
+ * se cuenta, disposición final y estado. Con Permanente en Sí no hay plazo, desde ni disposición.
+ */
+export function DialogPolitica({ politica, onClose }: { politica: Politica | null; onClose: () => void }) {
+  const { notify } = useNotify()
   const [notice, setNotice] = useState<Notice | null>(null)
-  const [confirmDiscard, setConfirmDiscard] = useState(false)
   const { data: modulos = [] } = useModulosQuery()
   const save = useSavePolitica()
 
@@ -95,8 +64,8 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
           tipoRegistro: value.tipoRegistro.trim(),
           plazoMinimo: value.permanente ? null : Number(value.plazoMinimo),
         })
-        queueNotice(politica ? SUCCESS_MESSAGES.politicaConservacion.updated : SUCCESS_MESSAGES.politicaConservacion.created)
-        navigate({ to: LISTADO })
+        notify(politica ? SUCCESS_MESSAGES.politicaConservacion.updated : SUCCESS_MESSAGES.politicaConservacion.created)
+        onClose()
       } catch (err) {
         // 409: tipo de registro repetido, con el texto del back.
         setNotice({ id: Date.now(), message: getErrorMessage(err) })
@@ -104,49 +73,28 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
     },
   })
 
-  function cancelar() {
-    if (save.isPending) return
-    if (JSON.stringify(form.state.values) !== JSON.stringify(defaultValues)) setConfirmDiscard(true)
-    else navigate({ to: LISTADO })
-  }
+  const { confirmDiscardOpen, requestClose, onOpenChange, discardDialogProps } = useGuardedDialog({
+    isSaving: save.isPending,
+    isDirty: () => JSON.stringify(form.state.values) !== JSON.stringify(defaultValues),
+    onOpen: () => {},
+    onClose,
+  })
 
   return (
-    <TableScreen>
-      <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" color="neutral" onClick={cancelar}>
-                <XIcon data-icon="inline-start" />
-                Cancelar
-              </Button>
-              <Button size="sm" color="primary" type="submit" form={FORM_ID} disabled={save.isPending}>
-                {save.isPending ? (
-                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                ) : (
-                  <FloppyDiskIcon data-icon="inline-start" />
-                )}
-                Guardar
-              </Button>
-            </div>
-          }
-        >
-          Conservación de datos <span className="text-muted-foreground">›</span>{" "}
-          {politica ? politica.tipoRegistro : "Nueva política"}
-        </TableScreenTitle>
-      </TableScreenHeader>
-      <TableScreenBody>
-        <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" className="mb-4" />
-        <Card className="rounded-md border border-border py-5">
-          <CardContent className="grid gap-5">
-            <FormSectionHeading>Datos de la política</FormSectionHeading>
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} className="sm:max-w-3xl" inert={confirmDiscardOpen}>
+        <DialogHeader>
+          <DialogTitle>{politica ? `Modificar política: ${politica.tipoRegistro}` : "Nueva política"}</DialogTitle>
+        </DialogHeader>
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
+
         <form
           id={FORM_ID}
           onSubmit={(e) => {
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid max-w-6xl gap-x-6 gap-y-6 md:grid-cols-3"
+          className="grid gap-x-6 gap-y-6 pt-2 sm:grid-cols-2"
         >
           <form.AppField name="tipoRegistro">
             {(f) => (
@@ -172,27 +120,26 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
           </form.AppField>
           <form.Field name="permanente">
             {(field) => (
-              <label className="flex flex-col gap-2 text-sm">
-                <span>
-                  Permanente<span className="text-red"> *</span>
-                </span>
-                <span className="flex items-center gap-2">
+              // Reglas de UI: el interruptor va en el recuadro de opciones.
+              <MarcoOpciones id="politica-permanente" label="Permanente" required>
+                <label className="flex items-center gap-2">
                   <Switch
                     size="sm"
                     round
+                    aria-labelledby="politica-permanente-label"
                     checked={field.state.value}
                     onCheckedChange={(v) => field.handleChange(v)}
                   />
                   <span className="text-muted-foreground">{field.state.value ? "Sí" : "No"}</span>
-                </span>
-              </label>
+                </label>
+              </MarcoOpciones>
             )}
           </form.Field>
 
           <form.Subscribe selector={(st) => st.values.permanente}>
             {(permanente) =>
               permanente ? (
-                <p className="rounded-md bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground md:col-span-3">
+                <p className="self-center rounded-md bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
                   Un registro permanente no vence ni se dispone: no lleva plazo ni disposición final.
                 </p>
               ) : (
@@ -212,11 +159,12 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
                     {(field) => (
                       <Opciones
                         legend="Se cuenta desde"
-                        className="md:col-span-2"
+                        className="sm:col-span-2"
                         value={field.state.value}
                         onChange={(v) => field.handleChange(v as CuentaDesde)}
                         labels={CUENTA_DESDE_LABELS}
-                        error={field.state.meta.errors[0]?.message}
+                        // El validador corre en cada cambio del form: el error solo se muestra al tocar el campo o al guardar.
+                        error={isFieldInvalid(field, form.state.submissionAttempts) ? field.state.meta.errors[0]?.message : undefined}
                       />
                     )}
                   </form.Field>
@@ -227,7 +175,7 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
                         value={field.state.value}
                         onChange={(v) => field.handleChange(v as Disposicion)}
                         labels={DISPOSICION_LABELS}
-                        error={field.state.meta.errors[0]?.message}
+                        error={isFieldInvalid(field, form.state.submissionAttempts) ? field.state.meta.errors[0]?.message : undefined}
                       />
                     )}
                   </form.Field>
@@ -247,19 +195,29 @@ function PoliticaForm({ politica }: { politica: Politica | null }) {
             )}
           </form.Field>
         </form>
-          </CardContent>
-        </Card>
-      </TableScreenBody>
-      <ConfirmDiscardDialog
-        open={confirmDiscard}
-        onOpenChange={setConfirmDiscard}
-        onConfirm={() => navigate({ to: LISTADO })}
-      />
-    </TableScreen>
+
+        <DialogFooter className="sm:items-center">
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          <Button variant="outline" color="neutral" size="sm" type="button" onClick={requestClose}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </Button>
+          <Button size="sm" color="primary" type="submit" form={FORM_ID} disabled={save.isPending} aria-busy={save.isPending}>
+            {save.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <FloppyDiskIcon data-icon="inline-start" />
+            )}
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+      <ConfirmDiscardDialog {...discardDialogProps} />
+    </Dialog>
   )
 }
 
-/** Opción única en línea, como en el prototipo. */
+/** Opción única en línea, como en el prototipo, dentro del recuadro de opciones (reglas de UI). */
 function Opciones({
   legend,
   value,
@@ -275,17 +233,10 @@ function Opciones({
   error?: string
   className?: string
 }) {
+  const id = `politica-${legend.toLowerCase().replace(/\s+/g, "-")}`
   return (
-    <fieldset className={cn("flex flex-col gap-2", className)}>
-      <legend className="mb-2 text-sm">
-        {legend}
-        <span className="text-red"> *</span>
-      </legend>
-      <RadioGroup
-        className="flex flex-wrap gap-x-6 gap-y-2 lg:flex-nowrap"
-        value={value ?? ""}
-        onValueChange={(v) => onChange(v as string)}
-      >
+    <MarcoOpciones id={id} label={legend} required error={error} className={className}>
+      <RadioGroup aria-labelledby={`${id}-label`} value={value ?? ""} onValueChange={(v) => onChange(v as string)}>
         {Object.entries(labels).map(([key, label]) => (
           <label key={key} className="flex items-center gap-2 text-sm whitespace-nowrap">
             <RadioGroupItem value={key} />
@@ -293,7 +244,6 @@ function Opciones({
           </label>
         ))}
       </RadioGroup>
-      {error ? <p className="text-xs text-red">{error}</p> : null}
-    </fieldset>
+    </MarcoOpciones>
   )
 }

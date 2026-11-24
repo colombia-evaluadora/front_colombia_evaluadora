@@ -7,7 +7,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { CONSERVACION_BASE as BASE } from "@/features/administration/conservacion-datos/api/query/use-conservacion-queries"
 import { conservacionKeys } from "@/features/administration/conservacion-datos/api/query-keys"
 import {
-  HUELLA_NO_COINCIDE,
+  HuellaNoCoincideError,
   type CuentaDesde,
   type Disposicion,
   type Politica,
@@ -114,8 +114,10 @@ async function disponer(v: {
   acta: File
   motivo: string
 }) {
+  // `postMultipart` ya antepone `/files`: con él aquí la URL quedaba `/files/files/...`, no la atendía el
+  // mock y la petición se iba al backend por el proxy.
   await postMultipart(
-    `/files/eval-col${BASE}/vencidos/disponer`,
+    `/eval-col${BASE}/vencidos/disponer`,
     {
       PK_POLITICA: v.pkPolitica,
       PK_ESTABLECIMIENTO: v.pkEstablecimiento,
@@ -170,7 +172,9 @@ export function useDescargarArchivo() {
       const respuesta = await fetch(resultado.ubicacion)
       if (!respuesta.ok) throw new Error("No se pudo descargar el archivo.")
       const blob = await respuesta.blob()
-      if ((await sha256(blob)) !== resultado.huella) throw new Error(HUELLA_NO_COINCIDE)
+      // No se entrega: el error lleva las dos huellas para el aviso (S.12.HIS.1a).
+      const calculada = await sha256(blob)
+      if (calculada !== resultado.huella) throw new HuellaNoCoincideError(resultado.huella, calculada)
       guardarBlob(blob, `archivo-${pkArchivo}`)
     },
   })

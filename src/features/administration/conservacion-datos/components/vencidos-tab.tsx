@@ -1,24 +1,23 @@
 "use no memo"
 
 import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useDataTable } from "@/hooks/use-data-table"
-import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
+import { paths } from "@/config/paths"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 
 import {
   useConservacionConfigQuery,
-  useDetalleVencidoQuery,
   useVencidosQuery,
 } from "@/features/administration/conservacion-datos/api/query/use-conservacion-queries"
 import {
   DISPOSICION_LABELS,
   fechaCorta,
-  type RegistroVencido,
   type Vencido,
 } from "@/features/administration/conservacion-datos/api/types"
 import { DialogDisponer } from "@/features/administration/conservacion-datos/components/dialog-disponer"
@@ -34,7 +33,7 @@ export function VencidosTab() {
   const paginacion = useTablePagination()
   const { data = [], isPending, isError, error, refetch } = useVencidosQuery()
   const config = useConservacionConfigQuery()
-  const [detalle, setDetalle] = useState<Vencido | null>(null)
+  const navigate = useNavigate()
   const [disponer, setDisponer] = useState<Vencido | null>(null)
 
   const columns: ColumnDef<Vencido>[] = [
@@ -55,8 +54,10 @@ export function VencidosTab() {
       id: "cantidad",
       accessorKey: "cantidad",
       meta: { label: "Registros" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Registros" />,
-      cell: ({ row }) => <span className="tabular-nums">{row.original.cantidad.toLocaleString("es-CO")}</span>,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Registros" className="justify-center" />,
+      cell: ({ row }) => (
+        <span className="block text-center tabular-nums">{row.original.cantidad.toLocaleString("es-CO")}</span>
+      ),
       size: 120,
     },
     {
@@ -80,7 +81,15 @@ export function VencidosTab() {
       cell: ({ row }) => (
         <RowActions
           items={[
-            { label: "Ver detalle", icon: <EyeIcon />, onClick: () => setDetalle(row.original) },
+            {
+              label: "Ver detalle",
+              icon: <EyeIcon />,
+              // S.12.VEN.3: en su propia pantalla.
+              onClick: () =>
+                navigate({
+                  to: paths.app.conservacionVencidoDetalle.getHref(row.original.pkPolitica, row.original.pkEstablecimiento),
+                }),
+            },
             { label: "Disponer", icon: <ArchiveIcon />, onClick: () => setDisponer(row.original) },
           ]}
         />
@@ -125,7 +134,6 @@ export function VencidosTab() {
         pageSize={paginacion.pageSize}
         onPageSizeChange={paginacion.setPageSize}
       />
-      {detalle ? <DialogDetalleVencido vencido={detalle} onClose={() => setDetalle(null)} /> : null}
       {disponer ? (
         <DialogDisponer
           key={filaId(disponer)}
@@ -138,92 +146,3 @@ export function VencidosTab() {
   )
 }
 
-/** Ver detalle: la lista de registros del lote, con la misma tabla de la pantalla. */
-function DialogDetalleVencido({ vencido, onClose }: { vencido: Vencido; onClose: () => void }) {
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>
-            {vencido.tipoRegistro} · {vencido.establecimiento}
-          </DialogTitle>
-        </DialogHeader>
-        <TablePaginationProvider>
-          <TablaDetalle vencido={vencido} />
-        </TablePaginationProvider>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-const columnasDetalle: ColumnDef<RegistroVencido>[] = [
-  {
-    id: "estudiante",
-    accessorKey: "estudiante",
-    meta: { label: "Estudiante" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Estudiante" />,
-    cell: ({ row }) => (
-      <span className="flex flex-col">
-        <span className="font-medium">{row.original.estudiante}</span>
-        <span className="text-xs text-muted-foreground">{row.original.documento}</span>
-      </span>
-    ),
-  },
-  {
-    id: "anio",
-    accessorKey: "anio",
-    meta: { label: "Año" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Año" />,
-    cell: ({ row }) => <span className="tabular-nums">{row.original.anio}</span>,
-    size: 90,
-  },
-  {
-    id: "vencidoDesde",
-    accessorKey: "vencidoDesde",
-    meta: { label: "Vencido desde" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Vencido desde" />,
-    cell: ({ row }) => <span className="tabular-nums">{fechaCorta(row.original.vencidoDesde)}</span>,
-    size: 140,
-  },
-]
-
-function TablaDetalle({ vencido }: { vencido: Vencido }) {
-  const paginacion = useTablePagination()
-  const { data = [], isPending, isError, error, refetch } = useDetalleVencidoQuery(vencido)
-  const { pagina, pageCount, pageIndex } = paginarLocal(data, paginacion, (r, col) =>
-    col === "anio" ? r.anio : String(r[col as keyof RegistroVencido] ?? ""),
-  )
-  const { table } = useDataTable({
-    columns: columnasDetalle,
-    data: pagina,
-    pageCount,
-    getRowId: (r) => `${r.documento}-${r.anio}-${r.vencidoDesde}`,
-    ...paginacion,
-    pageIndex,
-  })
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      {/* Scroll solo en la tabla: título y paginación quedan fijos. */}
-      <div className="max-h-[60vh] min-w-0 overflow-y-auto">
-      <DataTable
-        table={table}
-        isPending={isPending}
-        isError={isError}
-        onRetry={refetch}
-        errorMessage={error ? getErrorMessage(error) : undefined}
-        emptyMessage="El lote ya no tiene registros vencidos."
-      />
-      </div>
-      <Pagination
-        pageIndex={pageIndex}
-        pageCount={pageCount}
-        canPrev={pageIndex > 0}
-        canNext={pageIndex < pageCount - 1}
-        onPageChange={paginacion.goToPage}
-        totalCount={data.length}
-        pageSize={paginacion.pageSize}
-        onPageSizeChange={paginacion.setPageSize}
-      />
-    </div>
-  )
-}

@@ -5,7 +5,7 @@ import {
   actasDb,
   ampliacionesDb,
   archivoDb,
-  conservacionConfigDb,
+  almacenamientoDisponible,
   FUENTES_MOCK,
   modulosDb,
   politicasDb,
@@ -112,7 +112,7 @@ async function sha256(texto: string) {
 export const conservacionDatosHandlers = [
   http.get(`${BASE}/config`, async () => {
     await delay(100)
-    return resultado({ ...conservacionConfigDb })
+    return resultado({ almacenamientoArchivo: almacenamientoDisponible() })
   }),
 
   http.get(`${BASE}/modulos`, async () => {
@@ -246,11 +246,11 @@ export const conservacionDatosHandlers = [
     const p = politicasDb.find((x) => x.pkPolitica === pkPolitica)
     let disposicion = p?.disposicion ?? "ANONIMIZAR"
     const pedida = form.get("DISPOSICION")
-    if (pedida === "ANONIMIZAR" && disposicion === "ARCHIVAR" && !conservacionConfigDb.almacenamientoArchivo)
+    if (pedida === "ANONIMIZAR" && disposicion === "ARCHIVAR" && !almacenamientoDisponible())
       disposicion = "ANONIMIZAR"
     else if (pedida && pedida !== disposicion) return error(400, "La disposición debe ser la de la política.")
-    if (disposicion === "ARCHIVAR" && !conservacionConfigDb.almacenamientoArchivo)
-      return error(400, "Archivar no está disponible hasta que se configure el almacenamiento del archivo histórico.")
+    if (disposicion === "ARCHIVAR" && !almacenamientoDisponible())
+      return error(400, "Archivar no está disponible: no se pudo conectar con el almacenamiento del archivo histórico. Intente de nuevo más tarde.")
     const cantidad = vencidosDb[i].registros.length
     vencidosDb.splice(i, 1)
     actasDb.set(nextId([...actasDb.keys()]), acta.name)
@@ -279,7 +279,7 @@ export const conservacionDatosHandlers = [
     const page = Math.max(b.PAGE_INDEX ?? 0, 0)
     const filas = filtradas
       .slice(page * size, (page + 1) * size)
-      .map(({ contenido: _c, fkTarchivoActa: _f, pkEstablecimiento: _e, ...fila }) => fila)
+      .map(({ contenido: _c, fkTarchivoActa: _f, pkEstablecimiento: _e, alterado: _a, ...fila }) => fila)
     return resultado({ total: filtradas.length, filas })
   }),
 
@@ -290,7 +290,8 @@ export const conservacionDatosHandlers = [
     return resultado({
       pkArchivo: a.pkArchivo,
       ubicacion: `data:text/plain;charset=utf-8,${encodeURIComponent(a.contenido)}`,
-      huella: await sha256(a.contenido),
+      // Alterado: la huella guardada es la del contenido original, no la del que se entrega.
+      huella: await sha256(a.alterado ? `${a.contenido} (original)` : a.contenido),
       fkTarchivoActa: a.fkTarchivoActa,
     })
   }),

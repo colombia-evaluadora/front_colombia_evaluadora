@@ -46,6 +46,10 @@ export interface Vencido {
 }
 
 export interface RegistroVencido {
+  /** Qué registro es (p. ej. «Mensaje · Reunión de padres»). Pendiente en el back: hoy solo lo trae el mock. */
+  registro?: string
+  /** yyyy-MM-dd: cuándo se creó el registro. Pendiente en el back: hoy solo lo trae el mock. */
+  fechaRegistro?: string
   estudiante: string
   documento: string
   anio: number
@@ -85,10 +89,28 @@ export const DISPOSICION_LABELS: Record<Disposicion, string> = {
   ARCHIVAR: "Archivar",
 }
 
+/** Textos de S.12.VEN.2: el almacenamiento del archivo histórico no responde en ese momento. */
 export const ARCHIVAR_NO_DISPONIBLE =
-  "Archivar no está disponible hasta que se configure el almacenamiento del archivo histórico."
+  "Archivar no está disponible: no se pudo conectar con el almacenamiento del archivo histórico. Intente de nuevo más tarde."
+export const ALMACENAMIENTO_NO_RESPONDE = "El almacenamiento del archivo histórico no responde en este momento."
+
+/** Mensajes de la ampliación (Sección 6.4). */
+export const PLAZO_MENOR_MENSAJE = "El plazo del establecimiento no puede ser menor que el plazo mínimo."
+export const AMPLIACION_REPETIDA_MENSAJE = "Ya existe una ampliación para ese tipo de registro."
 
 export const HUELLA_NO_COINCIDE = "El archivo no es idéntico al original."
+
+/** Descargar archivo: la huella calculada no coincide con la guardada al archivar (S.12.HIS.1a). */
+export class HuellaNoCoincideError extends Error {
+  guardada: string
+  calculada: string
+  constructor(guardada: string, calculada: string) {
+    super(HUELLA_NO_COINCIDE)
+    this.name = "HuellaNoCoincideError"
+    this.guardada = guardada
+    this.calculada = calculada
+  }
+}
 
 /** yyyy-MM-dd → dd/MM/yyyy sin pasar por Date (evita el corrimiento de zona). */
 export const fechaCorta = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/")

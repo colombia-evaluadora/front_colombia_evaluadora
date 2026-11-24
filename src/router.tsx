@@ -288,9 +288,9 @@ const ConservacionDatosPage = lazyRouteComponent(
   "ConservacionDatosPage"
 )
 
-const PoliticaFormPage = lazyRouteComponent(
-  () => import("@/features/administration/conservacion-datos/pages/politica-form-page"),
-  "PoliticaFormPage"
+const VencidoDetallePage = lazyRouteComponent(
+  () => import("@/features/administration/conservacion-datos/pages/vencido-detalle-page"),
+  "VencidoDetallePage"
 )
 
 const EstablishmentDetailPage = lazyRouteComponent(
@@ -1355,22 +1355,19 @@ export const conservacionDatosRoute = createRoute({
   component: ConservacionDatosPage,
 })
 
-export const conservacionPoliticaNuevaRoute = createRoute({
+// S.12.VEN.3: detalle de un lote vencido, en su propia pantalla (solo consulta).
+export const conservacionVencidoDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.conservacionPoliticaNueva.path,
+  path: paths.app.conservacionVencidoDetalle.path,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Nueva política" }],
+    breadcrumb: [
+      ADMINISTRACION_CRUMB,
+      CONSERVACION_CRUMB,
+      { label: "Vencidos", to: `${paths.app.conservacionDatos.getHref()}?tab=vencidos` },
+      { label: "Detalle del lote" },
+    ],
   },
-  component: PoliticaFormPage,
-})
-
-export const conservacionPoliticaEditarRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.conservacionPoliticaEditar.path,
-  staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, CONSERVACION_CRUMB, { label: "Modificar política" }],
-  },
-  component: PoliticaFormPage,
+  component: VencidoDetallePage,
 })
 
 // Un `NoticeProvider` compartido: el aviso de un formulario sigue visible al
@@ -2970,8 +2967,7 @@ const routeTree = rootRoute.addChildren([
     relacionesAlumnoGrupoRoute,
     festivosRoute,
     conservacionDatosRoute,
-    conservacionPoliticaNuevaRoute,
-    conservacionPoliticaEditarRoute,
+    conservacionVencidoDetalleRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

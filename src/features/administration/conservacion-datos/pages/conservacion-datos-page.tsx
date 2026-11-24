@@ -3,15 +3,12 @@ import { useNavigate } from "@tanstack/react-router"
 
 import {
   TableScreen,
-  TableScreenActions,
   TableScreenBody,
   TableScreenHeader,
   TableScreenTabs,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
-import { Button } from "@/components/ui/button"
-import { ControlPointIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { useUser } from "@/lib/auth"
 import { Badge } from "@/components/ui/badge"
@@ -60,7 +57,9 @@ function ConservacionDatosContent() {
   const tab = search.tab && tabs.includes(search.tab) ? search.tab : "politicas"
   const editaPoliticas = esSuperAdmin && permisos.puedeEditar
   const lotes = vencidos.data?.length ?? 0
-  const [nuevaAmpliacion, setNuevaAmpliacion] = useState(false)
+  // Cada pestaña dibuja su barra (buscador y botones) aquí, en el encabezado, con un portal: así queda
+  // como en las demás vistas, con la línea que la separa de la tabla.
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null)
 
   // Cada pestaña arranca sin filtros ni página.
   const irA = (next: ConservacionTab) =>
@@ -69,31 +68,8 @@ function ConservacionDatosContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            tab === "politicas" && editaPoliticas ? (
-              <TableScreenActions>
-                <Button
-                  color="primary"
-                  size="sm"
-                  onClick={() => navigate({ to: paths.app.conservacionPoliticaNueva.getHref() })}
-                >
-                  <ControlPointIcon data-icon="inline-start" />
-                  Política
-                </Button>
-              </TableScreenActions>
-            ) : tab === "ampliaciones" && permisos.puedeCrear ? (
-              <TableScreenActions>
-                <Button color="primary" size="sm" onClick={() => setNuevaAmpliacion(true)}>
-                  <ControlPointIcon data-icon="inline-start" />
-                  Ampliación
-                </Button>
-              </TableScreenActions>
-            ) : null
-          }
-        >
-          Conservación de datos
-        </TableScreenTitle>
+        {/* Reglas de UI: el botón de crear de cada pestaña va en su línea de herramientas, no en el título. */}
+        <TableScreenTitle>Conservación de datos</TableScreenTitle>
         <TableScreenTabs>
           <Tabs
             value={tab}
@@ -115,20 +91,26 @@ function ConservacionDatosContent() {
             </TabsList>
           </Tabs>
         </TableScreenTabs>
-        <NoticeOutlet className="px-(--screen-spacing) pb-3 empty:hidden" />
+        <div ref={setToolbarSlot} />
+        {/* El banner recibe la clase en sí mismo: el margen va en un contenedor para que no quede pegado a las pestañas ni a los bordes. */}
+        <div className="px-(--screen-spacing) pt-3 empty:hidden">
+          <NoticeOutlet />
+        </div>
       </TableScreenHeader>
       <TableScreenBody>
-        {tab === "politicas" ? <PoliticasTab puedeEditar={editaPoliticas} /> : null}
+        {tab === "politicas" ? (
+          <PoliticasTab puedeEditar={editaPoliticas} toolbarSlot={toolbarSlot} />
+        ) : null}
         {tab === "ampliaciones" ? (
           <AmpliacionesTab
             esSuperAdmin={esSuperAdmin}
+            puedeCrear={permisos.puedeCrear}
             puedeEditar={permisos.puedeEditar}
-            nuevaAbierta={nuevaAmpliacion}
-            onCerrarNueva={() => setNuevaAmpliacion(false)}
+            toolbarSlot={toolbarSlot}
           />
         ) : null}
         {tab === "vencidos" ? <VencidosTab /> : null}
-        {tab === "archivo" ? <ArchivoTab esSuperAdmin={esSuperAdmin} /> : null}
+        {tab === "archivo" ? <ArchivoTab esSuperAdmin={esSuperAdmin} toolbarSlot={toolbarSlot} /> : null}
       </TableScreenBody>
     </TableScreen>
   )

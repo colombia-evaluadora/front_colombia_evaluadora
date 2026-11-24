@@ -22,7 +22,7 @@ export type ConservacionSearch = z.infer<typeof conservacionSearchSchema>
 
 /** Letras, números, espacio, guion y apóstrofo, como los rótulos de Referentes curriculares. */
 export const TIPO_REGISTRO_PATTERN = /^[A-Za-z0-9ÁÉÍÓÚáéíóúÜüÑñ '’-]*$/
-export const toTipoRegistroInput = (v: string) => v.replace(/[^A-Za-z0-9ÁÉÍÓÚáéíóúÜüÑñ '’-]/g, "").replace(/^s+/, "").replace(/s{2,}/g, " ")
+export const toTipoRegistroInput = (v: string) => v.replace(/[^A-Za-z0-9ÁÉÍÓÚáéíóúÜüÑñ '’-]/g, "").replace(/^\s+/, "").replace(/\s{2,}/g, " ")
 
 // Campos de la tabla «Política» (Sección 6.4). Plazo, desde y disposición solo si no es permanente.
 export const politicaFormSchema = z

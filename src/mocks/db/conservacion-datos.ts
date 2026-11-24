@@ -38,6 +38,8 @@ export interface ArchivoRecord extends Archivado {
   fkTarchivoActa: number
   /** Contenido del archivo; la huella se calcula al descargar. */
   contenido: string
+  /** El archivo guardado cambió después de archivar: la huella no coincide (S.12.HIS.1a). */
+  alterado?: boolean
 }
 
 /** Fuentes que el back sabe leer (TCONSERVACION_FUENTE, V591). */
@@ -51,7 +53,17 @@ export const modulosDb = [
   { pkModulo: 9, nombre: "Administración" },
 ]
 
-export const conservacionConfigDb = { almacenamientoArchivo: false }
+/** Archivar disponible por defecto (S.12.VEN.1). Para ver «Archivar no disponible» (S.12.VEN.2), ver `almacenamientoDisponible`. */
+export const conservacionConfigDb = { almacenamientoArchivo: true }
+
+/**
+ * El almacenamiento del archivo histórico responde, salvo que se simule su caída con
+ * `sessionStorage.setItem("msw:sin-almacenamiento", "1")` y recargar (como `msw:fault`).
+ */
+export function almacenamientoDisponible() {
+  const caido = typeof sessionStorage !== "undefined" && sessionStorage.getItem("msw:sin-almacenamiento") != null
+  return conservacionConfigDb.almacenamientoArchivo && !caido
+}
 
 export const politicasDb: PoliticaRecord[] = [
   { pkPolitica: 1, tipoRegistro: "Observador", pkModulo: 6, permanente: false, plazoMinimo: 5, cuentaDesde: "RETIRO_EGRESO", disposicion: "ANONIMIZAR", habilitado: true },
@@ -73,8 +85,12 @@ const estudiantes = [
   ["Mateo Rincón Salazar", "1098765435"],
 ]
 
-const registros = (n: number, anio: number, vence: string): RegistroVencido[] =>
+const ASUNTOS = ["Reunión de padres", "Llegada tarde", "Salida pedagógica", "Entrega de boletines"]
+
+const registros = (n: number, tipo: string, anio: number, vence: string): RegistroVencido[] =>
   Array.from({ length: n }, (_, i) => ({
+    registro: `${tipo} · ${ASUNTOS[i % ASUNTOS.length]}`,
+    fechaRegistro: `${anio}-${String((i % 9) + 2).padStart(2, "0")}-${String((i % 25) + 3).padStart(2, "0")}`,
     estudiante: estudiantes[i % estudiantes.length][0],
     documento: String(1098765432 + i),
     anio,
@@ -82,8 +98,8 @@ const registros = (n: number, anio: number, vence: string): RegistroVencido[] =>
   }))
 
 export const vencidosDb: VencidoRecord[] = [
-  ...(ee2 ? [{ pkPolitica: 1, pkEstablecimiento: ee2.id, registros: registros(14, 2019, "2026-02-04") }] : []),
-  ...(ee1 ? [{ pkPolitica: 3, pkEstablecimiento: ee1.id, registros: registros(23, 2024, "2026-03-10") }] : []),
+  ...(ee2 ? [{ pkPolitica: 1, pkEstablecimiento: ee2.id, registros: registros(14, "Anotación", 2019, "2026-02-04") }] : []),
+  ...(ee1 ? [{ pkPolitica: 3, pkEstablecimiento: ee1.id, registros: registros(23, "Mensaje", 2024, "2026-03-10") }] : []),
 ]
 
 export const archivoDb: ArchivoRecord[] = ee1
@@ -98,6 +114,8 @@ export const archivoDb: ArchivoRecord[] = ee1
       fechaDisposicion: "2026-03-10",
       fkTarchivoActa: 990001,
       contenido: `Archivo de solo lectura de ${estudiante} (mock).`,
+      // El último quedó alterado, para ver el aviso de huella que no coincide.
+      alterado: i === estudiantes.length - 1,
     }))
   : []
 

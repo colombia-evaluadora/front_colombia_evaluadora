@@ -54,7 +54,7 @@ export function SelectCampo({
     <Field variant="outlined" className={cn("min-w-0", className)} data-invalid={invalid || undefined}>
       <FieldLabel htmlFor={id}>
         {label}
-        {required ? <span className="text-red"> *</span> : null}
+        {required ? <span data-required-mark="">*</span> : null}
       </FieldLabel>
       {buscable ? (
         <ComboboxField items={toSelectItemsMap(opciones)} value={actual} onValueChange={cambiar}>
