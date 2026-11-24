@@ -123,6 +123,8 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
       { id: "complementary-ars", label: "ARS" },
       { id: "complementary-special-conditions", label: "Condiciones especiales del estudiante" },
       { id: "complementary-talent", label: "Talento del estudiante" },
+      // Último de la sección, como en TMATRICULA_CAMPO (el match es por posición).
+      { id: "complementary-srpa", label: "Situación en el SRPA" },
     ],
   },
   {

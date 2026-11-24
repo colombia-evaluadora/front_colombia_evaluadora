@@ -27,22 +27,25 @@ import {
   type MatriculaFieldConfigChange,
 } from "@/features/coverage/matricula/api/mutations/update-matricula-field-config"
 import { MatriculaFormSection } from "@/features/coverage/matricula/components/forms/form-create-matricula"
+import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/matricula/utils/matricula-field-catalog"
 import type { MatriculaConfigCampo, MatriculaConfigSeccion } from "@/features/coverage/matricula/api/types/matricula"
 
 const ROUND_SWITCH_CLASSNAME = "rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
 
 interface FieldConfigBoxProps {
   campo: MatriculaConfigCampo
+  /** Etiqueta del formulario; el back manda el nombre sin tildes («Situacion del ano anterior»). */
+  label: string
   onChange: (patch: { requerido: boolean; visible: boolean }) => void
 }
 
-function FieldConfigBox({ campo, onChange }: FieldConfigBoxProps) {
+function FieldConfigBox({ campo, label, onChange }: FieldConfigBoxProps) {
   const id = `campo-${campo.fkCampo}`
   const locked = !campo.editable
 
   return (
     <Field orientation="vertical" variant="outlined" className="w-full gap-2">
-      <FieldLabel htmlFor={id}>{campo.nombre}</FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <div
         className={cn(
           inputVariants({ variant: "outlined", size: "sm" }),
@@ -253,12 +256,14 @@ function MatriculaFieldConfigPageContent() {
           )}
 
           {secciones &&
-            secciones.map((seccion) => (
+            secciones.map((seccion, s) => (
               <MatriculaFormSection key={seccion.seccion} title={seccion.seccion}>
-                {seccion.campos.map((campo) => (
+                {seccion.campos.map((campo, c) => (
                   <FieldConfigBox
                     key={campo.fkCampo}
                     campo={campo}
+                    // Por posición, como `buildMatriculaFieldSettings`.
+                    label={MATRICULA_FIELD_CATALOG[s]?.fields[c]?.label ?? campo.nombre}
                     onChange={(patch) => patchField(campo.fkCampo, patch)}
                   />
                 ))}

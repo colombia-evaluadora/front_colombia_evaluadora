@@ -4,7 +4,8 @@ import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/ho
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { OPEN_SECTION_EVENT } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 
 import {
   TableScreen,
@@ -188,6 +189,7 @@ function MatriculaEditPageContent() {
     toGroup: string
   } | null>(null)
   const [groupChange, setGroupChange] = useState<{ from: string; to: string } | null>(null)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
 
   // Bloque 15: la media técnica y las asignaturas viven en su propio endpoint, no en el detalle.
   const asignaturasQuery = useMatriculaAsignaturasQuery(matriculaId)
@@ -597,18 +599,25 @@ function MatriculaEditPageContent() {
     performSave()
   }
 
+  // Cerrar con cambios sin guardar pregunta antes de salir; el estado lo sincroniza el backend, no cuenta.
+  const irALista = () =>
+    navigate({ to: paths.app.coberturaMatricula.getHref(), search: (prev) => ({ ...prev, accion: undefined }) })
+  function cerrar() {
+    const hayCambios =
+      values != null &&
+      inicial != null &&
+      JSON.stringify({ ...values, academic: { ...values.academic, status: inicial.academic.status } }) !==
+        JSON.stringify(inicial)
+    if (hayCambios) setConfirmarSalida(true)
+    else irALista()
+  }
+
   return (
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => ({ ...prev, accion: undefined })} />}
-              variant="fill"
-              color="neutral"
-              size="sm"
-              nativeButton={false}
-            >
+            <Button type="button" variant="fill" color="neutral" size="sm" onClick={cerrar}>
               Cerrar
             </Button>
           }
@@ -848,6 +857,8 @@ function MatriculaEditPageContent() {
           onClose={handleGroupChangeCancel}
         />
       )}
+
+      <ConfirmDiscardDialog open={confirmarSalida} onOpenChange={setConfirmarSalida} onConfirm={irALista} />
     </TableScreen>
   )
 }
