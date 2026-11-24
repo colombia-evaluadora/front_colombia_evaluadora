@@ -24,6 +24,7 @@ import { useEstablecimientoDeSede } from "@/features/coverage/matricula/api/quer
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { MatriculaFormBody } from "@/features/coverage/matricula/components/forms/matricula-form-body"
+import { MatriculaSoportesSection } from "@/features/coverage/matricula/components/forms/form-create-matricula/soportes-section"
 import { MatriculaToolbar } from "@/features/coverage/matricula/components/matricula-toolbar"
 import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/matricula/utils/matricula-field-settings"
@@ -135,6 +136,14 @@ function MatriculaDetailPageContent() {
                   fieldSettings={fieldSettings}
                   datosProtegidos={
                     Boolean(data.matricula.sinAutorizacion) || Boolean(data.details?.restricciones?.origenAdscripcion)
+                  }
+                />
+                {/* Solo lectura: adjuntar, reemplazar y revisar se hacen en Editar (EDI.1h). */}
+                <MatriculaSoportesSection
+                  matriculaId={data.matricula.id}
+                  editable={false}
+                  porAdscripcion={
+                    data.details?.restricciones?.tipo === "COMPLEMENTARIA" && Boolean(data.details?.restricciones?.origenAdscripcion)
                   }
                 />
               </div>

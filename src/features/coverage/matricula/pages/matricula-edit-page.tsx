@@ -671,7 +671,7 @@ function MatriculaEditPageContent() {
                     Corregir datos de identidad
                   </Button>
                 ) : null}
-                <MatriculaToolbar matricula={data.matricula} showModificar={false} filesEditable />
+                <MatriculaToolbar matricula={data.matricula} showModificar={false} />
               </div>
               {restricciones?.anulacionPendiente ? (
                 <div role="status" className="flex items-start gap-3 rounded-md border border-red-stroke bg-red-22 px-4 py-3 text-sm">
