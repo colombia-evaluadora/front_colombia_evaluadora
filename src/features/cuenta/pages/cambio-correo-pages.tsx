@@ -97,7 +97,7 @@ export function NoFuiYoPage() {
           icon={ShieldLockIcon}
           title="¿Devolver su correo anterior?"
           actions={
-            <Button color="destructive" disabled={revertir.isPending} onClick={() => revertir.mutate(token)}>
+            <Button color="primary" disabled={revertir.isPending} onClick={() => revertir.mutate(token)}>
               {revertir.isPending && <Spinner data-icon="inline-start" />}
               No fui yo: devolver mi correo
             </Button>

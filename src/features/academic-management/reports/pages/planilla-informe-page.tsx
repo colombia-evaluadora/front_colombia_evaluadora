@@ -615,7 +615,7 @@ function DialogRechazarCambios({
           <Button
             size="sm"
             variant="fill"
-            color="destructive"
+            color="primary"
             disabled={motivo.trim() === "" || rechazar.isPending}
             onClick={confirmar}
           >
