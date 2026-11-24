@@ -115,7 +115,7 @@ export function previaAceptar(id: number) {
   const c = buscar(id)
   const conflictos = (c?.especialidades ?? [])
     .filter((e) => e === "Agropecuaria" || e === "Sistemas")
-    .map((e, i) => ({ especialidad_id: 100 + i, especialidad: e, sede: `${YO} — Sede principal` }))
+    .map((e, i) => ({ especialidad_id: 100 + i, especialidad: e, sede: `${YO} — Sede principal`, sede_id: 1 }))
   return { conflictos, nuevas: (c?.especialidades ?? []).filter((e) => !conflictos.some((x) => x.especialidad === e)) }
 }
 

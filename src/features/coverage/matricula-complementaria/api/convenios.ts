@@ -100,9 +100,9 @@ export const useCrearConvenios = () =>
   )
 
 export const useAceptarConvenio = () =>
-  useMutacion((v: { id: number; vinculos: { especialidadId: number; sede: string; accion: "VINCULAR" | "CREAR" }[] }) =>
+  useMutacion((v: { id: number; vinculos: { especialidadId: number; sedeId: number; accion: "VINCULAR" | "CREAR" }[] }) =>
     evalCol.put(`${BASE}/${v.id}/aceptar`, {
-      VINCULOS: v.vinculos.map((x) => ({ FK_ESPECIALIDAD: x.especialidadId, SEDE: x.sede, ACCION: x.accion })),
+      VINCULOS: v.vinculos.map((x) => ({ FK_ESPECIALIDAD: x.especialidadId, SEDE: x.sedeId, ACCION: x.accion })),
     }),
   )
 

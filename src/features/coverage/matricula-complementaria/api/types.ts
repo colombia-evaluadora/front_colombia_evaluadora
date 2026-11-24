@@ -289,7 +289,7 @@ export interface OpcionesConvenio {
 
 export interface PreviaAceptar {
   /** Especialidades que la sede del origen ya tiene con el mismo nombre. */
-  conflictos: { especialidadId: number; especialidad: string; sede: string }[]
+  conflictos: { especialidadId: number; especialidad: string; sede: string; sedeId: number }[]
   /** Se agregan sin preguntar. */
   nuevas: string[]
 }
