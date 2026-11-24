@@ -14,7 +14,7 @@ interface RealEmployeeRoleRow {
   nombre: string
 }
 
-async function fetchEmployeeRoles(): Promise<CatalogItem[]> {
+export async function fetchEmployeeRoles(): Promise<CatalogItem[]> {
   // TROL no es TLISTA_VALOR: no lo cubre el catálogo genérico
   // `/select/:categoria` (ver use-catalogs.ts) — tiene su propia tabla,
   // igual que TMUNICIPIO/TPROPIEDAD_JURIDICA/TDISCAPACIDAD (ver V58 en el

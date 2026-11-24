@@ -10,7 +10,7 @@ import type {
 } from "@/features/administration/superadministradores/api/types/superadministrador"
 
 // Son pocos: orden y página se resuelven en el front, como en las demás vistas del módulo.
-async function fetchSuperadministradores() {
+export async function fetchSuperadministradores() {
   const [row] = await evalCol.getRows<Resultado<Superadministrador[]>>("/superadministradores")
   return row?.resultado ?? []
 }
@@ -19,7 +19,7 @@ export function useSuperadministradoresQuery() {
   return useQuery({ queryKey: superadministradorKeys.lista, queryFn: fetchSuperadministradores })
 }
 
-async function fetchTiposDocumento() {
+export async function fetchTiposDocumento() {
   const [row] = await evalCol.getRows<Resultado<TipoDocumentoXl[]>>(
     "/catalogos/superadministradores/tipos-documento",
   )

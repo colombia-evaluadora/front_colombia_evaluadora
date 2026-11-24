@@ -9,36 +9,6 @@ export const COLOR_ESTADO: Record<EstadoPiar, "success" | "muted" | "info"> = {
 
 export const COLOR_COBERTURA = { PENDIENTE_REVISION: "warning", CON_AJUSTES: "success", SIN_AJUSTES: "muted" } as const
 
-/** Orientación escribe el PIAR (V602); coordinador y rector anulan; el resto solo consulta. */
-export interface AccesoPiar {
-  puedeGestionar: boolean
-  puedeAnular: boolean
-  /** Regla 28: el docente lista sus PIAR, pero no el aviso de estudiantes sin PIAR (V603). */
-  veAvisoSinPiar: boolean
-  veOrientacion: boolean
-  registraAtencion: boolean
-  /** Rector, coordinador y, por menú, territoriales (fn_piar_gate_informe); orientación no. */
-  veInforme: boolean
-  veListado: boolean
-  /** Ajustes y seguimiento: orientación o el docente al que se le concedió edición en el menú (D3). */
-  puedeEditarAjustes: boolean
-}
-
-export function accesoPiar(roles: string[], permiso: { puedeCrear: boolean; puedeEditar: boolean }): AccesoPiar {
-  const orientacion = roles.includes("CEVAL-PSICO_ORIENTADOR")
-  return {
-    veAvisoSinPiar: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
-    veOrientacion: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR"].some((r) => roles.includes(r)),
-    registraAtencion: permiso.puedeEditar && (orientacion || roles.includes("CEVAL-RECTOR")),
-    veListado: ["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR", "CEVAL-DOCENTE"].some((r) => roles.includes(r)),
-    // El territorial entra al menú solo por el informe (V603): quien no es de establecimiento lo ve.
-    veInforme: !["CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-DOCENTE"].some((r) => roles.includes(r)) || ["CEVAL-RECTOR", "CEVAL-COORDINADOR"].some((r) => roles.includes(r)),
-    puedeGestionar: orientacion && permiso.puedeEditar,
-    puedeAnular: permiso.puedeEditar && (roles.includes("CEVAL-COORDINADOR") || roles.includes("CEVAL-RECTOR")),
-    puedeEditarAjustes: permiso.puedeEditar && (orientacion || roles.includes("CEVAL-DOCENTE")),
-  }
-}
-
 export const esEditable = (estado: EstadoPiar) => estado === "BORRADOR" || estado === "VIGENTE"
 
 /**
@@ -88,7 +58,21 @@ const TEXTO_FALTANTE: Record<string, string> = {
   FIRMAS_PENDIENTES: "Marcar como Firmó, con su fecha, a orientación, un docente de una asignatura con ajustes, rector y acudiente.",
 }
 
-export const textosFaltantes = (codigos: string[] | null | undefined) => (codigos ?? []).map((c) => TEXTO_FALTANTE[c] ?? "Completar los datos del PIAR.")
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
+
+/** Con el PIAR, los textos de cobertura y de ajustes Por mapear llevan sus conteos (CIC.7). */
+export const textosFaltantes = (codigos: string[] | null | undefined, piar?: Pick<PiarDetalle, "cobertura" | "ajustes">) =>
+  (codigos ?? []).map((c) => {
+    if (piar && c === "COBERTURA_INCOMPLETA") {
+      const n = (piar.cobertura ?? []).filter((x) => x.cobertura === "PENDIENTE_REVISION").length
+      if (n > 0) return `Revisar la cobertura de ${plural(n, "asignatura", "asignaturas")} (Pendiente de revisión).`
+    }
+    if (piar && c === "AJUSTES_POR_MAPEAR") {
+      const n = piar.ajustes.filter((x) => x.por_mapear).length
+      if (n > 0) return `Asignar una asignatura a ${plural(n, "ajuste", "ajustes")} (Por mapear).`
+    }
+    return TEXTO_FALTANTE[c] ?? "Completar los datos del PIAR."
+  })
 
 /** El acta se carga cuando es lo único que falta; lo demás se explica antes de pedir el archivo. */
 export const soloFaltaActa = (codigos: string[] | null | undefined) => (codigos ?? []).every((c) => c === "SIN_ACTA_FIRMADA")

@@ -23,7 +23,7 @@
  * - `buster = "${userSub}:${SCHEMA_VERSION}"`: subir `SCHEMA_VERSION` en un
  *   deploy invalida todo lo persistido.
  * - Escrituras agrupadas con throttle de 1 s; una entrada > 2 MB no se guarda;
- *   presupuesto de 50 MB por usuario con expulsión LRU (vencidas primero).
+ *   presupuesto de 200 MB por usuario con expulsión LRU (vencidas primero).
  * - En modo "equipo compartido" (o sin usuario activo) no se escribe nada.
  * - Solo se escribe lo que CAMBIÓ (`add-offline-preparar-incremental`): cada
  *   fila guarda la huella (`hashString`) de su JSON; si una query vuelve a
@@ -37,7 +37,7 @@ import { hydrate, type DehydratedState, type Query, type QueryClient } from "@ta
 import type { RecordedRequest } from "@/lib/offline/conditional-requests"
 import { hashString } from "@/lib/offline/content-hash"
 import { OFFLINE_MAX_MS } from "@/lib/offline/limits"
-import { isEncrypted, isVaultLocked, loadVault, openString, sealString } from "@/lib/offline/vault"
+import { isEncrypted, isVaultLocked, vaultStore, loadVault, openString, sealString } from "@/lib/offline/vault"
 import {
   deleteMeta,
   getDb,
@@ -47,13 +47,14 @@ import {
   type DeviceMode,
   type PersistedQueryRow,
 } from "@/lib/offline/db"
+import { isInstalledPwa } from "@/lib/offline/install-detection"
 
 /** Subirlo cuando cambie la forma de cualquier dato persistido. */
 export const SCHEMA_VERSION = 1
 
 export const PERSIST_THROTTLE_MS = 1000
 export const MAX_ENTRY_BYTES = 2 * 1024 * 1024
-export const USER_BUDGET_BYTES = 50 * 1024 * 1024
+export const USER_BUDGET_BYTES = 200 * 1024 * 1024
 
 const DAY_MS = 864e5
 
@@ -68,6 +69,8 @@ export interface OfflineQueryOptions {
   /** Tiempo máximo (ms) que se restaura desde `dataUpdatedAt`. */
   ttl: number
   scope?: "user"
+  /** Solo se guarda con el PIN creado (cifrado) y nunca se vuelve a pedir sola. */
+  requierePin?: boolean
 }
 
 export interface OfflineQueryMeta {
@@ -221,6 +224,24 @@ export function getDeviceMode(): DeviceMode {
   return deviceMode
 }
 
+/**
+ * La app instalada y una pestaña del mismo navegador comparten IndexedDB. Esta
+ * marca dice que lo guardado es de la app instalada: la pestaña (equipo
+ * compartido) no lo usa, pero tampoco lo borra al entrar o salir.
+ */
+const INSTALLED_OWNER_KEY = "device-mode-owner"
+
+/** ¿Esta pestaña convive con los datos de la app instalada? (entonces no se tocan). */
+export async function tabSharesInstalledData(): Promise<boolean> {
+  if (isInstalledPwa() || !isIndexedDbAvailable()) return false
+  try {
+    return (await getMeta<string>(INSTALLED_OWNER_KEY)) === "installed"
+  } catch {
+    // Ante la duda no se borra: puede haber meses de datos preparados.
+    return true
+  }
+}
+
 export function getActivePersistUser(): string | null {
   return activeUser
 }
@@ -239,7 +260,10 @@ export function initOfflinePersistence(): Promise<void> {
       if (!isIndexedDbAvailable()) return
       try {
         const stored = await getMeta<DeviceMode>(DEVICE_MODE_KEY)
-        deviceMode = stored === "personal" ? "personal" : DEFAULT_DEVICE_MODE
+        // Lo guardado como personal antes de la marca, abierto ya desde la app.
+        if (stored === "personal" && isInstalledPwa()) await setMeta(INSTALLED_OWNER_KEY, "installed")
+        const esDeLaApp = await tabSharesInstalledData()
+        deviceMode = stored === "personal" && !esDeLaApp ? "personal" : DEFAULT_DEVICE_MODE
       } catch {
         deviceMode = DEFAULT_DEVICE_MODE
       }
@@ -254,9 +278,15 @@ export function initOfflinePersistence(): Promise<void> {
  */
 export async function setDeviceMode(mode: DeviceMode): Promise<void> {
   deviceMode = mode
+  // En la pestaña "compartido" vale solo para ella: los datos son de la app instalada.
+  if (await tabSharesInstalledData()) return
   if (mode === "compartido") clearArchivos()
   if (!isIndexedDbAvailable()) return
   await setMeta(DEVICE_MODE_KEY, mode)
+  if (isInstalledPwa()) {
+    if (mode === "personal") await setMeta(INSTALLED_OWNER_KEY, "installed")
+    else await deleteMeta(INSTALLED_OWNER_KEY)
+  }
   if (mode === "compartido") {
     cancelPendingWrites()
     resetWriteState()
@@ -310,6 +340,8 @@ export function parsePersisted(json: string): unknown {
 function toRow(query: Query, userSub: string, now: number): PersistedQueryRow | null {
   const meta = query.meta as OfflineQueryMeta | undefined
   const offline = meta?.offline
+  // Módulos sensibles: solo cifrados. Sin PIN no se guardan.
+  if (offline?.requierePin && vaultStore.get() !== "abierta") return null
   if (!offline || query.state.status !== "success" || query.state.data === undefined) return null
   const data = meta.persistSelect ? meta.persistSelect(query.state.data) : query.state.data
   let json: string

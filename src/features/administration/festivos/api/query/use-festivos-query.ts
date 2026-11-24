@@ -8,7 +8,7 @@ import type { Festivo, Resultado } from "@/features/administration/festivos/api/
 // La lista entera (una veintena de filas): búsqueda, filtros, orden y página se
 // resuelven en el front, como en Áreas oficiales. El endpoint acepta
 // ?BUSCAR=&HABILITADO= si algún día hace falta filtrar en el back.
-async function fetchFestivos() {
+export async function fetchFestivos() {
   const [row] = await evalCol.getRows<Resultado<Festivo[]>>("/festivos")
   return row?.resultado ?? []
 }

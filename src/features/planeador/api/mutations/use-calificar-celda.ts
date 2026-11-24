@@ -1,5 +1,6 @@
 import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { PENDIENTE_APROBACION_NOTE } from "@/lib/offline/pending-approval"
 
 import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -98,8 +99,7 @@ export interface CalificarPayload {
 /** Todas las escrituras de una celda comparten entidad: FIFO entre calificar/observar/estado. */
 export const celdaEntityKey = (pk: number) => `planilla:act-est:${pk}`
 
-export const PLANILLA_SOLICITUD_NOTE =
-  "El periodo se cerró antes de sincronizar: tus cambios quedaron como solicitud al coordinador."
+export const PLANILLA_SOLICITUD_NOTE = PENDIENTE_APROBACION_NOTE
 
 function sendCalificar(p: CalificarPayload, ctx: SendCtx): Promise<CalificarCeldaResult> {
   return evalCol.putRow(

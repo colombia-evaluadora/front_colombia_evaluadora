@@ -8,7 +8,7 @@ import type {
   Resultado,
 } from "@/features/administration/listas-valor/api/types/lista-valor"
 
-async function fetchCategorias() {
+export async function fetchCategorias() {
   const [row] = await evalCol.getRows<Resultado<Categoria[]>>("/listas-valor/categorias")
   return row?.resultado ?? []
 }

@@ -58,6 +58,16 @@ export interface OutboxOp<P = unknown> {
   createdAt: number
   updatedAt: number
   appBuild: string
+  /**
+   * La op viajó en un paquete USB: `"exported"` en el equipo que lo generó,
+   * `"imported"` en el que lo cargó. El mismo cambio queda en DOS colas con la
+   * misma `Idempotency-Key`, y el gateway responde la segunda vez con la
+   * respuesta guardada (no se aplica dos veces). Por eso estas ops NO se
+   * fusionan con ediciones posteriores: el coalescing cambia la clave y el
+   * segundo envío dejaba de ser idempotente (una creación salía duplicada o
+   * una nota propia volvía como conflicto).
+   */
+  sharedViaPackage?: "exported" | "imported"
 }
 
 export interface SendCtx {

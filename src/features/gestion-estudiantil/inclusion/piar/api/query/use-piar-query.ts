@@ -4,6 +4,8 @@ import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
 import { PIAR, piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import type {
   AsignaturaOpcion,
   MatriculaDisponible,
@@ -24,7 +26,7 @@ export function toPiarFilters(search: string, f: PiarFiltros) {
     SEARCH: search.trim() || null,
     FK_SEDE: id(f.sede),
     FK_JORNADA: id(f.jornada),
-    FK_GRUPO: id(f.grupo),
+    FK_GRUPO: null,
     FK_GRADO: id(f.grado),
     FK_ESTADO: id(f.estado),
     CONDICION: null,
@@ -32,34 +34,53 @@ export function toPiarFilters(search: string, f: PiarFiltros) {
   }
 }
 
-export function usePiarListaQuery(params: { search: string; filtros: PiarFiltros; pageIndex: number; pageSize: number }, enabled = true) {
+/** `GET /piar/opciones/grados-filtro`: grados de los PIAR visibles. */
+export function useGradosFiltroQuery() {
+  return useQuery({
+    queryKey: piarKeys.gradosFiltro(),
+    queryFn: () =>
+      evalCol
+        .getRows<{ id: number; nombre: string }>(`${PIAR}/opciones/grados-filtro`)
+        .then((r): Opcion[] => r.map((g) => ({ value: String(g.id), label: g.nombre }))),
+    staleTime: 60_000,
+  })
+}
+
+type PiarListaParams = { search: string; filtros: PiarFiltros; pageIndex: number; pageSize: number; orden?: OrdenServidor }
+
+export const fetchPiarLista = async (params: PiarListaParams) => {
+  const rows = await evalCol.postRows<PiarRow>(`${PIAR}/query`, {
+    FILTERS: toPiarFilters(params.search, params.filtros),
+    ...params.orden,
+    PAGEINDEX: params.pageIndex,
+    PAGESIZE: params.pageSize,
+  })
+  const totalCount = rows[0]?.total_count ?? 0
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
+export function usePiarListaQuery(params: PiarListaParams, enabled = true) {
   return useQuery({
     enabled,
     queryKey: piarKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<PiarRow>(`${PIAR}/query`, {
-        FILTERS: toPiarFilters(params.search, params.filtros),
-        PAGEINDEX: params.pageIndex,
-        PAGESIZE: params.pageSize,
-      })
-      const totalCount = rows[0]?.total_count ?? 0
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchPiarLista(params),
     placeholderData: keepPreviousData,
   })
+}
+
+export const fetchSinPiar = (sede: string, jornada: string) => {
+  const q = new URLSearchParams()
+  if (sede) q.set("FK_SEDE", sede)
+  if (jornada) q.set("FK_JORNADA", jornada)
+  const qs = q.toString()
+  return evalCol.getRows<SinPiarRow>(`${PIAR}/aviso-sin-piar${qs ? `?${qs}` : ""}`)
 }
 
 export function useSinPiarQuery(sede = "", jornada = "", enabled = true) {
   return useQuery({
     enabled,
     queryKey: piarKeys.aviso(sede, jornada),
-    queryFn: () => {
-      const q = new URLSearchParams()
-      if (sede) q.set("FK_SEDE", sede)
-      if (jornada) q.set("FK_JORNADA", jornada)
-      const qs = q.toString()
-      return evalCol.getRows<SinPiarRow>(`${PIAR}/aviso-sin-piar${qs ? `?${qs}` : ""}`)
-    },
+    queryFn: () => fetchSinPiar(sede, jornada),
     staleTime: 60_000,
   })
 }
@@ -75,7 +96,7 @@ export function useMatriculasDisponiblesQuery(search: string) {
 }
 
 /** Las funciones que devuelven JSONB llegan como `{ resultado }` en una sola fila. */
-const piarQueryOptions = (piarId: number) => ({
+export const piarQueryOptions = (piarId: number) => ({
   queryKey: piarKeys.detalle(piarId),
   queryFn: () => evalCol.getRow<{ resultado: PiarDetalle }>(`${PIAR}/${piarId}`).then((r) => r.resultado),
 })
@@ -106,7 +127,11 @@ export function useAsignaturasPiarQuery(piarId: number, enabled = true) {
 export function usePeriodosPiarQuery(piarId: number, ajuste: number | undefined) {
   return useQuery({
     queryKey: piarKeys.opciones(piarId, "periodos", ajuste),
-    queryFn: () => evalCol.getRows<PeriodoEvaluacionOpcion>(`${PIAR}/${piarId}/opciones/periodos-evaluacion?AJUSTE=${ajuste}`),
+    queryFn: () =>
+      evalCol
+        .getRows<PeriodoEvaluacionOpcion>(`${PIAR}/${piarId}/opciones/periodos-evaluacion?AJUSTE=${ajuste}`)
+        // Por número del período («Período 2» antes que «Período 10»).
+        .then((r) => [...r].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { numeric: true }))),
     enabled: ajuste != null,
   })
 }

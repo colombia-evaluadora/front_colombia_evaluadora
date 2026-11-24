@@ -1,6 +1,6 @@
 "use no memo"
 
-import type { ColumnDef } from "@tanstack/react-table"
+import type { ColumnDef, SortingState } from "@tanstack/react-table"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -25,6 +25,9 @@ interface Props<T> {
   onRetry: () => void
   errorMessage?: string
   emptyMessage: string
+  /** Orden por servidor: lo lleva quien consulta. */
+  sorting?: SortingState
+  setSorting?: (s: SortingState) => void
 }
 
 /** Una de las dos tablas de la pestaña (ORI.LIS.1); cada una pagina por su cuenta. */
@@ -38,8 +41,8 @@ export function TablaOrientacion<T>(p: Props<T>) {
     pageSize: p.pageSize,
     goToPage: p.goToPage,
     setPageSize: p.setPageSize,
-    sorting: [],
-    setSorting: () => {},
+    sorting: p.sorting ?? [],
+    setSorting: p.setSorting ?? (() => {}),
     columnVisibilityStorageKey: `orientacion-${p.titulo}-column-visibility`,
   })
   return (

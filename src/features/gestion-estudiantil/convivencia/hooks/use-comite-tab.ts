@@ -2,6 +2,8 @@ import { useState } from "react"
 
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import { ORDEN_SESIONES } from "@/features/gestion-estudiantil/convivencia/components/comite/columns-sesiones"
 import { useComiteQuery, usePeriodosComiteQuery, useSesionesQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { periodoPorDefecto } from "@/features/gestion-estudiantil/convivencia/utils/comite"
@@ -24,6 +26,7 @@ export function useComiteTab(periodo: number | undefined) {
     filters: { FK_TLV_TIPO: tipo ? Number(tipo) : null },
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_SESIONES),
   })
 
   return {

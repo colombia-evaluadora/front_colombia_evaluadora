@@ -51,7 +51,7 @@ Roles de backend: leer RECTOR, COORDINADOR, DIRECTOR_GRUPO, PSICO_ORIENTADOR, DO
    - Buscador «Buscar por estudiante» con panel de filtros: Contiene las palabras, Sede, Jornada, Tipo, Período de Evaluación; chips y «Limpiar filtros»; botón de columnas visibles.
      - El Período de Evaluación usa el endpoint de períodos de Informes, que pide sede y jornada: el filtro queda deshabilitado hasta elegirlas.
    - Casilla «Incluir anulados» (`ANULADOS=true`). Una fila anulada lleva Badge soft «Anulado».
-   - DataTable: Fecha, Estudiante, Grado/Grupo, Tipo, Motivo, Otorgado por y acciones ⋮. Sede y Jornada no vienen en la fila, así que no se añaden. Contador «N reconocimientos».
+   - DataTable: Fecha, Estudiante, Grado/Grupo, Tipo, Motivo, Otorgado por y acciones ⋮. Sede y Jornada (`sede_nombre`, `jornada_nombre`) van ocultas de entrada y salen en «Columnas visibles». Contador «N reconocimientos».
    - Menú ⋮: Ver detalle; Modificar (deshabilitado si `!puede_modificar`); Anular (deshabilitado si `!puede_anular`); separador; Generar mención de honor (deshabilitado si `anulado`).
 2. **Modal Nuevo reconocimiento**: Estudiantes* (multiselección, `opciones/estudiantes`), Tipo de reconocimiento* (Lista de Valores `TIPO_RECONOCIMIENTO`, vía `useCatalogo`; nunca valores quemados), Motivo* (5–200, contador «n / 200»), Fecha* (ayuda «En un período Calificable.»), Otorgado por* (`opciones/otorgantes`, por defecto la fila con `es_usuario_actual`), Actividad relacionada (opcional, `GET /gestion-estudiantil/actividades?SEARCH=`; el `PERIODO` de ese endpoint es período académico, no de evaluación, así que no se envía), Soporte (imagen o PDF, 10 MB, opcional). Texto «Los campos marcados con * son obligatorios». Botones Cancelar y Guardar.
 3. **Modal Modificar**: el mismo formulario, con Estudiante fijo de solo lectura. `PUT /:ID`.
@@ -114,7 +114,7 @@ Cumple:
 Falta o no cumple:
 - QR, firmas y documento emitido de la mención: pendiente de infraestructura.
 - Portal del acudiente (W.8.LIS.1): fuera de alcance.
-- Sin parámetro de orden en el listado: las columnas no se ordenan en el cliente.
+- Orden por servidor (`QUERY.ORDEN`/`QUERY.DIR`: fecha, estudiante, grupo, tipo, otorgado; `ORDEN_RECONOCIMIENTOS`): las demás columnas no se ordenan.
 - El selector de Actividad relacionada usa el listado de actividades; no hay opciones dedicadas (B3).
 
 ## Decisiones pendientes

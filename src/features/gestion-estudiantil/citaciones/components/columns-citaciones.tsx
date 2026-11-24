@@ -3,6 +3,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { abreviarPersona, formatFechaHora12 } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CitacionRow } from "@/features/gestion-estudiantil/citaciones/api/types"
 import {
@@ -22,14 +24,17 @@ interface ColumnasOpciones {
 // la tabla no cabía a 1440 px y el Estado se cortaba.
 export const COLUMNAS_CITACIONES_OCULTAS = { origen: false, sede: false, jornada: false }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el orden lo fija el backend, así que no se ofrece el menú con flechas de ordenar
-  // (`DataTableColumnHeader` lo pinta mientras la columna sea ocultable). «Columnas» sigue ocultándolas.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_CITACIONES: MapaOrden = {
+  fecha: "fecha",
+  estudiante: "estudiante",
+  acudiente: "acudiente",
+  motivo: "motivo",
+  atiende: "atiende",
+  estado: "estado",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<CitacionRow>(ORDEN_CITACIONES, id, titulo)
 
 /** Columnas del listado de citaciones (G.3.CIT.1). */
 export function buildColumnsCitaciones({ onAccion }: ColumnasOpciones): ColumnDef<CitacionRow>[] {

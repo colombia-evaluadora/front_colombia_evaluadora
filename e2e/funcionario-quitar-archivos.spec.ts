@@ -25,7 +25,7 @@ async function login(page: Page) {
   for (let intento = 0; intento < 4; intento++) {
     const ingresar = page.getByRole("button", { name: "Ingresar" })
     if (await ingresar.isVisible().catch(() => false)) {
-      await page.getByLabel("Correo electrónico").fill("admin@example.com")
+      await page.getByLabel("Correo o número de documento").fill("admin@example.com")
       await page.getByLabel("Contraseña", { exact: true }).fill("password")
       await ingresar.click()
     }

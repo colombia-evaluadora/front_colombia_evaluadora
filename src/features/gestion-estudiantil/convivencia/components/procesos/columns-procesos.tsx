@@ -12,6 +12,16 @@ import { CeldaVencimiento } from "@/features/gestion-estudiantil/convivencia/com
 import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import { ACCIONES_PROCESO, MenuAccionesProceso, type AccionProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/menu-acciones-proceso"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+
+/** Columnas que el backend ordena (`BODY.ORDEN`): id de columna → clave de ORDEN. */
+export const ORDEN_PROCESOS: MapaOrden = {
+  fecha_apertura: "fecha",
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  cargos: "cargos",
+  responsable: "responsable",
+}
 
 interface ColumnasOpciones {
   onAccion: (proceso: ProcesoRow, accion: AccionProceso) => void

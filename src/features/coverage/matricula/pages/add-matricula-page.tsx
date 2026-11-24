@@ -6,7 +6,7 @@ import {
 } from "@/features/coverage/matricula/components/verificacion-estudiante-existente"
 import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/hooks/use-matricula-validacion-opciones"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 
 import {
   TableScreen,
@@ -15,6 +15,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { CaretRightIcon, FloppyDiskIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 
@@ -555,6 +556,16 @@ function AddMatriculaPageContent() {
 
   const saving = createMatricula.isPending
   const nombreEstudiante = [values.student.firstName, values.student.lastName].filter(Boolean).join(" ")
+  // Cancelar con datos o archivos sin guardar pregunta antes de salir.
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
+  const irALista = () => navigate({ to: paths.app.coberturaMatricula.getHref() })
+  function cancelar() {
+    const hayCambios =
+      JSON.stringify(values) !== JSON.stringify(initialValuesRef.current) ||
+      Object.values(files).some((lista) => lista.length > 0)
+    if (hayCambios) setConfirmarSalida(true)
+    else irALista()
+  }
 
   return (
     <TableScreen>
@@ -568,13 +579,7 @@ function AddMatriculaPageContent() {
                   <CaretRightIcon data-icon="inline-end" />
                 </Button>
               ) : null}
-              <Button
-                render={<Link to={paths.app.coberturaMatricula.getHref()} />}
-                variant="outline"
-                color="neutral"
-                size="sm"
-                nativeButton={false}
-              >
+              <Button type="button" variant="outline" color="neutral" size="sm" onClick={cancelar}>
                 <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
@@ -702,6 +707,8 @@ function AddMatriculaPageContent() {
           onConfirm={(evidencia) => crear(dialogoExistente.mode, evidencia)}
         />
       )}
+
+      <ConfirmDiscardDialog open={confirmarSalida} onOpenChange={setConfirmarSalida} onConfirm={irALista} />
     </TableScreen>
   )
 }

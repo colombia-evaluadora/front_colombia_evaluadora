@@ -26,7 +26,7 @@ interface Props {
 
 function HistorialContent({ matricula, gradoGrupo }: Props) {
   const navigate = useNavigate()
-  const { irValorar, irPlanNuevo, irPlan } = useNavegacionPrevencion()
+  const { irValorar, irPlanNuevo, irPlan, irGestionAlerta } = useNavegacionPrevencion()
   const q = useHistorialQuery(matricula)
   const historialAcademico = useEntradaHistorialAcademico(matricula)
   const h = q.data
@@ -74,9 +74,8 @@ function HistorialContent({ matricula, gradoGrupo }: Props) {
                     id: "gestionar",
                     label: "Gestionar",
                     icon: <GearIcon />,
-                    // Gestión de alertas (9.11) no tiene backend.
-                    disabled: true,
-                    onSelect: () => undefined,
+                    disabled: !h?.puede_gestionar || h.fk_gestion_alerta == null,
+                    onSelect: () => h?.fk_gestion_alerta != null && irGestionAlerta(h.fk_gestion_alerta),
                   },
                 ]}
               />

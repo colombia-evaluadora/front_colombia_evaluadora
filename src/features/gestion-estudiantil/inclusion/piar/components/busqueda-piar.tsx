@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
-import { SearchQueryBar } from "@/components/search/search-query-bar"
-import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
-import { useQuerySearch } from "@/components/search/use-query-search"
+import { optionTerm } from "@/components/search/query-syntax"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
+import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { useSearchFiltros } from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { FILTROS_VACIOS, type PiarFiltros } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
 
@@ -15,93 +16,72 @@ interface Props {
   filtros: PiarFiltros
   onSearch: (v: string) => void
   onFiltros: (f: PiarFiltros) => void
-  grados: { value: string; label: string }[]
+  grados: Opcion[]
 }
 
-/** G.4.PIA.LIS.2: texto libre y panel de filtros; las opciones se piden para lo que se está eligiendo. */
+/** G.4.PIA.LIS.2: contiene las palabras y panel de filtros; las opciones se piden para lo que se está eligiendo. */
 export function BusquedaPiar({ search, filtros, onSearch, onFiltros, grados }: Props) {
-  const [draft, setDraft] = useState<PiarFiltros>(FILTROS_VACIOS)
-  const [open, setOpen] = useState(false)
-  const opciones = useOpcionesGrupos(piarKeys.all, draft.sede, draft.jornada)
+  // Borrador de la sede elegida: la jornada depende de ella (el borrador vive en el hook común).
+  const [sedeBorrador, setSedeBorrador] = useState(filtros.sede)
+  const opciones = useOpcionesGrupos(piarKeys.all, sedeBorrador, "")
   const estados = useCatalogo("ESTADO_PIAR")
 
-  useEffect(() => {
-    if (open) setDraft(filtros)
-  }, [open, filtros])
-
-  type Q = PiarFiltros & { search: string }
-  const syntax: QuerySyntax<Q> = {
-    empty: { ...FILTROS_VACIOS, search: "" },
-    freeText: { key: "texto", field: "search" },
+  const onDraftChange = useCallback((d: PiarFiltros) => setSedeBorrador(d.sede), [])
+  const s = useSearchFiltros<PiarFiltros>({
+    search,
+    onSearchChange: onSearch,
+    filters: filtros,
+    applyFilters: onFiltros,
+    onClearAll: () => {
+      onSearch("")
+      onFiltros(FILTROS_VACIOS)
+    },
+    onDraftChange,
+    vacios: FILTROS_VACIOS,
     terms: [
       optionTerm("sede", "sede", opciones.sedeOpciones),
       optionTerm("jornada", "jornada", opciones.jornadaOpciones),
-      optionTerm("grupo", "grupo", opciones.grupoOpciones),
       optionTerm("grado", "grado", grados),
       optionTerm("estado", "estado", estados),
     ],
-  }
-  const { search: queryText, setSearch: setQueryText } = useQuerySearch({
-    syntax,
-    filters: { ...filtros, search },
-    applyFilters: ({ search: s, ...f }) => {
-      onSearch(s)
-      onFiltros(f)
-    },
   })
-  const badgeCount = Object.values(filtros).filter(Boolean).length
+  const { draft, setDraft } = s
+  const sinSede = !draft.sede
 
   return (
-          <SearchQueryBar
-            id="piar-search"
-            label={null}
-            placeholder="Buscar por estudiante"
-            value={queryText}
-            onValueChange={setQueryText}
-            onClearAll={() => {
-              onSearch("")
-              onFiltros(FILTROS_VACIOS)
-              setDraft(FILTROS_VACIOS)
-              setOpen(false)
-            }}
-            onClearFilters={() => {
-              setDraft(FILTROS_VACIOS)
-              onFiltros(FILTROS_VACIOS)
-            }}
-            activeFilterCount={badgeCount + (search ? 1 : 0)}
-            badgeCount={badgeCount}
-            open={open}
-            onOpenChange={setOpen}
-            onApply={() => {
-              onFiltros(draft)
-              setOpen(false)
-            }}
-            size="lg"
-            className="sm:w-full max-w-xl"
-          >
-            <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-3">
-              <Combo id="piar-sede" label="Sede" value={draft.sede} options={opciones.sedeOpciones} onChange={(sede) => setDraft({ ...draft, sede, jornada: "", grupo: "" })} />
-              <Combo
-                id="piar-jornada"
-                label="Jornada"
-                value={draft.jornada}
-                options={opciones.jornadaOpciones}
-                disabled={!draft.sede}
-                placeholder={draft.sede ? "Todos" : "Elegí Sede primero"}
-                onChange={(jornada) => setDraft({ ...draft, jornada, grupo: "" })}
-              />
-              <Combo id="piar-grado" label="Grado" value={draft.grado} options={grados} onChange={(grado) => setDraft({ ...draft, grado })} />
-              <Combo
-                id="piar-grupo"
-                label="Grado/Grupo"
-                value={draft.grupo}
-                options={opciones.grupoOpciones}
-                disabled={!draft.jornada}
-                placeholder={draft.jornada ? "Todos" : "Elegí Jornada primero"}
-                onChange={(grupo) => setDraft({ ...draft, grupo })}
-              />
-              <Combo id="piar-estado" label="Estado" value={draft.estado} options={estados} onChange={(estado) => setDraft({ ...draft, estado })} />
-            </div>
-          </SearchQueryBar>
+    <BarraBusquedaFiltros id="piar-search" placeholder="Buscar por estudiante" estado={s}>
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-4 md:grid-cols-3">
+        <Combo
+          id="piar-sede"
+          label="Sede"
+          value={draft.sede}
+          options={opciones.sedeOpciones}
+          onChange={(sede) => setDraft({ ...draft, sede, jornada: "" })}
+        />
+        <Combo
+          id="piar-jornada"
+          label="Jornada"
+          value={draft.jornada}
+          options={opciones.jornadaOpciones}
+          disabled={sinSede}
+          placeholder={sinSede ? "Elija una sede primero" : "Todos"}
+          onChange={(jornada) => setDraft({ ...draft, jornada })}
+        />
+        <Combo
+          id="piar-estado"
+          label="Estado"
+          value={draft.estado}
+          options={estados}
+          onChange={(estado) => setDraft({ ...draft, estado })}
+        />
+        <Combo
+          id="piar-grado"
+          label="Grado"
+          value={draft.grado}
+          options={grados}
+          onChange={(grado) => setDraft({ ...draft, grado })}
+        />
+      </div>
+    </BarraBusquedaFiltros>
   )
 }

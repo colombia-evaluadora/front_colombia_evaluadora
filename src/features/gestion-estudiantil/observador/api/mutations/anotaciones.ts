@@ -1,3 +1,4 @@
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -87,9 +88,9 @@ export function useAnularAnotacion({ mutationConfig }: { mutationConfig?: Mutati
   })
 }
 
-/** Exportar del listado: el mismo `FILTERS` de la tabla, sin paginar (clave `observador-anotaciones`). */
-function exportarAnotaciones(input: { filters: ObservadorQueryFilters; format: ExportFormat }) {
-  return downloadReport("observador-anotaciones", { format: input.format, filters: input.filters })
+/** Exportar del listado: el mismo `FILTERS` y el mismo orden de la tabla, sin paginar (clave `observador-anotaciones`). */
+function exportarAnotaciones(input: { filters: ObservadorQueryFilters; orden?: OrdenServidor; format: ExportFormat }) {
+  return downloadReport("observador-anotaciones", { format: input.format, filters: input.filters, sorting: input.orden?.ORDEN ? { id: input.orden.ORDEN, desc: input.orden.DIR === "desc" } : undefined })
 }
 
 export function useExportarAnotaciones({

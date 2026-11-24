@@ -37,21 +37,23 @@ export interface TableroParams {
   pageSize: number
 }
 
+export const fetchTablero = async (params: TableroParams) => {
+  const rows = await evalCol.getRows<TableroRow>(
+    `${BASE_PREVENCION}/tablero${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /tablero`: el alcance lo aplica el backend; `total_count` viene repetido en cada fila. */
 export function useTableroQuery(params: TableroParams) {
   return useQuery({
     queryKey: prevencionKeys.tablero(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<TableroRow>(
-        `${BASE_PREVENCION}/tablero${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchTablero(params),
     enabled: params.filters != null,
     placeholderData: (prev) => prev,
   })
@@ -77,14 +79,16 @@ export function useHistorialQuery(matricula: number | undefined, enabled = true)
   })
 }
 
+export const fetchAlertasEstudiante = (matricula: number | undefined) =>
+  evalCol
+    .getRows<AlertasEstudiante>(`${BASE_PREVENCION}/estudiantes/${matricula}/alertas`)
+    .then((r) => r[0] ?? null)
+
 /** `GET /estudiantes/:MATRICULA/alertas`: las señales vigentes que se consideran al valorar. */
 export function useAlertasEstudianteQuery(matricula: number | undefined, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.alertas(matricula ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<AlertasEstudiante>(`${BASE_PREVENCION}/estudiantes/${matricula}/alertas`)
-        .then((r) => r[0] ?? null),
+    queryFn: () => fetchAlertasEstudiante(matricula),
     enabled: matricula != null && enabled,
   })
 }

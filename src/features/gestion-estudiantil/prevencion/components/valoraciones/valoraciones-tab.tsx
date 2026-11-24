@@ -1,9 +1,10 @@
 "use no memo"
 
-import { useCallback, useMemo, type ReactNode } from "react"
+import { useCallback, useMemo, useState, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   TableScreenBody,
   TableScreenHeader,
@@ -23,9 +24,11 @@ import {
   toValoracionesFilters,
   useValoracionesQuery,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-valoraciones-query"
+import { useAccesoPrevencionQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-parametros-indicadores-query"
 import type { ValoracionRow } from "@/features/gestion-estudiantil/prevencion/api/types"
+import { DialogExportarSimpade } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/dialog-exportar-simpade"
 import { useDialogosPrevencion } from "@/features/gestion-estudiantil/prevencion/components/dialogos/use-dialogos-prevencion"
-import { buildColumnsValoraciones } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/columns-valoraciones"
+import { buildColumnsValoraciones, ORDEN_VALORACIONES } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/columns-valoraciones"
 import type { AccionValoracion } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/menu-acciones-valoracion"
 import { SearchValoraciones } from "@/features/gestion-estudiantil/prevencion/components/valoraciones/search-valoraciones"
 
@@ -39,14 +42,16 @@ interface Props {
 export function ValoracionesTab({ tabs }: Props) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const f = useValoracionesFiltros(goToPage)
-  const { irPlan, irPlanEditar, irValoracion } = useNavegacionPrevencion()
+  const { irPlan, irPlanEditar, irValoracion, irGestionAlerta } = useNavegacionPrevencion()
   const dialogos = useDialogosPrevencion()
+  const [exportando, setExportando] = useState(false)
+  const acceso = useAccesoPrevencionQuery(f.establecimientoId).data
 
   const filters = useMemo(
     () => (f.establecimientoId == null ? null : toValoracionesFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const { data, isPending, isError, error, refetch } = useValoracionesQuery({ filters, pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = useValoracionesQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_VALORACIONES) }, pageIndex, pageSize })
 
   const onAccion = useCallback(
     (fila: ValoracionRow, accion: AccionValoracion) => {
@@ -55,6 +60,8 @@ export function ValoracionesTab({ tabs }: Props) {
       if (accion === "ver") {
         if (planId != null) irPlan(planId)
         else irValoracion(fila.id)
+      } else if (accion === "gestionar") {
+        if (fila.fk_gestion_alerta != null) irGestionAlerta(fila.fk_gestion_alerta)
       } else if (accion === "anular-valoracion") {
         dialogos.abrir({ dialogo: "anular-valoracion", valoracionId: fila.id, estudiante })
       } else if (planId != null) {
@@ -65,7 +72,7 @@ export function ValoracionesTab({ tabs }: Props) {
         else if (accion === "modificar") irPlanEditar(planId)
       }
     },
-    [irPlan, irPlanEditar, irValoracion, dialogos],
+    [irPlan, irPlanEditar, irValoracion, irGestionAlerta, dialogos],
   )
   const columns = useMemo(() => buildColumnsValoraciones({ onAccion }), [onAccion])
 
@@ -90,8 +97,15 @@ export function ValoracionesTab({ tabs }: Props) {
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            // G.8.VAL.4: la exportación para el SIMPADE aún no tiene backend.
-            <Button size="sm" type="button" variant="outline" color="neutral" disabled>
+            // G.8.VAL.4: Supervisor de sede y Administrador, según `puede_exportar_simpade` de `GET /acceso`.
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              color="neutral"
+              disabled={acceso?.puede_exportar_simpade !== true}
+              onClick={() => setExportando(true)}
+            >
               <FileXlsIcon data-icon="inline-start" />
               Exportar para el SIMPADE
             </Button>
@@ -144,6 +158,7 @@ export function ValoracionesTab({ tabs }: Props) {
         />
       </TableScreenBody>
       {dialogos.dialogos}
+      {exportando && <DialogExportarSimpade sede={f.filtros.sede} jornada={f.filtros.jornada} onClose={() => setExportando(false)} />}
     </>
   )
 }

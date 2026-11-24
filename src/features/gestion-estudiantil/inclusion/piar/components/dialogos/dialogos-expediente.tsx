@@ -1,4 +1,5 @@
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { noAnteriorA } from "@/features/gestion-estudiantil/inclusion/piar/utils/validaciones-piar"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import { useParticipantesOpcionQuery } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 
@@ -27,7 +28,7 @@ export function DialogosExpediente({ piar, dialogo, onClose }: DialogoProps) {
             { name: "actividad", label: "Actividad", kind: "texto", required: true, min: 3, max: 150 },
             { name: "frecuencia", label: "Frecuencia acordada", kind: "texto", required: true, min: 3, max: 150 },
             { name: "responsable", label: "Responsable acordado", kind: "texto", required: true, min: 3, max: 150 },
-            { name: "fecha_revision", label: "Fecha de revisión", kind: "fecha", required: true },
+            { name: "fecha_revision", label: "Fecha de revisión", kind: "fecha", required: true, validar: (v) => noAnteriorA(v, piar.fecha_elaboracion, "La fecha de revisión no puede ser anterior a la elaboración del acuerdo.") },
             texto("descripcion", "Descripción", 1000, { required: true, min: 10 }),
           ]}
           onSubmit={(v) =>

@@ -8,6 +8,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "@/components/ui/icons"
 import { Pagination } from "@/components/pagination"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   TableScreenBody,
   TableScreenHeader,
@@ -28,7 +29,7 @@ import { useOpcionesGruposQuery } from "@/features/gestion-estudiantil/prevencio
 import type { TableroRow } from "@/features/gestion-estudiantil/prevencion/api/types"
 import type { AccionTablero } from "@/features/gestion-estudiantil/prevencion/components/tablero/menu-acciones-tablero"
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
-import { buildColumnsTablero } from "@/features/gestion-estudiantil/prevencion/components/tablero/columns-tablero"
+import { buildColumnsTablero, ORDEN_TABLERO } from "@/features/gestion-estudiantil/prevencion/components/tablero/columns-tablero"
 import { SearchTablero } from "@/features/gestion-estudiantil/prevencion/components/tablero/search-tablero"
 import { ultimaValoracionVigente } from "@/features/gestion-estudiantil/prevencion/utils/historial"
 import { useTableroFiltros } from "@/features/gestion-estudiantil/prevencion/hooks/use-tablero-filtros"
@@ -49,7 +50,7 @@ export function TableroTab({ tabs }: Props) {
     () => (f.establecimientoId == null ? null : toTableroFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const { data, isPending, isError, error, refetch } = useTableroQuery({ filters, pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = useTableroQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_TABLERO) }, pageIndex, pageSize })
 
   const queryClient = useQueryClient()
   const { irValorar, irPlanNuevo, irHistorial, irGestionAlerta } = useNavegacionPrevencion()

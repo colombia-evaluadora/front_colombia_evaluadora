@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Chat con MSW: mensaje programado (programar → Programados → el job lo envía una sola vez →
 // Enviados) y borrador de una actividad (autoguardado → retomar → publicar lo elimina).
@@ -7,10 +8,9 @@ const CHAT = "/app/comunicaciones/chat"
 
 async function login(page: Page, email: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(CHAT)}`)
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if ((await compartido.isChecked()) && (await compartido.isEnabled())) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname === CHAT)
   await page.getByRole("navigation", { name: "Conversaciones" }).waitFor()

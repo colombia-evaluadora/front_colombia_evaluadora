@@ -20,7 +20,7 @@ interface ParametrosEdadRow {
 // Respaldo si el registro único aún no existe: los valores sembrados por el back.
 const CORTES_INICIALES: Cortes = { bajaEdadHasta: -2, preextraedadDesde: 1, extraedadDesde: 2 }
 
-async function fetchParametros(): Promise<ParametrosEdad> {
+export async function fetchParametros(): Promise<ParametrosEdad> {
   const [row] = await evalCol.getRows<Resultado<ParametrosEdadRow>>("/parametros-edad")
   const r = row?.resultado
   return {

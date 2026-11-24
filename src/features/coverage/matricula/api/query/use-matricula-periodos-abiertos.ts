@@ -21,26 +21,28 @@ export interface MatriculaPeriodoOption {
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
+export async function fetchMatriculaPeriodosAbiertos(sedeId: number | null, jornadaId: number | null): Promise<MatriculaPeriodoOption[]> {
+  const { rows } = await fetchAcademicPeriods({
+    filters: { sedeId: sedeId ?? undefined, jornadaId: jornadaId ?? undefined },
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 100,
+  })
+  return rows
+    .filter((periodo) => periodo.status === "A")
+    .sort((a, b) => b.schoolYearId - a.schoolYearId || (a.cycle ?? 1) - (b.cycle ?? 1))
+    .map((periodo) => ({
+      value: String(periodo.id),
+      label: `${periodo.schoolYearId} · ${MODALIDAD[periodo.enrollmentModality ?? "ANUAL"]} · Ciclo ${periodo.cycle ?? 1}`,
+      vencido: Boolean(periodo.enrollmentDeadline) && periodo.enrollmentDeadline < hoy(),
+    }))
+}
+
 /** Periodos Abiertos de la sede y jornada: los únicos que lista Matrícula (Regla 54). */
 export function useMatriculaPeriodosAbiertosQuery(sedeId: number | null, jornadaId: number | null) {
   return useQuery({
     queryKey: matriculaKeys.periodosAbiertos(sedeId, jornadaId),
-    queryFn: async (): Promise<MatriculaPeriodoOption[]> => {
-      const { rows } = await fetchAcademicPeriods({
-        filters: { sedeId: sedeId ?? undefined, jornadaId: jornadaId ?? undefined },
-        sorting: [],
-        pageIndex: 0,
-        pageSize: 100,
-      })
-      return rows
-        .filter((periodo) => periodo.status === "A")
-        .sort((a, b) => b.schoolYearId - a.schoolYearId || (a.cycle ?? 1) - (b.cycle ?? 1))
-        .map((periodo) => ({
-          value: String(periodo.id),
-          label: `${periodo.schoolYearId} · ${MODALIDAD[periodo.enrollmentModality ?? "ANUAL"]} · Ciclo ${periodo.cycle ?? 1}`,
-          vencido: Boolean(periodo.enrollmentDeadline) && periodo.enrollmentDeadline < hoy(),
-        }))
-    },
+    queryFn: () => fetchMatriculaPeriodosAbiertos(sedeId, jornadaId),
     enabled: sedeId != null && jornadaId != null,
   })
 }

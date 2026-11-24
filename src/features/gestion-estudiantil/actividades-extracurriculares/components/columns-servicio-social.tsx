@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { EyeIcon } from "@/components/ui/icons"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { formatNumero } from "@/features/gestion-estudiantil/actividades-extracurriculares/utils/formatos-actividad"
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
@@ -18,14 +20,17 @@ interface ColumnasOpciones {
   onVer: (fila: ServicioSocialRow) => void
 }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_SERVICIO_SOCIAL: MapaOrden = {
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  horas: "horas",
+  estado: "estado",
+}
 
-/** Columnas del listado de servicio social (G.5.SOC.LIS): Estudiante · Grado/Grupo · Horas · Estado; Sede y Jornada no vienen en la salida. */
+const columna = (id: string, titulo: string) => columnaOrden<ServicioSocialRow>(ORDEN_SERVICIO_SOCIAL, id, titulo)
+
+/** Columnas del listado de servicio social (G.5.SOC.LIS): Estudiante · Grado/Grupo · Horas · Estado; Sede y Jornada ocultas. */
 export function buildColumnsServicioSocial({ onVer }: ColumnasOpciones): ColumnDef<ServicioSocialRow>[] {
   return [
     {
@@ -41,6 +46,8 @@ export function buildColumnsServicioSocial({ onVer }: ColumnasOpciones): ColumnD
       ),
     },
     { ...columna("grado_grupo", "Grado/Grupo"), accessorKey: "grado_grupo" },
+    { ...columna("sede", "Sede"), accessorKey: "sede_nombre" },
+    { ...columna("jornada", "Jornada"), accessorKey: "jornada_nombre" },
     {
       ...columna("horas", "Horas"),
       accessorFn: (f) => `${formatNumero(f.horas)} de ${formatNumero(f.horas_requeridas)}`,

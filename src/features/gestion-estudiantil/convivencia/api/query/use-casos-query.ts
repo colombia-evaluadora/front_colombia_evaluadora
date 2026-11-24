@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 import {
   SIN_GESTOR,
@@ -35,21 +37,25 @@ export interface CasosParams {
   filters: ConvivenciaQueryFilters
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
+}
+
+export const fetchCasos = async (params: CasosParams) => {
+  const rows = await evalCol.postRows<CasoRow>(`${BASE}/casos/query`, {
+    FILTERS: params.filters,
+    ...params.orden,
+    PAGEINDEX: params.pageIndex,
+    PAGESIZE: params.pageSize,
+  })
+  const totalCount = rows[0]?.total_count ?? 0
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
 }
 
 /** `POST /casos/query`: el alcance (sedes y Tipo II/III) lo aplica el backend. */
 export function useCasosQuery(params: CasosParams) {
   return useQuery({
     queryKey: convivenciaKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<CasoRow>(`${BASE}/casos/query`, {
-        FILTERS: params.filters,
-        PAGEINDEX: params.pageIndex,
-        PAGESIZE: params.pageSize,
-      })
-      const totalCount = rows[0]?.total_count ?? 0
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchCasos(params),
     placeholderData: (prev) => prev,
   })
 }
@@ -74,12 +80,30 @@ export function useCasoQuery(casoId: number | undefined) {
   })
 }
 
+export const fetchPasosCaso = (casoId: number | undefined) =>
+  evalCol.getRows<PasoCaso>(`${BASE}/casos/${casoId}/pasos`)
+
 /** `GET /casos/:ID/pasos`: pasos obligatorios del tipo con su estado. */
 export function usePasosCasoQuery(casoId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: convivenciaKeys.pasos(casoId ?? "none"),
-    queryFn: () => evalCol.getRows<PasoCaso>(`${BASE}/casos/${casoId}/pasos`),
+    queryFn: () => fetchPasosCaso(casoId),
     enabled: casoId != null && enabled,
+  })
+}
+
+/** `GET /casos/opciones/gestores-filtro`: gestores de los casos visibles; «Sin gestor» va primero. */
+export function useGestoresFiltroQuery() {
+  return useQuery({
+    queryKey: convivenciaKeys.gestoresFiltro(),
+    queryFn: () =>
+      evalCol
+        .getRows<{ id: number; nombre: string }>(`${BASE}/casos/opciones/gestores-filtro`)
+        .then((r): Opcion[] => [
+          { value: SIN_GESTOR, label: "Sin gestor" },
+          ...r.map((g) => ({ value: String(g.id), label: g.nombre })),
+        ]),
+    staleTime: 60_000,
   })
 }
 

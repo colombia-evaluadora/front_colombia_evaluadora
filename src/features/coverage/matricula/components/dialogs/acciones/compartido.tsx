@@ -142,6 +142,7 @@ export function CampoSelect({
   invalido,
   disabled,
   placeholder = "Seleccione",
+  vacio = "No hay opciones.",
   className,
 }: {
   id: string
@@ -154,6 +155,8 @@ export function CampoSelect({
   invalido?: boolean
   disabled?: boolean
   placeholder?: string
+  /** Texto de la lista sin opciones (p. ej. por qué no hay grupos). */
+  vacio?: string
   className?: string
 }) {
   const items = Object.fromEntries(opciones.map((o) => [o.value, o.label]))
@@ -171,7 +174,7 @@ export function CampoSelect({
         </ComboboxFieldTrigger>
         <ComboboxFieldContent>
           {opciones.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">No hay opciones.</p>
+            <p className="px-3 py-2 text-sm text-muted-foreground">{vacio}</p>
           ) : (
             opciones.map((o) => (
               <ComboboxFieldItem key={o.value} value={o.value} title={o.label} disabled={o.disabled}>
@@ -253,14 +256,15 @@ export function EmparejamientoNotas({
             </Fila>
           ) : a.estado === "PENDIENTE_NIVELACION" ? (
             <Fila key={`n-${a.destino}`} origen={<span className="text-muted-foreground">—</span>}>
-              <span className="flex items-center gap-2 font-semibold">
-                {a.destino}
+              {/* Cabe en la columna: el badge baja de línea en vez de salirse. */}
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-semibold">
+                <span className="min-w-0 break-words">{a.destino}</span>
                 <EstadoBadge color="warning">Pendiente por nivelación</EstadoBadge>
               </span>
             </Fila>
           ) : (
             <Fila key={`h-${a.origen}`} origen={a.origen}>
-              <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground">
                 —<EstadoBadge color="muted">Solo historial</EstadoBadge>
               </span>
             </Fila>
@@ -279,13 +283,15 @@ export const plural = (n: number, uno: string, varios: string) => `${n} ${n === 
 /** Texto del resumen del emparejamiento, como en el prototipo. */
 export function textoEmparejamiento(e: Emparejamiento) {
   const pendientes = e.asignaturas.filter((a) => a.estado === "PENDIENTE_NIVELACION").length
+  // Sin equivalente en el destino: sus notas quedan solo en el historial; no cuentan como «con equivalente».
+  const soloHistorial = e.asignaturas.filter((a) => a.estado === "SOLO_HISTORIAL").length
   const enCurso = e.periodos.find((p) => p.enCurso != null)
   return [
     `${plural(e.periodos.length, "período homologado", "períodos homologados")}`,
     enCurso ? `${enCurso.origen} combina la nota parcial (${enCurso.enCurso} %) con las del grupo nuevo` : null,
-    pendientes
-      ? `${plural(pendientes, "asignatura pendiente", "asignaturas pendientes")} por nivelación`
-      : "todas las asignaturas con equivalente",
+    pendientes ? `${plural(pendientes, "asignatura pendiente", "asignaturas pendientes")} por nivelación` : null,
+    soloHistorial ? `${plural(soloHistorial, "asignatura sin equivalente", "asignaturas sin equivalente")} (solo historial)` : null,
+    pendientes || soloHistorial ? null : "todas las asignaturas con equivalente",
   ]
     .filter(Boolean)
     .join(" · ")

@@ -20,6 +20,10 @@ export interface RemisionRow {
   estado_codigo: string
   estado_nombre: string
   fk_torientacion_atencion: number | null
+  presuncion_bap?: boolean
+  puede_registrar_atencion?: boolean
+  puede_descargar?: boolean
+  puede_anular?: boolean
   total_count: number
 }
 
@@ -44,6 +48,13 @@ export interface AtencionRow {
   origen_nombre: string
   motivo_nombre: string
   proxima_cita: string | null
+  /** Marca vigente de Presunción de BAP (5.3); solo la ven quienes ven la orientación. */
+  presuncion_bap?: boolean
+  puede_modificar?: boolean
+  puede_anular?: boolean
+  puede_descargar?: boolean
+  puede_marcar_presuncion?: boolean
+  puede_registrar_gestion?: boolean
   total_count: number
 }
 
@@ -52,6 +63,14 @@ export interface RemisionExterna {
   entidad: { id: number; nombre: string }
   motivo: string
   fecha: string
+  fecha_esperada?: string | null
+  /** Código del estado: ENVIADA o RESPONDIDA. */
+  estado?: string
+  vencida?: boolean
+  n_gestiones?: number
+  puede_registrar_gestion?: boolean
+  puede_registrar_respuesta?: boolean
+  puede_descargar?: boolean
   respuesta: string | null
   fecha_respuesta: string | null
 }
@@ -73,6 +92,8 @@ export interface AtencionDetalle {
   recomendaciones_familia: string | null
   recomendaciones_docente: string | null
   proxima_cita: string | null
+  firmantes?: { id: number; fk_tfuncionario: number; nombre: string; fk_tlv_calidad: number; calidad_codigo: string; calidad_nombre: string }[]
+  puede_registrar_remision_externa?: boolean
   remisiones_externas: RemisionExterna[]
   anulacion: { anulado_en: string; motivo: string } | null
 }

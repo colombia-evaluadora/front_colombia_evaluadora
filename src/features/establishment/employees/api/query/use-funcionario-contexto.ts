@@ -30,6 +30,16 @@ export function useFuncionarioContextoQuery(establishmentId: number | null) {
   })
 }
 
+export const gradosEscalafonQueryKey = (statuteId: number | null) =>
+  ["select-category", "ESCALAFON", "padre", statuteId] as const
+
+export async function fetchGradosEscalafon(statuteId: number) {
+  const raw = (await api.get(`/eval-col/select/ESCALAFON`, { params: { padre: statuteId } })) as unknown as {
+    rows?: SelectCategoryRow[]
+  }
+  return raw.rows ?? []
+}
+
 /**
  * Grados escalafón del estatuto docente elegido: Grado escalafón tiene como lista padre
  * Estatuto docente (V579.1). Sin estatuto no se ofrece ninguno.
@@ -37,13 +47,8 @@ export function useFuncionarioContextoQuery(establishmentId: number | null) {
 export function useGradosEscalafonQuery(statuteId: number | null) {
   return useQuery({
     meta: catalogoMeta(),
-    queryKey: ["select-category", "ESCALAFON", "padre", statuteId] as const,
-    queryFn: async () => {
-      const raw = (await api.get(`/eval-col/select/ESCALAFON`, { params: { padre: statuteId } })) as unknown as {
-        rows?: SelectCategoryRow[]
-      }
-      return raw.rows ?? []
-    },
+    queryKey: gradosEscalafonQueryKey(statuteId),
+    queryFn: () => fetchGradosEscalafon(statuteId as number),
     enabled: statuteId != null,
     staleTime: LISTA_VALOR_STALE_TIME,
   })

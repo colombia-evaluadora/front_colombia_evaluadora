@@ -5,12 +5,13 @@ import { useCallback, useMemo, useState } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   toActividadesFilters,
   useActividadesQuery,
 } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query/use-actividades-query"
 import type { ActividadRow } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
-import { buildColumnsActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/columns-actividades"
+import { buildColumnsActividades, ORDEN_ACTIVIDADES } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/columns-actividades"
 import type { AccionActividad } from "@/features/gestion-estudiantil/actividades-extracurriculares/components/menu-acciones-actividad"
 import { useActividadesFiltros } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-actividades-filtros"
 import { useNavegacionActividades } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-navegacion-actividades"
@@ -28,7 +29,8 @@ export function useActividadesLista() {
 
   // El período no se manda: la cascada solo conoce períodos de evaluación y el listado ya ordena lo más reciente primero.
   const filters = useMemo(() => toActividadesFilters(f.search, f.filtros), [f.search, f.filtros])
-  const query = useActividadesQuery({ filters, pageIndex, pageSize })
+  const orden = useMemo(() => ordenServidor(sorting, ORDEN_ACTIVIDADES), [sorting])
+  const query = useActividadesQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_ACTIVIDADES) }, pageIndex, pageSize })
 
   const onAccion = useCallback(
     (fila: ActividadRow, accion: AccionActividad) => {
@@ -65,6 +67,8 @@ export function useActividadesLista() {
     goToPage,
     setPageSize,
     filters,
+    /** `ORDEN`/`DIR` actuales de la tabla: la exportación sale en el mismo orden. */
+    orden,
     estadoDe,
     cerrarEstado: () => setEstadoDe(null),
     inscribirEn,

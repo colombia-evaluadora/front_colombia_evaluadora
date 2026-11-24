@@ -9,6 +9,7 @@
  *     instalación en vez del botón;
  *   - permiso `denied` → instrucciones para habilitarlo en el navegador.
  */
+import { isInstalledPwa } from "@/lib/offline/install-detection"
 
 export type PushAvailability =
   | "sin-clave" // build sin VITE_APP_VAPID_PUBLIC_KEY: ocultar todo
@@ -52,11 +53,7 @@ export function readPushEnvironment(vapidPublicKey: string): PushEnvironment {
     vapidPublicKey,
     userAgent: nav?.userAgent ?? "",
     maxTouchPoints: nav?.maxTouchPoints ?? 0,
-    standalone:
-      hasWindow &&
-      ((typeof window.matchMedia === "function" &&
-        window.matchMedia("(display-mode: standalone)").matches) ||
-        (nav as Navigator & { standalone?: boolean })?.standalone === true),
+    standalone: isInstalledPwa(),
     hasServiceWorker: Boolean(nav && "serviceWorker" in nav),
     hasPushManager: hasWindow && "PushManager" in window,
     hasNotification: hasWindow && "Notification" in window,

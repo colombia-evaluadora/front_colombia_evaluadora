@@ -13,11 +13,14 @@ import type {
 
 export const BASE_COMUN = "/gestion-estudiantil"
 
+export const fetchRemisionesCaso = (casoId: number | undefined) =>
+  evalCol.getRows<RemisionRow>(`${BASE_REINTEGRACION}/casos/${casoId}/remisiones`)
+
 /** `GET /casos/:ID/remisiones` (§10.4): `puede_gestionar` es el mismo para todas las filas del caso. */
 export function useRemisionesQuery(casoId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: reintegracionKeys.remisiones(casoId ?? "none"),
-    queryFn: () => evalCol.getRows<RemisionRow>(`${BASE_REINTEGRACION}/casos/${casoId}/remisiones`),
+    queryFn: () => fetchRemisionesCaso(casoId),
     enabled: enabled && casoId != null,
     retry: false,
   })
@@ -36,16 +39,18 @@ export function useRemisionExternaQuery(remisionId: number | undefined) {
   })
 }
 
+export const fetchPlazoRemisiones = (establecimiento: number | null) =>
+  evalCol
+    .getRows<PlazoRemisiones>(
+      `${BASE_COMUN}/configuracion-remisiones/plazo${queryString({ ESTABLECIMIENTO: establecimiento })}`,
+    )
+    .then((r) => r[0] ?? null)
+
 /** `GET /configuracion-remisiones/plazo` (común, V669): plazo de seguimiento en días hábiles. */
 export function usePlazoRemisionesQuery(establecimiento: number | null) {
   return useQuery({
     queryKey: reintegracionKeys.plazo(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<PlazoRemisiones>(
-          `${BASE_COMUN}/configuracion-remisiones/plazo${queryString({ ESTABLECIMIENTO: establecimiento })}`,
-        )
-        .then((r) => r[0] ?? null),
+    queryFn: () => fetchPlazoRemisiones(establecimiento),
     enabled: establecimiento != null,
     retry: false,
     staleTime: 60_000,

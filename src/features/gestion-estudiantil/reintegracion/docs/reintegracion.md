@@ -198,7 +198,7 @@ Verificado el 2026-11-13.
 ## Decisiones pendientes
 
 - **Celdas pequeñas del tablero.** Decisión pendiente.
-- **Motivo de la novedad del acta.** El acta necesita el motivo de la novedad y el backend hoy no lo entrega. Pendiente de confirmar con el backend o con producto.
+- **Motivo de la novedad del acta.** Resuelta: el backend ya lo entrega en `novedad.motivo_novedad` del acta (V675, `TRETIRO_MATRICULA.MOTIVO_NOVEDAD`). El acta es el PDF de reporting-service; el front no la pinta, solo descarga el PDF.
 - **Caracterización familiar (§9.8) en backend.** La ficha muestra `Alert` cuando `caracterizacion_disponible = false`: «El estudiante aún no tiene la caracterización familiar y de vivienda del año.». El campo ya se consume; falta que el backend lo entregue completo (PR #992).
 
 ## Bitácora
@@ -211,3 +211,4 @@ Verificado el 2026-11-13.
 - Fase 3 hecha: modales de acciones, acta de retiro en vista imprimible y Abrir caso de convivencia.
 - Pestaña Ficha con caracterización (confirmada, sin diligenciar, actualizar como Rector, Trabajo social y Orientación).
 - Verificación: `tsc -b` sin errores, oxlint sin hallazgos, vitest unit 1379/1379.
+- Orden por servidor en la bandeja de casos (`ORDEN_CASOS_REINTEGRACION`: estudiante, apertura, profesional, estado, días).

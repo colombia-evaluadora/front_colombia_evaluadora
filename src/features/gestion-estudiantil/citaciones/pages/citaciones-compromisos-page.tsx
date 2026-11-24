@@ -5,6 +5,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   TableScreen,
   TableScreenBody,
@@ -32,10 +33,12 @@ import {
 import {
   buildColumnsCitaciones,
   COLUMNAS_CITACIONES_OCULTAS,
+  ORDEN_CITACIONES,
 } from "@/features/gestion-estudiantil/citaciones/components/columns-citaciones"
 import {
   buildColumnsCompromisos,
   COLUMNAS_COMPROMISOS_OCULTAS,
+  ORDEN_COMPROMISOS,
 } from "@/features/gestion-estudiantil/citaciones/components/columns-compromisos"
 import {
   useDialogosCitacion,
@@ -72,6 +75,7 @@ function PestanaCitaciones({ cabecera, onNuevoCompromiso }: PestanaProps & { onN
     filters: toCitacionesFilters(f.search, f.filtros),
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_CITACIONES),
   })
 
   const dialogosCitacion = useDialogosCitacion()
@@ -150,6 +154,7 @@ function PestanaCompromisos({ cabecera }: PestanaProps) {
     filters: toCompromisosFilters(f.search, f.filtros),
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_COMPROMISOS),
   })
 
   const navigate = useNavigate() as unknown as Navegar

@@ -49,6 +49,8 @@ export interface PreviaPromover {
   areas: AreaReprobada[]
   /** Cierre académico de la matrícula: la fecha del acta no puede ser anterior. */
   fechaCierre: string
+  /** Fin del Período Académico siguiente (el de su reserva): tope del plazo para nivelar; null si aún no existe. */
+  finPeriodoSiguiente: string | null
   /** «[Estudiante] ya tiene matrícula en [Período]…»: no se promueve. */
   bloqueo: string | null
 }
@@ -105,7 +107,7 @@ export interface DetallePromocion {
   acta: string
   fechaActa: string
   plazo: string
-  /** Fin del Período Académico de la matrícula promovida: tope de Ampliar plazo. */
+  /** Fin del Período Académico siguiente (el de su reserva o, sin reserva, el siguiente según la modalidad): tope de Ampliar plazo. */
   finPeriodo: string
   /** Mínimo del Formato de calificación y Nota Máxima de Recuperación. */
   notaMinima: number

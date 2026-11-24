@@ -3,6 +3,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { ActividadRow } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/types"
@@ -18,12 +20,16 @@ interface ColumnasOpciones {
 }
 
 // Todas las columnas (menos Acciones) llevan accessorKey/accessorFn y `meta.label`: así «Columnas visibles» las lista.
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_ACTIVIDADES: MapaOrden = {
+  nombre: "nombre",
+  tipo: "tipo",
+  responsable: "responsable",
+  fechas: "fecha_inicio",
+  estado: "estado",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<ActividadRow>(ORDEN_ACTIVIDADES, id, titulo)
 
 /** Columnas del listado (G.5.ACT.LIS): Nombre · Tipo · Responsable · Grados · Inscritos · Fechas · Estado; Sede y Jornada ocultas. */
 export function buildColumnsActividades({ onAccion }: ColumnasOpciones): ColumnDef<ActividadRow>[] {

@@ -2,6 +2,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { PendingCreations } from "@/features/planeador/components/pending-creations"
 
 import { PrepareOfflineButton } from "@/components/offline/prepare-offline-dialog"
+import { PlanillasAuxiliaresButton } from "@/features/planeador/components/dialogs/dialog-planillas-auxiliares"
 import { Button } from "@/components/ui/button"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
@@ -148,7 +149,16 @@ function PlaneadorUnidadesPageContent() {
     // Alto completo desde `md`: ver el comentario en `planeador-page.tsx`.
     <TableScreen className="md:h-[calc(100dvh-4.5rem)] md:min-h-[40rem] md:flex-none">
       <TableScreenHeader>
-        <TableScreenTitle action={<PrepareOfflineButton />}>Planeador</TableScreenTitle>
+        <TableScreenTitle
+          action={
+            <div className="flex items-center gap-2">
+              <PlanillasAuxiliaresButton />
+              <PrepareOfflineButton />
+            </div>
+          }
+        >
+          Planeador
+        </TableScreenTitle>
 
         <PlaneadorTabs />
 

@@ -2,6 +2,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { CaracterizacionRow } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -20,13 +22,16 @@ interface ColumnasOpciones {
 }
 
 // Todas las columnas (menos Acciones) llevan accessorKey/accessorFn y `meta.label`: así «Columnas visibles» las lista.
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el backend no tiene parámetro de orden.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_CARACTERIZACIONES: MapaOrden = {
+  estudiante: "estudiante",
+  grupo: "grupo",
+  personas: "personas",
+  estado: "estado",
+  fecha: "fecha_confirmacion",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<CaracterizacionRow>(ORDEN_CARACTERIZACIONES, id, titulo)
 
 /** Columnas de Caracterización (G.8.CAR.1): Estudiante · Grado/Grupo · Personas · Estado · Fecha · Confirmada por; Sede y Jornada ocultas. */
 export function buildColumnsCaracterizaciones({

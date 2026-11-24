@@ -1,5 +1,12 @@
 "use no memo"
 
+import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
+import { getErrorMessage } from "@/lib/api-client"
+import { useNotify } from "@/components/notice/notice-context"
+import { FileDownloadOutlinedIcon } from "@/components/ui/icons"
+import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
+import { useExportarInformeInclusion } from "@/features/gestion-estudiantil/inclusion/informe/api/exportar-informe"
+import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
@@ -7,7 +14,6 @@ import { DataTable } from "@/components/data-table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDataTable } from "@/hooks/use-data-table"
 
-import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useAniosGeQuery, useSedesGeQuery } from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/components/tabla-datos"
@@ -67,21 +73,35 @@ export function TabInforme() {
   const [grado, setGrado] = useState("")
   const [grados, setGrados] = useState<{ value: string; label: string }[]>([])
   const sedes = useSedesGeQuery()
-  const { user } = useAuth()
-  const roles = user?.roles ?? []
-  // fn_piar_gate_informe: un rol de sede consulta su sede; sin ella responde 403.
-  const deSede = roles.includes("CEVAL-COORDINADOR") && !roles.includes("CEVAL-RECTOR")
+  // `informe_requiere_sede` (fn_inclusion_acceso): un rol de sede consulta y exporta con su sede; sin ella responde 403.
+  const deSede = usePiarAccess().informeRequiereSede
   const sedeInicial = sedes.data?.[0]?.id
   useEffect(() => {
     if (deSede && !sede && sedeInicial) setSede(String(sedeInicial))
   }, [deSede, sede, sedeInicial])
-  const anios = useAniosGeQuery(sede ? Number(sede) : null)
+  const anios = useAniosGeQuery(sede ? Number(sede) : (sedeInicial ?? null))
+  // El prototipo abre con el año vigente (el más reciente de la sede) elegido.
+  const [anioAuto, setAnioAuto] = useState(false)
+  useEffect(() => {
+    if (anioAuto || !anios.data?.length) return
+    setAnioAuto(true)
+    setAnio(String(Math.max(...anios.data.map((x) => x.anio))))
+  }, [anios.data, anioAuto])
   const establecimiento = sedes.data?.find((s) => String(s.id) === sede)?.establecimientoId ?? sedes.data?.[0]?.establecimientoId
   const { data, isPending, error } = useInformeQuery({ establecimiento: deSede && !sede ? null : establecimiento, sede, anio, grado })
   useEffect(() => {
     if (!data || grado) return
     setGrados(data.por_grado.map((g) => ({ value: String(g.fk_tgrado), label: g.grado_nombre })))
   }, [data, grado])
+  const { notify } = useNotify()
+  const exportar = useExportarInformeInclusion()
+  const onExportar = () => {
+    if (establecimiento == null) return
+    exportar.mutate(
+      { FK_ESTABLECIMIENTO: establecimiento, ...(sede && { FK_SEDE: Number(sede) }), ...(anio && { ANIO: Number(anio) }), ...(grado && { FK_GRADO: Number(grado) }) },
+      { onSuccess: (r) => notify(r.message, { variant: r.status === "error" ? "error" : "success" }), onError: (e) => notify(getErrorMessage(e), { variant: "error" }) },
+    )
+  }
   const filas = porAsignatura(data?.cobertura ?? [])
   const { table } = useDataTable({
     columns: COLUMNAS,
@@ -103,8 +123,19 @@ export function TabInforme() {
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <Combo id="inf-sede" label="Sede" todos={deSede ? false : "Todos"} value={sede} options={(sedes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre }))} onChange={(v) => { setSede(v); setAnio("") }} />
-        <Combo id="inf-anio" label="Año" value={anio} disabled={!sede} placeholder={sede ? "Todos" : "Elegí Sede primero"} options={(anios.data ?? []).map((a) => ({ value: String(a.anio), label: String(a.anio) }))} onChange={setAnio} />
+        <Combo id="inf-anio" label="Año" value={anio} options={(anios.data ?? []).map((a) => ({ value: String(a.anio), label: String(a.anio) }))} onChange={setAnio} />
         <Combo id="inf-grado" label="Grado" value={grado} options={grados} onChange={setGrado} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {(anio || grado || (sede && !deSede)) && (
+          <Button size="sm" variant="outline" color="neutral" onClick={() => { setSede(""); setAnio(""); setGrado("") }}>Limpiar filtros</Button>
+        )}
+        <Button size="sm" variant="outline" color="neutral" disabled={establecimiento == null || (deSede && !sede) || exportar.isPending} onClick={onExportar}>
+          <IconoCarga cargando={exportar.isPending}>
+            <FileDownloadOutlinedIcon data-icon="inline-start" />
+          </IconoCarga>
+          Exportar
+        </Button>
       </div>
       {isPending || !data ? (
         <Skeleton className="h-48 w-full" />
@@ -112,7 +143,7 @@ export function TabInforme() {
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             <Cifra titulo="PIAR vigentes" valor={vigentes} />
-            <Cifra titulo="Con ajustes" valor={data.vigentes_con_ajustes} de={vigentes} />
+            <Cifra titulo="PIAR vigentes con ajustes" valor={data.vigentes_con_ajustes} de={vigentes} />
             <Cifra titulo="Pendiente de revisión" valor={pendientes} />
           </div>
           <DataTable table={table} isPending={false} isError={false} onRetry={() => {}} growColumnId="asignatura" emptyMessage="Aún no hay cobertura registrada." />
@@ -120,14 +151,14 @@ export function TabInforme() {
             <TablaCifras titulo="Ajustes y seguimiento global" columnas={["Asignatura", "Con seguimiento", "Sin seguimiento"]} filas={data.seguimiento.map((s) => [s.asignatura_nombre, s.con_seguimiento, s.sin_seguimiento])} />
             <TablaCifras titulo="PIAR por grado" columnas={["Grado", "Vigentes", "Borradores", "Concluidos", "Cerrados"]} filas={data.por_grado.map((g) => [g.grado_nombre, g.vigentes, g.borradores, g.revision_concluida, g.cerrados])} />
           </div>
-          {data.barreras.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              Tipos de barrera más frecuentes:{" "}
-              {data.barreras.slice(0, 3).map((b, i) => (
-                <span key={b.nombre}>{i > 0 && " · "}<strong className="font-medium text-foreground">{b.nombre}</strong> {b.ajustes}</span>
-              ))}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            Tipos de barrera más frecuentes:{" "}
+            {data.barreras.length === 0
+              ? "—"
+              : data.barreras.slice(0, 3).map((b, i) => (
+                  <span key={b.nombre}>{i > 0 && " · "}<strong className="font-medium text-foreground">{b.nombre}</strong> {b.ajustes}</span>
+                ))}
+          </p>
         </>
       )}
     </div>

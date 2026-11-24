@@ -23,7 +23,7 @@ export interface BitacoraSede {
 }
 
 // Mismo endpoint que el selector de sedes, conservando `fk_establecimiento`.
-async function fetchSedes(): Promise<BitacoraSede[]> {
+export async function fetchSedes(): Promise<BitacoraSede[]> {
   const response = await api.get<RowsEnvelope<SedeRow> | SedeRow[]>(
     apiPath("/establishments/campuses/options", "/establecimientos/sedes/opciones"),
   )

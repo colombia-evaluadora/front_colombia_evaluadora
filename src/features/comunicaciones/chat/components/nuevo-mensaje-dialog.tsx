@@ -6,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PaperclipIcon, XIcon } from "@/components/ui/icons"
+import { InfoIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { useNotify } from "@/components/notice/notice-context"
@@ -20,8 +20,16 @@ import {
   useEnviarPorSeparado,
   type ResultadoPorSeparado,
 } from "@/features/comunicaciones/chat/api/mutations/use-enviar-por-separado"
+import { useConversacionesQuery } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
+import { useDisponibilidadDirectosQuery } from "@/features/comunicaciones/chat/api/query/use-disponibilidad-query"
+import {
+  avisoConversacionesExistentes,
+  conversacionesExistentesPorPersona,
+  type AvisoExistentes,
+} from "@/features/comunicaciones/chat/lib/conversaciones-existentes"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { SelectorPersonas } from "@/features/comunicaciones/chat/components/crear-chat-dialog"
+import { reemplazarSeleccion } from "@/features/comunicaciones/chat/lib/seleccion-unica"
 import {
   ACEPTA_DOCUMENTOS,
   ACEPTA_MULTIMEDIA,
@@ -129,6 +137,11 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
   })
   const modo = useStore(form.store, (s) => s.values.modo)
   const sucio = useStore(form.store, (s) => s.isDirty) || archivos.length > 0
+  const para = useStore(form.store, (s) => s.values.para)
+  // Hay algo que se perdería al abrir otro hilo (elegir solo el destinatario no cuenta).
+  const conContenido =
+    useStore(form.store, (s) => s.values.asunto.trim() !== "" || s.values.mensaje.trim() !== "") ||
+    archivos.length > 0
   const conAdjuntos = modo !== "SEPARADO"
 
   // Patrón del repo (crear-evaluacion-dialog): foco y scroll al primer campo en rojo.
@@ -143,11 +156,45 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
 
   // Con cambios pide confirmar; mientras envía no se cierra.
   const [descartar, setDescartar] = useState(false)
+  // Hilo existente elegido en el aviso de "Para": se abre tras confirmar el descarte.
+  const [abrirTras, setAbrirTras] = useState<number | null>(null)
   const cerrar = () => {
     if (pendiente) return
+    setAbrirTras(null)
     if (sucio) setDescartar(true)
     else onClose()
   }
+  const abrirExistente = (id: number) => {
+    if (pendiente) return
+    if (conContenido) {
+      setAbrirTras(id)
+      setDescartar(true)
+      return
+    }
+    onClose()
+    onCreado(id)
+  }
+  const confirmarDescarte = () => {
+    onClose()
+    if (abrirTras != null) onCreado(abrirTras)
+  }
+
+  // Directos ya abiertos con las personas elegidas (datos ya cargados de la bandeja; misma key que
+  // la presencia de la barra lateral): informa, no bloquea.
+  const conversaciones = useConversacionesQuery().data ?? []
+  const directos =
+    useDisponibilidadDirectosQuery(conversaciones.filter((c) => c.tipo === "DIRECTO" && !c.esBot).map((c) => c.id))
+      .data ?? []
+  // QA 106: se recalcula en cada render, así que sigue al Para y al modo (Grupal no muestra nada).
+  const aviso = avisoConversacionesExistentes(
+    modo,
+    para,
+    conversacionesExistentesPorPersona(
+      conversaciones,
+      directos,
+      para.map((p) => p.id),
+    ),
+  )
 
   const elegirArchivos = (lista: FileList | null) => {
     const { archivos: siguientes, error } = agregarAdjuntos(archivos, Array.from(lista ?? []))
@@ -184,17 +231,26 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
             <form.AppField name="para">
               {() => (
                 <CampoPara
+                  unico={modo === "INDIVIDUAL"}
                   paraGrupo={modo === "GRUPAL"}
                   permitido={(p) => modo === "GRUPAL" || reglaDirectoCon(p.perfil) !== "PROHIBIDO"}
                 />
               )}
             </form.AppField>
 
+            {aviso && <AvisoConversacionesExistentes aviso={aviso} onAbrir={abrirExistente} />}
+
             <form.AppField
               name="modo"
               listeners={{
                 // Sin adjuntos al enviar por separado (comms-service no los acepta).
                 onChange: ({ value }) => {
+                  // QA 105: al pasar a Individual con varias personas elegidas queda solo la primera;
+                  // Enviar por separado y Grupal conservan todas.
+                  const elegidas = form.getFieldValue("para")
+                  if (value === "INDIVIDUAL" && elegidas.length > 1) {
+                    form.setFieldValue("para", elegidas.slice(0, 1))
+                  }
                   if (value === "SEPARADO") {
                     setArchivos([])
                     setErrorAdjuntos(null)
@@ -316,13 +372,21 @@ function NuevoMensajeContenido({ onClose, onCreado, modoInicial = "INDIVIDUAL", 
           </Button>
         </DialogFooter>
       </DialogContent>
-      <ConfirmDiscardDialog open={descartar} onOpenChange={setDescartar} onConfirm={onClose} />
+      <ConfirmDiscardDialog open={descartar} onOpenChange={setDescartar} onConfirm={confirmarDescarte} />
     </Dialog>
   )
 }
 
 /** "* Para" con el selector de personas existente (chips) y la regla de a quién se escribe. */
-function CampoPara({ paraGrupo, permitido }: { paraGrupo: boolean; permitido: (p: Persona) => boolean }) {
+function CampoPara({
+  unico,
+  paraGrupo,
+  permitido,
+}: {
+  unico: boolean
+  paraGrupo: boolean
+  permitido: (p: Persona) => boolean
+}) {
   const field = useFieldContext<Persona[]>()
   const valor = useStore(field.store, (s) => s.value)
   const meta = useStore(field.store, (s) => s.meta)
@@ -341,7 +405,8 @@ function CampoPara({ paraGrupo, permitido }: { paraGrupo: boolean; permitido: (p
         onConsulta={setConsulta}
         value={valor}
         onChange={(v) => {
-          field.handleChange(v)
+          // QA 833: en Individual el Para admite una sola persona; elegir otra reemplaza a la anterior.
+          field.handleChange(unico ? reemplazarSeleccion(valor, v) : v)
           field.handleBlur()
         }}
         paraGrupo={paraGrupo}
@@ -353,6 +418,64 @@ function CampoPara({ paraGrupo, permitido }: { paraGrupo: boolean; permitido: (p
         <FieldDescription>Solo aparecen las personas a quienes puede escribir.</FieldDescription>
       )}
     </Field>
+  )
+}
+
+const MAX_ASUNTOS_AVISO = 2
+
+/**
+ * Aviso informativo bajo "Para" (QA 106). Individual: una línea con el texto, los asuntos como
+ * enlaces (si caben; se truncan) y «Abrir» a la derecha, que abre el más reciente. Enviar por
+ * separado: los nombres de quienes ya tienen conversación. No bloquea (cada envío crea un hilo por
+ * asunto, SSO #1006). Abrir pasa por el ConfirmDiscardDialog si hay asunto, mensaje o adjuntos.
+ */
+function AvisoConversacionesExistentes({ aviso, onAbrir }: { aviso: AvisoExistentes; onAbrir: (id: number) => void }) {
+  return (
+    <div role="status" className="flex items-center gap-3 rounded-md border border-primary-stroke bg-primary-22 px-4 py-2 text-sm">
+      <InfoIcon className="size-5 shrink-0 text-primary" />
+      {aviso.tipo === "INDIVIDUAL" ? (
+        <>
+          <p className="min-w-0 flex-1 truncate">
+            {aviso.texto}
+            {aviso.hilos.length > 1 &&
+              aviso.hilos.slice(0, MAX_ASUNTOS_AVISO).map((h, i) => (
+                <span key={h.id}>
+                  {i === 0 ? " " : ", "}
+                  <button
+                    type="button"
+                    onClick={() => onAbrir(h.id)}
+                    title={h.asunto}
+                    className="font-semibold text-primary underline underline-offset-2 hover:no-underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  >
+                    {h.asunto}
+                  </button>
+                </span>
+              ))}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            color="primary"
+            className="shrink-0"
+            onClick={() => onAbrir(aviso.hilos[0].id)}
+          >
+            Abrir
+          </Button>
+        </>
+      ) : (
+        <p className="min-w-0 flex-1">
+          Ya tiene conversación con{" "}
+          {aviso.nombres.map((n, i) => (
+            <span key={`${n}-${i}`}>
+              {i > 0 && (i === aviso.nombres.length - 1 ? " y " : ", ")}
+              <strong>{n}</strong>
+            </span>
+          ))}
+          .
+        </p>
+      )}
+    </div>
   )
 }
 

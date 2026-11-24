@@ -30,7 +30,7 @@ test("login manda el token del captcha y entra a la app", async ({ page }) => {
   const logins = capturar(page, /^\/api\/auth\/login$/)
 
   await page.goto("/login")
-  await page.getByLabel("Correo electrónico").fill("admin@example.com")
+  await page.getByLabel("Correo o número de documento").fill("admin@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   const ingresar = page.getByRole("button", { name: "Ingresar" })
   await expect(ingresar).toBeEnabled()
@@ -50,7 +50,7 @@ test("olvidé mi contraseña y check-email mandan el token", async ({ page }) =>
   const status = capturar(page, /^\/api\/sso-admin\/resetTokenStatus$/)
 
   await page.goto("/forgot-password")
-  await page.getByLabel("Correo electrónico").fill("admin@example.com")
+  await page.getByLabel("Correo o número de documento").fill("admin@example.com")
   await page.getByRole("button", { name: "Enviar instrucciones" }).click()
   await page.waitForURL((url) => url.pathname === "/check-email")
   await expect(page.getByText("¡Instrucciones enviadas!")).toBeVisible()

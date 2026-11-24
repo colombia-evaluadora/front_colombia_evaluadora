@@ -166,6 +166,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
 
   "/app/asistencia": MENU.asistencia,
   "/app/asistencia/manual": MENU.asistencia,
+  "/app/asistencia/diaria": MENU.asistencia,
 
   "/app/gestion-estudiantil/convivencia": MENU.convivencia,
   "/app/gestion-estudiantil/convivencia/nuevo": MENU.convivencia,

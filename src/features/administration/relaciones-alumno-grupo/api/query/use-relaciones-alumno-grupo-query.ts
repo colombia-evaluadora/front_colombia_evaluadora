@@ -15,7 +15,7 @@ interface RelacionesRow {
   zonas: { pkZona: number; zona: string }[]
 }
 
-async function fetchRelaciones(): Promise<RelacionesAlumnoGrupo> {
+export async function fetchRelaciones(): Promise<RelacionesAlumnoGrupo> {
   const [row] = await evalCol.getRows<Resultado<RelacionesRow>>("/relaciones-alumno-grupo")
   const r = row?.resultado
   return {

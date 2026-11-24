@@ -5,13 +5,14 @@ import { useCallback, useMemo } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   toCaracterizacionesFilters,
   useCaracterizacionesQuery,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-caracterizacion-query"
 import { useOpcionesSedesJornadasQuery } from "@/features/gestion-estudiantil/prevencion/api/query/use-opciones-prevencion-query"
 import type { CaracterizacionRow } from "@/features/gestion-estudiantil/prevencion/api/types"
-import { buildColumnsCaracterizaciones } from "@/features/gestion-estudiantil/prevencion/components/caracterizacion/columns-caracterizaciones"
+import { buildColumnsCaracterizaciones, ORDEN_CARACTERIZACIONES } from "@/features/gestion-estudiantil/prevencion/components/caracterizacion/columns-caracterizaciones"
 import type { AccionCaracterizacion } from "@/features/gestion-estudiantil/prevencion/components/caracterizacion/menu-acciones-caracterizacion"
 import { useCaracterizacionesFiltros } from "@/features/gestion-estudiantil/prevencion/hooks/use-caracterizaciones-filtros"
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
@@ -30,7 +31,7 @@ export function useCaracterizacionesLista() {
     () => (f.establecimientoId == null ? null : toCaracterizacionesFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const query = useCaracterizacionesQuery({ filters, pageIndex, pageSize })
+  const query = useCaracterizacionesQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_CARACTERIZACIONES) }, pageIndex, pageSize })
 
   const sedePorId = useMemo(
     () => new Map((sedesJornadas ?? []).map((r) => [r.fk_tsede, r.sede_nombre] as const)),

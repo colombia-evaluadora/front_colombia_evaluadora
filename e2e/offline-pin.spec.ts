@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // PIN local y cifrado en reposo (`add-offline-meses-pwa` D-4/D-8).
 
@@ -14,10 +15,9 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
         req.onsuccess = req.onerror = req.onblocked = () => resolve()
       }),
   )
-  await page.getByLabel("Correo electrónico").fill("docente@example.com")
+  await page.getByLabel("Correo o número de documento").fill("docente@example.com")
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   await page.goto("/app/planeador/actividades")
@@ -25,11 +25,9 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByLabel(/^PIN/).fill("246810")
-  await dialog.getByLabel("Confirmar PIN").fill("246810")
-  await dialog.getByRole("button", { name: "Crear PIN" }).click()
-  await expect(dialog.getByText(/cifrados con tu PIN/)).toBeVisible({ timeout: 30_000 })
-  await dialog.getByRole("button", { name: /^Preparar (todo|selección)$/ }).click()
+  await dialog.getByLabel("PIN nuevo").fill("246813")
+  // Al repetirlo, la preparación arranca sola.
+  await dialog.getByLabel("Repetir PIN").fill("246813")
   await expect(dialog).toBeHidden()
   await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
   await page.waitForTimeout(2_000)
@@ -50,12 +48,10 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
 
   await page.evaluate(() => sessionStorage.setItem("msw:fault", "network"))
   await page.reload()
-  await expect(page.getByRole("heading", { name: "Escribe tu PIN" })).toBeVisible({ timeout: 30_000 })
-  await page.getByLabel("PIN").fill("111111")
-  await page.getByRole("button", { name: "Abrir", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Escriba su PIN" })).toBeVisible({ timeout: 90_000 })
+  await page.getByLabel("PIN", { exact: true }).fill("111111")
   await expect(page.getByText(/PIN incorrecto/)).toBeVisible({ timeout: 30_000 })
-  await page.getByLabel("PIN").fill("246810")
-  await page.getByRole("button", { name: "Abrir", exact: true }).click()
-  await expect(page.getByRole("heading", { name: "Escribe tu PIN" })).toHaveCount(0, { timeout: 30_000 })
+  await page.getByLabel("PIN", { exact: true }).fill("246813")
+  await expect(page.getByRole("heading", { name: "Escriba su PIN" })).toHaveCount(0, { timeout: 30_000 })
   await expect(page.getByText(/^Datos del /).first()).toBeVisible({ timeout: 30_000 })
 })

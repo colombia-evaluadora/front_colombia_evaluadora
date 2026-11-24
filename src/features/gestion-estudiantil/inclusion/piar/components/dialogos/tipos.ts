@@ -10,7 +10,7 @@ export type Dialogo =
   | { tipo: "evidencia"; ajuste?: Ajuste }
   | { tipo: "actividad"; actividad?: ActividadFamiliar }
   | { tipo: "resultado"; actividad: ActividadFamiliar }
-  | { tipo: "participante"; fila?: Participante }
+  | { tipo: "participante"; fila?: Participante; /** Versión a la que se firma, si no es la actual (historial). */ version?: number; /** Abre con el estado de firma en Firmó. */ firmando?: boolean }
   | { tipo: "red" }
   | { tipo: "informes" }
   | { tipo: "antecedente" }

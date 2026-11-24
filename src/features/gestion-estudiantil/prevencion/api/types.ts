@@ -1,3 +1,5 @@
+import type { RemisionRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
+
 // Contrato de V638-V650 (SSO), Prevención y retención. Las filas llegan en snake_case tal como las
 // devuelven las funciones `fn_prevencion_*`; los cuerpos de escritura y los parámetros de consulta van en
 // MAYÚSCULAS. Las fechas son `aaaa-mm-dd` (DATE) salvo las marcas de tiempo de auditoría.
@@ -76,6 +78,9 @@ export interface ValoracionRow {
   puede_aceptar_presencial: boolean
   puede_anular: boolean
   puede_anular_valoracion: boolean
+  /** Gestión abierta de la alerta (§9.11) y el usuario la ve. */
+  fk_gestion_alerta: number | null
+  puede_gestionar: boolean
   total_count: number
 }
 
@@ -254,6 +259,8 @@ export interface AccesoPrevencion {
   puede_crear_acomp?: boolean
   /** «Exportar para el SIUCE» de los acompañamientos: Supervisor de sede y Administrador. */
   puede_exportar_siuce_acomp?: boolean
+  /** «Exportar para el SIMPADE» (§9.4): Supervisor de sede y Administrador, misma condición que su endpoint. */
+  puede_exportar_simpade?: boolean
   /** Pestaña Gestión de alertas (§9.11). */
   ver_gestion_alertas?: boolean
   /** Gestiones del usuario como Responsable, Pendientes o vencidas (número de la pestaña). */
@@ -271,6 +278,8 @@ export interface Historial {
   puede_valorar: boolean
   /** Misma regla del tablero (Regla 40). */
   puede_crear_plan: boolean
+  fk_gestion_alerta: number | null
+  puede_gestionar: boolean
   tiene_plan_abierto: boolean
   fk_tprevencion_plan_abierto: number | null
   valoraciones: HistorialValoracion[]
@@ -384,6 +393,12 @@ export interface OpcionEstrategia {
   fecha_inicio: string
   fecha_fin: string
   ya_es_beneficiario: boolean
+}
+
+/** `GET /acompanamientos/opciones/estados`: estados de cada pestaña para el filtro Estado. */
+export interface OpcionesEstadosAcomp {
+  acompanamiento: { valor: EstadoAcompanamiento; nombre: string }[]
+  reporte_consumo: { valor: EstadoReporteConsumo; nombre: string }[]
 }
 
 export interface OpcionResponsable {
@@ -649,6 +664,8 @@ export interface SenalSMAtencion {
   entidad_valor: string | null
   entidad_nombre: string | null
   registrada_por: string
+  /** Remisión externa común (V667) de la acción, si tuvo Entidad remitida; trae las banderas de gestión. */
+  remision?: Omit<RemisionRow, "puede_gestionar" | "origen"> | null
 }
 
 export interface SenalSMDetalle {
@@ -1681,6 +1698,9 @@ export interface GestionAlertasQueryFilters {
   SIN_RESPONSABLE: boolean | null
   VER_TODAS: boolean
   SEARCH: string | null
+  /** estudiante, grupo, umbral o plazo (V698); sin él, vencidas y plazo más próximo. */
+  ORDEN?: string | null
+  DIR?: "asc" | "desc" | null
 }
 
 export interface GuardarGestionInput {
