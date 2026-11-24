@@ -61,7 +61,7 @@ export function DeleteStatementDialog({ statement, levelLabel, childLabel, block
           <Button
             type="button"
             variant="ghost"
-            color="neutral"
+            color="destructive"
             size="icon-sm"
             disabled
             aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
@@ -84,7 +84,7 @@ export function DeleteStatementDialog({ statement, levelLabel, childLabel, block
                 <Button
                   type="button"
                   variant="ghost"
-                  color="neutral"
+                  color="destructive"
                   size="icon-sm"
                   disabled={soloEnLinea.disabled}
                   aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
@@ -110,6 +110,10 @@ export function DeleteStatementDialog({ statement, levelLabel, childLabel, block
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={deleteMutation.isPending}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMutation.isPending || soloEnLinea.disabled}
@@ -123,10 +127,6 @@ export function DeleteStatementDialog({ statement, levelLabel, childLabel, block
             )}
             Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -21,17 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CheckCircleIcon,
-  ControlPointIcon,
-  DotsThreeVerticalIcon,
-  InfoIcon,
-  PencilIcon,
-  ProhibitIcon,
-  TrashIcon,
-} from "@/components/ui/icons"
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, ControlPointIcon, DotsThreeVerticalIcon, InfoIcon, PencilIcon, ProhibitIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getErrorMessage } from "@/lib/api-client"
@@ -285,7 +275,7 @@ export function IconografiaPanel({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel variant="outline" color="neutral"><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
             <AlertDialogAction
               color="destructive"
               disabled={eliminar.isPending}

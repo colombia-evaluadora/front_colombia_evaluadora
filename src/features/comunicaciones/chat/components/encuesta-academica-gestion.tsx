@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
+import { XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +66,7 @@ export function EncuestaAcademicaGestion({ encuesta: e }: { encuesta: Encuesta }
           </AlertDialogHeader>
           <ErrorNoticeBanner error={cerrar.isError ? cerrar.error : null} />
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={cerrar.isPending}>Volver</AlertDialogCancel>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={cerrar.isPending}><XIcon data-icon="inline-start" />Volver</AlertDialogCancel>
             <AlertDialogAction
               disabled={cerrar.isPending}
               aria-busy={cerrar.isPending}

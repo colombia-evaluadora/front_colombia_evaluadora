@@ -346,7 +346,15 @@ function EncuestaInstitucionalDialog({
           />
 
           <DialogFooter className="sm:justify-between">
-            {paso === 1 ? (
+            <Button variant="outline" color="neutral"
+                    type="button"
+                    onClick={() => void intentarCerrar()}
+                    disabled={crear.isPending}
+                  >
+                    <XIcon data-icon="inline-start" />
+                    Cancelar
+                  </Button>
+              {paso === 1 ? (
               <Button type="submit" form="encuesta-datos" className="sm:ml-auto">
                 Siguiente
                 <ArrowRightIcon data-icon="inline-end" />
@@ -366,15 +374,6 @@ function EncuestaInstitucionalDialog({
                   >
                     {editar ? "Guardar" : "Crear"}
                     <ArrowRightIcon data-icon="inline-end" />
-                  </Button>
-                  <Button
-                    type="button"
-                    color="neutral"
-                    onClick={() => void intentarCerrar()}
-                    disabled={crear.isPending}
-                  >
-                    <XIcon data-icon="inline-start" />
-                    Cancelar
                   </Button>
                 </div>
               </>

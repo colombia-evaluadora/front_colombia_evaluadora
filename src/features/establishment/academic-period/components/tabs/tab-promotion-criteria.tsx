@@ -613,7 +613,8 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel variant="fill" color="neutral">
+                <AlertDialogCancel variant="outline" color="neutral">
+                  <XIcon data-icon="inline-start" />
                   Cancelar
                 </AlertDialogCancel>
                 <AlertDialogAction

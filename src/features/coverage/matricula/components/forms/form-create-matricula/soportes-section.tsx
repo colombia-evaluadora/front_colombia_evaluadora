@@ -12,17 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import {
-  CheckIcon,
-  DotsThreeVerticalIcon,
-  EyeIcon,
-  FileDownloadOutlinedIcon,
-  PaperclipIcon,
-  PlusIcon,
-  SpinnerIcon,
-  TrashIcon,
-  UploadSimpleIcon,
-} from "@/components/ui/icons"
+import { CheckIcon, DotsThreeVerticalIcon, EyeIcon, FileDownloadOutlinedIcon, PaperclipIcon, PlusIcon, SpinnerIcon, TrashIcon, UploadSimpleIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -489,7 +479,8 @@ export function DialogRevisarSoporte({
         </Field>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" disabled={revisar.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" type="button" size="sm" disabled={revisar.isPending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={revisar.isPending} onClick={guardar}>
@@ -572,7 +563,8 @@ export function DialogReemplazarSoporte({
           </p>
         ) : null}
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" disabled={cargar.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" type="button" size="sm" disabled={cargar.isPending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={cargar.isPending} onClick={reemplazar}>
@@ -602,7 +594,8 @@ function DialogQuitarSoporte({ matriculaId, fila, onClose }: { matriculaId: stri
           Se quitará el documento {s.archivoNombre} de «Otros documentos relevantes». Quedará registrado en la Bitácora.
         </p>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" disabled={quitar.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" type="button" size="sm" disabled={quitar.isPending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

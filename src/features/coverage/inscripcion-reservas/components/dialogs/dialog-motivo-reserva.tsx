@@ -133,6 +133,7 @@ function DialogMotivo({
             disabled={enviar.isPending}
             onClick={() => onOpenChange(false)}
           >
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="submit" form={FORM_ID} color="destructive" disabled={enviar.isPending}>

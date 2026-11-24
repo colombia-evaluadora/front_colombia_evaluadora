@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { DotsThreeVerticalIcon, FileDownloadOutlinedIcon, PushPinIcon } from "@/components/ui/icons"
+import { DotsThreeVerticalIcon, FileDownloadOutlinedIcon, PushPinIcon, XIcon } from "@/components/ui/icons"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { useNotify } from "@/components/notice/notice-context"
@@ -205,6 +205,7 @@ export function ParticipacionItem({
           </Field>
           <DialogFooter>
             <Button variant="outline" color="neutral" onClick={() => setDialogo(null)}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
             <Button disabled={!valor.trim()} onClick={confirmar}>

@@ -339,6 +339,10 @@ function BotonDesvincular({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={unlink.isPending}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={unlink.isPending || soloEnLinea.disabled}
@@ -350,12 +354,8 @@ function BotonDesvincular({
             ) : (
               <CheckIcon data-icon="inline-start" />
             )}
-            Sí
+            Desvincular
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={unlink.isPending}>
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

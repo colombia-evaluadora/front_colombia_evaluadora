@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowsLeftRightIcon, CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ArrowsLeftRightIcon, CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -242,7 +242,8 @@ function DialogCambiarGrupoIndividual({
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
@@ -362,7 +363,8 @@ function DialogCambiarGrupoLote({ matriculas, onOpenChange, onDone }: Props) {
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={cambiar.isPending} onClick={confirmar}>

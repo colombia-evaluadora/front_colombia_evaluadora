@@ -35,7 +35,7 @@ export function DialogEliminarCodigo({ codigo, onClose }: { codigo: CodigoRow; o
         </DialogHeader>
         <ErrorNoticeBanner error={error} />
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}><XIcon data-icon="inline-start" />Cancelar</DialogClose>
           <Button
             size="sm"
             type="button"

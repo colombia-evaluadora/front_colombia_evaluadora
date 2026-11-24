@@ -69,7 +69,7 @@ export function DialogoDuplicado({ mensaje, tipo, matricula, pending, onClose, o
 
         {/* La acción recomendada (Ver historial) va en azul a la derecha; Crear de todos modos queda secundaria. */}
         <DialogFooter>
-          <Button size="sm" type="button" variant="outline" color="neutral" disabled={pending} onClick={onClose}>
+          <Button variant="outline" color="neutral" size="sm" type="button" disabled={pending} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

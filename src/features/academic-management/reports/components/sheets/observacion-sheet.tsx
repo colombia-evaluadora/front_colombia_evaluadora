@@ -20,7 +20,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { BrainIcon, BrushIcon, CheckIcon, InfoIcon, SpinnerIcon, StarFillIcon } from "@/components/ui/icons"
+import { BrainIcon, BrushIcon, CheckIcon, InfoIcon, SpinnerIcon, StarFillIcon, XIcon } from "@/components/ui/icons"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 
 import { useOnlineOnly } from "@/lib/offline/use-online-only"
@@ -305,12 +305,13 @@ export function ObservacionSheet({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral">
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmarSobrescribir}>
               Sobrescribir
             </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral">
-              Cancelar
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

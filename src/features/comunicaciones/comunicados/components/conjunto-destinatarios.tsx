@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { InfoIcon, WarningCircleIcon } from "@/components/ui/icons"
+import { InfoIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useUser } from "@/lib/auth"
 import { SelectOpciones } from "@/components/select-opciones"
@@ -478,7 +478,8 @@ export function ConjuntoDestinatarios({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral">
+            <AlertDialogCancel variant="outline" color="neutral">
+              <XIcon data-icon="inline-start" />
               Volver
             </AlertDialogCancel>
             <AlertDialogAction

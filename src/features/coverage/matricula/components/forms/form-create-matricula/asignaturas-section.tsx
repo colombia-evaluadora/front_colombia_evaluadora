@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/components/ui/empty"
-import { InboxIcon, LockIcon, PlusCircleIcon, RemoveCircleOutlineIcon } from "@/components/ui/icons"
+import { InboxIcon, LockIcon, PlusCircleIcon, RemoveCircleOutlineIcon, XIcon } from "@/components/ui/icons"
 import type {
   MatriculaAsignatura,
   MatriculaAsignaturasCambios,
@@ -233,7 +233,7 @@ export function MatriculaAsignaturasSection({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel variant="outline" color="neutral"><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (porDesmatricular) cambiar(porDesmatricular, { matriculada: false, externa: false })

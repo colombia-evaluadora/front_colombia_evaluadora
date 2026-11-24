@@ -191,9 +191,7 @@ export function ReservarCuposDialog() {
               <ErrorNoticeBanner error={reservar.error} />
 
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  color="neutral"
+                <Button variant="outline" color="neutral"
                   disabled={reservar.isPending}
                   onClick={() => handleOpenChange(false)}
                 >

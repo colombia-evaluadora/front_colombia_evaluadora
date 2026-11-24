@@ -151,18 +151,18 @@ export function ViewOperationChangesDialog({
         )}
 
         <DialogFooter>
+          <DialogClose
+            render={<Button size="sm" type="button" variant="outline" color="neutral" />}
+          >
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
           <DialogConfirmRevertChanges
             tableSlug={tableSlug}
             operationId={operationId}
             fieldIndexes={revertibleIndexes}
             onReverted={() => setOpen(false)}
           />
-          <DialogClose
-            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
-          >
-            <XIcon data-icon="inline-start" />
-            Cerrar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

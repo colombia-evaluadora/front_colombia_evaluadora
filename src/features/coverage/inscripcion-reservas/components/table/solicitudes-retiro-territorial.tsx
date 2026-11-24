@@ -481,9 +481,7 @@ function RegistrarRetiroDialog({
           </>
         )}
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={registrar.isPending}
             onClick={() => onOpenChange(false)}
           >
@@ -597,9 +595,7 @@ function CerrarSinRetiroDialog({
           </p>
         </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={cerrar.isPending}
             onClick={() => onOpenChange(false)}
           >

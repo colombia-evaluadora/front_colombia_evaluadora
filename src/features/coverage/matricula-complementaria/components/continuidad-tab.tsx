@@ -225,7 +225,8 @@ function DialogAsignarGrupo({ fila: f, onOpenChange }: { fila: Continuidad; onOp
         />
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

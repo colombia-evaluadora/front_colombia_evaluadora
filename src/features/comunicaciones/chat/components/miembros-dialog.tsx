@@ -386,7 +386,8 @@ export function MiembrosDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={quitando}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={quitando}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction

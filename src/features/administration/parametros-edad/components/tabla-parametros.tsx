@@ -144,7 +144,25 @@ export function AccionesFila({
   if (editando) {
     return (
       <div key="editando" className="flex justify-end gap-1">
-        {/* Mismo estilo que la edición en fila de Escala de valoración. */}
+        {/* Reglas de UI: descartar primero (borde neutro) y guardar, el primario, al final. */}
+        <Tooltip key="cancelar">
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Cancelar edición"
+                disabled={guardando}
+                onClick={onCancelar}
+              />
+            }
+          >
+            <XIcon />
+          </TooltipTrigger>
+          <TooltipContent>Cancelar edición</TooltipContent>
+        </Tooltip>
         <Tooltip key="guardar">
           <TooltipTrigger
             render={
@@ -161,24 +179,6 @@ export function AccionesFila({
             {guardando ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
           </TooltipTrigger>
           <TooltipContent>Guardar cambios</TooltipContent>
-        </Tooltip>
-        <Tooltip key="cancelar">
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="fill"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Cancelar edición"
-                disabled={guardando}
-                onClick={onCancelar}
-              />
-            }
-          >
-            <XIcon />
-          </TooltipTrigger>
-          <TooltipContent>Cancelar edición</TooltipContent>
         </Tooltip>
       </div>
     )

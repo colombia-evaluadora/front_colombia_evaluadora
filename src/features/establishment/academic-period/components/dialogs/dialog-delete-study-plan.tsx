@@ -135,7 +135,7 @@ export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: Del
       <Tooltip>
         <TooltipTrigger
           render={
-            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            <AlertDialogTrigger render={<Button variant="ghost" color="destructive" size="icon-sm" />} />
           }
         >
           <span className="sr-only">Eliminar {subjectWord}</span>
@@ -160,6 +160,10 @@ export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: Del
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
+              <AlertDialogCancel variant="outline" color="neutral">
+                <XIcon data-icon="inline-start" />
+                Cerrar
+              </AlertDialogCancel>
               <Button
                 color="destructive"
                 disabled={checkingBlock || !canDelete}
@@ -179,10 +183,6 @@ export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: Del
                 <CheckIcon data-icon="inline-start" />
                 Remover
               </Button>
-              <AlertDialogCancel variant="fill" color="neutral">
-                <XIcon data-icon="inline-start" />
-                Cerrar
-              </AlertDialogCancel>
             </AlertDialogFooter>
           </>
         ) : (

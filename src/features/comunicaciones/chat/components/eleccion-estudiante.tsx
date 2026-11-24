@@ -15,13 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import {
-  CalendarBlankIcon,
-  ChartBarIcon,
-  CheckIcon,
-  ClockIcon,
-  TrophyIcon,
-} from "@/components/ui/icons"
+import { CalendarBlankIcon, ChartBarIcon, CheckIcon, ClockIcon, TrophyIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Candidato, Eleccion } from "@/features/comunicaciones/chat/api/types"
 import { useVotarEleccion } from "@/features/comunicaciones/chat/api/mutations/use-crear-eleccion"
@@ -116,7 +110,8 @@ function TarjetaCandidatos({ eleccion: e }: { eleccion: Eleccion }) {
           </AlertDialogHeader>
           <ErrorNoticeBanner error={votar.isError ? votar.error : null} />
           <AlertDialogFooter>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={votar.isPending}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={votar.isPending}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction

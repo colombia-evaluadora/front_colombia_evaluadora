@@ -29,7 +29,7 @@ export function ConfirmDiscardDialog({
   onConfirm,
   title = "¿Estás seguro de salir?",
   description = "Perderás los cambios no guardados.",
-  confirmLabel = "Si, salir",
+  confirmLabel = "Sí, salir",
   cancelLabel = "Continuar editando",
 }: ConfirmDiscardDialogProps) {
   return (
@@ -39,15 +39,16 @@ export function ConfirmDiscardDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {/* Reglas de UI: el que vuelve atrás con borde y XIcon; la acción principal, al final. */}
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            {cancelLabel}
+          </AlertDialogCancel>
           <AlertDialogAction color="destructive" onClick={onConfirm}>
             <CheckIcon data-icon="inline-start" />
             {confirmLabel}
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            {cancelLabel}
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

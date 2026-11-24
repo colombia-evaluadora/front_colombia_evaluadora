@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
 import {
@@ -94,6 +94,10 @@ export function DeleteSelectedEvaluationPeriodsDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral" disabled={submitting}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={submitting}
@@ -103,14 +107,10 @@ export function DeleteSelectedEvaluationPeriodsDialog({
             {submitting ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={submitting}>
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

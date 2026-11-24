@@ -198,7 +198,7 @@ export function CreateAreaDialog({ academicPeriodId, open, onOpenChange, onSaved
         </form>
 
         <DialogFooter>
-          <Button size="sm" type="button" variant="outline" color="neutral" onClick={close} disabled={isSaving}>
+          <Button variant="outline" color="neutral" size="sm" type="button" onClick={close} disabled={isSaving}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

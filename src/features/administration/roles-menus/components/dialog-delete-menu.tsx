@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useDeleteMenu } from "@/features/administration/roles-menus/api/mutations/delete-menu"
@@ -58,6 +58,10 @@ export function DialogDeleteMenu({ menu, childrenCount, open, onOpenChange }: Di
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMenu.isPending}
@@ -67,14 +71,10 @@ export function DialogDeleteMenu({ menu, childrenCount, open, onOpenChange }: Di
             {deleteMenu.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <CheckIcon data-icon="inline-start" />
+              <TrashIcon data-icon="inline-start" />
             )}
-            Si
+            Eliminar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

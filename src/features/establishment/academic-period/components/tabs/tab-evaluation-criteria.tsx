@@ -12,7 +12,7 @@ import type { NotifyOptions } from "@/components/notice/pending-notice"
 import { getErrorMessage } from "@/lib/api-client"
 import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { CheckIcon, InfoIcon } from "@/components/ui/icons"
+import { CheckIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -498,7 +498,8 @@ const EvaluationCriteriaForm = forwardRef<EvaluationCriteriaHandle, EvaluationCr
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel color="primary">
+              <AlertDialogCancel variant="outline" color="neutral">
+                <XIcon data-icon="inline-start" />
                 <CheckIcon data-icon="inline-start" />
                 Entendido
               </AlertDialogCancel>

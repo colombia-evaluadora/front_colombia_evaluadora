@@ -179,6 +179,8 @@ function FestivosPageContent() {
         <DataTable
           table={table}
           isPending={isPending}
+          // Inactivo: la fila atenuada; los iconos de acción quedan al 100%.
+          isRowMuted={(row) => !(row.original as Festivo).habilitado}
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}

@@ -207,13 +207,14 @@ export function AprobacionBotAcciones({ aprobacion: a }: { aprobacion: Aprobacio
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button color="primary" disabled={ocupado} aria-busy={ocupado} onClick={aprobar}>
-              {ocupado && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
-              Sí
-            </Button>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={ocupado}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={ocupado}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </AlertDialogCancel>
+            <Button color="primary" disabled={ocupado} aria-busy={ocupado} onClick={aprobar}>
+              {ocupado && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
+              Aprobar
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -243,13 +244,14 @@ export function AprobacionBotAcciones({ aprobacion: a }: { aprobacion: Aprobacio
             />
           </Field>
           <AlertDialogFooter>
-            <Button color="primary" disabled={motivo.trim() === "" || ocupado} aria-busy={ocupado} onClick={rechazar}>
-              {ocupado && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
-              Sí
-            </Button>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={ocupado}>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={ocupado}>
+              <XIcon data-icon="inline-start" />
               Cancelar
             </AlertDialogCancel>
+            <Button color="primary" disabled={motivo.trim() === "" || ocupado} aria-busy={ocupado} onClick={rechazar}>
+              {ocupado && <SpinnerIcon className="animate-spin" data-icon="inline-start" />}
+              Rechazar
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

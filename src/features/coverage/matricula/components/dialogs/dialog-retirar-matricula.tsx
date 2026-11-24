@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { DatePicker } from "@/components/date-picker"
-import { PaperclipIcon, PersonRemoveIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PaperclipIcon, PersonRemoveIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -262,7 +262,8 @@ export function DialogRetirar({
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="button" variant="fill" color="destructive" size="sm" disabled={pendiente} onClick={confirmar}>

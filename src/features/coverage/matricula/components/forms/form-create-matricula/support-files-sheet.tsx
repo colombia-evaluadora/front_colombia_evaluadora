@@ -113,7 +113,7 @@ function SupportFileRow({ file, onRemove, showDownload = false }: SupportFileRow
                 <Button
                   type="button"
                   variant="ghost"
-                  color="neutral"
+                  color="destructive"
                   size="icon-sm"
                   aria-label={`Eliminar ${file.name}`}
                   onClick={() => onRemove(file)}
@@ -335,7 +335,7 @@ function ExistingFileRow({ file, removable, markedForRemoval, onToggleRemove }: 
                 <Button
                   type="button"
                   variant="ghost"
-                  color="neutral"
+                  color="destructive"
                   size="icon-sm"
                   aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
                   onClick={onToggleRemove}

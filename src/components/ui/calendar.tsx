@@ -12,6 +12,12 @@ type CalendarView = "days" | "months" | "years"
 // siempre pasan props válidos en runtime.
 type CalendarProps = any & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
+  /**
+   * Fechas que se repiten cada año (p. ej. un festivo «7 de agosto»): oculta el año, las
+   * flechas dan la vuelta de diciembre a enero sin cambiar de año y la vista de meses no
+   * lleva navegación por año.
+   */
+  sinAnio?: boolean
 }
 
 /**
@@ -38,6 +44,7 @@ function Calendar({
   mode,
   selected,
   onSelect,
+  sinAnio = false,
   ...props
 }: CalendarProps) {
   const [view, setView] = React.useState<CalendarView>("days")
@@ -51,13 +58,16 @@ function Calendar({
     setDisplayMonth(date)
   }, [])
 
+  // Sin año, las flechas dan la vuelta dentro del mismo año (dic → ene).
   const handlePrevMonth = React.useCallback(() => {
-    setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1))
-  }, [displayMonth])
+    const m = displayMonth.getMonth() - 1
+    setDisplayMonth(new Date(displayMonth.getFullYear(), sinAnio ? (m + 12) % 12 : m, 1))
+  }, [displayMonth, sinAnio])
 
   const handleNextMonth = React.useCallback(() => {
-    setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))
-  }, [displayMonth])
+    const m = displayMonth.getMonth() + 1
+    setDisplayMonth(new Date(displayMonth.getFullYear(), sinAnio ? m % 12 : m, 1))
+  }, [displayMonth, sinAnio])
 
   const handlePrevYear = React.useCallback(() => {
     setDisplayMonth(new Date(displayMonth.getFullYear() - 1, displayMonth.getMonth(), 1))
@@ -146,13 +156,15 @@ function Calendar({
               >
                 {monthName}
               </button>
-              <button
-                type="button"
-                onClick={() => setView("years")}
-                className="hover:text-primary text-sm font-medium"
-              >
-                {year}
-              </button>
+              {sinAnio ? null : (
+                <button
+                  type="button"
+                  onClick={() => setView("years")}
+                  className="hover:text-primary text-sm font-medium"
+                >
+                  {year}
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -199,6 +211,7 @@ function Calendar({
           onNextYear={handleNextYear}
           onYearClick={() => setView("years")}
           onSelect={handleSelectMonth}
+          sinAnio={sinAnio}
         />
       )}
 
@@ -263,6 +276,7 @@ function MonthGrid({
   onNextYear,
   onYearClick,
   onSelect,
+  sinAnio = false,
 }: {
   displayMonth: Date
   bounds: RangeBounds
@@ -270,6 +284,7 @@ function MonthGrid({
   onNextYear: () => void
   onYearClick: () => void
   onSelect: (monthIndex: number) => void
+  sinAnio?: boolean
 }) {
   const year = displayMonth.getFullYear()
 
@@ -277,7 +292,10 @@ function MonthGrid({
     <div className="flex flex-col gap-4">
       {/* Header con mismo layout que el day view: flechas en los
           extremos + label centrado con flex-1 para tener espacio real
-          entre flecha y label (no `gap-2` chiquito). */}
+          entre flecha y label (no `gap-2` chiquito). Sin año, solo el título. */}
+      {sinAnio ? (
+        <p className="flex h-(--cell-size) items-center justify-center text-sm font-medium">Mes</p>
+      ) : (
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
@@ -304,6 +322,7 @@ function MonthGrid({
           <CaretRightIcon className="size-4" />
         </button>
       </div>
+      )}
       <div className="grid grid-cols-3 gap-2">
         {MONTH_LABELS_ES.map((label, index) => {
           // Comparamos por año-mes real (no strings) para que un rango

@@ -202,7 +202,7 @@ function Contenido({
       </ul>
 
       <DialogFooter>
-        <Button size="sm" variant="outline" color="neutral" onClick={onClose} disabled={restaurar.isPending}>
+        <Button variant="outline" color="neutral" size="sm" onClick={onClose} disabled={restaurar.isPending}>
           <XIcon data-icon="inline-start" />
           Cancelar
         </Button>

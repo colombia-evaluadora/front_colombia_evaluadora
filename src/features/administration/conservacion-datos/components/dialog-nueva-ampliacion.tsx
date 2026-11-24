@@ -92,7 +92,7 @@ export function DialogNuevaAmpliacion({
           </Field>
         </div>
         <DialogFooter>
-          <Button size="sm" variant="outline" color="neutral" disabled={save.isPending} onClick={onClose}>
+          <Button variant="outline" color="neutral" size="sm" disabled={save.isPending} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

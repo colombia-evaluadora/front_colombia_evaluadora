@@ -16,14 +16,7 @@ import {
   FileUploadItemPreview,
   FileUploadList,
 } from "@/components/ui/file-upload"
-import {
-  ArrowCounterClockwiseIcon,
-  FileUploadOutlinedIcon,
-  ProhibitIcon,
-  SpinnerIcon,
-  WarningCircleIcon,
-  WarningIcon,
-} from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, FileUploadOutlinedIcon, ProhibitIcon, SpinnerIcon, WarningCircleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -280,7 +273,8 @@ export function DialogReactivarMatricula({ matricula, onOpenChange, onDone }: Pr
         )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

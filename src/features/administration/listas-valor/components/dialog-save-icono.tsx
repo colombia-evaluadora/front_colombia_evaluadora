@@ -202,7 +202,7 @@ export function DialogSaveIcono({ open, onOpenChange, icono }: DialogSaveIconoPr
         </form>
         <DialogFooter className="sm:items-center">
           <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
-          <Button size="sm" type="button" variant="outline" color="neutral" onClick={requestClose}>
+          <Button variant="outline" color="neutral" size="sm" type="button" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

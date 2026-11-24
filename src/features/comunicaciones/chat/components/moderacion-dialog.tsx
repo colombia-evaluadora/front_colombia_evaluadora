@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/date-picker"
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
-import { InfoIcon, WarningIcon } from "@/components/ui/icons"
+import { InfoIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { useChatAccess } from "@/features/comunicaciones/chat/api/use-chat-access"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -85,6 +85,7 @@ export function ReportarDialog({
         <Motivo valor={motivo} onCambiar={setMotivo} placeholder="Describa lo que ocurrió" />
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={reportar.isPending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
@@ -259,6 +260,7 @@ function SuspenderDialog({ persona, reporteId, onClose }: { persona: { id: numbe
         <Motivo valor={motivo} onCambiar={setMotivo} placeholder="Describa el motivo" />
         <DialogFooter>
           <Button variant="outline" color="neutral" disabled={suspender.isPending} onClick={onClose}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
@@ -411,7 +413,8 @@ function FormConfiguracion({ inicial, onCancelar }: { inicial: ValoresConfigurac
       </FieldGroup>
       <DialogFooter>
         {onCancelar && (
-          <Button size="sm" variant="outline" color="neutral" disabled={guardar.isPending} onClick={onCancelar}>
+          <Button variant="outline" color="neutral" size="sm" disabled={guardar.isPending} onClick={onCancelar}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
         )}

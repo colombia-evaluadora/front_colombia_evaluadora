@@ -304,9 +304,7 @@ function CupoContratadoForm({
           </form.AppField>
         </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={guardar.isPending}
             onClick={() => onOpenChange(false)}
           >
@@ -366,9 +364,7 @@ function OferentesDialog({
           }
         />
         <DialogFooter>
-          <Button
-            variant="outline"
-            color="neutral"
+          <Button variant="outline" color="neutral"
             disabled={guardar.isPending}
             onClick={() => onOpenChange(false)}
           >

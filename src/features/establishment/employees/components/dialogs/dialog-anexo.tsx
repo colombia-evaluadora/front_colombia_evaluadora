@@ -87,7 +87,7 @@ export function DialogAnexo({ open, onOpenChange, onAdd }: DialogAnexoProps) {
           </form.AppField>
         </form>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>

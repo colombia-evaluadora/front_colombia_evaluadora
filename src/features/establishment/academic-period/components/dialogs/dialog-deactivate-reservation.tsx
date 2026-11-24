@@ -150,6 +150,10 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
         </AlertDialogHeader>
         <ErrorNoticeBanner error={isError ? error : null} />
         <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" color="neutral">
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             color="primary"
             disabled={!detail || deactivate.isPending || isFetching}
@@ -161,12 +165,8 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
             ) : (
               <CheckIcon data-icon="inline-start" />
             )}
-            Si
+            Inactivar
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral">
-            <XIcon data-icon="inline-start" />
-            No
-          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

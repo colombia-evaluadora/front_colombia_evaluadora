@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { XIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -159,7 +160,8 @@ function SilenciarDialog({
           </form.AppField>
         </form>
         <DialogFooter>
-          <Button type="button" variant="fill" color="neutral" onClick={onClose} disabled={silenciar.isPending}>
+          <Button variant="outline" color="neutral" type="button" onClick={onClose} disabled={silenciar.isPending}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button type="submit" form={id} color="destructive" disabled={silenciar.isPending} aria-busy={silenciar.isPending}>

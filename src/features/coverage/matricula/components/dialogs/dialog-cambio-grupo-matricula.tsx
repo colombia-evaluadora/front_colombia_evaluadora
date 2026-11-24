@@ -160,7 +160,11 @@ export function CambioGrupoMatriculaDialog(props: CambioGrupoMatriculaDialogProp
         )}
 
         <DialogFooter className={masivo ? "sm:justify-end" : "m-0 shrink-0 px-6 pb-6 sm:justify-end"}>
-          {props.modo === "masivo" && props.onBack && (
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
+            {props.modo === "masivo" && props.onBack && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={props.onBack}>
               <ArrowLeftIcon data-icon="inline-start" />
               Anterior
@@ -170,10 +174,6 @@ export function CambioGrupoMatriculaDialog(props: CambioGrupoMatriculaDialogProp
             <CheckIcon data-icon="inline-start" />
             {masivo ? "Confirmar cambio de grupo" : "Confirmar cambio"}
           </Button>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

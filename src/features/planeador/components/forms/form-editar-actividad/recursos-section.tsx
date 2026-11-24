@@ -620,7 +620,7 @@ function RecursoItem({
             render={
               <Button
                 variant="ghost"
-                color="neutral"
+                color="destructive"
                 size="icon-sm"
                 type="button"
                 aria-label="Quitar de la lista"

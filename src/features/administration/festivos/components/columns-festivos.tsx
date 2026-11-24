@@ -42,7 +42,7 @@ export function createFestivosColumns({
       meta: { label: "Festivo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Festivo" />,
       cell: ({ row }) => (
-        <span className={row.original.habilitado ? "font-medium" : "font-medium text-muted-foreground"}>
+        <span className="font-medium">
           {row.original.nombre}
         </span>
       ),
@@ -83,7 +83,7 @@ export function createFestivosColumns({
             Activo
           </Badge>
         ) : (
-          <Badge variant="outline" color="neutral">
+          <Badge variant="soft" color="neutral">
             Inactivo
           </Badge>
         ),

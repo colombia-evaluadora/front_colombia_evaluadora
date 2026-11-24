@@ -87,7 +87,7 @@ export function DeleteGradeGroupDialog({ gradeGroup, gradeName }: DeleteGradeGro
       <Tooltip>
         <TooltipTrigger
           render={
-            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            <AlertDialogTrigger render={<Button variant="ghost" color="destructive" size="icon-sm" />} />
           }
         >
           <span className="sr-only">Eliminar grupo</span>
@@ -127,7 +127,8 @@ export function DeleteGradeGroupDialog({ gradeGroup, gradeName }: DeleteGradeGro
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel color="primary">
+              <AlertDialogCancel variant="outline" color="neutral">
+                <XIcon data-icon="inline-start" />
                 <CheckIcon data-icon="inline-start" />
                 Entendido
               </AlertDialogCancel>
@@ -143,6 +144,10 @@ export function DeleteGradeGroupDialog({ gradeGroup, gradeName }: DeleteGradeGro
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
+              <AlertDialogCancel variant="outline" color="neutral">
+                <XIcon data-icon="inline-start" />
+                Cancelar
+              </AlertDialogCancel>
               <AlertDialogAction
                 color="destructive"
                 disabled={deleteMutation.isPending}
@@ -152,14 +157,10 @@ export function DeleteGradeGroupDialog({ gradeGroup, gradeName }: DeleteGradeGro
                 {deleteMutation.isPending ? (
                   <SpinnerIcon data-icon="inline-start" className="animate-spin" />
                 ) : (
-                  <CheckIcon data-icon="inline-start" />
+                  <TrashIcon data-icon="inline-start" />
                 )}
-                Si
+                Eliminar
               </AlertDialogAction>
-              <AlertDialogCancel variant="fill" color="neutral">
-                <XIcon data-icon="inline-start" />
-                No
-              </AlertDialogCancel>
             </AlertDialogFooter>
           </>
         )}

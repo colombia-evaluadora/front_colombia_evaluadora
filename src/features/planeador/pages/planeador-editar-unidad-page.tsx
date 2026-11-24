@@ -21,7 +21,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NotFoundPage } from "@/components/layout/not-found-page"
-import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { LoadingLabel } from "@/components/offline/loading-label"
 import { paths } from "@/config/paths"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
@@ -329,6 +329,10 @@ function EditarUnidadPageContent({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <AlertDialogCancel variant="outline" color="neutral" disabled={updateMutation.isPending}>
+              <XIcon data-icon="inline-start" />
+              Volver a revisar
+            </AlertDialogCancel>
             <AlertDialogAction
               color="primary"
               disabled={updateMutation.isPending}
@@ -349,9 +353,6 @@ function EditarUnidadPageContent({
               )}
               Guardar de todas formas
             </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={updateMutation.isPending}>
-              Volver a revisar
-            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

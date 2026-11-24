@@ -388,14 +388,14 @@ function CalendarioContenido({
         </FormDisabledProvider>
       </form>
       <DialogFooter>
-        {soloLectura ? (
-          <Button onClick={cerrar}>Cerrar</Button>
-        ) : (
-          <>
-            <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={cerrar}>
+        <Button variant="outline" color="neutral" disabled={guardar.isPending} onClick={cerrar}>
               <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
+          {soloLectura ? (
+          <Button onClick={cerrar}>Cerrar</Button>
+        ) : (
+          <>
             <Button type="submit" form={FORM_ID} disabled={guardar.isPending}>
               {guardar.isPending ? (
                 <Spinner data-icon="inline-start" />

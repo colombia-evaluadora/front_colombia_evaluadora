@@ -447,14 +447,14 @@ export function SelectItemsDialog({
         </div>
 
         <DialogFooter className="shrink-0">
+          <DialogClose render={<Button variant="outline" color="neutral" size="sm" type="button" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
           <Button size="sm" type="button" color="primary" onClick={handleAccept}>
             <CheckIcon data-icon="inline-start" />
             Aceptar
           </Button>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

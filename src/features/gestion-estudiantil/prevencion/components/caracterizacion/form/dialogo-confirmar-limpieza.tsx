@@ -30,7 +30,7 @@ export function DialogoConfirmarLimpieza({ f }: { f: FormularioCaracterizacion }
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
+          <AlertDialogCancel variant="outline" color="neutral"><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={f.confirmarLimpieza}>Cambiar y quitar</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
