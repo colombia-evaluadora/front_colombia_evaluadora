@@ -14,6 +14,15 @@ export const ONLINE_ONLY_PREFIXES = [
   "/app/administracion/administradores-territoriales",
   "/app/administracion/supervisores-territoriales",
   "/app/establecimiento-educativo",
+  // Preparar no guarda nada de estos módulos: decir "usa Preparar sin conexión"
+  // era falso. Anotaciones, convivencia, inclusión y prevención son además datos
+  // sensibles de menores; guardarlos en el equipo requiere una decisión aparte.
+  "/app/gestion-estudiantil",
+  "/app/comunicaciones/comunicados",
+  "/app/comunicaciones/comunicados-territorial",
+  "/app/comunicaciones/espacios",
+  "/app/comunicaciones/procesos",
+  "/app/administracion",
   // Mis dispositivos: registrar o revocar equipos solo tiene sentido con el servidor.
   "/app/mis-dispositivos",
 ] as const

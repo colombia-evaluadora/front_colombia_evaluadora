@@ -12,6 +12,8 @@ import {
   usePlaneadorDocenteScope,
   type PlaneadorAlcanceParams,
 } from "@/features/planeador/hooks/use-planeador-docente-scope"
+import { railDelDia } from "@/features/planeador/lib/rail-guardado"
+import { useConnectivity } from "@/lib/offline/use-connectivity"
 import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 import { motivoNoEditableDeFila, tieneResultadosDeFila } from "@/features/planeador/lib/actividad-editable"
 
@@ -256,7 +258,7 @@ const TAMANO_TANTEO = 200
  * con el total exacto — en la práctica, un solo viaje.
  */
 export async function fetchTodasLasActividadesMias(
-  alcance: PlaneadorAlcanceParams = {},
+  alcance: PlaneadorAlcanceParams & { gradoAsignaturaPares?: ActividadTabPair[] } = {},
 ): Promise<Actividad[]> {
   const primera = await fetchActividadesMias({ size: TAMANO_TANTEO, offset: 0, ...alcance })
   if (primera.totalCount <= primera.rows.length) return primera.rows
@@ -267,7 +269,16 @@ export async function fetchTodasLasActividadesMias(
 export function useActividadesMiasQuery(params: UseActividadesMiasParams) {
   const scope = usePlaneadorDocenteScope()
   const conDocente = conAlcance(params, scope)
-  return useQuery({
+  const offline = useConnectivity().status === "offline"
+  // Solo lectura de lo que dejó "Preparar" (no descarga nada por su cuenta).
+  const { size: _size, offset: _offset, dia, search, estados, instrumento, ...alcance } = conDocente
+  const todas = useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
+    queryKey: planeadorKeys.actividades.miasTodas(alcance),
+    queryFn: () => fetchTodasLasActividadesMias(alcance),
+    enabled: false,
+  })
+  const query = useQuery({
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: planeadorKeys.actividades.mias(conDocente),
     queryFn: () => fetchActividadesMias(conDocente),
@@ -275,4 +286,17 @@ export function useActividadesMiasQuery(params: UseActividadesMiasParams) {
     placeholderData: (previous) => previous,
     staleTime: 1000 * 30,
   })
+  const sinDato = query.data === undefined || query.isPlaceholderData
+  if (offline && sinDato && todas.data && dia && !search && !estados && instrumento == null) {
+    return {
+      ...query,
+      data: railDelDia(todas.data, dia),
+      isPending: false,
+      isError: false,
+      error: null,
+      isPlaceholderData: false,
+      dataUpdatedAt: todas.dataUpdatedAt,
+    }
+  }
+  return query
 }
