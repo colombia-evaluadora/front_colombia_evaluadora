@@ -48,25 +48,31 @@ export interface ConvocatoriasParams {
   sorting: { id: string; desc: boolean }[]
 }
 
+export async function fetchConvocatorias(params: ConvocatoriasParams) {
+  const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
+    PAGE_INDEX: params.pageIndex,
+    PAGE_SIZE: params.pageSize,
+    SORTING: params.sorting[0] ? { ID: params.sorting[0].id, DESC: params.sorting[0].desc } : { ID: "anio", DESC: true },
+  })
+  return toPaginated(rows, { pageSize: params.pageSize, map: (r) => camelizar<Convocatoria>(r) })
+}
+
 export function useConvocatoriasQuery(params: ConvocatoriasParams) {
   return useQuery({
     queryKey: convocatoriaKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
-        PAGE_INDEX: params.pageIndex,
-        PAGE_SIZE: params.pageSize,
-        SORTING: params.sorting[0] ? { ID: params.sorting[0].id, DESC: params.sorting[0].desc } : { ID: "anio", DESC: true },
-      })
-      return toPaginated(rows, { pageSize: params.pageSize, map: (r) => camelizar<Convocatoria>(r) })
-    },
+    queryFn: () => fetchConvocatorias(params),
     placeholderData: keepPreviousData,
   })
+}
+
+export async function fetchConvocatoria(id: number) {
+  return camelizar<Convocatoria>(await evalCol.getRow(`${BASE}/${id}`))
 }
 
 export function useConvocatoriaQuery(id: number | null) {
   return useQuery({
     queryKey: convocatoriaKeys.detalle(id ?? "none"),
-    queryFn: async () => camelizar<Convocatoria>(await evalCol.getRow(`${BASE}/${id}`)),
+    queryFn: () => fetchConvocatoria(id as number),
     enabled: id != null,
   })
 }
@@ -118,10 +124,14 @@ export function useEliminarConvocatoria() {
   })
 }
 
+export async function fetchSeleccionCupo(id: number, cupoId: number | null) {
+  return camelizar<SeleccionCupo>(await evalCol.getRow(`${BASE}/${id}/seleccion?FK_CUPO=${cupoId}`))
+}
+
 export function useSeleccionCupoQuery(id: number, cupoId: number | null) {
   return useQuery({
     queryKey: convocatoriaKeys.seleccion(id, cupoId),
-    queryFn: async () => camelizar<SeleccionCupo>(await evalCol.getRow(`${BASE}/${id}/seleccion?FK_CUPO=${cupoId}`)),
+    queryFn: () => fetchSeleccionCupo(id, cupoId),
     enabled: cupoId != null,
   })
 }
@@ -135,10 +145,14 @@ export function useSeleccionar() {
   })
 }
 
+export async function fetchResultado(id: number) {
+  return camelizar<ResultadoSeleccion>(await evalCol.getRow(`${BASE}/${id}/resultado`))
+}
+
 export function useResultadoQuery(id: number) {
   return useQuery({
     queryKey: convocatoriaKeys.resultado(id),
-    queryFn: async () => camelizar<ResultadoSeleccion>(await evalCol.getRow(`${BASE}/${id}/resultado`)),
+    queryFn: () => fetchResultado(id),
   })
 }
 

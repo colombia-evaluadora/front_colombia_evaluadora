@@ -36,7 +36,7 @@ const RAICES = new Set([
   "curricular-references", "curricular-reference", "curricular-evidences", "curricular-statements",
   "curricular-reference-grades", "curricular-reference-areas",
   // Catálogos
-  "catalogs", "select-category",
+  "catalogs", "select-category", "sede-jornadas-activas",
 ])
 
 export function esModuloPersistible(queryKey: readonly unknown[] | undefined): boolean {

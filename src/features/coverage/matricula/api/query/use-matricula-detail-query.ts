@@ -154,7 +154,7 @@ function toIdString(value: number | null | undefined): string {
   return value != null ? String(value) : ""
 }
 
-async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> {
+export async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> {
   const raw = await api.get<{ rows: { matricula: RawMatriculaDetail }[] } | { matricula: RawMatriculaDetail }>(
     `/eval-col/cobertura-academica/matricula/${id}`,
   )

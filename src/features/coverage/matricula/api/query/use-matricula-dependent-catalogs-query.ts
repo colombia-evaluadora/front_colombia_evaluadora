@@ -51,7 +51,7 @@ interface GruposRawResponse {
   rows: GrupoRow[]
 }
 
-async function fetchGrupos(gradoId: number, jornadaName?: string): Promise<MatriculaGrupoOption[]> {
+export async function fetchGrupos(gradoId: number, jornadaName?: string): Promise<MatriculaGrupoOption[]> {
   const raw: GruposRawResponse = await api.post(`/eval-col/grados/${gradoId}/grupos/query`, {
     PAGE_INDEX: "0",
     PAGE_SIZE: String(CATALOG_PAGE_SIZE),
