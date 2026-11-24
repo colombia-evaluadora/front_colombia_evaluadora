@@ -4,19 +4,18 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CheckCircleIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
-import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { descargarPlan } from "@/features/gestion-estudiantil/inclusion/piar/api/descargas"
 import { useEjecutarPiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 import { FormDialogPiar } from "@/features/gestion-estudiantil/inclusion/piar/components/form-dialog-piar"
 import type { DialogoProps } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { texto } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
+import { hoyIso } from "@/features/gestion-estudiantil/inclusion/piar/utils/validaciones-piar"
 import { progresoBloques } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 export function DialogosCiclo({ piar, dialogo, onClose }: DialogoProps) {
   const ejecutar = useEjecutarPiar()
   const estudiante = piar.estudiante.nombre
-  const motivosCierre = useCatalogo("MOTIVO_CIERRE_PIAR")
   const comunes = { onClose, abierto: true }
 
   switch (dialogo.tipo) {
@@ -25,15 +24,17 @@ export function DialogosCiclo({ piar, dialogo, onClose }: DialogoProps) {
         <FormDialogPiar
           {...comunes}
           titulo={`Cerrar PIAR — ${estudiante}`}
-          descripcion={`Estado: ${piar.estado.nombre} · Ajustes: ${piar.ajustes.length}`}
+          descripcion={
+            <>
+              <p>Período Académico: {piar.periodo_academico ?? "—"} · Estado: {piar.estado.nombre} · Ajustes: {piar.ajustes.length}</p>
+              <p className="mt-2">Un PIAR cerrado no se reabre; si hace falta, se inicia una nueva versión.</p>
+            </>
+          }
           confirmar="Cerrar PIAR"
           confirmarColor="destructive"
-          inicial={{ motivo: "FIN_PERIODO" }}
-          campos={[
-            { name: "motivo", label: "Motivo", kind: "select", required: true, ancho: true, options: motivosCierre.map((m) => ({ value: m.codigo, label: m.label })) },
-            texto("informe", "Informe anual de competencias", 5000, { required: true }),
-          ]}
-          onSubmit={(v) => ejecutar("post", `/${piar.id}/cerrar`, { MOTIVO: v.motivo, INFORME_ANUAL: v.informe })}
+          campos={[texto("informe", "Informe anual de competencias", 5000, { required: true })]}
+          // Sin MOTIVO: el backend lo deriva (RETIRO si la matrícula ya no está Cursando; si no, FIN_PERIODO).
+          onSubmit={(v) => ejecutar("post", `/${piar.id}/cerrar`, { INFORME_ANUAL: v.informe })}
         />
       )
     case "anular":
@@ -56,11 +57,10 @@ export function DialogosCiclo({ piar, dialogo, onClose }: DialogoProps) {
           campos={[
             texto("sintesis", "Síntesis de orientación", 3000, { required: true, min: 10 }),
             texto("recomendaciones", "Recomendaciones", 2000, { required: true, min: 10 }),
-            { name: "conclusion", label: "Fecha de conclusión", kind: "fecha", required: true },
-            { name: "proxima", label: "Fecha de próxima revisión", kind: "fecha", required: true },
+            { name: "proxima", label: "Fecha de próxima revisión", kind: "fecha", required: true, validar: (v) => (v > hoyIso() ? null : "La fecha de próxima revisión debe ser posterior a hoy.") },
           ]}
           onSubmit={(v) =>
-            ejecutar("post", `/${piar.id}/concluir-revision`, { SINTESIS: v.sintesis, RECOMENDACIONES: v.recomendaciones, FECHA_PROXIMA: v.proxima, FECHA_CONCLUSION: v.conclusion })
+            ejecutar("post", `/${piar.id}/concluir-revision`, { SINTESIS: v.sintesis, RECOMENDACIONES: v.recomendaciones, FECHA_PROXIMA: v.proxima })
           }
         />
       )

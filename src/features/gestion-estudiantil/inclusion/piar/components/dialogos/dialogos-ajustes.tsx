@@ -65,7 +65,7 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
             meta: a?.meta,
             ajuste: a?.ajuste,
             recursos: a?.recursos,
-            apoyos: a?.apoyos_requeridos,
+            apoyos_requeridos: a?.apoyos_requeridos,
           }}
           campos={[
             { name: "asignatura", label: "Asignatura", kind: "select", options: asignaturas, required: true, visible: (v) => v.tipo !== infraestructura },
@@ -77,7 +77,7 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
             texto("meta", "Meta de aprendizaje", 1000, { required: true, min: 10 }),
             texto("ajuste", "Ajuste", 500, { required: true, min: 10 }),
             texto("recursos", "Recursos", 1000),
-            texto("apoyos", "Apoyos requeridos", 1000),
+            texto("apoyos_requeridos", "Apoyos requeridos", 1000),
           ]}
           onSubmit={(v) =>
             ejecutar("post", `/${piar.id}/ajustes`, {
@@ -91,7 +91,7 @@ export function DialogosAjustes({ piar, dialogo, onClose }: DialogoProps) {
               META: v.meta,
               TEXTO_AJUSTE: v.ajuste,
               RECURSOS: nulo(v.recursos),
-              APOYOS_REQUERIDOS: nulo(v.apoyos),
+              APOYOS_REQUERIDOS: nulo(v.apoyos_requeridos),
               PRODUCTOS_APOYO: a?.productos_apoyo ?? null,
             })
           }

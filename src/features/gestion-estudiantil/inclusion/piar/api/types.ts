@@ -28,6 +28,10 @@ export interface PiarRow {
   trasladado: boolean
   fk_tgrado: number
   grado_nombre: string
+  puede_modificar?: boolean
+  puede_cargar_acta?: boolean
+  puede_cerrar?: boolean
+  puede_anular?: boolean
   total_count: number
 }
 
@@ -179,6 +183,20 @@ export interface PiarDetalle {
   activacion_faltantes?: string[] | null
   acudiente?: { fk_tpadre: number; nombre: string; tiene_cuenta: boolean } | null
   version_actual?: VersionActual | null
+  /** Banderas de `fn_piar_acciones_interno` (V601): el gate y el estado ya resueltos para quien consulta. */
+  puede_modificar?: boolean
+  puede_activar?: boolean
+  puede_cerrar?: boolean
+  puede_concluir_revision?: boolean
+  puede_nueva_version?: boolean
+  puede_actualizar_acuerdo?: boolean
+  puede_registrar_copia_familia?: boolean
+  puede_anular?: boolean
+  puede_registrar_seguimiento?: boolean
+  puede_modificar_actividades?: boolean
+  puede_registrar_resultado_actividad?: boolean
+  puede_registrar_expediente?: boolean
+  puede_emitir?: boolean
 }
 
 export interface Actualizacion {
@@ -192,6 +210,7 @@ export interface Actualizacion {
   valores_nuevos: Record<string, unknown>
   fk_tarchivo_soporte: number | null
   soporte_nombre: string | null
+  puede_cargar_documento?: boolean
   registrado_en: string
   registra: string | null
 }
@@ -205,6 +224,9 @@ export interface VersionHistorial {
   fk_tarchivo_acta: number | null
   creada_en: string
   acta_nombre: string | null
+  puede_cargar_documento?: boolean
+  /** Firmantes que faltan en una versión Pendiente de acuerdo (p. ej. ORIENTACION, DOCENTE). */
+  firmantes_faltantes?: string[] | null
   autor: string | null
   conclusion: { sintesis: string; recomendaciones: string; fecha_conclusion: string; fecha_proxima_revision: string; responsable: string | null } | null
   actualizaciones: Actualizacion[]
@@ -230,6 +252,9 @@ export interface MatriculaDisponible {
   fecha_ingreso: string | null
   repitente: string | null
   fk_tpiar_anterior: number | null
+  talento: string | null
+  periodo_nombre: string | null
+  periodo_anio: number | null
 }
 
 export interface AsignaturaOpcion {

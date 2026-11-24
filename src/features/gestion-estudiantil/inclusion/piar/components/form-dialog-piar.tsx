@@ -8,6 +8,8 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 import { useAppForm } from "@/lib/forms"
+import { MarcoOpciones } from "@/components/marco-opciones"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { subirSoportePiar } from "@/features/gestion-estudiantil/inclusion/piar/api/mutations/piar"
 import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/boton-quitar"
@@ -15,7 +17,7 @@ import { BotonQuitar } from "@/features/gestion-estudiantil/commons/components/b
 export interface CampoPiar {
   name: string
   label: string
-  kind: "texto" | "area" | "fecha" | "select"
+  kind: "texto" | "area" | "fecha" | "select" | "radio"
   /** Con función, obligatorio según lo elegido en otros campos. */
   required?: boolean | ((valores: Record<string, string>) => boolean)
   min?: number
@@ -25,6 +27,8 @@ export interface CampoPiar {
   placeholder?: string
   /** Ocupa las dos columnas del formulario. */
   ancho?: boolean
+  /** Validación propia del valor ya con contenido: devuelve el mensaje de error o null. */
+  validar?: (valor: string, valores: Record<string, string>) => string | null
   /** Se muestra según lo elegido en otros campos. */
   visible?: (valores: Record<string, string>) => boolean
 }
@@ -49,7 +53,9 @@ function esquema(campos: CampoPiar[]) {
         if (c.visible && !c.visible(v as Record<string, string>)) continue
         const t = (v[c.name] as string).trim()
         const obligatorio = typeof c.required === "function" ? c.required(v as Record<string, string>) : c.required
-        if (obligatorio && !t) ctx.addIssue({ code: "custom", path: [c.name], message: `${c.label} es obligatorio.` })
+        const propio = t && c.validar ? c.validar(t, v as Record<string, string>) : null
+        if (propio) ctx.addIssue({ code: "custom", path: [c.name], message: propio })
+        else if (obligatorio && !t) ctx.addIssue({ code: "custom", path: [c.name], message: `${c.label} es obligatorio.` })
         else if (t && c.min && t.length < c.min)
           ctx.addIssue({ code: "custom", path: [c.name], message: `${c.label} debe tener al menos ${c.min} caracteres.` })
       }
@@ -167,7 +173,18 @@ export function FormDialogPiar({
                   <div key={c.name} className={c.ancho || c.kind === "area" ? "sm:col-span-2" : undefined}>
                     <form.AppField name={c.name}>
                       {(field) =>
-                        c.kind === "area" ? (
+                        c.kind === "radio" ? (
+                          <MarcoOpciones id={`piar-${c.name}`} label={c.label} required={c.required}>
+                            <RadioGroup aria-labelledby={`piar-${c.name}-label`} value={field.state.value} onValueChange={(v) => field.handleChange(v as string)}>
+                              {(typeof c.options === "function" ? c.options(valores) : (c.options ?? [])).map((o) => (
+                                <label key={o.value} className="flex items-center gap-2 text-sm">
+                                  <RadioGroupItem value={o.value} />
+                                  {o.label}
+                                </label>
+                              ))}
+                            </RadioGroup>
+                          </MarcoOpciones>
+                        ) : c.kind === "area" ? (
                           <field.TextareaField label={c.label} required={c.required} maxLength={c.max} placeholder={c.placeholder} />
                         ) : c.kind === "fecha" ? (
                           <field.DateField label={c.label} required={c.required} />

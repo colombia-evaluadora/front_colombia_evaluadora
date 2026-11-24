@@ -19,17 +19,30 @@ export const ORDEN_REMISIONES: MapaOrden = {
 }
 
 interface Opciones {
-  puedeRegistrar: boolean
   onRegistrar: (r: RemisionRow) => void
   onDescargar: (r: RemisionRow) => void
-  puedeAnular: boolean
   onAnular: (r: RemisionRow) => void
 }
 
-export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescargar, puedeAnular, onAnular }: Opciones): ColumnDef<RemisionRow>[] {
+export function buildColumnsRemisiones({ onRegistrar, onDescargar, onAnular }: Opciones): ColumnDef<RemisionRow>[] {
   return [
     { id: "fecha", header: "Fecha", enableSorting: false, cell: ({ row }) => formatFecha(row.original.fecha) },
-    { id: "estudiante", accessorKey: "estudiante_nombre", header: "Estudiante", enableSorting: false },
+    {
+      id: "estudiante",
+      accessorKey: "estudiante_nombre",
+      header: "Estudiante",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex flex-col items-start gap-1">
+          <span>{row.original.estudiante_nombre}</span>
+          {row.original.presuncion_bap && (
+            <Badge variant="soft" color="warning">
+              <span>Presunción de BAP</span>
+            </Badge>
+          )}
+        </div>
+      ),
+    },
     { id: "motivo", accessorKey: "motivo_nombre", header: "Motivo", enableSorting: false },
     { id: "remite", header: "Responsable de enseñanza", enableSorting: false, cell: ({ row }) => row.original.remite_nombre ?? "—" },
     {
@@ -55,11 +68,11 @@ export function buildColumnsRemisiones({ puedeRegistrar, onRegistrar, onDescarga
               id: "registrar",
               label: "Registrar atención",
               icon: <ClipboardAddIcon />,
-              disabled: !puedeRegistrar || row.original.estado_codigo === "ATENDIDA",
+              disabled: !row.original.puede_registrar_atencion || row.original.estado_codigo === "ATENDIDA",
               onSelect: () => onRegistrar(row.original),
             },
-            { id: "descargar", label: "Descargar remisión", icon: <FilePdfIcon />, onSelect: () => onDescargar(row.original) },
-            { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !puedeAnular, onSelect: () => onAnular(row.original) },
+            { id: "descargar", label: "Descargar remisión", icon: <FilePdfIcon />, disabled: !row.original.puede_descargar, onSelect: () => onDescargar(row.original) },
+            { id: "anular", label: "Anular", icon: <ProhibitIcon />, disabled: !row.original.puede_anular, onSelect: () => onAnular(row.original) },
           ]}
         />
       ),

@@ -127,7 +127,11 @@ export function useAsignaturasPiarQuery(piarId: number, enabled = true) {
 export function usePeriodosPiarQuery(piarId: number, ajuste: number | undefined) {
   return useQuery({
     queryKey: piarKeys.opciones(piarId, "periodos", ajuste),
-    queryFn: () => evalCol.getRows<PeriodoEvaluacionOpcion>(`${PIAR}/${piarId}/opciones/periodos-evaluacion?AJUSTE=${ajuste}`),
+    queryFn: () =>
+      evalCol
+        .getRows<PeriodoEvaluacionOpcion>(`${PIAR}/${piarId}/opciones/periodos-evaluacion?AJUSTE=${ajuste}`)
+        // Por número del período («Período 2» antes que «Período 10»).
+        .then((r) => [...r].sort((a, b) => a.nombre.localeCompare(b.nombre, "es", { numeric: true }))),
     enabled: ajuste != null,
   })
 }

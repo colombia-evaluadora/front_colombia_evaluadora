@@ -41,13 +41,13 @@ export function SeccionRedes({ ficha: { piar, gestiona, setDialogo, quitar } }: 
     <SeccionPlegable
       defaultAbierta={false}
       titulo={<TituloSensible>Redes de apoyo ({redes.length})</TituloSensible>}
-      accion={gestiona && <BotonSeccion onClick={() => setDialogo({ tipo: "red" })}>Agregar</BotonSeccion>}
+      accion={<BotonSeccion disabled={!gestiona} onClick={() => setDialogo({ tipo: "red" })}>Agregar</BotonSeccion>}
       contentClassName="grid gap-2 p-4 text-sm"
     >
       {redes.map((r) => (
         <div key={r.id} className="flex items-start justify-between gap-3">
           <span><strong>{r.persona_institucion}</strong> · {r.tipo_integrante.nombre}{r.relacion && ` · ${r.relacion}`} — {r.apoyo}</span>
-          {gestiona && <BotonQuitar onClick={() => quitar(`/red-apoyo/${r.id}/eliminar`)} />}
+          <BotonQuitar disabled={!gestiona} onClick={() => quitar(`/red-apoyo/${r.id}/eliminar`)} />
         </div>
       ))}
       {!redes.length && <Vacio>Sin integrantes.</Vacio>}
@@ -55,19 +55,19 @@ export function SeccionRedes({ ficha: { piar, gestiona, setDialogo, quitar } }: 
   )
 }
 
-export function SeccionInformes({ ficha: { piar, gestiona, setDialogo, quitar } }: { ficha: FichaPiar }) {
+export function SeccionInformes({ ficha: { piar, setDialogo, quitar } }: { ficha: FichaPiar }) {
   const informes = piar.informes_profesionales ?? []
   return (
     <SeccionPlegable
       defaultAbierta={false}
       titulo={<TituloSensible>Informes de profesionales ({informes.length} de 5)</TituloSensible>}
-      accion={gestiona && informes.length < 5 && <BotonSeccion icono={ICONO_SUBIR} onClick={() => setDialogo({ tipo: "informes" })}>Adjuntar</BotonSeccion>}
+      accion={informes.length < 5 && <BotonSeccion icono={ICONO_SUBIR} disabled={!piar.puede_registrar_expediente} onClick={() => setDialogo({ tipo: "informes" })}>Adjuntar</BotonSeccion>}
       contentClassName="grid gap-2 p-4 text-sm"
     >
       {informes.map((i) => (
         <div key={i.id} className="flex items-center justify-between gap-3">
           <EnlaceArchivo archivo={{ id: i.fk_tarchivo, nombre: i.nombre }} />
-          {gestiona && <BotonQuitar onClick={() => quitar(`/informes/${i.id}/eliminar`)} />}
+          <BotonQuitar disabled={!piar.puede_registrar_expediente} onClick={() => quitar(`/informes/${i.id}/eliminar`)} />
         </div>
       ))}
       {!informes.length && <Vacio>Sin informes.</Vacio>}
@@ -75,7 +75,7 @@ export function SeccionInformes({ ficha: { piar, gestiona, setDialogo, quitar } 
   )
 }
 
-export function SeccionAntecedentes({ ficha: { piar, gestiona, setDialogo } }: { ficha: FichaPiar }) {
+export function SeccionAntecedentes({ ficha: { piar, setDialogo } }: { ficha: FichaPiar }) {
   const antecedentes = piar.antecedentes ?? []
   const externos = piar.documentos_externos ?? []
   return (
@@ -83,12 +83,10 @@ export function SeccionAntecedentes({ ficha: { piar, gestiona, setDialogo } }: {
       defaultAbierta={false}
       titulo={<TituloSensible>Antecedentes y documentos externos ({antecedentes.length + externos.length})</TituloSensible>}
       accion={
-        gestiona && (
-          <span className="flex flex-wrap gap-2">
-            <BotonSeccion onClick={() => setDialogo({ tipo: "antecedente" })}>Registrar antecedente</BotonSeccion>
-            <BotonSeccion icono={ICONO_SUBIR} onClick={() => setDialogo({ tipo: "externo" })}>Incorporar informe externo</BotonSeccion>
-          </span>
-        )
+        <span className="flex flex-wrap gap-2">
+          <BotonSeccion disabled={!piar.puede_registrar_expediente} onClick={() => setDialogo({ tipo: "antecedente" })}>Registrar antecedente</BotonSeccion>
+          <BotonSeccion icono={ICONO_SUBIR} disabled={!piar.puede_registrar_expediente} onClick={() => setDialogo({ tipo: "externo" })}>Incorporar informe externo</BotonSeccion>
+        </span>
       }
       contentClassName="grid gap-2 p-4 text-sm"
     >
@@ -129,17 +127,16 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
             id: "actions",
             enableHiding: false,
             header: () => null,
-            cell: ({ row }) =>
-              gestiona && (
+            cell: ({ row }) => (
                 <DropdownMenu>
-                  <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" color="neutral" aria-label={`Acciones de ${row.original.asignatura_nombre}`} />}>
+                  <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" color="neutral" disabled={!gestiona} aria-label={`Acciones de ${row.original.asignatura_nombre}`} />}>
                     <DotsThreeVerticalIcon />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setDialogo({ tipo: "cobertura", fila: row.original })}><ListChecksIcon />Revisar cobertura</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ),
+            ),
           },
         ]}
       />
@@ -148,38 +145,36 @@ export function SeccionCobertura({ ficha: { piar, gestiona, setDialogo } }: { fi
 }
 
 export function SeccionAjustes({ ficha: { piar, gestiona, estado, setDialogo } }: { ficha: FichaPiar }) {
-  const borrador = gestiona && estado === "BORRADOR"
+  const borrador = estado === "BORRADOR"
   return (
     <SeccionPlegable
       titulo={<Titulo>Ajustes razonables ({piar.ajustes.length})</Titulo>}
-      accion={borrador && piar.fk_tpiar_origen == null && <BotonSeccion onClick={() => setDialogo({ tipo: "ajuste" })}>Agregar ajuste</BotonSeccion>}
+      accion={borrador && piar.fk_tpiar_origen == null && <BotonSeccion disabled={!gestiona} onClick={() => setDialogo({ tipo: "ajuste" })}>Agregar ajuste</BotonSeccion>}
       contentClassName="grid gap-3 p-4"
     >
-      {piar.ajustes.map((a, i) => <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} piarId={piar.id} editaAjuste={borrador} sensible puedeEditar={gestiona} onDialogo={setDialogo} />)}
+      {piar.ajustes.map((a, i) => <TarjetaAjuste key={a.id} ajuste={a} indice={i + 1} piarId={piar.id} editaAjuste={borrador} sensible puedeEditar puedeSeguimiento bloqueado={!gestiona} evidenciaBloqueada={!piar.puede_registrar_expediente} seguimientoBloqueado={!piar.puede_registrar_seguimiento} onDialogo={setDialogo} />)}
       {!piar.ajustes.length && <Vacio>Sin ajustes.</Vacio>}
     </SeccionPlegable>
   )
 }
 
-export function SeccionActividades({ ficha: { piar, estado, gestiona, setDialogo } }: { ficha: FichaPiar }) {
+export function SeccionActividades({ ficha: { piar, estado, setDialogo } }: { ficha: FichaPiar }) {
   const actividades = piar.actividades_familiares ?? []
   return (
     <SeccionPlegable
       defaultAbierta={estado === "BORRADOR"}
       titulo={<Titulo>Actividades familiares ({actividades.length})</Titulo>}
-      accion={gestiona && <BotonSeccion onClick={() => setDialogo({ tipo: "actividad" })}>Agregar actividad</BotonSeccion>}
+      accion={<BotonSeccion disabled={!piar.puede_modificar_actividades} onClick={() => setDialogo({ tipo: "actividad" })}>Agregar actividad</BotonSeccion>}
       contentClassName="grid gap-3 p-4 text-sm"
     >
       {actividades.map((a) => (
         <article key={a.id} className="grid gap-2 rounded-lg border border-border p-4">
           <header className="flex flex-wrap items-center gap-2">
             <strong>{a.actividad}</strong>
-            {gestiona && (
-              <span className="ml-auto flex items-center gap-1">
-                <Button size="xs" variant="ghost" color="neutral" type="button" onClick={() => setDialogo({ tipo: "actividad", actividad: a })}>Modificar</Button>
-                <BotonSeccion onClick={() => setDialogo({ tipo: "resultado", actividad: a })}>Registrar resultado</BotonSeccion>
-              </span>
-            )}
+            <span className="ml-auto flex items-center gap-1">
+              <Button size="xs" variant="ghost" color="neutral" type="button" disabled={!piar.puede_modificar_actividades} onClick={() => setDialogo({ tipo: "actividad", actividad: a })}>Modificar</Button>
+              <BotonSeccion disabled={!piar.puede_registrar_resultado_actividad} onClick={() => setDialogo({ tipo: "resultado", actividad: a })}>Registrar resultado</BotonSeccion>
+            </span>
           </header>
           <ListaDatos>
             <Par label="Descripción">{a.descripcion}</Par>

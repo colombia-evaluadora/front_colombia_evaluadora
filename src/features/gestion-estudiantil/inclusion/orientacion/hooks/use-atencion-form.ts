@@ -7,7 +7,9 @@ import { useAppForm } from "@/lib/forms"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useGuardarAtencion } from "@/features/gestion-estudiantil/inclusion/orientacion/api/mutations/atenciones"
-import { useAtencionQuery, useEstudiantesAtencionQuery, useRemisionesDeQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
+import { useEstudiantesAtencionQuery, useRemisionesDeQuery } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
+import type { FirmanteForm } from "@/features/gestion-estudiantil/inclusion/orientacion/components/firmantes-atencion"
+import type { AtencionDetalle } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { atencionAlBackend, esquemaAtencion, valoresDesde } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/atencion-form"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
 
@@ -20,21 +22,25 @@ interface SearchAtencion {
 }
 
 /** Estado de la página de atención (ATE.1): nueva, desde una remisión, modificar o ver. */
-export function useAtencionForm() {
+export function useAtencionForm(detalle: AtencionDetalle | undefined, estado: { isPending: boolean; error: unknown }) {
   const navigate = useNavigate()
   const { atencionId } = useParams({ strict: false }) as { atencionId?: string }
   const s = useSearch({ strict: false }) as SearchAtencion
   const id = atencionId ? Number(atencionId) : undefined
-  const { data: detalle, isPending, error } = useAtencionQuery(id)
+  const { isPending, error } = estado
 
   const modalidades = useCatalogo("MODALIDAD_ATENCION_ORIENTACION")
   const origenes = useCatalogo("ORIGEN_ATENCION_ORIENTACION")
   const motivos = useCatalogo("MOTIVO_ORIENTACION")
   const entidades = useCatalogo("ENTIDAD_REMISION")
+  const calidades = useCatalogo("CALIDAD_FIRMANTE_ATENCION")
+  const [firmantes, setFirmantes] = useState<FirmanteForm[]>(() =>
+    (detalle?.firmantes ?? []).map((f, i) => ({ clave: i + 1, funcionario: String(f.fk_tfuncionario), nombre: f.nombre, calidad: String(f.fk_tlv_calidad) })),
+  )
 
   const [matricula, setMatricula] = useState(s.matricula ? String(s.matricula) : "")
   const [busqueda, setBusqueda] = useState("")
-  const [remision, setRemision] = useState(s.remision ? String(s.remision) : "")
+  const [remision, setRemision] = useState(detalle?.remision_origen ? String(detalle.remision_origen.id) : s.remision ? String(s.remision) : "")
   const [notice, setNotice] = useState<{ id: number; message: string } | null>(null)
   const estudianteFijo = detalle?.estudiante.nombre ?? s.estudiante
   const estudiantes = useEstudiantesAtencionQuery(busqueda, !id && !s.matricula).data ?? []
@@ -45,13 +51,18 @@ export function useAtencionForm() {
   const avisar = (e: unknown) => setNotice({ id: Date.now(), message: mensajePiar(e) })
 
   const form = useAppForm({
-    defaultValues: valoresDesde(undefined, s.motivo),
+    defaultValues: valoresDesde(detalle, s.motivo),
     validators: { onSubmit: esquemaAtencion },
     onSubmit: async ({ value }) => {
       if (!id && !matricula) return setNotice({ id: Date.now(), message: "Elija el estudiante." })
       const esRemision = origenes.find((o) => o.value === value.origen)?.codigo === "REMISION_DOCENTE"
       if (esRemision && !remision) return setNotice({ id: Date.now(), message: "Elija la remisión de origen." })
-      const body = atencionAlBackend(value, esRemision ? Number(remision) : null)
+      if (firmantes.some((f) => !f.funcionario || !f.calidad)) return setNotice({ id: Date.now(), message: "Cada firmante necesita funcionario y calidad." })
+      const body = {
+        ...atencionAlBackend(value, esRemision ? Number(remision) : null),
+        // Un JSONB viaja como cadena JSON; en una corrección, la lista reemplaza a los firmantes actuales.
+        FIRMANTES: JSON.stringify(firmantes.map((f) => ({ fk_tfuncionario: Number(f.funcionario), fk_tlv_calidad: Number(f.calidad) }))),
+      }
       try {
         await guardar.mutateAsync({ id, body: id ? body : { ...body, FK_MATRICULA: Number(matricula) } })
         queueNotice(id ? "Atención actualizada." : "Atención registrada.")
@@ -62,15 +73,6 @@ export function useAtencionForm() {
     },
   })
 
-  // Al llegar el detalle o los catálogos: sin esto los selects quedan vacíos.
-  useEffect(() => {
-    if (detalle) {
-      form.reset(valoresDesde(detalle))
-      if (detalle.remision_origen) setRemision(String(detalle.remision_origen.id))
-    }
-    // Solo al cargar el detalle.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detalle?.id]);
   useEffect(() => {
     if (id) return
     const modalidad = modalidades.find((m) => m.codigo === "ATENCION")?.value
@@ -83,7 +85,7 @@ export function useAtencionForm() {
 
   return {
     id, detalle, cargando: id != null && isPending, error, soloLectura: Boolean(s.ver),
-    modalidades, origenes, motivos, entidades,
+    modalidades, origenes, motivos, entidades, calidades, firmantes, setFirmantes,
     matricula, setMatricula, setBusqueda, estudiantes, estudianteFijo, remision, setRemision, remisiones,
     notice, setNotice, form, guardando: guardar.isPending, volver,
   }
