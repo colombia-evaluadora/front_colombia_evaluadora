@@ -174,7 +174,7 @@ export function DialogAceptarConvenio({ convenio: c, onOpenChange }: { convenio:
   const aceptar = useAceptarConvenio()
   const [acciones, setAcciones] = useState<Record<string, "VINCULAR" | "CREAR">>({})
   const [aviso, setAviso] = useState<AvisoError>(null)
-  const clave = (x: { especialidadId: number; sede: string }) => `${x.especialidadId}-${x.sede}`
+  const clave = (x: { especialidadId: number; sedeId: number }) => `${x.especialidadId}-${x.sedeId}`
   const conflictos = data?.conflictos ?? []
 
   return (
@@ -231,7 +231,7 @@ export function DialogAceptarConvenio({ convenio: c, onOpenChange }: { convenio:
           disabled={!data}
           onConfirm={() =>
             aceptar.mutate(
-              { id: c.id, vinculos: conflictos.map((x) => ({ especialidadId: x.especialidadId, sede: x.sede, accion: acciones[clave(x)] ?? "VINCULAR" })) },
+              { id: c.id, vinculos: conflictos.map((x) => ({ especialidadId: x.especialidadId, sedeId: x.sedeId, accion: acciones[clave(x)] ?? "VINCULAR" })) },
               {
                 onSuccess: () => {
                   notify(`Se aceptó el convenio con ${c.receptor}.`, { variant: "success" })

@@ -113,6 +113,7 @@ interface MatriculaListRow {
   anulacion_pendiente?: "S" | "N"
   snapshot_pendiente?: "S" | "N"
   total_count: number
+  total_estudiantes?: number
 }
 
 interface MatriculaListRawResponse {
@@ -148,7 +149,7 @@ function toMatricula(row: MatriculaListRow): Matricula {
     retiroSolicitado: row.retiro_solicitado === "S",
     retiroSolicitadoPor: row.retiro_solicitado_por?.trim() || null,
     retiroTraslado:
-      row.retiro_traslado === "S" ? { acta: row.acta_retiro ?? "", fecha: row.fecha_retiro ?? "" } : null,
+      row.retiro_traslado === "S" ? { acta: row.acta_retiro ?? "", fecha: row.fecha_retiro?.slice(0, 10) ?? "" } : null,
     simpadeIngresado: row.simpade_ingresado === "S",
     simpade:
       row.simpade_ingresado === "S" && row.simpade_fecha_ingreso
@@ -174,7 +175,10 @@ export async function fetchMatricula(params: UseMatriculaQueryParams): Promise<M
   )
   const backendRows = raw.rows ?? []
   // `total_count` viene repetido por fila (window count); el front arma el envelope.
-  return toPaginated(backendRows, { pageSize: params.pageSize, map: toMatricula })
+  const pagina = toPaginated(backendRows, { pageSize: params.pageSize, map: toMatricula })
+  // Sin total_estudiantes (back sin desplegar) se cae al total de matrículas.
+  const estudiantes = Number(backendRows[0]?.total_estudiantes)
+  return { ...pagina, totalEstudiantes: Number.isFinite(estudiantes) ? estudiantes : pagina.totalCount }
 }
 
 /**

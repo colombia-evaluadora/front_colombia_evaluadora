@@ -44,11 +44,12 @@ const CARNE = /^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/
 
 /**
  * Gestión Estudiantil: tres bloques de cuatro con alguna letra G-Z. Primera letra:
- * "S" → certificado de servicio social, "M" → mención de honor; segunda letra:
+ * "S" → certificado de servicio social, "M" → mención de honor, "C" → constancia de estudio; segunda letra:
  * V vigente, A actualizado, R reemplazado, N anulado; otra → NO_VALIDO.
  */
 function documentoGe(c: string) {
-  const tipo = c[0] === "S" ? "SERVICIO_SOCIAL_CERTIFICADO" : c[0] === "M" ? "MENCION_HONOR" : null
+  const tipo =
+    c[0] === "S" ? "SERVICIO_SOCIAL_CERTIFICADO" : c[0] === "M" ? "MENCION_HONOR" : c[0] === "C" ? "CONSTANCIA_ESTUDIO" : null
   const estado = { V: "VIGENTE", A: "ACTUALIZADO", R: "REEMPLAZADO", N: "ANULADO" }[c[1]]
   if (!tipo || !estado) return { tipo: null, estado: "NO_VALIDO" }
   return {

@@ -1,3 +1,4 @@
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useEffect } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -24,6 +25,7 @@ import { useEstablecimientoDeSede } from "@/features/coverage/matricula/api/quer
 import { useMatriculaCampusesQuery } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { MatriculaFormBody } from "@/features/coverage/matricula/components/forms/matricula-form-body"
+import { MatriculaSoportesSection } from "@/features/coverage/matricula/components/forms/form-create-matricula/soportes-section"
 import { MatriculaToolbar } from "@/features/coverage/matricula/components/matricula-toolbar"
 import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import { applyGradeFieldRules, buildMatriculaFieldSettings } from "@/features/coverage/matricula/utils/matricula-field-settings"
@@ -46,6 +48,7 @@ function MatriculaDetailPageContent() {
   const gradeLabel = useMatriculaGradeLabel()
   const { notify } = useNotify()
   const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
+  const { puedeEditar: puedeEditarSoportes } = useMenuPermission("MATRICULA")
   // La configuración de campos es la del colegio de la sede de la matrícula.
   const colegio = useEstablecimientoDeSede({
     sedeId: data?.details?.sedeId,
@@ -135,6 +138,15 @@ function MatriculaDetailPageContent() {
                   fieldSettings={fieldSettings}
                   datosProtegidos={
                     Boolean(data.matricula.sinAutorizacion) || Boolean(data.details?.restricciones?.origenAdscripcion)
+                  }
+                />
+                {/* Adjuntar y reemplazar se hacen en Editar; revisar, también aquí (manual §5.4). */}
+                <MatriculaSoportesSection
+                  matriculaId={data.matricula.id}
+                  editable={false}
+                  revisable={puedeEditarSoportes}
+                  porAdscripcion={
+                    data.details?.restricciones?.tipo === "COMPLEMENTARIA" && Boolean(data.details?.restricciones?.origenAdscripcion)
                   }
                 />
               </div>

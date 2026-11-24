@@ -132,6 +132,8 @@ export interface MatriculaQueryResponse {
   rows: Matricula[]
   pageCount: number
   totalCount: number
+  /** Estudiantes distintos del filtro: la complementaria repite al estudiante. */
+  totalEstudiantes: number
 }
 
 export type ExportFormat = "pdf" | "excel"

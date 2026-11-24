@@ -32,6 +32,7 @@ import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/compo
 import { DialogAgregarComplementaria } from "@/features/coverage/matricula/components/dialogs/dialog-agregar-complementaria"
 import { DialogCambiarEspecialidad } from "@/features/coverage/matricula-complementaria/components/dialogs-postulacion"
 import { DialogCambiarGrupo } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grupo"
+import { useMatriculaCapacidades } from "@/features/coverage/matricula/api/query/use-matricula-capacidades"
 import { DialogCambiarGrado } from "@/features/coverage/matricula/components/dialogs/acciones/dialog-cambiar-grado"
 import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
@@ -82,8 +83,6 @@ export function MatriculaStatusBadge({ status }: { status: string }) {
 
 /** Columnas que el prototipo deja fuera de la vista inicial; siguen en el menú de columnas. */
 export const MATRICULA_INITIAL_VISIBILITY = {
-  firstName: false,
-  lastName: false,
   institution: false,
   campus: false,
   shift: false,
@@ -182,20 +181,6 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
       </div>
     ),
     enableHiding: false,
-  },
-  {
-    id: "firstName",
-    accessorKey: "firstName",
-    meta: { label: "Nombres" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Nombres" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.firstName}</span>,
-  },
-  {
-    id: "lastName",
-    accessorKey: "lastName",
-    meta: { label: "Apellidos" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Apellidos" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.lastName}</span>,
   },
   {
     id: "institution",
@@ -608,6 +593,7 @@ function AccionesEditar({ matricula, parte }: { matricula: Matricula; parte: "ca
   const navigate = useNavigate()
   const [abierto, setAbierto] = useState<"grupo" | "grado" | null>(null)
   const [bloqueada, setBloqueada] = useState<string | null>(null)
+  const capacidades = useMatriculaCapacidades()
   if (!puedeEditar || matricula.status !== "Cursando") return null
   // Con retiro solicitado (Regla 71) los cambios se muestran pero abren el aviso de
   // acción bloqueada (SOL.4b); con anulación pendiente no se ofrecen. Corregir identidad sí.
@@ -638,9 +624,11 @@ function AccionesEditar({ matricula, parte }: { matricula: Matricula; parte: "ca
           <OnlineOnlyAction>
             <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => abrir("grupo", "Cambiar de grupo")} />
           </OnlineOnlyAction>
-          <OnlineOnlyAction>
-            <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => abrir("grado", "Cambiar de grado")} />
-          </OnlineOnlyAction>
+          {capacidades.cambiarGrado ? (
+            <OnlineOnlyAction>
+              <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => abrir("grado", "Cambiar de grado")} />
+            </OnlineOnlyAction>
+          ) : null}
         </>
       ) : null}
       {bloqueada ? <DialogAccionBloqueada matricula={matricula} accion={bloqueada} onClose={() => setBloqueada(null)} /> : null}
@@ -726,8 +714,9 @@ function SolicitudRetiroAccion({ matricula }: { matricula: Matricula }) {
 function ReactivarAccion({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   const { notify } = useNotify()
+  const { reactivar } = useMatriculaCapacidades()
   const [abierto, setAbierto] = useState(false)
-  if (!puedeEditar || !ESTADOS_REACTIVABLES.includes(matricula.status)) return null
+  if (!puedeEditar || !reactivar || !ESTADOS_REACTIVABLES.includes(matricula.status)) return null
   return (
     <OnlineOnlyAction>
       <BotonAccion modo="icon" label={"Reactivar"} ariaLabel={`Reactivar la matrícula de ${matricula.firstName} ${matricula.lastName}`} Icon={ArrowCounterClockwiseIcon} onClick={() => setAbierto(true)} />

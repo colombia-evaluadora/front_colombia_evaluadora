@@ -422,7 +422,7 @@ function AddMatriculaPageContent() {
     if (failedOtherDocumentsCount > 0) {
       notify(
         `${message} ${failedOtherDocumentsCount} archivo(s) de "otros documentos" no se pudieron subir; ` +
-          `puede reintentarlos desde "Archivos" en el detalle del estudiante.`,
+          `puede adjuntarlos en Soportes, al editar la matrícula.`,
         { variant: "error" },
       )
     } else {
