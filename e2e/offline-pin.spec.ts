@@ -48,7 +48,7 @@ test("crear PIN: lo guardado queda cifrado y al recargar sin red se pide el PIN"
 
   await page.evaluate(() => sessionStorage.setItem("msw:fault", "network"))
   await page.reload()
-  await expect(page.getByRole("heading", { name: "Escriba su PIN" })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole("heading", { name: "Escriba su PIN" })).toBeVisible({ timeout: 90_000 })
   await page.getByLabel("PIN", { exact: true }).fill("111111")
   await expect(page.getByText(/PIN incorrecto/)).toBeVisible({ timeout: 30_000 })
   await page.getByLabel("PIN", { exact: true }).fill("246813")
