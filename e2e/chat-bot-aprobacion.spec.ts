@@ -31,7 +31,7 @@ async function iniciarSesion(page: Page) {
   await page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 60_000 })
   for (let intento = 0; intento < 3; intento++) {
     if (!new URL(page.url()).pathname.startsWith("/login")) break
-    await page.getByLabel("Correo electrónico").fill("admin@example.com")
+    await page.getByLabel("Correo o número de documento").fill("admin@example.com")
     await page.getByLabel("Contraseña", { exact: true }).fill("password")
     const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
     if ((await compartido.count()) && (await compartido.isChecked()) && (await compartido.isEnabled())) {

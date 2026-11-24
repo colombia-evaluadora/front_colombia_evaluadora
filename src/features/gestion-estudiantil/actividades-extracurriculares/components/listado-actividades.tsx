@@ -15,7 +15,7 @@ import { SearchActividades } from "@/features/gestion-estudiantil/actividades-ex
 import { useActividadesLista } from "@/features/gestion-estudiantil/actividades-extracurriculares/hooks/use-actividades-lista"
 
 /** Pestaña Actividades (G.5.ACT.LIS): búsqueda, filtros y tabla paginada en el servidor. */
-export function ListadoActividades({ onFiltersChange }: { onFiltersChange: (f: ActividadesQueryFilters, orden: OrdenServidor) => void }) {
+export function ListadoActividades({ onFiltersChange }: { onFiltersChange: (f: ActividadesQueryFilters, orden: OrdenServidor | undefined) => void }) {
   const l = useActividadesLista()
   const { f, query, table, pageIndex, pageSize } = l
   const { data, isPending, isError, error, refetch } = query

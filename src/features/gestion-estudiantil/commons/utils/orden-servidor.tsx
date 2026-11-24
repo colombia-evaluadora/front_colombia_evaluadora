@@ -10,11 +10,14 @@ export interface OrdenServidor {
   DIR?: "asc" | "desc"
 }
 
-/** `BODY.ORDEN`/`BODY.DIR` a partir del orden de la tabla; sin columna con clave, el orden por defecto. */
-export function ordenServidor(sorting: SortingState, mapa: MapaOrden): OrdenServidor {
+/**
+ * `BODY.ORDEN`/`BODY.DIR` a partir del orden de la tabla; sin columna con clave, `undefined` (orden por
+ * defecto). `undefined` y no `{}` para que la query key coincida con la que precarga el modo sin conexión.
+ */
+export function ordenServidor(sorting: SortingState, mapa: MapaOrden): OrdenServidor | undefined {
   const s = sorting[0]
   const orden = s ? mapa[s.id] : undefined
-  return s && orden ? { ORDEN: orden, DIR: s.desc ? "desc" : "asc" } : {}
+  return s && orden ? { ORDEN: orden, DIR: s.desc ? "desc" : "asc" } : undefined
 }
 
 /** Solo las columnas con clave llevan encabezado ordenable; el resto queda sin orden. */

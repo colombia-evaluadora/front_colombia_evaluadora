@@ -47,7 +47,7 @@ function toAssignment(row: RoleMenuRow | number): RoleMenuAssignment {
   }
 }
 
-async function fetchRoleMenus(roleId: number): Promise<RoleMenuAssignment[]> {
+export async function fetchRoleMenus(roleId: number): Promise<RoleMenuAssignment[]> {
   const rows = await evalCol.getRows<RoleMenuRow | number>(`/roles/${roleId}/menus`)
   return rows.map(toAssignment)
 }

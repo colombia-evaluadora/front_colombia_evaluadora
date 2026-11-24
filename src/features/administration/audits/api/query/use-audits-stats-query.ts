@@ -8,7 +8,7 @@ import { toBind } from "@/features/administration/audits/api/real-mapping"
 import type { AuditsStats, AuditsStatsRequest } from "@/features/administration/audits/api/types/audit"
 import { auditKeys } from "@/features/administration/audits/api/query-keys"
 
-async function fetchAuditsStats(body: AuditsStatsRequest): Promise<AuditsStats> {
+export async function fetchAuditsStats(body: AuditsStatsRequest): Promise<AuditsStats> {
   const path = apiPath("/audits/stats", "/audits/stats", AUDIT_API_PREFIX)
 
   if (env.ENABLE_API_MOCKING) {

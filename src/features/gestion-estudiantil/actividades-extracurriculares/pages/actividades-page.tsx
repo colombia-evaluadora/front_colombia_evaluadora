@@ -37,8 +37,8 @@ function ActividadesContent() {
   const puedeCrearActividad = puedeCrear && Boolean(cap?.actividades_puede_crear)
   const pestana: Pestana = tab === "servicio-social" ? "servicio-social" : "actividades"
   // Filtros aplicados de la pestaña visible: cada listado los publica al montarse y al cambiarlos.
-  const [aplicado, setAplicado] = useState<{ filters: ActividadesQueryFilters | ServicioSocialQueryFilters; orden: OrdenServidor } | null>(null)
-  const setFiltros = useCallback((filters: ActividadesQueryFilters | ServicioSocialQueryFilters, orden: OrdenServidor) => setAplicado({ filters, orden }), [])
+  const [aplicado, setAplicado] = useState<{ filters: ActividadesQueryFilters | ServicioSocialQueryFilters; orden: OrdenServidor | undefined } | null>(null)
+  const setFiltros = useCallback((filters: ActividadesQueryFilters | ServicioSocialQueryFilters, orden: OrdenServidor | undefined) => setAplicado({ filters, orden }), [])
   const exportar = useExportarActividades()
 
   return (

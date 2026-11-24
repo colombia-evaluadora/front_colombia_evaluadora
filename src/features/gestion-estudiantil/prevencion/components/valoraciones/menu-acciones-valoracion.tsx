@@ -32,7 +32,7 @@ interface Props {
 /**
  * Acciones de una fila de Valoraciones y planes (G.8.VAL.3): todas a la vista, las cuatro primeras como iconos
  * en el hover y el resto en el ⋮. La que la bandera del backend no permite va deshabilitada. «Gestionar» (9.11)
- * no tiene backend. Modificar: el listado no trae `puede_modificar`; se habilita para un plan Propuesto o Activo y el
+ * se habilita con `puede_gestionar` y `fk_gestion_alerta`. Modificar: el listado no trae `puede_modificar`; se habilita para un plan Propuesto o Activo y el
  * detalle (con `puede_modificar`) y el backend deciden.
  */
 export function MenuAccionesValoracion({ fila: f, onAccion }: Props) {
@@ -89,8 +89,7 @@ export function MenuAccionesValoracion({ fila: f, onAccion }: Props) {
           id: "gestionar",
           label: "Gestionar",
           icon: <GearIcon />,
-          // Gestión de alertas (9.11) no tiene backend.
-          disabled: true,
+          disabled: !f.puede_gestionar || f.fk_gestion_alerta == null,
           onSelect: () => onAccion("gestionar"),
         },
       ]}

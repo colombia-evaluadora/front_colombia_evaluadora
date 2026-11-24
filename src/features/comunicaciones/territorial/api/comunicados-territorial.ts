@@ -42,11 +42,20 @@ export interface FiltrosTerritorial {
   sortDir?: "asc" | "desc"
 }
 
+export const territorialKeys = {
+  establecimientos: ["comunicados-territorial", "establecimientos"] as const,
+  lista: (filtros: FiltrosTerritorial, pagina: number, tamano: number) =>
+    ["comunicados-territorial", "lista", filtros, pagina, tamano] as const,
+  detalle: (id: number | null) => ["comunicados-territorial", "detalle", id] as const,
+} as const
+
+export const fetchEstablecimientosTerritorial = () => evalCol.getRows<OpcionSeleccion>(`${RUTA}/establecimientos`)
+
 /** Filtro por establecimiento: comms-service solo devuelve los que el usuario tiene a cargo. */
 export function useEstablecimientosTerritorialQuery() {
   return useQuery({
-    queryKey: ["comunicados-territorial", "establecimientos"],
-    queryFn: () => evalCol.getRows<OpcionSeleccion>(`${RUTA}/establecimientos`),
+    queryKey: territorialKeys.establecimientos,
+    queryFn: fetchEstablecimientosTerritorial,
     staleTime: Infinity,
   })
 }
@@ -63,30 +72,34 @@ interface PaginaTerritorialRespuesta {
   totalCount?: number
 }
 
+export async function fetchComunicadosTerritorial(filtros: FiltrosTerritorial, { pagina, tamano }: PaginaTerritorial) {
+  const params = new URLSearchParams()
+  for (const [clave, valor] of Object.entries(filtros)) if (valor) params.set(clave, valor)
+  params.set("pagina", String(pagina))
+  params.set("tamano", String(tamano))
+  // Por `api` y no `evalCol.getRows`: ese descarta todo lo que no sea `rows` y aquí hace falta el total.
+  const r = await api.get<PaginaTerritorialRespuesta>(`/eval-col${RUTA}?${params.toString()}`)
+  const totalCount = r?.totalCount ?? 0
+  return { rows: r?.rows ?? [], totalCount, pageCount: toPageCount(totalCount, tamano) }
+}
+
 export function useComunicadosTerritorialQuery(filtros: FiltrosTerritorial, { pagina, tamano }: PaginaTerritorial) {
   return useQuery({
-    queryKey: ["comunicados-territorial", "lista", filtros, pagina, tamano],
-    queryFn: async () => {
-      const params = new URLSearchParams()
-      for (const [clave, valor] of Object.entries(filtros)) if (valor) params.set(clave, valor)
-      params.set("pagina", String(pagina))
-      params.set("tamano", String(tamano))
-      // Por `api` y no `evalCol.getRows`: ese descarta todo lo que no sea `rows` y aquí hace falta el total.
-      const r = await api.get<PaginaTerritorialRespuesta>(`/eval-col${RUTA}?${params.toString()}`)
-      const totalCount = r?.totalCount ?? 0
-      return { rows: r?.rows ?? [], totalCount, pageCount: toPageCount(totalCount, tamano) }
-    },
+    queryKey: territorialKeys.lista(filtros, pagina, tamano),
+    queryFn: () => fetchComunicadosTerritorial(filtros, { pagina, tamano }),
     placeholderData: keepPreviousData,
   })
 }
 
+export async function fetchComunicadoTerritorial(id: number) {
+  const [fila] = await evalCol.getRows<ComunicadoTerritorialDetalle>(`${RUTA}/${id}`)
+  return fila ?? null
+}
+
 export function useComunicadoTerritorialQuery(id: number | null) {
   return useQuery({
-    queryKey: ["comunicados-territorial", "detalle", id],
-    queryFn: async () => {
-      const [fila] = await evalCol.getRows<ComunicadoTerritorialDetalle>(`${RUTA}/${id as number}`)
-      return fila ?? null
-    },
+    queryKey: territorialKeys.detalle(id),
+    queryFn: () => fetchComunicadoTerritorial(id as number),
     enabled: id != null,
   })
 }

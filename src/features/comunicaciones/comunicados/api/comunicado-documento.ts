@@ -95,9 +95,9 @@ export interface Cascada {
 
 export const esAcademico = (c: Conjunto) => c.tipos.includes("ESTUDIANTES") || c.tipos.includes("ACUDIENTES")
 
-/** Opciones de cada nivel según lo ya elegido en el conjunto. */
-export function useCascadaQuery(c: Conjunto) {
-  const params = {
+/** Parámetros de la cascada (van en la query key). */
+export function toCascadaParams(c: Conjunto) {
+  return {
     establecimiento: c.establecimiento,
     sede: c.sede,
     // "Todas las jornadas" (conjunto solo de funcionarios) no acota por jornada.
@@ -109,14 +109,23 @@ export function useCascadaQuery(c: Conjunto) {
     grado: c.grado === TODOS ? "" : c.grado,
     grupo: c.grupo === TODOS ? "" : c.grupo,
   }
+}
+
+export const cascadaKey = (params: ReturnType<typeof toCascadaParams>) => ["comunicado-cascada", params] as const
+
+export async function fetchCascada(params: ReturnType<typeof toCascadaParams>) {
+  const qs = new URLSearchParams()
+  for (const [clave, valor] of Object.entries(params)) if (valor) qs.set(clave, valor)
+  const [fila] = await evalCol.getRows<Cascada>(`/comunicaciones/comunicados/destinos/cascada?${qs.toString()}`)
+  return fila
+}
+
+/** Opciones de cada nivel según lo ya elegido en el conjunto. */
+export function useCascadaQuery(c: Conjunto) {
+  const params = toCascadaParams(c)
   return useQuery({
-    queryKey: ["comunicado-cascada", params],
-    queryFn: async () => {
-      const qs = new URLSearchParams()
-      for (const [clave, valor] of Object.entries(params)) if (valor) qs.set(clave, valor)
-      const [fila] = await evalCol.getRows<Cascada>(`/comunicaciones/comunicados/destinos/cascada?${qs.toString()}`)
-      return fila
-    },
+    queryKey: cascadaKey(params),
+    queryFn: () => fetchCascada(params),
     staleTime: 60_000,
     placeholderData: keepPreviousData,
   })

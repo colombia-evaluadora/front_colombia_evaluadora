@@ -15,7 +15,7 @@ interface ExportarInput {
   pestana: Pestana
   filters: ActividadesQueryFilters | ServicioSocialQueryFilters
   /** Orden de la tabla: el Excel sale igual que la pantalla. */
-  orden: OrdenServidor
+  orden?: OrdenServidor
   format: ExportFormat
 }
 
@@ -25,7 +25,7 @@ function exportar({ pestana, filters, orden, format }: ExportarInput) {
     format,
     filters,
     // El backend lee el orden de `BODY.SORTING.ID` / `BODY.SORTING.DESC`; sin orden elegido no se manda.
-    sorting: orden.ORDEN ? { id: orden.ORDEN, desc: orden.DIR === "desc" } : undefined,
+    sorting: orden?.ORDEN ? { id: orden.ORDEN, desc: orden.DIR === "desc" } : undefined,
   })
 }
 

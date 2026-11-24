@@ -27,7 +27,7 @@ const COLUMNAS_OCULTAS = { sede: false, jornada: false }
 export function ListadoServicioSocial({
   onFiltersChange,
 }: {
-  onFiltersChange: (f: ServicioSocialQueryFilters, orden: OrdenServidor) => void
+  onFiltersChange: (f: ServicioSocialQueryFilters, orden: OrdenServidor | undefined) => void
 }) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const f = useServicioSocialFiltros(goToPage)

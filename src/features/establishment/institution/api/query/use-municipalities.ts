@@ -21,7 +21,7 @@ interface RealMunicipalityRow {
   departamento_nombre: string
 }
 
-async function fetchMunicipalities(): Promise<Municipality[]> {
+export async function fetchMunicipalities(): Promise<Municipality[]> {
   // TMUNICIPIO no es TLISTA_VALOR: no lo cubre el catálogo genérico
   // `/select/:categoria` (ver use-catalogs.ts), tiene su propio endpoint
   // (V58, todavía en postgres/pending/step5_catalogos_v58.sql).

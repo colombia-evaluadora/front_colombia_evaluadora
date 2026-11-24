@@ -39,40 +39,44 @@ export interface CaracterizacionesParams {
   pageSize: number
 }
 
+export const fetchCaracterizaciones = async (params: CaracterizacionesParams) => {
+  const rows = await evalCol.getRows<CaracterizacionRow>(
+    `${BASE_PREVENCION}/caracterizaciones${queryString({
+      ...params.filters,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return {
+    rows,
+    totalCount,
+    sinConfirmar: Number(rows[0]?.sin_confirmar ?? 0),
+    pageCount: toPageCount(totalCount, params.pageSize),
+  }
+}
+
 /** `GET /caracterizaciones`: estudiantes Cursando con su estado; `total_count` y `sin_confirmar` vienen en cada fila. */
 export function useCaracterizacionesQuery(params: CaracterizacionesParams) {
   return useQuery({
     queryKey: prevencionKeys.caracterizaciones(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<CaracterizacionRow>(
-        `${BASE_PREVENCION}/caracterizaciones${queryString({
-          ...params.filters,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return {
-        rows,
-        totalCount,
-        sinConfirmar: Number(rows[0]?.sin_confirmar ?? 0),
-        pageCount: toPageCount(totalCount, params.pageSize),
-      }
-    },
+    queryFn: () => fetchCaracterizaciones(params),
     enabled: params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchCaracterizacionFiltros = (establecimiento: number | null) =>
+  evalCol.getRows<OpcionCaracterizacionFiltro>(
+    `${BASE_PREVENCION}/opciones/caracterizacion-filtros${queryString({ ESTABLECIMIENTO: establecimiento })}`,
+  )
+
 /** `GET /opciones/caracterizacion-filtros`: grupos con estudiantes Cursando en el ámbito sensible de quien consulta. */
 export function useCaracterizacionFiltrosQuery(establecimiento: number | null) {
   return useQuery({
     queryKey: prevencionKeys.opciones.caracterizacionFiltros(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol.getRows<OpcionCaracterizacionFiltro>(
-        `${BASE_PREVENCION}/opciones/caracterizacion-filtros${queryString({ ESTABLECIMIENTO: establecimiento })}`,
-      ),
+    queryFn: () => fetchCaracterizacionFiltros(establecimiento),
     enabled: establecimiento != null,
     staleTime: 60_000,
   })

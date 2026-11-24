@@ -25,6 +25,7 @@ import {
   deactivatePersistUser,
   getActivePersistUser,
   getDeviceMode,
+  tabSharesInstalledData,
   initOfflinePersistence,
   startQueryPersister,
 } from "@/lib/offline/query-persister"
@@ -261,7 +262,8 @@ export function useLogout({
         // pendientes decide conservar o descartar antes de llamar al logout.
         await setOutboxUser(null)
         if (sub && keep) await lockDeviceSession(sub).catch(() => undefined)
-        else if (sub) {
+        // Pestaña junto a la app instalada: lo guardado es de la app, no se borra.
+        else if (sub && !(await tabSharesInstalledData())) {
           await clearUserData(sub).catch(() => undefined)
           // Equipo que no conserva datos: tampoco conserva la credencial del equipo.
           await deleteDeviceToken(sub).catch(() => undefined)

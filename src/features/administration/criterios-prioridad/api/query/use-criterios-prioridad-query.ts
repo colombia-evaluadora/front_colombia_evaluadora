@@ -11,7 +11,7 @@ import type {
 
 // Son pocos (los 9 iniciales y los que agregue el Superadministrador): orden y
 // página se resuelven en el front, como en Áreas oficiales.
-async function fetchCriteriosPrioridad() {
+export async function fetchCriteriosPrioridad() {
   const [row] = await evalCol.getRows<Resultado<CriterioPrioridad[]>>("/criterios-prioridad")
   return row?.resultado ?? []
 }
@@ -20,7 +20,7 @@ export function useCriteriosPrioridadQuery() {
   return useQuery({ queryKey: criterioPrioridadKeys.lista, queryFn: fetchCriteriosPrioridad })
 }
 
-async function fetchCriterioCampos() {
+export async function fetchCriterioCampos() {
   const [row] = await evalCol.getRows<Resultado<BloqueOpcion[]>>(
     "/catalogos/criterios-prioridad/campos",
   )

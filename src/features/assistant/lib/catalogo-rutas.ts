@@ -382,7 +382,7 @@ export const CATALOGO_RUTAS: RutaCatalogo[] = [
   // ─── Cobertura: inscritos ────────────────────────────────────────────────
   {
     codigo: "inscritos.detalle",
-    menu: "INSCRITOS",
+    menu: "INSCRIPCIONES",
     ruta: "/app/cobertura/inscritos/$enrollmentId",
     descripcion: "Detalle de un estudiante inscrito.",
     accion: "ver",

@@ -1,6 +1,8 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { CaretDownIcon } from "@/components/ui/icons"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { syncNow } from "@/lib/offline/outbox/engine"
@@ -18,7 +20,8 @@ function mensaje(error: unknown): string {
 }
 
 /**
- * Respaldo por USB (D-9): exportar desde el equipo sin internet (funciona sin
+ * Respaldo por USB (D-9), presentado como «Pasar mis cambios a otro equipo» y
+ * cerrado por defecto (quien usa un solo equipo no lo necesita): exportar desde el equipo sin internet (funciona sin
  * red) e importar en otro equipo con internet, con la misma cuenta.
  */
 export function UsbPackageCard() {
@@ -43,7 +46,7 @@ export function UsbPackageCard() {
       a.download = `sincronizacion-${new Date().toISOString().slice(0, 10)}.cesync.json`
       a.click()
       URL.revokeObjectURL(url)
-      setOk(`Paquete con ${count} cambios descargado. Cópialo a una memoria USB; en este equipo los cambios siguen pendientes.`)
+      setOk(`Paquete exportado (${count} ${count === 1 ? "cambio" : "cambios"}). Estos cambios siguen pendientes en este equipo y se enviarán cuando tenga internet; el servidor no los aplicará dos veces. Si ya los importó en otro equipo, conéctese antes de 15 días o descártelos aquí.`)
     } catch (e) {
       setError(mensaje(e))
     } finally {
@@ -58,7 +61,7 @@ export function UsbPackageCard() {
     setOk(null)
     try {
       const result = await importSyncPackage(await archivo.text(), frase, sub)
-      setOk(`Se agregaron ${result.agregados} cambios a la cola${result.yaEstaban ? ` (${result.yaEstaban} ya estaban)` : ""}. Enviando…`)
+      setOk(`Se agregaron ${result.agregados} cambios; ${result.yaEstaban} ya estaban en este equipo. Enviando a la plataforma…`)
       void syncNow()
     } catch (e) {
       setError(mensaje(e))
@@ -68,12 +71,30 @@ export function UsbPackageCard() {
   }
 
   return (
-    <section aria-label="Paquete USB" className="flex flex-col gap-3 rounded-md border p-3 text-sm">
-      <p className="font-semibold">¿Este equipo nunca tiene internet? Usa un paquete USB</p>
+    <section aria-label="Pasar mis cambios a otro equipo" className="min-w-0 rounded-md border text-sm">
+    <Collapsible className="flex min-w-0 flex-col">
+      <CollapsibleTrigger
+        render={<Button variant="ghost" color="neutral" className="group w-full justify-between rounded-md px-3" />}
+      >
+        Opciones avanzadas: pasar mis cambios a otro equipo
+        <CaretDownIcon data-icon="inline-end" className="transition-transform group-data-[panel-open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex min-w-0 flex-col gap-3 px-3 pt-1 pb-3">
       <p className="text-muted-foreground">
-        Exporta tus cambios pendientes a un archivo cifrado y llévalo a un equipo con internet. Allí inicia sesión con
-        tu misma cuenta, abre esta pantalla e impórtalo con la misma frase.
+        Úselo solo si este equipo nunca tiene internet. Si su equipo se conecta de vez en cuando, no lo necesita:
+        sus cambios se envían solos al volver la conexión.
       </p>
+      <ol className="text-muted-foreground flex list-decimal flex-col gap-1 pl-5">
+        <li>
+          En este equipo escriba una frase secreta y pulse «Exportar paquete». Se descarga un archivo protegido con
+          sus cambios pendientes; cópielo a una memoria USB.
+        </li>
+        <li>
+          En un equipo personal con la app instalada y con internet, inicie sesión con la misma cuenta, abra esta pantalla, escriba la misma frase,
+          elija el archivo y pulse «Importar paquete». Los cambios se envían a la plataforma.
+        </li>
+        <li>En este equipo los cambios siguen apareciendo como pendientes; no se borran.</li>
+      </ol>
       <Field variant="outlined" data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor="usb-frase">Frase del paquete ({PASSPHRASE_MIN_LENGTH}+ caracteres)</FieldLabel>
         <Input id="usb-frase" type="password" autoComplete="off" value={frase} onChange={(e) => setFrase(e.target.value)} />
@@ -100,6 +121,8 @@ export function UsbPackageCard() {
       </div>
       {error && <FieldError>{error}</FieldError>}
       {ok && <p className="text-green">{ok}</p>}
+      </CollapsibleContent>
+    </Collapsible>
     </section>
   )
 }

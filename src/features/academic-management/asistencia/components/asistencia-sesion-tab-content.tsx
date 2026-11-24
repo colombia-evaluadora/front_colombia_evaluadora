@@ -1,5 +1,6 @@
 "use no memo"
 
+import { GUARDADO_PENDIENTE_APROBACION } from "@/lib/offline/pending-approval"
 import { useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
 import { createPortal } from "react-dom"
@@ -521,7 +522,7 @@ export function AsistenciaSesionTabContent({
       if (quedaronPendientes.length > 0) {
         setPendientesLocales((prev) => new Set([...prev, ...quedaronPendientes]))
         notify(
-          "El período ya no es calificable: los cambios quedaron pendientes de aprobación del coordinador.",
+          GUARDADO_PENDIENTE_APROBACION,
           {
             variant: "info",
           },

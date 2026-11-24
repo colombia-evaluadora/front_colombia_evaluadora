@@ -11,16 +11,18 @@ export interface InformeInclusion {
   barreras: { nombre: string; ajustes: number }[]
 }
 
+export const fetchInformeInclusion = (params: { establecimiento: number | null | undefined; sede: string; anio: string; grado: string }) => {
+  const q = new URLSearchParams({ FK_ESTABLECIMIENTO: String(params.establecimiento) })
+  if (params.sede) q.set("FK_SEDE", params.sede)
+  if (params.anio) q.set("ANIO", params.anio)
+  if (params.grado) q.set("FK_GRADO", params.grado)
+  return evalCol.getRow<{ resultado: InformeInclusion }>(`/gestion-estudiantil/inclusion/informe?${q}`).then((r) => r.resultado)
+}
+
 export function useInformeQuery(params: { establecimiento: number | null | undefined; sede: string; anio: string; grado: string }) {
   return useQuery({
     queryKey: ["inclusion", "informe", params],
-    queryFn: () => {
-      const q = new URLSearchParams({ FK_ESTABLECIMIENTO: String(params.establecimiento) })
-      if (params.sede) q.set("FK_SEDE", params.sede)
-      if (params.anio) q.set("ANIO", params.anio)
-      if (params.grado) q.set("FK_GRADO", params.grado)
-      return evalCol.getRow<{ resultado: InformeInclusion }>(`/gestion-estudiantil/inclusion/informe?${q}`).then((r) => r.resultado)
-    },
+    queryFn: () => fetchInformeInclusion(params),
     enabled: params.establecimiento != null,
     staleTime: 60_000,
   })

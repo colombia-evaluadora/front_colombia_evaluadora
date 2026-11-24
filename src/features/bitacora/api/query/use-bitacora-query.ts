@@ -118,7 +118,7 @@ export function toBitacoraSorting(sorting: SortingState) {
   return orden ? { id: orden.id, desc: orden.desc } : { id: "fecha", desc: true }
 }
 
-async function fetchBitacora(params: BitacoraParams): Promise<BitacoraPagina> {
+export async function fetchBitacora(params: BitacoraParams): Promise<BitacoraPagina> {
   if (env.ENABLE_API_MOCKING) return fetchBitacoraMock(params)
 
   const response = await api.query<RowsEnvelope<BitacoraRow>>(`${AUDIT_API_PREFIX}/bitacora/query`, {

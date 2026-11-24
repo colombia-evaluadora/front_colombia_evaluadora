@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Auditoría de rutas offline (docs/offline/AUDITORIA-RUTAS.md): después de
 // "Preparar para usar sin conexión", NINGUNA ruta no administrativa debe
@@ -52,17 +53,16 @@ test(`${usuario}: ninguna ruta muestra el empty state sin red tras preparar`, as
         req.onsuccess = req.onerror = req.onblocked = () => resolve()
       }),
   )
-  await page.getByLabel("Correo electrónico").fill(usuario)
+  await page.getByLabel("Correo o número de documento").fill(usuario)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
 
   await page.getByRole("button", { name: "Cuenta de usuario" }).click()
   await page.getByRole("menuitem", { name: "Preparar para usar sin conexión" }).click()
   const dialog = page.getByRole("dialog", { name: "Preparar para usar sin conexión" })
-  await dialog.getByRole("button", { name: "Preparar todo" }).click()
+  await dialog.getByRole("button", { name: "Preparar este equipo" }).click()
   await expect(dialog).toBeHidden()
   await expect(page.getByText(/Listo. Este equipo puede usarse sin conexión./).first()).toBeVisible({ timeout: 300_000 })
 

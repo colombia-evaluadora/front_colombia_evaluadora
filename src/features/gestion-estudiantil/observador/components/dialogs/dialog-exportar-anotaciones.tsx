@@ -5,7 +5,7 @@ import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils
 import type { ObservadorQueryFilters } from "@/features/gestion-estudiantil/observador/api/types"
 
 /** Exportar del listado: lo que se ve en la tabla (mismos filtros y alcance), sin paginar. */
-export function DialogExportarAnotaciones({ filters, orden }: { filters: ObservadorQueryFilters; orden: OrdenServidor }) {
+export function DialogExportarAnotaciones({ filters, orden }: { filters: ObservadorQueryFilters; orden?: OrdenServidor }) {
   const exportar = useExportarAnotaciones()
   return (
     <ExportDialog

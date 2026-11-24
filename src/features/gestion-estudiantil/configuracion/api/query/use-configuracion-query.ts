@@ -8,30 +8,34 @@ import type { AccesoConfiguracion, NivelesConvivencia } from "@/features/gestion
 
 export const BASE_CONFIGURACION = "/gestion-estudiantil/configuracion"
 
+export const fetchAccesoConfiguracion = (establecimiento: number | null) =>
+  evalCol
+    .getRows<AccesoConfiguracion>(`${BASE_CONFIGURACION}/acceso${queryString({ ESTABLECIMIENTO: establecimiento })}`)
+    .then((r) => r[0] ?? null)
+
 /** `GET /configuracion/acceso`: qué puede el usuario en las pestañas de Configuración (403 sin CONFIGURACION_GE/VER). */
 export function useAccesoConfiguracionQuery(establecimiento: number | null) {
   return useQuery({
     queryKey: configuracionKeys.acceso(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<AccesoConfiguracion>(`${BASE_CONFIGURACION}/acceso${queryString({ ESTABLECIMIENTO: establecimiento })}`)
-        .then((r) => r[0] ?? null),
+    queryFn: () => fetchAccesoConfiguracion(establecimiento),
     enabled: establecimiento != null,
     retry: false,
     staleTime: 60_000,
   })
 }
 
+export const fetchNivelesConvivencia = (establecimiento: number | null) =>
+  evalCol
+    .getRows<NivelesConvivencia>(
+      `${BASE_CONFIGURACION}/niveles-convivencia${queryString({ ESTABLECIMIENTO: establecimiento })}`,
+    )
+    .then((r) => r[0] ?? null)
+
 /** `GET /configuracion/niveles-convivencia` (§3.6). */
 export function useNivelesConvivenciaQuery(establecimiento: number | null) {
   return useQuery({
     queryKey: configuracionKeys.niveles(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<NivelesConvivencia>(
-          `${BASE_CONFIGURACION}/niveles-convivencia${queryString({ ESTABLECIMIENTO: establecimiento })}`,
-        )
-        .then((r) => r[0] ?? null),
+    queryFn: () => fetchNivelesConvivencia(establecimiento),
     enabled: establecimiento != null,
     retry: false,
   })

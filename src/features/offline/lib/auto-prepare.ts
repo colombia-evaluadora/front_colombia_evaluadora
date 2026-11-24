@@ -26,7 +26,7 @@ import { connectivityStore } from "@/lib/offline/connectivity"
 import { getOfflineMode } from "@/lib/offline/offline-mode"
 import { isSyncing } from "@/lib/offline/outbox/engine"
 import { getDeviceMode } from "@/lib/offline/query-persister"
-import { isVaultLocked } from "@/lib/offline/vault"
+import { vaultStore } from "@/lib/offline/vault"
 
 /** Cada cuánto se vuelve a preparar con la app abierta (revisable). */
 export const AUTO_PREPARE_INTERVAL_MS = 4 * 60 * 60 * 1000
@@ -85,7 +85,8 @@ export function canAutoPrepare(): boolean {
     getOfflineMode() !== "off" &&
     getDeviceMode() === "personal" &&
     isAutoPrepareEnabled() &&
-    !isVaultLocked() &&
+    // PIN obligatorio: sin él (o bloqueado) no se descarga nada.
+    vaultStore.get() === "abierta" &&
     // Con la red inestable (degradada) tampoco: se espera a que se asiente.
     connectivityStore.getState().status === "online" &&
     !isPreparing() &&

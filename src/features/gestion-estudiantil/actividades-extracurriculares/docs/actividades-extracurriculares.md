@@ -19,7 +19,6 @@ Backend: migraciones V617 a V623 de SSO. Menú `ACTIVIDADES_EXTRACURRICULARES`.
 
 **Fuera de alcance**
 
-- Exportar (listado de actividades y de servicio social): no hay endpoint en el backend (B1). El botón se muestra deshabilitado.
 - Parámetros del servicio social: pantalla del menú Configuración (CONFIG_SERVICIO_SOCIAL), fuera de esta entrega (B5).
 - Certificado con QR, firmas y documento emitido (B4).
 - Portal del acudiente (B6).
@@ -65,7 +64,7 @@ Estado: **Cubierto** (el backend entrega lo que la pantalla necesita), **Parcial
 | Detalle de servicio social (G.5.SOC.DET): «N de M horas · le faltan X» y tabla de sesiones | `GET /servicio-social/estudiante/:MATRICULA` | Cubierto |
 | Certificado (G.5.SOC.DOC): vista imprimible, habilitado si estado Cumplido | `GET /servicio-social/certificado/:MATRICULA` | Parcial (B4) |
 | Grados del servicio social: limita los grados cuando el tipo es Servicio social | `GET /servicio-social/parametros` | Cubierto |
-| Exportar actividades y servicio social (ambas pestañas) | — | Falta (B1) |
+| Exportar actividades y servicio social (ambas pestañas) | `/actividades/exportar` y `/servicio-social/exportar` (V623, vía reporting-service) | Cubierto |
 | Pantalla de parámetros del servicio social (menú Configuración) | — | Fuera (B5) |
 | Portal del acudiente (Regla 5) | — | Fuera (B6) |
 
@@ -73,7 +72,7 @@ Selectores: Sede, Jornada y Grados desde `useOpcionesCascada`. Grados usa `grado
 
 **Brechas del backend**
 
-- **B1 Exportar.** No hay endpoint para actividades ni para servicio social. Front: botón deshabilitado.
+- **B1 Exportar.** Resuelta (V623): `api/mutations/exportar.ts` exporta cada pestaña con los filtros de su listado.
 - **B2 Activar o inactivar.** La spec lo da también al Responsable; el backend (role_query y gate de V622) solo lo da a Supervisor y Administrador. Front: la acción usa `puede_editar`.
 - **B3 Sin banderas por fila.** No hay bandera para retirar, registrar sesión ni certificado. Front: retirar y nueva sesión usan `puede_inscribir` (mismo gate en V622) y el estado; el certificado se habilita si el estado es CUMPLIDO y el gate decide el rol.
 - **B4 Certificado parcial.** Sin QR ni firmas configuradas; el documento emitido queda fuera.

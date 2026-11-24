@@ -10,7 +10,7 @@ import type {
 } from "@/features/administration/administradores-territoriales/api/types/administrador"
 
 // Son pocos: orden y página se resuelven en el front, como en Superadministradores.
-async function fetchAdministradores() {
+export async function fetchAdministradores() {
   const [row] = await evalCol.getRows<Resultado<AdministradorTerritorial[]>>("/administradores-territoriales")
   return row?.resultado ?? []
 }
@@ -19,7 +19,7 @@ export function useAdministradoresQuery() {
   return useQuery({ queryKey: administradorKeys.lista, queryFn: fetchAdministradores })
 }
 
-async function fetchAdministrador(id: number) {
+export async function fetchAdministrador(id: number) {
   const [row] = await evalCol.getRows<Resultado<AdministradorTerritorial>>(`/administradores-territoriales/${id}`)
   if (!row) throw new Error("No existe el administrador territorial solicitado.")
   return row.resultado
@@ -33,7 +33,7 @@ export function useAdministradorQuery(id: number | null) {
   })
 }
 
-async function fetchCatalogos() {
+export async function fetchCatalogos() {
   const [row] = await evalCol.getRows<Resultado<CatalogosAdministrador>>("/catalogos/administradores-territoriales")
   return row?.resultado ?? { tiposDocumento: [] }
 }

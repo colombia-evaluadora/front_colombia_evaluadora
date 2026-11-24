@@ -38,27 +38,33 @@ export interface PostulacionesParams {
   pageSize: number
 }
 
+export async function fetchPostulaciones(p: PostulacionesParams) {
+  const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
+    SEARCH: p.search || null,
+    FK_CONVOCATORIA: p.convocatoria ?? null,
+    GRADO: p.grado || null,
+    PAGE_INDEX: p.pageIndex,
+    PAGE_SIZE: p.pageSize,
+  })
+  return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Postulacion>(r) })
+}
+
 export function usePostulacionesQuery(p: PostulacionesParams) {
   return useQuery({
     queryKey: postulacionKeys.lista(p),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
-        SEARCH: p.search || null,
-        FK_CONVOCATORIA: p.convocatoria ?? null,
-        GRADO: p.grado || null,
-        PAGE_INDEX: p.pageIndex,
-        PAGE_SIZE: p.pageSize,
-      })
-      return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Postulacion>(r) })
-    },
+    queryFn: () => fetchPostulaciones(p),
     placeholderData: keepPreviousData,
   })
+}
+
+export async function fetchPostulacion(id: number) {
+  return camelizar<Postulacion>(await evalCol.getRow(`${BASE}/${id}`))
 }
 
 export function usePostulacionQuery(id: number | null) {
   return useQuery({
     queryKey: postulacionKeys.detalle(id ?? "none"),
-    queryFn: async () => camelizar<Postulacion>(await evalCol.getRow(`${BASE}/${id}`)),
+    queryFn: () => fetchPostulacion(id as number),
     enabled: id != null,
   })
 }

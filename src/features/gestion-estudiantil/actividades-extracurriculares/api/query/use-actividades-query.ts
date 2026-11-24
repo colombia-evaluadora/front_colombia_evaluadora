@@ -38,31 +38,35 @@ export interface PaginaParams<F> {
   pageSize: number
 }
 
+export const fetchActividades = async (params: PaginaParams<ActividadesQueryFilters>) => {
+  const rows = await evalCol.getRows<ActividadRow>(
+    `${BASE_ACTIVIDADES}${queryString({ ...params.filters, PAGEINDEX: params.pageIndex, PAGESIZE: params.pageSize })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /actividades`: paginado en el servidor; `total_count` viene repetido en cada fila. */
 export function useActividadesQuery(params: PaginaParams<ActividadesQueryFilters>) {
   return useQuery({
     queryKey: actividadesKeys.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<ActividadRow>(
-        `${BASE_ACTIVIDADES}${queryString({ ...params.filters, PAGEINDEX: params.pageIndex, PAGESIZE: params.pageSize })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchActividades(params),
     enabled: params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchActividad = (actividadId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_ACTIVIDADES}/${actividadId}`)
+    .then((r) => desenvolver<ActividadDetalle>(r[0], "datos", "No se encontró la actividad."))
+
 /** `GET /actividades/:ID` → columna `datos`. */
 export function useActividadQuery(actividadId: number | undefined) {
   return useQuery({
     queryKey: actividadesKeys.detalle(actividadId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_ACTIVIDADES}/${actividadId}`)
-        .then((r) => desenvolver<ActividadDetalle>(r[0], "datos", "No se encontró la actividad.")),
+    queryFn: () => fetchActividad(actividadId),
     enabled: actividadId != null,
     retry: false,
   })
@@ -90,22 +94,24 @@ export interface ParticipantesParams {
   pageSize: number
 }
 
+export const fetchParticipantes = async (actividadId: number | undefined, params: ParticipantesParams) => {
+  const rows = await evalCol.getRows<ParticipanteRow>(
+    `${BASE_ACTIVIDADES}/${actividadId}/participantes${queryString({
+      SEARCH: params.search?.trim() || null,
+      ESTADO: params.estado,
+      PAGEINDEX: params.pageIndex,
+      PAGESIZE: params.pageSize,
+    })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /actividades/:ID/participantes`. */
 export function useParticipantesQuery(actividadId: number | undefined, params: ParticipantesParams) {
   return useQuery({
     queryKey: actividadesKeys.participantes(actividadId ?? "none", params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<ParticipanteRow>(
-        `${BASE_ACTIVIDADES}/${actividadId}/participantes${queryString({
-          SEARCH: params.search?.trim() || null,
-          ESTADO: params.estado,
-          PAGEINDEX: params.pageIndex,
-          PAGESIZE: params.pageSize,
-        })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchParticipantes(actividadId, params),
     enabled: actividadId != null,
     retry: false,
     placeholderData: (prev) => prev,
@@ -132,33 +138,37 @@ export interface SesionesParams {
   pageSize: number
 }
 
+export const fetchSesionesActividad = async (actividadId: number | undefined, params: SesionesParams) => {
+  const rows = await evalCol.getRows<SesionRow>(
+    `${BASE_ACTIVIDADES}/${actividadId}/sesiones${queryString({ PAGEINDEX: params.pageIndex, PAGESIZE: params.pageSize })}`,
+  )
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `GET /actividades/:ID/sesiones`. */
 export function useSesionesQuery(actividadId: number | undefined, params: SesionesParams) {
   return useQuery({
     queryKey: actividadesKeys.sesiones(actividadId ?? "none", params),
-    queryFn: async () => {
-      const rows = await evalCol.getRows<SesionRow>(
-        `${BASE_ACTIVIDADES}/${actividadId}/sesiones${queryString({ PAGEINDEX: params.pageIndex, PAGESIZE: params.pageSize })}`,
-      )
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchSesionesActividad(actividadId, params),
     enabled: actividadId != null,
     retry: false,
     placeholderData: (prev) => prev,
   })
 }
 
+export const fetchSesionActividad = (sesionId: number | undefined) =>
+  evalCol.getRows<Record<string, unknown>>(`${BASE_ACTIVIDADES}/sesiones/${sesionId}`).then((r) => {
+    const fila = r[0]
+    if (!fila) throw new Error("No se encontró la sesión.")
+    return ("datos" in fila ? desenvolver<SesionDetalle>(fila, "datos", "") : fila) as SesionDetalle
+  })
+
 /** `GET /actividades/sesiones/:ID` (JSON). */
 export function useSesionQuery(sesionId: number | undefined) {
   return useQuery({
     queryKey: actividadesKeys.sesion(sesionId ?? "none"),
-    queryFn: () =>
-      evalCol.getRows<Record<string, unknown>>(`${BASE_ACTIVIDADES}/sesiones/${sesionId}`).then((r) => {
-        const fila = r[0]
-        if (!fila) throw new Error("No se encontró la sesión.")
-        return ("datos" in fila ? desenvolver<SesionDetalle>(fila, "datos", "") : fila) as SesionDetalle
-      }),
+    queryFn: () => fetchSesionActividad(sesionId),
     enabled: sesionId != null,
     retry: false,
   })

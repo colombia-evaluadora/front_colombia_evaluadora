@@ -74,7 +74,7 @@ export async function fetchGruposAdmisionRows(ee: number): Promise<GrupoAdmision
   return row ? datos(row) : []
 }
 
-async function fetchGruposAdmision(): Promise<GrupoAdmision[]> {
+export async function fetchGruposAdmision(): Promise<GrupoAdmision[]> {
   const ee = await fetchEstablecimientoId()
   if (ee == null) return []
   const grupos = await fetchGruposAdmisionRows(ee)
@@ -315,15 +315,18 @@ export function toInscripcionDetalle(d: InscripcionDetalleRow): InscripcionDetal
   }
 }
 
+export async function fetchInscripcionDetalle(id: string) {
+  return toInscripcionDetalle(
+    datos(
+      await evalCol.getRow<{ datos: InscripcionDetalleRow }>(`${INSCRIPCIONES_BASE}/${id}`),
+    ),
+  )
+}
+
 export function useInscripcionDetalleQuery(id: string) {
   return useQuery({
     queryKey: inscripcionesKeys.detalle(id),
-    queryFn: async () =>
-      toInscripcionDetalle(
-        datos(
-          await evalCol.getRow<{ datos: InscripcionDetalleRow }>(`${INSCRIPCIONES_BASE}/${id}`),
-        ),
-      ),
+    queryFn: () => fetchInscripcionDetalle(id),
     enabled: Boolean(id),
   })
 }

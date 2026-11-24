@@ -33,18 +33,20 @@ export interface ConveniosParams {
   pageSize: number
 }
 
+export async function fetchConvenios(p: ConveniosParams) {
+  const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
+    SEARCH: p.search || null,
+    ANIO: p.anio ?? null,
+    PAGE_INDEX: p.pageIndex,
+    PAGE_SIZE: p.pageSize,
+  })
+  return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Convenio>(r) })
+}
+
 export function useConveniosQuery(p: ConveniosParams) {
   return useQuery({
     queryKey: convenioKeys.lista(p),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
-        SEARCH: p.search || null,
-        ANIO: p.anio ?? null,
-        PAGE_INDEX: p.pageIndex,
-        PAGE_SIZE: p.pageSize,
-      })
-      return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Convenio>(r) })
-    },
+    queryFn: () => fetchConvenios(p),
     placeholderData: keepPreviousData,
   })
 }

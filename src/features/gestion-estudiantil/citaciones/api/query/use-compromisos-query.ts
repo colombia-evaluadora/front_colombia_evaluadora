@@ -34,32 +34,36 @@ export interface CompromisosParams {
   orden?: OrdenServidor
 }
 
+export const fetchCompromisos = async (params: CompromisosParams) => {
+  const rows = await evalCol.postRows<CompromisoRow>(`${BASE_COMPROMISOS}/query`, {
+    FILTERS: params.filters,
+    ...params.orden,
+    PAGEINDEX: params.pageIndex,
+    PAGESIZE: params.pageSize,
+  })
+  const totalCount = Number(rows[0]?.total_count ?? 0)
+  return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
+}
+
 /** `POST /compromisos/query`: el alcance lo aplica el backend; `total_count` viene repetido en cada fila. */
 export function useCompromisosQuery(params: CompromisosParams) {
   return useQuery({
     queryKey: citacionesKeys.compromisos.lista(params),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<CompromisoRow>(`${BASE_COMPROMISOS}/query`, {
-        FILTERS: params.filters,
-        ...params.orden,
-        PAGEINDEX: params.pageIndex,
-        PAGESIZE: params.pageSize,
-      })
-      const totalCount = Number(rows[0]?.total_count ?? 0)
-      return { rows, totalCount, pageCount: toPageCount(totalCount, params.pageSize) }
-    },
+    queryFn: () => fetchCompromisos(params),
     placeholderData: (prev) => prev,
   })
 }
+
+export const fetchCompromiso = (compromisoId: number | undefined) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_COMPROMISOS}/${compromisoId}`)
+    .then((r) => desenvolver<CompromisoDetalle>(r[0], "datos", "No se encontró el compromiso solicitado."))
 
 /** `GET /compromisos/:ID`: la fila con sus ítems, en la columna `datos`. */
 export function useCompromisoQuery(compromisoId: number | undefined) {
   return useQuery({
     queryKey: citacionesKeys.compromisos.detalle(compromisoId ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_COMPROMISOS}/${compromisoId}`)
-        .then((r) => desenvolver<CompromisoDetalle>(r[0], "datos", "No se encontró el compromiso solicitado.")),
+    queryFn: () => fetchCompromiso(compromisoId),
     enabled: compromisoId != null,
   })
 }

@@ -134,7 +134,7 @@ test("app instalada: equipo personal sin piloto, guarda todo sola, cerrar sesió
   await expect(page.getByRole("checkbox", { name: "Este es un equipo compartido" })).toHaveCount(0)
   await expect(page.locator('[data-slot="installed-device-note"]')).toBeVisible()
 
-  await page.getByLabel("Correo electrónico").fill(USUARIO)
+  await page.getByLabel("Correo o número de documento").fill(USUARIO)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
@@ -163,7 +163,7 @@ test("app instalada: equipo personal sin piloto, guarda todo sola, cerrar sesió
   await page.waitForURL((url) => url.pathname === "/login", { timeout: 30_000 })
   await expect(page.getByRole("button", { name: /Continuar sin conexión/ })).toHaveCount(0)
   await expect(page.getByText(/escribe tu correo y tu contraseña/i)).toBeVisible({ timeout: 15_000 })
-  await page.getByLabel("Correo electrónico").fill(USUARIO)
+  await page.getByLabel("Correo o número de documento").fill(USUARIO)
   await page.getByLabel("Contraseña", { exact: true }).fill("otra-cosa")
   await page.getByRole("button", { name: "Entrar sin conexión" }).click()
   await expect(page.getByRole("alert").filter({ hasText: /solo puede entrar/ })).toBeVisible({ timeout: 15_000 })
@@ -181,7 +181,7 @@ test("app instalada: equipo personal sin piloto, guarda todo sola, cerrar sesió
   await page.waitForURL((url) => url.pathname.startsWith("/app/") || url.pathname === "/login", { timeout: 30_000 })
   if (new URL(page.url()).pathname === "/login") {
     // Recargar sin red vuelve a pedir desbloquear (la sesión no se reabre sola).
-    await page.getByLabel("Correo electrónico").fill(USUARIO)
+    await page.getByLabel("Correo o número de documento").fill(USUARIO)
     await page.getByLabel("Contraseña", { exact: true }).fill("password")
     await page.getByRole("button", { name: "Entrar sin conexión" }).click()
     await page.waitForURL((url) => url.pathname.startsWith("/app/"), { timeout: 30_000 })

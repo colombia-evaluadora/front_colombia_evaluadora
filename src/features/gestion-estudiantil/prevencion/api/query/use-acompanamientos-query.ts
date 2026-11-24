@@ -58,7 +58,7 @@ export function toReportesConsumoFilters(
   }
 }
 
-interface ParamsPaginados<F> {
+export interface ParamsPaginados<F> {
   filters: F | null
   pageIndex: number
   pageSize: number
@@ -72,11 +72,14 @@ async function paginado<T extends { total_count: number }>(url: string, filters:
   return { rows, totalCount, pageCount: toPageCount(totalCount, pageSize) }
 }
 
+export const fetchAcompanamientos = (params: ParamsPaginados<AcompanamientosQueryFilters>) =>
+  paginado<AcompanamientoRow>(BASE_ACOMPANAMIENTOS, params.filters, params.pageIndex, params.pageSize)
+
 /** `GET /acompanamientos?TIPO=`: pestañas Embarazo y Consumo, más recientes primero; `total_count` en cada fila. */
 export function useAcompanamientosQuery(params: ParamsPaginados<AcompanamientosQueryFilters>) {
   return useQuery({
     queryKey: prevencionKeys.acompanamientos(params),
-    queryFn: () => paginado<AcompanamientoRow>(BASE_ACOMPANAMIENTOS, params.filters, params.pageIndex, params.pageSize),
+    queryFn: () => fetchAcompanamientos(params),
     enabled: params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,
@@ -161,12 +164,14 @@ export function useOpcionesAcompAbiertosQuery(matricula: number | undefined, ena
   })
 }
 
+export const fetchReportesConsumo = (params: ParamsPaginados<ReportesConsumoQueryFilters>) =>
+  paginado<ReporteConsumoRow>(`${BASE_ACOMPANAMIENTOS}/consumo/reportes`, params.filters, params.pageIndex, params.pageSize)
+
 /** `GET /acompanamientos/consumo/reportes`: vista Reportes recibidos (solo orientación). */
 export function useReportesConsumoQuery(params: ParamsPaginados<ReportesConsumoQueryFilters>, enabled = true) {
   return useQuery({
     queryKey: prevencionKeys.reportesConsumo(params),
-    queryFn: () =>
-      paginado<ReporteConsumoRow>(`${BASE_ACOMPANAMIENTOS}/consumo/reportes`, params.filters, params.pageIndex, params.pageSize),
+    queryFn: () => fetchReportesConsumo(params),
     enabled: enabled && params.filters != null,
     retry: false,
     placeholderData: (prev) => prev,

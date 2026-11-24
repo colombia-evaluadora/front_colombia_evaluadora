@@ -1,91 +1,94 @@
-import { useState, useSyncExternalStore } from "react"
+import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { PinInput } from "@/components/offline/pin-input"
+import { FieldError } from "@/components/ui/field"
 import { resealDeviceToken } from "@/lib/offline/device-token"
 import { resealOutbox } from "@/lib/offline/outbox/store"
 import { getActivePersistUser, resealUserQueries } from "@/lib/offline/query-persister"
-import { toDigitsOnly } from "@/lib/text-input"
-import { createVault, isValidPin, PIN_MIN_LENGTH, vaultStore } from "@/lib/offline/vault"
+import { createVault, isEasyPin, PIN_LENGTH } from "@/lib/offline/vault"
 
 /**
- * "Proteger con PIN" (D-4/D-8) dentro de Preparar. Al crearlo, todo lo
- * guardado en el equipo se re-escribe cifrado (AES-GCM) y desde ahí cada vez
- * que se abra la app se pide el PIN. Default revisable: opcional pero
- * recomendado (P6 pendiente).
+ * Crear el PIN del equipo, obligatorio para preparar (decisión del líder,
+ * 2026-11): se escribe y se repite, sin botones. Al crearlo, todo lo guardado
+ * se re-escribe cifrado (AES-GCM) y se llama `onCreated`.
  */
-export function PinSetupCard() {
-  const state = useSyncExternalStore(vaultStore.subscribe, vaultStore.get, () => "sin-pin" as const)
+export function PinSetupCard({ onCreated }: { onCreated: () => void }) {
+  const [primero, setPrimero] = useState<string | null>(null)
   const [pin, setPin] = useState("")
-  const [confirm, setConfirm] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (state === "abierta") {
-    return (
-      <p className="rounded-md bg-green-22 px-3 py-2 text-green">
-        Datos de este equipo cifrados con tu PIN. Lo pediremos cada vez que abras la app.
-      </p>
-    )
-  }
-  if (state !== "sin-pin") return null
-
-  async function crear() {
+  async function completar(valor: string) {
+    if (busy) return
+    if (primero == null) {
+      setPin("")
+      if (isEasyPin(valor)) {
+        setError("Ese PIN es muy fácil de adivinar. Elija otros números.")
+        return
+      }
+      setError(null)
+      setPrimero(valor)
+      return
+    }
+    const reiniciar = (mensaje: string) => {
+      setPin("")
+      setPrimero(null)
+      setError(mensaje)
+    }
+    if (valor !== primero) {
+      reiniciar("Los números no coinciden. Empecemos de nuevo.")
+      return
+    }
     const sub = getActivePersistUser()
-    if (!sub) return
-    if (!isValidPin(pin)) return setError(`El PIN debe tener al menos ${PIN_MIN_LENGTH} dígitos.`)
-    if (pin !== confirm) return setError("Los PIN no coinciden.")
+    if (!sub) {
+      reiniciar("Inicie sesión con internet para crear su PIN.")
+      return
+    }
     setBusy(true)
     setError(null)
     try {
-      await createVault(sub, pin)
+      await createVault(sub, valor)
       await resealUserQueries(sub)
       await resealOutbox()
       // El token del equipo pasa a sellarse con la DEK del PIN.
       await resealDeviceToken(sub)
+      onCreated()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos crear el PIN.")
+      reiniciar(e instanceof Error ? e.message : "No pudimos crear el PIN. Intente de nuevo.")
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-md border px-3 py-3">
-      <p className="font-semibold">Proteger con PIN (recomendado)</p>
-      <p className="text-muted-foreground text-xs">
-        Cifra en este equipo las notas, la asistencia y los datos de tus estudiantes. Si lo olvidas, se pierde lo
-        que no hayas sincronizado.
+    <div className="flex min-w-0 flex-col gap-3 rounded-md border px-3 py-4 text-center" data-slot="pin-setup">
+      <p className="text-base font-semibold" aria-live="polite">
+        {busy
+          ? "Protegiendo sus datos…"
+          : primero == null
+            ? `Cree un PIN de ${PIN_LENGTH} números`
+            : "Repita el mismo PIN"}
       </p>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-        <Field variant="outlined" className="min-w-0" data-invalid={error ? true : undefined}>
-          <FieldLabel htmlFor="pin-nuevo">PIN ({PIN_MIN_LENGTH}+ dígitos)</FieldLabel>
-          <Input
-            id="pin-nuevo"
-            type="password"
-            inputMode="numeric"
-            autoComplete="new-password"
-            value={pin}
-            onChange={(e) => setPin(toDigitsOnly(e.target.value, 12))}
-          />
-        </Field>
-        <Field variant="outlined" className="min-w-0" data-invalid={error ? true : undefined}>
-          <FieldLabel htmlFor="pin-confirmar">Confirmar PIN</FieldLabel>
-          <Input
-            id="pin-confirmar"
-            type="password"
-            inputMode="numeric"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(toDigitsOnly(e.target.value, 12))}
-          />
-        </Field>
-      </div>
-      {error && <FieldError>{error}</FieldError>}
-      <Button variant="outline" color="primary" className="self-start" disabled={busy} onClick={() => void crear()}>
-        {busy ? "Cifrando…" : "Crear PIN"}
-      </Button>
+      <p className="text-muted-foreground">
+        {primero == null
+          ? "Protege la información de sus estudiantes si alguien más usa o se lleva este equipo. Se le pedirá al abrir la aplicación."
+          : "Así confirmamos que lo escribió bien."}
+      </p>
+      <PinInput
+        key={primero == null ? "crear" : "repetir"}
+        id="pin-equipo"
+        label={primero == null ? "PIN nuevo" : "Repetir PIN"}
+        value={pin}
+        invalid={error != null}
+        disabled={busy}
+        onChange={setPin}
+        onComplete={(v) => void completar(v)}
+      />
+      {error && <FieldError className="text-center">{error}</FieldError>}
+      <p className="text-xs text-muted-foreground">
+        Elija números que recuerde. Si lo olvida, entra de nuevo con internet y su contraseña; solo se pierde lo que
+        no se haya enviado.
+      </p>
     </div>
   )
 }
