@@ -150,7 +150,7 @@ export async function enqueue<P>(kind: string, payload: P, options: EnqueueOptio
   // Coalescing (§6.7): solo con una op que nunca se intentó enviar (una en
   // `retry` pudo haber llegado al servidor sin que viéramos la respuesta).
   const prev = [...all].reverse().find((o) => o.entityKey === entityKey && isOpen(o))
-  if (prev && prev.kind === kind && prev.status === "pending" && prev.attempts === 0 && files.length === 0 && handler.coalesce) {
+  if (prev && prev.kind === kind && prev.status === "pending" && prev.attempts === 0 && !prev.sharedViaPackage && files.length === 0 && handler.coalesce) {
     const merged = handler.coalesce(prev.payload as P, payload)
     if (merged !== null) {
       try {

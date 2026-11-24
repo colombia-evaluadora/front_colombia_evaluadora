@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import { usarComoEquipoPersonal } from "./support/equipo-personal"
 
 // Auditoría de cargas infinitas sin conexión (docs/offline/AUDITORIA-RUTAS.md):
 // SIN haber usado "Preparar", ninguna ruta no administrativa puede quedarse
@@ -114,10 +115,9 @@ async function limpiarEquipo(page: Page) {
 }
 
 async function ingresar(page: Page, email: string) {
-  await page.getByLabel("Correo electrónico").fill(email)
+  await page.getByLabel("Correo o número de documento").fill(email)
   await page.getByLabel("Contraseña", { exact: true }).fill("password")
-  const compartido = page.getByRole("checkbox", { name: "Este es un equipo compartido" })
-  if (await compartido.isChecked()) await compartido.click()
+  await usarComoEquipoPersonal(page)
   await page.getByRole("button", { name: "Ingresar" }).click()
   await page.waitForURL((url) => url.pathname.startsWith("/app/"))
   // La pantalla de aterrizaje termina de cargar con red (y guarda lo suyo).

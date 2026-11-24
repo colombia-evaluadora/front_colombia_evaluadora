@@ -46,7 +46,7 @@ test("(a) sin index.html en el precache, online la app carga desde la red", asyn
   await deletePrecachedIndex(page)
   await page.goto("/login")
   await expect(page).toHaveTitle("Colombia Evaluadora")
-  await expect(page.getByLabel("Correo electrónico")).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByLabel("Correo o número de documento")).toBeVisible({ timeout: 30_000 })
 })
 
 test("(b) sin index.html en el precache y sin red, aparece la página inline", async ({

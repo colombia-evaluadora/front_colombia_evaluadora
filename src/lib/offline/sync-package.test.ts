@@ -60,6 +60,15 @@ describe("paquete de sincronización USB", () => {
     expect(await importSyncPackage(text, "frase segura", A)).toEqual({ agregados: 0, yaEstaban: 1 })
   }, 60_000)
 
+  it("marca las ops exportadas e importadas para que no se fusionen", async () => {
+    await putOps([op("o3")])
+    const text = await (await exportSyncPackage(A, "frase segura")).blob.text()
+    expect(outboxStore.getOps()[0]).toMatchObject({ id: "o3", status: "pending", sharedViaPackage: "exported" })
+    await deleteOps(["o3"])
+    await importSyncPackage(text, "frase segura", A)
+    expect(outboxStore.getOps()[0]).toMatchObject({ idempotencyKey: "k-o3", sharedViaPackage: "imported" })
+  }, 60_000)
+
   it("rechaza frase incorrecta, archivo alterado y otro usuario", async () => {
     await putOps([op("o2")])
     const text = await (await exportSyncPackage(A, "frase segura")).blob.text()

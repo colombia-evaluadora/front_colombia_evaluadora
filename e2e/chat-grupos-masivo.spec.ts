@@ -21,7 +21,7 @@ async function irAlChat(page: Page) {
 
 async function ingresar(page: Page, email: string) {
   for (let intento = 0; intento < 2; intento++) {
-    await page.getByLabel("Correo electrónico").fill(email)
+    await page.getByLabel("Correo o número de documento").fill(email)
     await page.getByLabel("Contraseña", { exact: true }).fill("password")
     await page.getByRole("button", { name: "Ingresar" }).click()
     await page.waitForURL((u) => u.pathname.startsWith("/app"))

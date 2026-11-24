@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react"
-import { useForm, useStore } from "@tanstack/react-form"
+import { useState } from "react"
+import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from "@/components/ui/icons"
 import { toEmailInput } from "@/lib/text-input"
-import { canUsePersonalDevice, isInstalledPersonalDevice } from "@/lib/offline/device-policy"
-import { canChoosePersonalDevice } from "@/lib/offline/pilot"
+import { isInstalledPersonalDevice } from "@/lib/offline/device-policy"
 
 import {
   Field,
@@ -39,29 +38,15 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       email: "",
       password: "",
       rememberMe: false,
-      // Un equipo compartido no guarda nada (§0.3). Si el piloto offline
-      // abarca a todos (`VITE_APP_OFFLINE_PILOT=*`), el default es "personal":
-      // con "compartido" marcado por defecto el docente que solo iniciaba
-      // sesión se quedaba sin menú ni datos guardados y offline no podía
-      // trabajar. Fuera del piloto sigue siendo "compartido" y la página
-      // revalida con el token (`isOfflinePilotUser`). En la app instalada es
-      // siempre personal (`lib/offline/device-policy.ts`).
-      sharedDevice: !instalada && !canChoosePersonalDevice(""),
+      // App instalada = equipo personal; web en pestaña = compartido (no
+      // guarda nada). Ya no se pregunta: `lib/offline/install-detection.ts`.
+      sharedDevice: !instalada,
     },
     validators: {
       onChange: loginFormSchema,
     },
     onSubmit: ({ value }) => onSubmit(value),
   })
-
-  // Solo el piloto puede desmarcar "equipo compartido" (plan §0.3). Antes del
-  // login se decide por el correo escrito; la página revalida con el token.
-  const email = useStore(form.store, (state) => state.values.email)
-  const sharedDevice = useStore(form.store, (state) => state.values.sharedDevice)
-  const puedeElegirPersonal = canUsePersonalDevice(email)
-  useEffect(() => {
-    if (!puedeElegirPersonal && !sharedDevice) form.setFieldValue("sharedDevice", true)
-  }, [form, puedeElegirPersonal, sharedDevice])
 
   return (
     <form
@@ -174,44 +159,19 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
           )}
         </form.Field>
 
-        <form.Field name="sharedDevice">
-          {(field) =>
-            instalada ? (
-              // En la app instalada no se ofrece "equipo compartido": nadie la
-              // instala en un computador de sala, y el docente la instala para
-              // trabajar sin conexión (default revisable, D-12).
-              <p data-slot="installed-device-note" className="text-xs text-muted-foreground">
-                App instalada: este equipo es personal y guarda tus datos para que puedas trabajar sin
-                conexión.
-              </p>
-            ) : (
-            <Field orientation="horizontal" className="items-start">
-              <Checkbox
-                id={field.name}
-                checked={field.state.value}
-                disabled={!puedeElegirPersonal}
-                onCheckedChange={(checked) => field.handleChange(checked === true)}
-              />
-              <div className="flex flex-col gap-1">
-                <FieldLabel htmlFor={field.name} className="text-sm font-normal tracking-normal normal-case text-muted-foreground">
-                  Este es un equipo compartido
-                </FieldLabel>
-                {!puedeElegirPersonal && (
-                  <FieldDescription>
-                    Solo los usuarios del piloto sin conexión pueden usar este equipo como personal.
-                  </FieldDescription>
-                )}
-                {!field.state.value && (
-                  <FieldDescription>
-                    Al desmarcar, este equipo guardará nombres de tus estudiantes y tus registros
-                    sin conexión. Úsalo solo en un equipo personal.
-                  </FieldDescription>
-                )}
-              </div>
-            </Field>
-            )
-          }
-        </form.Field>
+        {instalada ? (
+          // App instalada (D-12): equipo personal, guarda los datos.
+          <p data-slot="installed-device-note" className="text-xs text-muted-foreground">
+            App instalada: este equipo es personal y guarda sus datos para que pueda trabajar sin
+            conexión.
+          </p>
+        ) : (
+          // Web en una pestaña = equipo compartido: no se guarda nada en el equipo.
+          <p data-slot="shared-device-note" className="text-xs text-muted-foreground">
+            Para usar la plataforma sin internet, instale la aplicación en su equipo personal.
+          </p>
+        )}
+
       </FieldGroup>
     </form>
   )

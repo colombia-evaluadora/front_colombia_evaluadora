@@ -1,5 +1,6 @@
 import { outboxHeaders } from "@/lib/offline/outbox/headers"
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query"
+import { PENDIENTE_APROBACION_NOTE } from "@/lib/offline/pending-approval"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
@@ -56,8 +57,7 @@ type RegistroCola = Omit<AsistenciaRegistroManual, "fkArchivo"> & {
 
 export type RegistrarPayload = Omit<AsistenciaRegistrarRequest, "REGISTROS"> & { REGISTROS?: RegistroCola[] }
 
-export const PERIODO_SOLICITUD_NOTE =
-  "El periodo se cerró antes de sincronizar: tus cambios quedaron como solicitud al coordinador."
+export const PERIODO_SOLICITUD_NOTE = PENDIENTE_APROBACION_NOTE
 
 /** Sesión de asistencia: (grupo, contexto, fecha, bloque) — FIFO de la outbox. */
 export function sesionEntityKey(

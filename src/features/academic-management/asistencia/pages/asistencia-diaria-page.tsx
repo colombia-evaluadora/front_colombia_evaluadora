@@ -314,7 +314,7 @@ function PlanillaDiaria({
       const avisar = alSalir ? queueNotice : notify
       avisar(
         r.solicitud
-          ? "La planilla quedó pendiente de aprobación del Supervisor de sede. Mientras tanto, sigue vigente lo registrado."
+          ? "Guardado. Queda pendiente de aprobación del supervisor de sede; no se ve como definitivo hasta que lo apruebe. Mientras tanto sigue vigente lo registrado antes."
           : `Asistencia diaria guardada. Se marcó No asistido en ${r.actividades_no_asistido} actividades del ${fechaCorta(fecha)}.`,
         { variant: r.solicitud ? "info" : "success" },
       )
