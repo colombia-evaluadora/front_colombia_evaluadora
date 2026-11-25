@@ -49,7 +49,7 @@ export function LogoutPendingDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent showCloseButton={false} data-slot="logout-pending-dialog">
+      <DialogContent showCloseButton={false} className="grid-cols-[minmax(0,1fr)]" data-slot="logout-pending-dialog">
         <DialogHeader>
           <DialogTitle>Tienes {summary.total} cambios sin sincronizar</DialogTitle>
           <DialogDescription>
@@ -66,7 +66,7 @@ export function LogoutPendingDialog({
           </p>
         )}
         {error && <p className="text-red text-sm">{error}</p>}
-        <DialogFooter>
+        <DialogFooter className="sm:flex-wrap">
           {confirmDiscard ? (
             <>
               <Button variant="outline" color="neutral" onClick={() => setConfirmDiscard(false)}>
