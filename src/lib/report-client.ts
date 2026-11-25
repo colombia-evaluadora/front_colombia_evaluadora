@@ -50,6 +50,7 @@ export type ReportKey =
   | "informes-inscripciones"
   | "informes-demanda"
   | "informes-edades"
+  | "informes-fuera-matricula"
   | "informes"
   | "informes-tabla"
   | "boletin"

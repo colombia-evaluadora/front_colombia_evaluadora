@@ -23,6 +23,8 @@ import {
 } from "@/features/coverage/informes-reportes/components/informes-cobertura"
 import { EstadisticaEdades } from "@/features/coverage/informes-reportes/components/estadistica-edades"
 import { filtrosEdades } from "@/features/coverage/informes-reportes/api/edades"
+import { FiltrosFuera, FueraMatriculaInforme } from "@/features/coverage/informes-reportes/components/fuera-matricula"
+import { filtrosFuera } from "@/features/coverage/informes-reportes/api/fuera-matricula"
 import { FiltrosInforme } from "@/features/coverage/informes-reportes/components/filtros-informe"
 import { InformeMatricula, InformeNivelaciones } from "@/features/coverage/informes-reportes/components/informes-matricula"
 import { ConsultaMatriculados } from "@/features/coverage/informes-reportes/components/consulta-matriculados"
@@ -82,6 +84,7 @@ const DISPONIBLES: Partial<Record<InformeId, { reporte: ReportKey; filtros: (s: 
   inscripciones: { reporte: "informes-inscripciones", filtros: filtrosCobertura.inscripciones },
   "demanda-no-atendida": { reporte: "informes-demanda", filtros: filtrosCobertura.demanda },
   edades: { reporte: "informes-edades", filtros: filtrosEdades },
+  "fuera-matricula": { reporte: "informes-fuera-matricula", filtros: filtrosFuera },
 }
 
 /** Exportar el informe abierto en Excel o PDF con sus filtros. */
@@ -125,6 +128,7 @@ const CAMPOS: Partial<Record<InformeId, Parameters<typeof FiltrosInforme>[0]["ca
   "lista-sorteo": ["jornada", "grado", "grupoAdmision"],
   "demanda-no-atendida": ["periodo", "grado"],
   edades: ["sede", "jornada", "periodo", "grado"],
+  "fuera-matricula": ["grado"],
 }
 
 function Contenido() {
@@ -137,6 +141,7 @@ function Contenido() {
       <TableScreenToolbar>
         <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SelectorInforme value={informe} />
+          {informe === "fuera-matricula" ? <FiltrosFuera /> : null}
           {campos ? <FiltrosInforme campos={campos} /> : null}
         </div>
       </TableScreenToolbar>
@@ -153,6 +158,7 @@ function Contenido() {
   if (informe === "lista-sorteo") return <InformeListaSorteo encabezado={encabezado} />
   if (informe === "demanda-no-atendida") return <InformeDemanda encabezado={encabezado} />
   if (informe === "edades") return <EstadisticaEdades encabezado={encabezado} />
+  if (informe === "fuera-matricula") return <FueraMatriculaInforme encabezado={encabezado} />
 
   return (
     <TableScreen>

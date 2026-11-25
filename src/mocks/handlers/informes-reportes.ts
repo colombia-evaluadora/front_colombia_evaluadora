@@ -100,6 +100,26 @@ export const informesReportesHandlers = [
     })
   }),
 
+  // Estudiantes fuera de matrícula (C.4.FUE.1).
+  http.get("*/api/eval-col/informes-reportes/fuera-matricula/opciones", async () => {
+    await delay(100)
+    return HttpResponse.json({
+      rows: [{ opciones: { establecimientos: [{ value: "1", label: "IE Central" }, { value: "2", label: "IE Sur" }], municipios: [{ value: "1", label: "Cartagena" }] } }],
+    })
+  }),
+
+  http.post("*/api/eval-col/informes-reportes/fuera-matricula/query", async () => {
+    await delay(150)
+    const base = { municipio: "Cartagena", matricula_id: null, reserva_id: null, inscripcion_id: null, liberada_por_retiro: false }
+    return HttpResponse.json({
+      rows: conTotal([
+        { ...base, clave: "M1", situacion: "RETIRADO", liberada_por_retiro: true, estudiante: "Ana Ruiz", grado: "Quinto", establecimiento_id: 1, origen: "IE Central", fecha: "2027-03-12", motivo: "Cambio de domicilio", matricula_id: 1 },
+        { ...base, clave: "R2", situacion: "SIN_CONTINUIDAD", estudiante: "Luis Pérez", grado: "Séptimo", establecimiento_id: 2, origen: "IE Sur", fecha: "2027-12-02", motivo: "Sin cupo en el grado siguiente", reserva_id: 2 },
+        { ...base, clave: "I3", situacion: "SIN_CUPO_PLATAFORMA", estudiante: "Sara Gil", grado: "Noveno", municipio: "Turbaco", establecimiento_id: 1, origen: "IE Central", fecha: "2027-12-05", motivo: "Ningún establecimiento con cupo", inscripcion_id: 3 },
+      ]),
+    })
+  }),
+
   http.post("*/api/eval-col/informes-reportes/demanda/query", async () => {
     await delay(150)
     return HttpResponse.json({
