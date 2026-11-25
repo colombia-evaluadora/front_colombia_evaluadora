@@ -1,3 +1,5 @@
+import { FichaDatos } from "@/components/ficha-datos"
+
 import type { ProcesoDetalle } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
@@ -10,7 +12,8 @@ export function EtapaFirmeza({ proceso }: { proceso: ProcesoDetalle }) {
   const desde = e.fecha_en_firme ?? proceso.fecha_en_firme
   return (
     <EtapaProceso titulo="Firmeza" alcanzada={e.alcanzada} resumen={desde ? `En firme desde el ${formatFecha(desde)}` : undefined}>
-      <Dato label="En firme desde">{formatFecha(desde)}</Dato>
+      <FichaDatos datos={[{ etiqueta: "En firme desde", valor: formatFecha(desde) }]} />
+      {/* La tabla de sanciones no cabe en una celda de la ficha: va debajo, con su etiqueta. */}
       <Dato label="Sanciones vigentes">
         <TablaSanciones sanciones={e.sanciones} />
       </Dato>

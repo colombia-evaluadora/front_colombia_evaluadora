@@ -27,7 +27,9 @@ export function CampoGrupos({ id, grupos, value, error, onChange }: Props) {
 
   return (
     <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error) || undefined}>
-      <FieldLabel htmlFor={id}>Grado/Grupo*</FieldLabel>
+      <FieldLabel htmlFor={id}>
+        Grado/Grupo<span data-required-mark="">*</span>
+      </FieldLabel>
       <ComboboxField<number, true> multiple disabled={sinGrupos} value={value} onValueChange={(v) => onChange(v ?? [])}>
         <ComboboxFieldTrigger id={id} className="w-full" aria-invalid={Boolean(error) || undefined}>
           <ComboboxFieldValue placeholder={sinGrupos ? "No dirige ningún grupo" : "Seleccionar"}>

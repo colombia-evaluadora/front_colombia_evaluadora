@@ -1,5 +1,4 @@
-import type { ReactNode } from "react"
-
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,16 +25,10 @@ interface Props {
   onAccion: (accion: "modificar" | "anular", observacion: ObservacionRow) => void
 }
 
-function Dato({ etiqueta, children, ancho }: { etiqueta: string; children: ReactNode; ancho?: boolean }) {
-  return (
-    <div className={ancho ? "flex flex-col gap-0.5 sm:col-span-2" : "flex flex-col gap-0.5"}>
-      <dt className="text-xs text-muted-foreground">{etiqueta}</dt>
-      <dd className="text-sm whitespace-pre-line">{children || "—"}</dd>
-    </div>
-  )
-}
-
-/** Ver detalle (§8): los campos de la observación, su Período de Evaluación, a cuántos aplica y la anulación. */
+/**
+ * Ver detalle (§8): los campos de la observación, su Período de Evaluación, a cuántos aplica y la anulación,
+ * en la ficha de datos de los Ver detalle (`FichaDatos`, como Reconocimientos).
+ */
 export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: Props) {
   const { data: o, isPending, isError, error } = useObservacionQuery(observacionId)
   const fila: ObservacionRow | null = o ? { ...o, total_count: 0 } : null
@@ -43,12 +36,12 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Observación</span>
             {o?.anulada && (
-              <Badge variant="soft" color="muted">
+              <Badge variant="soft" color="neutral">
                 <span>Anulada</span>
               </Badge>
             )}
@@ -61,35 +54,34 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
           </p>
         )}
         {o && (
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-            <Dato etiqueta="Fecha">{formatFecha(o.fecha)}</Dato>
-            <Dato etiqueta="Período de evaluación">{o.periodo_nombre}</Dato>
-            <Dato etiqueta="Grado/Grupo">{o.grado_grupo}</Dato>
-            <Dato etiqueta="Dirigida a">
-              {o.fk_tmatricula != null
-                ? o.dirigida_a
-                : `${o.dirigida_a} · ${o.estudiantes_cuenta} ${o.estudiantes_cuenta === 1 ? "estudiante" : "estudiantes"}`}
-            </Dato>
-            <Dato etiqueta="Título" ancho>
-              {o.titulo}
-            </Dato>
-            <Dato etiqueta="Observación" ancho>
-              {o.observacion}
-            </Dato>
-            <Dato etiqueta="Registrado por">{o.registrado_por_nombre}</Dato>
-            <Dato etiqueta="Fecha de registro">{formatFechaHora(o.created_at)}</Dato>
-            {o.anulada && (
-              <>
-                <Dato etiqueta="Fecha de anulación">{formatFechaHora(o.anulado_en)}</Dato>
-                <Dato etiqueta="Anulada por">{o.anulado_por_nombre}</Dato>
-                <Dato etiqueta="Motivo de la anulación" ancho>
-                  {o.motivo_anulacion}
-                </Dato>
-              </>
-            )}
-          </dl>
+          <FichaDatos
+            datos={[
+              { etiqueta: "Fecha", valor: formatFecha(o.fecha) },
+              { etiqueta: "Período de evaluación", valor: o.periodo_nombre },
+              { etiqueta: "Grado/Grupo", valor: o.grado_grupo },
+              {
+                etiqueta: "Dirigida a",
+                valor:
+                  o.fk_tmatricula != null
+                    ? o.dirigida_a
+                    : `${o.dirigida_a} · ${o.estudiantes_cuenta} ${o.estudiantes_cuenta === 1 ? "estudiante" : "estudiantes"}`,
+              },
+              { etiqueta: "Título", valor: o.titulo, ancho: true },
+              { etiqueta: "Observación", valor: <span className="whitespace-pre-line">{o.observacion}</span>, ancho: true },
+              { etiqueta: "Registrado por", valor: o.registrado_por_nombre },
+              { etiqueta: "Fecha de registro", valor: formatFechaHora(o.created_at) },
+              ...(o.anulada
+                ? [
+                    { etiqueta: "Fecha de anulación", valor: formatFechaHora(o.anulado_en) },
+                    { etiqueta: "Anulada por", valor: o.anulado_por_nombre },
+                    { etiqueta: "Motivo de la anulación", valor: o.motivo_anulacion, ancho: true },
+                  ]
+                : []),
+            ]}
+          />
         )}
-        {/* Pie: Cerrar (secundario), Anular (destructivo) y la acción principal, Modificar, en azul a la derecha. */}
+        {/* Pie: Cerrar, Anular (outline rojo) y Modificar. En modo ver no hay acción principal: Modificar
+            va secundario (CLAUDE.md §13). */}
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>
             <XIcon data-icon="inline-start" />

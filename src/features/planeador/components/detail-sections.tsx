@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 import { formatDate } from "@/features/planeador/lib/format-date"
+import { FichaDatos } from "@/components/ficha-datos"
 import { paths } from "@/config/paths"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -30,9 +31,9 @@ import {
 } from "@/features/planeador/components/unidad-evidencias-section"
 
 /**
- * Helpers de layout: `Definition` es un par término/definición; `DefinitionGrid`
- * los acomoda en N columnas. Sin esto las 8 secciones del detalle se
- * llenan de boilerplate y nadie encuentra dónde cambiar un margen.
+ * Los datos de la actividad van en la ficha de los Ver detalle (`FichaDatos`).
+ * `Definition` queda para los pares sueltos dentro de las listas (recursos,
+ * criterios e ítems de los instrumentos).
  */
 
 function Definition({
@@ -55,25 +56,6 @@ function Definition({
       <dt className="text-muted-foreground text-xs font-semibold uppercase">{term}</dt>
       <dd className="text-sm">{children}</dd>
     </div>
-  )
-}
-
-function DefinitionGrid({
-  cols,
-  className,
-  children,
-}: {
-  cols: 2 | 3
-  className?: string
-  children: React.ReactNode
-}) {
-  const colsClass = cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
-  // Filas de alto automático en pares (término + definición): las declara la
-  // grilla para que los `Definition` puedan engancharse con subgrid.
-  return (
-    <dl className={`grid auto-rows-auto gap-x-4 gap-y-4 ${colsClass} ${className ?? ""}`}>
-      {children}
-    </dl>
   )
 }
 
@@ -130,16 +112,18 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
     <div className="flex flex-col gap-4">
       {/* 1) Identificación de la actividad */}
       <Section title={`Identificación de la ${rotuloLabelLower}`}>
-        <DefinitionGrid cols={3}>
-          <Definition term={`Nombre de la ${rotuloLabelLower}`}>{actividad.nombre}</Definition>
-          <Definition term={`Tipo de ${rotuloLabelLower}`}>{actividad.tipo}</Definition>
-          <Definition term={`${unidadLabel} asociada`}>{actividad.unidad.nombre}</Definition>
-          {/* Docente dueño (sso V553: quien dicta el grupo+asignatura o, sin
-              grupo, el autor de la unidad). Sirve sobre todo a Super Admin,
-              Rector y Coordinador mirando planeadores ajenos; se muestra
-              siempre que el backend lo resuelva. */}
-          {actividad.docenteNombre && <Definition term="Docente">{actividad.docenteNombre}</Definition>}
-        </DefinitionGrid>
+        <FichaDatos
+          datos={[
+            { etiqueta: `Nombre de la ${rotuloLabelLower}`, valor: actividad.nombre },
+            { etiqueta: `Tipo de ${rotuloLabelLower}`, valor: actividad.tipo },
+            { etiqueta: `${unidadLabel} asociada`, valor: actividad.unidad.nombre },
+            // Docente dueño (sso V553: quien dicta el grupo+asignatura o, sin
+            // grupo, el autor de la unidad). Sirve sobre todo a Super Admin,
+            // Rector y Coordinador mirando planeadores ajenos; se muestra
+            // siempre que el backend lo resuelva.
+            ...(actividad.docenteNombre ? [{ etiqueta: "Docente", valor: actividad.docenteNombre }] : []),
+          ]}
+        />
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el
             mockup: es el desglose de la unidad que se nombra arriba. Solo
@@ -152,21 +136,21 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         {/* "¿Requiere validación del coordinador?" va en Identificación, igual
             que en el form de edición: es una propiedad de toda la actividad
             (antes salía en Seguimiento, que no aplica a unidades formativas). */}
-        <DefinitionGrid cols={3} className="mt-4">
-          <Definition term={`${subjectLabel} / materia`}>{actividad.asignatura}</Definition>
-          <Definition term="Grado / Grupo">
-            {actividad.grado} {actividad.grupo}
-          </Definition>
-          <Definition term="¿Requiere validación del coordinador?">
-            {actividad.requiereValidacion ? "Sí" : "No"}
-          </Definition>
-        </DefinitionGrid>
-
         {/* 3) Materiales requeridos: un campo más de esta card, no una
             sección aparte. */}
-        <Definition term="Materiales requeridos (lista breve)" className="mt-4">
-          {actividad.materiales}
-        </Definition>
+        <FichaDatos
+          className="mt-4"
+          datos={[
+            { etiqueta: `${subjectLabel} / materia`, valor: actividad.asignatura },
+            { etiqueta: "Grado / Grupo", valor: `${actividad.grado} ${actividad.grupo}` },
+            { etiqueta: "¿Requiere validación del coordinador?", valor: actividad.requiereValidacion ? "Sí" : "No" },
+            {
+              etiqueta: "Materiales requeridos (lista breve)",
+              valor: actividad.materiales ? <span className="whitespace-pre-line">{actividad.materiales}</span> : null,
+              ancho: true,
+            },
+          ]}
+        />
       </Section>
 
       {/* 4) Materiales de apoyo (read-only) */}
@@ -212,22 +196,18 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         {/* Una sola grilla para los cinco campos: partirlos en dos `dl` de 3
             y 2 columnas hacía que la segunda fila no alineara con la de
             arriba. */}
-        <DefinitionGrid cols={3}>
-          <Definition term="Fecha inicio">{formatDate(actividad.fechaInicio)}</Definition>
-          <Definition term="Fecha de entrega o cierre">
-            {formatDate(actividad.fechaCierre)}
-          </Definition>
-          <Definition term="Duración estimada (minutos)">
-            {actividad.duracionEstimada}
-          </Definition>
-          <Definition term="Semana del cronograma">
-            {/* Solo un número o un rango simple ("10-12"), sin el prefijo
-                "Semana" — el form restringe la entrada a ese formato (ver
-                `toDigitsOrRangeInput` en `text-input.ts`). */}
-            {actividad.semana}
-          </Definition>
-          <Definition term="Modalidad">{actividad.modalidad}</Definition>
-        </DefinitionGrid>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Fecha inicio", valor: formatDate(actividad.fechaInicio) },
+            { etiqueta: "Fecha de entrega o cierre", valor: formatDate(actividad.fechaCierre) },
+            { etiqueta: "Duración estimada (minutos)", valor: actividad.duracionEstimada },
+            // Solo un número o un rango simple ("10-12"), sin el prefijo
+            // "Semana" — el form restringe la entrada a ese formato (ver
+            // `toDigitsOrRangeInput` en `text-input.ts`).
+            { etiqueta: "Semana del cronograma", valor: actividad.semana },
+            { etiqueta: "Modalidad", valor: actividad.modalidad },
+          ]}
+        />
       </Section>
 
       {/* 6) Evaluación — no aplica en una unidad formativa. */}
@@ -236,15 +216,19 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
       {/* 8) Seguimiento — mismo gate que Evaluación. */}
       {!formativa && (
         <Section title="Seguimiento">
-          <DefinitionGrid cols={3}>
-            <Definition term="¿Genera evidencias?">
-              {actividad.generaEvidencias ? "Sí" : "No"}
-            </Definition>
-            <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
-          </DefinitionGrid>
-          <Definition term="Observaciones del docente" className="mt-4">
-            {actividad.observaciones}
-          </Definition>
+          <FichaDatos
+            datos={[
+              { etiqueta: "¿Genera evidencias?", valor: actividad.generaEvidencias ? "Sí" : "No" },
+              { etiqueta: "Tipo de evidencia", valor: actividad.tipoEvidencia },
+              {
+                etiqueta: "Observaciones del docente",
+                valor: actividad.observaciones ? (
+                  <span className="whitespace-pre-line">{actividad.observaciones}</span>
+                ) : null,
+                ancho: true,
+              },
+            ]}
+          />
         </Section>
       )}
     </div>
@@ -278,18 +262,18 @@ function EvaluacionDetalle({ actividad }: { actividad: Actividad }) {
 
   return (
     <Section title="Evaluación">
-      <DefinitionGrid cols={2}>
-        <Definition
-          term={`¿Es ${rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)} evaluativa?`}
-        >
-          {actividad.esEvaluativa ? "Sí" : "No"}
-        </Definition>
-        <Definition term="Instrumento de evaluación">
-          {actividad.instrumento === "Otro"
-            ? "Otro (personalizado)"
-            : actividad.instrumento || "—"}
-        </Definition>
-      </DefinitionGrid>
+      <FichaDatos
+        datos={[
+          {
+            etiqueta: `¿Es ${rotuloEnMinuscula(actividad.rotuloEjecucion ?? ROTULO_ACTIVIDAD_FALLBACK)} evaluativa?`,
+            valor: actividad.esEvaluativa ? "Sí" : "No",
+          },
+          {
+            etiqueta: "Instrumento de evaluación",
+            valor: actividad.instrumento === "Otro" ? "Otro (personalizado)" : actividad.instrumento || "—",
+          },
+        ]}
+      />
 
       {/* Misma ramificación que `InstrumentoEvaluacionSection` (form de
           edición): cada instrumento monta su propia ficha, no siempre la
@@ -437,17 +421,21 @@ function InstrumentoPersonalizadoDetalle({
 }) {
   return (
     <Section title="Definición del instrumento personalizado" className="mt-4">
-      <DefinitionGrid cols={2}>
-        <Definition term="Descripción del instrumento">
-          {instrumentoPersonalizado.descripcion || "—"}
-        </Definition>
-        <Definition term="Tipo de evidencia esperada">
-          {instrumentoPersonalizado.tipoEvidenciaEsperada || "—"}
-        </Definition>
-        <Definition term="Método de valoración" className="mt-4">
-          {instrumentoPersonalizado.metodoValoracion || "—"}
-        </Definition>
-      </DefinitionGrid>
+      <FichaDatos
+        datos={[
+          {
+            etiqueta: "Descripción del instrumento",
+            valor: instrumentoPersonalizado.descripcion ? (
+              <span className="whitespace-pre-line">{instrumentoPersonalizado.descripcion}</span>
+            ) : (
+              "—"
+            ),
+            ancho: true,
+          },
+          { etiqueta: "Tipo de evidencia esperada", valor: instrumentoPersonalizado.tipoEvidenciaEsperada || "—" },
+          { etiqueta: "Método de valoración", valor: instrumentoPersonalizado.metodoValoracion || "—" },
+        ]}
+      />
       <div className="mt-4 flex flex-col gap-1 text-sm">
         <span>{instrumentoPersonalizado.requiereArchivo ? "Sí" : "No"} requiere adjuntar un archivo.</span>
         <span>

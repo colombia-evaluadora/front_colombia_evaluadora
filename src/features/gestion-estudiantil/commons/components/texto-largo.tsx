@@ -26,7 +26,7 @@ export function TextoLargo({ id, label, value, onChange, max, required, rows = 3
     <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error) || undefined}>
       <FieldLabel htmlFor={id}>
         {label}
-        {required && "*"}
+        {required && <span data-required-mark="">*</span>}
       </FieldLabel>
       <Textarea
         id={id}

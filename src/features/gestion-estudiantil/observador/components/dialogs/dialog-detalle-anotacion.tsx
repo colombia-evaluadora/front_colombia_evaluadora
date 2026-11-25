@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 
 import { paths } from "@/config/paths"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "@/components/ui/icons"
@@ -16,7 +16,6 @@ import {
 
 import { colorDeTipo } from "@/features/gestion-estudiantil/observador/api/ui-mappings"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import type { AnotacionRow } from "@/features/gestion-estudiantil/observador/api/types"
 
 /** Ver detalle: lo mismo del listado más observación, marcas y, si aplica, la anulación. */
@@ -24,51 +23,64 @@ export function DialogDetalleAnotacion({ anotacion, onClose }: { anotacion: Anot
   const a = anotacion
   return (
     <Dialog open={a != null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Anotación — {a?.estudiante_nombre}</DialogTitle>
         </DialogHeader>
+        {/* Ficha de datos de los Ver detalle (`FichaDatos`, como Reconocimientos); la anulación va en sus
+            propias filas en lugar de un aviso aparte. */}
         {a && (
-          <dl className="grid grid-cols-2 gap-4">
-            <Dato label="Fecha">{formatFecha(a.fecha)}</Dato>
-            <Dato label="Grado/Grupo">{a.grado_grupo}</Dato>
-            <Dato label="Tipo">
-              <Badge variant="soft" color={colorDeTipo(a.tipo_codigo)}>
-                {a.tipo_nombre}
-              </Badge>
-            </Dato>
-            <Dato label="Tipo de situación">{a.situacion_nombre}</Dato>
-            <div className="col-span-2">
-              <Dato label="Código y descripción">
-                <span className="font-semibold">{a.codigo}</span> · {a.descripcion}
-              </Dato>
-            </div>
-            <div className="col-span-2">
-              <Dato label="Observación">
-                <span className="whitespace-pre-line">{a.observacion}</span>
-              </Dato>
-            </div>
-            <Dato label="Responsable de enseñanza">{a.responsable_nombre}</Dato>
-            <Dato label="Período de evaluación">{a.periodo_evaluacion_nombre}</Dato>
-            <Dato label="Preocupa la permanencia">{a.preocupa_permanencia ? "Sí" : "No"}</Dato>
-            <Dato label="Requiere mediación">{a.requiere_mediacion ? "Sí" : "No"}</Dato>
-            {a.fk_tcaso_convivencia != null && (
-              <Dato label="Caso de convivencia">
-                <Link
-                  to={paths.app.convivenciaCaso.getHref(a.fk_tcaso_convivencia)}
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Ver el caso
-                </Link>
-              </Dato>
-            )}
-            {a.anulada && (
-              <Alert className="col-span-2">
-                <AlertTitle>Anulada el {formatFecha(a.anulado_en)}{a.anulado_por_nombre && ` por ${a.anulado_por_nombre}`}</AlertTitle>
-                <AlertDescription>{a.motivo_anulacion}</AlertDescription>
-              </Alert>
-            )}
-          </dl>
+          <FichaDatos
+            datos={[
+              { etiqueta: "Fecha", valor: formatFecha(a.fecha) },
+              { etiqueta: "Grado/Grupo", valor: a.grado_grupo },
+              {
+                etiqueta: "Tipo",
+                valor: (
+                  <Badge variant="soft" color={colorDeTipo(a.tipo_codigo)}>
+                    {a.tipo_nombre}
+                  </Badge>
+                ),
+              },
+              { etiqueta: "Tipo de situación", valor: a.situacion_nombre },
+              {
+                etiqueta: "Código y descripción",
+                valor: (
+                  <span>
+                    <span className="font-semibold">{a.codigo}</span> · {a.descripcion}
+                  </span>
+                ),
+                ancho: true,
+              },
+              { etiqueta: "Observación", valor: <span className="whitespace-pre-line">{a.observacion}</span>, ancho: true },
+              { etiqueta: "Responsable de enseñanza", valor: a.responsable_nombre },
+              { etiqueta: "Período de evaluación", valor: a.periodo_evaluacion_nombre },
+              { etiqueta: "Preocupa la permanencia", valor: a.preocupa_permanencia ? "Sí" : "No" },
+              { etiqueta: "Requiere mediación", valor: a.requiere_mediacion ? "Sí" : "No" },
+              ...(a.fk_tcaso_convivencia != null
+                ? [
+                    {
+                      etiqueta: "Caso de convivencia",
+                      valor: (
+                        <Link
+                          to={paths.app.convivenciaCaso.getHref(a.fk_tcaso_convivencia)}
+                          className="font-medium text-primary underline-offset-4 hover:underline"
+                        >
+                          Ver el caso
+                        </Link>
+                      ),
+                    },
+                  ]
+                : []),
+              ...(a.anulada
+                ? [
+                    { etiqueta: "Fecha de anulación", valor: formatFecha(a.anulado_en) },
+                    { etiqueta: "Anulada por", valor: a.anulado_por_nombre },
+                    { etiqueta: "Motivo de la anulación", valor: a.motivo_anulacion, ancho: true },
+                  ]
+                : []),
+            ]}
+          />
         )}
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>

@@ -43,7 +43,7 @@ export function buildColumnsObservaciones({ onAccion }: ColumnasOpciones): Colum
           {/* G.7.LIS.1: «Todo el grupo» en cursiva; el nombre del estudiante, en redonda. */}
           <span className={row.original.fk_tmatricula == null ? "italic" : undefined}>{row.original.dirigida_a}</span>
           {row.original.anulada && (
-            <Badge variant="soft" color="muted">
+            <Badge variant="soft" color="neutral">
               <span>Anulada</span>
             </Badge>
           )}
@@ -53,7 +53,16 @@ export function buildColumnsObservaciones({ onAccion }: ColumnasOpciones): Colum
     {
       ...columna("titulo", "Título"),
       accessorKey: "titulo",
-      cell: ({ row }) => row.original.titulo || "—",
+      // Una sola línea a su ancho natural; uno muy largo (hasta 100) se corta con «…» y se lee completo
+      // en el tooltip nativo o en Ver detalle.
+      cell: ({ row }) =>
+        row.original.titulo ? (
+          <span className="block max-w-md truncate" title={row.original.titulo}>
+            {row.original.titulo}
+          </span>
+        ) : (
+          "—"
+        ),
     },
     { ...columna("periodo", "Período de evaluación"), accessorKey: "periodo_nombre" },
     {

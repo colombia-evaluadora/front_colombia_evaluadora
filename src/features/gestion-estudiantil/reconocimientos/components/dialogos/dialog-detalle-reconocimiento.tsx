@@ -57,7 +57,7 @@ export function DialogDetalleReconocimiento({ reconocimientoId, onClose, onAccio
           <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Reconocimiento</span>
             {r?.anulado && (
-              <Badge variant="soft" color="muted">
+              <Badge variant="soft" color="neutral">
                 <span>Anulado</span>
               </Badge>
             )}
