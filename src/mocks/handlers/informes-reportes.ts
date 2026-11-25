@@ -72,6 +72,34 @@ export const informesReportesHandlers = [
     })
   }),
 
+  // Estadística de edades (C.4.EDA.1): Sexto y Séptimo con edad recomendada 11 y 12.
+  http.post("*/api/eval-col/informes-reportes/edades/query", async () => {
+    await delay(150)
+    const sit = (edad: number, rec: number) =>
+      edad - rec >= 3 ? "EXTRAEDAD" : edad - rec >= 2 ? "PREEXTRAEDAD" : edad - rec <= -2 ? "BAJA_EDAD" : "EN_EDAD"
+    const filas = (grupo: string, orden: number, rec: number, porEdad: [number, number][]) =>
+      porEdad.flatMap(([edad, n]) => [
+        { grupo, orden, edad_recomendada: rec, edad, genero: "Femenino", situacion: sit(edad, rec), cantidad: Math.ceil(n / 2) },
+        { grupo, orden, edad_recomendada: rec, edad, genero: "Masculino", situacion: sit(edad, rec), cantidad: Math.floor(n / 2) },
+      ])
+    return HttpResponse.json({
+      rows: [
+        ...filas("Sexto", 6, 11, [[9, 3], [10, 7], [11, 62], [12, 30], [13, 12], [14, 5]]),
+        ...filas("Séptimo", 7, 12, [[9, 1], [10, 2], [11, 7], [12, 62], [13, 30], [14, 17]]),
+      ],
+    })
+  }),
+
+  http.post("*/api/eval-col/informes-reportes/edades/estudiantes/query", async () => {
+    await delay(150)
+    return HttpResponse.json({
+      rows: conTotal([
+        { matricula_id: 1, documento: "1098765421", estudiante: "Valentina Ríos Mora", fecha_nacimiento: "2015-05-12", edad: 11, grupo_clave: "Sexto", grupo: "6°A", situacion: "EN_EDAD" },
+        { matricula_id: 2, documento: "1098765422", estudiante: "Samuel Díaz Peña", fecha_nacimiento: "2013-02-03", edad: 14, grupo_clave: "Sexto", grupo: "6°B", situacion: "EXTRAEDAD" },
+      ]),
+    })
+  }),
+
   http.post("*/api/eval-col/informes-reportes/demanda/query", async () => {
     await delay(150)
     return HttpResponse.json({

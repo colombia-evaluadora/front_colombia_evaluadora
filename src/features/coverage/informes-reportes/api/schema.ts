@@ -71,6 +71,8 @@ export const informesReportesSearchSchema = z.object({
   metodologia: z.coerce.number().optional().catch(undefined),
   nuevo: z.enum(["S", "N"]).optional().catch(undefined),
   grupoAdmision: z.coerce.number().optional().catch(undefined),
+  agrupar: z.enum(["GRADO", "GRUPO", "SEDE", "JORNADA", "METODOLOGIA", "ESTABLECIMIENTO"]).optional().catch(undefined),
+  grupoEdad: texto,
   direccion: z.enum(["ENTRANTE", "SALIENTE"]).optional().catch(undefined),
   estadoTraslado: z.enum(["PENDIENTE", "ACEPTADO", "RECHAZADO", "CANCELADO"]).optional().catch(undefined),
   page: z.coerce.number().catch(0).default(0),

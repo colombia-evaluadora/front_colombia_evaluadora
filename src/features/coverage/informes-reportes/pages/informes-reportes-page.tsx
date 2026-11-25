@@ -21,6 +21,8 @@ import {
   InformeListaCobertura,
   InformeListaSorteo,
 } from "@/features/coverage/informes-reportes/components/informes-cobertura"
+import { EstadisticaEdades } from "@/features/coverage/informes-reportes/components/estadistica-edades"
+import { filtrosEdades } from "@/features/coverage/informes-reportes/api/edades"
 import { FiltrosInforme } from "@/features/coverage/informes-reportes/components/filtros-informe"
 import { InformeMatricula, InformeNivelaciones } from "@/features/coverage/informes-reportes/components/informes-matricula"
 import { ConsultaMatriculados } from "@/features/coverage/informes-reportes/components/consulta-matriculados"
@@ -79,6 +81,7 @@ const DISPONIBLES: Partial<Record<InformeId, { reporte: ReportKey; filtros: (s: 
   traslados: { reporte: "informes-traslados", filtros: filtrosCobertura.traslados },
   inscripciones: { reporte: "informes-inscripciones", filtros: filtrosCobertura.inscripciones },
   "demanda-no-atendida": { reporte: "informes-demanda", filtros: filtrosCobertura.demanda },
+  edades: { reporte: "informes-edades", filtros: filtrosEdades },
 }
 
 /** Exportar el informe abierto en Excel o PDF con sus filtros. */
@@ -121,6 +124,7 @@ const CAMPOS: Partial<Record<InformeId, Parameters<typeof FiltrosInforme>[0]["ca
   inscripciones: ["sede", "jornada", "grupoAdmision", "grado", "edad"],
   "lista-sorteo": ["jornada", "grado", "grupoAdmision"],
   "demanda-no-atendida": ["periodo", "grado"],
+  edades: ["sede", "jornada", "periodo", "grado"],
 }
 
 function Contenido() {
@@ -148,6 +152,7 @@ function Contenido() {
   if (informe === "inscripciones") return <InformeInscripciones encabezado={encabezado} />
   if (informe === "lista-sorteo") return <InformeListaSorteo encabezado={encabezado} />
   if (informe === "demanda-no-atendida") return <InformeDemanda encabezado={encabezado} />
+  if (informe === "edades") return <EstadisticaEdades encabezado={encabezado} />
 
   return (
     <TableScreen>
