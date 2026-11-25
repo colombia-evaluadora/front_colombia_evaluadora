@@ -99,6 +99,8 @@ interface ReportInput {
    * plantilla usa `NoPages` y el servicio responde 200 igual.
    */
   omitirVacio?: boolean
+  /** Nombre del fichero guardado; sin él, el del servidor (`content-disposition`). */
+  nombreArchivo?: string
 }
 
 const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
@@ -109,7 +111,7 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
 /** Pide el reporte, dispara la descarga y devuelve `{ status, message }`. */
 export async function downloadReport(
   key: ReportKey,
-  { format, filters, sorting, columns, filtersLabel, columnLabels, params, omitirVacio }: ReportInput,
+  { format, filters, sorting, columns, filtersLabel, columnLabels, params, omitirVacio, nombreArchivo }: ReportInput,
 ): Promise<ExportResult> {
   try {
     // Genérico explícito: la augmentación global de axios en `api-client` lo retipa.
@@ -124,7 +126,7 @@ export async function downloadReport(
 
     const blob = response.data as Blob
     const filas = Number(response.headers["x-report-rows"])
-    const nombre = nombreDeArchivo(response.headers["content-disposition"]) ?? `${key}.${format === "pdf" ? "pdf" : "xlsx"}`
+    const nombre = nombreArchivo ?? nombreDeArchivo(response.headers["content-disposition"]) ?? `${key}.${format === "pdf" ? "pdf" : "xlsx"}`
 
     const vacio = Number.isFinite(filas) && filas === 0
     if (!(vacio && omitirVacio)) guardar(blob, nombre)

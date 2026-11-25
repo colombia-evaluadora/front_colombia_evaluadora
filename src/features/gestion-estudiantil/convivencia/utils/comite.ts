@@ -1,7 +1,9 @@
 import type {
+  AdjuntoSesion,
   CargoVacio,
   IntegranteComite,
   IntegranteInput,
+  MotivoQuorum,
   PeriodoComite,
   SesionDetalle,
   SesionInput,
@@ -48,10 +50,15 @@ export function integrantesVigentesEn<T extends Pick<IntegranteComite, "desde" |
   return integrantes.filter((i) => vigenteEn(i, fecha))
 }
 
-/** Mayoría simple de los integrantes vigentes: floor(M/2) + 1. */
-export const quorumMinimo = (integrantes: number) => Math.floor(integrantes / 2) + 1
+/** Por que no hay quorum (Regla 23); el calculo lo hace el servidor, aqui solo se redacta el motivo. */
+const TEXTO_MOTIVO_QUORUM: Record<MotivoQuorum, string> = {
+  SIN_PRESIDENTE: "Sin el Rector, que preside el Comité, la sesión no tiene quórum aunque asistan los demás integrantes.",
+  INSUFICIENTE: "No asistió más de la mitad de los integrantes.",
+  ESTAMENTO_FALTANTE: "Falta al menos un integrante de un estamento con integrantes vigentes.",
+}
 
-export const hayQuorum = (asistentes: number, integrantes: number) => integrantes > 0 && asistentes >= quorumMinimo(integrantes)
+export const textoMotivoQuorum = (motivo: string | null | undefined) =>
+  motivo ? (TEXTO_MOTIVO_QUORUM[motivo as MotivoQuorum] ?? null) : null
 
 /** Al cambiar la fecha, los asistentes marcados que ya no son vigentes se descartan. */
 export function asistentesVigentes(asistentes: number[], vigentes: Pick<IntegranteComite, "id">[]): number[] {
@@ -78,6 +85,8 @@ export interface FilaIntegrante {
   fk_funcionario: number | null
   fk_matricula: number | null
   nombre: string
+  /** Estamento del cargo (solo lectura): lo da el cargo, no se elige. */
+  estamento: string
   desde: string
   hasta: string
 }
@@ -103,6 +112,7 @@ export function filaIntegranteVacia(desde: string): FilaIntegrante {
     fk_funcionario: null,
     fk_matricula: null,
     nombre: "",
+    estamento: "",
     desde,
     hasta: "",
   }
@@ -110,7 +120,7 @@ export function filaIntegranteVacia(desde: string): FilaIntegrante {
 
 /** Una fila por cargo vacío, para que el usuario solo complete a la persona. */
 export function filaDeCargoVacio(c: CargoVacio, desde: string): FilaIntegrante {
-  return { ...filaIntegranteVacia(desde), fk_tlv_cargo: String(c.fk_tlv_cargo), dato: c.dato, codigo: c.cargo_codigo, cargo_nombre: c.cargo_nombre }
+  return { ...filaIntegranteVacia(desde), fk_tlv_cargo: String(c.fk_tlv_cargo), dato: c.dato, codigo: c.cargo_codigo, cargo_nombre: c.cargo_nombre, estamento: c.estamento ?? "" }
 }
 
 /** Fila ya guardada: solo lectura, con su persona y su vigencia. */
@@ -125,6 +135,7 @@ export function filaDeIntegrante(i: IntegranteComite, dato: DatoCargo | null): F
     fk_funcionario: i.fk_funcionario,
     fk_matricula: i.fk_matricula,
     nombre: i.nombre,
+    estamento: i.estamento ?? "",
     desde: dia(i.desde),
     hasta: dia(i.hasta),
   }
@@ -174,6 +185,11 @@ export const LIM = {
   invitadoCalidad: { min: 3, max: 100 },
   decision: { min: 10, max: 3000 },
   otros: 5000,
+  lugar: 100,
+  objetivo: 300,
+  ordenDia: 2000,
+  forma: { min: 3, max: 300 },
+  adjuntos: 5,
 } as const
 
 export interface InvitadoFila {
@@ -194,9 +210,28 @@ export interface CasoFila {
   fecha_seguimiento: string
 }
 
+export interface EleccionFila {
+  key: string
+  /** pk del integrante del Comité elegido. */
+  integrante: string
+  forma: string
+}
+
 export interface ValoresSesion {
   tipo: string
   fecha: string
+  /** `HH:mm`; opcional. */
+  hora: string
+  lugar: string
+  objetivo: string
+  ordenDia: string
+  /** pk del integrante (uno de los asistentes) que elabora el acta. */
+  elabora: string
+  eleccion: EleccionFila[]
+  /** Archivos nuevos por subir. */
+  adjuntos: File[]
+  /** Ya guardados en la sesión; quitarlos de la lista los desvincula. */
+  adjuntosGuardados: AdjuntoSesion[]
   asistentes: number[]
   invitados: InvitadoFila[]
   casos: CasoFila[]
@@ -209,11 +244,19 @@ export interface ErroresSesion {
   contenido?: string
   otros?: string
   asistentes?: string
+  lugar?: string
+  objetivo?: string
+  ordenDia?: string
+  elabora?: string
+  eleccionGeneral?: string
+  eleccion: Record<string, { integrante?: string; forma?: string }>
   invitados: Record<string, { nombre?: string; calidad?: string }>
   casos: Record<string, { caso?: string; decision?: string; fecha?: string }>
 }
 
 export const invitadoVacio = (): InvitadoFila => ({ key: nuevaKey(), nombre: "", calidad: "" })
+
+export const eleccionVacia = (): EleccionFila => ({ key: nuevaKey(), integrante: "", forma: "" })
 
 export const casoVacio = (): CasoFila => ({
   key: nuevaKey(),
@@ -230,6 +273,14 @@ export const casoVacio = (): CasoFila => ({
 export const valoresSesionVacios = (): ValoresSesion => ({
   tipo: "",
   fecha: new Date().toLocaleDateString("en-CA"),
+  hora: "",
+  lugar: "",
+  objetivo: "",
+  ordenDia: "",
+  elabora: "",
+  eleccion: [],
+  adjuntos: [],
+  adjuntosGuardados: [],
   asistentes: [],
   invitados: [],
   casos: [],
@@ -244,6 +295,14 @@ export function desdeSesion(s: SesionDetalle): ValoresSesion {
   return {
     tipo: String(s.fk_tlv_tipo),
     fecha: dia(s.fecha),
+    hora: s.hora ? s.hora.slice(0, 5) : "",
+    lugar: s.lugar ?? "",
+    objetivo: s.objetivo ?? "",
+    ordenDia: s.orden_dia ?? "",
+    elabora: s.elabora ? String(s.elabora.fk_integrante) : "",
+    eleccion: (s.eleccion ?? []).map((e) => ({ key: nuevaKey(), integrante: String(e.fk_integrante), forma: e.forma_eleccion })),
+    adjuntos: [],
+    adjuntosGuardados: s.adjuntos ?? [],
     asistentes: s.asistentes.filter((a) => a.asistio).map((a) => a.fk_integrante),
     invitados: s.invitados.map((i) => ({ key: nuevaKey(), nombre: i.nombre, calidad: i.calidad })),
     casos: s.casos.map((c) => ({
@@ -260,8 +319,9 @@ export function desdeSesion(s: SesionDetalle): ValoresSesion {
   }
 }
 
-export function validarSesion(v: ValoresSesion): ErroresSesion {
-  const e: ErroresSesion = { invitados: {}, casos: {} }
+/** `conformacion`: el tipo de sesión es Conformación (registra la elección y no exige casos ni otros temas). */
+export function validarSesion(v: ValoresSesion, conformacion = false): ErroresSesion {
+  const e: ErroresSesion = { invitados: {}, casos: {}, eleccion: {} }
   if (!v.tipo) e.tipo = "Elija el tipo de sesión."
   if (!v.fecha) e.fecha = "Indique la fecha de la sesión."
   if (v.asistentes.length === 0) e.asistentes = "Marque al menos un asistente."
@@ -292,19 +352,49 @@ export function validarSesion(v: ValoresSesion): ErroresSesion {
   }
 
   if (v.otros.length > LIM.otros) e.otros = `Máximo ${LIM.otros} caracteres.`
-  if (v.casos.length === 0 && !v.otros.trim()) e.contenido = "Registre al menos un caso tratado u otros temas."
+  if (v.lugar.trim().length > LIM.lugar) e.lugar = `Máximo ${LIM.lugar} caracteres.`
+  if (v.objetivo.length > LIM.objetivo) e.objetivo = `Máximo ${LIM.objetivo} caracteres.`
+  if (v.ordenDia.length > LIM.ordenDia) e.ordenDia = `Máximo ${LIM.ordenDia} caracteres.`
+  if (v.elabora && !v.asistentes.includes(Number(v.elabora))) e.elabora = "Quien elabora el acta debe ser uno de los asistentes."
+
+  if (conformacion) {
+    if (v.eleccion.length === 0) e.eleccionGeneral = "Registre la elección de al menos un integrante."
+    const elegidos = new Set<string>()
+    for (const f of v.eleccion) {
+      const err: { integrante?: string; forma?: string } = {}
+      if (!f.integrante) err.integrante = "Elija el integrante."
+      else if (elegidos.has(f.integrante)) err.integrante = "Este integrante ya está en la elección."
+      else elegidos.add(f.integrante)
+      const n = f.forma.trim().length
+      if (n < LIM.forma.min || n > LIM.forma.max)
+        err.forma = `La forma de elección debe tener entre ${LIM.forma.min} y ${LIM.forma.max} caracteres.`
+      if (err.integrante || err.forma) e.eleccion[f.key] = err
+    }
+  } else if (v.casos.length === 0 && !v.otros.trim()) e.contenido = "Registre al menos un caso tratado u otros temas."
   return e
 }
 
 export const sesionConErrores = (e: ErroresSesion) =>
-  Boolean(e.tipo || e.fecha || e.contenido || e.otros || e.asistentes) ||
+  Boolean(e.tipo || e.fecha || e.contenido || e.otros || e.asistentes || e.lugar || e.objetivo || e.ordenDia || e.elabora || e.eleccionGeneral) ||
+  Object.keys(e.eleccion).length > 0 ||
   Object.keys(e.invitados).length > 0 ||
   Object.keys(e.casos).length > 0
 
-export function sesionInput(v: ValoresSesion): SesionInput {
+/** `adjuntos`: pk de los archivos ya guardados en la sesión; los nuevos se suben al enviar. */
+export function sesionInput(v: ValoresSesion, conformacion = false): SesionInput & { NUEVOS: File[]; ADJUNTOS: number[] } {
   return {
     FK_TLV_TIPO: Number(v.tipo),
     FECHA: v.fecha,
+    HORA: v.hora || null,
+    LUGAR: v.lugar.trim() || null,
+    OBJETIVO: v.objetivo.trim() || null,
+    ORDEN_DIA: v.ordenDia.trim() || null,
+    FK_ASISTENTE_ELABORA: v.elabora ? Number(v.elabora) : null,
+    ...(conformacion && {
+      ELECCION: v.eleccion.map((f) => ({ fk_integrante: Number(f.integrante), forma_eleccion: f.forma.trim() })),
+    }),
+    ADJUNTOS: v.adjuntosGuardados.map((a) => a.fk_archivo),
+    NUEVOS: v.adjuntos,
     ...(v.otros.trim() && { OTROS_TEMAS: v.otros.trim() }),
     ASISTENTES: v.asistentes,
     INVITADOS: v.invitados.map((i) => ({ nombre: i.nombre.trim(), calidad: i.calidad.trim() })),
@@ -316,3 +406,13 @@ export function sesionInput(v: ValoresSesion): SesionInput {
     })),
   }
 }
+
+/** Nombre del acta: el que da el servidor o, sin él, `acta-comite-<fecha>.pdf`. */
+export const nombreActa = (s: { acta_nombre?: string | null; fecha: string }) => s.acta_nombre || `acta-comite-${dia(s.fecha)}.pdf`
+
+/** Filtros aplicados del listado de sesiones (el texto libre va aparte). */
+export interface SesionesFiltros {
+  tipo: string
+}
+
+export const SESIONES_FILTROS_VACIOS: SesionesFiltros = { tipo: "" }
