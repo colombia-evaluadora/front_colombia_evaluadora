@@ -8,7 +8,7 @@
  * guardan sesión, segundo factor, tokens de archivo, verificaciones públicas
  * ni búsquedas efímeras. Una query que declara su `meta.offline` conserva la suya.
  */
-import { OFFLINE_TTL, type OfflineQueryMeta } from "@/lib/offline/query-persister"
+import { getDeviceMode, OFFLINE_TTL, type OfflineQueryMeta } from "@/lib/offline/query-persister"
 
 const RAICES = new Set([
   // Gestión estudiantil
@@ -55,4 +55,15 @@ export function conMetaPorDefecto<T extends { queryKey?: readonly unknown[]; met
 ): T {
   if (options.meta?.offline || !esModuloPersistible(options.queryKey)) return options
   return { ...options, meta: { ...options.meta, offline: { ttl: OFFLINE_TTL.roster, requierePin: true } } }
+}
+
+/**
+ * En el equipo personal lo guardable no se descarta de memoria. Con el `gcTime`
+ * por defecto (5 min) lo que Preparar bajaba sin pantalla abierta se borraba
+ * mientras seguía la descarga: sin red, la pantalla decía "no está guardada"
+ * aunque estaba en IndexedDB (solo se relee al abrir la app).
+ */
+export function conservarEnMemoria<T extends { gcTime?: number; meta?: Record<string, unknown> & OfflineQueryMeta }>(options: T): T {
+  if (!options.meta?.offline || getDeviceMode() !== "personal" || options.gcTime === Infinity) return options
+  return { ...options, gcTime: Infinity }
 }
