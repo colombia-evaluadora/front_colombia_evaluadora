@@ -30,6 +30,7 @@ import { TTL_OFFLINE, offlineMeta } from "@/lib/offline/query-meta"
 export const opcionesGeKeys = {
   all: ["gestion-estudiantil", "opciones"] as const,
   sedes: () => [...opcionesGeKeys.all, "sedes"] as const,
+  establecimientos: () => [...opcionesGeKeys.all, "establecimientos"] as const,
   anios: (sedeId: number | null) => [...opcionesGeKeys.all, "anos", sedeId] as const,
   jornadas: (sedeId: number | null, anio: number | null) => [...opcionesGeKeys.all, "jornadas", sedeId, anio] as const,
   grupos: (params: GruposPeriodoParams) => [...opcionesGeKeys.all, "grupos-periodo", params] as const,
@@ -41,6 +42,24 @@ const BASE = "/gestion-estudiantil/opciones"
 // Las fetch van sueltas para que la preparación sin conexión siembre las mismas keys.
 export async function fetchSedesGe() {
   return (await evalCol.postRows<SedeRow>(`${BASE}/sedes`, {})).map(toSede)
+}
+
+export interface EstablecimientoGe {
+  id: number
+  nombre: string
+}
+
+interface EstablecimientoGeRow {
+  fk_testablecimiento: number
+  establecimiento_nombre: string
+}
+
+/** Establecimientos del alcance, tengan o no período académico: Configuración es del establecimiento (GE Regla 4). */
+export async function fetchEstablecimientosGe(): Promise<EstablecimientoGe[]> {
+  return (await evalCol.postRows<EstablecimientoGeRow>(`${BASE}/establecimientos`, {})).map((r) => ({
+    id: Number(r.fk_testablecimiento),
+    nombre: r.establecimiento_nombre,
+  }))
 }
 
 export async function fetchAniosGe(sedeId: number | null) {
@@ -77,6 +96,15 @@ export function useSedesGeQuery() {
     meta: offlineMeta(TTL_OFFLINE.grupo),
     queryKey: opcionesGeKeys.sedes(),
     queryFn: fetchSedesGe,
+    staleTime: 1000 * 60 * 10,
+  })
+}
+
+export function useEstablecimientosGeQuery() {
+  return useQuery({
+    meta: offlineMeta(TTL_OFFLINE.grupo),
+    queryKey: opcionesGeKeys.establecimientos(),
+    queryFn: fetchEstablecimientosGe,
     staleTime: 1000 * 60 * 10,
   })
 }
