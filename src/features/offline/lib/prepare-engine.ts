@@ -473,6 +473,12 @@ export function runPrepare(
   return run
 }
 
+function esFallaTransitoria(error: unknown): boolean {
+  if (isNetworkError(error)) return true
+  const status = Axios.isAxiosError(error) ? error.response?.status : undefined
+  return status === 408 || status === 429 || (status != null && status >= 500)
+}
+
 async function execute(
   queryClient: QueryClient,
   initial: PrepareTask[],
@@ -605,7 +611,9 @@ async function execute(
         continue
       }
       console.warn("[offline] preparar falló", JSON.stringify(task.queryKey), error)
-      if (!task.optional) {
+      // "Opcional" perdona que el dato no aplique (4xx), no que se haya caído: un
+      // timeout, un 429 o un 5xx dejaba la pantalla sin datos y el aviso en verde.
+      if (!task.optional || esFallaTransitoria(error)) {
         failed.push(task)
         failedDetails.push({ label: describePrepareKey(task.queryKey), message: failureMessage(error) })
       }
