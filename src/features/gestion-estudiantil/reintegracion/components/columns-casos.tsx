@@ -2,6 +2,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { CasoRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
@@ -14,13 +16,16 @@ interface ColumnasOpciones {
 }
 
 // Todas las columnas (menos Acciones) llevan accessorKey/accessorFn y `meta.label`: así «Columnas visibles» las lista.
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el backend no tiene parámetro de orden.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_CASOS_REINTEGRACION: MapaOrden = {
+  estudiante: "estudiante",
+  fecha_apertura: "apertura",
+  profesional: "profesional",
+  estado: "estado",
+  dias_en_estado: "dias",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<CasoRow>(ORDEN_CASOS_REINTEGRACION, id, titulo)
 
 /**
  * Columnas de la bandeja (G.9.BAN.1): Estudiante · Grado/Grupo · Origen · Fecha de apertura · Profesional de

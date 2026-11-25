@@ -198,7 +198,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
         <TableScreenBody>
           {data ? (
             <p className="mb-3 text-sm text-muted-foreground tabular-nums">
-              {data.totalCount === 1 ? "1 estudiante" : `${data.totalCount.toLocaleString("es-CO")} estudiantes`}
+              {data.totalEstudiantes === 1 ? "1 estudiante" : `${data.totalEstudiantes.toLocaleString("es-CO")} estudiantes`}
             </p>
           ) : null}
           <DataTable

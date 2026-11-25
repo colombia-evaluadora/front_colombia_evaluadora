@@ -11,7 +11,7 @@ import { usePiarAccess } from "@/features/gestion-estudiantil/inclusion/piar/api
 import type { Dialogo } from "@/features/gestion-estudiantil/inclusion/piar/components/dialogos/tipos"
 import { datosAlBackend, datosDesdePiar, esquemaDatos } from "@/features/gestion-estudiantil/inclusion/piar/utils/datos-piar"
 import { mensajePiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/errores-piar"
-import { esEditable, soloFaltaActa } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { soloFaltaActa } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 interface Aviso {
   id: number
@@ -29,7 +29,7 @@ export function useFichaPiar(piar: PiarDetalle) {
 
   const estado = piar.estado.codigo
   const version = piar.version_actual
-  const gestiona = access.puedeGestionar && esEditable(estado) && !piar.anulacion && !piar.solo_consulta
+  const gestiona = Boolean(piar.puede_modificar)
   const avisar = (message: string, variant: Aviso["variant"] = "error") => setNotice({ id: Date.now(), message, variant })
 
   const actaDelServidor = {

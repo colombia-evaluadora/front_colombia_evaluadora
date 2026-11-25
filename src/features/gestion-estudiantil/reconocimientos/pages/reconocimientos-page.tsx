@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import {
   TableScreen,
   TableScreenBody,
@@ -26,7 +27,7 @@ import {
 } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-reconocimientos-query"
 import { useSugerenciasQuery } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-sugerencias-query"
 import type { ReconocimientoRow } from "@/features/gestion-estudiantil/reconocimientos/api/types"
-import { buildColumnsReconocimientos } from "@/features/gestion-estudiantil/reconocimientos/components/columns-reconocimientos"
+import { buildColumnsReconocimientos, ORDEN_RECONOCIMIENTOS } from "@/features/gestion-estudiantil/reconocimientos/components/columns-reconocimientos"
 import { DialogDetalleReconocimiento } from "@/features/gestion-estudiantil/reconocimientos/components/dialogos/dialog-detalle-reconocimiento"
 import { useDialogosReconocimientos } from "@/features/gestion-estudiantil/reconocimientos/components/dialogos/use-dialogos-reconocimientos"
 import type { AccionReconocimiento } from "@/features/gestion-estudiantil/reconocimientos/components/menu-acciones-reconocimiento"
@@ -34,6 +35,9 @@ import { SearchReconocimientos } from "@/features/gestion-estudiantil/reconocimi
 import { SugerenciasPorPuesto } from "@/features/gestion-estudiantil/reconocimientos/components/sugerencias-por-puesto"
 import { useReconocimientosAccess } from "@/features/gestion-estudiantil/reconocimientos/hooks/use-reconocimientos-access"
 import { useReconocimientosFiltros } from "@/features/gestion-estudiantil/reconocimientos/hooks/use-reconocimientos-filtros"
+
+/** Sede y Jornada van ocultas de entrada; «Columnas visibles» las ofrece. */
+const COLUMNAS_OCULTAS = { sede: false, jornada: false }
 
 type Navegar = (opts: { to: string; search: Record<string, unknown>; replace?: boolean }) => void
 
@@ -52,7 +56,7 @@ function ReconocimientosContent() {
     () => (f.establecimientoId == null ? null : toReconocimientosFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const { data, isPending, isError, error, refetch } = useReconocimientosQuery({ filters, pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = useReconocimientosQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_RECONOCIMIENTOS) }, pageIndex, pageSize })
 
   // Los filtros del listado no aplican a las sugerencias (§7.1).
   const sugerencias = useSugerenciasQuery(
@@ -81,6 +85,7 @@ function ReconocimientosContent() {
     sorting,
     setSorting,
     columnVisibilityStorageKey: "reconocimientos-column-visibility",
+    initialColumnVisibility: COLUMNAS_OCULTAS,
   })
 
   const total = data?.totalCount ?? 0

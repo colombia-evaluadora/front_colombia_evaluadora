@@ -26,7 +26,7 @@ Rama: `feature/CU-86e3yf6qd-FRONT-G-estudiantil-Prevencion-y-retencion-salud-men
 
 - 9.9–9.11, territorial y metas.
 - SIMPADE (G.8.VAL.4): sin estructura. El botón se muestra deshabilitado.
-- Gestionar (9.11, G.8.GAL): sin backend. La acción se muestra deshabilitada.
+- Gestionar (9.11, G.8.GAL): el backend existe (V665, V669, V696, V698). Se habilita con `puede_gestionar` y `fk_gestion_alerta` en el tablero, en Valoraciones y en el historial, y navega con `irGestionAlerta`.
 
 ## Decisiones
 
@@ -476,7 +476,7 @@ Comprobaciones:
 
 **(c) SIMPADE con estructura provisional.** El botón se habilita con la bandera `puede_exportar_siuce_acomp` (Supervisor de sede y Administrador) y exporta una estructura provisional; la definitiva depende de la Decisión Pendiente «Validación con el SIMPADE».
 
-**(d) Oferta de Crear plan tras valorar.** Usa `puede_valorar` más plan abierto, no `puede_crear_plan` (Regla 40, coordinador). Pedir la bandera al backend en el historial.
+**(d) Oferta de Crear plan tras valorar.** El historial usa `puede_crear_plan` de `GET …/historial` (V644, Regla 40). La oferta tras valorar sigue usando `puede_valorar` más plan abierto.
 
 **(e) Mensaje tras acciones de salud mental, estrategias y caracterización.** Muestra la etiqueta de auditoría del backend («Prevención y retención: …»). Revisar el origen.
 
@@ -499,3 +499,4 @@ Comprobaciones:
 **(n) Administración › Lista de valores.** Debe mostrar «Del SIMPADE» como interruptor en el tipo de estrategia.
 
 **(o) Reintegración (#992).** Cablear `caracterizacion_disponible`.
+- Orden por servidor (`QUERY.ORDEN`/`QUERY.DIR`) en Tablero, Valoraciones, Salud mental, Estrategias, Caracterización, Embarazo, Consumo y Reportes recibidos: mapa `ORDEN_*` junto a cada `columns-*.tsx` y `ordenServidor` de `commons/utils/orden-servidor.tsx`.

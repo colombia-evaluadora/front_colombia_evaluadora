@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -106,6 +106,8 @@ export function armarFilas(soportes: Soporte[]): FilaSoporte[] {
 interface SoportesSectionProps {
   matriculaId: string
   editable: boolean
+  /** Revisar soporte sin poder adjuntar ni reemplazar: Ver detalle (manual §5.4). Por defecto, igual que `editable`. */
+  revisable?: boolean
   /** Complementaria por adscripción: suma los documentos requeridos del convenio. */
   porAdscripcion?: boolean
 }
@@ -115,7 +117,7 @@ interface SoportesSectionProps {
  * revisión. Cada operación se guarda al momento, no con el botón Guardar de la
  * matrícula; la revisión nunca impide la matrícula.
  */
-export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion = false }: SoportesSectionProps) {
+export function MatriculaSoportesSection({ matriculaId, editable, revisable = editable, porAdscripcion = false }: SoportesSectionProps) {
   const { notify } = useNotify()
   const soportesQuery = useSoportesQuery(matriculaId)
   const cargar = useCargarSoporte(matriculaId)
@@ -236,13 +238,17 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
                             <EyeIcon /> Ver archivo
                           </DropdownMenuItem>
                           {editable ? (
+                            <DropdownMenuItem disabled={!cargado} onClick={() => setReemplazando(fila)}>
+                              <UploadSimpleIcon /> Reemplazar
+                            </DropdownMenuItem>
+                          ) : null}
+                          {revisable ? (
+                            <DropdownMenuItem disabled={!cargado} onClick={() => setRevisando(fila)}>
+                              <CheckIcon /> Revisar soporte
+                            </DropdownMenuItem>
+                          ) : null}
+                          {editable ? (
                             <>
-                              <DropdownMenuItem disabled={!cargado} onClick={() => setReemplazando(fila)}>
-                                <UploadSimpleIcon /> Reemplazar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem disabled={!cargado} onClick={() => setRevisando(fila)}>
-                                <CheckIcon /> Revisar soporte
-                              </DropdownMenuItem>
                               {fila.tipo === "OTRO" ? (
                                 <>
                                   <DropdownMenuSeparator />
@@ -308,12 +314,50 @@ function Ficha({ filas }: { filas: [string, ReactNode][] }) {
   )
 }
 
+type VistaPrevia =
+  | { estado: "cargando" | "sin-vista" | "error" }
+  | { estado: "imagen" | "pdf"; src: string }
+
+/**
+ * Baja el archivo como blob y decide la vista por su content-type real, no por
+ * el nombre (hay soportes sin extensión). El `blob:` además evita que un
+ * `X-Frame-Options` del gateway bloquee el PDF dentro del iframe.
+ */
+function useVistaPrevia(url: string | undefined): VistaPrevia {
+  const [vista, setVista] = useState<VistaPrevia>({ estado: "cargando" })
+  useEffect(() => {
+    if (!url) return
+    let src: string | null = null
+    let vigente = true
+    setVista({ estado: "cargando" })
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.blob()
+      })
+      .then((blob) => {
+        if (!vigente) return
+        const tipo = blob.type.toLowerCase()
+        const estado = tipo.startsWith("image/") ? "imagen" : tipo === "application/pdf" ? "pdf" : null
+        if (!estado) return setVista({ estado: "sin-vista" })
+        src = URL.createObjectURL(blob)
+        setVista({ estado, src })
+      })
+      .catch(() => vigente && setVista({ estado: "error" }))
+    return () => {
+      vigente = false
+      if (src) URL.revokeObjectURL(src)
+    }
+  }, [url])
+  return vista
+}
+
 /** Ver archivo (EDI.1h): vista previa y, al lado, la ficha con la revisión vigente. */
 /** Vista previa del soporte; la reusa la ficha de una reserva (Asignar grupo). */
 export function DialogVerSoporte({ fila, onClose }: { fila: FilaSoporte; onClose: () => void }) {
   const s = fila.soporte as Soporte
   const { data: url, isPending } = useArchivoViewUrl(s.archivoId)
-  const esPdf = (s.archivoNombre ?? "").toLowerCase().endsWith(".pdf")
+  const vista = useVistaPrevia(url)
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-4xl">
@@ -322,12 +366,18 @@ export function DialogVerSoporte({ fila, onClose }: { fila: FilaSoporte; onClose
         </DialogHeader>
         <div className="grid gap-4 md:grid-cols-[1fr_18rem]">
           <div className="flex min-h-96 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40">
-            {isPending || !url ? (
+            {isPending || !url || vista.estado === "cargando" ? (
               <SpinnerIcon className="animate-spin text-muted-foreground" aria-label="Cargando vista previa" />
-            ) : esPdf ? (
-              <iframe src={url} title={`Vista previa de ${s.archivoNombre}`} className="h-[32rem] w-full" />
+            ) : vista.estado === "imagen" ? (
+              <img src={vista.src} alt={`Vista previa de ${s.archivoNombre}`} className="max-h-[32rem] object-contain" />
+            ) : vista.estado === "pdf" ? (
+              <iframe src={vista.src} title={`Vista previa de ${s.archivoNombre}`} className="h-[32rem] w-full" />
             ) : (
-              <img src={url} alt={`Vista previa de ${s.archivoNombre}`} className="max-h-[32rem] object-contain" />
+              <p className="px-6 text-center text-sm text-muted-foreground">
+                {vista.estado === "error"
+                  ? "No se pudo cargar el archivo. Intente descargarlo."
+                  : "Este tipo de archivo no tiene vista previa. Use Descargar para abrirlo."}
+              </p>
             )}
           </div>
           <Ficha

@@ -55,6 +55,7 @@ export type ReportKey =
   | "orientacion-remision"
   | "remision-externa"
   | "orientacion-ficha"
+  | "inclusion-informe"
   | "piar-plan"
   | "piar-acta"
   | "piar-actualizacion"

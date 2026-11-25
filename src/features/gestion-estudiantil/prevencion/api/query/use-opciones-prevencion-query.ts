@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import { queryString } from "@/features/gestion-estudiantil/commons/api/jsonb"
+import { desenvolver, queryString } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { prevencionKeys } from "@/features/gestion-estudiantil/prevencion/api/query-keys"
 import { BASE_PREVENCION } from "@/features/gestion-estudiantil/prevencion/api/query/use-tablero-query"
 import type {
@@ -12,6 +12,7 @@ import type {
   OpcionMotivoRetiro,
   OpcionPeriodo,
   OpcionPeriodoAcademico,
+  OpcionesEstadosAcomp,
   OpcionResponsable,
   OpcionSedeJornada,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -69,6 +70,19 @@ export function useOpcionesResponsablesQuery(params: OpcionesResponsablesParams,
     enabled: enabled && params.establecimiento != null,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
+  })
+}
+
+/** `GET /acompanamientos/opciones/estados`: estados de Embarazo, Consumo y Reportes recibidos (una fila con `datos`). */
+export function useOpcionesEstadosAcompQuery(establecimiento: number | null) {
+  return useQuery({
+    queryKey: prevencionKeys.opciones.acompEstados(establecimiento ?? "none"),
+    queryFn: () =>
+      evalCol
+        .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/acompanamientos/opciones/estados${queryString({ ESTABLECIMIENTO: establecimiento })}`)
+        .then((r) => desenvolver<OpcionesEstadosAcomp>(r[0], "datos", "No se pudieron cargar los estados.")),
+    enabled: establecimiento != null,
+    staleTime: 60_000,
   })
 }
 

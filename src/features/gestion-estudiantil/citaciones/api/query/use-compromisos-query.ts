@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { desenvolver } from "@/features/gestion-estudiantil/commons/api/jsonb"
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import type {
@@ -30,11 +31,13 @@ export interface CompromisosParams {
   filters: CompromisosQueryFilters
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
 export const fetchCompromisos = async (params: CompromisosParams) => {
   const rows = await evalCol.postRows<CompromisoRow>(`${BASE_COMPROMISOS}/query`, {
     FILTERS: params.filters,
+    ...params.orden,
     PAGEINDEX: params.pageIndex,
     PAGESIZE: params.pageSize,
   })

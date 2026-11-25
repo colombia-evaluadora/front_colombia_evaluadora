@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { PiarDetalle } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
-import { accesoPiar, claveElemento, esOpcionElegida, textoElemento, progresoBloques, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
+import { claveElemento, esOpcionElegida, textoElemento, progresoBloques, sinAjustesTodas } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 
 const base = {
   ajustes: [],
@@ -13,18 +13,6 @@ const base = {
   ],
   version_actual: { participantes: [], acta: null },
 } as unknown as PiarDetalle
-
-describe("accesoPiar", () => {
-  const editar = { puedeCrear: true, puedeEditar: true }
-  it("solo orientación gestiona; coordinador y rector anulan", () => {
-    expect(accesoPiar(["CEVAL-PSICO_ORIENTADOR"], editar).puedeGestionar).toBe(true)
-    expect(accesoPiar(["CEVAL-RECTOR"], editar)).toMatchObject({ puedeGestionar: false, puedeAnular: true })
-  })
-  it("el docente en solo lectura no edita ajustes (D3)", () => {
-    expect(accesoPiar(["CEVAL-DOCENTE"], { puedeCrear: false, puedeEditar: false }).puedeEditarAjustes).toBe(false)
-    expect(accesoPiar(["CEVAL-DOCENTE"], editar).puedeEditarAjustes).toBe(true)
-  })
-})
 
 describe("progresoBloques", () => {
   it("cuenta los bloques y nombra lo que falta en singular", () => {

@@ -28,7 +28,7 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
                 <IconoCarga cargando={guardando}>
                   <FloppyDiskIcon data-icon="inline-start" />
                 </IconoCarga>
-                Abrir proceso
+                Guardar
               </Button>
             </div>
           }
@@ -40,6 +40,14 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
 
       <TableScreenBody>
         <div className="flex flex-col gap-5 pb-6">
+          <Alert variant="info">
+            <InfoIcon aria-hidden="true" />
+            <AlertDescription>
+              Al guardar, se comunicarán los cargos a{" "}
+              {form.acudienteNombre ? <span className="font-medium">{form.acudienteNombre}</span> : "el acudiente"} en el portal y
+              por correo, y se creará la citación a la diligencia de descargos.
+            </AlertDescription>
+          </Alert>
           <SeccionEstudianteOrigen form={form} />
           <SeccionDatosApertura form={form} />
           <ConstructorCargos form={form} />
@@ -47,9 +55,7 @@ function ProcesoForm({ origen }: { origen: OrigenProceso }) {
           <Alert variant="info">
             <InfoIcon aria-hidden="true" />
             <AlertDescription>
-              Al guardar, los cargos se comunican al acudiente en el portal y por correo, y se crea la citación a la
-              diligencia de descargos. Los cargos y las pruebas no se modifican después; si hay un error, se anula el
-              proceso y se abre uno nuevo.
+              Los cargos y las pruebas no se modifican después; si hay un error, se anula el proceso y se abre uno nuevo.
             </AlertDescription>
           </Alert>
           <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>

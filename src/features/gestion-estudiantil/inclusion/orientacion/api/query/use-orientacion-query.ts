@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import type { RemisionDetalle } from "@/features/gestion-estudiantil/inclusion/orientacion/utils/remision-form"
 import { orientacionKeys } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query-keys"
 import type { AtencionDetalle, AtencionRow, MiRemisionRow, OrientacionFiltros, RemisionRow } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
@@ -15,10 +16,11 @@ export interface Params {
   filtros: OrientacionFiltros
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
-async function listar<T extends { total_count: number }>(ruta: string, filters: unknown, pageIndex: number, pageSize: number) {
-  const rows = await evalCol.postRows<T>(`${BASE}/${ruta}/query`, { FILTERS: filters, PAGEINDEX: pageIndex, PAGESIZE: pageSize })
+async function listar<T extends { total_count: number }>(ruta: string, filters: unknown, pageIndex: number, pageSize: number, orden?: OrdenServidor) {
+  const rows = await evalCol.postRows<T>(`${BASE}/${ruta}/query`, { FILTERS: filters, ...orden, PAGEINDEX: pageIndex, PAGESIZE: pageSize })
   const totalCount = rows[0]?.total_count ?? 0
   return { rows, totalCount, pageCount: toPageCount(totalCount, pageSize) }
 }
@@ -26,7 +28,7 @@ async function listar<T extends { total_count: number }>(ruta: string, filters: 
 const comunes = ({ search, filtros }: Params) => ({ SEARCH: search.trim() || null, FK_SEDE: id(filtros.sede), FK_JORNADA: id(filtros.jornada), FK_MOTIVO: id(filtros.motivo) })
 
 export const fetchRemisiones = (p: Params) =>
-  listar<RemisionRow>("remisiones", { ...comunes(p), FK_ESTADO: id(p.filtros.estado), FK_MATRICULA: null }, p.pageIndex, p.pageSize)
+  listar<RemisionRow>("remisiones", { ...comunes(p), FK_ESTADO: id(p.filtros.estado), FK_MATRICULA: null }, p.pageIndex, p.pageSize, p.orden)
 
 export function useRemisionesQuery(p: Params) {
   return useQuery({
@@ -37,7 +39,7 @@ export function useRemisionesQuery(p: Params) {
 }
 
 export const fetchAtenciones = (p: Params) =>
-  listar<AtencionRow>("atenciones", { ...comunes(p), FK_MODALIDAD: id(p.filtros.modalidad), FK_ORIGEN: id(p.filtros.origen) }, p.pageIndex, p.pageSize)
+  listar<AtencionRow>("atenciones", { ...comunes(p), FK_MODALIDAD: id(p.filtros.modalidad), FK_ORIGEN: id(p.filtros.origen) }, p.pageIndex, p.pageSize, p.orden)
 
 export function useAtencionesQuery(p: Params) {
   return useQuery({
@@ -96,6 +98,20 @@ export function useEstudiantesAtencionQuery(search: string, enabled: boolean) {
     queryFn: () =>
       evalCol.getRows<{ fk_tmatricula: number; estudiante_nombre: string; grado_grupo: string }>(
         `/gestion-estudiantil/inclusion/piar/matriculas-disponibles?TODAS=true${search ? `&SEARCH=${encodeURIComponent(search)}` : ""}`,
+      ),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  })
+}
+
+/** Funcionarios que pueden firmar la ficha impresa (5.2): del alcance de quien registra, con sus roles; hasta 50 por búsqueda. */
+export function useFuncionariosFirmanteQuery(search: string, enabled: boolean) {
+  return useQuery({
+    queryKey: orientacionKeys.funcionarios(search),
+    queryFn: () =>
+      evalCol.getRows<{ fk_tfuncionario: number; nombre: string; roles: string | null }>(
+        `${BASE}/opciones/funcionarios${search.trim() ? `?SEARCH=${encodeURIComponent(search.trim())}` : ""}`,
       ),
     enabled,
     placeholderData: keepPreviousData,

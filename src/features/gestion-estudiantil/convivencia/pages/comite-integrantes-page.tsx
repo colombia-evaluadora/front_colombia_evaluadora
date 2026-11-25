@@ -59,6 +59,7 @@ function Contenido({ periodo, periodos, comite, onPeriodo }: ContenidoProps) {
             label="Período académico"
             size="default"
             todos={false}
+            description="Un Comité por establecimiento y Período Académico."
             value={String(periodo.fk_periodo)}
             options={periodos.map((p) => ({ value: String(p.fk_periodo), label: rotuloPeriodo(p) }))}
             onChange={(v) => {

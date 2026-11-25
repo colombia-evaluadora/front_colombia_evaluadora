@@ -62,7 +62,6 @@ import {
 } from "@/features/gestion-estudiantil/convivencia/api/query/use-procesos-query"
 import { PROCESOS_FILTROS_VACIOS } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { FILTROS_VACIOS as CONVIVENCIA_VACIOS } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { COMITE_VER_ROLES } from "@/features/gestion-estudiantil/convivencia/utils/access"
 // Citaciones y compromisos
 import { citacionesKeys } from "@/features/gestion-estudiantil/citaciones/api/query-keys"
 import {
@@ -88,7 +87,6 @@ import { FILTROS_VACIOS as ORIENTACION_VACIOS } from "@/features/gestion-estudia
 import { piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
 import { fetchPiarLista, fetchSinPiar, piarQueryOptions } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { FILTROS_VACIOS as PIAR_VACIOS } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
-import { accesoPiar } from "@/features/gestion-estudiantil/inclusion/piar/utils/piar"
 // Reconocimientos
 import { reconocimientosKeys } from "@/features/gestion-estudiantil/reconocimientos/api/query-keys"
 import {
@@ -362,7 +360,7 @@ function comiteTasks(): PrepareTask[] {
   ]
 }
 
-function convivenciaTasks(roles: readonly string[]): PrepareTask[] {
+function convivenciaTasks(): PrepareTask[] {
   return [
     listadoFiltrado(convivenciaKeys.lista, fetchCasos, toConvivenciaFilters("", CONVIVENCIA_VACIOS), {
       fila: (c) => [
@@ -389,8 +387,8 @@ function convivenciaTasks(roles: readonly string[]): PrepareTask[] {
       "TIPO_AGRESION",
       "EVENTO_GENERADOR",
     ),
-    conSedes((sedes) => [capacidades(sedes[0].establecimientoId)]),
-    ...(COMITE_VER_ROLES.some((r) => roles.includes(r)) ? comiteTasks() : []),
+    // El Comité se precarga solo si el backend dice que el usuario lo ve (comite_puede_ver).
+    conSedes((sedes) => [capacidades(sedes[0].establecimientoId, (cap) => (cap?.comite_puede_ver ? comiteTasks() : []))]),
   ]
 }
 
@@ -412,8 +410,24 @@ function citacionesTasks(): PrepareTask[] {
 
 // ---- Inclusión y orientación --------------------------------------------------------
 
+/**
+ * Qué precargar sin conexión por rol (no hay sesión de red para `/inclusion/acceso` al preparar); la pantalla
+ * en línea decide con las banderas del backend y cada GET sigue validando su gate.
+ */
+function accesoInclusionPorRol(roles: readonly string[]) {
+  const tiene = (...r: string[]) => r.some((x) => roles.includes(x))
+  const sensible = tiene("CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR")
+  return {
+    // Coinciden con puede_ver_piar y puede_ver_orientacion: el docente lista PIAR pero no ve la orientación ni el aviso sin PIAR.
+    veAvisoSinPiar: sensible,
+    veOrientacion: sensible,
+    veListado: sensible || tiene("CEVAL-DOCENTE"),
+    veInforme: !tiene("CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-DOCENTE") || tiene("CEVAL-RECTOR", "CEVAL-COORDINADOR"),
+  }
+}
+
 function inclusionTasks(roles: readonly string[]): PrepareTask[] {
-  const acceso = accesoPiar([...roles], { puedeCrear: false, puedeEditar: false })
+  const acceso = accesoInclusionPorRol(roles)
   // Solo quien NO ve lo sensible (el docente) abre el PIAR sin dejar traza de consulta.
   const sinTraza = acceso.veListado && !acceso.veOrientacion
   const tasks: PrepareTask[] = []

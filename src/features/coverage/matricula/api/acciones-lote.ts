@@ -143,7 +143,8 @@ export function usePreviaReingresoQuery(matriculaIds: string[]) {
       const rows = await evalCol.postRows<PreviaReingresoRow>(`${BASE}/reingresar/previa`, { IDS: ids(matriculaIds) })
       return rows.map((r) => ({
         matriculaId: String(r.pk_matricula),
-        fechaRetiro: r.fecha_retiro,
+        // Timestamp en el back: se recorta a yyyy-MM-dd para mostrarla y compararla con la fecha de reingreso.
+        fechaRetiro: r.fecha_retiro?.slice(0, 10) ?? "",
         grupoActual: r.grupo_actual,
         sinCupo: r.sin_cupo,
         cuposLibres: r.cupos_libres,
@@ -420,18 +421,6 @@ export function useGenerarHojas() {
     mutationFn: (matriculaIds: string[]) =>
       // Sale de reporting-service (V282: /matricula/hojas bajo FILTERS), como el carné.
       reporte("matricula-hoja", { IDS: ids(matriculaIds) }),
-  })
-}
-
-/** Si la constancia lleva numeración (Configuración de Reportes): ofrece generar como borrador. */
-export function useConfiguracionConstanciaQuery() {
-  return useQuery({
-    queryKey: [...matriculaKeys.all, "constancia-configuracion"],
-    queryFn: async () => {
-      const row = await evalCol.getRow<{ numeracion: boolean }>(`${BASE}/constancias/configuracion`)
-      return { numeracion: row.numeracion }
-    },
-    staleTime: 5 * 60_000,
   })
 }
 

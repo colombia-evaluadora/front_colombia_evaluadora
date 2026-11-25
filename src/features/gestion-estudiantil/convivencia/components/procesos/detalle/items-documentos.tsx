@@ -26,8 +26,12 @@ const DOCUMENTOS: { clave: DocumentoProceso; etiqueta: string }[] = [
 export function ItemsDocumentos({ procesoId, documentos }: { procesoId: number; documentos: ProcesoDetalle["documentos"] }) {
   const { notify } = useNotify();
   const descargar = async (clave: DocumentoProceso) => {
-    const r = await descargarDocumentoProceso(clave, procesoId);
-    if (r.status === "error") notify(r.message, { variant: "error" });
+    try {
+      const r = await descargarDocumentoProceso(clave, procesoId);
+      if (r.status === "error") notify(r.message, { variant: "error" });
+    } catch {
+      notify("No se pudo descargar el documento. Intente de nuevo.", { variant: "error" });
+    }
   };
   return (
     <>

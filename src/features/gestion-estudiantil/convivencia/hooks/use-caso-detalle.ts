@@ -3,19 +3,18 @@ import { useCanGoBack, useNavigate, useRouter } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
 import { useCitacionesAccess } from "@/features/gestion-estudiantil/citaciones/hooks/use-citaciones-access"
-import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia/api/use-convivencia-access"
 import { esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { resumenDeDetalle, type CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { useDialogosCaso } from "@/features/gestion-estudiantil/convivencia/components/dialogs/use-dialogos-caso"
 import { datosPendientesCaso } from "@/features/gestion-estudiantil/convivencia/utils/datos-pendientes"
 import type { AccionCaso } from "@/features/gestion-estudiantil/convivencia/components/menu-acciones-caso"
+import { banderasDe } from "@/features/gestion-estudiantil/convivencia/utils/access"
 
 /** Navegación y orquestación de diálogos del detalle del caso. */
 export function useCasoDetalle(caso: CasoDetalle) {
   const navigate = useNavigate()
   const router = useRouter()
   const canGoBack = useCanGoBack()
-  const access = useConvivenciaAccess()
   const { puedeCrearCitacion: puedeCitar, puedeCrearCompromiso } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
   const resumen = resumenDeDetalle(caso)
@@ -38,7 +37,7 @@ export function useCasoDetalle(caso: CasoDetalle) {
   const datosPendientes = abierto && caso.acceso_completo ? datosPendientesCaso(caso) : []
 
   return {
-    access,
+    banderas: banderasDe(caso),
     puedeCitar,
     puedeCrearCompromiso,
     abierto,

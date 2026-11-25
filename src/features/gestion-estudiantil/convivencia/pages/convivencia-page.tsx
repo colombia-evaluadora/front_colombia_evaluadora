@@ -12,6 +12,9 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { conOrdenServidor, ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import { ORDEN_CASOS } from "@/features/gestion-estudiantil/convivencia/components/table/columns-casos"
+import { ORDEN_PROCESOS } from "@/features/gestion-estudiantil/convivencia/components/procesos/columns-procesos"
 import { useDataTable } from "@/hooks/use-data-table"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
@@ -37,7 +40,7 @@ import { TabComite } from "@/features/gestion-estudiantil/convivencia/components
 import { DialogExportarSiuce } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-exportar-siuce"
 import { buildColumnsCasos } from "@/features/gestion-estudiantil/convivencia/components/table/columns-casos"
 import { SearchCasos } from "@/features/gestion-estudiantil/convivencia/components/search/search-casos"
-import { useCasosFiltros, useGestoresDelListado } from "@/features/gestion-estudiantil/convivencia/hooks/use-casos-filtros"
+import { useCasosFiltros } from "@/features/gestion-estudiantil/convivencia/hooks/use-casos-filtros"
 import { useDialogosCaso } from "@/features/gestion-estudiantil/convivencia/components/dialogs/use-dialogos-caso"
 import { periodoPorDefecto } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
@@ -48,7 +51,6 @@ interface PestanaProps {
 function PestanaCasos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
-  const access = useConvivenciaAccess()
   const { puedeCrearCitacion: puedeCitar, puedeCrearCompromiso } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
 
@@ -58,12 +60,11 @@ function PestanaCasos({ cabecera }: PestanaProps) {
     filters: toConvivenciaFilters(f.search, f.filtros),
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_CASOS),
   })
   const rows = data?.rows ?? []
-  const gestores = useGestoresDelListado(data?.rows)
 
-  const columns = buildColumnsCasos({
-    access,
+  const columns = conOrdenServidor(buildColumnsCasos({
     puedeCitar,
     puedeCrearCompromiso,
     onAccion: (caso, accion) => {
@@ -76,7 +77,7 @@ function PestanaCasos({ cabecera }: PestanaProps) {
       else if (accion === "modificar") navigate({ to: paths.app.convivenciaEditar.getHref(caso.id) })
       else abrir(accion, resumenDeFila(caso))
     },
-  })
+  }), ORDEN_CASOS)
 
   const { table } = useDataTable({
     columns,
@@ -104,7 +105,7 @@ function PestanaCasos({ cabecera }: PestanaProps) {
             applyFilters={f.applyFilters}
             onClearAll={f.onClearAll}
             onDraftChange={f.onDraftChange}
-            opciones={{ ...f.opciones, gestores }}
+            opciones={f.opciones}
           />
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -150,15 +151,16 @@ function PestanaProcesos({ cabecera }: PestanaProps) {
     filters: toProcesosFilters(f.search, f.filtros),
     pageIndex,
     pageSize,
+    orden: ordenServidor(sorting, ORDEN_PROCESOS),
   })
 
-  const columns = buildColumnsProcesos({
+  const columns = conOrdenServidor(buildColumnsProcesos({
     onAccion: (proceso, accion) => {
       if (accion === "ver") navigate({ to: paths.app.convivenciaProceso.getHref(proceso.id) })
       else if (accion === "anular") setAnulando(resumenDeProceso(proceso))
       else abrirEtapa(accion, proceso.id)
     },
-  })
+  }), ORDEN_PROCESOS)
 
   const { table } = useDataTable({
     columns,

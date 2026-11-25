@@ -5,11 +5,12 @@ import { useCallback, useMemo } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { toCasosFilters, useCasosQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-casos-query"
 import { usePermisosReintegracionQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-permisos-query"
 import type { CasoRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import type { AccionCaso } from "@/features/gestion-estudiantil/reintegracion/components/acciones-caso"
-import { buildColumnsCasos } from "@/features/gestion-estudiantil/reintegracion/components/columns-casos"
+import { buildColumnsCasos, ORDEN_CASOS_REINTEGRACION } from "@/features/gestion-estudiantil/reintegracion/components/columns-casos"
 import { useDialogosCaso } from "@/features/gestion-estudiantil/reintegracion/components/use-dialogos-caso"
 import { useNavegacionReintegracion } from "@/features/gestion-estudiantil/reintegracion/hooks/use-navegacion-reintegracion"
 import { useCasosFiltros } from "@/features/gestion-estudiantil/reintegracion/hooks/use-casos-filtros"
@@ -30,7 +31,7 @@ export function useCasosLista() {
     () => (f.establecimientoId == null ? null : toCasosFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const query = useCasosQuery({ filters, pageIndex, pageSize })
+  const query = useCasosQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_CASOS_REINTEGRACION) }, pageIndex, pageSize })
 
   // Ver caso y Abrir caso de convivencia navegan; el resto abre su modal con el caso cargado.
   const { abrir } = dialogos

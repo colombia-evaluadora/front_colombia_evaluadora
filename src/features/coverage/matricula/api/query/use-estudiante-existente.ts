@@ -69,7 +69,8 @@ export function useEstudianteExistenteQuery(documento: string) {
         secondName: r.segundo_nombre ?? "",
         lastName: r.primer_apellido,
         secondLastName: r.segundo_apellido ?? "",
-        birthDate: r.fecha_nacimiento ?? "",
+        // El back la manda como timestamp («2022-03-14T00:00:00.000Z»).
+        birthDate: r.fecha_nacimiento?.slice(0, 10) ?? "",
         correoEnmascarado: r.correo_enmascarado ?? "",
         telefonoEnmascarado: r.telefono_enmascarado ?? "",
         ultimoAcudiente: r.ultimo_acudiente_nombre

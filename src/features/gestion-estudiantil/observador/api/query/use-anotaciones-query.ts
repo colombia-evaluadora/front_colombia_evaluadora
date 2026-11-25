@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { observadorKeys } from "@/features/gestion-estudiantil/observador/api/query-keys"
 import type {
   AnotacionRow,
@@ -32,11 +33,13 @@ export interface AnotacionesParams {
   filters: ObservadorQueryFilters
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
 export const fetchAnotaciones = async (params: AnotacionesParams) => {
   const rows = await evalCol.postRows<AnotacionRow>("/gestion-estudiantil/observador/query", {
     FILTERS: params.filters,
+    ...params.orden,
     PAGEINDEX: params.pageIndex,
     PAGESIZE: params.pageSize,
   })

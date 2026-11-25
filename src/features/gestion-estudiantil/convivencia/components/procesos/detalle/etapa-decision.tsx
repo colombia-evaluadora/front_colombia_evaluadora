@@ -11,7 +11,7 @@ import { textoNotificacion } from "@/features/gestion-estudiantil/convivencia/ut
 export function EtapaDecisionProceso({ etapa, cargos }: { etapa: EtapaDecision; cargos: CargoDTO[] }) {
   const probados = cargos.filter((c) => etapa.cargos_probados?.includes(c.id)).map((c) => `${c.orden}. ${c.codigo}`)
   return (
-    <EtapaProceso titulo="Decisión" alcanzada={etapa.alcanzada} resumen={formatFecha(etapa.fecha)}>
+    <EtapaProceso titulo="3. Decisión" alcanzada={etapa.alcanzada} resumen={formatFecha(etapa.fecha)}>
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Dato label="Instancia que decide">{etapa.instancia?.nombre ?? ""}</Dato>
         <Dato label="Resultado">{etapa.resultado?.nombre ?? ""}</Dato>

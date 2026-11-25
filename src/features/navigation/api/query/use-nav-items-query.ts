@@ -9,6 +9,7 @@ import type { NavItem, NavItemDto } from "@/features/navigation/api/types/nav-it
 import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
 import { navigationKeys } from "@/features/navigation/api/query-keys"
 import { perfilActivo } from "@/features/navigation/lib/perfil"
+import { esSinPermiso, tokenSinRoles } from "@/features/navigation/lib/sin-roles"
 
 /**
  * El sidebar sale de `GET /eval-col/my-menus` → `fn_list_my_menus`, que cruza
@@ -27,10 +28,17 @@ import { perfilActivo } from "@/features/navigation/lib/perfil"
  * edita la pantalla de roles y menús.
  */
 async function fetchNavItemsDto() {
+  // Sin roles no hay menú: «Sin acceso» en lugar del 403 (ver `sin-roles.ts`).
+  if (tokenSinRoles()) return []
   // Cuenta con varios perfiles: solo el menú del perfil elegido (U.5.PER.1).
   const perfil = perfilActivo()
-  const menus = await evalCol.getRows<MenuNode>(perfil ? `/my-menus?perfil=${perfil}` : "/my-menus")
-  return toNavItemDtos(menus)
+  try {
+    const menus = await evalCol.getRows<MenuNode>(perfil ? `/my-menus?perfil=${perfil}` : "/my-menus")
+    return toNavItemDtos(menus)
+  } catch (error) {
+    if (esSinPermiso(error)) return []
+    throw error
+  }
 }
 
 // El cache guarda la forma CRUDA (íconos como texto): es serializable y se

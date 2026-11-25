@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -8,6 +10,7 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { BotonArchivo } from "@/features/gestion-estudiantil/convivencia/components/soportes/boton-archivo"
 import { FilaSoporte } from "@/features/gestion-estudiantil/convivencia/components/soportes/fila-soporte"
+import { DialogVincularSoporte, type SoporteGeneral } from "@/features/gestion-estudiantil/convivencia/components/soportes/dialog-vincular-soporte"
 import { PanelMotivoSoporte } from "@/features/gestion-estudiantil/convivencia/components/soportes/panel-motivo-soporte"
 import { VersionesAnteriores } from "@/features/gestion-estudiantil/convivencia/components/soportes/versiones-anteriores"
 import { useSoportesAccion } from "@/features/gestion-estudiantil/convivencia/hooks/use-soportes-accion"
@@ -15,7 +18,7 @@ import { MAX_SOPORTES } from "@/features/gestion-estudiantil/convivencia/utils/s
 
 interface Props {
   accion: { id: number; nombre: string; fecha: string }
-  caso: { numero: string | number; cerrado: boolean; tieneSoporte: boolean }
+  caso: { numero: string | number; cerrado: boolean; tieneSoporte: boolean; soporte: SoporteGeneral | null }
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -23,6 +26,7 @@ interface Props {
 /** Soportes de una acción (G.2.CAS.ACC.11): hasta 5 vigentes; con el caso cerrado, solo lectura. */
 export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props) {
   const f = useSoportesAccion({ accionId: accion.id, cerrado: caso.cerrado, open })
+  const [vincular, setVincular] = useState(false)
   const ocupado = f.agregando || f.pendingPanel
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !ocupado && (f.cerrar(), onOpenChange(false))}>
@@ -44,7 +48,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
         </DialogHeader>
         <NoticeBanner notice={f.notice} onClose={f.cerrarNotice} variant="error" />
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant="outline" color="neutral" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={f.vincularCaso}>
+          <Button type="button" size="sm" variant="outline" color="neutral" disabled={!f.puedeAgregar || !caso.tieneSoporte || ocupado} onClick={() => setVincular(true)}>
             <IconoCarga cargando={f.agregando}><LinkIcon data-icon="inline-start" /></IconoCarga>
             Vincular soporte del caso
           </Button>
@@ -72,6 +76,20 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
               ))}
             </ul>
           )}
+          {vincular && (
+            <DialogVincularSoporte
+              accion={accion}
+              numero={caso.numero}
+              soporte={caso.soporte}
+              total={f.vigentes.length}
+              pending={f.agregando}
+              onConfirmar={() => {
+                f.vincularCaso()
+                setVincular(false)
+              }}
+              onClose={() => setVincular(false)}
+            />
+          )}
           {f.panel && !caso.cerrado && (
             <PanelMotivoSoporte
               panel={f.panel}
@@ -86,7 +104,7 @@ export function DialogSoportesAccion({ accion, caso, open, onOpenChange }: Props
               onCancelar={f.cerrarPanel}
             />
           )}
-          <VersionesAnteriores soportes={f.anteriores} />
+          <VersionesAnteriores soportes={f.anteriores} todos={f.consulta.data} />
         </div>
         <DialogFooter>
           <DialogClose render={<Button size="sm" type="button" variant="outline" color="neutral" />}>

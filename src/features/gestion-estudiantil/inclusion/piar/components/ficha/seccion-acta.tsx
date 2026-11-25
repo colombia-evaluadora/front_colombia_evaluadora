@@ -9,7 +9,7 @@ import { TablaDatos } from "@/features/gestion-estudiantil/inclusion/piar/compon
 import { BotonQuitar, BotonSeccion, EnlaceArchivo } from "@/features/gestion-estudiantil/inclusion/piar/components/ui-piar"
 import type { FichaPiar } from "@/features/gestion-estudiantil/inclusion/piar/hooks/use-ficha-piar"
 
-function TablaParticipantes({ version, quitable, onQuitar, onEditar }: { version: VersionActual; quitable: boolean; onQuitar: (id: number) => void; onEditar: (p: Participante) => void }) {
+function TablaParticipantes({ version, quitable, bloqueado, onQuitar, onEditar }: { version: VersionActual; quitable: boolean; bloqueado: boolean; onQuitar: (id: number) => void; onEditar: (p: Participante) => void }) {
   return (
     <TablaDatos
       id="piar-participantes"
@@ -29,8 +29,8 @@ function TablaParticipantes({ version, quitable, onQuitar, onEditar }: { version
           cell: ({ row }) =>
             quitable && (
               <span className="inline-flex items-center gap-1">
-                <Button size="xs" variant="outline" color="neutral" type="button" onClick={() => onEditar(row.original)}>Modificar</Button>
-                <BotonQuitar onClick={() => onQuitar(row.original.id)} />
+                <Button size="xs" variant="outline" color="neutral" type="button" disabled={bloqueado} onClick={() => onEditar(row.original)}>Modificar</Button>
+                <BotonQuitar disabled={bloqueado} onClick={() => onQuitar(row.original.id)} />
               </span>
             ),
         },
@@ -45,16 +45,16 @@ export function SeccionActa({ ficha }: { ficha: FichaPiar }) {
   const borrador = estado === "BORRADOR"
   const bloqueado = !borrador || !gestiona
   // Un cambio sustancial abre una versión Pendiente de acuerdo que también recoge sus firmas (fn_piar_validar_version_preparable).
-  const preparable = gestiona && ["VERSION_TRABAJO", "PENDIENTE_ACUERDO"].includes(version.estado.codigo)
+  const preparable = ["VERSION_TRABAJO", "PENDIENTE_ACUERDO"].includes(version.estado.codigo)
   return (
     <SeccionPlegable
       defaultAbierta={borrador}
       titulo={<span className="font-normal">Acta de acuerdo</span>}
       accion={
-        estado === "VIGENTE" && gestiona && (
+        estado === "VIGENTE" && (
           <span className="flex flex-wrap gap-2">
-            <BotonSeccion icono={<PencilIcon data-icon="inline-start" />} onClick={() => setDialogo({ tipo: "actualizar" })}>Actualizar acuerdo</BotonSeccion>
-            {!version.copia && <BotonSeccion onClick={() => setDialogo({ tipo: "copia" })}>Registrar copia a la familia</BotonSeccion>}
+            <BotonSeccion icono={<PencilIcon data-icon="inline-start" />} disabled={!piar.puede_actualizar_acuerdo} onClick={() => setDialogo({ tipo: "actualizar" })}>Actualizar acuerdo</BotonSeccion>
+            {!version.copia && <BotonSeccion disabled={!piar.puede_registrar_copia_familia} onClick={() => setDialogo({ tipo: "copia" })}>Registrar copia a la familia</BotonSeccion>}
           </span>
         )
       }
@@ -73,17 +73,17 @@ export function SeccionActa({ ficha }: { ficha: FichaPiar }) {
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <strong className="font-medium">Participantes y firmantes</strong>
-          {preparable && <BotonSeccion onClick={() => setDialogo({ tipo: "participante" })}>Agregar participante</BotonSeccion>}
+          {preparable && <BotonSeccion disabled={!gestiona} onClick={() => setDialogo({ tipo: "participante" })}>Agregar participante</BotonSeccion>}
         </div>
-        <TablaParticipantes version={version} quitable={preparable} onQuitar={(id) => quitar(`/participantes/${id}/eliminar`)} onEditar={(fila) => setDialogo({ tipo: "participante", fila })} />
+        <TablaParticipantes version={version} quitable={preparable} bloqueado={!gestiona} onQuitar={(id) => quitar(`/participantes/${id}/eliminar`)} onEditar={(fila) => setDialogo({ tipo: "participante", fila })} />
       </div>
       {version.acta && <p>Acta firmada: <EnlaceArchivo archivo={version.acta} /></p>}
       {version.copia && <p className="text-muted-foreground">Copia entregada a la familia el {formatFecha(version.copia.fecha)} ({version.copia.medio}).</p>}
       <div className="flex flex-wrap items-center gap-3">
         <Button size="sm" variant="outline" color="neutral" type="button" onClick={() => documento(descargarActa(piar.id, version.id))}>Generar borrador del acta</Button>
-        {gestiona && borrador && (
+        {borrador && (
           <>
-            <Button size="sm" variant="outline" color="neutral" type="button" onClick={abrirActivacion}>
+            <Button size="sm" variant="outline" color="neutral" type="button" disabled={!piar.puede_activar} onClick={abrirActivacion}>
               <FileUploadOutlinedIcon data-icon="inline-start" />
               Cargar acta
             </Button>

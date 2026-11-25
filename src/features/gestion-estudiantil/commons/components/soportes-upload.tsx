@@ -24,6 +24,10 @@ interface SoportesUploadProps {
   onChange: (archivos: File[]) => void
   max: number
   disabled?: boolean
+  /** Reemplaza el texto de ayuda del recuadro. */
+  ayuda?: string
+  /** Tipos aceptados; por defecto PDF, JPG y PNG. */
+  accept?: string
 }
 
 const claveArchivo = (f: File) => `${f.name}:${f.size}:${f.lastModified}`
@@ -35,7 +39,7 @@ const claveArchivo = (f: File) => `${f.name}:${f.size}:${f.lastModified}`
  * cargados van debajo. Al llegar al máximo (con un solo archivo, apenas se carga) el recuadro cambia: muestra
  * cada archivo con su miniatura, nombre, peso y la papelera roja para quitarlo.
  */
-export function SoportesUpload({ label, archivos, onChange, max, disabled }: SoportesUploadProps) {
+export function SoportesUpload({ label, archivos, onChange, max, disabled, ayuda, accept = ".pdf,.jpg,.jpeg,.png" }: SoportesUploadProps) {
   const [rechazo, setRechazo] = useState<string | null>(null)
   const lleno = archivos.length >= max
 
@@ -67,7 +71,7 @@ export function SoportesUpload({ label, archivos, onChange, max, disabled }: Sop
           onChange(v)
         }}
         onFileReject={(f, mensaje) => setRechazo(`${f.name}: ${mensaje}`)}
-        accept=".pdf,.jpg,.jpeg,.png"
+        accept={accept}
         maxFiles={max}
         maxSize={MAX_MB * 1024 * 1024}
         multiple={max > 1}
@@ -94,7 +98,7 @@ export function SoportesUpload({ label, archivos, onChange, max, disabled }: Sop
               <FolderOpenIcon aria-hidden className="size-6 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">
-                  PDF, JPG o PNG; hasta {MAX_MB} MB{max > 1 ? ` cada uno y ${max} archivos` : ""}.
+                  {ayuda ?? `PDF, JPG o PNG; hasta ${MAX_MB} MB${max > 1 ? ` cada uno y ${max} archivos` : ""}.`}
                 </p>
               </div>
               <FileUploadTrigger render={<Button type="button" variant="outline" size="sm" />}>

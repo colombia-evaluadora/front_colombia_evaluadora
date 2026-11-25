@@ -2,10 +2,14 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CheckCircleIcon, ProhibitIcon } from "@/components/ui/icons"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckCircleIcon, InfoIcon, ProhibitIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
+import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import { useAnularCaso, useCerrarCaso } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import type { CasoResumen } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { DialogCasoShell } from "@/features/gestion-estudiantil/convivencia/components/dialogs/dialog-caso-shell"
@@ -37,6 +41,9 @@ function useEstadoDialogo(onClose: () => void) {
  */
 export function DialogCerrarCaso({ caso, onClose }: Props) {
   const { notify } = useNotify()
+  const detalle = useCasoQuery(caso?.id).data
+  const manifestaciones = useCatalogo("MANIFESTACION_SITUACION")
+  const sesion = [...(detalle?.sesiones_comite ?? [])].sort((a, b) => b.fecha.localeCompare(a.fecha))[0]
   const s = useEstadoDialogo(onClose)
   const mut = useCerrarCaso({
     mutationConfig: {
@@ -87,12 +94,24 @@ export function DialogCerrarCaso({ caso, onClose }: Props) {
         },
       }}
     >
+      <Alert variant="info">
+        <InfoIcon aria-hidden="true" />
+        <AlertDescription>
+          Un caso cerrado no se reabre; si el estudiante lo necesita, se abre un caso nuevo vinculado a este.
+        </AlertDescription>
+      </Alert>
+      <p className="text-sm text-muted-foreground">
+        {[caso?.tipo_nombre, nombreDe(manifestaciones, detalle?.fk_tlv_manifestacion)].filter(Boolean).join(" · ")}
+        {sesion && ` · Comité: sesión del ${formatFecha(sesion.fecha)}${sesion.con_quorum ? " con quórum" : " sin quórum"}`}
+        {detalle?.ultimo_seguimiento && ` · Último seguimiento: ${detalle.ultimo_seguimiento}`}
+      </p>
       <TextoLargo
         id="cerrar-resumen"
         label="Resumen del resultado de cierre"
         required
         rows={4}
         max={2000}
+        descripcion="De 10 a 2000 caracteres."
         value={s.texto}
         onChange={s.setTexto}
         error={error}

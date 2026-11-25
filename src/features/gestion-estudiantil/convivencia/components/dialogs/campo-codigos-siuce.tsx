@@ -16,8 +16,6 @@ interface Props {
   onChange: (codigos: CodigoSiuce[]) => void
   /** Afectados que aún no tienen código: lo único que ofrece el constructor. */
   afectados: Opcion[]
-  /** Todos los afectados del caso, con su código si ya se reportaron. */
-  afectadosCaso: AfectadoSiuce[]
   reportados: AfectadoSiuce[]
   /** Con los códigos que se están agregando, nadie queda pendiente. */
   todosReportados: boolean
@@ -25,13 +23,10 @@ interface Props {
 }
 
 /** «Códigos del reporte en el SIUCE»: un código por cada afectado reportado. */
-export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso, reportados, todosReportados, error }: Props) {
+export function CampoCodigosSiuce({ codigos, onChange, afectados, reportados, todosReportados, error }: Props) {
   return (
     <Field variant="outlined" orientation="vertical" className="gap-3" data-invalid={Boolean(error) || undefined}>
       <FieldLabel>Códigos del reporte en el SIUCE*</FieldLabel>
-      {afectadosCaso.length > 0 && (
-        <p className="text-sm text-muted-foreground">Afectados: {afectadosCaso.map((a) => a.nombre).join(", ")}</p>
-      )}
       {codigos.map((c, i) => (
         <div key={i} className="flex items-start gap-2">
           <ComboOpciones
@@ -68,11 +63,9 @@ export function CampoCodigosSiuce({ codigos, onChange, afectados, afectadosCaso,
         Agregar afectado
       </Button>
       {reportados.length > 0 && (
-        <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-          {reportados.map((a) => (
-            <li key={`${a.fk_matricula ?? "f"}-${a.fk_funcionario ?? "m"}`}>{textoReportado(a)}</li>
-          ))}
-        </ul>
+        <p className="text-xs text-muted-foreground">
+          Solo se ofrecen los afectados aún sin código; {reportados.map((a) => textoReportado(a)).join("; ")}.
+        </p>
       )}
       {todosReportados && (
         <Alert variant="info">

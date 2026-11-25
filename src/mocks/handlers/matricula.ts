@@ -105,7 +105,7 @@ interface MatriculaListRequestBody {
 // camelCase -> snake_case, como manda fn_matricula_listar (V200) — mismo
 // criterio que `toRawMatriculaFieldConfig` arriba. `total_count` viaja
 // repetido por fila (window count real), no como envelope aparte.
-function toRawMatriculaRow(row: Matricula, totalCount: number) {
+function toRawMatriculaRow(row: Matricula, totalCount: number, totalEstudiantes: number) {
   return {
     id: Number(row.id),
     document_number: row.documentNumber,
@@ -155,6 +155,7 @@ function toRawMatriculaRow(row: Matricula, totalCount: number) {
     nuevo: esNuevo(Number(row.id)) ? "S" : "N",
     metodologia_grupo: metodologiaNombre(metodologiaDe(Number(row.id))),
     total_count: totalCount,
+    total_estudiantes: totalEstudiantes,
   }
 }
 
@@ -442,7 +443,7 @@ export const matriculaHandlers = [
     const page = filtered.slice(start, start + safePageSize)
 
     return HttpResponse.json({
-      rows: page.map((row) => toRawMatriculaRow(row, totalCount)),
+      rows: page.map((row) => toRawMatriculaRow(row, totalCount, new Set(filtered.map((r) => r.documentNumber)).size)),
     })
   }),
 

@@ -14,7 +14,7 @@ Rama: `feature/CU-86e3yf6pt-FRONT-G-estudiantil-Convivencia-escolar-proceso-disc
 
 Probado en navegador: ciclo completo descargos → decisión Sancionar → notificación presencial → reposición Modifica → apelación Confirma → En firme → ajustar fechas → cumplimiento → Cerrado; y descargos → Archivar.
 
-Fuera de alcance del front: PDFs del backend (no existen) y confirmación del acudiente en el portal (no existe).
+Fuera de alcance del front: confirmación del acudiente en el portal (no existe).
 
 ## Rutas
 
@@ -81,7 +81,7 @@ Las mutaciones de etapa invalidan todo `convivenciaKeys.all`, porque el listado 
 
 - Los permisos de cada fila vienen del backend en los `puede_*` (`ProcesoAcciones`): `puede_ver_detalle`, `puede_descargos`, `puede_no_presentar`, `puede_decidir`, `puede_notificar`, `puede_recurso`, `puede_resolver`, `puede_ajustar`, `puede_cumplimiento`, `puede_anular`. El front no repite reglas de estado ni de rol.
 - El menú de fila (`components/procesos/menu-acciones-proceso.tsx`) muestra todas las acciones; las que el backend niega aparecen deshabilitadas.
-- El botón "+ Abrir proceso" (`cabecera-convivencia.tsx`) solo se muestra si `access.puedeSupervisar`, es decir, coordinador o rector.
+- El botón "+ Abrir proceso" (`cabecera-convivencia.tsx`) siempre se muestra y queda deshabilitado sin `access.puedeAbrirProceso` (capacidad `convivencia_puede_abrir_proceso` de `GET /gestion-estudiantil/capacidades`).
 - Ver detalle navega a `/procesos/:id`. Anular abre el diálogo de anulación con motivo obligatorio.
 - El detalle tiene un único menú ⋮ con las acciones de etapa y los documentos (`ItemsDocumentos`). Las entradas de documentos van deshabilitadas porque los PDF aún no existen.
 
@@ -181,9 +181,12 @@ Ruta base: `src/features/gestion-estudiantil/convivencia/`.
 ## Pendiente
 
 - Descargos «No» sin probar en navegador (requiere plazo vencido).
-- PDFs del backend (comunicación de cargos, acta de descargos, resolución). Las entradas de documentos siguen deshabilitadas.
+- Documentos (comunicación de cargos, acta de descargos, resolución): ya tienen endpoint (V721, V722) y `items-documentos.tsx` los habilita según `documentos` del detalle.
 - Confirmación del acudiente en el portal (no existe en el backend).
 - Mensaje de X-Mensaje del backend genérico (etiquetas V590) que pisa el mensaje del contrato.
 - Opciones de sanciones vacías sin mensaje.
 - Candidatos fuera de esta rama con `Field outlined` envolviendo controles que no lo son (`siuce/*`, `si-no.tsx`, `datos-siuce-fields.tsx`).
 - Menús de casos y comité con `w-72 nowrap`.
+- Sesiones del Comité con orden por servidor (fecha, tipo; `ORDEN_SESIONES` en `columns-sesiones.tsx`).
+
+- Panel de filtros: el campo «Contiene las palabras» (arriba, ancho completo) vive en `BarraBusquedaFiltros` y se sincroniza con el texto libre de la barra; el gestor del filtro de Casos sale de `GET /casos/opciones/gestores-filtro`.

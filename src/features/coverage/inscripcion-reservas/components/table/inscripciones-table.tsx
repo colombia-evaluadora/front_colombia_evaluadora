@@ -1,5 +1,6 @@
 "use no memo"
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { format } from "date-fns"
 import { toast } from "sonner"
@@ -76,6 +77,7 @@ function SelectSimple({
   value,
   options,
   onChange,
+  disabled,
 }: {
   id: string
   label: string
@@ -83,6 +85,7 @@ function SelectSimple({
   value: string
   options: { value: string; label: string }[]
   onChange: (value: string) => void
+  disabled?: boolean
 }) {
   const items = Object.fromEntries(options.map((o) => [o.value, o.label]))
   return (
@@ -91,9 +94,9 @@ function SelectSimple({
         {label}
         {required && <span className="text-red">*</span>}
       </FieldLabel>
-      <Select items={items} value={value} onValueChange={(v) => v != null && onChange(v)}>
+      <Select items={items} value={value} onValueChange={(v) => v != null && onChange(v)} disabled={disabled}>
         <SelectTrigger id={id}>
-          <SelectValue placeholder="Seleccionar" />
+          <SelectValue placeholder={disabled ? "—" : "Seleccionar"} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
@@ -120,7 +123,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaInscritosRoute.useSearch()
   const navigate = coberturaInscritosRoute.useNavigate()
   const pagination = useTablePagination()
-  const { data: grupo, grupos } = useGrupoAdmisionQuery(search.inscGrupo)
+  const { data: grupo, grupos, isPending: gruposPending } = useGrupoAdmisionQuery(search.inscGrupo)
 
   // El grado es obligatorio: sin uno en la URL se toma el primero del grupo.
   const grado = search.inscGrado ?? grupo?.grados[0] ?? ""
@@ -206,7 +209,10 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   })
 
   const jornadaLabel = search.inscJornada ?? "todas las jornadas"
-  const emptyMessage = `No hay opciones por admitir en ${grado} · ${jornadaLabel}. Cuando se liberen cupos, las opciones en lista de espera se pueden admitir aquí.`
+  // Sin grupo de admisión la lista nunca se pide: se avisa en vez de dejar el esqueleto.
+  const emptyMessage = !grupo
+    ? "Aún no hay grupos de admisión. Se crean solos al habilitar Inscripciones en un período académico."
+    : `No hay opciones por admitir en ${grado} · ${jornadaLabel}. Cuando se liberen cupos, las opciones en lista de espera se pueden admitir aquí.`
 
   return (
     <TableScreen>
@@ -214,9 +220,11 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
         {encabezado}
 
         <div className="grid gap-3 px-(--screen-spacing) pt-4">
-          <Badge variant="soft" color="neutral" className="text-xs font-medium tracking-normal">
-            Cupos disponibles: {data?.cuposDisponibles ?? "…"}
-          </Badge>
+          {grupo && (
+            <Badge variant="soft" color="neutral" className="text-xs font-medium tracking-normal">
+              Cupos disponibles: {data?.cuposDisponibles ?? "…"}
+            </Badge>
+          )}
           <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
             {grupos.length > 1 ? (
               <SelectSimple
@@ -242,6 +250,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
               label="Grado"
               required
               value={grado}
+              disabled={!grupo}
               options={(grupo?.grados ?? []).map((g) => ({ value: g, label: g }))}
               onChange={(v) => {
                 resetSelection()
@@ -251,7 +260,9 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
             <SelectSimple
               id="insc-jornada"
               label="Jornada"
-              value={search.inscJornada ?? TODAS}
+              // Sin grupo no hay jornadas: vacío como Grado, no "Todas".
+              value={grupo ? (search.inscJornada ?? TODAS) : ""}
+              disabled={!grupo}
               options={[
                 { value: TODAS, label: "Todas" },
                 ...(grupo?.jornadas ?? []).map((j) => ({ value: j, label: j })),
@@ -369,12 +380,24 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
                     message: `Se exportaron las inscripciones en ${format === "pdf" ? "PDF" : "Excel"}.`,
                   })}
                 />
-                <Button
-                  onClick={() => navigate({ to: paths.app.coberturaInscripcionNueva.getHref() })}
-                >
-                  <PlusIcon data-icon="inline-start" />
-                  Nueva inscripción
-                </Button>
+                {/* Sin grupo no hay grados que elegir: el formulario no se podría guardar. El span
+                    recibe el hover porque un botón deshabilitado no dispara eventos. */}
+                <Tooltip>
+                  <TooltipTrigger render={<span className="inline-flex" />}>
+                    <Button
+                      disabled={!grupo}
+                      onClick={() => navigate({ to: paths.app.coberturaInscripcionNueva.getHref() })}
+                    >
+                      <PlusIcon data-icon="inline-start" />
+                      Nueva inscripción
+                    </Button>
+                  </TooltipTrigger>
+                  {!grupo && (
+                    <TooltipContent>
+                      Aún no hay grupos de admisión. Se crean solos al habilitar Inscripciones en un período académico.
+                    </TooltipContent>
+                  )}
+                </Tooltip>
               </>
             )}
           </TableScreenActions>
@@ -384,7 +407,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
       <TableScreenBody>
         <DataTable
           table={table}
-          isPending={isPending}
+          isPending={gruposPending || (!!grupo && isPending)}
           isError={isError}
           onRetry={refetch}
           emptyMessage={emptyMessage}

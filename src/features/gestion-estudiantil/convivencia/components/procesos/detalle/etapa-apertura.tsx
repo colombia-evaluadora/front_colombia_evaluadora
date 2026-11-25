@@ -9,7 +9,7 @@ import { textoCitacion, textoNotificacion } from "@/features/gestion-estudiantil
 export function EtapaApertura({ proceso }: { proceso: ProcesoDetalle }) {
   const a = proceso.etapas.apertura
   return (
-    <EtapaProceso titulo="Apertura" alcanzada={a.alcanzada} resumen={[formatFecha(a.fecha), a.por].filter(Boolean).join(" · ")}>
+    <EtapaProceso titulo="1. Apertura y cargos" alcanzada={a.alcanzada} resumen={[formatFecha(a.fecha), a.por].filter(Boolean).join(" · ")}>
       <Dato label={`Cargos (${a.cargos.length})`}>
         <ol className="flex flex-col gap-3">
           {a.cargos.map((c) => (

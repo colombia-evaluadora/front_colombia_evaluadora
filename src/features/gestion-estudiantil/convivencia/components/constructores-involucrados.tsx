@@ -88,6 +88,7 @@ export function ConstructoresInvolucrados({
             <p className="text-xs text-muted-foreground">
               Adultos o personas externas que participaron en la situación. Información sensible.
             </p>
+            {involucrados.length === 0 && <p className="text-sm text-muted-foreground">Sin otros involucrados.</p>}
             {involucrados.map((v, i) => (
               <FilaOtroInvolucrado
                 key={v.key}

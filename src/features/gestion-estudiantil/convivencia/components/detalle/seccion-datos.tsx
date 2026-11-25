@@ -1,6 +1,11 @@
+import { Link } from "@tanstack/react-router"
+
 import { Badge } from "@/components/ui/badge"
+import { paths } from "@/config/paths"
 
 import { nombreDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { COLOR_ESTADO_PROCESO } from "@/features/gestion-estudiantil/convivencia/api/procesos-ui"
+import type { EstadoProcesoCodigo } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { fechaHechosTexto } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
@@ -35,7 +40,22 @@ export function SeccionDatosCasoDetalle({ caso }: { caso: CasoDetalle }) {
           {resultados.find((r) => r.codigo === caso.ultimo_seguimiento)?.label ?? caso.ultimo_seguimiento}
         </Dato>
         <Dato label="Registro vinculado">
-          {caso.registro_vinculado_tipo ? `${caso.registro_vinculado_tipo} #${caso.registro_vinculado_id ?? ""}` : ""}
+          {caso.registro_vinculado ? (
+            // F24: el plan de origen, legible y con enlace a su detalle.
+            <Link to={paths.app.prevencionPlanDetalle.getHref(caso.registro_vinculado.id)} className="text-primary hover:underline">
+              {[
+                caso.registro_vinculado.tipo_nombre,
+                caso.registro_vinculado.estudiante_nombre,
+                caso.registro_vinculado.fecha && formatFecha(caso.registro_vinculado.fecha),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </Link>
+          ) : caso.registro_vinculado_tipo ? (
+            `${caso.registro_vinculado_tipo} #${caso.registro_vinculado_id ?? ""}`
+          ) : (
+            ""
+          )}
         </Dato>
       </dl>
       <Dato label="Anotaciones de origen">
@@ -60,6 +80,25 @@ export function SeccionDatosCasoDetalle({ caso }: { caso: CasoDetalle }) {
           ""
         )}
       </Dato>
+      {/* F31: los procesos abiertos desde este caso, con su estado. */}
+      {caso.procesos_disciplinarios?.length ? (
+        <Dato label="Procesos disciplinarios">
+          <ul className="flex flex-col gap-1">
+            {caso.procesos_disciplinarios.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-2">
+                <Link to={paths.app.convivenciaProceso.getHref(p.id)} className="text-primary hover:underline">
+                  {[p.numero, p.estudiante].filter(Boolean).join(" · ")}
+                </Link>
+                {p.estado_nombre && (
+                  <Badge variant="soft" color={COLOR_ESTADO_PROCESO[p.estado_codigo as EstadoProcesoCodigo] ?? "muted"}>
+                    {p.estado_nombre}
+                  </Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Dato>
+      ) : null}
       <Dato label="Descripción de los hechos">
         <span className="whitespace-pre-wrap">{caso.descripcion}</span>
       </Dato>

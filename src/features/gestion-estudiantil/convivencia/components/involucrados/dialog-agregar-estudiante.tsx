@@ -72,7 +72,7 @@ export function DialogAgregarEstudiante({
             size="default"
             todos={false}
             disabled={!s.grupo}
-            placeholder={s.grupo ? (s.cargandoRoster ? "Cargando…" : "Buscar estudiante") : "Elegí Grado/Grupo primero"}
+            placeholder={s.grupo ? (s.cargandoRoster ? "Cargando…" : "Buscar estudiante") : "Elija Grado/Grupo primero"}
             value={s.estudiante}
             options={s.estudianteOpciones}
             error={s.repetido ? "Este estudiante ya está en el caso." : undefined}

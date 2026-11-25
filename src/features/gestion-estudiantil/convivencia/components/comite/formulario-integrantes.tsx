@@ -24,6 +24,7 @@ export function FormularioIntegrantes({ form, comite, puedeEscribir }: Props) {
           label="Copiar integrantes de"
           size="default"
           todos="Ninguno"
+          description="Solo al crear el Comité. Trae los cargos de funcionarios con rol activo."
           value={form.copiarDe}
           options={form.periodosCopiables.map((p) => ({ value: String(p.fk_periodo), label: rotuloPeriodo(p) }))}
           onChange={form.setCopiarDe}

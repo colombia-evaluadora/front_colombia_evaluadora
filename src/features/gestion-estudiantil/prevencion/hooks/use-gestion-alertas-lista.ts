@@ -19,7 +19,7 @@ import {
   type GestionAlertasFiltros,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
 import type { AccionGestion } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/acciones-gestion"
-import { buildColumnsGestionAlertas } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/columns-gestion-alertas"
+import { buildColumnsGestionAlertas, ORDEN_GESTION_ALERTAS } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/columns-gestion-alertas"
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
 
 /**
@@ -80,8 +80,13 @@ export function useGestionAlertasLista(onAccion: (fila: GestionAlertaRow, accion
   )
 
   const filters = useMemo(
-    () => (establecimientoId == null ? null : toGestionAlertasFilters(establecimientoId, verTodas, search, filtros)),
-    [establecimientoId, verTodas, search, filtros],
+    () => {
+      if (establecimientoId == null) return null
+      const base = toGestionAlertasFilters(establecimientoId, verTodas, search, filtros)
+      const orden = sorting[0] ? ORDEN_GESTION_ALERTAS[sorting[0].id] : undefined
+      return orden ? { ...base, ORDEN: orden, DIR: sorting[0].desc ? ("desc" as const) : ("asc" as const) } : base
+    },
+    [establecimientoId, verTodas, search, filtros, sorting],
   )
   const query = useGestionAlertasQuery({ filters, pageIndex, pageSize })
   const columns = useMemo(() => buildColumnsGestionAlertas(onAccion), [onAccion])

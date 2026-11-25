@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
 
+import type { OrdenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
+import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
 import { convivenciaKeys } from "@/features/gestion-estudiantil/convivencia/api/query-keys"
 import {
   SIN_GESTOR,
@@ -35,11 +37,13 @@ export interface CasosParams {
   filters: ConvivenciaQueryFilters
   pageIndex: number
   pageSize: number
+  orden?: OrdenServidor
 }
 
 export const fetchCasos = async (params: CasosParams) => {
   const rows = await evalCol.postRows<CasoRow>(`${BASE}/casos/query`, {
     FILTERS: params.filters,
+    ...params.orden,
     PAGEINDEX: params.pageIndex,
     PAGESIZE: params.pageSize,
   })
@@ -88,6 +92,21 @@ export function usePasosCasoQuery(casoId: number | undefined, enabled = true) {
   })
 }
 
+/** `GET /casos/opciones/gestores-filtro`: gestores de los casos visibles; «Sin gestor» va primero. */
+export function useGestoresFiltroQuery() {
+  return useQuery({
+    queryKey: convivenciaKeys.gestoresFiltro(),
+    queryFn: () =>
+      evalCol
+        .getRows<{ id: number; nombre: string }>(`${BASE}/casos/opciones/gestores-filtro`)
+        .then((r): Opcion[] => [
+          { value: SIN_GESTOR, label: "Sin gestor" },
+          ...r.map((g) => ({ value: String(g.id), label: g.nombre })),
+        ]),
+    staleTime: 60_000,
+  })
+}
+
 /** `GET /casos/:ID/gestores`: Supervisores de sede candidatos (Regla 27). */
 export function useGestoresCasoQuery(casoId: number | undefined) {
   return useQuery({
@@ -97,13 +116,20 @@ export function useGestoresCasoQuery(casoId: number | undefined) {
   })
 }
 
-/** `POST /gestor-previsto`: a quién quedará asignado el caso que se está creando. */
-export function useGestorPrevistoQuery(tipoId: number | null, matriculas: number[]) {
+/**
+ * `POST /gestor-previsto`: a quién quedará asignado el caso que se está creando. `vinculado` marca el caso abierto
+ * desde un plan (Regla 24): un docente que lo abre no queda como gestor.
+ */
+export function useGestorPrevistoQuery(tipoId: number | null, matriculas: number[], vinculado = false) {
   return useQuery({
-    queryKey: convivenciaKeys.gestorPrevisto(tipoId ?? "none", matriculas),
+    queryKey: convivenciaKeys.gestorPrevisto(tipoId ?? "none", matriculas, vinculado),
     queryFn: () =>
       evalCol
-        .postRows<GestorPrevisto>(`${BASE}/gestor-previsto`, { FK_TLV_TIPO: tipoId, FK_MATRICULAS: matriculas })
+        .postRows<GestorPrevisto>(`${BASE}/gestor-previsto`, {
+          FK_TLV_TIPO: tipoId,
+          FK_MATRICULAS: matriculas,
+          VINCULADO: vinculado,
+        })
         .then((r) => r[0] ?? null),
     enabled: tipoId != null && matriculas.length > 0,
   })

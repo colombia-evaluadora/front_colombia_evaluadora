@@ -146,3 +146,4 @@ Probado en local el 2026-11-18:
 - Corrección: observador firmado (carga y descarga).
 - Corrección: etiqueta REPORTE_CONSUMO y colores en «Mis reportes y remisiones».
 - Brechas B1–B3 del backend conectadas en el front.
+- Orden por servidor en Embarazo, Consumo y Reportes recibidos (`ORDEN_ACOMPANAMIENTOS`, `ORDEN_REPORTES_CONSUMO`); el filtro Estado sale de `GET /acompanamientos/opciones/estados` (`useOpcionesEstadosAcompQuery`), ya sin listas fijas en `ui-mappings.ts`.

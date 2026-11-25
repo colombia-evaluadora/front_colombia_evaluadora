@@ -1,13 +1,13 @@
-import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
+import { useCapacidadesGe } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
 import { accesoConvivencia } from "@/features/gestion-estudiantil/convivencia/utils/access"
 
-/** Qué acciones ofrecer; el backend vuelve a validar cada una con su gate y alcance. */
+/** Qué acciones de página ofrecer (capacidades del backend + menú); el backend vuelve a validar cada una. */
 export function useConvivenciaAccess() {
-  const { user } = useAuth()
   const permiso = useMenuPermission("CONVIVENCIA")
-  return accesoConvivencia(user?.roles ?? [], permiso)
+  const { data: cap } = useCapacidadesGe()
+  return accesoConvivencia(cap, permiso)
 }
 
 export type ConvivenciaAccess = ReturnType<typeof useConvivenciaAccess>

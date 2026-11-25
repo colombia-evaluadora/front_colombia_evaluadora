@@ -5,6 +5,7 @@ import { useMemo } from "react"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
+import { ordenServidor } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import {
   toAcompanamientosFilters,
@@ -20,10 +21,6 @@ import {
   type ReporteConsumoRow,
   type TipoAcompanamiento,
 } from "@/features/gestion-estudiantil/prevencion/api/types"
-import {
-  ESTADOS_ACOMP_FILTRO,
-  ESTADOS_REPORTE_CONSUMO_FILTRO,
-} from "@/features/gestion-estudiantil/prevencion/api/ui-mappings"
 import type {
   AccionAcomp,
   AccionReporteConsumo,
@@ -31,6 +28,8 @@ import type {
 import {
   buildColumnsAcompanamientos,
   buildColumnsReportesConsumo,
+  ORDEN_ACOMPANAMIENTOS,
+  ORDEN_REPORTES_CONSUMO,
 } from "@/features/gestion-estudiantil/prevencion/components/acompanamientos/columns-acompanamientos"
 import { useAmbitoPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-ambito-prevencion"
 import { useAcompanamientosFiltros } from "@/features/gestion-estudiantil/prevencion/hooks/use-acompanamientos-filtros"
@@ -54,7 +53,7 @@ export function useAcompanamientosLista(
     [responsablesQ.data],
   )
   const f = useAcompanamientosFiltros(ACOMPANAMIENTOS_FILTROS_VACIOS, goToPage, {
-    estados: ESTADOS_ACOMP_FILTRO,
+    estados: "acompanamiento",
     responsables,
   })
 
@@ -62,7 +61,7 @@ export function useAcompanamientosLista(
     () => (f.establecimientoId == null ? null : toAcompanamientosFilters(f.establecimientoId, tipo, f.search, f.filtros)),
     [f.establecimientoId, tipo, f.search, f.filtros],
   )
-  const query = useAcompanamientosQuery({ filters, pageIndex, pageSize })
+  const query = useAcompanamientosQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_ACOMPANAMIENTOS) }, pageIndex, pageSize })
   const columns = useMemo(() => buildColumnsAcompanamientos({ tipo, onAccion }), [tipo, onAccion])
 
   const { table } = useDataTable({
@@ -89,13 +88,13 @@ export function useReportesConsumoLista(
   onAccion: (fila: ReporteConsumoRow, accion: AccionReporteConsumo) => void,
 ) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const f = useAcompanamientosFiltros(REPORTES_CONSUMO_FILTROS_VACIOS, goToPage, { estados: ESTADOS_REPORTE_CONSUMO_FILTRO })
+  const f = useAcompanamientosFiltros(REPORTES_CONSUMO_FILTROS_VACIOS, goToPage, { estados: "reporte_consumo" })
 
   const filters = useMemo(
     () => (f.establecimientoId == null ? null : toReportesConsumoFilters(f.establecimientoId, f.search, f.filtros)),
     [f.establecimientoId, f.search, f.filtros],
   )
-  const query = useReportesConsumoQuery({ filters, pageIndex, pageSize }, enabled)
+  const query = useReportesConsumoQuery({ filters: filters && { ...filters, ...ordenServidor(sorting, ORDEN_REPORTES_CONSUMO) }, pageIndex, pageSize }, enabled)
   const columns = useMemo(() => buildColumnsReportesConsumo(onAccion), [onAccion])
 
   const { table } = useDataTable({

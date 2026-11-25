@@ -15,10 +15,8 @@ import {
   WarningIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
 import { fileTooLarge, invalidFileType, required } from "@/lib/forms/messages"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
@@ -28,34 +26,31 @@ import { ACTA_MAX_BYTES } from "@/features/administration/conservacion-datos/api
 import {
   ARCHIVAR_NO_DISPONIBLE,
   DISPOSICION_LABELS,
-  type Disposicion,
   type Vencido,
 } from "@/features/administration/conservacion-datos/api/types"
 
 const MOTIVO_MAX = 500
 
 /**
- * Modal Disponer (Sección 6.4): aplica la disposición de la política al lote,
- * con acta en PDF y motivo. Sin almacenamiento de archivo, Archivar queda
- * inactivo y solo se puede anonimizar (S.12.VEN.2).
+ * Modal Disponer (Sección 6.4): aplica al lote la disposición de la política,
+ * de solo lectura, con acta en PDF y motivo. Un lote de una política Archivar
+ * no se puede disponer mientras no haya almacenamiento del archivo histórico.
  */
 export function DialogDisponer({
   vencido,
   almacenamientoArchivo,
   onClose,
+  onDispuesto,
 }: {
   vencido: Vencido
   almacenamientoArchivo: boolean
   onClose: () => void
+  /** Reemplaza el aviso y el cierre por defecto (p. ej. el detalle vuelve al listado). */
+  onDispuesto?: () => void
 }) {
   const { notify } = useNotify()
   const inputRef = useRef<HTMLInputElement>(null)
   const archivarBloqueado = vencido.disposicion === "ARCHIVAR" && !almacenamientoArchivo
-  // Con almacenamiento: la de la política, de solo lectura. Sin él y política
-  // Archivar: hay que elegir Anonimizar a conciencia.
-  const [disposicion, setDisposicion] = useState<Disposicion | null>(
-    archivarBloqueado ? null : vencido.disposicion,
-  )
   const [acta, setActa] = useState<File | null>(null)
   const [motivo, setMotivo] = useState("")
   const [intentado, setIntentado] = useState(false)
@@ -65,6 +60,7 @@ export function DialogDisponer({
   const disponer = useDisponer({
     mutationConfig: {
       onSuccess: () => {
+        if (onDispuesto) return onDispuesto()
         notify(SUCCESS_MESSAGES.loteVencido.created)
         onClose()
       },
@@ -74,7 +70,6 @@ export function DialogDisponer({
 
   const motivoLimpio = motivo.trim()
   const errores = {
-    disposicion: disposicion ? null : "Seleccione la disposición.",
     acta: errorActa ?? (acta ? null : required("El acta")),
     motivo:
       motivoLimpio.length === 0
@@ -100,17 +95,16 @@ export function DialogDisponer({
 
   function enviar() {
     setIntentado(true)
-    if (errores.disposicion || errores.acta || errores.motivo || !disposicion || !acta) return
+    if (archivarBloqueado || errores.acta || errores.motivo || !acta) return
     disponer.mutate({
       pkPolitica: vencido.pkPolitica,
       pkEstablecimiento: vencido.pkEstablecimiento,
-      disposicion,
       acta,
       motivo: motivoLimpio,
     })
   }
 
-  const accion = disposicion ? DISPOSICION_LABELS[disposicion] : "Disponer"
+  const accion = DISPOSICION_LABELS[vencido.disposicion]
 
   return (
     <Dialog open onOpenChange={(open) => !open && !disponer.isPending && onClose()}>
@@ -124,45 +118,14 @@ export function DialogDisponer({
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} variant="error" />
 
         <div className="grid gap-5 sm:grid-cols-2">
-          {archivarBloqueado ? (
-            <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
-              <legend className="mb-1.5 text-sm">
-                Disposición<span className="text-red"> *</span>
-              </legend>
-              <RadioGroup
-                className="flex gap-6"
-                value={disposicion ?? ""}
-                onValueChange={(v) => setDisposicion(v as Disposicion)}
-              >
-                <label className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value="ANONIMIZAR" />
-                  Anonimizar
-                </label>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={<label className="flex cursor-not-allowed items-center gap-2 text-sm text-muted-foreground" />}
-                  >
-                    <RadioGroupItem value="ARCHIVAR" disabled />
-                    Archivar
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-72">{ARCHIVAR_NO_DISPONIBLE}</TooltipContent>
-                </Tooltip>
-              </RadioGroup>
-              <p className="text-xs text-muted-foreground">
-                La política indica Archivar, pero el almacenamiento del archivo histórico no está configurado.
-              </p>
-              {intentado && errores.disposicion ? <p className="text-xs text-red">{errores.disposicion}</p> : null}
-            </fieldset>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm">Disposición</span>
-              <div className="flex h-10 items-center justify-between rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground">
-                {DISPOSICION_LABELS[vencido.disposicion]}
-                <LockIcon className="size-4" aria-hidden />
-              </div>
-              <p className="text-xs text-muted-foreground">La de la política.</p>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm">Disposición</span>
+            <div className="flex h-10 items-center justify-between rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground">
+              {DISPOSICION_LABELS[vencido.disposicion]}
+              <LockIcon className="size-4" aria-hidden />
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">La de la política.</p>
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm">
@@ -199,7 +162,7 @@ export function DialogDisponer({
 
           <Field
             variant="outlined"
-            className={archivarBloqueado ? "" : "sm:col-span-2"}
+            className="sm:col-span-2"
             data-invalid={intentado && errores.motivo ? true : undefined}
           >
             <FieldLabel htmlFor="disponer-motivo">
@@ -246,7 +209,7 @@ export function DialogDisponer({
           <Button
             size="sm"
             color="primary"
-            disabled={disponer.isPending || (archivarBloqueado && !disposicion)}
+            disabled={disponer.isPending || archivarBloqueado}
             onClick={enviar}
           >
             {disponer.isPending ? (

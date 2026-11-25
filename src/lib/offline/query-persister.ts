@@ -505,7 +505,7 @@ export function startQueryPersister(queryClient: QueryClient): () => void {
 // ---- Lectura / usuario activo ---------------------------------------------
 
 /** Cuánto vive en memoria una query restaurada sin observadores. */
-const RESTORED_GC_MS = 24 * 60 * 60 * 1000
+const RESTORED_GC_MS = Infinity
 
 /**
  * Restaura en el cache las filas vigentes de `userSub` (y borra las vencidas

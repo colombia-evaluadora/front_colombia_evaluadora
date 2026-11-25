@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
-import { SearchQueryBar } from "@/components/search/search-query-bar"
-import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
-import { useQuerySearch } from "@/components/search/use-query-search"
+import { optionTerm } from "@/components/search/query-syntax"
 
 import { useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { useOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
+import { BarraBusquedaFiltros } from "@/features/gestion-estudiantil/commons/components/barra-busqueda-filtros"
 import { ComboOpciones as Combo } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { useSearchFiltros } from "@/features/gestion-estudiantil/commons/hooks/use-search-filtros"
 import { FILTROS_VACIOS, type OrientacionFiltros } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { orientacionKeys } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query-keys"
 
@@ -17,23 +17,31 @@ interface Props {
   onFiltros: (f: OrientacionFiltros) => void
 }
 
-/** G.4.ORI.LIS.4: palabras, Sede, Jornada, Motivo, Estado (remisiones) y Origen (atenciones). */
+/** G.4.ORI.LIS.4: contiene las palabras, Sede, Jornada, Motivo, Estado (remisiones), Modalidad y Origen (atenciones). */
 export function SearchOrientacion({ search, filtros, onSearch, onFiltros }: Props) {
-  const [draft, setDraft] = useState(FILTROS_VACIOS)
-  const [open, setOpen] = useState(false)
-  const opciones = useOpcionesGrupos(orientacionKeys.all, draft.sede, draft.jornada)
+  const [sedeBorrador, setSedeBorrador] = useState(filtros.sede)
+  const [jornadaBorrador, setJornadaBorrador] = useState(filtros.jornada)
+  const opciones = useOpcionesGrupos(orientacionKeys.all, sedeBorrador, jornadaBorrador)
   const motivos = useCatalogo("MOTIVO_ORIENTACION")
   const estados = useCatalogo("ESTADO_REMISION_ORIENTACION")
   const origenes = useCatalogo("ORIGEN_ATENCION_ORIENTACION")
   const modalidades = useCatalogo("MODALIDAD_ATENCION_ORIENTACION")
 
-  useEffect(() => {
-    if (open) setDraft(filtros)
-  }, [open, filtros])
-
-  const syntax: QuerySyntax<OrientacionFiltros & { search: string }> = {
-    empty: { ...FILTROS_VACIOS, search: "" },
-    freeText: { key: "texto", field: "search" },
+  const onDraftChange = useCallback((d: OrientacionFiltros) => {
+    setSedeBorrador(d.sede)
+    setJornadaBorrador(d.jornada)
+  }, [])
+  const s = useSearchFiltros<OrientacionFiltros>({
+    search,
+    onSearchChange: onSearch,
+    filters: filtros,
+    applyFilters: onFiltros,
+    onClearAll: () => {
+      onSearch("")
+      onFiltros(FILTROS_VACIOS)
+    },
+    onDraftChange,
+    vacios: FILTROS_VACIOS,
     terms: [
       optionTerm("sede", "sede", opciones.sedeOpciones),
       optionTerm("jornada", "jornada", opciones.jornadaOpciones),
@@ -42,53 +50,19 @@ export function SearchOrientacion({ search, filtros, onSearch, onFiltros }: Prop
       optionTerm("modalidad", "modalidad", modalidades),
       optionTerm("origen", "origen", origenes),
     ],
-  }
-  const { search: queryText, setSearch: setQueryText } = useQuerySearch({
-    syntax,
-    filters: { ...filtros, search },
-    applyFilters: ({ search: s, ...f }) => {
-      onSearch(s)
-      onFiltros(f)
-    },
   })
-  const badgeCount = Object.values(filtros).filter(Boolean).length
+  const { draft, setDraft } = s
 
   return (
-    <SearchQueryBar
-      id="orientacion-search"
-      label={null}
-      placeholder="Buscar por estudiante"
-      value={queryText}
-      onValueChange={setQueryText}
-      onClearAll={() => {
-        onSearch("")
-        onFiltros(FILTROS_VACIOS)
-        setDraft(FILTROS_VACIOS)
-        setOpen(false)
-      }}
-      onClearFilters={() => {
-        setDraft(FILTROS_VACIOS)
-        onFiltros(FILTROS_VACIOS)
-      }}
-      activeFilterCount={badgeCount + (search ? 1 : 0)}
-      badgeCount={badgeCount}
-      open={open}
-      onOpenChange={setOpen}
-      onApply={() => {
-        onFiltros(draft)
-        setOpen(false)
-      }}
-      size="lg"
-      className="sm:w-full max-w-xl"
-    >
+    <BarraBusquedaFiltros id="orientacion-search" placeholder="Buscar por estudiante" estado={s}>
       <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-3">
         <Combo id="ori-sede" label="Sede" value={draft.sede} options={opciones.sedeOpciones} onChange={(sede) => setDraft({ ...draft, sede, jornada: "" })} />
-        <Combo id="ori-jornada" label="Jornada" value={draft.jornada} options={opciones.jornadaOpciones} disabled={!draft.sede} placeholder={draft.sede ? "Todos" : "Elegí Sede primero"} onChange={(jornada) => setDraft({ ...draft, jornada })} />
+        <Combo id="ori-jornada" label="Jornada" value={draft.jornada} options={opciones.jornadaOpciones} disabled={!draft.sede} placeholder={draft.sede ? "Todos" : "Elija una sede primero"} onChange={(jornada) => setDraft({ ...draft, jornada })} />
         <Combo id="ori-motivo" label="Motivo" value={draft.motivo} options={motivos} onChange={(motivo) => setDraft({ ...draft, motivo })} />
         <Combo id="ori-estado" label="Estado (remisiones)" value={draft.estado} options={estados} onChange={(estado) => setDraft({ ...draft, estado })} />
         <Combo id="ori-modalidad" label="Modalidad (atenciones)" value={draft.modalidad} options={modalidades} onChange={(modalidad) => setDraft({ ...draft, modalidad })} />
         <Combo id="ori-origen" label="Origen (atenciones)" value={draft.origen} options={origenes} onChange={(origen) => setDraft({ ...draft, origen })} />
       </div>
-    </SearchQueryBar>
+    </BarraBusquedaFiltros>
   )
 }

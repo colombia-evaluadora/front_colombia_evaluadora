@@ -14,6 +14,7 @@ import {
   type ErroresCaso,
   type ValoresCaso,
 } from "@/features/gestion-estudiantil/convivencia/utils/caso-form"
+import { useGestorPrevistoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
 import { useAbrirCasoConvivencia } from "@/features/gestion-estudiantil/prevencion/api/mutations/caso-convivencia"
 import type { PlanDetalle } from "@/features/gestion-estudiantil/prevencion/api/types"
 import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevencion/hooks/use-navegacion-prevencion"
@@ -34,6 +35,8 @@ export function useAbrirCasoForm(plan: PlanDetalle) {
   const roles = useCatalogo("ROL_SITUACION")
   const grave = esGrave(codigoDe(tipos, v.tipo))
   const secuelas = useSecuelasHabilitadas(v.siuce)
+  // NUE.2: el gestor lo asigna Convivencia por Sede y Jornada del estudiante del plan (VINCULADO).
+  const previsto = useGestorPrevistoQuery(v.tipo ? Number(v.tipo) : null, [plan.fk_tmatricula], true)
 
   const set = (patch: Partial<ValoresCaso>) => setValores({ ...v, ...patch })
   const cambiarTipo = (tipo: string) => {
@@ -84,6 +87,7 @@ export function useAbrirCasoForm(plan: PlanDetalle) {
     cambiarTipo,
     siuceAbierto,
     setSiuceAbierto,
+    gestorPrevisto: v.tipo ? previsto.data : undefined,
     roles,
     rol,
     setRol,

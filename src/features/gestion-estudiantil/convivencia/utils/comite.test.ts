@@ -102,6 +102,7 @@ describe("sesión", () => {
     ...valoresSesionVacios(),
     tipo: "3",
     fecha: "2026-03-10",
+    asistentes: [1],
     otros: "Revisión de ruta de atención",
   })
 

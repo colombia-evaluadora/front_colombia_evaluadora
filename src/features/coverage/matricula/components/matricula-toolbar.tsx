@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
-import { FilesMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
 import { AccionesDocumentos } from "@/features/coverage/matricula/components/dialogs/acciones/documentos"
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
@@ -15,14 +14,13 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 interface MatriculaToolbarProps {
   matricula: Matricula
   showModificar?: boolean
-  filesEditable?: boolean
   /** Abre Retirar al entrar (enlace del aviso por inasistencia continua). */
   abrirRetiro?: boolean
 }
 
 // Editar solo con la matrícula Cursando (tabla de acciones de la lista).
 
-export function MatriculaToolbar({ matricula, showModificar = true, filesEditable = false, abrirRetiro = false }: MatriculaToolbarProps) {
+export function MatriculaToolbar({ matricula, showModificar = true, abrirRetiro = false }: MatriculaToolbarProps) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
 
   return (
@@ -49,7 +47,6 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
       {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" porInasistencia={abrirRetiro} /> : null}
       {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
       <AccionesDocumentos matricula={matricula} modo="button" />
-      <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable && puedeEditar} />
     </div>
   )
 }

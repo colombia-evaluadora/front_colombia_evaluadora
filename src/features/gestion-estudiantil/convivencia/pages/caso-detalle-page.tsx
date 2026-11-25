@@ -7,7 +7,7 @@ import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
 import { useCasoQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
-import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
+import { COLOR_ESTADO, esFinal } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { AccionesDetalle } from "@/features/gestion-estudiantil/convivencia/components/detalle/acciones-detalle"
 import { AvisoDatosPendientes } from "@/features/gestion-estudiantil/convivencia/components/detalle/aviso-datos-pendientes"
@@ -29,7 +29,7 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
               Volver a Convivencia
             </Button>
           }
-          action={caso.acceso_completo && <AccionesDetalle caso={caso} detalle={detalle} />}
+          action={caso.acceso_completo && !esFinal(caso.estado_codigo) && <AccionesDetalle caso={caso} detalle={detalle} />}
         >
           <span className="flex flex-wrap items-center gap-2">
             Caso {caso.numero}
@@ -56,7 +56,7 @@ function CasoDetalleContent({ caso }: { caso: CasoDetalle }) {
             <>
               <AvisoDatosPendientes
                 pendientes={detalle.datosPendientes}
-                puedeCompletar={detalle.access.puedeGestionar}
+                puedeCompletar={detalle.banderas.puede_modificar}
                 onCompletar={detalle.completarDatos}
               />
               <DatosCompletos caso={caso} />

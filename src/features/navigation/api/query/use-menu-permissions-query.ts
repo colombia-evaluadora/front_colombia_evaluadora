@@ -5,6 +5,7 @@ import { isNetworkError } from "@/lib/network-error"
 import { getUsableOfflineSession, MENU_SNAPSHOT_TTL_MS } from "@/lib/offline/session"
 import type { MenuPermission } from "@/features/navigation/api/types/menu-permission"
 import { navigationKeys } from "@/features/navigation/api/query-keys"
+import { esSinPermiso, tokenSinRoles } from "@/features/navigation/lib/sin-roles"
 
 /**
  * Sin red, el snapshot de la sesión guardada. Normalmente ya lo sembró
@@ -21,9 +22,12 @@ async function permisosDeLaSesion(): Promise<MenuPermission[] | null> {
 }
 
 async function fetchMenuPermissions(): Promise<MenuPermission[]> {
+  // Sin roles no hay permisos que pedir (ver `sin-roles.ts`).
+  if (tokenSinRoles()) return []
   try {
     return await evalCol.getRows<MenuPermission>("/usuarios/permisos-menu")
   } catch (error) {
+    if (esSinPermiso(error)) return []
     if (!isNetworkError(error)) throw error
     const snapshot = await permisosDeLaSesion()
     if (snapshot) return snapshot

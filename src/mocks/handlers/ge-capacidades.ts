@@ -13,6 +13,11 @@ const CAPACIDADES: CapacidadesGe = {
   actividades_puede_crear: true,
   citaciones_puede_citar: true,
   citaciones_puede_crear_compromiso: true,
+  convivencia_puede_crear_caso: true,
+  convivencia_puede_exportar_siuce: true,
+  convivencia_puede_abrir_proceso: true,
+  comite_puede_ver: true,
+  comite_puede_gestionar: true,
 }
 
 /** Capacidades de página de Gestión Estudiantil: una fila con todo habilitado. */

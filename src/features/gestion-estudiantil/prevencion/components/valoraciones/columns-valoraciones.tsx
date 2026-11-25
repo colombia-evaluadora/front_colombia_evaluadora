@@ -3,6 +3,8 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
+import { columnaOrden } from "@/features/gestion-estudiantil/commons/components/encabezado-orden"
+import type { MapaOrden } from "@/features/gestion-estudiantil/commons/utils/orden-servidor"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 import type { ValoracionRow } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -21,13 +23,15 @@ interface ColumnasOpciones {
   onAccion: (fila: ValoracionRow, accion: AccionValoracion) => void
 }
 
-const columna = (id: string, titulo: string) => ({
-  id,
-  enableSorting: false,
-  meta: { label: titulo },
-  // Encabezado plano: el backend no tiene parámetro de orden.
-  header: () => <div className="text-sm font-medium">{titulo}</div>,
-})
+/** Columnas que el backend ordena (`QUERY.ORDEN`/`BODY.ORDEN`): id de columna → valor de ORDEN. */
+export const ORDEN_VALORACIONES: MapaOrden = {
+  fecha: "fecha",
+  estudiante: "estudiante",
+  grado_grupo: "grupo",
+  nivel: "nivel",
+}
+
+const columna = (id: string, titulo: string) => columnaOrden<ValoracionRow>(ORDEN_VALORACIONES, id, titulo)
 
 /** Columnas de Valoraciones y planes (G.8.VAL.1): Fecha · Estudiante · Nivel de riesgo · Plan · Acciones vencidas. */
 export function buildColumnsValoraciones({ onAccion }: ColumnasOpciones): ColumnDef<ValoracionRow>[] {

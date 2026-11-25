@@ -3,6 +3,8 @@ import { useRouter } from "@tanstack/react-router"
 import type { ErrorComponentProps } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { CerrarSesionButton } from "@/components/layout/cerrar-sesion-button"
+import { hasAuthToken } from "@/lib/api-client"
 import { isNetworkError, NetworkSessionError } from "@/lib/network-error"
 import { isOfflineNow } from "@/lib/offline/connectivity"
 import {
@@ -107,9 +109,13 @@ export function ErrorPage({ error }: ErrorComponentProps) {
         `beforeLoad`— y al terminar resetea el boundary (su `resetKey` es el
         `loadedAt` del router), así que cubre también los errores de render.
       */}
-      <Button size="sm" onClick={() => void router.invalidate()} className="mt-2">
-        Reintentar
-      </Button>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        {/* Con sesión, salir siempre es posible: esta pantalla reemplaza al layout y su menú de cuenta. */}
+        {hasAuthToken() ? <CerrarSesionButton /> : null}
+        <Button size="sm" onClick={() => void router.invalidate()}>
+          Reintentar
+        </Button>
+      </div>
     </div>
   )
 }
