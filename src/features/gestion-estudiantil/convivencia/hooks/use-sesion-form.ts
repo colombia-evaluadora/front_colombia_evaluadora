@@ -5,21 +5,23 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import type { ComiteDetalle, SesionDetalle } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { useActualizarSesionMutation, useCrearSesionMutation } from "@/features/gestion-estudiantil/convivencia/api/mutations/comite"
+import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { useQuorumQuery } from "@/features/gestion-estudiantil/convivencia/api/query/use-comite-query"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"
 import {
   asistentesVigentes,
   casoVacio,
   desdeSesion,
-  hayQuorum,
+  eleccionVacia,
   integrantesVigentesEn,
   invitadoVacio,
-  quorumMinimo,
   sesionConErrores,
   sesionInput,
   validarSesion,
   valoresSesionVacios,
   type CasoFila,
+  type EleccionFila,
   type InvitadoFila,
   type ValoresSesion,
 } from "@/features/gestion-estudiantil/convivencia/utils/comite"
@@ -48,20 +50,40 @@ export function useSesionForm({ periodo, comite, sesion }: Params) {
   const vigentes = useMemo(() => integrantesVigentesEn(comite.integrantes, v.fecha), [comite.integrantes, v.fecha])
   const asistentes = asistentesVigentes(v.asistentes, vigentes)
   const total = vigentes.length
-  const quorum = hayQuorum(asistentes.length, total)
+  // El quórum lo calcula el servidor según el criterio del Comité (Regla 23); aquí solo se muestra.
+  const quorum = useQuorumQuery(comite.fk_comite, v.fecha, asistentes, total > 0)
 
-  const errores = useMemo(() => (intento ? validarSesion(v) : { invitados: {}, casos: {} }), [intento, v])
+  const tipos = useCatalogo("TIPO_SESION_COMITE")
+  const conformacion = codigoDe(tipos, v.tipo) === "CONFORMACION"
+
+  const errores = useMemo(
+    () => (intento ? validarSesion({ ...v, asistentes }, conformacion) : { invitados: {}, casos: {}, eleccion: {} }),
+    [intento, v, asistentes, conformacion],
+  )
 
   const cambiarFecha = (fecha: string) =>
-    setV((prev) => ({
-      ...prev,
-      fecha,
-      // Quien ya no es vigente en la nueva fecha deja de figurar como asistente.
-      asistentes: asistentesVigentes(prev.asistentes, integrantesVigentesEn(comite.integrantes, fecha)),
-    }))
+    setV((prev) => {
+      const vigentesNuevos = integrantesVigentesEn(comite.integrantes, fecha)
+      const ids = new Set(vigentesNuevos.map((i) => String(i.id)))
+      // Quien ya no es vigente en la nueva fecha deja de figurar como asistente, quien elabora o elegido.
+      const nuevos = asistentesVigentes(prev.asistentes, vigentesNuevos)
+      return {
+        ...prev,
+        fecha,
+        asistentes: nuevos,
+        elabora: prev.elabora && nuevos.includes(Number(prev.elabora)) ? prev.elabora : "",
+        eleccion: prev.eleccion.map((e) => (e.integrante && !ids.has(e.integrante) ? { ...e, integrante: "" } : e)),
+      }
+    })
 
   const marcarAsistente = (id: number, asistio: boolean) =>
-    set({ asistentes: asistio ? [...new Set([...v.asistentes, id])] : v.asistentes.filter((a) => a !== id) })
+    set({
+      asistentes: asistio ? [...new Set([...v.asistentes, id])] : v.asistentes.filter((a) => a !== id),
+      ...(!asistio && v.elabora === String(id) ? { elabora: "" } : {}),
+    })
+
+  const cambiarEleccion = (key: string, patch: Partial<EleccionFila>) =>
+    set({ eleccion: v.eleccion.map((e) => (e.key === key ? { ...e, ...patch } : e)) })
 
   const cambiarInvitado = (key: string, patch: Partial<InvitadoFila>) =>
     set({ invitados: v.invitados.map((i) => (i.key === key ? { ...i, ...patch } : i)) })
@@ -70,7 +92,7 @@ export function useSesionForm({ periodo, comite, sesion }: Params) {
 
   async function guardar() {
     setIntento(true)
-    const e = validarSesion(v)
+    const e = validarSesion({ ...v, asistentes }, conformacion)
     if (sesionConErrores(e)) {
       notify("Revise los campos marcados.", { variant: "error" })
       enfocarPrimerError()
@@ -82,7 +104,7 @@ export function useSesionForm({ periodo, comite, sesion }: Params) {
     }
     setGuardando(true)
     try {
-      const input = sesionInput({ ...v, asistentes })
+      const input = sesionInput({ ...v, asistentes }, conformacion)
       if (editar) await actualizar.mutateAsync({ sesionId: sesion.id, ...input })
       else await crear.mutateAsync({ comiteId: comite.fk_comite as number, ...input })
       queueNotice(editar ? "Sesión modificada." : "Sesión registrada.", { variant: "success" })
@@ -105,8 +127,11 @@ export function useSesionForm({ periodo, comite, sesion }: Params) {
     vigentes,
     asistentes,
     total,
-    minimoQuorum: quorumMinimo(total),
     quorum,
+    conformacion,
+    agregarEleccion: () => set({ eleccion: [...v.eleccion, eleccionVacia()] }),
+    cambiarEleccion,
+    quitarEleccion: (key: string) => set({ eleccion: v.eleccion.filter((e) => e.key !== key) }),
     cambiarFecha,
     marcarAsistente,
     agregarInvitado: () => set({ invitados: [...v.invitados, invitadoVacio()] }),

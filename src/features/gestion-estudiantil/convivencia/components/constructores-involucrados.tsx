@@ -22,6 +22,8 @@ interface ConstructoresProps {
   mostrarErrores: boolean
   /** Caso que se modifica; ausente en el alta. Acota el combo de funcionarios. */
   casoId?: number
+  /** Matrícula que no se puede quitar (el estudiante del plan al abrir un caso desde Prevención). */
+  fijoMatricula?: number
 }
 
 /** «Estudiantes involucrados (N)» y «Otros involucrados (N)» en un mismo recuadro (G.2.CAS.NUE.1). */
@@ -34,6 +36,7 @@ export function ConstructoresInvolucrados({
   errorInvolucrados,
   mostrarErrores,
   casoId,
+  fijoMatricula,
 }: ConstructoresProps) {
   const roles = useCatalogo("ROL_SITUACION")
   const tipos = useCatalogo("TIPO_INVOLUCRADO")
@@ -67,7 +70,7 @@ export function ConstructoresInvolucrados({
                   roles={roles}
                   mostrarErrores={mostrarErrores}
                   onRol={(rol) => onEstudiantes(estudiantes.map((x, j) => (j === i ? { ...x, rol } : x)))}
-                  onQuitar={() => onEstudiantes(estudiantes.filter((_, j) => j !== i))}
+                  onQuitar={e.fk_matricula === fijoMatricula ? undefined : () => onEstudiantes(estudiantes.filter((_, j) => j !== i))}
                 />
               ))}
             </ul>

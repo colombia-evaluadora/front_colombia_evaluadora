@@ -5,8 +5,7 @@ import { usePasosCasoQuery } from "@/features/gestion-estudiantil/convivencia/ap
 import type { CasoDetalle, PasoCaso } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { COD, esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
-import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import { codigosReportados, etiquetaPasoCierre } from "@/features/gestion-estudiantil/convivencia/utils/detalle"
+import { codigosReportados, etiquetaPasoCierre, subtextoPaso } from "@/features/gestion-estudiantil/convivencia/utils/detalle"
 
 function EstadoPaso({ paso }: { paso: PasoCaso }) {
   if (paso.no_aplica)
@@ -48,14 +47,12 @@ export function SeccionPasos({ caso }: { caso: CasoDetalle }) {
                 <span>
                   {p.accion_nombre}
                   {p.condicional && <span className="text-xs text-muted-foreground"> · condicional</span>}
-                  {p.de_cierre && <span className="text-xs text-muted-foreground"> · {etiquetaPasoCierre(grave)}</span>}
+                  {!p.detalle && p.de_cierre && <span className="text-xs text-muted-foreground"> · {etiquetaPasoCierre(grave)}</span>}
                 </span>
                 <EstadoPaso paso={p} />
               </div>
-              {(p.registrado || p.no_aplica) && p.accion !== COD.reporteSiuce && ultima(p.accion) && (
-                <p className="text-xs text-muted-foreground">
-                  {formatFecha(ultima(p.accion).fecha_hora)} · {ultima(p.accion).descripcion}
-                </p>
+              {p.accion !== COD.reporteSiuce && subtextoPaso(p, ultima(p.accion)) && (
+                <p className="text-xs text-muted-foreground">{subtextoPaso(p, ultima(p.accion))}</p>
               )}
               {p.accion === COD.reporteSiuce && codigos.length > 0 && (
                 <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">

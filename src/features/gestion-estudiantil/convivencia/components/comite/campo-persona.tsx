@@ -41,6 +41,7 @@ export function CampoPersona({ id, dato, periodo, valor, onChange, disabled, err
       <ComboEstudianteComite
         id={id}
         label="Estudiante"
+        description="Estudiante con matrícula Cursando en el establecimiento."
         required
         periodo={periodo}
         disabled={disabled}

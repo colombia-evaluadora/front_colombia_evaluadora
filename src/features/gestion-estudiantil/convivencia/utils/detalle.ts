@@ -1,3 +1,4 @@
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoAccion, CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 
 /** «Sí» / «No», o vacío si no se respondió. */
@@ -20,4 +21,17 @@ export function codigosReportados(caso: CasoDetalle, codigoAccion: string) {
 }
 
 /** Etiqueta del paso de cierre: en Tipo II/III se hace después de la sesión del Comité. */
-export const etiquetaPasoCierre = (grave: boolean) => (grave ? "Paso de cierre · después de la sesión del comité" : "de cierre")
+export const etiquetaPasoCierre = (grave: boolean) => (grave ? "Paso de cierre · después de la sesión del Comité" : "de cierre")
+
+/**
+ * Subtexto de un paso del protocolo: «fecha · detalle del back · descripción de la última acción».
+ * La fecha es la del paso (o, sin ella, la de su última acción); las partes vacías se omiten.
+ */
+export function subtextoPaso(
+  p: { fecha_hora?: string | null; detalle?: string | null; registrado: boolean; no_aplica: boolean },
+  ultimaAccion?: { fecha_hora: string; descripcion: string },
+): string {
+  const hecho = p.registrado || p.no_aplica
+  const fecha = p.fecha_hora ?? (hecho ? ultimaAccion?.fecha_hora : null)
+  return [fecha && formatFecha(fecha), p.detalle, hecho ? ultimaAccion?.descripcion : null].filter(Boolean).join(" · ")
+}

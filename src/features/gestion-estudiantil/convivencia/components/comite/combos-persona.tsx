@@ -19,6 +19,7 @@ interface ComboBaseProps {
   required?: boolean
   disabled?: boolean
   error?: string
+  description?: string
 }
 
 /** El elegido encabeza la lista aunque la búsqueda actual no lo devuelva. */
@@ -78,7 +79,7 @@ export function ComboFuncionarioComite({
 }
 
 /** Estudiante del establecimiento: la consulta exige al menos 2 caracteres. */
-export function ComboEstudianteComite({ id, label, periodo, value, nombre, onChange, required, disabled, error }: ComboBaseProps) {
+export function ComboEstudianteComite({ id, label, periodo, value, nombre, onChange, required, disabled, error, description }: ComboBaseProps) {
   const { setTexto, busqueda } = useBusquedaDiferida()
   const q = useEstudiantesComiteQuery(periodo, busqueda.length >= 2 ? busqueda : "")
   const filas = q.data ?? []
@@ -96,6 +97,7 @@ export function ComboEstudianteComite({ id, label, periodo, value, nombre, onCha
       todos={false}
       disabled={disabled}
       placeholder="Escriba al menos 2 letras del nombre"
+      description={description}
       value={value}
       options={opciones}
       error={error}

@@ -38,7 +38,7 @@ export function FormularioAbrirConvivencia({ caso }: { caso: CasoDetalle }) {
             </div>
           }
         >
-          <span className="whitespace-normal">Reintegración › Abrir caso de convivencia · {caso.estudiante_nombre}</span>
+          <span className="whitespace-normal">Convivencia › Nuevo caso</span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

@@ -13,9 +13,11 @@ import { usePeriodosComiteQuery, useSesionQuery } from "@/features/gestion-estud
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
 import {
   ActaSesion,
+  AdjuntosSesion,
   AsistentesSesion,
   CasosSesion,
   DatosSesion,
+  EleccionSesion,
   OtrosTemasSesion,
 } from "@/features/gestion-estudiantil/convivencia/components/comite/detalle/secciones-sesion"
 import { useSesionDetalle } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-detalle"
@@ -52,8 +54,10 @@ function Contenido({ sesion, periodo, etiqueta }: { sesion: SesionDetalle; perio
         <div className="flex flex-col gap-6 pb-6">
           <DatosSesion sesion={sesion} periodo={etiqueta} />
           <AsistentesSesion sesion={sesion} />
+          <EleccionSesion sesion={sesion} />
           <CasosSesion sesion={sesion} />
           <OtrosTemasSesion sesion={sesion} />
+          <AdjuntosSesion sesion={sesion} />
           <ActaSesion sesion={sesion} descargando={d.descargando} onDescargar={d.descargar} />
         </div>
       </TableScreenBody>
