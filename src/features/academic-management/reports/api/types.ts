@@ -68,6 +68,9 @@ export interface GrupoPeriodo {
   directorId: number | null
   directorNombre: string | null
   periodoAcademicoId: number
+  /** Si puede escribir las observaciones del grupo, sin mirar el menú
+   *  (`fn_informe_puede_observar`): el director de grupo, solo en referente Formativo. */
+  puedeObservar: boolean
 }
 
 export interface PeriodoInforme {

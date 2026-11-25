@@ -442,7 +442,8 @@ function ReportsPageContent() {
   const gruposDisponibles = grupos.filter((g) => !gruposAbiertosIds.includes(g.grupoId))
   const topeAlcanzado = gruposAbiertosIds.length >= MAX_GRUPOS_ABIERTOS
   const grupoActivoId = Number(activeTab)
-  const gradoActivoId = grupos.find((g) => g.grupoId === grupoActivoId)?.gradoId
+  const grupoActivo = grupos.find((g) => g.grupoId === grupoActivoId)
+  const gradoActivoId = grupoActivo?.gradoId
 
   // Misma key que el tab activo (se deduplica); sin filtro del buscador.
   const informeActivo = useInformeGrupoQuery(
@@ -451,9 +452,12 @@ function ReportsPageContent() {
   const esCualitativoActivo = grupoEsCualitativo(informeActivo.data)
 
   const { puedeEditar } = useMenuPermission("INFORMES")
-  // Docente / director de grupo solo consultan: consolidar y redactar
-  // observaciones es de coordinación, aunque el menú les dé EDITAR.
+  // Docente / director de grupo no consolidan: es de coordinación, aunque el
+  // menú les dé EDITAR.
   const puedeEscribir = puedeEditar && !soloSusGrupos
+  // Las observaciones sí las registra el director de grupo en sus grupos de
+  // referente Formativo; la base lo decide por grupo (puedeObservar).
+  const puedeObservar = puedeEditar && (grupoActivo?.puedeObservar ?? false)
   const periodosCerrados = periodosDisponibles.filter((p) => p.cerrado).map((p) => p.id)
   const observacionLabel = useStudyPlanSubjectLabel(gradoActivoId, esCualitativoActivo)
 
@@ -658,7 +662,7 @@ function ReportsPageContent() {
     texto: string,
     borrador: { texto: string; observacionesOrigen: number } | null,
   ) {
-    if (!puedeEscribir) return
+    if (!puedeObservar) return
     const limpio = texto.trim()
     const periodoId = fila.modoPeriodo === "final" ? null : fila.periodoId
     try {
@@ -797,7 +801,7 @@ function ReportsPageContent() {
           onGuardar={handleGuardarObservacion}
           soloLecturaMotivo={
             // Periodo cerrado: el resumen de la IA se puede generar y guardar igual.
-            !puedeEscribir ? "Solo lectura: no tienes permiso para editar observaciones." : null
+            !puedeObservar ? "Solo lectura: no tienes permiso para editar observaciones." : null
           }
         />
 
