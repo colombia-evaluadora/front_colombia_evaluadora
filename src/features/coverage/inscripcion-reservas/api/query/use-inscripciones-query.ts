@@ -60,6 +60,7 @@ export interface GrupoAdmisionRow {
   desempate: GrupoAdmisionConfig["desempate"]
   sorteoEjecutado: boolean
   bloqueado: boolean
+  periodoAbierto?: boolean
   configurado: boolean
   criterios: number[]
   documentosRequeridos: number[]

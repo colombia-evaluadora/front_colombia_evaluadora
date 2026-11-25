@@ -49,6 +49,7 @@ const toGrupoConfig = (g: GrupoAdmisionRow): GrupoAdmisionConfig => ({
   desempate: g.desempate,
   documentosRequeridos: g.documentosRequeridos.map(String),
   bloqueado: g.bloqueado,
+  periodoAbierto: g.periodoAbierto === true,
   configurado: g.configurado,
 })
 

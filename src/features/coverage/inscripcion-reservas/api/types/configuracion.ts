@@ -24,6 +24,8 @@ export interface GrupoAdmisionConfig {
   documentosRequeridos: string[]
   /** Después del sorteo o de la primera admisión no se cambian criterios ni desempate. */
   bloqueado: boolean
+  /** Algún período del grupo ya está Abierto: no cambian modo, criterios, desempate ni documentos (3.7). */
+  periodoAbierto: boolean
   configurado: boolean
 }
 
