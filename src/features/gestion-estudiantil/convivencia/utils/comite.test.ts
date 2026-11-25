@@ -182,6 +182,15 @@ describe("sesión", () => {
     expect(e2.eleccion[f.key].forma).toBeTruthy()
     expect(validarSesion({ ...v, eleccion: [{ ...f, forma: "Votación del consejo" }] }, true).eleccion).toEqual({})
   })
+  it("en Conformación no se validan ni se envían los casos", () => {
+    const c = { ...casoVacio(), fk_caso: 8, decision: "corta" }
+    const f = { ...eleccionVacia(), integrante: "1", forma: "Votación del consejo" }
+    const v = { ...base(), casos: [c], eleccion: [f] }
+    expect(validarSesion(v, true).casos).toEqual({})
+    expect(sesionInput(v, true).CASOS).toEqual([])
+    expect(sesionInput(v, true).ELECCION).toHaveLength(1)
+    expect(sesionInput(v, false).CASOS).toHaveLength(1)
+  })
   it("quien elabora el acta debe ser asistente y el input manda la elección solo en Conformación", () => {
     expect(validarSesion({ ...base(), elabora: "9" }).elabora).toBeTruthy()
     const f = { ...eleccionVacia(), integrante: "1", forma: " Votación " }

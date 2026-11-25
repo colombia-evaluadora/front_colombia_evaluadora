@@ -31,7 +31,7 @@ export function DatosSesion({ sesion, periodo }: { sesion: SesionDetalle; period
       <Dato label="Quórum">
         <span className="flex flex-wrap items-center gap-2">
           <BadgeQuorum conQuorum={sesion.con_quorum} />
-          {sesion.criterio_quorum && <span className="text-muted-foreground">Criterio: {sesion.criterio_quorum}</span>}
+          {sesion.criterio_quorum && <span className="text-muted-foreground">Criterio de quórum: {sesion.criterio_quorum}</span>}
           {motivo && <span className="text-muted-foreground">{motivo}</span>}
         </span>
       </Dato>

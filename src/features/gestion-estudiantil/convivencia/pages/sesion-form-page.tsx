@@ -63,7 +63,11 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
           <SeccionAsistentes form={form} />
           <SeccionInvitados form={form} />
           {form.conformacion && <SeccionEleccion form={form} />}
-          <SeccionCasosTratados form={form} comite={comite.fk_comite as number} periodo={periodo.fk_periodo} />
+          {form.conformacion ? (
+            <p className="text-sm text-muted-foreground">Una sesión de Conformación no exige casos tratados.</p>
+          ) : (
+            <SeccionCasosTratados form={form} comite={comite.fk_comite as number} periodo={periodo.fk_periodo} />
+          )}
           <TextoLargo
             id="sesion-otros"
             label="Otros temas tratados"

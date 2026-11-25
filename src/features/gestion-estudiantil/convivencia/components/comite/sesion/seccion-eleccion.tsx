@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 
@@ -30,9 +30,6 @@ export function SeccionEleccion({ form }: { form: SesionFormState }) {
           }
         >
           <div className="flex flex-col gap-3 px-4 py-3">
-            <p className="text-xs text-muted-foreground">
-              Cómo se eligió o designó a cada integrante, p. ej. «Votación del consejo de estudiantes».
-            </p>
             {v.eleccion.map((f) => {
               const err = errores.eleccion[f.key]
               return (
@@ -46,6 +43,7 @@ export function SeccionEleccion({ form }: { form: SesionFormState }) {
                       todos={false}
                       value={f.integrante}
                       options={opciones(f.integrante)}
+                      description="Integrantes vigentes en la fecha; uno una sola vez."
                       error={err?.integrante}
                       onChange={(integrante) => form.cambiarEleccion(f.key, { integrante })}
                     />
@@ -58,7 +56,11 @@ export function SeccionEleccion({ form }: { form: SesionFormState }) {
                         aria-invalid={Boolean(err?.forma) || undefined}
                         onChange={(e) => form.cambiarEleccion(f.key, { forma: e.target.value })}
                       />
-                      {err?.forma && <FieldError>{err.forma}</FieldError>}
+                      {err?.forma ? (
+                        <FieldError>{err.forma}</FieldError>
+                      ) : (
+                        <FieldDescription>Cómo se eligió o designó, p. ej. votación del consejo de estudiantes.</FieldDescription>
+                      )}
                     </Field>
                   </div>
                   <BotonQuitar label="Quitar elección" onClick={() => form.quitarEleccion(f.key)} className="shrink-0" />

@@ -45,7 +45,7 @@ export function SeccionActaAdjuntos({ form }: { form: SesionFormState }) {
           archivos={v.adjuntos}
           onChange={(adjuntos) => set({ adjuntos })}
           max={cupo}
-          ayuda="PDF, JPG o PNG; hasta 10 MB cada uno y 5 archivos. Se ven en Ver detalle; no salen en el PDF del acta."
+          ayuda="PDF, JPG o PNG (p. ej. evidencia fotográfica); hasta 5 archivos de 10 MB. Se ven en Ver detalle de la sesión y no salen en el PDF del acta."
         />
       )}
     </div>

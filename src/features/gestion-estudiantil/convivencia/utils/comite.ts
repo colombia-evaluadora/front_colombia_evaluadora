@@ -57,8 +57,11 @@ const TEXTO_MOTIVO_QUORUM: Record<MotivoQuorum, string> = {
   ESTAMENTO_FALTANTE: "Falta al menos un integrante de un estamento con integrantes vigentes.",
 }
 
-export const textoMotivoQuorum = (motivo: string | null | undefined) =>
-  motivo ? (TEXTO_MOTIVO_QUORUM[motivo as MotivoQuorum] ?? null) : null
+/** `enFormulario`: sin presidente, el formulario aclara además cómo se guarda la sesión. */
+export const textoMotivoQuorum = (motivo: string | null | undefined, enFormulario = false) => {
+  const texto = motivo ? (TEXTO_MOTIVO_QUORUM[motivo as MotivoQuorum] ?? null) : null
+  return texto && enFormulario && motivo === "SIN_PRESIDENTE" ? `${texto} Se guarda con la marca Sin quórum.` : texto
+}
 
 /** Al cambiar la fecha, los asistentes marcados que ya no son vigentes se descartan. */
 export function asistentesVigentes(asistentes: number[], vigentes: Pick<IntegranteComite, "id">[]): number[] {
@@ -338,7 +341,8 @@ export function validarSesion(v: ValoresSesion, conformacion = false): ErroresSe
   }
 
   const vistos = new Set<number>()
-  for (const c of v.casos) {
+  // Conformación no exige casos tratados: no se validan ni se envían.
+  for (const c of conformacion ? [] : v.casos) {
     const err: { caso?: string; decision?: string; fecha?: string } = {}
     if (c.fk_caso == null) err.caso = "Elija el caso."
     else if (vistos.has(c.fk_caso)) err.caso = "Este caso ya está en la sesión."
@@ -398,7 +402,7 @@ export function sesionInput(v: ValoresSesion, conformacion = false): SesionInput
     ...(v.otros.trim() && { OTROS_TEMAS: v.otros.trim() }),
     ASISTENTES: v.asistentes,
     INVITADOS: v.invitados.map((i) => ({ nombre: i.nombre.trim(), calidad: i.calidad.trim() })),
-    CASOS: v.casos.map((c) => ({
+    CASOS: (conformacion ? [] : v.casos).map((c) => ({
       fk_caso: c.fk_caso as number,
       decision: c.decision.trim(),
       ...(c.responsable && { fk_funcionario_responsable: Number(c.responsable) }),

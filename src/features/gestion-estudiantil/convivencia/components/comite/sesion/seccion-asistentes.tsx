@@ -43,10 +43,10 @@ export function SeccionAsistentes({ form }: { form: SesionFormState }) {
                   {asistentes.length} de {total} integrantes
                 </span>
                 {q && <BadgeQuorum conQuorum={q.con_quorum} />}
-                {q?.criterio_nombre && <span className="text-muted-foreground">Criterio: {q.criterio_nombre}</span>}
+                {q?.criterio_nombre && <span className="text-muted-foreground">Criterio de quórum: {q.criterio_nombre}</span>}
               </p>
-              {q && !q.con_quorum && textoMotivoQuorum(q.motivo) && (
-                <p className="text-muted-foreground">{textoMotivoQuorum(q.motivo)}</p>
+              {q && !q.con_quorum && textoMotivoQuorum(q.motivo, true) && (
+                <p className="text-muted-foreground">{textoMotivoQuorum(q.motivo, true)}</p>
               )}
             </div>
             {form.errores.asistentes && <FieldError>{form.errores.asistentes}</FieldError>}
