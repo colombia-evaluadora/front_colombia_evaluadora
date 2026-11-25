@@ -120,6 +120,39 @@ export const informesReportesHandlers = [
     })
   }),
 
+  // Calidad de la información (C.4.CAL.1).
+  http.post("*/api/eval-col/informes-reportes/calidad/query", async () => {
+    await delay(150)
+    const por = { C1: 4, C4: 12, C10: 6, C11: 15 }
+    return HttpResponse.json({
+      rows: conTotal([
+        { hallazgo_id: 1, control: "C1", estudiante: "Ana Ruiz", establecimiento: "IE Central", dato: "Mismo nombre y fecha de nacimiento que otro estudiante", estado: "PENDIENTE", justificacion: null, corte: "2027-04-02", matricula_id: 1, por_control: por },
+        { hallazgo_id: 2, control: "C4", estudiante: "Luis Pérez", establecimiento: "IE Central", dato: "14 años en Sexto", estado: "AJUSTADO", justificacion: null, corte: "2027-04-02", matricula_id: 2, por_control: por },
+        { hallazgo_id: 3, control: "C10", estudiante: "Sara Gil", establecimiento: "IE Central", dato: "Sin boletín del año anterior", estado: "JUSTIFICADO", justificacion: "La estudiante llegó del exterior; el boletín está en trámite de apostilla.", corte: "2027-04-02", matricula_id: 3, por_control: por },
+      ]),
+    })
+  }),
+
+  http.get("*/api/eval-col/informes-reportes/calidad/:id/historial", async () => {
+    await delay(100)
+    return HttpResponse.json({
+      rows: [
+        { fecha: "2027-04-02T08:00:00", actor: "Sistema", estado: "PENDIENTE", texto: "Hallazgo generado con el corte del 02/04/2027: Pendiente." },
+        { fecha: "2027-04-05T10:00:00", actor: "M. Gómez", estado: "JUSTIFICADO", texto: "Justificó el hallazgo." },
+      ],
+    })
+  }),
+
+  http.post("*/api/eval-col/informes-reportes/calidad/generar", async () => {
+    await delay(300)
+    return HttpResponse.json({ rows: [{ generacion: 1 }] })
+  }),
+
+  http.put("*/api/eval-col/informes-reportes/calidad/:id/estado", async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: [] })
+  }),
+
   http.post("*/api/eval-col/informes-reportes/demanda/query", async () => {
     await delay(150)
     return HttpResponse.json({

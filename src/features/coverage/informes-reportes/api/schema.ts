@@ -75,6 +75,8 @@ export const informesReportesSearchSchema = z.object({
   grupoEdad: texto,
   municipio: z.coerce.number().optional().catch(undefined),
   establecimiento: z.coerce.number().optional().catch(undefined),
+  control: z.enum(["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11"]).optional().catch(undefined),
+  estadoHallazgo: z.enum(["PENDIENTE", "AJUSTADO", "JUSTIFICADO"]).optional().catch(undefined),
   situacionFuera: z.enum(["RETIRADO", "SIN_CONTINUIDAD", "SIN_CUPO_PLATAFORMA"]).optional().catch(undefined),
   direccion: z.enum(["ENTRANTE", "SALIENTE"]).optional().catch(undefined),
   estadoTraslado: z.enum(["PENDIENTE", "ACEPTADO", "RECHAZADO", "CANCELADO"]).optional().catch(undefined),

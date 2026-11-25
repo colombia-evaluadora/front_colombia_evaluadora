@@ -25,6 +25,8 @@ import { EstadisticaEdades } from "@/features/coverage/informes-reportes/compone
 import { filtrosEdades } from "@/features/coverage/informes-reportes/api/edades"
 import { FiltrosFuera, FueraMatriculaInforme } from "@/features/coverage/informes-reportes/components/fuera-matricula"
 import { filtrosFuera } from "@/features/coverage/informes-reportes/api/fuera-matricula"
+import { CalidadInforme, FiltrosCalidad, GenerarCalidad } from "@/features/coverage/informes-reportes/components/calidad"
+import { filtrosCalidad } from "@/features/coverage/informes-reportes/api/calidad"
 import { FiltrosInforme } from "@/features/coverage/informes-reportes/components/filtros-informe"
 import { InformeMatricula, InformeNivelaciones } from "@/features/coverage/informes-reportes/components/informes-matricula"
 import { ConsultaMatriculados } from "@/features/coverage/informes-reportes/components/consulta-matriculados"
@@ -85,6 +87,7 @@ const DISPONIBLES: Partial<Record<InformeId, { reporte: ReportKey; filtros: (s: 
   "demanda-no-atendida": { reporte: "informes-demanda", filtros: filtrosCobertura.demanda },
   edades: { reporte: "informes-edades", filtros: filtrosEdades },
   "fuera-matricula": { reporte: "informes-fuera-matricula", filtros: filtrosFuera },
+  calidad: { reporte: "informes-calidad", filtros: filtrosCalidad },
 }
 
 /** Exportar el informe abierto en Excel o PDF con sus filtros. */
@@ -129,6 +132,7 @@ const CAMPOS: Partial<Record<InformeId, Parameters<typeof FiltrosInforme>[0]["ca
   "demanda-no-atendida": ["periodo", "grado"],
   edades: ["sede", "jornada", "periodo", "grado"],
   "fuera-matricula": ["grado"],
+  calidad: ["sede", "jornada", "periodo", "grado"],
 }
 
 function Contenido() {
@@ -137,12 +141,22 @@ function Contenido() {
 
   const encabezado = (
     <>
-      <TableScreenTitle action={<Exportar informe={informe} />}>Informes y reportes</TableScreenTitle>
+      <TableScreenTitle
+        action={
+          <div className="flex items-center gap-2">
+            {informe === "calidad" ? <GenerarCalidad /> : null}
+            <Exportar informe={informe} />
+          </div>
+        }
+      >
+        Informes y reportes
+      </TableScreenTitle>
       <TableScreenToolbar>
         <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SelectorInforme value={informe} />
           {informe === "fuera-matricula" ? <FiltrosFuera /> : null}
           {campos ? <FiltrosInforme campos={campos} /> : null}
+          {informe === "calidad" ? <FiltrosCalidad /> : null}
         </div>
       </TableScreenToolbar>
     </>
@@ -159,6 +173,7 @@ function Contenido() {
   if (informe === "demanda-no-atendida") return <InformeDemanda encabezado={encabezado} />
   if (informe === "edades") return <EstadisticaEdades encabezado={encabezado} />
   if (informe === "fuera-matricula") return <FueraMatriculaInforme encabezado={encabezado} />
+  if (informe === "calidad") return <CalidadInforme encabezado={encabezado} />
 
   return (
     <TableScreen>
