@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPageCount } from "@/lib/pagination"
-import type { Audiencia, DestinosComunicado, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
+import type { AdjuntoComunicado, Audiencia, DestinosComunicado, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 
 const RUTA = "/comunicaciones/comunicados/territorial"
 
@@ -29,7 +29,8 @@ export interface ComunicadoTerritorialDetalle {
   // Vacío en un comunicado anulado: de ese solo se ve la fila.
   contenidoHtml: string
   visibleHasta: string | null
-  adjuntos: string[]
+  // También vacíos en un anulado.
+  adjuntos: AdjuntoComunicado[]
 }
 
 export interface FiltrosTerritorial {

@@ -6,11 +6,12 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { EyeIcon } from "@/components/ui/icons"
-import { resumenDestinatarios } from "@/features/comunicaciones/chat/lib/destinos-comunicado"
+import { tiposAbreviados } from "@/features/comunicaciones/comunicados/lib/tipos-destinatario"
 import type {
   ComunicadoTerritorial,
   EstadoTerritorial,
 } from "@/features/comunicaciones/territorial/api/comunicados-territorial"
+import { dirigidoA, tiposTerritorial } from "@/features/comunicaciones/territorial/lib/destinatarios"
 import { AccionesFila } from "@/features/gestion-estudiantil/commons/components/acciones-fila"
 import { anchoAccionesFila } from "@/features/gestion-estudiantil/commons/utils/acciones-fila"
 
@@ -33,7 +34,11 @@ export function EstadoTerritorialBadge({ estado }: { estado: EstadoTerritorial }
   )
 }
 
-export const dirigidoA = (c: ComunicadoTerritorial) => resumenDestinatarios(c.audiencia, c.destinos) || "—"
+/** Abreviados como en Publicados (M.1.LIS.1); sin tipo (grados o personas del formato anterior), el resumen. */
+const textoTipos = (c: ComunicadoTerritorial) => {
+  const tipos = tiposTerritorial(c)
+  return tipos.length > 0 ? tiposAbreviados(tipos) : dirigidoA(c)
+}
 
 /**
  * Columnas de la consulta territorial (M.1.TER.1): las de Publicados más Establecimiento. Los ids son
@@ -87,13 +92,13 @@ export function createTerritorialColumns({
     },
     {
       id: "tipos",
-      accessorFn: (row) => dirigidoA(row),
+      accessorFn: (row) => textoTipos(row),
       enableSorting: false,
       meta: { label: "Tipos" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Tipos" />,
       cell: ({ row }) => (
         <span title={dirigidoA(row.original)} className="block max-w-56 truncate">
-          {dirigidoA(row.original)}
+          {textoTipos(row.original)}
         </span>
       ),
     },
