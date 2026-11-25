@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ArrowsLeftRightIcon } from "@/components/ui/icons"
 
 import type { ComiteDetalle, IntegranteComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
@@ -33,20 +34,27 @@ export function RecuadroIntegrantes({ comite, puedeGestionar }: Props) {
                 <li key={i.id} className="flex items-center gap-3 px-4 py-2 text-sm">
                   <span className="w-48 shrink-0 font-medium">{i.cargo_nombre}</span>
                   <span className="min-w-0 flex-1 truncate">{i.nombre}</span>
+                  {i.estamento && <span className="shrink-0 text-xs text-muted-foreground">{i.estamento}</span>}
                   <span className="shrink-0 text-xs text-muted-foreground">Desde {formatFecha(dia(i.desde))}</span>
-                  {puedeGestionar && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      color="neutral"
-                      aria-label={`Reemplazar ${i.cargo_nombre}`}
-                      onClick={() => setReemplazando(i)}
+                  {/* Siempre visible: sin permiso queda deshabilitada, no oculta. */}
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          color="neutral"
+                          aria-label={`Reemplazar ${i.cargo_nombre}`}
+                          disabled={!puedeGestionar}
+                          onClick={() => setReemplazando(i)}
+                        />
+                      }
                     >
-                      <ArrowsLeftRightIcon data-icon="inline-start" />
-                      Reemplazar
-                    </Button>
-                  )}
+                      <ArrowsLeftRightIcon />
+                    </TooltipTrigger>
+                    <TooltipContent>Reemplazar</TooltipContent>
+                  </Tooltip>
                 </li>
               ))}
             </ul>

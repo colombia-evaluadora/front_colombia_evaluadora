@@ -7,20 +7,86 @@ import { paths } from "@/config/paths"
 
 import type { SesionDetalle } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { formatFecha, formatHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { Dato, Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
-import { dia, textoAsistentes } from "@/features/gestion-estudiantil/convivencia/utils/comite"
+import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
+import { ChipArchivo } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/chip-archivo"
+import { dia, nombreActa, textoAsistentes, textoMotivoQuorum } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 /** Datos de la sesión: período, tipo y fecha. */
 export function DatosSesion({ sesion, periodo }: { sesion: SesionDetalle; periodo: string }) {
+  const motivo = sesion.con_quorum ? null : textoMotivoQuorum(sesion.motivo_quorum)
   return (
     <dl className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
       <Dato label="Período académico">{periodo}</Dato>
       <Dato label="Tipo de sesión">{sesion.tipo_nombre}</Dato>
       <Dato label="Fecha">{formatFecha(dia(sesion.fecha))}</Dato>
+      <Dato label="Hora">{formatHora(sesion.hora)}</Dato>
+      <Dato label="Lugar">{sesion.lugar}</Dato>
+      <Dato label="Elabora el acta">
+        {sesion.elabora ? `${sesion.elabora.cargo_nombre} · ${sesion.elabora.nombre}` : ""}
+      </Dato>
+      <Dato label="Quórum">
+        <span className="flex flex-wrap items-center gap-2">
+          <BadgeQuorum conQuorum={sesion.con_quorum} />
+          {sesion.criterio_quorum && <span className="text-muted-foreground">Criterio: {sesion.criterio_quorum}</span>}
+          {motivo && <span className="text-muted-foreground">{motivo}</span>}
+        </span>
+      </Dato>
+      {sesion.objetivo && (
+        <div className="sm:col-span-3">
+          <Dato label="Objetivo">
+            <span className="whitespace-pre-wrap">{sesion.objetivo}</span>
+          </Dato>
+        </div>
+      )}
+      {sesion.orden_dia && (
+        <div className="sm:col-span-3">
+          <Dato label="Orden del día">
+            <span className="whitespace-pre-wrap">{sesion.orden_dia}</span>
+          </Dato>
+        </div>
+      )}
     </dl>
+  )
+}
+
+/** Forma de elección de cada integrante (solo sesiones de Conformación). */
+export function EleccionSesion({ sesion }: { sesion: SesionDetalle }) {
+  const eleccion = sesion.eleccion ?? []
+  if (eleccion.length === 0) return null
+  return (
+    <Seccion titulo="Elección de integrantes">
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {eleccion.map((e) => (
+          <li key={e.fk_integrante}>
+            <span className="font-medium">{e.cargo_nombre}</span>
+            <span className="text-muted-foreground"> · {e.nombre} · </span>
+            {e.forma_eleccion}
+          </li>
+        ))}
+      </ul>
+    </Seccion>
+  )
+}
+
+/** Adjuntos: se ven aquí y no salen en el PDF del acta. */
+export function AdjuntosSesion({ sesion }: { sesion: SesionDetalle }) {
+  const adjuntos = sesion.adjuntos ?? []
+  if (adjuntos.length === 0) return null
+  return (
+    <Seccion titulo={`Adjuntos (${adjuntos.length})`}>
+      <div className="flex flex-wrap gap-2">
+        {adjuntos.map((a) => (
+          <ChipArchivo
+            key={a.id}
+            archivo={{ pk_tarchivo: a.fk_archivo, nombre: a.nombre, tamano_bytes: a.peso ?? 0, tipo_mime: a.tipo ?? "" }}
+          />
+        ))}
+      </div>
+    </Seccion>
   )
 }
 
@@ -40,6 +106,7 @@ export function AsistentesSesion({ sesion }: { sesion: SesionDetalle }) {
             <span>
               <span className="font-medium">{a.cargo_nombre}</span>
               <span className="text-muted-foreground">
+                {a.estamento && ` · ${a.estamento}`}
                 {" · "}
                 {a.nombre}
                 {!a.asistio && " (no asistió)"}
@@ -119,7 +186,7 @@ export function ActaSesion({ sesion, descargando, onDescargar }: { sesion: Sesio
     <Seccion titulo="Acta">
       <div className="flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-1 text-sm">
         <PaperclipIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <span>acta-comite-{dia(sesion.fecha)}.pdf</span>
+        <span>{nombreActa(sesion)}</span>
         <Button size="icon-sm" variant="ghost" color="neutral" aria-label="Descargar acta" onClick={onDescargar} disabled={descargando}>
           {descargando ? <SpinnerIcon className="animate-spin" /> : <FileDownloadOutlinedIcon />}
         </Button>

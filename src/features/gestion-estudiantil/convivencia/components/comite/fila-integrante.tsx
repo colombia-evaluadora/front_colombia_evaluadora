@@ -1,5 +1,5 @@
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -41,6 +41,7 @@ export function FilaIntegranteForm({ fila, periodo, error, hastaEditable, inicio
             todos={false}
             value={fila.fk_tlv_cargo}
             options={opcionesCargo}
+            description={fila.estamento ? `Estamento: ${fila.estamento}` : undefined}
             error={error?.cargo}
             onChange={onCargo}
           />
@@ -48,7 +49,11 @@ export function FilaIntegranteForm({ fila, periodo, error, hastaEditable, inicio
           <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error?.cargo) || undefined}>
             <FieldLabel htmlFor={`int-cargo-${fila.key}`}>Cargo*</FieldLabel>
             <Input id={`int-cargo-${fila.key}`} readOnly title={fila.cargo_nombre} value={fila.cargo_nombre} />
-            {error?.cargo && <FieldError>{error.cargo}</FieldError>}
+            {error?.cargo ? (
+              <FieldError>{error.cargo}</FieldError>
+            ) : (
+              fila.estamento && <FieldDescription>Estamento: {fila.estamento}</FieldDescription>
+            )}
           </Field>
         )}
         {guardada ? (

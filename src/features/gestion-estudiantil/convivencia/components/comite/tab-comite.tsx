@@ -81,7 +81,6 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
           )}
           <SeccionSesiones
             tab={tab}
-            puedeGestionar={puedeGestionarComite}
             onVer={nav.aSesion}
             onModificar={nav.aSesionEditar}
           />

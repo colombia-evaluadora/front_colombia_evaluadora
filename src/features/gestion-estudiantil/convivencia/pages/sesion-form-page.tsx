@@ -13,6 +13,8 @@ import { useConvivenciaAccess } from "@/features/gestion-estudiantil/convivencia
 import { SeccionAsistentes } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/seccion-asistentes"
 import { SeccionCasosTratados } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/seccion-casos-tratados"
 import { SeccionDatosSesion } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/seccion-datos-sesion"
+import { SeccionActaAdjuntos } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/seccion-acta"
+import { SeccionEleccion } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/seccion-eleccion"
 import { SeccionInvitados } from "@/features/gestion-estudiantil/convivencia/components/comite/sesion/seccion-invitados"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { useSesionForm } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
@@ -60,6 +62,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
           />
           <SeccionAsistentes form={form} />
           <SeccionInvitados form={form} />
+          {form.conformacion && <SeccionEleccion form={form} />}
           <SeccionCasosTratados form={form} comite={comite.fk_comite as number} periodo={periodo.fk_periodo} />
           <TextoLargo
             id="sesion-otros"
@@ -70,6 +73,7 @@ function SesionForm({ periodo, comite, sesion }: FormProps) {
             error={errores.otros}
             onChange={(otros) => set({ otros })}
           />
+          <SeccionActaAdjuntos form={form} />
           <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         </div>
       </TableScreenBody>

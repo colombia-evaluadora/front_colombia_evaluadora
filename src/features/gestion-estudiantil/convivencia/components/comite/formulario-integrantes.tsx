@@ -31,6 +31,21 @@ export function FormularioIntegrantes({ form, comite, puedeEscribir }: Props) {
         />
       )}
 
+      <div className="grid grid-cols-1 gap-3 sm:max-w-2xl">
+        <ComboOpciones
+          id="int-criterio"
+          label="Criterio de quórum"
+          required
+          size="default"
+          todos={false}
+          description="Mitad más uno o Por estamento. Con cualquiera, sin el Rector no hay quórum."
+          disabled={!puedeEscribir}
+          value={form.criterio}
+          options={form.criterios}
+          onChange={form.setCriterio}
+        />
+      </div>
+
       <AvisoCargosVacios
         cargos={form.cargosSinIntegrante}
         accion={

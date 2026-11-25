@@ -5,6 +5,7 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import type { SesionDetalle } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import { descargarActa } from "@/features/gestion-estudiantil/convivencia/api/descargar-reportes"
+import { nombreActa } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 import { useComiteNavegacion } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-navegacion"
 
 /** Acta en PDF y navegación del detalle de una sesión (G.2.COM.SES.4). */
@@ -16,7 +17,7 @@ export function useSesionDetalle(sesion: SesionDetalle, periodo: number | undefi
   async function descargar() {
     setDescargando(true)
     try {
-      await descargarActa(sesion.id)
+      await descargarActa(sesion.id, nombreActa(sesion))
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
     } finally {
