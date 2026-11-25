@@ -203,7 +203,7 @@ function AddMatriculaPageContent() {
   // Lo que había escrito antes de precargar: si cambian el documento, se devuelve.
   const antesPrecarga = useRef<Pick<
     CreateMatriculaInput["student"],
-    "firstName" | "secondName" | "lastName" | "secondLastName" | "birthDate"
+    "firstName" | "secondName" | "lastName" | "secondLastName" | "birthDate" | "gender"
   > | null>(null)
   useEffect(() => {
     const doc = values.student.documentNumber.trim()
@@ -220,7 +220,7 @@ function AddMatriculaPageContent() {
     }
     if (docPrecargado.current === doc) return
     docPrecargado.current = doc
-    const { firstName, secondName, lastName, secondLastName, birthDate } = estudianteExistente
+    const { firstName, secondName, lastName, secondLastName, birthDate, gender } = estudianteExistente
     setValues((prev) => {
       // Solo la primera vez: al pasar de un estudiante registrado a otro se conserva lo original.
       antesPrecarga.current ??= {
@@ -229,10 +229,20 @@ function AddMatriculaPageContent() {
         lastName: prev.student.lastName,
         secondLastName: prev.student.secondLastName,
         birthDate: prev.student.birthDate,
+        gender: prev.student.gender,
       }
       return {
         ...prev,
-        student: { ...prev.student, firstName, secondName, lastName, secondLastName, birthDate },
+        student: {
+          ...prev.student,
+          firstName,
+          secondName,
+          lastName,
+          secondLastName,
+          birthDate,
+          // Sin género registrado se deja el que ya estaba (predeterminado o elegido).
+          gender: gender || prev.student.gender,
+        },
       }
     })
   }, [estudianteExistente, values.student.documentNumber])
