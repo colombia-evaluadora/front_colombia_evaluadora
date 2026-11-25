@@ -8,6 +8,7 @@ import { NoticeOutlet } from "@/components/notice/notice-context"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { GestorPrevisto } from "@/features/gestion-estudiantil/convivencia/components/form/gestor-previsto"
 import { SeccionDatosCaso } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-datos-caso"
 import { SeccionFechas } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-fechas"
 import { SeccionSiuce } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-siuce"
@@ -71,12 +72,11 @@ export function FormularioAbrirCaso({ plan }: { plan: PlanDetalle }) {
             onChange={(descripcion) => set({ descripcion })}
             error={errores.descripcion}
           />
-          <SeccionSiuce form={form} />
+          <SeccionSiuce form={form} conNumero={false} />
+          <GestorPrevisto previsto={form.gestorPrevisto} />
           <Alert>
             <InfoIcon aria-hidden="true" />
-            <AlertDescription>
-              El caso queda Reportado y vinculado a este plan; convivencia le asigna el gestor.
-            </AlertDescription>
+            <AlertDescription>El caso queda Reportado y vinculado a este plan.</AlertDescription>
           </Alert>
           <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         </div>

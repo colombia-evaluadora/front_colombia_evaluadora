@@ -12,7 +12,8 @@ export const convivenciaKeys = {
   gestoresFiltro: () => [...all, "gestores-filtro"] as const,
   gestores: (id: number | "none") => [...all, "gestores", id] as const,
   funcionarios: <P>(params: P) => [...all, "funcionarios", params] as const,
-  gestorPrevisto: (tipo: number | "none", matriculas: number[]) => [...all, "gestor-previsto", tipo, matriculas] as const,
+  gestorPrevisto: (tipo: number | "none", matriculas: number[], vinculado = false) =>
+    [...all, "gestor-previsto", tipo, matriculas, vinculado] as const,
   soportes: (accion: number | "none") => [...all, "soportes", accion] as const,
   siuce: <P>(params: P) => [...all, "siuce", params] as const,
 } as const

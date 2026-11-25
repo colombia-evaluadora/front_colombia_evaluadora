@@ -38,7 +38,8 @@ function responder(url: string): unknown[] {
   if (url.includes("/opciones/periodos")) return [{ fk_tperiodo_evaluacion: 9, nombre: "P1", en_curso: true }]
   if (url.includes("/comite/periodos")) return [{ fk_periodo: 4, abierto: true }]
   if (/comite\/periodo\/4$/.test(url)) return [{ comite: { fk_comite: 40 } }]
-  if (url.includes("/capacidades")) return [{ observador_puede_ver_mis_reportes: true }]
+  if (url.includes("/capacidades"))
+    return [{ observador_puede_ver_mis_reportes: true, comite_puede_ver: true }]
   if (url.includes("/prevencion/acceso"))
     return [
       {

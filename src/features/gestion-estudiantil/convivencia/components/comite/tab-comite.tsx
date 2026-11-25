@@ -70,7 +70,6 @@ function Contenido({ periodo, onPeriodoChange }: Props) {
           <RecuadroIntegrantes
             comite={comite.data}
             puedeGestionar={puedeGestionarComite}
-            onAdministrar={() => nav.aIntegrantes(actual.fk_periodo)}
           />
           {comite.data.sin_ordinaria_dos_meses && (
             <Alert variant="warning">

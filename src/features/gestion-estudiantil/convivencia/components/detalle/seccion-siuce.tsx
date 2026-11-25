@@ -23,7 +23,8 @@ export function SeccionSiuceDetalle({ caso }: { caso: CasoDetalle }) {
         <Dato label="Evento generador">{nombreDe(eventos, caso.fk_tlv_evento_generador)}</Dato>
         <Dato label="Situación repetitiva">{siNo(caso.situacion_repetitiva)}</Dato>
         <Dato label="Secuelas físicas">{siNo(caso.secuelas_fisicas)}</Dato>
-        <Dato label="Soporte">{caso.fk_tarchivo_soporte ? "Adjunto" : ""}</Dato>
+        <Dato label="Número del caso en el SIUCE">{caso.numero_siuce}</Dato>
+        <Dato label="Soporte">{caso.soporte?.nombre ?? (caso.fk_tarchivo_soporte ? "Adjunto" : "Sin soporte")}</Dato>
       </dl>
     </SeccionPlegable>
   )

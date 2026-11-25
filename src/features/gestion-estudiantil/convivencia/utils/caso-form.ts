@@ -1,6 +1,6 @@
 import { formatDateValue } from "@/lib/date-value"
 
-import type { ActualizarCasoInput, CrearCasoInput } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
+import type { ActualizarCasoInput, CorregirFechasInput, CrearCasoInput } from "@/features/gestion-estudiantil/convivencia/api/mutations/casos"
 import type { CasoDatosInput, CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
 import type { DatosSiuce, EstudianteFila, InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
 import { siuceBody, SIUCE_VACIO, validarSiuce } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
@@ -17,6 +17,8 @@ export interface ValoresCaso {
   lugar: string
   descripcion: string
   siuce: DatosSiuce
+  /** Número del caso en el SIUCE (opcional, hasta 50 caracteres). */
+  numeroSiuce: string
   soporte: File[]
   soporteExistente: number | null
   estudiantes: EstudianteFila[]
@@ -27,7 +29,10 @@ export interface ValoresCaso {
 export type ErroresCaso = Partial<Record<keyof ValoresCaso | keyof DatosSiuce, string>>
 
 /** Campos del bloque plegable «Datos para el SIUCE»: con error en uno, el bloque se abre. */
-export const CAMPOS_SIUCE = ["tiposDano", "agresion", "repetitiva", "secuelas"] as const
+export const CAMPOS_SIUCE = ["tiposDano", "agresion", "repetitiva", "secuelas", "numeroSiuce"] as const
+
+/** Máximo de caracteres del número del caso en el SIUCE. */
+export const MAX_NUMERO_SIUCE = 50
 
 const pad = (n: number) => String(n).padStart(2, "0")
 export const hoy = () => formatDateValue(new Date())
@@ -57,6 +62,7 @@ export function desdeCaso(c: CasoDetalle | undefined): ValoresCaso {
           secuelas: c.secuelas_fisicas ?? null,
         }
       : SIUCE_VACIO,
+    numeroSiuce: c?.numero_siuce ?? "",
     soporte: [],
     soporteExistente: c?.fk_tarchivo_soporte ?? null,
     estudiantes: (c?.estudiantes ?? []).map((e) => ({
@@ -117,6 +123,8 @@ export function validarCaso(v: ValoresCaso, ctx: ContextoValidacion): ErroresCas
   const d = errorLargo(v.descripcion, 20, 3000, "La descripción")
   if (d) e.descripcion = d
   Object.assign(e, validarSiuce(v.siuce, grave, secuelas))
+  if (v.numeroSiuce.trim().length > MAX_NUMERO_SIUCE)
+    e.numeroSiuce = `El número del caso en el SIUCE admite hasta ${MAX_NUMERO_SIUCE} caracteres.`
   if (!v.estudiantes.length) e.estudiantes = "Agregue al menos un estudiante."
   else if (v.estudiantes.some((x) => !x.rol)) e.estudiantes = "Elija el rol de cada estudiante."
   else if (tipoI && v.estudiantes.length + v.involucrados.length < 2)
@@ -146,6 +154,9 @@ export function datosDeCaso(v: ValoresCaso, secuelas: boolean): CasoDatosInput {
   }
 }
 
+/** Vacío = sin número (al modificar, lo quita). */
+const numeroSiuceBody = (v: ValoresCaso) => v.numeroSiuce.trim() || null
+
 export const toInvolucradoInput = (i: InvolucradoFila) => ({
   fk_tlv_tipo_involucrado: Number(i.tipo),
   fk_funcionario: i.fk_funcionario,
@@ -159,11 +170,24 @@ const toEstudianteInput = (e: EstudianteFila) => ({ fk_matricula: e.fk_matricula
 
 export function crearCasoInput(v: ValoresCaso, secuelas: boolean): CrearCasoInput {
   return {
-    datos: datosDeCaso(v, secuelas),
+    datos: { ...datosDeCaso(v, secuelas), NUMERO_SIUCE: numeroSiuceBody(v) },
     tipoId: Number(v.tipo),
     soporte: v.soporte[0] ?? null,
     estudiantes: v.estudiantes.map(toEstudianteInput),
     involucrados: v.involucrados.map(toInvolucradoInput),
+  }
+}
+
+/** Body de `POST /casos/:ID/fechas` (G.2.CAS.GES.3): las fechas, la hora y el motivo de la corrección. */
+export function corregirFechasInput(casoId: number, v: ValoresCaso): CorregirFechasInput {
+  return {
+    casoId,
+    FECHA_CONOCIMIENTO: v.fechaConocimiento,
+    FECHA_HECHOS_CONOCIDA: Boolean(v.fechaConocida),
+    FECHA_HECHOS: v.fechaConocida ? v.fechaHechos : null,
+    HORA_HECHOS_CONOCIDA: v.fechaConocida ? Boolean(v.horaConocida) : null,
+    HORA_HECHOS: v.fechaConocida && v.horaConocida ? v.hora : null,
+    MOTIVO: v.motivo.trim(),
   }
 }
 
@@ -178,7 +202,7 @@ export function actualizarCasoInput(
   const invActuales = new Set(v.involucrados.map((i) => i.id).filter(Boolean))
   return {
     casoId: caso.id,
-    datos: datosDeCaso(v, secuelas),
+    datos: { ...datosDeCaso(v, secuelas), NUMERO_SIUCE: numeroSiuceBody(v) },
     soporte: v.soporte[0] ?? null,
     motivoCorreccion: fechasCambiaron ? v.motivo.trim() : null,
     estudiantesNuevos: v.estudiantes.filter((e) => !e.id).map(toEstudianteInput),

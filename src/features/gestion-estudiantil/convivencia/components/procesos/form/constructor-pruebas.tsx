@@ -26,7 +26,7 @@ export function ConstructorPruebas({ form }: { form: ProcesoFormState }) {
         }
       >
         {v.pruebas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aún no hay pruebas. Son opcionales.</p>
+          <p className="text-sm text-muted-foreground">Sin pruebas.</p>
         ) : (
           v.pruebas.map((p, i) => (
             <FilaPrueba

@@ -16,6 +16,9 @@ import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/te
 import { useRegistrarAccion } from "@/features/gestion-estudiantil/convivencia/hooks/use-registrar-accion"
 import { MarcoOpciones } from "@/components/marco-opciones"
 
+/** «A», «A y B», «A, B y C». */
+const listaY = (n: string[]) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n.join(""))
+
 interface Props {
   caso: CasoResumen | null
   onClose: () => void
@@ -32,6 +35,7 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
   return (
     <DialogCasoShell
       caso={caso}
+      resumenExtra={f.esSiuce && f.afectadosCaso.length > 0 ? `Afectados: ${listaY(f.afectadosCaso.map((a) => a.nombre))}` : undefined}
       titulo="Registrar acción"
       className="sm:max-w-2xl"
       onClose={f.cerrar}
@@ -134,7 +138,6 @@ export function DialogRegistrarAccion({ caso, onClose }: Props) {
             codigos={f.codigos}
             onChange={f.setCodigos}
             afectados={f.afectados}
-            afectadosCaso={f.afectadosCaso}
             reportados={f.reportados}
             todosReportados={f.todosReportados}
             error={ver.codigos}

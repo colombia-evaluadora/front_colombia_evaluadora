@@ -51,7 +51,6 @@ interface PestanaProps {
 function PestanaCasos({ cabecera }: PestanaProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const navigate = useNavigate()
-  const access = useConvivenciaAccess()
   const { puedeCrearCitacion: puedeCitar, puedeCrearCompromiso } = useCitacionesAccess()
   const { abrir, dialogos } = useDialogosCaso()
 
@@ -66,7 +65,6 @@ function PestanaCasos({ cabecera }: PestanaProps) {
   const rows = data?.rows ?? []
 
   const columns = conOrdenServidor(buildColumnsCasos({
-    access,
     puedeCitar,
     puedeCrearCompromiso,
     onAccion: (caso, accion) => {

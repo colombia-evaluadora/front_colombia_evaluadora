@@ -208,6 +208,7 @@ export interface ErroresSesion {
   fecha?: string
   contenido?: string
   otros?: string
+  asistentes?: string
   invitados: Record<string, { nombre?: string; calidad?: string }>
   casos: Record<string, { caso?: string; decision?: string; fecha?: string }>
 }
@@ -263,6 +264,7 @@ export function validarSesion(v: ValoresSesion): ErroresSesion {
   const e: ErroresSesion = { invitados: {}, casos: {} }
   if (!v.tipo) e.tipo = "Elija el tipo de sesión."
   if (!v.fecha) e.fecha = "Indique la fecha de la sesión."
+  if (v.asistentes.length === 0) e.asistentes = "Marque al menos un asistente."
 
   for (const i of v.invitados) {
     const nombre = i.nombre.trim().length
@@ -295,7 +297,7 @@ export function validarSesion(v: ValoresSesion): ErroresSesion {
 }
 
 export const sesionConErrores = (e: ErroresSesion) =>
-  Boolean(e.tipo || e.fecha || e.contenido || e.otros) ||
+  Boolean(e.tipo || e.fecha || e.contenido || e.otros || e.asistentes) ||
   Object.keys(e.invitados).length > 0 ||
   Object.keys(e.casos).length > 0
 

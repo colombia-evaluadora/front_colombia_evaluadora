@@ -1,6 +1,7 @@
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useMemo, useState } from "react"
 
-import { ClipboardAddIcon } from "@/components/ui/icons"
+import { ClipboardAddIcon, InfoIcon } from "@/components/ui/icons"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { formatDateValue } from "@/lib/date-value"
@@ -122,7 +123,11 @@ export function DialogRegistrarDescargos({ proceso: p, onClose }: Props) {
             {e.otros && <FieldError>{e.otros}</FieldError>}
           </Field>
           <ConstructorPruebasDescargos pruebas={v.pruebas} onChange={(pruebas) => set({ pruebas })} errores={e} intento={intento} />
-          <CampoArchivo label="Acta de descargos firmada*" archivos={v.acta} error={e.acta} onChange={(acta) => set({ acta })} />
+          <CampoArchivo label="Acta de descargos firmada*" ayuda="PDF o imagen; máximo 10 MB." archivos={v.acta} error={e.acta} onChange={(acta) => set({ acta })} />
+          <Alert variant="info">
+            <InfoIcon aria-hidden="true" />
+            <AlertDescription>Al registrar, el proceso pasará a Por decidir.</AlertDescription>
+          </Alert>
         </>
       )}
       {v.presento === false && (

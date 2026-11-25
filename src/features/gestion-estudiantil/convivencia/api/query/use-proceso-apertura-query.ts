@@ -14,6 +14,19 @@ export interface EstudianteProceso {
   grado_grupo: string
   sede_nombre: string
   jornada_nombre: string
+  acudiente_nombre: string | null
+  acudiente_tiene_cuenta: boolean | null
+}
+
+/** Fila de `opciones/estudiantes-caso`: los del caso, con el proceso que ya tienen (si lo tienen). */
+export interface EstudianteDelCaso {
+  fk_tmatricula: number
+  nombre: string
+  grado_grupo: string
+  proceso_id: number | null
+  proceso_numero: string | number | null
+  acudiente_nombre: string | null
+  acudiente_tiene_cuenta: boolean | null
 }
 
 export interface AnotacionOrigen {
@@ -21,6 +34,8 @@ export interface AnotacionOrigen {
   fecha: string
   codigo: string
   codigo_descripcion: string
+  /** Id del comportamiento (código) de la anotación: es el `FK_COMPORTAMIENTO` del cargo. */
+  fk_comportamiento?: number | null
   tipo_situacion_nombre: string
   observacion_corta: string
 }
@@ -65,14 +80,12 @@ export function useEstudiantesProcesoQuery(search: string) {
   })
 }
 
-/** §2.1 `opciones/estudiantes-caso`: presuntos agresores del caso sin proceso activo. */
+/** §2.1 `opciones/estudiantes-caso`: estudiantes del caso; los que ya tienen proceso traen `proceso_numero`. */
 export function useEstudiantesCasoQuery(caso: number | null) {
   return useQuery({
     queryKey: K("estudiantes-caso", caso),
     queryFn: () =>
-      evalCol.getRows<{ fk_tmatricula: number; nombre: string; grado_grupo: string }>(
-        `${BASE}/opciones/estudiantes-caso?CASO=${caso}`,
-      ),
+      evalCol.getRows<EstudianteDelCaso>(`${BASE}/opciones/estudiantes-caso?CASO=${caso}`),
     enabled: caso != null,
   })
 }

@@ -12,7 +12,7 @@ export function GestorPrevisto({ previsto }: { previsto: GestorPrevistoData | un
       ) : (
         <>
           Gestor del caso: <span className="font-medium">{previsto.nombre}</span>{" "}
-          <span className="text-muted-foreground">(asignado por sede y jornada)</span>
+          <span className="text-muted-foreground">(asignado por Sede y Jornada)</span>
           <LockIcon aria-hidden="true" className="inline size-4 align-text-bottom text-muted-foreground" />
         </>
       )}

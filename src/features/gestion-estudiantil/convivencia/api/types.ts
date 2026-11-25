@@ -1,5 +1,7 @@
-/** Fila de `POST /gestion-estudiantil/convivencia/casos/query` (fn_convivencia_caso_listar, V599). */
-export interface CasoRow {
+import type { BanderasCaso } from "@/features/gestion-estudiantil/convivencia/utils/access"
+
+/** Fila de `POST /gestion-estudiantil/convivencia/casos/query` (fn_convivencia_caso_listar, V599) con las banderas `puede_*`. */
+export interface CasoRow extends Partial<BanderasCaso> {
   id: number
   numero: string | number
   fk_establecimiento: number
@@ -77,8 +79,17 @@ export interface CasoAccion {
   no_aplica: boolean
   fk_tlv_resultado: number | null
   resultado_nombre: string | null
-  soportes: { fk_archivo: number; vinculado: boolean }[]
+  soportes: { fk_archivo: number; vinculado: boolean; nombre?: string | null; tipo?: string | null; peso?: number | null }[]
   codigos_siuce: { fk_matricula: number | null; fk_funcionario: number | null; codigo: string; afectado_nombre?: string | null }[]
+}
+
+/** Proceso disciplinario abierto desde el caso (`procesos_disciplinarios` del detalle). */
+export interface ProcesoDelCaso {
+  id: number
+  numero: string | number
+  estudiante: string | null
+  estado_codigo: string | null
+  estado_nombre: string | null
 }
 
 /** Sesión del Comité que trató el caso (`sesiones_comite` del detalle). */
@@ -106,7 +117,7 @@ export interface AfectadoSiuce {
  * `GET /gestion-estudiantil/convivencia/casos/:ID` (fn_convivencia_caso_detalle_interno, V267).
  * Con `acceso_completo=false` en un Tipo II/III solo llegan número, tipo, estado y fecha de conocimiento.
  */
-export interface CasoDetalle {
+export interface CasoDetalle extends Partial<BanderasCaso> {
   id: number
   numero: string | number
   fk_tlv_tipo: number
@@ -130,6 +141,10 @@ export interface CasoDetalle {
   situacion_repetitiva?: boolean | null
   secuelas_fisicas?: boolean | null
   fk_tarchivo_soporte?: number | null
+  /** Número del caso en el SIUCE (hasta 50 caracteres). */
+  numero_siuce?: string | null
+  /** Soporte general del caso: nombre, tipo (extensión) y peso en bytes. */
+  soporte?: { fk_archivo: number; nombre: string; tipo: string | null; peso: number | null } | null
   fk_funcionario_reporta?: number | null
   reporta_nombre?: string | null
   fk_funcionario_gestor?: number | null
@@ -138,6 +153,12 @@ export interface CasoDetalle {
   /** Plan de acompañamiento o Caso de reintegración (Regla 24); sin backend propio todavía. */
   registro_vinculado_tipo?: string | null
   registro_vinculado_id?: number | null
+  /** Registro de origen legible (hoy solo el Plan de prevención). */
+  registro_vinculado?: { tipo: string; tipo_nombre: string; id: number; estudiante_nombre: string | null; fecha: string | null } | null
+  /** Procesos disciplinarios abiertos desde este caso. */
+  procesos_disciplinarios?: ProcesoDelCaso[] | null
+  /** Hay acciones anteriores a la fecha de los hechos aclarada después: se señalan para revisión. */
+  acciones_inconsistentes?: boolean | null
   estudiantes?: CasoEstudiante[]
   otros_involucrados?: CasoInvolucrado[] | null
   acciones?: CasoAccion[] | null
@@ -145,7 +166,7 @@ export interface CasoDetalle {
   seguimiento_vencido?: boolean | null
   sesiones_comite?: SesionComiteDelCaso[] | null
   afectados_siuce?: AfectadoSiuce[] | null
-  cierre?: { resumen: string; cerrado_en: string; cerrado_por: string | null } | null
+  cierre?: { resumen: string; cerrado_en: string; cerrado_por: string | null; cerrado_por_rol: string | null } | null
   anulacion?: { anulado_en: string; motivo: string; anulado_por: string | null } | null
 }
 
@@ -225,6 +246,8 @@ export interface CasoDatosInput {
   SITUACION_REPETITIVA: boolean | null
   SECUELAS_FISICAS: boolean | null
   FK_ARCHIVO_SOPORTE: number | null
+  /** Número del caso en el SIUCE; vacío lo quita. */
+  NUMERO_SIUCE?: string | null
 }
 
 export interface EstudianteInput {

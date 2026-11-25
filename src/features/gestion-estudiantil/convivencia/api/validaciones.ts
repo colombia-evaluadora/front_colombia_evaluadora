@@ -89,7 +89,7 @@ export function erroresInvolucrado(
 /** Campo del formulario del caso al que apunta un mensaje 22023 de convivencia (V209). */
 export type CampoCaso =
   | "tipo" | "manifestacion" | "lugar" | "fechaConocida" | "fechaHechos" | "fechaConocimiento" | "horaConocida" | "hora"
-  | "descripcion" | "tiposDano" | "agresion" | "repetitiva" | "secuelas" | "estudiantes" | "involucrados" | "motivo"
+  | "descripcion" | "numeroSiuce" | "tiposDano" | "agresion" | "repetitiva" | "secuelas" | "estudiantes" | "involucrados" | "motivo"
 
 const MENSAJES_CAMPO: [RegExp, CampoCaso][] = [
   [/elija el funcionario|funcionario elegido|se elige como funcionario|nombre del involucrado|número de documento|puede ser afectado|Esta persona ya está/i, "involucrados"],
@@ -98,6 +98,7 @@ const MENSAJES_CAMPO: [RegExp, CampoCaso][] = [
   [/hora de los hechos|Indique si se conoce la hora/i, "hora"],
   [/fecha de conocimiento/i, "fechaConocimiento"],
   [/descripción de los hechos/i, "descripcion"],
+  [/número del caso en el SIUCE/i, "numeroSiuce"],
   [/tipo de daño/i, "tiposDano"],
   [/tipo de agresión/i, "agresion"],
   [/repetitiva/i, "repetitiva"],

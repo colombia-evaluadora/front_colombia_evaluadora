@@ -30,16 +30,16 @@ export function DialogCorregirFechas({ caso, onClose }: Props) {
         onClick: s.guardar,
       }}
     >
-      {s.incompleto ? (
-        <Alert variant="info">
+      {s.accionesInconsistentes && (
+        <Alert variant="warning">
           <InfoIcon aria-hidden="true" />
           <AlertDescription>
-            El Lugar o la Manifestación de este caso faltan o ya no están vigentes. Actualícelos con Modificar antes de corregir las fechas.
+            Este caso tiene acciones registradas con fecha anterior a la fecha de los hechos: hay una inconsistencia. Se señalan
+            para revisión y su historial no se reescribe.
           </AlertDescription>
         </Alert>
-      ) : (
-        !s.cargando && <SeccionFechas form={s} />
       )}
+      {!s.cargando && <SeccionFechas form={s} modal valorActual={s.valorActual} />}
       {s.pasaADesconocida && (
         <Alert variant="warning">
           <WarningIcon aria-hidden="true" />

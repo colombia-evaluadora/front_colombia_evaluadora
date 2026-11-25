@@ -5,6 +5,7 @@ import { usePasosCasoQuery } from "@/features/gestion-estudiantil/convivencia/ap
 import type { CasoDetalle, PasoCaso } from "@/features/gestion-estudiantil/convivencia/api/types"
 import { COD, esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { codigosReportados, etiquetaPasoCierre } from "@/features/gestion-estudiantil/convivencia/utils/detalle"
 
 function EstadoPaso({ paso }: { paso: PasoCaso }) {
@@ -30,6 +31,11 @@ export function SeccionPasos({ caso }: { caso: CasoDetalle }) {
   const pasos = usePasosCasoQuery(caso.id)
   const grave = esGrave(caso.tipo_codigo)
   const codigos = codigosReportados(caso, COD.reporteSiuce)
+  // Última acción registrada de cada paso: «fecha · descripción».
+  const ultima = (accion: string) =>
+    (caso.acciones ?? [])
+      .filter((a) => a.accion_codigo === accion)
+      .sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora))[0]
   return (
     <Seccion titulo="Pasos obligatorios del protocolo">
       {pasos.isPending ? (
@@ -46,6 +52,11 @@ export function SeccionPasos({ caso }: { caso: CasoDetalle }) {
                 </span>
                 <EstadoPaso paso={p} />
               </div>
+              {(p.registrado || p.no_aplica) && p.accion !== COD.reporteSiuce && ultima(p.accion) && (
+                <p className="text-xs text-muted-foreground">
+                  {formatFecha(ultima(p.accion).fecha_hora)} · {ultima(p.accion).descripcion}
+                </p>
+              )}
               {p.accion === COD.reporteSiuce && codigos.length > 0 && (
                 <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                   {codigos.map((c) => (

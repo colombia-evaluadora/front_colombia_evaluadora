@@ -29,7 +29,7 @@ export function ConstructorPruebasDescargos({ pruebas, onChange, errores, intent
         }
       >
         {pruebas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ninguna. Son opcionales.</p>
+          <p className="text-sm text-muted-foreground">Sin pruebas aportadas.</p>
         ) : (
           pruebas.map((p, i) => (
             <FilaPrueba

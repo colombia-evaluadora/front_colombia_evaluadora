@@ -1,6 +1,7 @@
 "use no memo"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/pagination"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -63,7 +64,14 @@ export function SeccionSesiones({ tab, puedeGestionar, onVer, onModificar }: Pro
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold">Sesiones</h2>
-          <FiltroTipo tipos={tab.tipos} value={tab.tipo} onChange={tab.setTipo} />
+          <div className="flex flex-wrap items-end gap-3">
+            <FiltroTipo tipos={tab.tipos} value={tab.tipo} onChange={tab.setTipo} />
+            {tab.tipo && (
+              <Button size="sm" variant="outline" color="neutral" onClick={() => tab.setTipo("")}>
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       <DataTable
