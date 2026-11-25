@@ -35,7 +35,7 @@ const unicos = (vs: string[]) => [...new Set(vs.filter(Boolean))].map((v) => ({ 
  * Sede, Jornada, Período (Abiertos y Cerrados, con su estado) y Grado, más los
  * campos extra que pida el informe. Cambiar uno limpia los que dependen de él.
  */
-export function FiltrosInforme({ campos }: { campos: Campo[] }) {
+export function FiltrosInforme({ campos, soloCerrados = false }: { campos: Campo[]; soloCerrados?: boolean }) {
   const search = coberturaInformesReportesRoute.useSearch()
   const navigate = coberturaInformesReportesRoute.useNavigate()
   const { data: periodos = [] } = usePeriodosInformeQuery()
@@ -52,7 +52,8 @@ export function FiltrosInforme({ campos }: { campos: Campo[] }) {
     ? grados.map((g) => ({ value: String(g.valor), label: g.nombre }))
     : catalogoGrados.map((g) => ({ value: String(g.valor), label: g.nombre }))
 
-  const enSede = periodos.filter((p) => !search.sede || p.sede === search.sede)
+  // El libro de registro solo se genera de períodos Cerrados (C.4.LIB.1).
+  const enSede = periodos.filter((p) => (!search.sede || p.sede === search.sede) && (!soloCerrados || p.estado === "CERRADO"))
   const enJornada = enSede.filter((p) => !search.jornada || p.jornada === search.jornada)
 
   function set(campo: Campo, valor: string) {

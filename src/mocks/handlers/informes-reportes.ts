@@ -153,6 +153,12 @@ export const informesReportesHandlers = [
     return HttpResponse.json({ rows: [] })
   }),
 
+  // Libro de registro (C.4.LIB.1c): libro y folios que se asignarían.
+  http.post("*/api/eval-col/informes-reportes/libro-registro/previa", async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [{ libro: 5, folios: 2 }] })
+  }),
+
   // Certificado de calificaciones (C.4.CER.1a): número que llevaría el definitivo.
   http.get("*/api/eval-col/informes-reportes/certificado-calificaciones/:id/previa", async () => {
     await delay(100)

@@ -30,6 +30,7 @@ import { filtrosCalidad } from "@/features/coverage/informes-reportes/api/calida
 import { FiltrosInforme } from "@/features/coverage/informes-reportes/components/filtros-informe"
 import { InformeMatricula, InformeNivelaciones } from "@/features/coverage/informes-reportes/components/informes-matricula"
 import { ConsultaMatriculados } from "@/features/coverage/informes-reportes/components/consulta-matriculados"
+import { ControlesLibro, LibroRegistroInforme } from "@/features/coverage/informes-reportes/components/libro-registro"
 
 const ITEMS = Object.fromEntries(INFORMES.flatMap((g) => g.opciones.map((o) => [o.value, o.label])))
 
@@ -133,6 +134,7 @@ const CAMPOS: Partial<Record<InformeId, Parameters<typeof FiltrosInforme>[0]["ca
   edades: ["sede", "jornada", "periodo", "grado"],
   "fuera-matricula": ["grado"],
   calidad: ["sede", "jornada", "periodo", "grado"],
+  "libro-calificaciones": ["sede", "jornada", "periodo", "grado"],
 }
 
 function Contenido() {
@@ -155,7 +157,8 @@ function Contenido() {
         <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SelectorInforme value={informe} />
           {informe === "fuera-matricula" ? <FiltrosFuera /> : null}
-          {campos ? <FiltrosInforme campos={campos} /> : null}
+          {campos ? <FiltrosInforme campos={campos} soloCerrados={informe === "libro-calificaciones"} /> : null}
+          {informe === "libro-calificaciones" ? <ControlesLibro /> : null}
           {informe === "calidad" ? <FiltrosCalidad /> : null}
         </div>
       </TableScreenToolbar>
@@ -174,6 +177,7 @@ function Contenido() {
   if (informe === "edades") return <EstadisticaEdades encabezado={encabezado} />
   if (informe === "fuera-matricula") return <FueraMatriculaInforme encabezado={encabezado} />
   if (informe === "calidad") return <CalidadInforme encabezado={encabezado} />
+  if (informe === "libro-calificaciones") return <LibroRegistroInforme encabezado={encabezado} />
 
   return (
     <TableScreen>

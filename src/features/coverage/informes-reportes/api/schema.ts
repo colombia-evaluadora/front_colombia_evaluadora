@@ -80,6 +80,7 @@ export const informesReportesSearchSchema = z.object({
   situacionFuera: z.enum(["RETIRADO", "SIN_CONTINUIDAD", "SIN_CUPO_PLATAFORMA"]).optional().catch(undefined),
   direccion: z.enum(["ENTRANTE", "SALIENTE"]).optional().catch(undefined),
   estadoTraslado: z.enum(["PENDIENTE", "ACEPTADO", "RECHAZADO", "CANCELADO"]).optional().catch(undefined),
+  libroModo: z.enum(["GRUPO", "ESTUDIANTE"]).optional().catch(undefined),
   page: z.coerce.number().catch(0).default(0),
   pageSize: z.coerce.number().catch(10).default(10),
 })
