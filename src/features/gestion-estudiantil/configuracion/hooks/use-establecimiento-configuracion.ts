@@ -1,20 +1,20 @@
 import { useMemo, useState } from "react"
 
-import { useSedesGeQuery } from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
+import { useEstablecimientosGeQuery } from "@/features/gestion-estudiantil/commons/api/use-opciones-ge"
 
 /**
  * El catálogo (y toda Configuración) es de un establecimiento: con uno solo se usa ese; con varios se elige.
- * Salen de las sedes al alcance de quien consulta (`/gestion-estudiantil/opciones/sedes`), no de
- * `/establecimientos/opciones`, que no lo ven todos los roles.
+ * Salen de `/gestion-estudiantil/opciones/establecimientos`, que no exige período académico: un establecimiento
+ * recién creado también se configura. `/opciones/sedes` solo trae sedes con período activo.
  */
 export function useEstablecimientoConfiguracion() {
-  const sedesQ = useSedesGeQuery()
+  const establecimientosQ = useEstablecimientosGeQuery()
   const [elegido, setElegido] = useState("")
 
-  const opciones = useMemo(() => {
-    const porId = new Map((sedesQ.data ?? []).map((s) => [s.establecimientoId, s.establecimientoNombre]))
-    return [...porId.entries()].map(([id, nombre]) => ({ value: String(id), label: nombre }))
-  }, [sedesQ.data])
+  const opciones = useMemo(
+    () => (establecimientosQ.data ?? []).map((e) => ({ value: String(e.id), label: e.nombre })),
+    [establecimientosQ.data],
+  )
 
   const actual = elegido || opciones[0]?.value || ""
   return {
@@ -22,6 +22,7 @@ export function useEstablecimientoConfiguracion() {
     valor: actual,
     id: actual ? Number(actual) : null,
     elegir: setElegido,
-    cargando: sedesQ.isPending,
+    cargando: establecimientosQ.isPending,
+    error: establecimientosQ.error,
   }
 }

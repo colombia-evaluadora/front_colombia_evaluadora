@@ -15,7 +15,10 @@ export function useConfiguracionAcceso() {
   return {
     establecimiento,
     acceso: accesoQ.data ?? ACCESO_NINGUNO,
-    cargando: establecimiento.cargando || accesoQ.isPending,
-    error: accesoQ.error,
+    // isLoading y no isPending: sin establecimiento (o sin menú) la consulta está deshabilitada y isPending
+    // se queda en true para siempre — la tabla no salía del skeleton (QA, establecimientos sin períodos).
+    cargando: establecimiento.cargando || accesoQ.isLoading,
+    sinEstablecimiento: !establecimiento.cargando && !establecimiento.error && establecimiento.opciones.length === 0,
+    error: establecimiento.error ?? accesoQ.error,
   }
 }
