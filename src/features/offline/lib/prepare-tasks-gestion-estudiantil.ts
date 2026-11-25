@@ -84,6 +84,7 @@ import {
   fetchRemisiones,
 } from "@/features/gestion-estudiantil/inclusion/orientacion/api/query/use-orientacion-query"
 import { FILTROS_VACIOS as ORIENTACION_VACIOS } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
+import { fetchAccesoInclusion } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
 import { fetchPiarLista, fetchSinPiar, piarQueryOptions } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { FILTROS_VACIOS as PIAR_VACIOS } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
@@ -410,24 +411,20 @@ function citacionesTasks(): PrepareTask[] {
 
 // ---- Inclusión y orientación --------------------------------------------------------
 
-/**
- * Qué precargar sin conexión por rol (no hay sesión de red para `/inclusion/acceso` al preparar); la pantalla
- * en línea decide con las banderas del backend y cada GET sigue validando su gate.
- */
-function accesoInclusionPorRol(roles: readonly string[]) {
-  const tiene = (...r: string[]) => r.some((x) => roles.includes(x))
-  const sensible = tiene("CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-COORDINADOR", "CEVAL-RECTOR")
-  return {
-    // Coinciden con puede_ver_piar y puede_ver_orientacion: el docente lista PIAR pero no ve la orientación ni el aviso sin PIAR.
-    veAvisoSinPiar: sensible,
-    veOrientacion: sensible,
-    veListado: sensible || tiene("CEVAL-DOCENTE"),
-    veInforme: !tiene("CEVAL-PSICO_ORIENTADOR", "CEVAL-TRABAJADOR_SOCIAL", "CEVAL-DOCENTE") || tiene("CEVAL-RECTOR", "CEVAL-COORDINADOR"),
-  }
+function inclusionTasks(roles: readonly string[]): PrepareTask[] {
+  // Las mismas banderas con que la pantalla arma sus pestañas (el rol solo no
+  // alcanza: al superadministrador no le descargaba nada).
+  return [
+    extra(["inclusion", "acceso"], fetchAccesoInclusion, (a) => inclusionSegunAcceso(roles, {
+      veListado: Boolean(a?.puede_ver_piar),
+      veOrientacion: Boolean(a?.puede_ver_orientacion),
+      veAvisoSinPiar: Boolean(a?.puede_ver_aviso_sin_piar),
+      veInforme: Boolean(a?.puede_ver_informe),
+    })),
+  ]
 }
 
-function inclusionTasks(roles: readonly string[]): PrepareTask[] {
-  const acceso = accesoInclusionPorRol(roles)
+function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListado" | "veOrientacion" | "veAvisoSinPiar" | "veInforme", boolean>): PrepareTask[] {
   // Solo quien NO ve lo sensible (el docente) abre el PIAR sin dejar traza de consulta.
   const sinTraza = acceso.veListado && !acceso.veOrientacion
   const tasks: PrepareTask[] = []

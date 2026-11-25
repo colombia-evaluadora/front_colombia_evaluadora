@@ -25,7 +25,7 @@ import { toCasosFilters } from "@/features/gestion-estudiantil/reintegracion/api
 import { CASOS_FILTROS_VACIOS } from "@/features/gestion-estudiantil/reintegracion/api/types"
 import { esModuloPersistible } from "@/lib/offline/modulos-persistibles"
 
-const http = vi.hoisted(() => ({ urls: [] as string[], total: 11, sedes: 1 }))
+const http = vi.hoisted(() => ({ urls: [] as string[], total: 11, sedes: 1, veOrientacion: true }))
 
 function responder(url: string): unknown[] {
   http.urls.push(url)
@@ -40,6 +40,8 @@ function responder(url: string): unknown[] {
   if (/comite\/periodo\/4$/.test(url)) return [{ comite: { fk_comite: 40 } }]
   if (url.includes("/capacidades"))
     return [{ observador_puede_ver_mis_reportes: true, comite_puede_ver: true }]
+  if (url.includes("/inclusion/acceso"))
+    return [{ puede_ver_piar: true, puede_ver_orientacion: http.veOrientacion, puede_ver_aviso_sin_piar: http.veOrientacion, puede_ver_informe: true }]
   if (url.includes("/prevencion/acceso"))
     return [
       {
@@ -171,6 +173,7 @@ describe("gestionEstudiantilTasks", () => {
     const prohibidas =
       /piar\/\d|orientacion\/(remisiones|atenciones)\/\d|salud-mental\/\d|acompanamientos\/(\d|consumo\/reportes\/\d)|caracterizaciones\/\d|historial-academico|remisiones-externas\/\d|\/documento/
     expect(http.urls.filter((u) => prohibidas.test(u))).toEqual([])
+    http.veOrientacion = false
     // El docente abre el PIAR sin traza (solo ajustes): a él sí se le guarda.
     expect((await preparar(["inclusion-orientacion"], ["CEVAL-DOCENTE"])).tiene(piarKeys.detalle(5))).toBe(true)
   })
