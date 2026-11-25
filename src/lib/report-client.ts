@@ -58,6 +58,8 @@ export type ReportKey =
   | "informes-diplomas"
   | "informes-actas-graduacion"
   | "informes-libro-actas"
+  | "informes-certificados-culminacion"
+  | "informes-culminacion"
   | "informes-graduacion"
   | "informes"
   | "informes-tabla"

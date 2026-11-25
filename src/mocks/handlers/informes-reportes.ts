@@ -154,6 +154,24 @@ export const informesReportesHandlers = [
   }),
 
   // Graduación (C.4.GRA.1): los cuatro estudiantes del prototipo.
+  // Certificados de culminación (C.4.CUL): grados de fin de nivel y lista.
+  http.get("*/api/eval-col/informes-reportes/culminacion/grados/:periodo", async () => {
+    await delay(150)
+    return HttpResponse.json([
+      { grado_id: 900, grado: "Transición", nivel: "PREESCOLAR" },
+      { grado_id: 905, grado: "Quinto", nivel: "PRIMARIA" },
+      { grado_id: 909, grado: "Noveno", nivel: "BASICA" },
+    ])
+  }),
+  http.post("*/api/eval-col/informes-reportes/culminacion/query", async () => {
+    await delay(300)
+    const base = { generado: false, numero: null, generado_en: null, total_count: 3 }
+    return HttpResponse.json([
+      { ...base, matricula_id: 21, documento: "1098765721", estudiante: "Valentina Pardo Gómez", grado: "Noveno", grupo: "9°A", nivel: "BASICA", generado: true, numero: "0012", generado_en: "2027-12-03T10:00:00" },
+      { ...base, matricula_id: 22, documento: "1098765722", estudiante: "Samuel Ortiz Rueda", grado: "Quinto", grupo: "5°B", nivel: "PRIMARIA" },
+      { ...base, matricula_id: 23, documento: "1098765723", estudiante: "Emma Rojas Díaz", grado: "Transición", grupo: "TR-A", nivel: "PREESCOLAR" },
+    ])
+  }),
   // Actas de graduación (C.4.ACT): lista del año y graduados de un acta.
   http.post("*/api/eval-col/informes-reportes/graduacion/actas/query", async () => {
     await delay(300)
