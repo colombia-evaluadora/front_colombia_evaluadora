@@ -404,7 +404,8 @@ function ReportsPageContent() {
   const gruposDisponibles = grupos.filter((g) => !gruposAbiertosIds.includes(g.grupoId))
   const topeAlcanzado = gruposAbiertosIds.length >= MAX_GRUPOS_ABIERTOS
   const grupoActivoId = Number(activeTab)
-  const gradoActivoId = grupos.find((g) => g.grupoId === grupoActivoId)?.gradoId
+  const grupoActivo = grupos.find((g) => g.grupoId === grupoActivoId)
+  const gradoActivoId = grupoActivo?.gradoId
 
   // Misma key que la del tab activo: TanStack Query la deduplica. La página
   // la necesita sin el filtro del buscador para decidir la plantilla del
@@ -415,9 +416,12 @@ function ReportsPageContent() {
   const esCualitativoActivo = grupoEsCualitativo(informeActivo.data)
 
   const { puedeEditar } = useMenuPermission("INFORMES")
-  // Docente / director de grupo solo consultan: consolidar y redactar
-  // observaciones es de coordinación, aunque el menú les dé EDITAR.
+  // Docente / director de grupo no consolidan: es de coordinación, aunque el
+  // menú les dé EDITAR.
   const puedeEscribir = puedeEditar && !soloSusGrupos
+  // Las observaciones sí las registra el director de grupo en sus grupos de
+  // referente Formativo; la base lo decide por grupo (puedeObservar).
+  const puedeObservar = puedeEditar && (grupoActivo?.puedeObservar ?? false)
   const periodosCerrados = React.useMemo(
     () => periodosDisponibles.filter((p) => p.cerrado).map((p) => p.id),
     [periodosDisponibles],
@@ -580,7 +584,7 @@ function ReportsPageContent() {
     texto: string,
     borrador: { texto: string; observacionesOrigen: number } | null,
   ) {
-    if (!puedeEscribir || periodosCerrados.includes(fila.periodoId)) return
+    if (!puedeObservar || periodosCerrados.includes(fila.periodoId)) return
     const limpio = texto.trim()
     const periodoId = fila.modoPeriodo === "final" ? null : fila.periodoId
     try {
@@ -714,7 +718,7 @@ function ReportsPageContent() {
           onOpenChange={(open) => !open && setObservacionAbierta(null)}
           onGuardar={handleGuardarObservacion}
           soloLecturaMotivo={
-            !puedeEscribir
+            !puedeObservar
               ? "Solo lectura: no tienes permiso para editar observaciones."
               : observacionAbierta && periodosCerrados.includes(observacionAbierta.periodoId)
                 ? "Periodo cerrado: la observación no se puede modificar."

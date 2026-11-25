@@ -21,6 +21,8 @@ interface GrupoPeriodoRow {
   director_id: number | null
   director_nombre: string | null
   fk_tperiodo_academico: number
+  /** Solo `/informes/grupos-periodo` la trae; las opciones de GE no. */
+  puede_observar?: boolean | null
 }
 
 function toGrupo(row: GrupoPeriodoRow): GrupoPeriodo {
@@ -41,6 +43,8 @@ function toGrupo(row: GrupoPeriodoRow): GrupoPeriodo {
     directorId: row.director_id,
     directorNombre: row.director_nombre,
     periodoAcademicoId: row.fk_tperiodo_academico,
+    // Sin la columna no se recorta: la base vuelve a validar al guardar.
+    puedeObservar: row.puede_observar ?? true,
   }
 }
 
