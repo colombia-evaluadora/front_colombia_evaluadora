@@ -451,7 +451,7 @@ function SupervisorForm({
             {soloLectura ? "Cerrar" : "Cancelar"}
           </Button>
           {soloLectura && actual != null && puedeEditar && (
-            <Button size="sm" type="button" color="primary" onClick={() => onModificar(actual.pkSupervisor)}>
+            <Button size="sm" type="button" variant="outline" color="neutral" onClick={() => onModificar(actual.pkSupervisor)}>
               <PencilIcon data-icon="inline-start" />
               Modificar
             </Button>

@@ -108,7 +108,7 @@ export function DialogDetalleObservacion({ observacionId, onClose, onAccion }: P
                 <ProhibitIcon data-icon="inline-start" />
                 Anular
               </Button>
-              <Button size="sm" type="button" disabled={!acciones.modificar} onClick={() => onAccion("modificar", fila)}>
+              <Button size="sm" type="button" variant="outline" color="neutral" disabled={!acciones.modificar} onClick={() => onAccion("modificar", fila)}>
                 <PencilIcon data-icon="inline-start" />
                 Modificar
               </Button>
