@@ -1,4 +1,5 @@
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
+import { FichaDatos } from "@/components/ficha-datos"
+
 import type { ContextoAcompanamiento } from "@/features/gestion-estudiantil/prevencion/api/types"
 import { BadgeEstadoMatricula } from "@/features/gestion-estudiantil/prevencion/components/acompanamientos/badges-acompanamiento"
 
@@ -8,15 +9,18 @@ const t = (v: unknown) => (typeof v === "string" && v ? v : null)
 export function BloqueContexto({ contexto }: { contexto: ContextoAcompanamiento | null }) {
   const c = contexto ?? {}
   return (
-    <dl className="grid grid-cols-1 gap-4 rounded-md border px-4 py-3 sm:grid-cols-2 xl:grid-cols-3">
-      <Dato label="Documento">{t(c.documento)}</Dato>
-      <Dato label="Sede">{t(c.sede_nombre)}</Dato>
-      <Dato label="Jornada">{t(c.jornada_nombre)}</Dato>
-      <Dato label="Período académico">{t(c.periodo_academico)}</Dato>
-      <Dato label="Grado/Grupo">{t(c.grado_grupo)}</Dato>
-      <Dato label="Estado de matrícula">
-        {t(c.estado_matricula_nombre) && <BadgeEstadoMatricula nombre={t(c.estado_matricula_nombre)} />}
-      </Dato>
-    </dl>
+    <FichaDatos
+      datos={[
+        { etiqueta: "Documento", valor: t(c.documento) },
+        { etiqueta: "Sede", valor: t(c.sede_nombre) },
+        { etiqueta: "Jornada", valor: t(c.jornada_nombre) },
+        { etiqueta: "Período académico", valor: t(c.periodo_academico) },
+        { etiqueta: "Grado/Grupo", valor: t(c.grado_grupo) },
+        {
+          etiqueta: "Estado de matrícula",
+          valor: t(c.estado_matricula_nombre) && <BadgeEstadoMatricula nombre={t(c.estado_matricula_nombre)} />,
+        },
+      ]}
+    />
   )
 }

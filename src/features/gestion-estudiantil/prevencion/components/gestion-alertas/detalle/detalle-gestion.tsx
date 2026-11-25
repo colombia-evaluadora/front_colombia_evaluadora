@@ -1,9 +1,9 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { GestionAlertaDetalle } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -13,7 +13,6 @@ import { HistorialGestion } from "@/features/gestion-estudiantil/prevencion/comp
 import { RutaProteccion } from "@/features/gestion-estudiantil/prevencion/components/gestion-alertas/detalle/ruta-proteccion"
 import type { ResumenRemision } from "@/features/gestion-estudiantil/commons/components/remisiones/dialogos-remision"
 
-const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
 const mesAnio = (fecha: string) => formatFecha(fecha).slice(3)
 
 interface Props {
@@ -32,51 +31,67 @@ export function DetalleGestion({ d, onContacto, onVerAnterior, onRegistrarGestio
   return (
     <div className="flex flex-col gap-4 pb-6">
       <SeccionPlegable encuadrada comoSeccion defaultAbierta titulo="Gestión de la alerta" contentClassName="px-4 py-4">
-        <dl className={GRID}>
-          <Dato label="Umbral">
-            <Badge variant="soft" color={UMBRAL_GESTION_COLOR[d.umbral]}>
-              <span>Umbral: {d.umbral_nombre}</span>
-            </Badge>
-          </Dato>
-          <Dato label="Plazo">
-            <span className="flex flex-wrap items-center gap-2">
-              {formatFecha(d.plazo) || "—"}
-              {d.vencida && (
-                <Badge variant="soft" color="destructive">
-                  <span>Vencida</span>
+        <FichaDatos
+          datos={[
+            {
+              etiqueta: "Umbral",
+              valor: (
+                <Badge variant="soft" color={UMBRAL_GESTION_COLOR[d.umbral]}>
+                  <span>Umbral: {d.umbral_nombre}</span>
                 </Badge>
-              )}
-            </span>
-          </Dato>
-          <Dato label="Responsable">{responsable}</Dato>
-          <Dato label="Activada">{formatFecha(d.fecha_activacion)}</Dato>
-          <Dato label="Reincidencia">
-            {d.gestion_anterior ? (
-              <span className="flex flex-wrap items-center gap-x-2">
-                Reincidente de {mesAnio(d.gestion_anterior.fecha_activacion)}
-                <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onVerAnterior(d.gestion_anterior!.id)}>
-                  Ver gestión anterior
-                </Button>
-              </span>
-            ) : (
-              "No"
-            )}
-          </Dato>
-          <Dato label="Estado">
-            <Badge variant="soft" color={ESTADO_GESTION_COLOR[d.estado]}>
-              <span>{d.estado_nombre}</span>
-            </Badge>
-          </Dato>
-          {d.seguimiento_reforzado && (
-            <Dato label="Seguimiento reforzado">{d.motivos_seguimiento.join(", ") || "Sí"}</Dato>
-          )}
-          {d.verificacion && (
-            <Dato label="Verificación de la reincorporación">
-              {formatFecha(d.verificacion.fecha)}
-              {d.verificacion.resuelta_por ? ` · ${abreviarPersona(d.verificacion.resuelta_por)}` : ""}
-            </Dato>
-          )}
-        </dl>
+              ),
+            },
+            {
+              etiqueta: "Plazo",
+              valor: (
+                <span className="flex flex-wrap items-center gap-2">
+                  {formatFecha(d.plazo) || "—"}
+                  {d.vencida && (
+                    <Badge variant="soft" color="destructive">
+                      <span>Vencida</span>
+                    </Badge>
+                  )}
+                </span>
+              ),
+            },
+            { etiqueta: "Responsable", valor: responsable },
+            { etiqueta: "Activada", valor: formatFecha(d.fecha_activacion) },
+            {
+              etiqueta: "Reincidencia",
+              valor: d.gestion_anterior ? (
+                <span className="flex flex-wrap items-center gap-x-2">
+                  Reincidente de {mesAnio(d.gestion_anterior.fecha_activacion)}
+                  <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onVerAnterior(d.gestion_anterior!.id)}>
+                    Ver gestión anterior
+                  </Button>
+                </span>
+              ) : (
+                "No"
+              ),
+            },
+            {
+              etiqueta: "Estado",
+              valor: (
+                <Badge variant="soft" color={ESTADO_GESTION_COLOR[d.estado]}>
+                  <span>{d.estado_nombre}</span>
+                </Badge>
+              ),
+            },
+            ...(d.seguimiento_reforzado
+              ? [{ etiqueta: "Seguimiento reforzado", valor: d.motivos_seguimiento.join(", ") || "Sí" }]
+              : []),
+            ...(d.verificacion
+              ? [
+                  {
+                    etiqueta: "Verificación de la reincorporación",
+                    valor: `${formatFecha(d.verificacion.fecha)}${
+                      d.verificacion.resuelta_por ? ` · ${abreviarPersona(d.verificacion.resuelta_por)}` : ""
+                    }`,
+                  },
+                ]
+              : []),
+          ]}
+        />
       </SeccionPlegable>
 
       <SeccionPlegable encuadrada comoSeccion defaultAbierta titulo="Historial de responsables" contentClassName="px-4 py-2">

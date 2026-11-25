@@ -1,6 +1,6 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { LockIcon } from "@/components/ui/icons"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { CaracterizacionDetalle } from "@/features/gestion-estudiantil/prevencion/api/types"
 
@@ -27,14 +27,16 @@ export function SeccionMatricula({ detalle }: { detalle: CaracterizacionDetalle 
       }
       contentClassName="px-4 py-4"
     >
-      <dl className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <Dato label="Domicilio">{m.direccion}</Dato>
-        <Dato label="Estrato">{m.estrato?.nombre}</Dato>
-        <Dato label="Sisbén">{m.sisben?.nombre}</Dato>
-        <Dato label="Población víctima del conflicto">{m.victima_conflicto?.nombre}</Dato>
-        <Dato label="Subsidiado">{siNo(m.subsidiado)}</Dato>
-        <Dato label="Acudiente">{acudiente}</Dato>
-      </dl>
+      <FichaDatos
+        datos={[
+          { etiqueta: "Domicilio", valor: m.direccion },
+          { etiqueta: "Estrato", valor: m.estrato?.nombre },
+          { etiqueta: "Sisbén", valor: m.sisben?.nombre },
+          { etiqueta: "Población víctima del conflicto", valor: m.victima_conflicto?.nombre },
+          { etiqueta: "Subsidiado", valor: siNo(m.subsidiado) },
+          { etiqueta: "Acudiente", valor: acudiente },
+        ]}
+      />
     </SeccionPlegable>
   )
 }

@@ -1,20 +1,22 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "@/components/ui/icons"
 
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 
 /** Lo que ve quien reportó un caso Tipo II/III sin acceso a sus datos: número, tipo, estado y fecha. */
 export function VistaRestringida({ caso }: { caso: CasoDetalle }) {
   return (
     <>
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Dato label="Número">{String(caso.numero)}</Dato>
-        <Dato label="Tipo">{caso.tipo_nombre}</Dato>
-        <Dato label="Estado">{caso.estado_nombre}</Dato>
-        <Dato label="Fecha de conocimiento">{formatFecha(caso.fecha_conocimiento)}</Dato>
-      </dl>
+      <FichaDatos
+        datos={[
+          { etiqueta: "Número", valor: String(caso.numero) },
+          { etiqueta: "Tipo", valor: caso.tipo_nombre },
+          { etiqueta: "Estado", valor: caso.estado_nombre },
+          { etiqueta: "Fecha de conocimiento", valor: formatFecha(caso.fecha_conocimiento) },
+        ]}
+      />
       <Alert variant="info">
         <InfoIcon aria-hidden="true" />
         <AlertDescription>

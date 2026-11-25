@@ -1,8 +1,8 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 
 import type { ProcesoDetalle, RecursoDTO } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { ChipArchivo } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/chip-archivo"
 import { EtapaProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-proceso"
 import { TablaSanciones } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/tabla-sanciones"
@@ -21,26 +21,24 @@ function ItemRecurso({ recurso: r }: { recurso: RecursoDTO }) {
   return (
     <li className="flex flex-col gap-3 rounded-lg border border-border p-3">
       <p className="text-sm font-semibold">{resumenRecurso(r)}</p>
-      <Dato label="Argumentos">
-        <span className="whitespace-pre-wrap">{r.argumentos}</span>
-      </Dato>
-      <Dato label="Escrito del recurso">
-        <ChipArchivo archivo={r.escrito} />
-      </Dato>
+      <FichaDatos
+        datos={[
+          { etiqueta: "Argumentos", valor: <span className="whitespace-pre-line">{r.argumentos}</span>, ancho: true },
+          { etiqueta: "Escrito del recurso", valor: <ChipArchivo archivo={r.escrito} /> },
+        ]}
+      />
       {r.resolucion && (
         <div className="flex flex-col gap-3 border-t border-border pt-3">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <Dato label="Fecha de la resolución">{formatFecha(r.resolucion.fecha)}</Dato>
-            <Dato label="Resultado">{r.resolucion.resultado.nombre}</Dato>
-            <Dato label="Plazo para recurrir">{formatFecha(r.resolucion.plazo_recurrir)}</Dato>
-            <Dato label="Notificación">{textoNotificacion(r.resolucion.notificacion)}</Dato>
-          </dl>
-          <Dato label="Motivación">
-            <span className="whitespace-pre-wrap">{r.resolucion.motivacion}</span>
-          </Dato>
-          <Dato label="Acto de la resolución">
-            <ChipArchivo archivo={r.resolucion.acto} />
-          </Dato>
+          <FichaDatos
+            datos={[
+              { etiqueta: "Fecha de la resolución", valor: formatFecha(r.resolucion.fecha) },
+              { etiqueta: "Resultado", valor: r.resolucion.resultado.nombre },
+              { etiqueta: "Plazo para recurrir", valor: formatFecha(r.resolucion.plazo_recurrir) },
+              { etiqueta: "Notificación", valor: textoNotificacion(r.resolucion.notificacion) },
+              { etiqueta: "Motivación", valor: <span className="whitespace-pre-line">{r.resolucion.motivacion}</span>, ancho: true },
+              { etiqueta: "Acto de la resolución", valor: <ChipArchivo archivo={r.resolucion.acto} /> },
+            ]}
+          />
           {r.resolucion.resultado.codigo === "MODIFICA" && r.resolucion.sanciones.length > 0 && (
             <TablaSanciones sanciones={r.resolucion.sanciones} />
           )}

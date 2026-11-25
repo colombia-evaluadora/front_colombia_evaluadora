@@ -1,7 +1,7 @@
+import { FichaDatos, type DatoFicha } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { abreviarPersona, formatFecha, formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type {
@@ -13,7 +13,6 @@ import type {
 import { ESTADO_ACCION_ACOMP } from "@/features/gestion-estudiantil/prevencion/api/ui-mappings"
 import { BloqueContexto } from "@/features/gestion-estudiantil/prevencion/components/acompanamientos/bloque-contexto"
 
-const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
 const num = (v: number | null) => (v == null ? null : String(v))
 
 /** Contenido del detalle: contexto, datos del tipo, descripción, acciones, reportes vinculados y cierre o anulación. */
@@ -26,15 +25,28 @@ interface Props {
 export function DetalleAcompanamiento({ d, onResultado, onEditarAccion }: Props) {
   return (
     <div className="flex flex-col gap-4 pb-6">
+      {/* Anulación y cierre en sus propias filas de la ficha (antes un aviso con «Anulado el … por …»). */}
       {d.anulacion && (
-        <Aviso titulo={`Anulado el ${formatFechaHora(d.anulacion.anulado_en)} por ${d.anulacion.anulado_por ?? "—"}`}>
-          {d.anulacion.motivo}
-        </Aviso>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Fecha de anulación", valor: formatFechaHora(d.anulacion.anulado_en) },
+            { etiqueta: "Anulado por", valor: d.anulacion.anulado_por },
+            {
+              etiqueta: "Motivo de la anulación",
+              valor: <span className="whitespace-pre-line">{d.anulacion.motivo}</span>,
+              ancho: true,
+            },
+          ]}
+        />
       )}
       {d.cierre && (
-        <Aviso titulo={`Cerrado el ${formatFechaHora(d.cierre.cerrado_en)} por ${d.cierre.cerrado_por ?? "—"}`}>
-          {d.cierre.resumen}
-        </Aviso>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Fecha de cierre", valor: formatFechaHora(d.cierre.cerrado_en) },
+            { etiqueta: "Cerrado por", valor: d.cierre.cerrado_por },
+            { etiqueta: "Resumen del cierre", valor: <span className="whitespace-pre-line">{d.cierre.resumen}</span>, ancho: true },
+          ]}
+        />
       )}
 
       <SeccionPlegable encuadrada comoSeccion defaultAbierta titulo="Estudiante y contexto" contentClassName="px-4 py-4">
@@ -48,29 +60,41 @@ export function DetalleAcompanamiento({ d, onResultado, onEditarAccion }: Props)
         titulo={d.tipo === "EMBARAZO" ? "Situación y fuente" : "Información y fuente"}
         contentClassName="flex flex-col gap-4 px-4 py-4"
       >
-        <dl className={GRID}>
-          <Dato label="Fecha de conocimiento">{formatFecha(d.fecha_conocimiento)}</Dato>
-          <Dato label="Responsable">{abreviarPersona(d.responsable_nombre)}</Dato>
-          {d.antecedente && (
-            <Dato label="Antecedente">
-              Acompañamiento del {formatFecha(d.antecedente.fecha_conocimiento)}
-              {d.antecedente.cerrado_en ? `, cerrado el ${formatFecha(d.antecedente.cerrado_en)}` : ""}
-            </Dato>
-          )}
-        </dl>
-        {d.detalle && d.tipo === "EMBARAZO" && <DatosEmbarazo e={d.detalle as AcompDetalleEmbarazo} />}
-        {d.detalle && d.tipo === "CONSUMO" && <DatosConsumo c={d.detalle as AcompDetalleConsumo} />}
+        <FichaDatos
+          datos={[
+            { etiqueta: "Fecha de conocimiento", valor: formatFecha(d.fecha_conocimiento) },
+            { etiqueta: "Responsable", valor: abreviarPersona(d.responsable_nombre) },
+            ...(d.antecedente
+              ? [
+                  {
+                    etiqueta: "Antecedente",
+                    valor: `Acompañamiento del ${formatFecha(d.antecedente.fecha_conocimiento)}${
+                      d.antecedente.cerrado_en ? `, cerrado el ${formatFecha(d.antecedente.cerrado_en)}` : ""
+                    }`,
+                  },
+                ]
+              : []),
+            ...(d.detalle && d.tipo === "EMBARAZO" ? datosEmbarazo(d.detalle as AcompDetalleEmbarazo) : []),
+            ...(d.detalle && d.tipo === "CONSUMO" ? datosConsumo(d.detalle as AcompDetalleConsumo) : []),
+          ]}
+        />
       </SeccionPlegable>
 
       <SeccionPlegable encuadrada comoSeccion defaultAbierta titulo="Descripción y acuerdos" contentClassName="px-4 py-4">
-        <dl className="grid grid-cols-1 gap-4">
-          <Dato label={d.tipo === "EMBARAZO" ? "Descripción y necesidades de continuidad" : "Descripción de lo observado o informado"}>
-            <span className="whitespace-pre-line">{d.descripcion}</span>
-          </Dato>
-          <Dato label="Acuerdos de continuidad educativa">
-            {d.acuerdos && <span className="whitespace-pre-line">{d.acuerdos}</span>}
-          </Dato>
-        </dl>
+        <FichaDatos
+          datos={[
+            {
+              etiqueta: d.tipo === "EMBARAZO" ? "Descripción y necesidades de continuidad" : "Descripción de lo observado o informado",
+              valor: <span className="whitespace-pre-line">{d.descripcion}</span>,
+              ancho: true,
+            },
+            {
+              etiqueta: "Acuerdos de continuidad educativa",
+              valor: d.acuerdos && <span className="whitespace-pre-line">{d.acuerdos}</span>,
+              ancho: true,
+            },
+          ]}
+        />
       </SeccionPlegable>
 
       <SeccionPlegable
@@ -121,43 +145,30 @@ export function DetalleAcompanamiento({ d, onResultado, onEditarAccion }: Props)
   )
 }
 
-function Aviso({ titulo, children }: { titulo: string; children: string }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-md border px-4 py-3 text-sm">
-      <span className="font-medium">{titulo}</span>
-      <span className="whitespace-pre-line">{children}</span>
-    </div>
-  )
+function datosEmbarazo(e: AcompDetalleEmbarazo): DatoFicha[] {
+  return [
+    { etiqueta: "Situación de acompañamiento", valor: e.situacion_nombre },
+    { etiqueta: "Semanas de gestación informadas", valor: num(e.semanas_gestacion) },
+    { etiqueta: "Fecha estimada de parto informada", valor: formatFecha(e.fecha_estimada_parto) },
+    { etiqueta: "Fuente de la información de gestación", valor: e.fuente_gestacion },
+    { etiqueta: "Fecha de la información", valor: formatFecha(e.fecha_info_gestacion) },
+    { etiqueta: "Progenitor conocido", valor: e.progenitor_conocido },
+    { etiqueta: "Acompañamiento del progenitor", valor: e.acompanamiento_progenitor },
+    { etiqueta: "Apoyo del acudiente", valor: e.apoyo_acudiente },
+  ]
 }
 
-function DatosEmbarazo({ e }: { e: AcompDetalleEmbarazo }) {
-  return (
-    <dl className={GRID}>
-      <Dato label="Situación de acompañamiento">{e.situacion_nombre}</Dato>
-      <Dato label="Semanas de gestación informadas">{num(e.semanas_gestacion)}</Dato>
-      <Dato label="Fecha estimada de parto informada">{formatFecha(e.fecha_estimada_parto)}</Dato>
-      <Dato label="Fuente de la información de gestación">{e.fuente_gestacion}</Dato>
-      <Dato label="Fecha de la información">{formatFecha(e.fecha_info_gestacion)}</Dato>
-      <Dato label="Progenitor conocido">{e.progenitor_conocido}</Dato>
-      <Dato label="Acompañamiento del progenitor">{e.acompanamiento_progenitor}</Dato>
-      <Dato label="Apoyo del acudiente">{e.apoyo_acudiente}</Dato>
-    </dl>
-  )
-}
-
-function DatosConsumo({ c }: { c: AcompDetalleConsumo }) {
-  return (
-    <dl className={GRID}>
-      <Dato label="Origen de la información">{c.origen_nombre}</Dato>
-      <Dato label="Fuente de la información">{c.fuente_info}</Dato>
-      <Dato label="Fecha de la información">{formatFecha(c.fecha_info)}</Dato>
-      <Dato label="Sustancia presunta">{c.otra_sustancia ? `${c.sustancia_nombre}: ${c.otra_sustancia}` : c.sustancia_nombre}</Dato>
-      <Dato label="Lugar informado">{c.otro_lugar ? `${c.lugar_nombre}: ${c.otro_lugar}` : c.lugar_nombre}</Dato>
-      <Dato label="Tiempo de consumo informado (semanas)">{num(c.semanas_consumo)}</Dato>
-      <Dato label="Señales de riesgo informadas">{c.senales_riesgo}</Dato>
-      <Dato label="Tiempo de señales de riesgo informado (semanas)">{num(c.semanas_senales)}</Dato>
-    </dl>
-  )
+function datosConsumo(c: AcompDetalleConsumo): DatoFicha[] {
+  return [
+    { etiqueta: "Origen de la información", valor: c.origen_nombre },
+    { etiqueta: "Fuente de la información", valor: c.fuente_info },
+    { etiqueta: "Fecha de la información", valor: formatFecha(c.fecha_info) },
+    { etiqueta: "Sustancia presunta", valor: c.otra_sustancia ? `${c.sustancia_nombre}: ${c.otra_sustancia}` : c.sustancia_nombre },
+    { etiqueta: "Lugar informado", valor: c.otro_lugar ? `${c.lugar_nombre}: ${c.otro_lugar}` : c.lugar_nombre },
+    { etiqueta: "Tiempo de consumo informado (semanas)", valor: num(c.semanas_consumo) },
+    { etiqueta: "Señales de riesgo informadas", valor: c.senales_riesgo },
+    { etiqueta: "Tiempo de señales de riesgo informado (semanas)", valor: num(c.semanas_senales) },
+  ]
 }
 
 function ItemAccion({ a, onEditar, onResultado }: { a: AcompAccion; onEditar?: () => void; onResultado?: () => void }) {

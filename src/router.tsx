@@ -230,18 +230,6 @@ const AdministradoresTerritorialesPage = lazyRouteComponent(
   () => import("@/features/administration/administradores-territoriales/pages/administradores-territoriales-page"),
   "AdministradoresTerritorialesPage"
 )
-const AdministradorNuevoPage = lazyRouteComponent(
-  () => import("@/features/administration/administradores-territoriales/pages/administrador-form-page"),
-  "AdministradorNuevoPage"
-)
-const AdministradorModificarPage = lazyRouteComponent(
-  () => import("@/features/administration/administradores-territoriales/pages/administrador-form-page"),
-  "AdministradorModificarPage"
-)
-const AdministradorDetallePage = lazyRouteComponent(
-  () => import("@/features/administration/administradores-territoriales/pages/administrador-form-page"),
-  "AdministradorDetallePage"
-)
 const CriteriosPrioridadPage = lazyRouteComponent(
   () => import("@/features/administration/criterios-prioridad/pages/criterios-prioridad-page"),
   "CriteriosPrioridadPage"
@@ -1190,11 +1178,6 @@ export const supervisoresTerritorialesRoute = createRoute({
   component: SupervisoresTerritorialesPage,
 })
 
-const ADMINISTRADORES_CRUMB = {
-  label: "Administradores territoriales",
-  to: paths.app.administradoresTerritoriales.getHref(),
-}
-
 export const administradoresTerritorialesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.administradoresTerritoriales.path,
@@ -1203,33 +1186,6 @@ export const administradoresTerritorialesRoute = createRoute({
     breadcrumb: [ADMINISTRACION_CRUMB, { label: "Administradores territoriales" }],
   },
   component: AdministradoresTerritorialesPage,
-})
-
-export const administradorTerritorialNuevoRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.administradorTerritorialNuevo.path,
-  staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Nuevo administrador territorial" }],
-  },
-  component: AdministradorNuevoPage,
-})
-
-export const administradorTerritorialDetalleRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.administradorTerritorialDetalle.path,
-  staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Ver detalle" }],
-  },
-  component: AdministradorDetallePage,
-})
-
-export const administradorTerritorialModificarRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.administradorTerritorialModificar.path,
-  staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, ADMINISTRADORES_CRUMB, { label: "Modificar" }],
-  },
-  component: AdministradorModificarPage,
 })
 
 export const criteriosPrioridadRoute = createRoute({
@@ -2913,9 +2869,6 @@ const routeTree = rootRoute.addChildren([
     superadministradoresRoute,
     supervisoresTerritorialesRoute,
     administradoresTerritorialesRoute,
-    administradorTerritorialNuevoRoute,
-    administradorTerritorialDetalleRoute,
-    administradorTerritorialModificarRoute,
     parametrosEdadRoute,
     relacionesAlumnoGrupoRoute,
     festivosRoute,

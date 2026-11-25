@@ -50,7 +50,7 @@ export function PantallaCaracterizacion({ detalle, modo }: Props) {
                 {modo === "ver" ? "Volver" : "Cancelar"}
               </Button>
               {modo === "ver" ? (
-                <Button size="sm" type="button" disabled={!e.puede_modificar} onClick={f.modificar}>
+                <Button size="sm" type="button" variant="outline" color="neutral" disabled={!e.puede_modificar} onClick={f.modificar}>
                   <PencilIcon data-icon="inline-start" />
                   Modificar
                 </Button>

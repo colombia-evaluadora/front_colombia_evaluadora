@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
+import { FichaDatos } from "@/components/ficha-datos"
 import {
   TableScreen,
   TableScreenActions,
@@ -213,18 +214,18 @@ function DetalleLote({ lote, busqueda }: { lote: Vencido; busqueda: string }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Resumen del lote. */}
-      <div className="flex flex-col gap-3 rounded-md border p-4">
+      <div className="flex flex-col gap-3">
         <Badge variant="soft" color="warning" className="w-fit tabular-nums">
           {lote.cantidad.toLocaleString("es-CO")} {lote.cantidad === 1 ? "registro vencido" : "registros vencidos"}
         </Badge>
-        <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <Dato termino="Tipo de registro">{lote.tipoRegistro}</Dato>
-          <Dato termino="Establecimiento">{lote.establecimiento}</Dato>
-          <Dato termino="Vencido desde">
-            <span className="tabular-nums">{fechaCorta(lote.vencidoDesde)}</span>
-          </Dato>
-          <Dato termino="Disposición de la política">{DISPOSICION_LABELS[lote.disposicion]}</Dato>
-        </dl>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Tipo de registro", valor: lote.tipoRegistro },
+            { etiqueta: "Establecimiento", valor: lote.establecimiento },
+            { etiqueta: "Vencido desde", valor: <span className="tabular-nums">{fechaCorta(lote.vencidoDesde)}</span> },
+            { etiqueta: "Disposición de la política", valor: DISPOSICION_LABELS[lote.disposicion] },
+          ]}
+        />
       </div>
 
       <DataTable
@@ -248,15 +249,6 @@ function DetalleLote({ lote, busqueda }: { lote: Vencido; busqueda: string }) {
         pageSize={paginacion.pageSize}
         onPageSizeChange={paginacion.setPageSize}
       />
-    </div>
-  )
-}
-
-function Dato({ termino, children }: { termino: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-xs text-muted-foreground">{termino}</dt>
-      <dd className="font-medium">{children}</dd>
     </div>
   )
 }

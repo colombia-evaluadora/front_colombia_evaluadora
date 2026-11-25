@@ -1,4 +1,5 @@
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
+import { FichaDatos } from "@/components/ficha-datos"
+
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { SenalRiesgo, ValoracionDetalle } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -10,31 +11,26 @@ function alertasConsideradas(valor: unknown): string[] {
   return a?.senales ? etiquetasAlertas(a.senales, a.condiciones ?? []) : []
 }
 
-/** Datos de la valoración: fecha, nivel, autor, análisis y, si se anuló, la anulación. */
+/** Datos de la valoración: fecha, nivel, autor, análisis y, si se anuló, la anulación (en sus propias filas). */
 export function SeccionValoracion({ valoracion: v }: { valoracion: ValoracionDetalle }) {
   return (
     <SeccionPlegable encuadrada comoSeccion titulo="Valoración del riesgo" contentClassName="flex flex-col gap-4 px-4 py-4">
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Dato label="Fecha">{formatFecha(v.fecha)}</Dato>
-        <Dato label="Nivel de riesgo">{v.nivel_nombre}</Dato>
-        <Dato label="Valorada por">{abreviarPersona(v.valorada_por)}</Dato>
-      </dl>
-      <p className="text-sm">
-        <span className="text-muted-foreground">Alertas consideradas: </span>
-        {alertasConsideradas(v.alertas_consideradas).join(" · ") || "Ninguna"}
-      </p>
-      <p className="text-sm">
-        <span className="text-muted-foreground">Análisis: </span>
-        {v.analisis}
-      </p>
-      {v.anulacion && (
-        <p className="text-sm">
-          <span className="text-muted-foreground">
-            Anulada el {formatFecha(v.anulacion.fecha)} por {abreviarPersona(v.anulacion.por)}:{" "}
-          </span>
-          {v.anulacion.motivo}
-        </p>
-      )}
+      <FichaDatos
+        datos={[
+          { etiqueta: "Fecha", valor: formatFecha(v.fecha) },
+          { etiqueta: "Nivel de riesgo", valor: v.nivel_nombre },
+          { etiqueta: "Valorada por", valor: abreviarPersona(v.valorada_por) },
+          { etiqueta: "Alertas consideradas", valor: alertasConsideradas(v.alertas_consideradas).join(" · ") || "Ninguna", ancho: true },
+          { etiqueta: "Análisis", valor: v.analisis, ancho: true },
+          ...(v.anulacion
+            ? [
+                { etiqueta: "Fecha de anulación", valor: formatFecha(v.anulacion.fecha) },
+                { etiqueta: "Anulada por", valor: abreviarPersona(v.anulacion.por) },
+                { etiqueta: "Motivo de la anulación", valor: v.anulacion.motivo, ancho: true },
+              ]
+            : []),
+        ]}
+      />
     </SeccionPlegable>
   )
 }

@@ -49,7 +49,7 @@ export function FichaDatos({ datos, className }: { datos: DatoFicha[]; className
           {f.datos.map((d) => (
             <Fragment key={d.etiqueta}>
               <dt className="flex items-center bg-table-screen-title px-4 py-2.5 text-muted-foreground">{d.etiqueta}</dt>
-              <dd className={cn("flex min-w-0 items-center bg-background px-4 py-2.5 break-words", f.completa && "sm:col-span-3")}>
+              <dd className={cn("flex min-w-0 items-center bg-background px-4 py-2.5 [overflow-wrap:anywhere]", f.completa && "sm:col-span-3")}>
                 {d.valor || "—"}
               </dd>
             </Fragment>

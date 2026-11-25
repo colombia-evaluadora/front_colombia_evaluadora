@@ -125,7 +125,9 @@ export function FormularioObservacion({ form, grupos, detalle, etiquetas }: Prop
 
       <div className="sm:col-span-2">
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errorFecha) || undefined}>
-          <FieldLabel htmlFor="observacion-fecha">Fecha*</FieldLabel>
+          <FieldLabel htmlFor="observacion-fecha">
+            Fecha<span data-required-mark="">*</span>
+          </FieldLabel>
           <DatePicker
             id="observacion-fecha"
             value={v.fecha}

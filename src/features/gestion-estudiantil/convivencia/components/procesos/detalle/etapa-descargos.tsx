@@ -1,9 +1,10 @@
+import { FichaDatos } from "@/components/ficha-datos"
+
 import type { EtapaDescargos } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { ChipArchivo } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/chip-archivo"
 import { EtapaProceso } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/etapa-proceso"
-import { ListaPruebas } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/lista-pruebas"
+import { datoPruebas } from "@/features/gestion-estudiantil/convivencia/components/procesos/detalle/lista-pruebas"
 
 const siNo = (v: boolean | null | undefined) => (v == null ? "" : v ? "Sí" : "No")
 
@@ -11,26 +12,26 @@ const siNo = (v: boolean | null | undefined) => (v == null ? "" : v ? "Sí" : "N
 export function EtapaDescargosProceso({ etapa }: { etapa: EtapaDescargos }) {
   return (
     <EtapaProceso titulo="Descargos" alcanzada={etapa.alcanzada} resumen={formatFecha(etapa.fecha)}>
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Dato label="Presentó descargos">{siNo(etapa.presento)}</Dato>
-        {etapa.presento && <Dato label="Fecha de la diligencia">{formatFecha(etapa.fecha_diligencia)}</Dato>}
-        {etapa.presento && <Dato label="Acudiente presente">{siNo(etapa.acudiente_presente)}</Dato>}
-        <Dato label="Registrado por">{etapa.registrado_por ?? ""}</Dato>
-      </dl>
-      {etapa.presento ? (
-        <>
-          <Dato label="Versión del estudiante">
-            <span className="whitespace-pre-wrap">{etapa.version}</span>
-          </Dato>
-          <Dato label="Otros asistentes">{etapa.otros_asistentes ?? ""}</Dato>
-          <ListaPruebas pruebas={etapa.pruebas} />
-          <Dato label="Acta de descargos firmada">{etapa.acta ? <ChipArchivo archivo={etapa.acta} /> : ""}</Dato>
-        </>
-      ) : (
-        <Dato label="Constancia">
-          <span className="whitespace-pre-wrap">{etapa.constancia}</span>
-        </Dato>
-      )}
+      <FichaDatos
+        datos={[
+          { etiqueta: "Presentó descargos", valor: siNo(etapa.presento) },
+          ...(etapa.presento
+            ? [
+                { etiqueta: "Fecha de la diligencia", valor: formatFecha(etapa.fecha_diligencia) },
+                { etiqueta: "Acudiente presente", valor: siNo(etapa.acudiente_presente) },
+              ]
+            : []),
+          { etiqueta: "Registrado por", valor: etapa.registrado_por ?? "" },
+          ...(etapa.presento
+            ? [
+                { etiqueta: "Versión del estudiante", valor: <span className="whitespace-pre-line">{etapa.version}</span>, ancho: true },
+                { etiqueta: "Otros asistentes", valor: etapa.otros_asistentes ?? "", ancho: true },
+                datoPruebas(etapa.pruebas),
+                { etiqueta: "Acta de descargos firmada", valor: etapa.acta ? <ChipArchivo archivo={etapa.acta} /> : "" },
+              ]
+            : [{ etiqueta: "Constancia", valor: <span className="whitespace-pre-line">{etapa.constancia}</span>, ancho: true }]),
+        ]}
+      />
     </EtapaProceso>
   )
 }

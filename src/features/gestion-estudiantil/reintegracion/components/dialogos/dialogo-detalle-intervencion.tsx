@@ -1,3 +1,4 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -5,7 +6,6 @@ import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogT
 import { XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useIntervencionQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-intervenciones-query"
 import type { CasoDetalle, IntervencionDetalle } from "@/features/gestion-estudiantil/reintegracion/api/types"
@@ -35,7 +35,7 @@ export function DialogoDetalleIntervencion({ caso, intervencionId, onClose }: Pr
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             Intervención — {caso.estudiante_nombre}
@@ -46,28 +46,29 @@ export function DialogoDetalleIntervencion({ caso, intervencionId, onClose }: Pr
         {q.isError && <ErrorNoticeBanner error={q.error} />}
         {i && (
           <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
-              <Dato label="Tipo de intervención">{i.tipo.nombre}</Dato>
-              <Dato label="Fecha programada">{formatFecha(i.fecha_programada)}</Dato>
-              <Dato label="Fecha de realización">{formatFecha(i.fecha_realizacion)}</Dato>
-              <Dato label="Resultado">
-                {i.resultado ? (
-                  <Badge variant="soft" color="info">
-                    <span>{i.resultado.nombre}</span>
-                  </Badge>
-                ) : null}
-              </Dato>
-              <Dato label="Registrada por">{i.autor.nombre}</Dato>
-            </dl>
-            {SECCIONES.map(({ campo, label }) => {
-              const texto = i[campo]
-              return typeof texto === "string" && texto.trim() ? (
-                <section key={campo} className="flex flex-col gap-1">
-                  <h3 className="text-sm font-semibold">{label}</h3>
-                  <p className="text-sm whitespace-pre-line">{texto}</p>
-                </section>
-              ) : null
-            })}
+            <FichaDatos
+              datos={[
+                { etiqueta: "Tipo de intervención", valor: i.tipo.nombre },
+                { etiqueta: "Fecha programada", valor: formatFecha(i.fecha_programada) },
+                { etiqueta: "Fecha de realización", valor: formatFecha(i.fecha_realizacion) },
+                {
+                  etiqueta: "Resultado",
+                  valor: i.resultado ? (
+                    <Badge variant="soft" color="info">
+                      <span>{i.resultado.nombre}</span>
+                    </Badge>
+                  ) : null,
+                },
+                { etiqueta: "Registrada por", valor: i.autor.nombre },
+                // Las secciones de texto, solo las que tienen contenido, cada una en su fila.
+                ...SECCIONES.flatMap(({ campo, label }) => {
+                  const texto = i[campo]
+                  return typeof texto === "string" && texto.trim()
+                    ? [{ etiqueta: label, valor: <span className="whitespace-pre-line">{texto}</span>, ancho: true }]
+                    : []
+                }),
+              ]}
+            />
             <section className="flex flex-col gap-1">
               <h3 className="text-sm font-semibold">Evidencias</h3>
               {i.evidencias.length === 0 ? (

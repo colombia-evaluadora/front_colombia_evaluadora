@@ -1,7 +1,7 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { PlanDetalle } from "@/features/gestion-estudiantil/prevencion/api/types"
 import { NIVEL_COLOR } from "@/features/gestion-estudiantil/prevencion/api/ui-mappings"
@@ -40,26 +40,32 @@ export function ResumenOrigen({ plan: p, analisisOrigen, canal, onVerCaso }: Pro
         </p>
       </div>
 
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Dato label="Acudiente">
-          {p.acudiente
-            ? `${abreviarPersona(p.acudiente.nombre)}${p.acudiente.parentesco ? ` (${p.acudiente.parentesco})` : ""}`
-            : "Sin acudiente registrado"}
-        </Dato>
-        <Dato label="Creado por">{abreviarPersona(p.creado_por)}</Dato>
-        <Dato label="Caso de convivencia">
-          {p.caso_convivencia && (
-            <Button variant="link" size="sm" className="h-auto p-0" onClick={onVerCaso}>
-              {p.caso_convivencia.numero}
-            </Button>
-          )}
-        </Dato>
-        {p.anulacion && (
-          <Dato label="Anulado">
-            {formatFecha(p.anulacion.fecha)} · {p.anulacion.motivo}
-          </Dato>
-        )}
-      </dl>
+      <FichaDatos
+        datos={[
+          {
+            etiqueta: "Acudiente",
+            valor: p.acudiente
+              ? `${abreviarPersona(p.acudiente.nombre)}${p.acudiente.parentesco ? ` (${p.acudiente.parentesco})` : ""}`
+              : "Sin acudiente registrado",
+          },
+          { etiqueta: "Creado por", valor: abreviarPersona(p.creado_por) },
+          {
+            etiqueta: "Caso de convivencia",
+            valor: p.caso_convivencia && (
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={onVerCaso}>
+                {p.caso_convivencia.numero}
+              </Button>
+            ),
+          },
+          // La anulación en sus propias filas (antes «Anulado: fecha · motivo» en un solo dato).
+          ...(p.anulacion
+            ? [
+                { etiqueta: "Fecha de anulación", valor: formatFecha(p.anulacion.fecha) },
+                { etiqueta: "Motivo de la anulación", valor: p.anulacion.motivo, ancho: true },
+              ]
+            : []),
+        ]}
+      />
     </>
   )
 }

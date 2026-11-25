@@ -6,6 +6,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import {
   TableScreen,
+  TableScreenActions,
   TableScreenBody,
   TableScreenHeader,
   TableScreenTitle,
@@ -72,16 +73,7 @@ function ObservacionesContent() {
   return (
     <>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            <Button size="sm" disabled={!acceso.puedeCrear} onClick={abrirNueva}>
-              <ControlPointIcon data-icon="inline-start" />
-              Nueva observación
-            </Button>
-          }
-        >
-          Observaciones y sugerencias
-        </TableScreenTitle>
+        <TableScreenTitle>Observaciones y sugerencias</TableScreenTitle>
         <TableScreenToolbar>
           <SearchObservaciones
             search={f.search}
@@ -92,9 +84,17 @@ function ObservacionesContent() {
             onDraftChange={f.onDraftChange}
             opciones={f.opciones}
           />
-          <p className="text-sm text-muted-foreground" aria-live="polite">
-            {total} {total === 1 ? "observación" : "observaciones"}
-          </p>
+          {/* «Nueva observación» en la línea del buscador, a la derecha (CLAUDE.md §13). Solo el
+              Responsable de grupo la tiene: el Supervisor de sede y el Administrador del establecimiento
+              consultan y anulan, pero no disponen de ella (G.7.LIS.1, Indicaciones › Quién). */}
+          <TableScreenActions>
+            {acceso.puedeCrear && (
+              <Button size="sm" onClick={abrirNueva}>
+                <ControlPointIcon data-icon="inline-start" />
+                Nueva observación
+              </Button>
+            )}
+          </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
 
@@ -105,8 +105,8 @@ function ObservacionesContent() {
           isError={isError}
           onRetry={refetch}
           isRowMuted={(row) => row.original.anulada}
-          growColumnId="titulo"
-          growColumnClassName="whitespace-normal min-w-56"
+          // El sobrante va al final de la fila (en la última columna con datos), no en medio (CLAUDE.md §13).
+          growColumnId="registrado_por"
           emptyMessage={
             f.sinEstablecimiento
               ? "No tiene sedes asignadas: elija una sede para ver las observaciones."

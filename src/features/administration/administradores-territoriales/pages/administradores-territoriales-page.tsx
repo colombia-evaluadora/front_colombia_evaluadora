@@ -1,7 +1,6 @@
 "use no memo"
 
 import { useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import {
@@ -26,7 +25,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { CheckIcon, ControlPointIcon, SpinnerIcon, XIcon, FunnelXIcon } from "@/components/ui/icons"
-import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
@@ -41,6 +39,10 @@ import {
   documentoTexto,
   type AdministradorTerritorial,
 } from "@/features/administration/administradores-territoriales/api/types/administrador"
+import {
+  DialogAdministrador,
+  type ModoAdministrador,
+} from "@/features/administration/administradores-territoriales/components/dialog-administrador"
 import { createAdministradoresColumns } from "@/features/administration/administradores-territoriales/components/columns-administradores"
 import {
   useAdministradoresFilters,
@@ -82,7 +84,6 @@ function valorOrdenable(s: AdministradorTerritorial, columna: string) {
 
 function AdministradoresTerritorialesPageContent() {
   const { notify } = useNotify()
-  const navigate = useNavigate()
   // Solo el Superadministrador: acceso y guardado, sin Eliminar (V353).
   const permisos = useMenuPermission("ADMINISTRADORES_TERRITORIALES")
   const { filters, applyFilters, clearAllFilters, activeFilterCount } = useAdministradoresFilters()
@@ -102,6 +103,8 @@ function AdministradoresTerritorialesPageContent() {
   const pagina = ordenados.slice(pageIndex * paginacion.pageSize, (pageIndex + 1) * paginacion.pageSize)
 
   const [aInactivar, setAInactivar] = useState<AdministradorTerritorial | null>(null)
+  // Nuevo, Modificar y Ver detalle en un modal (como Superadministradores y Supervisores territoriales).
+  const [dialogo, setDialogo] = useState<{ modo: ModoAdministrador; pk: number | null } | null>(null)
   const [pendiente, setPendiente] = useState<number | null>(null)
 
   const estado = useEstadoAdministrador({
@@ -124,8 +127,8 @@ function AdministradoresTerritorialesPageContent() {
   const columns = createAdministradoresColumns({
     puedeEditar: permisos.puedeEditar,
     pendiente,
-    onVer: (s) => navigate({ to: paths.app.administradorTerritorialDetalle.getHref(s.pkAdministrador) }),
-    onModificar: (s) => navigate({ to: paths.app.administradorTerritorialModificar.getHref(s.pkAdministrador) }),
+    onVer: (s) => setDialogo({ modo: "ver", pk: s.pkAdministrador }),
+    onModificar: (s) => setDialogo({ modo: "modificar", pk: s.pkAdministrador }),
     // Activar va directo; inactivar corta el acceso de alguien: se confirma.
     onEstado: (s) => (s.activo ? setAInactivar(s) : cambiarEstado(s, true)),
   })
@@ -140,7 +143,7 @@ function AdministradoresTerritorialesPageContent() {
     columnVisibilityStorageKey: "administradores-territoriales-column-visibility",
   })
 
-  const nuevo = () => navigate({ to: paths.app.administradorTerritorialNuevo.getHref() })
+  const nuevo = () => setDialogo({ modo: "nuevo", pk: null })
   const sinRegistros = !isPending && !isError && lista.length === 0
 
   return (
@@ -234,6 +237,16 @@ function AdministradoresTerritorialesPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {dialogo ? (
+        <DialogAdministrador
+          key={`${dialogo.modo}-${dialogo.pk ?? "nuevo"}`}
+          modo={dialogo.modo}
+          pkAdministrador={dialogo.pk}
+          puedeEditar={permisos.puedeEditar}
+          onClose={() => setDialogo(null)}
+          onModificar={(pk) => setDialogo({ modo: "modificar", pk })}
+        />
+      ) : null}
     </TableScreen>
   )
 }

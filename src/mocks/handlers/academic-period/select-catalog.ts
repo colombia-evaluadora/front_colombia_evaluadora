@@ -23,6 +23,7 @@ import {
 } from "@/mocks/db/citaciones-compromisos"
 import { TIPOS_RECONOCIMIENTO_MOCK } from "@/mocks/db/reconocimientos"
 import { LISTAS_VALOR_COMUNICADO } from "@/mocks/db/comunicaciones-listas-valor"
+import { DESTINATARIOS_OBSERVACION_MOCK } from "@/mocks/handlers/observaciones-sugerencias"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -48,6 +49,8 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
   MOTIVO_CITACION: () => deMock(MOTIVOS_CITACION_MOCK),
   TIPO_COMPROMISO: () => deMock(TIPOS_COMPROMISO_MOCK),
   RESPONSABLE_COMPROMISO: () => deMock(RESPONSABLES_COMPROMISO_MOCK),
+  // Observaciones y sugerencias (V631): pk estables para el filtro «Dirigida a».
+  DESTINATARIOS_OBSERVACION: () => DESTINATARIOS_OBSERVACION_MOCK,
   ESTADO_COMPROMISO: () => deMock(ESTADOS_COMPROMISO_MOCK),
   TIPO_RECONOCIMIENTO: () => deMock(TIPOS_RECONOCIMIENTO_MOCK),
   JORNADA: () =>

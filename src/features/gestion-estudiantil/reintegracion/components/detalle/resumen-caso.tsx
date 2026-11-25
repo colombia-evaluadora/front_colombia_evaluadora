@@ -1,7 +1,7 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { CasoDetalle } from "@/features/gestion-estudiantil/reintegracion/api/types"
 
@@ -16,18 +16,25 @@ export function ResumenCaso({ caso: c, onCasoAnterior, onCasoConvivencia }: Prop
   const causa = c.causa_principal?.id
   return (
     <section className="flex flex-col gap-3 text-sm" aria-label="Resumen del caso">
-      <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
-        <Dato label="Origen">{c.origen.nombre}</Dato>
-        <Dato label="Apertura">{formatFecha(c.fecha_apertura)}</Dato>
-        <Dato label="Profesional de trabajo social">
-          {c.profesional ? abreviarPersona(c.profesional.nombre) : "Sin asignar"}
-        </Dato>
-        {c.motivo_apertura && (
-          <div className="sm:col-span-3">
-            <Dato label="Motivo de apertura">{c.motivo_apertura}</Dato>
-          </div>
-        )}
-      </dl>
+      <FichaDatos
+        datos={[
+          { etiqueta: "Origen", valor: c.origen.nombre },
+          { etiqueta: "Apertura", valor: formatFecha(c.fecha_apertura) },
+          {
+            etiqueta: "Profesional de trabajo social",
+            valor: c.profesional ? abreviarPersona(c.profesional.nombre) : "Sin asignar",
+          },
+          ...(c.motivo_apertura
+            ? [
+                {
+                  etiqueta: "Motivo de apertura",
+                  valor: <span className="whitespace-pre-line">{c.motivo_apertura}</span>,
+                  ancho: true,
+                },
+              ]
+            : []),
+        ]}
+      />
 
       {c.retiro && (
         <p>

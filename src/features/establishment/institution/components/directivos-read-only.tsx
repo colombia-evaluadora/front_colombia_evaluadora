@@ -1,5 +1,6 @@
 import { format, parseISO } from "date-fns"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { LockIcon } from "@/components/ui/icons"
 import { CATALOGS } from "@/lib/catalogs"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
@@ -15,7 +16,7 @@ function fecha(value: string | null | undefined): string {
   }
 }
 
-/** Datos de una persona como tabla de pares etiqueta · valor, tres por fila. */
+/** Datos de una persona en la ficha de datos (dos pares por fila). */
 function DirectivoTable({ title, person, emptyMessage }: { title: string; person: Person | null; emptyMessage: string }) {
   const { data: documentTypes = [] } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
   const { data: genders = [] } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
@@ -50,17 +51,8 @@ function DirectivoTable({ title, person, emptyMessage }: { title: string; person
   return (
     <section className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold">{title}</h3>
-      {/* `gap-px` sobre fondo de borde dibuja las líneas entre celdas. */}
-      <dl className="grid grid-cols-[minmax(8rem,auto)_1fr] gap-px overflow-hidden rounded-lg border border-border bg-border text-sm lg:grid-cols-[minmax(9rem,auto)_1fr_minmax(9rem,auto)_1fr_minmax(9rem,auto)_1fr]">
-        {pares.map(([etiqueta, valor]) => (
-          <div key={etiqueta} className="contents">
-            <dt className="bg-muted/40 px-3 py-2.5 text-muted-foreground">{etiqueta}</dt>
-            <dd className="min-w-0 bg-card px-3 py-2.5 font-medium break-words">{valor?.trim() || "—"}</dd>
-          </div>
-        ))}
-        {/* Completa la última fila (Teléfono va solo). */}
-        <div aria-hidden className="hidden bg-card lg:col-span-4 lg:block" />
-      </dl>
+      {/* Misma ficha que el resto del detalle del establecimiento (`FichaDatos`, CLAUDE.md §13). */}
+      <FichaDatos datos={pares.map(([etiqueta, valor]) => ({ etiqueta, valor: valor?.trim() ?? "" }))} />
     </section>
   )
 }
