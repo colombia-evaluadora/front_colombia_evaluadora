@@ -24,8 +24,17 @@ export function isMissingOfflineData(query: Query): boolean {
   return query.state.fetchStatus === "paused"
 }
 
+const avisadas = new Set<string>()
+
 export function hasMissingOfflineData(client: QueryClient): boolean {
-  return client.getQueryCache().getAll().some(isMissingOfflineData)
+  const faltan = client.getQueryCache().getAll().filter(isMissingOfflineData)
+  // Qué dato exacto falta: "parte de esta pantalla" no alcanza para corregir la preparación.
+  for (const query of faltan) {
+    if (avisadas.has(query.queryHash)) continue
+    avisadas.add(query.queryHash)
+    console.warn("[offline] dato sin guardar", query.queryHash)
+  }
+  return faltan.length > 0
 }
 
 /** `true` sin conexión si la pantalla tiene datos que no están en el equipo. */

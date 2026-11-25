@@ -9,7 +9,8 @@ interface Props {
   roles: OpcionCatalogo[]
   mostrarErrores: boolean
   onRol: (rol: string) => void
-  onQuitar: () => void
+  /** Ausente: la fila no se puede quitar. */
+  onQuitar?: () => void
 }
 
 /** Una fila de «Estudiantes involucrados»: nombre, grado y rol en la situación. */
@@ -33,7 +34,7 @@ export function FilaEstudiante({ fila: e, roles, mostrarErrores, onRol, onQuitar
         onChange={onRol}
       />
       {/* mt-2: el campo con label flotante baja 8px; así la papelera queda centrada con él. */}
-      <BotonQuitar label={`Quitar a ${e.nombre}`} onClick={onQuitar} className="mt-2" />
+      <BotonQuitar label={`Quitar a ${e.nombre}`} onClick={onQuitar ?? (() => {})} disabled={!onQuitar} className="mt-2" />
     </li>
   )
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { getLandingNavUrl } from "@/features/navigation/api/query/use-nav-items-query"
 
-const items = [{ url: "/app/mis-dispositivos" }, { url: "/app/cobertura/matricula/agregar" }, { url: "/app/asistencia" }]
+const items = [{ url: "/app/mis-dispositivos" }, { url: "/app/mis-dispositivos/x" }, { url: "/app/asistencia" }]
 const fallback = "/app/planeador/actividades"
 
 describe("getLandingNavUrl", () => {

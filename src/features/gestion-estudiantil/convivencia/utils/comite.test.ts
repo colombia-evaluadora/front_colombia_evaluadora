@@ -4,14 +4,14 @@ import {
   asistentesVigentes,
   casoVacio,
   desdeSesion,
+  eleccionVacia,
   filaDeCargoVacio,
   filaIntegranteVacia,
-  hayQuorum,
   integrantesVigentesEn,
   integranteInput,
   invitadoVacio,
   periodoPorDefecto,
-  quorumMinimo,
+  textoMotivoQuorum,
   sesionInput,
   soloSeguimiento,
   validarFilaIntegrante,
@@ -41,18 +41,15 @@ describe("vigencia", () => {
   })
 })
 
-describe("quórum", () => {
-  it("floor(M/2)+1", () => {
-    expect([1, 2, 3, 4, 5, 6, 7].map(quorumMinimo)).toEqual([1, 2, 2, 3, 3, 4, 4])
+describe("motivo del quórum", () => {
+  it("redacta cada motivo que da el servidor", () => {
+    expect(textoMotivoQuorum("SIN_PRESIDENTE")).toContain("Rector")
+    expect(textoMotivoQuorum("INSUFICIENTE")).toContain("más de la mitad")
+    expect(textoMotivoQuorum("ESTAMENTO_FALTANTE")).toContain("estamento")
   })
-  it("con quórum desde la mayoría simple", () => {
-    expect(hayQuorum(3, 5)).toBe(true)
-    expect(hayQuorum(2, 5)).toBe(false)
-    expect(hayQuorum(2, 4)).toBe(false)
-    expect(hayQuorum(3, 4)).toBe(true)
-  })
-  it("sin integrantes vigentes no hay quórum", () => {
-    expect(hayQuorum(0, 0)).toBe(false)
+  it("sin motivo o desconocido, nada", () => {
+    expect(textoMotivoQuorum(null)).toBeNull()
+    expect(textoMotivoQuorum("OTRO")).toBeNull()
   })
 })
 
@@ -148,6 +145,13 @@ describe("sesión", () => {
     expect(input).toEqual({
       FK_TLV_TIPO: 3,
       FECHA: "2026-03-10",
+      HORA: null,
+      LUGAR: null,
+      OBJETIVO: null,
+      ORDEN_DIA: null,
+      FK_ASISTENTE_ELABORA: null,
+      ADJUNTOS: [],
+      NUEVOS: [],
       ASISTENTES: [1, 2],
       INVITADOS: [],
       CASOS: [{ fk_caso: 8, decision: "Se cita al acudiente" }],
@@ -167,5 +171,30 @@ describe("sesión", () => {
     } as never)
     expect(v).toMatchObject({ tipo: "3", fecha: "2026-03-10", asistentes: [1] })
     expect(v.casos[0]).toMatchObject({ fk_caso: 5, tipo_codigo: "TIPO_III", responsable: "4", fecha_seguimiento: "2026-04-01" })
+  })
+  it("Conformación exige la elección y no exige casos ni otros temas", () => {
+    const v = { ...base(), otros: "" }
+    const e = validarSesion(v, true)
+    expect(e.contenido).toBeUndefined()
+    expect(e.eleccionGeneral).toBeTruthy()
+    const f = { ...eleccionVacia(), integrante: "1", forma: "ab" }
+    const e2 = validarSesion({ ...v, eleccion: [f] }, true)
+    expect(e2.eleccion[f.key].forma).toBeTruthy()
+    expect(validarSesion({ ...v, eleccion: [{ ...f, forma: "Votación del consejo" }] }, true).eleccion).toEqual({})
+  })
+  it("en Conformación no se validan ni se envían los casos", () => {
+    const c = { ...casoVacio(), fk_caso: 8, decision: "corta" }
+    const f = { ...eleccionVacia(), integrante: "1", forma: "Votación del consejo" }
+    const v = { ...base(), casos: [c], eleccion: [f] }
+    expect(validarSesion(v, true).casos).toEqual({})
+    expect(sesionInput(v, true).CASOS).toEqual([])
+    expect(sesionInput(v, true).ELECCION).toHaveLength(1)
+    expect(sesionInput(v, false).CASOS).toHaveLength(1)
+  })
+  it("quien elabora el acta debe ser asistente y el input manda la elección solo en Conformación", () => {
+    expect(validarSesion({ ...base(), elabora: "9" }).elabora).toBeTruthy()
+    const f = { ...eleccionVacia(), integrante: "1", forma: " Votación " }
+    expect(sesionInput({ ...base(), eleccion: [f] }, false).ELECCION).toBeUndefined()
+    expect(sesionInput({ ...base(), eleccion: [f] }, true).ELECCION).toEqual([{ fk_integrante: 1, forma_eleccion: "Votación" }])
   })
 })

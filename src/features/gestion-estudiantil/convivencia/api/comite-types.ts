@@ -23,6 +23,9 @@ export interface IntegranteComite {
   fk_funcionario: number | null
   fk_matricula: number | null
   nombre: string
+  /** Estamento del cargo (solo lectura): lo da el cargo, no se elige. */
+  estamento?: string | null
+  estamento_codigo?: string | null
   desde: string
   hasta: string | null
   vigente: boolean
@@ -32,6 +35,8 @@ export interface CargoVacio {
   fk_tlv_cargo: number
   cargo_codigo: string
   cargo_nombre: string
+  estamento?: string | null
+  estamento_codigo?: string | null
   dato: DatoCargo
 }
 
@@ -41,6 +46,10 @@ export interface ComiteDetalle {
   periodo_nombre: string
   fk_establecimiento: number
   fk_comite: number | null
+  /** Criterio de quórum del Comité (lista CRITERIO_QUORUM_COMITE); por defecto Mitad más uno. */
+  fk_tlv_criterio_quorum?: number | null
+  criterio_codigo?: string | null
+  criterio_nombre?: string | null
   rector_previsto: { fk_funcionario: number; nombre: string } | null
   integrantes: IntegranteComite[]
   cargos_vacios: CargoVacio[]
@@ -57,15 +66,47 @@ export interface SesionFila {
   asistentes: number
   integrantes_vigentes: number
   con_quorum: boolean
+  /** Por qué no hay quórum (`MotivoQuorum`); nulo con quórum. */
+  motivo_quorum?: MotivoQuorum | null
   casos_tratados: number
+  /** El backend decide si el usuario puede modificar la sesión. */
+  puede_modificar_sesion?: boolean
   total_count?: number
+}
+
+export type MotivoQuorum = "SIN_PRESIDENTE" | "INSUFICIENTE" | "ESTAMENTO_FALTANTE"
+
+/** `POST /comite/:ID/quorum`: vista previa del quórum con los asistentes marcados. */
+export interface QuorumVistaPrevia {
+  asistentes: number
+  vigentes: number
+  con_quorum: boolean
+  criterio_codigo: string | null
+  criterio_nombre: string | null
+  motivo: MotivoQuorum | null
 }
 
 export interface AsistenteSesion {
   fk_integrante: number
   cargo_nombre: string
+  estamento?: string | null
   nombre: string
   asistio: boolean
+}
+
+export interface EleccionSesion {
+  fk_integrante: number
+  cargo_nombre: string
+  nombre: string
+  forma_eleccion: string
+}
+
+export interface AdjuntoSesion {
+  id: number
+  fk_archivo: number
+  nombre: string
+  tipo: string | null
+  peso: number | null
 }
 
 export interface InvitadoSesion {
@@ -95,11 +136,24 @@ export interface SesionDetalle {
   periodo_nombre: string
   fk_tlv_tipo: number
   tipo_nombre: string
+  tipo_codigo?: string
   fecha: string
+  hora?: string | null
+  lugar?: string | null
+  objetivo?: string | null
+  orden_dia?: string | null
   otros_temas: string | null
   asistentes_total: number
   integrantes_vigentes: number
   con_quorum: boolean
+  criterio_quorum?: string | null
+  motivo_quorum?: MotivoQuorum | null
+  /** Quien elabora el acta (uno de los asistentes). */
+  elabora?: { fk_integrante: number; cargo_nombre: string; nombre: string } | null
+  /** Nombre del PDF del acta (`acta-comite-aaaa-mm-dd.pdf`). */
+  acta_nombre?: string | null
+  eleccion?: EleccionSesion[]
+  adjuntos?: AdjuntoSesion[]
   asistentes: AsistenteSesion[]
   invitados: InvitadoSesion[]
   casos: CasoSesion[]
@@ -176,6 +230,11 @@ export interface IntegranteInput {
   hasta?: string | null
 }
 
+export interface EleccionInput {
+  fk_integrante: number
+  forma_eleccion: string
+}
+
 export interface CasoSesionInput {
   fk_caso: number
   decision: string
@@ -188,6 +247,14 @@ export interface SesionInput {
   FK_TLV_TIPO: number
   FECHA: string
   OTROS_TEMAS?: string | null
+  HORA?: string | null
+  LUGAR?: string | null
+  OBJETIVO?: string | null
+  ORDEN_DIA?: string | null
+  FK_ASISTENTE_ELABORA?: number | null
+  ELECCION?: EleccionInput[]
+  /** pk de archivo de cada adjunto, ya subido (máximo 5). */
+  ADJUNTOS?: number[]
   ASISTENTES: number[]
   INVITADOS: InvitadoSesion[]
   CASOS: CasoSesionInput[]

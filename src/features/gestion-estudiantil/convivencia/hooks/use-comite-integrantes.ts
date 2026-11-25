@@ -5,6 +5,7 @@ import { getErrorMessage } from "@/lib/api-client"
 
 import type { ComiteDetalle, PeriodoComite } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 import {
+  useActualizarComiteMutation,
   useAgregarIntegranteMutation,
   useCrearComiteMutation,
   useQuitarIntegranteMutation,
@@ -26,6 +27,9 @@ import {
   type FilaIntegrante,
 } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
+/** Código del criterio de quórum por defecto en CRITERIO_QUORUM_COMITE (Regla 23). */
+const CRITERIO_POR_DEFECTO = "MITAD_MAS_UNO"
+
 /** Código del cargo del Rector en CARGO_COMITE_CONVIVENCIA: se precarga con el rector previsto y no se cambia. */
 export const CARGO_RECTOR = "RECTOR"
 
@@ -42,12 +46,13 @@ const hoy = () => new Date().toISOString().slice(0, 10)
 
 /** Todos los cargos que se conocen del Comité, para elegirlos al agregar o avisar los que faltan. */
 function cargosDelComite(comite: ComiteDetalle, conocidos: Map<string, DatoCargo>) {
-  const m = new Map<string, { fk_tlv_cargo: number; cargo_codigo: string; cargo_nombre: string; dato: DatoCargo }>()
+  const m = new Map<string, { fk_tlv_cargo: number; cargo_codigo: string; cargo_nombre: string; estamento?: string | null; dato: DatoCargo }>()
   for (const i of comite.integrantes)
     m.set(String(i.fk_tlv_cargo), {
       fk_tlv_cargo: i.fk_tlv_cargo,
       cargo_codigo: i.cargo_codigo,
       cargo_nombre: i.cargo_nombre,
+      estamento: i.estamento,
       dato: datoDelCargo(conocidos, String(i.fk_tlv_cargo)) as DatoCargo,
     })
   for (const c of comite.cargos_vacios) m.set(String(c.fk_tlv_cargo), c)
@@ -89,12 +94,20 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
   ])
   const [quitados, setQuitados] = useState<number[]>([])
   const [copiarDe, setCopiarDe] = useState("")
+  // Criterio de quórum: lo guardado en el Comité; sin él (o al crear), el predeterminado de la lista.
+  const criterios = useCatalogo("CRITERIO_QUORUM_COMITE")
+  const [criterioElegido, setCriterioElegido] = useState<string | null>(null)
+  const criterioGuardado = comite.fk_tlv_criterio_quorum != null ? String(comite.fk_tlv_criterio_quorum) : ""
+  const criterioPorDefecto = criterios.find((c) => c.codigo === CRITERIO_POR_DEFECTO)?.value ?? ""
+  const criterio = criterioElegido ?? (criterioGuardado || criterioPorDefecto)
+  const criterioCambio = existe && criterio !== "" && criterio !== criterioGuardado
   const [intento, setIntento] = useState(false)
   const [guardando, setGuardando] = useState(false)
 
   const crear = useCrearComiteMutation()
   const agregar = useAgregarIntegranteMutation()
   const quitar = useQuitarIntegranteMutation()
+  const actualizarComite = useActualizarComiteMutation()
 
   const periodosCopiables = periodos.filter((p) => p.fk_comite != null && p.fk_periodo !== periodo.fk_periodo)
 
@@ -139,6 +152,7 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
       dato: c?.dato ?? null,
       codigo: c?.cargo_codigo ?? "",
       cargo_nombre: c?.cargo_nombre ?? "",
+      estamento: c?.estamento ?? "",
       fk_funcionario: esRector ? rector.fk_funcionario : null,
       fk_matricula: null,
       nombre: esRector ? rector.nombre : "",
@@ -162,7 +176,7 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
       notify("Registre al menos un integrante o copie los de otro período.", { variant: "error" })
       return
     }
-    if (existe && aEnviar.length === 0 && quitados.length === 0) {
+    if (existe && aEnviar.length === 0 && quitados.length === 0 && !criterioCambio) {
       notify("No hay cambios por guardar.", { variant: "info" })
       return
     }
@@ -172,6 +186,7 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
         await crear.mutateAsync({
           FK_PERIODO: periodo.fk_periodo,
           ...(copiarDe && { COPIAR_DE_PERIODO: Number(copiarDe) }),
+          ...(criterio && { FK_TLV_CRITERIO_QUORUM: Number(criterio) }),
           INTEGRANTES: aEnviar.map(integranteInput),
         })
       } else {
@@ -188,6 +203,7 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
           })
         }
         for (const id of quitados) await quitar.mutateAsync({ integranteId: id })
+        if (criterioCambio) await actualizarComite.mutateAsync({ comiteId: comite.fk_comite as number, FK_TLV_CRITERIO_QUORUM: Number(criterio) })
       }
       queueNotice(existe ? "Integrantes del comité actualizados." : "Comité registrado.", { variant: "success" })
       nav.aPestana(periodo.fk_periodo)
@@ -209,6 +225,9 @@ export function useComiteIntegrantes({ periodo, comite, periodos }: Params) {
     guardando,
     copiarDe,
     setCopiarDe,
+    criterio,
+    setCriterio: setCriterioElegido,
+    criterios,
     periodosCopiables,
     cargosSinIntegrante,
     esRectorBloqueado,

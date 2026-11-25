@@ -41,8 +41,15 @@ export function SeccionDatosCasoDetalle({ caso }: { caso: CasoDetalle }) {
         </Dato>
         <Dato label="Registro vinculado">
           {caso.registro_vinculado ? (
-            // F24: el plan de origen, legible y con enlace a su detalle.
-            <Link to={paths.app.prevencionPlanDetalle.getHref(caso.registro_vinculado.id)} className="text-primary hover:underline">
+            // F24: el registro de origen, con la etiqueta que da el backend y enlace a su detalle.
+            <Link
+              to={
+                caso.registro_vinculado.tipo === "CASO_REINTEGRACION"
+                  ? paths.app.reintegracionCaso.getHref(caso.registro_vinculado.id)
+                  : paths.app.prevencionPlanDetalle.getHref(caso.registro_vinculado.id)
+              }
+              className="text-primary hover:underline"
+            >
               {[
                 caso.registro_vinculado.tipo_nombre,
                 caso.registro_vinculado.estudiante_nombre,
@@ -67,7 +74,9 @@ export function SeccionDatosCasoDetalle({ caso }: { caso: CasoDetalle }) {
                 <span>
                   <span className="font-semibold">{a.codigo}</span> · {a.descripcion}
                 </span>
-                <span className="text-muted-foreground">— {a.estudiante}</span>
+                <span className="text-muted-foreground">
+                  — {[a.estudiante, a.registrador_nombre].filter(Boolean).join(" · ")}
+                </span>
                 {a.anulada && (
                   <Badge variant="soft" color="muted">
                     Anulada

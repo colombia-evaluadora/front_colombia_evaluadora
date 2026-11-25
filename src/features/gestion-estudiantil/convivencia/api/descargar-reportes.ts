@@ -4,8 +4,8 @@ import type { ExportResult } from "@/features/establishment/institution/api/type
 import type { SiuceFiltros } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
 
 /** Acta de una sesión del Comité en PDF (clave `convivencia-acta-comite`). */
-export function descargarActa(fkSesion: number): Promise<ExportResult> {
-  return downloadReport("convivencia-acta-comite", { format: "pdf", filters: { FK_SESION: fkSesion } })
+export function descargarActa(fkSesion: number, nombreArchivo?: string): Promise<ExportResult> {
+  return downloadReport("convivencia-acta-comite", { format: "pdf", filters: { FK_SESION: fkSesion }, nombreArchivo })
 }
 
 /** Reporte de apoyo para el SIUCE en Excel (clave `convivencia-siuce`); `columnas` = claves de `SIUCE_COLUMNAS`. */

@@ -30,6 +30,7 @@ export const comiteKeys = {
   detalle: (periodo: number | "none") => [...comiteAll, "detalle", periodo] as const,
   sesiones: <P>(params: P) => [...comiteAll, "sesiones", params] as const,
   sesion: (id: number | "none") => [...comiteAll, "sesion", id] as const,
+  quorum: (comite: number | "none", fecha: string, asistentes: number[]) => [...comiteAll, "quorum", comite, fecha, asistentes] as const,
   casos: (comite: number | "none", search: string) => [...comiteAll, "casos", comite, search] as const,
   funcionarios: <P>(comite: number | "none", params: P) => [...comiteAll, "funcionarios", comite, params] as const,
   estudiantes: (comite: number | "none", search: string) => [...comiteAll, "estudiantes", comite, search] as const,

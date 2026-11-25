@@ -29,28 +29,27 @@ export function LogoutDeviceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} data-slot="logout-device-dialog">
+      <DialogContent showCloseButton={false} className="grid-cols-[minmax(0,1fr)]" data-slot="logout-device-dialog">
         <DialogHeader>
           <DialogTitle>Cerrar sesión en este equipo</DialogTitle>
           <DialogDescription>
-            Tus datos guardados
-            {pendientes > 0 ? ` y tus ${pendientes} cambios sin sincronizar` : ""} se quedan en este equipo para
-            que sigas trabajando sin conexión. Para volver a entrar necesitarás tu contraseña
-            {hasPin ? " o tu PIN" : ""}.
+            Sus datos guardados
+            {pendientes > 0 ? ` y sus ${pendientes} cambios sin sincronizar` : ""} se quedan en este equipo para
+            que siga trabajando sin conexión. Para volver a entrar necesitará su contraseña
+            {hasPin ? " o su PIN" : ""}.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="sm:justify-between">
-          <Button variant="ghost" color="destructive" onClick={onWipe}>
-            Borrar los datos de este equipo…
+        {/* En su propia fila: los tres botones no caben en el ancho del modal y el primario se cortaba. */}
+        <Button variant="link" color="destructive" className="justify-self-start px-0" onClick={onWipe}>
+          Borrar los datos de este equipo…
+        </Button>
+        <DialogFooter>
+          <Button variant="outline" color="neutral" onClick={() => onOpenChange(false)}>
+            Cancelar
           </Button>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button variant="outline" color="neutral" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button color="primary" onClick={onLogout}>
-              Cerrar sesión
-            </Button>
-          </div>
+          <Button color="primary" onClick={onLogout}>
+            Cerrar sesión
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

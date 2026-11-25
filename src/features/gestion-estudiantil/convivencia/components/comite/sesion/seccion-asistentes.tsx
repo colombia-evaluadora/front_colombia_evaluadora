@@ -2,12 +2,14 @@ import { FieldError } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { BadgeQuorum } from "@/features/gestion-estudiantil/convivencia/components/comite/badge-quorum"
+import { textoMotivoQuorum } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import type { SesionFormState } from "@/features/gestion-estudiantil/convivencia/hooks/use-sesion-form"
 
 /** Casillas con los integrantes vigentes en la fecha elegida, contador «N de M» y quórum calculado. */
 export function SeccionAsistentes({ form }: { form: SesionFormState }) {
   const { vigentes, asistentes, total, quorum, v } = form
+  const q = quorum.data
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-background">
       <SeccionPlegable
@@ -29,17 +31,24 @@ export function SeccionAsistentes({ form }: { form: SesionFormState }) {
                     />
                     <span>
                       <span className="font-medium">{i.cargo_nombre}</span> · {i.nombre}
+                      {i.estamento && <span className="text-muted-foreground"> · {i.estamento}</span>}
                     </span>
                   </label>
                 </li>
               ))}
             </ul>
-            <p className="flex items-center gap-2 text-sm">
-              <span>
-                {asistentes.length} de {total} integrantes
-              </span>
-              <BadgeQuorum conQuorum={quorum} />
-            </p>
+            <div className="flex flex-col gap-1 text-sm" aria-live="polite">
+              <p className="flex flex-wrap items-center gap-2">
+                <span>
+                  {asistentes.length} de {total} integrantes
+                </span>
+                {q && <BadgeQuorum conQuorum={q.con_quorum} />}
+                {q?.criterio_nombre && <span className="text-muted-foreground">Criterio de quórum: {q.criterio_nombre}</span>}
+              </p>
+              {q && !q.con_quorum && textoMotivoQuorum(q.motivo, true) && (
+                <p className="text-muted-foreground">{textoMotivoQuorum(q.motivo, true)}</p>
+              )}
+            </div>
             {form.errores.asistentes && <FieldError>{form.errores.asistentes}</FieldError>}
           </div>
         )}

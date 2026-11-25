@@ -45,6 +45,7 @@ import {
   type QueryObserverOptions,
 } from "@tanstack/react-query"
 
+import { isNetworkError } from "@/lib/network-error"
 import { conMetaPorDefecto, conservarEnMemoria } from "@/lib/offline/modulos-persistibles"
 
 /** Marca de las opciones cuyo `networkMode` decide este módulo (y no la query). */
@@ -83,11 +84,24 @@ export function syncQueryNetworkMode(query: Query): void {
   if (next !== options) query.setOptions(next)
 }
 
+/**
+ * Un refetch que falla por RED deja la query en `error` aunque conserve su dato,
+ * y casi todas las pantallas miran `isError` antes que `data`: la tabla decía
+ * "no está guardada" con "Mostrando 1-1 de 1 registros" al pie. Pasa al cortarse
+ * la red, antes de que el heartbeat lo note. Se vuelve a `success` marcada como
+ * vencida, para que se pida de nuevo al volver la conexión.
+ */
+function conservarDatoSinRed(query: Query): void {
+  if (query.state.data === undefined || !isNetworkError(query.state.error)) return
+  query.setState({ status: "success", error: null, fetchStatus: "idle", isInvalidated: true })
+}
+
 export class OfflineAwareQueryClient extends QueryClient {
   constructor(config?: QueryClientConfig) {
     super(config)
     this.getQueryCache().subscribe((event) => {
       if (event.type === "added" || event.type === "updated") syncQueryNetworkMode(event.query)
+      if (event.type === "updated" && event.action.type === "error") conservarDatoSinRed(event.query)
     })
   }
 

@@ -42,6 +42,8 @@ export interface AnotacionOrigen {
   descripcion: string
   fk_matricula: number
   estudiante: string | null
+  /** Funcionario que registró la anotación. */
+  registrador_nombre?: string | null
   anulada: boolean
 }
 
@@ -179,6 +181,10 @@ export interface PasoCaso {
   registrado: boolean
   no_aplica: boolean
   de_cierre: boolean
+  /** Primera acción registrada del paso. */
+  fecha_hora?: string | null
+  /** Texto de apoyo del paso (p. ej. «Paso de cierre · después de la sesión del Comité»). */
+  detalle?: string | null
 }
 
 /** Fila de `GET /casos/:ID/gestores`: supervisores candidatos del caso. */

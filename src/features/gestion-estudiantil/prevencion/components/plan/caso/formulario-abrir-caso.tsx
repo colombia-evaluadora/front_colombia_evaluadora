@@ -5,9 +5,10 @@ import { TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/componen
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 
-import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
+import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
+import { ConstructoresInvolucrados } from "@/features/gestion-estudiantil/convivencia/components/constructores-involucrados"
 import { GestorPrevisto } from "@/features/gestion-estudiantil/convivencia/components/form/gestor-previsto"
 import { SeccionDatosCaso } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-datos-caso"
 import { SeccionFechas } from "@/features/gestion-estudiantil/convivencia/components/form/seccion-fechas"
@@ -39,7 +40,7 @@ export function FormularioAbrirCaso({ plan }: { plan: PlanDetalle }) {
             </div>
           }
         >
-          <span className="whitespace-normal">Prevención › Abrir caso de convivencia · {plan.estudiante_nombre}</span>
+          <span className="whitespace-normal">Convivencia › Nuevo caso</span>
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
@@ -47,20 +48,23 @@ export function FormularioAbrirCaso({ plan }: { plan: PlanDetalle }) {
       <TableScreenBody>
         <div className="flex flex-col gap-5 pb-6">
           <ErrorNoticeBanner error={form.error} />
+          <p className="text-sm text-muted-foreground">
+            Registro vinculado:{" "}
+            <span className="text-foreground">
+              Plan de acompañamiento · {plan.estudiante_nombre} · {formatFecha(plan.fecha_inicio)}
+            </span>
+          </p>
           <SeccionDatosCaso form={form} />
-          <div className="grid grid-cols-1 gap-3">
-            <ComboOpciones
-              id="caso-rol"
-              label="Rol del estudiante en la situación"
-              required
-              size="default"
-              todos={false}
-              value={form.rol}
-              options={form.roles}
-              error={form.errorRol}
-              onChange={form.setRol}
-            />
-          </div>
+          <ConstructoresInvolucrados
+            estudiantes={v.estudiantes}
+            onEstudiantes={form.setEstudiantes}
+            involucrados={v.involucrados}
+            onInvolucrados={(involucrados) => set({ involucrados })}
+            errorEstudiantes={form.errorEstudiantes}
+            errorInvolucrados={errores.involucrados}
+            mostrarErrores={form.intento}
+            fijoMatricula={plan.fk_tmatricula}
+          />
           <SeccionFechas form={{ v, set, errores, fechasCambiaron: false }} />
           <TextoLargo
             id="caso-descripcion"

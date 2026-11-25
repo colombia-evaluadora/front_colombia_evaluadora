@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
@@ -9,6 +10,7 @@ import type {
   EstudianteComite,
   FuncionarioComite,
   PeriodoComite,
+  QuorumVistaPrevia,
   SesionDetalle,
   SesionFila,
 } from "@/features/gestion-estudiantil/convivencia/api/comite-types"
@@ -48,7 +50,7 @@ export function useComiteQuery(periodo: number | null | undefined) {
 
 export interface SesionesParams {
   comite: number | null | undefined
-  filters: { FK_TLV_TIPO?: number | null }
+  filters: { FK_TLV_TIPO?: number | null; SEARCH?: string }
   pageIndex: number
   pageSize: number
   orden?: OrdenServidor
@@ -122,6 +124,33 @@ export function useEstudiantesComiteQuery(periodo: number | null | undefined, se
     queryFn: () => evalCol.getRows<EstudianteComite>(`${BASE}/periodo/${periodo}/estudiantes${queryString({ SEARCH: q, LIMITE })}`),
     enabled: periodo != null && enabled && q.length >= MIN_BUSQUEDA_ESTUDIANTE,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** El valor, con `espera` ms de retraso: la clave de la consulta no cambia a cada casilla marcada. */
+function useDiferido<T>(valor: T, espera: number): T {
+  const [diferido, setDiferido] = useState(valor)
+  const huella = JSON.stringify(valor)
+  useEffect(() => {
+    const t = setTimeout(() => setDiferido(valor), espera)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [huella, espera])
+  return diferido
+}
+
+/**
+ * `POST /comite/:ID/quorum`: vista previa del quórum de la sesión (Regla 23), calculada en el servidor.
+ * La clave es estable (asistentes ordenados) y la consulta espera a que se deje de marcar.
+ */
+export function useQuorumQuery(comite: number | null | undefined, fecha: string, asistentes: number[], enabled = true) {
+  const estables = useMemo(() => [...asistentes].sort((a, b) => a - b), [asistentes])
+  const diferidos = useDiferido(estables, 400)
+  return useQuery({
+    queryKey: comiteKeys.quorum(comite ?? "none", fecha, diferidos),
+    queryFn: () => evalCol.postRow<QuorumVistaPrevia>(`${BASE}/${comite}/quorum`, { FECHA: fecha, ASISTENTES: diferidos }),
+    enabled: comite != null && Boolean(fecha) && enabled,
     placeholderData: keepPreviousData,
   })
 }

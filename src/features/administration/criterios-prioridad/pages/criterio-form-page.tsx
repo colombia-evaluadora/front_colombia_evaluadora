@@ -222,7 +222,8 @@ function CriterioForm({
         >
           <span className="flex flex-wrap items-center gap-2">
             <span>
-              Criterios de prioridad <span className="text-muted-foreground">›</span>{" "}
+              {/* En uso: "Criterio › [nombre]" (Sección 5). */}
+              {enUso ? "Criterio" : "Criterios de prioridad"} <span className="text-muted-foreground">›</span>{" "}
               {criterio ? criterio.nombre : "Nuevo criterio"}
             </span>
             {enUso && (

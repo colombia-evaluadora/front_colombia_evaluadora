@@ -1,55 +1,28 @@
 "use no memo"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
-import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/pagination"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { getErrorMessage } from "@/lib/api-client"
 
-import type { OpcionCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
+import { SearchSesiones } from "@/features/gestion-estudiantil/convivencia/components/comite/search-sesiones"
 import { buildColumnsSesiones } from "@/features/gestion-estudiantil/convivencia/components/comite/columns-sesiones"
 import type { useComiteTab } from "@/features/gestion-estudiantil/convivencia/hooks/use-comite-tab"
 
 interface Props {
   tab: ReturnType<typeof useComiteTab>
-  puedeGestionar: boolean
   onVer: (id: number) => void
   onModificar: (id: number) => void
 }
 
-function FiltroTipo({ tipos, value, onChange }: { tipos: OpcionCatalogo[]; value: string; onChange: (v: string) => void }) {
-  const items = { "": "Todos", ...Object.fromEntries(tipos.map((t) => [t.value, t.label])) }
-  return (
-    <Field orientation="vertical" variant="outlined" className="w-full gap-2 sm:w-72">
-      <FieldLabel htmlFor="sesiones-tipo">Tipo de sesión</FieldLabel>
-      <Select items={items} value={value} onValueChange={(v) => onChange(v ?? "")}>
-        <SelectTrigger id="sesiones-tipo" size="default" className="w-full">
-          <SelectValue placeholder="Todos" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">Todos</SelectItem>
-          {tipos.map((t) => (
-            <SelectItem key={t.value} value={t.value}>
-              {t.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
-  )
-}
-
 /** «Sesiones» del Comité: filtro por tipo, tabla y paginación (G.2.COM.SES.1). */
-export function SeccionSesiones({ tab, puedeGestionar, onVer, onModificar }: Props) {
+export function SeccionSesiones({ tab, onVer, onModificar }: Props) {
   const { sesiones, pagina } = tab
   const rows = sesiones.data?.rows ?? []
   const pageCount = sesiones.data?.pageCount ?? 1
 
   const { table } = useDataTable({
     columns: buildColumnsSesiones({
-      puedeModificar: puedeGestionar,
       onAccion: (s, accion) => (accion === "ver" ? onVer(s.id) : onModificar(s.id)),
     }),
     data: rows,
@@ -64,14 +37,15 @@ export function SeccionSesiones({ tab, puedeGestionar, onVer, onModificar }: Pro
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold">Sesiones</h2>
-          <div className="flex flex-wrap items-end gap-3">
-            <FiltroTipo tipos={tab.tipos} value={tab.tipo} onChange={tab.setTipo} />
-            {tab.tipo && (
-              <Button size="sm" variant="outline" color="neutral" onClick={() => tab.setTipo("")}>
-                Limpiar filtros
-              </Button>
-            )}
-          </div>
+          <SearchSesiones
+            search={tab.search}
+            onSearchChange={tab.setSearch}
+            filters={tab.filtros}
+            applyFilters={tab.aplicarFiltros}
+            onClearAll={tab.limpiar}
+            onDraftChange={() => {}}
+            tipos={tab.tipos}
+          />
         </div>
       </div>
       <DataTable
@@ -79,7 +53,7 @@ export function SeccionSesiones({ tab, puedeGestionar, onVer, onModificar }: Pro
         isPending={sesiones.isPending}
         isError={sesiones.isError}
         onRetry={sesiones.refetch}
-        emptyMessage={tab.tipo ? "No hay sesiones para el filtro aplicado." : "Aún no hay sesiones del comité en este período."}
+        emptyMessage={tab.hayFiltros ? "No hay sesiones para el filtro aplicado." : "Aún no hay sesiones del comité en este período."}
         errorMessage={sesiones.error ? getErrorMessage(sesiones.error) : undefined}
       />
       <Pagination

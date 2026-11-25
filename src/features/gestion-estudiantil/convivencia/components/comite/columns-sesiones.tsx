@@ -16,12 +16,11 @@ export const ORDEN_SESIONES: MapaOrden = {
 }
 
 interface Opciones {
-  puedeModificar: boolean
   onAccion: (sesion: SesionFila, accion: AccionSesion) => void
 }
 
 /** Columnas de «Sesiones» (G.2.COM.SES.1): Fecha, Tipo, Asistentes, Quórum y Casos tratados. */
-export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): ColumnDef<SesionFila>[] {
+export function buildColumnsSesiones({ onAccion }: Opciones): ColumnDef<SesionFila>[] {
   return [
     {
       ...columnaOrden<SesionFila>(ORDEN_SESIONES, "fecha", "Fecha"),
@@ -45,7 +44,7 @@ export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): Co
     {
       ...columnaOrden<SesionFila>(ORDEN_SESIONES, "quorum", "Quórum"),
       accessorKey: "con_quorum",
-      cell: ({ row }) => <BadgeQuorum conQuorum={row.original.con_quorum} />,
+      cell: ({ row }) => <BadgeQuorum conQuorum={row.original.con_quorum} motivo={row.original.motivo_quorum} />,
     },
     {
       ...columnaOrden<SesionFila>(ORDEN_SESIONES, "casos", "Casos tratados"),
@@ -60,7 +59,7 @@ export function buildColumnsSesiones({ puedeModificar, onAccion }: Opciones): Co
       cell: ({ row }) => (
         <MenuAccionesSesion
           numero={row.original.numero}
-          puedeModificar={puedeModificar}
+          puedeModificar={row.original.puede_modificar_sesion === true}
           onAccion={(accion) => onAccion(row.original, accion)}
         />
       ),

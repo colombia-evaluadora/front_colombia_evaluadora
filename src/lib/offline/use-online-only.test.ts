@@ -44,10 +44,13 @@ describe("isOnlineOnlyPath", async () => {
       expect(isOnlineOnlyPath("/app/" + p)).toBe(false)
   })
 
-  it("los formularios sin cola y Mis dispositivos siguen en línea", () => {
-    for (const p of ["cobertura/matricula/agregar", "cobertura/matricula/detalle/5/editar", "gestion-estudiantil/convivencia/comite/sesion/nueva", "comunicaciones/comunicados/nuevo", "establecimiento-educativo/periodos/agregar", "mis-dispositivos"])
-      expect(isOnlineOnlyPath("/app/" + p)).toBe(true)
-    expect(isOnlineOnlyPath("/app/establecimiento-educativo/periodos/12/editar")).toBe(false)
-    expect(isOnlineOnlyPath("/app/planeador/actividades/nueva")).toBe(false)
+  it("ningún formulario se bloquea; los que no encolan avisan que guardar necesita conexión", async () => {
+    const { guardarNecesitaConexion } = await import("@/lib/offline/online-only-paths")
+    for (const p of ["cobertura/matricula/agregar", "cobertura/matricula/detalle/5/editar", "establecimiento-educativo/editar/3", "comunicaciones/comunicados/nuevo"]) {
+      expect(isOnlineOnlyPath("/app/" + p)).toBe(false)
+      expect(guardarNecesitaConexion("/app/" + p)).toBe(true)
+    }
+    expect(guardarNecesitaConexion("/app/planeador/actividades/agregar")).toBe(false)
+    expect(isOnlineOnlyPath("/app/mis-dispositivos")).toBe(true)
   })
 })
