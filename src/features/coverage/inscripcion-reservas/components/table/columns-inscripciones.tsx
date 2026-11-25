@@ -49,14 +49,14 @@ export const admisible = (o: OpcionInscripcion) =>
   o.estadoOpcion === "PENDIENTE" || o.estadoOpcion === "EN_LISTA_ESPERA"
 
 /** Acciones por fila según la Sección 3.3, "Acciones por fila". */
-function accionesDe(o: OpcionInscripcion, sorteoEjecutado: boolean): AccionInscripcion[] {
+function accionesDe(o: OpcionInscripcion, inscripcionCerrada: boolean): AccionInscripcion[] {
   const activa = o.estadoInscripcion !== "ANULADA"
   const acciones: AccionInscripcion[] = ["VER_DETALLE"]
   if (activa) acciones.push("EDITAR")
   if (admisible(o)) acciones.push("ADMITIR", "NO_ADMITIR")
-  // Regla 27: Inscrita o En lista de espera, menos de tres opciones y antes del sorteo.
+  // Regla 27: Inscrita o En lista de espera, menos de tres opciones, antes del cierre y del sorteo.
   if (
-    !sorteoEjecutado &&
+    !inscripcionCerrada &&
     o.totalOpciones < 3 &&
     (o.estadoInscripcion === "INSCRITA" || o.estadoInscripcion === "EN_LISTA_ESPERA")
   ) {
@@ -90,12 +90,13 @@ const TOOLTIP_SIN_AUTORIZACION =
 const ACTIONS_SIZE =6 * 32 + 5 * 4 + 16
 
 export function createInscripcionesColumns({
-  sorteoEjecutado,
+  inscripcionCerrada,
   admisionAbierta,
   fechaSorteo,
   onAction,
 }: {
-  sorteoEjecutado: boolean
+  /** Ya llegó la fecha de cierre o se hizo el sorteo: no se amplía (Regla 27). */
+  inscripcionCerrada: boolean
   admisionAbierta: boolean
   fechaSorteo: string
   onAction: (accion: AccionInscripcion, opcion: OpcionInscripcion) => void
@@ -216,7 +217,7 @@ export function createInscripcionesColumns({
       size: ACTIONS_SIZE,
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) =>
-        accionesDe(row.original, sorteoEjecutado).map((accion) => {
+        accionesDe(row.original, inscripcionCerrada).map((accion) => {
           const { label, icon: Icon } = ACCIONES_INSCRIPCION[accion]
           const bloqueada = accion === "ADMITIR" && !admisionAbierta
           return (

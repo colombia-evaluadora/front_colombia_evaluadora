@@ -191,6 +191,7 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                       legend="Modo de admisión"
                       value={f.state.value}
                       onChange={(v) => f.handleChange(v as ModoAdmision)}
+                      disabled={grupo.periodoAbierto}
                       opciones={[
                         ["MANUAL", "Manual"],
                         ["AUTOMATICA", "Automática"],
@@ -209,7 +210,7 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                       (c) => !f.state.value.includes(c.id),
                     )}
                     nombre={(id) => nombreCriterio.get(id) ?? id}
-                    disabled={grupo.bloqueado}
+                    disabled={grupo.bloqueado || grupo.periodoAbierto}
                   />
                 )}
               </form.Field>
@@ -220,7 +221,7 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                     legend="Desempate"
                     value={f.state.value}
                     onChange={(v) => f.handleChange(v as DesempateConfig)}
-                    disabled={grupo.bloqueado}
+                    disabled={grupo.bloqueado || grupo.periodoAbierto}
                     opciones={[
                       ["SORTEO", "Sorteo"],
                       ["ORDEN_INSCRIPCION", "Orden de inscripción"],
@@ -234,6 +235,7 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                   <fieldset className="grid gap-3">
                     <legend className="mb-3 text-sm font-medium">
                       Documentos requeridos para admitir
+                      {grupo.periodoAbierto && <NoEditable />}
                     </legend>
                     {(catalogos?.documentos ?? []).map((d) => {
                       const marcado = f.state.value.includes(d.id)
@@ -244,6 +246,7 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                         >
                           <Checkbox
                             checked={marcado}
+                            disabled={grupo.periodoAbierto}
                             onCheckedChange={(c) =>
                               f.handleChange(
                                 c
@@ -260,7 +263,12 @@ function ConfigGrupoForm({ grupo }: { grupo: GrupoAdmisionConfig }) {
                 )}
               </form.Field>
 
-              {grupo.bloqueado ? (
+              {grupo.periodoAbierto ? (
+                <Aviso tono="warning">
+                  Algún período del grupo ya está Abierto: solo se puede cambiar la fecha de cierre. El
+                  modo de admisión, los criterios, el desempate y los documentos quedan fijos.
+                </Aviso>
+              ) : grupo.bloqueado ? (
                 <Aviso tono="warning">
                   Ya hubo sorteo o admisión en este grupo: los criterios de prioridad y el desempate
                   quedan fijos.
