@@ -153,6 +153,12 @@ export const informesReportesHandlers = [
     return HttpResponse.json({ rows: [] })
   }),
 
+  // Certificado de calificaciones (C.4.CER.1a): número que llevaría el definitivo.
+  http.get("*/api/eval-col/informes-reportes/certificado-calificaciones/:id/previa", async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [{ numero: "CC-2027-0013", formativo: false }] })
+  }),
+
   http.post("*/api/eval-col/informes-reportes/demanda/query", async () => {
     await delay(150)
     return HttpResponse.json({

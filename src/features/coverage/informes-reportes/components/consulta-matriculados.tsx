@@ -11,7 +11,7 @@ import { Pagination } from "@/components/pagination"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { EyeIcon, XIcon } from "@/components/ui/icons"
+import { EyeIcon, FileTextIcon, XIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { paths } from "@/config/paths"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -26,11 +26,15 @@ import { AGE_SITUATION_LABELS, MarcaComplementaria, MatriculaStatusBadge } from 
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import { informesKeys, useMatriculadosQuery, usePeriodosInformeQuery, type Matriculado } from "@/features/coverage/informes-reportes/api/informes"
 import type { InformesSearch } from "@/features/coverage/informes-reportes/api/schema"
+import { CertificadoCalificacionesDialog } from "@/features/coverage/informes-reportes/components/certificado-calificaciones-dialog"
 
 const unicos = (valores: (string | number | null)[]) =>
   [...new Set(valores.filter((v): v is string | number => v != null && v !== ""))]
 
-function columnas(gradeLabel: (g: number) => string): ColumnDef<Matriculado>[] {
+// Preescolar (grados 0 y anteriores) es de enfoque formativo: sin certificado de calificaciones (Regla 59).
+const esFormativo = (m: Matriculado) => m.grado <= 0
+
+function columnas(gradeLabel: (g: number) => string, onCertificado: (m: Matriculado) => void): ColumnDef<Matriculado>[] {
   return [
     {
       id: "documentNumber",
@@ -107,9 +111,10 @@ function columnas(gradeLabel: (g: number) => string): ColumnDef<Matriculado>[] {
     },
     {
       id: "actions",
-      size: 48,
+      size: 96,
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => (
+        <div className="flex">
         <Tooltip>
           <TooltipTrigger
             render={
@@ -127,6 +132,31 @@ function columnas(gradeLabel: (g: number) => string): ColumnDef<Matriculado>[] {
           </TooltipTrigger>
           <TooltipContent>Ver detalle</TooltipContent>
         </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              // Deshabilitado no recibe el hover: el span lleva el texto emergente.
+              <span>
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label="Generar certificado de calificaciones"
+                  disabled={esFormativo(row.original)}
+                  onClick={() => onCertificado(row.original)}
+                >
+                  <FileTextIcon />
+                </Button>
+              </span>
+            }
+          />
+          <TooltipContent>
+            {esFormativo(row.original)
+              ? "Los grados de enfoque formativo no tienen certificado de calificaciones."
+              : "Generar certificado de calificaciones"}
+          </TooltipContent>
+        </Tooltip>
+        </div>
       ),
       enableHiding: false,
       enableSorting: false,
@@ -152,10 +182,11 @@ export function ConsultaMatriculados({ encabezado }: { encabezado: ReactNode }) 
   const search = coberturaInformesReportesRoute.useSearch()
   const navigate = coberturaInformesReportesRoute.useNavigate()
   const gradeLabel = useMatriculaGradeLabel()
+  const [certificado, setCertificado] = useState<Matriculado | null>(null)
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { data, isPending, isError, error, refetch } = useMatriculadosQuery(search, { pageIndex, pageSize, sorting })
   const { table } = useDataTable({
-    columns: columnas(gradeLabel),
+    columns: columnas(gradeLabel, setCertificado),
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
     getRowId: (m) => m.id,
@@ -359,6 +390,21 @@ export function ConsultaMatriculados({ encabezado }: { encabezado: ReactNode }) 
           />
         ) : null}
       </TableScreenBody>
+      {certificado ? (
+        <CertificadoCalificacionesDialog
+          matriculaId={certificado.id}
+          resumen={[
+            `${certificado.nombres} ${certificado.apellidos}`,
+            gradeLabel(certificado.grado),
+            certificado.grupo,
+            certificado.anio,
+            certificado.estado,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          onOpenChange={(o) => !o && setCertificado(null)}
+        />
+      ) : null}
     </TableScreen>
   )
 }

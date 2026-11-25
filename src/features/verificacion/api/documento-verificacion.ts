@@ -11,7 +11,7 @@ import { env } from "@/config/env"
  * `fetch` directo, como en el boletín: página pública, sin Bearer ni el manejo
  * de sesión vencida del interceptor de axios.
  */
-export type TipoDocumentoGe = "SERVICIO_SOCIAL_CERTIFICADO" | "MENCION_HONOR" | "CONSTANCIA_ESTUDIO"
+export type TipoDocumentoGe = "SERVICIO_SOCIAL_CERTIFICADO" | "MENCION_HONOR" | "CONSTANCIA_ESTUDIO" | "CERTIFICADO_CALIFICACIONES"
 export type TipoDocumento = "CARNE" | "BOLETIN" | TipoDocumentoGe | null
 export type EstadoCarne = "VIGENTE" | "REEMPLAZADO" | "ANULADO" | "NO_VALIDO"
 
@@ -51,7 +51,7 @@ export type DocumentoVerificacion =
   | { tipo: TipoDocumentoGe; ge: DocumentoGeVerificacion }
   | { tipo: null }
 
-const TIPOS_GE: string[] = ["SERVICIO_SOCIAL_CERTIFICADO", "MENCION_HONOR", "CONSTANCIA_ESTUDIO"]
+const TIPOS_GE: string[] = ["SERVICIO_SOCIAL_CERTIFICADO", "MENCION_HONOR", "CONSTANCIA_ESTUDIO", "CERTIFICADO_CALIFICACIONES"]
 const ESTADOS_GE: EstadoDocumentoGe[] = ["VIGENTE", "ACTUALIZADO", "REEMPLAZADO", "ANULADO", "NO_VALIDO"]
 
 const ESTADOS: EstadoCarne[] = ["VIGENTE", "REEMPLAZADO", "ANULADO", "NO_VALIDO"]
