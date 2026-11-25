@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckIcon, FileDownloadOutlinedIcon, PaperclipIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
@@ -9,18 +10,20 @@ import type { SesionDetalle } from "@/features/gestion-estudiantil/convivencia/a
 import { COLOR_ESTADO } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { EstadoCasoCodigo } from "@/features/gestion-estudiantil/convivencia/api/types"
-import { Dato, Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
+import { Seccion } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { dia, textoAsistentes } from "@/features/gestion-estudiantil/convivencia/utils/comite"
 
 /** Datos de la sesión: período, tipo y fecha. */
 export function DatosSesion({ sesion, periodo }: { sesion: SesionDetalle; periodo: string }) {
   return (
-    <dl className="grid grid-cols-1 gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
-      <Dato label="Período académico">{periodo}</Dato>
-      <Dato label="Tipo de sesión">{sesion.tipo_nombre}</Dato>
-      <Dato label="Fecha">{formatFecha(dia(sesion.fecha))}</Dato>
-    </dl>
+    <FichaDatos
+      datos={[
+        { etiqueta: "Período académico", valor: periodo },
+        { etiqueta: "Tipo de sesión", valor: sesion.tipo_nombre },
+        { etiqueta: "Fecha", valor: formatFecha(dia(sesion.fecha)) },
+      ]}
+    />
   )
 }
 

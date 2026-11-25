@@ -1,11 +1,11 @@
 import { useState } from "react"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { useNotify } from "@/components/notice/notice-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, InfoIcon } from "@/components/ui/icons"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { TextoLargo } from "@/features/gestion-estudiantil/commons/components/texto-largo"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -48,18 +48,21 @@ export function TabFicha({ caso: c }: { caso: CasoDetalle }) {
     <div className="flex flex-col gap-6 py-4">
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">Datos de la matrícula</h2>
-        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
-          <Dato label="Domicilio">{[d.direccion, d.barrio].filter(Boolean).join(" · ")}</Dato>
-          <Dato label="Población víctima del conflicto">{d.victima_conflicto ?? ""}</Dato>
-          <Dato label="Estrato">{d.estrato ?? ""}</Dato>
-          <Dato label="Sisbén">{d.sisben ?? ""}</Dato>
-          <Dato label="Subsidio">{d.subsidio ?? ""}</Dato>
-          <Dato label="Acudiente">
-            {d.acudiente?.nombre
-              ? `${d.acudiente.nombre}${d.acudiente.parentesco ? ` (${d.acudiente.parentesco})` : ""}`
-              : ""}
-          </Dato>
-        </dl>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Domicilio", valor: [d.direccion, d.barrio].filter(Boolean).join(" · ") },
+            { etiqueta: "Población víctima del conflicto", valor: d.victima_conflicto ?? "" },
+            { etiqueta: "Estrato", valor: d.estrato ?? "" },
+            { etiqueta: "Sisbén", valor: d.sisben ?? "" },
+            { etiqueta: "Subsidio", valor: d.subsidio ?? "" },
+            {
+              etiqueta: "Acudiente",
+              valor: d.acudiente?.nombre
+                ? `${d.acudiente.nombre}${d.acudiente.parentesco ? ` (${d.acudiente.parentesco})` : ""}`
+                : "",
+            },
+          ]}
+        />
       </section>
 
       {c.ficha.caracterizacion ? (

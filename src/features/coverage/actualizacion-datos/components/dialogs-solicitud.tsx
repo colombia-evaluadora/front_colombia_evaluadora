@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
@@ -134,31 +135,31 @@ const ETIQUETA_ESTADO = { PENDIENTE: "Pendiente", APROBADA: "Aprobada", RECHAZAD
 
 /** Ver detalle de una solicitud ya decidida: la decisión y su motivo. */
 export function DialogDetalleSolicitud({ solicitud: s, onClose }: { solicitud: SolicitudCorreccion; onClose: () => void }) {
-  const filas: [string, string][] = [
-    ["Solicitante", s.solicitante],
-    ["Estudiante", s.estudiante],
-    ["Dato", s.dato],
-    ["Valor actual", s.valorActual],
-    ["Valor solicitado", s.valorSolicitado],
-    ["Fecha", formatoFecha(s.fecha)],
-    ["Motivo de la solicitud", s.motivo],
-    ["Decisión", `${ETIQUETA_ESTADO[s.estado]}${s.decididoPor ? ` por ${s.decididoPor}` : ""}${s.fechaDecision ? ` el ${formatoFecha(s.fechaDecision)}` : ""}`],
-  ]
-  if (s.motivoDecision) filas.push(["Motivo del rechazo", s.motivoDecision])
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Solicitud de corrección</DialogTitle>
         </DialogHeader>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          {filas.map(([k, v]) => [
-            <dt key={`${k}-k`} className="text-muted-foreground">
-              {k}
-            </dt>,
-            <dd key={`${k}-v`}>{v}</dd>,
-          ])}
-        </dl>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Solicitante", valor: s.solicitante },
+            { etiqueta: "Estudiante", valor: s.estudiante },
+            { etiqueta: "Dato", valor: s.dato },
+            { etiqueta: "Valor actual", valor: s.valorActual },
+            { etiqueta: "Valor solicitado", valor: s.valorSolicitado },
+            { etiqueta: "Fecha", valor: formatoFecha(s.fecha) },
+            { etiqueta: "Motivo de la solicitud", valor: <span className="whitespace-pre-line">{s.motivo}</span>, ancho: true },
+            {
+              etiqueta: "Decisión",
+              valor: `${ETIQUETA_ESTADO[s.estado]}${s.decididoPor ? ` por ${s.decididoPor}` : ""}${s.fechaDecision ? ` el ${formatoFecha(s.fechaDecision)}` : ""}`,
+              ancho: true,
+            },
+            ...(s.motivoDecision
+              ? [{ etiqueta: "Motivo del rechazo", valor: <span className="whitespace-pre-line">{s.motivoDecision}</span>, ancho: true }]
+              : []),
+          ]}
+        />
         <DialogFooter>
           <Button type="button" variant="fill" color="primary" size="sm" onClick={onClose}>
             Cerrar

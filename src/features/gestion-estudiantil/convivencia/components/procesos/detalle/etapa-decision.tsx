@@ -1,3 +1,5 @@
+import { FichaDatos } from "@/components/ficha-datos"
+
 import type { EtapaDecision } from "@/features/gestion-estudiantil/convivencia/api/procesos-detalle-types"
 import type { CargoDTO } from "@/features/gestion-estudiantil/convivencia/api/procesos-types"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
@@ -12,19 +14,18 @@ export function EtapaDecisionProceso({ etapa, cargos }: { etapa: EtapaDecision; 
   const probados = cargos.filter((c) => etapa.cargos_probados?.includes(c.id)).map((c) => `${c.orden}. ${c.codigo}`)
   return (
     <EtapaProceso titulo="Decisión" alcanzada={etapa.alcanzada} resumen={formatFecha(etapa.fecha)}>
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Dato label="Instancia que decide">{etapa.instancia?.nombre ?? ""}</Dato>
-        <Dato label="Resultado">{etapa.resultado?.nombre ?? ""}</Dato>
-        <Dato label="Cargos probados">{probados.join(", ")}</Dato>
-        <Dato label="Plazo para recurrir">{formatFecha(etapa.plazo_recurrir)}</Dato>
-      </dl>
-      <Dato label="Motivación">
-        <span className="whitespace-pre-wrap">{etapa.motivacion}</span>
-      </Dato>
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Dato label="Acto de decisión firmado">{etapa.acto ? <ChipArchivo archivo={etapa.acto} /> : ""}</Dato>
-        <Dato label="Notificación de la decisión">{etapa.notificacion ? textoNotificacion(etapa.notificacion) : ""}</Dato>
-      </dl>
+      <FichaDatos
+        datos={[
+          { etiqueta: "Instancia que decide", valor: etapa.instancia?.nombre ?? "" },
+          { etiqueta: "Resultado", valor: etapa.resultado?.nombre ?? "" },
+          { etiqueta: "Cargos probados", valor: probados.join(", ") },
+          { etiqueta: "Plazo para recurrir", valor: formatFecha(etapa.plazo_recurrir) },
+          { etiqueta: "Motivación", valor: <span className="whitespace-pre-line">{etapa.motivacion}</span>, ancho: true },
+          { etiqueta: "Acto de decisión firmado", valor: etapa.acto ? <ChipArchivo archivo={etapa.acto} /> : "" },
+          { etiqueta: "Notificación de la decisión", valor: etapa.notificacion ? textoNotificacion(etapa.notificacion) : "" },
+        ]}
+      />
+      {/* La tabla de sanciones no cabe en una celda de la ficha: va debajo, con su etiqueta. */}
       <Dato label="Sanciones">
         <TablaSanciones sanciones={etapa.sanciones ?? []} />
       </Dato>

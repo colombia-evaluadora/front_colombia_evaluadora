@@ -1,3 +1,4 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -5,7 +6,6 @@ import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogT
 import { XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { formatFecha, formatFechaHora } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useRemisionExternaQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-remisiones-query"
 import type { RemisionRow } from "@/features/gestion-estudiantil/reintegracion/api/types"
@@ -31,41 +31,44 @@ export function DialogoDetalleRemision({ remision: r, onClose }: { remision: Rem
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Remisión — {r.entidad_nombre}</DialogTitle>
         </DialogHeader>
         <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
-            <Dato label="Fecha de remisión">{formatFecha(r.fecha_remision)}</Dato>
-            <Dato label="Fecha esperada de respuesta">{formatFecha(r.fecha_esperada)}</Dato>
-            <Dato label="Estado">
-              <span className="flex flex-wrap items-center gap-1">
-                <Badge variant="soft" color={r.estado === "RESPONDIDA" ? "success" : "info"}>
-                  <span>{r.estado_etiqueta}</span>
-                </Badge>
-                {r.vencida && (
-                  <Badge variant="soft" color="destructive">
-                    <span>Respuesta pendiente — plazo vencido</span>
-                  </Badge>
-                )}
-              </span>
-            </Dato>
-            <Dato label="Fecha de respuesta">{formatFecha(r.fecha_respuesta)}</Dato>
-            <Dato label="Registrada por">{r.registrada_por}</Dato>
-            <div className="sm:col-span-3">
-              <Dato label="Motivo">
-                <span className="whitespace-pre-line">{r.motivo}</span>
-              </Dato>
-            </div>
-            {r.respuesta && (
-              <div className="sm:col-span-3">
-                <Dato label="Respuesta recibida">
-                  <span className="whitespace-pre-line">{r.respuesta}</span>
-                </Dato>
-              </div>
-            )}
-          </dl>
+          <FichaDatos
+            datos={[
+              { etiqueta: "Fecha de remisión", valor: formatFecha(r.fecha_remision) },
+              { etiqueta: "Fecha esperada de respuesta", valor: formatFecha(r.fecha_esperada) },
+              {
+                etiqueta: "Estado",
+                valor: (
+                  <span className="flex flex-wrap items-center gap-1">
+                    <Badge variant="soft" color={r.estado === "RESPONDIDA" ? "success" : "info"}>
+                      <span>{r.estado_etiqueta}</span>
+                    </Badge>
+                    {r.vencida && (
+                      <Badge variant="soft" color="destructive">
+                        <span>Respuesta pendiente — plazo vencido</span>
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              },
+              { etiqueta: "Fecha de respuesta", valor: formatFecha(r.fecha_respuesta) },
+              { etiqueta: "Registrada por", valor: r.registrada_por },
+              { etiqueta: "Motivo", valor: <span className="whitespace-pre-line">{r.motivo}</span>, ancho: true },
+              ...(r.respuesta
+                ? [
+                    {
+                      etiqueta: "Respuesta recibida",
+                      valor: <span className="whitespace-pre-line">{r.respuesta}</span>,
+                      ancho: true,
+                    },
+                  ]
+                : []),
+            ]}
+          />
           {q.isPending && <Skeleton className="h-32" />}
           {q.isError && <ErrorNoticeBanner error={q.error} />}
           {d && (

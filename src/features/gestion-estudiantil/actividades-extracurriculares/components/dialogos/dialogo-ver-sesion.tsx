@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -9,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getErrorMessage } from "@/lib/api-client"
 import { fetchArchivoViewUrl } from "@/lib/files"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import { useSesionQuery } from "@/features/gestion-estudiantil/actividades-extracurriculares/api/query/use-actividades-query"
 import { formatHoras } from "@/features/gestion-estudiantil/actividades-extracurriculares/utils/formatos-actividad"
@@ -22,7 +22,7 @@ export function DialogoVerSesion({ sesionId, onClose }: { sesionId: number; onCl
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Sesión{s ? ` — ${s.actividad}` : ""}</DialogTitle>
           <DialogDescription>Detalle de la sesión y de sus asistentes.</DialogDescription>
@@ -32,36 +32,51 @@ export function DialogoVerSesion({ sesionId, onClose }: { sesionId: number; onCl
           <Skeleton className="h-48" />
         ) : s ? (
           <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
-            <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
-              <Dato label="Fecha">{formatFecha(s.fecha)}</Dato>
-              <Dato label="Duración (horas)">{formatHoras(s.duracion_horas)}</Dato>
-              <Dato label="Asistentes">
-                {s.asistentes.length} de {s.inscritos}
-              </Dato>
-              <div className="sm:col-span-3">
-                <Dato label="Observación">{s.observacion}</Dato>
-              </div>
-              {s.fk_tarchivo_soporte != null && (
-                <div className="sm:col-span-3">
-                  <Dato label="Soporte">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => {
-                        setErrorSoporte(null)
-                        fetchArchivoViewUrl(s.fk_tarchivo_soporte!)
-                          .then((t) => window.open(t.url, "_blank", "noopener"))
-                          .catch((e) => setErrorSoporte(getErrorMessage(e)))
-                      }}
-                    >
-                      <PaperclipIcon data-icon="inline-start" />
-                      Abrir el soporte
-                    </Button>
-                    {errorSoporte && <span className="text-xs text-red">{errorSoporte}</span>}
-                  </Dato>
-                </div>
-              )}
-            </dl>
+            <FichaDatos
+              datos={[
+                { etiqueta: "Fecha", valor: formatFecha(s.fecha) },
+                { etiqueta: "Duración (horas)", valor: formatHoras(s.duracion_horas) },
+                {
+                  etiqueta: "Asistentes",
+                  valor: (
+                    <>
+                      {s.asistentes.length} de {s.inscritos}
+                    </>
+                  ),
+                },
+                {
+                  etiqueta: "Observación",
+                  valor: s.observacion ? <span className="whitespace-pre-line">{s.observacion}</span> : null,
+                  ancho: true,
+                },
+                ...(s.fk_tarchivo_soporte != null
+                  ? [
+                      {
+                        etiqueta: "Soporte",
+                        ancho: true,
+                        valor: (
+                          <span className="flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => {
+                                setErrorSoporte(null)
+                                fetchArchivoViewUrl(s.fk_tarchivo_soporte!)
+                                  .then((t) => window.open(t.url, "_blank", "noopener"))
+                                  .catch((e) => setErrorSoporte(getErrorMessage(e)))
+                              }}
+                            >
+                              <PaperclipIcon data-icon="inline-start" />
+                              Abrir el soporte
+                            </Button>
+                            {errorSoporte && <span className="text-xs text-red">{errorSoporte}</span>}
+                          </span>
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
             <Table>
               <TableHeader>
                 <TableRow>

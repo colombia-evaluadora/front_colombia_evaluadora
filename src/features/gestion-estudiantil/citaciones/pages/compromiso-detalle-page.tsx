@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 
-import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
+import { FichaDatos } from "@/components/ficha-datos"
+import { TableScreen,TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +23,6 @@ import {
 } from "@/features/gestion-estudiantil/citaciones/api/ui-mappings"
 import { useDialogosCompromiso } from "@/features/gestion-estudiantil/citaciones/components/dialogos/use-dialogos-citaciones"
 import { formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { SeccionPlegable } from "@/features/gestion-estudiantil/commons/components/seccion-plegable"
 import { abreviarPersona } from "@/features/gestion-estudiantil/commons/utils/formatos"
 
@@ -105,20 +105,30 @@ function CompromisoDetalleContent({ compromiso: c }: { compromiso: CompromisoDet
       <TableScreenBody>
         <div className="flex flex-col gap-5 pb-6">
           <SeccionPlegable encuadrada comoSeccion titulo="Datos del compromiso" contentClassName="flex flex-col gap-4 px-4 py-4">
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-              <Dato label="Estudiante">{c.estudiante_nombre}</Dato>
-              <Dato label="Grado/Grupo">{c.grado_grupo}</Dato>
-              <Dato label="Sede">{c.sede_nombre}</Dato>
-              <Dato label="Jornada">{c.jornada_nombre}</Dato>
-              <Dato label="Acudiente">{c.acudiente_nombre ?? "Sin acudiente registrado"}</Dato>
-              <Dato label="Tipo">{c.tipo_nombre}</Dato>
-              <Dato label="Fecha">{formatFecha(c.fecha)}</Dato>
-              <Dato label="Fecha de revisión">{formatFecha(c.fecha_revision)}</Dato>
-              <Dato label="Creado por">{abreviarPersona(c.crea_nombre)}</Dato>
-              <Dato label="Registro de origen">{origen?.texto}</Dato>
-              <Dato label="Aceptado presencialmente">{c.aceptado_presencialmente ? "Sí" : "No"}</Dato>
-              {c.observacion_resultado && <Dato label="Observación del resultado">{c.observacion_resultado}</Dato>}
-            </dl>
+            <FichaDatos
+              datos={[
+                { etiqueta: "Estudiante", valor: c.estudiante_nombre },
+                { etiqueta: "Grado/Grupo", valor: c.grado_grupo },
+                { etiqueta: "Sede", valor: c.sede_nombre },
+                { etiqueta: "Jornada", valor: c.jornada_nombre },
+                { etiqueta: "Acudiente", valor: c.acudiente_nombre ?? "Sin acudiente registrado" },
+                { etiqueta: "Tipo", valor: c.tipo_nombre },
+                { etiqueta: "Fecha", valor: formatFecha(c.fecha) },
+                { etiqueta: "Fecha de revisión", valor: formatFecha(c.fecha_revision) },
+                { etiqueta: "Creado por", valor: abreviarPersona(c.crea_nombre) },
+                { etiqueta: "Registro de origen", valor: origen?.texto },
+                { etiqueta: "Aceptado presencialmente", valor: c.aceptado_presencialmente ? "Sí" : "No" },
+                ...(c.observacion_resultado
+                  ? [
+                      {
+                        etiqueta: "Observación del resultado",
+                        valor: <span className="whitespace-pre-line">{c.observacion_resultado}</span>,
+                        ancho: true,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           </SeccionPlegable>
 
           <SeccionPlegable

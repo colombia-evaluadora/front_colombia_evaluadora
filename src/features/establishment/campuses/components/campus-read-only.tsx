@@ -1,3 +1,4 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { ArrowCounterClockwiseIcon, LockIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
@@ -37,11 +38,9 @@ export function ReadOnlyValue({
 
 /**
  * Datos de la sede principal que vienen del establecimiento (Regla 85): en
- * solo lectura y como tabla de pares etiqueta · valor, tres por fila.
+ * solo lectura y en la ficha de datos de los Ver detalle (`FichaDatos`).
  */
 export function SyncedWithEstablishment({ pairs }: { pairs: [string, string][] }) {
-  // Completa la última fila para que la grilla no quede con huecos sin borde.
-  const filler = (3 - (pairs.length % 3)) % 3
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3">
       <p className="flex flex-wrap items-center gap-x-2 text-sm">
@@ -49,18 +48,7 @@ export function SyncedWithEstablishment({ pairs }: { pairs: [string, string][] }
         <span className="font-medium">Sincronizado con el establecimiento</span>
         <span className="text-xs text-muted-foreground">· Se cambia desde Establecimientos.</span>
       </p>
-      {/* `gap-px` sobre fondo de borde dibuja las líneas entre celdas. */}
-      <dl className="grid grid-cols-[minmax(8rem,auto)_1fr] gap-px overflow-hidden rounded-md border border-border bg-border text-sm lg:grid-cols-[minmax(8rem,auto)_1fr_minmax(8rem,auto)_1fr_minmax(8rem,auto)_1fr]">
-        {pairs.map(([etiqueta, valor]) => (
-          <div key={etiqueta} className="contents">
-            <dt className="bg-muted/40 px-3 py-2 text-muted-foreground">{etiqueta}</dt>
-            <dd className="min-w-0 bg-card px-3 py-2 break-words">{valor?.trim() || "—"}</dd>
-          </div>
-        ))}
-        {Array.from({ length: filler }, (_, i) => (
-          <div key={i} aria-hidden className="hidden bg-card lg:col-span-2 lg:block" />
-        ))}
-      </dl>
+      <FichaDatos datos={pairs.map(([etiqueta, valor]) => ({ etiqueta, valor: valor?.trim() }))} />
     </section>
   )
 }

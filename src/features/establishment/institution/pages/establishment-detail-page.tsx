@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { format, parseISO } from "date-fns"
-import type { ReactNode } from "react"
-
+import { FichaDatos, type DatoFicha } from "@/components/ficha-datos"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import {
   TableScreen,
@@ -12,7 +11,7 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { PencilIcon } from "@/components/ui/icons"
+import { PencilIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { paths } from "@/config/paths"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
@@ -67,7 +66,19 @@ export function EstablishmentDetailPage() {
       <TableScreenHeader>
         <TableScreenTitle
           action={
+            // Modo ver: sin acción principal (CLAUDE.md §13). Cerrar primero y Editar secundario, como
+            // «Modificar» en los Ver detalle.
             <div className="flex items-center gap-2">
+              <Button
+                render={<Link to={paths.app.establishments.general.getHref()} search={(prev) => prev} />}
+                nativeButton={false}
+                variant="outline"
+                color="neutral"
+                size="sm"
+              >
+                <XIcon data-icon="inline-start" />
+                Cerrar
+              </Button>
               {puedeEditar && establishment ? (
                 <Button
                   render={
@@ -77,21 +88,14 @@ export function EstablishmentDetailPage() {
                     />
                   }
                   nativeButton={false}
+                  variant="outline"
+                  color="neutral"
                   size="sm"
                 >
                   <PencilIcon data-icon="inline-start" />
                   Editar
                 </Button>
               ) : null}
-              <Button
-                render={<Link to={paths.app.establishments.general.getHref()} search={(prev) => prev} />}
-                nativeButton={false}
-                variant="fill"
-                color="neutral"
-                size="sm"
-              >
-                Cerrar
-              </Button>
             </div>
           }
         >
@@ -130,84 +134,62 @@ export function EstablishmentDetailPage() {
                         />
                       </div>
                       <div className="flex grow flex-col gap-6">
-                        <DetailSection title="Identificación">
-                          <DetailItem label="Nombre del establecimiento" value={establishment.basicInfo.name} />
-                          <DetailItem label="Código DANE" value={establishment.basicInfo.dane} />
-                          <DetailItem label="NIT" value={establishment.basicInfo.nit} />
-                          <DetailItem
-                            label="Naturaleza jurídica"
-                            value={nameOf(ownershipTypes, establishment.basicInfo.ownershipType)}
-                          />
-                          <DetailItem label="Sector" value={sector} />
-                          <DetailItem
-                            label="Modalidad de prestación del servicio"
-                            value={nameOf(modalities, establishment.basicInfo.serviceModality)}
-                          />
-                        </DetailSection>
-                        <DetailSection title="Domicilio">
-                          <DetailItem
-                            label="Municipio"
-                            value={municipalityLabel(municipalities, establishment.address.municipality?.id)}
-                          />
-                          <DetailItem label="Zona" value={nameOf(zones, establishment.address.zone)} />
-                          <DetailItem label="Dirección" value={establishment.address.address} />
-                          <DetailItem label="Barrio" value={establishment.address.district?.name} />
-                          <DetailItem label="Comuna" value={establishment.address.commune?.name} />
-                          <DetailItem label="Localidad" value={establishment.address.locality?.name} />
-                        </DetailSection>
-                        <DetailSection title="Contacto">
-                          <DetailItem label="Correo electrónico" value={establishment.contact.email} />
-                          <DetailItem label="Página web" value={establishment.contact.website} />
-                          <DetailItem label="Teléfono" value={establishment.contact.phone} />
-                          <DetailItem label="Fax" value={establishment.contact.fax} />
-                        </DetailSection>
+                        <DetailSection
+                          title="Identificación"
+                          datos={[
+                            { etiqueta: "Nombre del establecimiento", valor: texto(establishment.basicInfo.name) },
+                            { etiqueta: "Código DANE", valor: texto(establishment.basicInfo.dane) },
+                            { etiqueta: "NIT", valor: texto(establishment.basicInfo.nit) },
+                            { etiqueta: "Naturaleza jurídica", valor: texto(nameOf(ownershipTypes, establishment.basicInfo.ownershipType)) },
+                            { etiqueta: "Sector", valor: texto(sector) },
+                            { etiqueta: "Modalidad de prestación del servicio", valor: texto(nameOf(modalities, establishment.basicInfo.serviceModality)) },
+                          ]}
+                        />
+                        <DetailSection
+                          title="Domicilio"
+                          datos={[
+                            { etiqueta: "Municipio", valor: texto(municipalityLabel(municipalities, establishment.address.municipality?.id)) },
+                            { etiqueta: "Zona", valor: texto(nameOf(zones, establishment.address.zone)) },
+                            { etiqueta: "Dirección", valor: texto(establishment.address.address) },
+                            { etiqueta: "Barrio", valor: texto(establishment.address.district?.name) },
+                            { etiqueta: "Comuna", valor: texto(establishment.address.commune?.name) },
+                            { etiqueta: "Localidad", valor: texto(establishment.address.locality?.name) },
+                          ]}
+                        />
+                        <DetailSection
+                          title="Contacto"
+                          datos={[
+                            { etiqueta: "Correo electrónico", valor: texto(establishment.contact.email) },
+                            { etiqueta: "Página web", valor: texto(establishment.contact.website) },
+                            { etiqueta: "Teléfono", valor: texto(establishment.contact.phone) },
+                            { etiqueta: "Fax", valor: texto(establishment.contact.fax) },
+                          ]}
+                        />
                       </div>
                     </CardContent>
                   </Card>
                   <Card className={accordionCardClassName}>
                     <CardContent>
-                      <DetailSection title="Información complementaria">
-                        <DetailItem
-                          label="Resolución de aprobación"
-                          value={establishment.additionalInfo.approvalResolution}
-                        />
-                        <DetailItem
-                          label="Calendario"
-                          value={nameOf(calendarios, establishment.additionalInfo.calendar)}
-                        />
-                        {/* Solo en el sector No oficial (Regla 90). */}
-                        {esSectorNoOficial(sector) ? (
-                          <>
-                            <DetailItem
-                              label="Idioma de enseñanza"
-                              value={nameOf(idiomas, establishment.additionalInfo.teachingLanguage)}
-                            />
-                            <DetailItem
-                              label="Régimen tarifario"
-                              value={nameOf(costRegimen, establishment.additionalInfo.costRegime)}
-                            />
-                          </>
-                        ) : null}
-                        <DetailItem label="Género de la población atendida" value={poblacion?.gender ?? "Sin estudiantes"} />
-                        <DetailItem
-                          label="Licencia de funcionamiento"
-                          value={establishment.additionalInfo.licenseStatus}
-                        />
-                        <DetailItem
-                          label="Fecha licencia"
-                          value={formatDate(establishment.additionalInfo.licenseDate)}
-                        />
-                        {/* Calculados con las matrículas (sso V571.2). */}
-                        <DetailItem
-                          label="Atiende población perteneciente a grupos étnicos"
-                          value={yesNo(poblacion?.ethnicGroups === true)}
-                        />
-                        <DetailItem
-                          label="Atiende población con capacidades o talentos excepcionales"
-                          value={yesNo(poblacion?.exceptionalTalents === true)}
-                        />
-                        <DetailItem label="Ofrece subsidio" value={yesNo(poblacion?.subsidy === true)} />
-                      </DetailSection>
+                      <DetailSection
+                        title="Información complementaria"
+                        datos={[
+                          { etiqueta: "Resolución de aprobación", valor: texto(establishment.additionalInfo.approvalResolution) },
+                          { etiqueta: "Calendario", valor: texto(nameOf(calendarios, establishment.additionalInfo.calendar)) },
+                          // Solo en el sector No oficial (Regla 90).
+                          ...(esSectorNoOficial(sector) ? [
+                              { etiqueta: "Idioma de enseñanza", valor: texto(nameOf(idiomas, establishment.additionalInfo.teachingLanguage)) },
+                              { etiqueta: "Régimen tarifario", valor: texto(nameOf(costRegimen, establishment.additionalInfo.costRegime)) },
+                            ]
+                          : []),
+                          { etiqueta: "Género de la población atendida", valor: texto(poblacion?.gender ?? "Sin estudiantes") },
+                          { etiqueta: "Licencia de funcionamiento", valor: texto(establishment.additionalInfo.licenseStatus) },
+                          { etiqueta: "Fecha licencia", valor: texto(formatDate(establishment.additionalInfo.licenseDate)) },
+                          // Calculados con las matrículas (sso V571.2).
+                          { etiqueta: "Atiende población perteneciente a grupos étnicos", valor: texto(yesNo(poblacion?.ethnicGroups === true)) },
+                          { etiqueta: "Atiende población con capacidades o talentos excepcionales", valor: texto(yesNo(poblacion?.exceptionalTalents === true)) },
+                          { etiqueta: "Ofrece subsidio", valor: texto(yesNo(poblacion?.subsidy === true)) },
+                        ]}
+                      />
                     </CardContent>
                   </Card>
                 </div>
@@ -236,23 +218,19 @@ export function EstablishmentDetailPage() {
   )
 }
 
-function DetailSection({ title, children }: { title: string; children: ReactNode }) {
+/** Título y ficha de datos de los Ver detalle (`FichaDatos`, CLAUDE.md §13). */
+function DetailSection({ title, datos }: { title: string; datos: DatoFicha[] }) {
   return (
     <section className="flex grow flex-col gap-3">
       <h3 className="text-base font-semibold">{title}</h3>
-      <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+      <FichaDatos datos={datos} />
     </section>
   )
 }
 
-function DetailItem({ label, value }: { label: string; value: string | null | undefined }) {
-  const text = value?.trim()
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm break-words">{text || "—"}</dd>
-    </div>
-  )
+/** Valor sin espacios sobrantes; vacío queda en "" y la ficha muestra «—». */
+function texto(value: string | null | undefined): string {
+  return value?.trim() ?? ""
 }
 
 function nameOf(items: CatalogItem[], item: CatalogItem | null | undefined): string {

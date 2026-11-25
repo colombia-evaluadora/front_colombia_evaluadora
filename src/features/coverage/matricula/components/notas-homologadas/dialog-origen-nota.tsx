@@ -1,3 +1,4 @@
+import { FichaDatos } from "@/components/ficha-datos"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { SpinnerIcon } from "@/components/ui/icons"
@@ -22,7 +23,7 @@ export function DialogOrigenNota({ matriculaId, nota, onOpenChange }: Props) {
 
   return (
     <Dialog open={nota != null} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             Origen de la nota — {nota?.asignatura} · {nota?.periodo}
@@ -39,23 +40,22 @@ export function DialogOrigenNota({ matriculaId, nota, onOpenChange }: Props) {
 
         {data && (
           <>
-            <dl className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] overflow-hidden rounded-md border border-border text-sm">
-              {[
-                ["Grupo de origen", data.grupoOrigen],
-                ["Responsable de enseñanza", data.responsableEnsenanza],
-                ["Snapshot", data.snapshot],
-              ].map(([label, value]) => (
-                <div key={label} className="contents">
-                  <dt className="border-b border-border bg-muted/40 px-4 py-2.5 text-muted-foreground">{label}</dt>
-                  <dd className="border-b border-border px-4 py-2.5">{value}</dd>
-                </div>
-              ))}
-              <dt className="bg-muted/40 px-4 py-2.5 text-muted-foreground">Nota homologada</dt>
-              <dd className="px-4 py-2.5 font-semibold">
-                {formatNota(data.nota)} · {data.valoracion}
-                {data.porcentajeCursado != null && ` · parcial, ${data.porcentajeCursado} % cursado`}
-              </dd>
-            </dl>
+            <FichaDatos
+              datos={[
+                { etiqueta: "Grupo de origen", valor: data.grupoOrigen },
+                { etiqueta: "Responsable de enseñanza", valor: data.responsableEnsenanza },
+                { etiqueta: "Snapshot", valor: data.snapshot },
+                {
+                  etiqueta: "Nota homologada",
+                  valor: (
+                    <span className="font-semibold">
+                      {formatNota(data.nota)} · {data.valoracion}
+                      {data.porcentajeCursado != null && ` · parcial, ${data.porcentajeCursado} % cursado`}
+                    </span>
+                  ),
+                },
+              ]}
+            />
 
             {data.actividades.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">

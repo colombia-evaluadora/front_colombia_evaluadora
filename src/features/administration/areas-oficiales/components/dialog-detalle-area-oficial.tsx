@@ -1,5 +1,4 @@
-import type { ReactNode } from "react"
-
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,52 +26,65 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
   return (
     <Dialog open={area != null} onOpenChange={(next) => !next && onClose()}>
       {area && (
-        <DialogContent showCloseButton={false} className="sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>{area.nombre}</DialogTitle>
           </DialogHeader>
-          <dl className="grid gap-4 text-sm sm:grid-cols-[10rem_1fr]">
-            <Dato label="Estado">
-              {area.habilitada ? (
-                <Badge variant="soft" color="success">
-                  Activa
-                </Badge>
-              ) : (
-                <Badge variant="soft" color="neutral">
-                  Inactiva
-                </Badge>
-              )}
-            </Dato>
-            <Dato label="Niveles educativos">
-              {area.niveles.length ? (
-                <ul className="flex flex-wrap gap-1.5">
-                  {area.niveles.map((n) => (
-                    <li key={n.pkNivel}>
-                      <Badge variant="soft" color="neutral">
-                        {n.nombre}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                "—"
-              )}
-            </Dato>
-            {area.esDimensionTransversal && (
-              <Dato label="Marca">
-                <Badge variant="soft" color="info">
-                  {DIMENSION_TRANSVERSAL_LABEL}
-                </Badge>
-              </Dato>
-            )}
-            {area.especialidad && <Dato label="Especialidad">{area.especialidad}</Dato>}
-            <Dato label="En uso">
-              <span className="tabular-nums">
-                {area.usos.planesEstudio} en Planes de estudio · {area.usos.referentes} en
-                Referentes
-              </span>
-            </Dato>
-          </dl>
+          <FichaDatos
+            datos={[
+              {
+                etiqueta: "Estado",
+                valor: area.habilitada ? (
+                  <Badge variant="soft" color="success">
+                    Activa
+                  </Badge>
+                ) : (
+                  <Badge variant="soft" color="neutral">
+                    Inactiva
+                  </Badge>
+                ),
+              },
+              {
+                etiqueta: "Niveles educativos",
+                valor: area.niveles.length ? (
+                  <ul className="flex flex-wrap gap-1.5">
+                    {area.niveles.map((n) => (
+                      <li key={n.pkNivel}>
+                        <Badge variant="soft" color="neutral">
+                          {n.nombre}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  "—"
+                ),
+              },
+              ...(area.esDimensionTransversal
+                ? [
+                    {
+                      etiqueta: "Marca",
+                      // Fila entera: el badge es largo y no se parte (en media fila se salía de la celda).
+                      ancho: true,
+                      valor: (
+                        <Badge variant="soft" color="info">
+                          {DIMENSION_TRANSVERSAL_LABEL}
+                        </Badge>
+                      ),
+                    },
+                  ]
+                : []),
+              ...(area.especialidad ? [{ etiqueta: "Especialidad", valor: area.especialidad }] : []),
+              {
+                etiqueta: "En uso",
+                valor: (
+                  <span className="tabular-nums">
+                    {area.usos.planesEstudio} en Planes de estudio · {area.usos.referentes} en Referentes
+                  </span>
+                ),
+              },
+            ]}
+          />
           {area.enUso && (
             <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm text-blue">
               <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -80,7 +92,7 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
             </p>
           )}
           <DialogFooter>
-            <Button size="sm" type="button" variant="fill" color="neutral" onClick={onClose}>
+            <Button size="sm" type="button" variant="outline" color="neutral" onClick={onClose}>
               <XIcon data-icon="inline-start" />
               Cerrar
             </Button>
@@ -88,14 +100,5 @@ export function DialogDetalleAreaOficial({ area, onClose }: DialogDetalleAreaOfi
         </DialogContent>
       )}
     </Dialog>
-  )
-}
-
-function Dato({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0">{children}</dd>
-    </>
   )
 }

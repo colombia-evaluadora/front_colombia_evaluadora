@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
@@ -94,8 +95,8 @@ function Botones({
 
 const Requeridos = () => <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
-/** Los datos del convenio en una tabla de dos columnas. */
-export function ResumenConvenio({ c }: { c: Convenio }) {
+/** Los datos del convenio, en orden: los usa el resumen de las acciones y la ficha de Ver detalle. */
+function filasConvenio(c: Convenio) {
   const filas: [string, string][] = [
     ["Establecimiento que recibe", c.receptor],
     ["Establecimiento de origen", c.origen],
@@ -107,6 +108,12 @@ export function ResumenConvenio({ c }: { c: Convenio }) {
   ]
   if (c.documentos.length) filas.push(["Documentos requeridos", c.documentos.join(", ")])
   if (c.motivo) filas.push(["Motivo", c.motivo])
+  return filas
+}
+
+/** Los datos del convenio en una tabla de dos columnas. */
+export function ResumenConvenio({ c }: { c: Convenio }) {
+  const filas = filasConvenio(c)
   return (
     <dl className="grid overflow-hidden rounded-md border border-border text-sm sm:grid-cols-[auto_1fr] [&>:last-child]:border-b-0 sm:[&>:nth-last-child(2)]:border-b-0">
       {filas.map(([t, v]) => (
@@ -149,11 +156,17 @@ const motivoValido = (m: string) => m.trim().length >= MOTIVO_MIN && m.trim().le
 export function DialogDetalleConvenio({ convenio: c, onOpenChange }: { convenio: Convenio; onOpenChange: (o: boolean) => void }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Convenio con {c.contraparte}</DialogTitle>
         </DialogHeader>
-        <ResumenConvenio c={c} />
+        <FichaDatos
+          datos={filasConvenio(c).map(([etiqueta, valor]) =>
+            etiqueta === "Motivo"
+              ? { etiqueta, valor: <span className="whitespace-pre-line">{valor}</span>, ancho: true }
+              : { etiqueta, valor, ancho: etiqueta === "Documentos requeridos" },
+          )}
+        />
         <DialogFooter>
           <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
             Cerrar

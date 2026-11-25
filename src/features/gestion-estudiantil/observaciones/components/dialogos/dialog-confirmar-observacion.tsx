@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import type { ResumenObservacion } from "@/features/gestion-estudiantil/observaciones/api/types"
@@ -35,7 +35,11 @@ export function DialogConfirmarObservacion({ resumen, pending, onCancelar, onCon
     <Dialog open onOpenChange={(open) => !open && !pending && onCancelar()}>
       <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Confirmar la observación</DialogTitle>
+          {/* G.7.ACC.1: ícono de advertencia junto al título (no es destructivo: Confirmar sigue azul). */}
+          <DialogTitle className="flex items-center gap-2">
+            <WarningIcon aria-hidden="true" className="size-5 shrink-0 text-yellow" />
+            Confirmar la observación
+          </DialogTitle>
           <DialogDescription>
             Esta observación se aplicará a <strong>{destinoConfirmacion(resumen)}</strong>. {boletin}
           </DialogDescription>

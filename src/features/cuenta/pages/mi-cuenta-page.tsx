@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { useForm } from "@tanstack/react-form"
 import * as z from "zod"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -46,18 +47,14 @@ function MisDatos() {
   return (
     <div className="flex flex-col gap-6">
 
-      <section className="bg-card rounded-xl border p-5">
-        <dl className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground text-xs">Nombre</dt>
-            <dd className="font-medium">{user?.name || "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground text-xs">Correo</dt>
-            <dd className="font-medium break-all">{user?.email || "—"}</dd>
-          </div>
-        </dl>
-      </section>
+      {/* Datos de la cuenta en la ficha de los Ver detalle (CLAUDE.md §13): ya trae su marco. Un dato
+          por fila: la página es angosta y en media fila el correo se partía. */}
+      <FichaDatos
+        datos={[
+          { etiqueta: "Nombre", valor: user?.name, ancho: true },
+          { etiqueta: "Correo", valor: user?.email, ancho: true },
+        ]}
+      />
 
       <section className="bg-card flex flex-col gap-4 rounded-xl border p-5">
         <div>

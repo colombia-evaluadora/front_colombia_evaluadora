@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 
+import { FichaDatos } from "@/components/ficha-datos"
 import { useNotify } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -7,14 +8,11 @@ import { ChatTextIcon, ControlPointIcon, FileDownloadOutlinedIcon } from "@/comp
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { downloadReport } from "@/lib/report-client"
 
-import { Dato } from "@/features/gestion-estudiantil/commons/components/dato"
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
 import { abreviarPersona, formatFecha } from "@/features/gestion-estudiantil/commons/utils/formatos"
 import type { GestionAlertaDetalle, GestionRuta } from "@/features/gestion-estudiantil/prevencion/api/types"
 import type { ResumenRemision } from "@/features/gestion-estudiantil/commons/components/remisiones/dialogos-remision"
 import { useRemisionExternaQuery } from "@/features/gestion-estudiantil/reintegracion/api/query/use-remisiones-query"
-
-const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
 
 const fechaDe = (x: string | { fecha: string }) => (typeof x === "string" ? x : x.fecha)
 const textoDe = (x: string | { nombre?: string }) => (typeof x === "string" ? x : (x.nombre ?? ""))
@@ -89,46 +87,61 @@ export function RutaProteccion({ d, ruta, onRegistrarGestion, onRegistrarRespues
         </Button>
       </div>
 
-      <dl className={GRID}>
-        <Dato label="Entidad">{ruta.entidad_nombre}</Dato>
-        <Dato label="Fecha de activación">{formatFecha(ruta.fecha_activacion)}</Dato>
-        <Dato label="Activada por">{abreviarPersona(ruta.activada_por_nombre) || ruta.activada_por_rol}</Dato>
-        <Dato label="Fecha esperada de respuesta">{formatFecha(resumen.fecha_esperada)}</Dato>
-        <Dato label="Recordatorios">{recordatorios.map((f) => formatFecha(f)).join(", ")}</Dato>
-        <Dato label="Estado de la remisión">
-          <span className="flex flex-wrap gap-1">
-            <Badge variant="soft" color={enviada ? "info" : "success"}>
-              <span>{resumen.estado_etiqueta}</span>
-            </Badge>
-            {enviada && vencida && (
-              <Badge variant="soft" color="destructive">
-                <span>Respuesta pendiente — plazo vencido</span>
-              </Badge>
-            )}
-          </span>
-        </Dato>
-      </dl>
-      <dl className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Dato label="Motivo del informe">{ruta.motivo && <span className="whitespace-pre-line">{ruta.motivo}</span>}</Dato>
-        <Dato label="Descripción de la situación reportada">
-          {ruta.descripcion && <span className="whitespace-pre-line">{ruta.descripcion}</span>}
-        </Dato>
-        <Dato label="Entorno familiar y antecedentes institucionales">
-          {ruta.entorno_familiar && <span className="whitespace-pre-line">{ruta.entorno_familiar}</span>}
-        </Dato>
-        <Dato label="Situación actual de residencia, cuidado y protección">
-          {ruta.situacion_residencia && <span className="whitespace-pre-line">{ruta.situacion_residencia}</span>}
-        </Dato>
-        <Dato label="Actuaciones institucionales">
-          {ruta.actuaciones.length > 0 && (
-            <ul className="list-disc pl-5">
-              {ruta.actuaciones.map((a, i) => (
-                <li key={i}>{textoDe(a)}</li>
-              ))}
-            </ul>
-          )}
-        </Dato>
-      </dl>
+      <FichaDatos
+        datos={[
+          { etiqueta: "Entidad", valor: ruta.entidad_nombre },
+          { etiqueta: "Fecha de activación", valor: formatFecha(ruta.fecha_activacion) },
+          { etiqueta: "Activada por", valor: abreviarPersona(ruta.activada_por_nombre) || ruta.activada_por_rol },
+          { etiqueta: "Fecha esperada de respuesta", valor: formatFecha(resumen.fecha_esperada) },
+          { etiqueta: "Recordatorios", valor: recordatorios.map((f) => formatFecha(f)).join(", ") },
+          {
+            etiqueta: "Estado de la remisión",
+            valor: (
+              <span className="flex flex-wrap gap-1">
+                <Badge variant="soft" color={enviada ? "info" : "success"}>
+                  <span>{resumen.estado_etiqueta}</span>
+                </Badge>
+                {enviada && vencida && (
+                  <Badge variant="soft" color="destructive">
+                    <span>Respuesta pendiente — plazo vencido</span>
+                  </Badge>
+                )}
+              </span>
+            ),
+          },
+          {
+            etiqueta: "Motivo del informe",
+            valor: ruta.motivo && <span className="whitespace-pre-line">{ruta.motivo}</span>,
+            ancho: true,
+          },
+          {
+            etiqueta: "Descripción de la situación reportada",
+            valor: ruta.descripcion && <span className="whitespace-pre-line">{ruta.descripcion}</span>,
+            ancho: true,
+          },
+          {
+            etiqueta: "Entorno familiar y antecedentes institucionales",
+            valor: ruta.entorno_familiar && <span className="whitespace-pre-line">{ruta.entorno_familiar}</span>,
+            ancho: true,
+          },
+          {
+            etiqueta: "Situación actual de residencia, cuidado y protección",
+            valor: ruta.situacion_residencia && <span className="whitespace-pre-line">{ruta.situacion_residencia}</span>,
+            ancho: true,
+          },
+          {
+            etiqueta: "Actuaciones institucionales",
+            valor: ruta.actuaciones.length > 0 && (
+              <ul className="list-disc pl-5">
+                {ruta.actuaciones.map((a, i) => (
+                  <li key={i}>{textoDe(a)}</li>
+                ))}
+              </ul>
+            ),
+            ancho: true,
+          },
+        ]}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-medium">Gestiones</h3>
@@ -170,12 +183,12 @@ export function RutaProteccion({ d, ruta, onRegistrarGestion, onRegistrarRespues
         </TableBody>
       </Table>
       {ruta.respuesta ? (
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
-          <Dato label="Fecha de respuesta">{formatFecha(ruta.fecha_respuesta)}</Dato>
-          <Dato label="Respuesta recibida">
-            <span className="whitespace-pre-line">{ruta.respuesta}</span>
-          </Dato>
-        </dl>
+        <FichaDatos
+          datos={[
+            { etiqueta: "Fecha de respuesta", valor: formatFecha(ruta.fecha_respuesta) },
+            { etiqueta: "Respuesta recibida", valor: <span className="whitespace-pre-line">{ruta.respuesta}</span>, ancho: true },
+          ]}
+        />
       ) : (
         <p className="text-xs text-muted-foreground">
           Sin respuesta registrada. Al registrarla, la remisión queda Respondida y se cancelan los recordatorios pendientes.
