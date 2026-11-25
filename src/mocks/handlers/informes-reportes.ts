@@ -153,6 +153,66 @@ export const informesReportesHandlers = [
     return HttpResponse.json({ rows: [] })
   }),
 
+  // Graduación (C.4.GRA.1): los cuatro estudiantes del prototipo.
+  // Actas de graduación (C.4.ACT): lista del año y graduados de un acta.
+  http.post("*/api/eval-col/informes-reportes/graduacion/actas/query", async () => {
+    await delay(300)
+    return HttpResponse.json([
+      { acta_id: 1, numero: "014", fecha: "2027-12-02", modalidad: "CEREMONIA", libro: 1, folio: 14, graduados: 3, emitida: true, total_count: 2 },
+      { acta_id: 2, numero: "015", fecha: "2027-12-15", modalidad: "VENTANILLA", libro: 1, folio: 15, graduados: 1, emitida: false, total_count: 2 },
+    ])
+  }),
+  http.get("*/api/eval-col/informes-reportes/graduacion/actas/:id/graduados", async () => {
+    await delay(200)
+    const titulo = "BACHILLER TÉCNICO CON ESPECIALIDAD EN SISTEMAS"
+    return HttpResponse.json([
+      { n: 1, matricula_id: 4, graduacion_id: 1, documento: "T.I. 1098765704", estudiante: "MATEO RÍOS CÁRDENAS", titulo, diploma: "0415", entrega: "2027-12-05" },
+      { n: 2, matricula_id: 5, graduacion_id: 2, documento: "T.I. 1098765705", estudiante: "LAURA MÉNDEZ PARDO", titulo, diploma: "0416", entrega: null },
+      { n: 3, matricula_id: 6, graduacion_id: 3, documento: "C.C. 1098765706", estudiante: "SOFÍA ARDILA ROJAS", titulo: "BACHILLER ACADÉMICO", diploma: null, entrega: null },
+    ])
+  }),
+  http.post("*/api/eval-col/informes-reportes/graduacion/query", async () => {
+    await delay(150)
+    const base = { grupo: "11°A", requisitos: 5, faltan: null, graduacion_id: null, acta: null, fecha_grado: null, diploma: null, diploma_emitido: false, entrega: null }
+    return HttpResponse.json({
+      rows: conTotal([
+        { ...base, matricula_id: 1, documento: "1098765701", estudiante: "Laura Méndez Ríos", estado: "Aprobado", cumplidos: 5 },
+        { ...base, matricula_id: 2, documento: "1098765702", estudiante: "Camilo Andrés Pardo", estado: "Aprobado", cumplidos: 4, faltan: "Examen de Estado Saber 11" },
+        { ...base, matricula_id: 3, documento: "1098765703", estudiante: "Sofía Lozano Díaz", estado: "Aprobado", cumplidos: 3, faltan: "Servicio social estudiantil (62 de 80 h); Estudios constitucionales (50 horas)" },
+        { ...base, matricula_id: 4, documento: "1098765704", estudiante: "Mateo Ríos Cárdenas", estado: "Graduado", cumplidos: 5, graduacion_id: 1, acta: "014", fecha_grado: "2027-12-02", diploma: "0415", diploma_emitido: true, entrega: "2027-12-05" },
+      ]),
+    })
+  }),
+
+  http.get("*/api/eval-col/informes-reportes/graduacion/:id/requisitos", async () => {
+    await delay(100)
+    return HttpResponse.json({
+      rows: [
+        { orden: 1, codigo: "APROBAR", nombre: "Aprobar el último grado de la Media", cumplido: true, detalle: "del sistema", del_sistema: true },
+        { orden: 2, codigo: "SERVICIO_SOCIAL", nombre: "Servicio social estudiantil", cumplido: true, detalle: "80 de 80 h", del_sistema: true },
+        { orden: 3, codigo: "NIVELACIONES", nombre: "Sin áreas pendientes de nivelación", cumplido: true, detalle: "del sistema", del_sistema: true },
+        { orden: 4, codigo: "CONSTITUCIONALES", nombre: "Estudios constitucionales (50 horas)", cumplido: true, detalle: "Cumplido", del_sistema: false },
+        { orden: 5, codigo: "SABER11", nombre: "Examen de Estado Saber 11", cumplido: false, detalle: "Pendiente", del_sistema: false },
+      ],
+    })
+  }),
+
+  http.put("*/api/eval-col/informes-reportes/graduacion/requisitos", async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: [{ matriculas: 1 }] })
+  }),
+
+  http.post("*/api/eval-col/informes-reportes/graduacion/registrar", async ({ request }) => {
+    await delay(200)
+    const body = (await request.json()) as { IDS: number[] }
+    return HttpResponse.json({ rows: body.IDS.map((id) => ({ matricula_id: id, graduado: id === 1, motivo: id === 1 ? null : "No cumple los requisitos" })) })
+  }),
+
+  http.put("*/api/eval-col/informes-reportes/graduacion/:id/:accion", async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: [] })
+  }),
+
   // Libro de registro (C.4.LIB.1c): libro y folios que se asignarían.
   http.post("*/api/eval-col/informes-reportes/libro-registro/previa", async () => {
     await delay(100)

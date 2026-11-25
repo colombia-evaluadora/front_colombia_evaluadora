@@ -31,6 +31,9 @@ import { FiltrosInforme } from "@/features/coverage/informes-reportes/components
 import { InformeMatricula, InformeNivelaciones } from "@/features/coverage/informes-reportes/components/informes-matricula"
 import { ConsultaMatriculados } from "@/features/coverage/informes-reportes/components/consulta-matriculados"
 import { ControlesLibro, LibroRegistroInforme } from "@/features/coverage/informes-reportes/components/libro-registro"
+import { FiltrosGraduacion, GraduacionInforme } from "@/features/coverage/informes-reportes/components/graduacion"
+import { filtrosGraduacion } from "@/features/coverage/informes-reportes/api/graduacion"
+import { ActasGraduacionInforme, FiltrosActasGraduacion, GenerarLibroActas } from "@/features/coverage/informes-reportes/components/actas-graduacion"
 
 const ITEMS = Object.fromEntries(INFORMES.flatMap((g) => g.opciones.map((o) => [o.value, o.label])))
 
@@ -89,6 +92,7 @@ const DISPONIBLES: Partial<Record<InformeId, { reporte: ReportKey; filtros: (s: 
   edades: { reporte: "informes-edades", filtros: filtrosEdades },
   "fuera-matricula": { reporte: "informes-fuera-matricula", filtros: filtrosFuera },
   calidad: { reporte: "informes-calidad", filtros: filtrosCalidad },
+  graduacion: { reporte: "informes-graduacion", filtros: filtrosGraduacion },
 }
 
 /** Exportar el informe abierto en Excel o PDF con sus filtros. */
@@ -135,6 +139,7 @@ const CAMPOS: Partial<Record<InformeId, Parameters<typeof FiltrosInforme>[0]["ca
   "fuera-matricula": ["grado"],
   calidad: ["sede", "jornada", "periodo", "grado"],
   "libro-calificaciones": ["sede", "jornada", "periodo", "grado"],
+  graduacion: ["sede", "jornada", "periodo"],
 }
 
 function Contenido() {
@@ -147,6 +152,7 @@ function Contenido() {
         action={
           <div className="flex items-center gap-2">
             {informe === "calidad" ? <GenerarCalidad /> : null}
+            {informe === "actas-graduacion" ? <GenerarLibroActas /> : null}
             <Exportar informe={informe} />
           </div>
         }
@@ -159,6 +165,8 @@ function Contenido() {
           {informe === "fuera-matricula" ? <FiltrosFuera /> : null}
           {campos ? <FiltrosInforme campos={campos} soloCerrados={informe === "libro-calificaciones"} /> : null}
           {informe === "libro-calificaciones" ? <ControlesLibro /> : null}
+          {informe === "graduacion" ? <FiltrosGraduacion /> : null}
+          {informe === "actas-graduacion" ? <FiltrosActasGraduacion /> : null}
           {informe === "calidad" ? <FiltrosCalidad /> : null}
         </div>
       </TableScreenToolbar>
@@ -178,6 +186,8 @@ function Contenido() {
   if (informe === "fuera-matricula") return <FueraMatriculaInforme encabezado={encabezado} />
   if (informe === "calidad") return <CalidadInforme encabezado={encabezado} />
   if (informe === "libro-calificaciones") return <LibroRegistroInforme encabezado={encabezado} />
+  if (informe === "graduacion") return <GraduacionInforme encabezado={encabezado} />
+  if (informe === "actas-graduacion") return <ActasGraduacionInforme encabezado={encabezado} />
 
   return (
     <TableScreen>
