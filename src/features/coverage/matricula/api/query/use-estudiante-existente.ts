@@ -14,6 +14,7 @@ export interface EstudianteExistente {
   secondLastName: string
   /** yyyy-MM-dd */
   birthDate: string
+  gender: string
   /** Ya enmascarados por el back (Guía UX §5): «a***@g***.com», «******4321». */
   correoEnmascarado: string
   telefonoEnmascarado: string
@@ -42,6 +43,7 @@ interface Row {
   traslado_grado_valor?: number | null
   traslado_grado_nombre?: string | null
   traslado_periodo?: string | null
+  fk_tlv_genero?: number | null
 }
 
 function useDebounced(valor: string, ms = 600) {
@@ -71,6 +73,7 @@ export function useEstudianteExistenteQuery(documento: string) {
         secondLastName: r.segundo_apellido ?? "",
         // El back la manda como timestamp («2022-03-14T00:00:00.000Z»).
         birthDate: r.fecha_nacimiento?.slice(0, 10) ?? "",
+        gender: r.fk_tlv_genero != null ? String(r.fk_tlv_genero) : "",
         correoEnmascarado: r.correo_enmascarado ?? "",
         telefonoEnmascarado: r.telefono_enmascarado ?? "",
         ultimoAcudiente: r.ultimo_acudiente_nombre
