@@ -29,6 +29,21 @@ export const CONTROLES: Record<string, string> = {
   C11: "C11 Nuevos e internados",
 }
 
+/** Dónde se corrige el dato de cada control (Ver detalle, Sección 3.9). */
+export const DONDE_CORREGIR: Record<string, string> = {
+  C1: "Unificar estudiantes, en esta misma fila",
+  C2: "Matrícula › Corregir datos de identidad (revise que la corrección sea correcta)",
+  C3: "Matrícula › Corregir datos de identidad (tipo de documento) o Datos personales (país de origen)",
+  C4: "Matrícula › Datos personales (fecha de nacimiento) o el grado de la matrícula",
+  C5: "Matrícula: grado de la matrícula actual o estado de la del año anterior",
+  C6: "Matrícula: grado del ciclo o fecha de nacimiento",
+  C7: "Matrícula › Residencia (departamento, municipio, dirección y geolocalización)",
+  C8: "Matrícula › Datos personales (etnia)",
+  C9: "Matrícula › Información complementaria (apoyo académico, SRPA, trastorno) y Datos personales (país de origen)",
+  C10: "Matrícula › Soportes (cargar o revisar el documento)",
+  C11: "Matrícula: marca Nuevo e Internado",
+}
+
 export const ESTADOS_HALLAZGO = [
   { value: "PENDIENTE", label: "Pendiente" },
   { value: "AJUSTADO", label: "Ajustado" },

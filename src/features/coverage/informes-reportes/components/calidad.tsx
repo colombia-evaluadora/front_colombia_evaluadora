@@ -25,6 +25,7 @@ import { coberturaInformesReportesRoute } from "@/router"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import {
   CONTROLES,
+  DONDE_CORREGIR,
   ESTADOS_HALLAZGO,
   useCambiarEstadoHallazgo,
   useGenerarCalidad,
@@ -272,6 +273,12 @@ function DialogDetalle({ h, onClose }: { h: Hallazgo; onClose: () => void }) {
           <dd>{CONTROLES[h.control] ?? h.control}</dd>
           <dt className="text-muted-foreground">Dato que falla</dt>
           <dd>{h.dato}</dd>
+          {DONDE_CORREGIR[h.control] ? (
+            <>
+              <dt className="text-muted-foreground">Dónde se corrige</dt>
+              <dd>{DONDE_CORREGIR[h.control]}</dd>
+            </>
+          ) : null}
           <dt className="text-muted-foreground">Estado</dt>
           <dd>{etiqueta(h.estado)}</dd>
           {h.justificacion ? (
