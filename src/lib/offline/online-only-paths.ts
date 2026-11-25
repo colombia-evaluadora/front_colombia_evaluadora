@@ -9,23 +9,15 @@ export const ONLINE_ONLY_PREFIXES = [
   "/app/mis-dispositivos",
 ] as const
 
-/**
- * Formularios de módulos sin cola de cambios: abrirlos sin red dejaba llenar
- * todo para fallar al guardar. Se consultan sus datos, pero crear y modificar
- * necesitan conexión. (Planeador, planilla y asistencia sí encolan.)
- */
-const FORMULARIO_SIN_COLA =
-  /^\/app\/(cobertura|gestion-estudiantil|administracion|establecimiento-educativo|comunicaciones)\/(.*\/)?(agregar|nueva|nuevo|editar)(\/|$)/
-
-/** Edición de periodo: ahí viven horario y asignaciones, de solo consulta sin red. */
-const EDITAR_PERIODO = /^\/app\/establecimiento-educativo\/periodos\/[^/]+\/editar\/?$/
-
-export function isReadOnlyOfflinePath(pathname: string): boolean {
-  return EDITAR_PERIODO.test(pathname)
+export function isOnlineOnlyPath(pathname: string): boolean {
+  return ONLINE_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
-export function isOnlineOnlyPath(pathname: string): boolean {
-  if (isReadOnlyOfflinePath(pathname)) return false
-  if (FORMULARIO_SIN_COLA.test(pathname)) return true
-  return ONLINE_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+/**
+ * Formularios de módulos sin cola de cambios: se abren y se consultan sin red
+ * (decisión del líder: ningún "Editar" bloqueado), pero Guardar necesita
+ * conexión y el banner lo avisa. Planeador, planilla y asistencia sí encolan.
+ */
+export function guardarNecesitaConexion(pathname: string): boolean {
+  return /^\/app\/(cobertura|gestion-estudiantil|administracion|establecimiento-educativo|comunicaciones)\/(.*\/)?(agregar|nueva|nuevo|editar)(\/|$)/.test(pathname)
 }

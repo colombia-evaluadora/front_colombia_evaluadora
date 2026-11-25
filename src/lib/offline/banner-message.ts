@@ -1,6 +1,6 @@
 import { OFFLINE_MAX_DAYS } from "@/lib/offline/limits"
 import type { ConnectivityState } from "@/lib/offline/connectivity"
-import { isOnlineOnlyPath } from "@/lib/offline/online-only-paths"
+import { guardarNecesitaConexion, isOnlineOnlyPath } from "@/lib/offline/online-only-paths"
 
 /** El banner espera esto antes de aparecer (histéresis: no parpadea). */
 export const BANNER_DELAY_MS = 1_500
@@ -19,7 +19,10 @@ export function isOfflineCapablePath(pathname: string): boolean {
 export const OFFLINE_MESSAGE =
   "Estás sin conexión. Puedes seguir consultando y registrando asistencia y calificaciones; se enviarán cuando vuelva la conexión."
 export const OFFLINE_ONLINE_ONLY_MESSAGE =
-  "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador, Planilla, Asistencia, Informes y Referentes."
+  "Estás sin conexión. Esta sección necesita conexión; el resto del menú sigue disponible con lo guardado en este equipo."
+/** Formularios sin cola de cambios: se abren, pero Guardar necesita red. */
+export const OFFLINE_FORM_MESSAGE =
+  "Estás sin conexión. Puedes consultar este formulario; para guardar necesitas internet. No cierres la pantalla si ya escribiste: lo no guardado se pierde."
 export const DEGRADED_MESSAGE = "La conexión está lenta o inestable. Lo que guardes se enviará apenas se estabilice."
 export const SERVER_DOWN_MESSAGE = "No pudimos comunicarnos con el servidor"
 export const CAPTIVE_PORTAL_HINT = "Puede que la red Wi-Fi requiera iniciar sesión."
@@ -28,6 +31,7 @@ export const CAPTIVE_PORTAL_HINT = "Puede que la red Wi-Fi requiera iniciar sesi
 export function getOfflineBannerMessage(state: ConnectivityState, pathname: string): string | null {
   if (state.status === "online") return null
   if (state.status === "offline") {
+    if (guardarNecesitaConexion(pathname)) return OFFLINE_FORM_MESSAGE
     return isOfflineCapablePath(pathname) ? OFFLINE_MESSAGE : OFFLINE_ONLINE_ONLY_MESSAGE
   }
   // 502/503 del gateway: el problema es nuestro, no de la red del usuario.

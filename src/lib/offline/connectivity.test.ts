@@ -201,7 +201,7 @@ describe("getOfflineBannerMessage", () => {
   })
   it("offline en vista solo en línea", () => {
     expect(getOfflineBannerMessage({ status: "offline", since }, "/app/mis-dispositivos")).toBe(
-      "Estás sin conexión. Esta sección necesita conexión; tus datos guardados siguen disponibles en Planeador, Planilla, Asistencia, Informes y Referentes.",
+      "Estás sin conexión. Esta sección necesita conexión; el resto del menú sigue disponible con lo guardado en este equipo.",
     )
   })
   it("degradado", () => {
