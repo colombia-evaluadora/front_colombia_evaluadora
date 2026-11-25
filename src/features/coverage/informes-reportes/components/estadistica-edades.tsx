@@ -138,7 +138,7 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
         ) : isError ? (
           <p className="p-10 text-center text-sm text-red">{getErrorMessage(error)}</p>
         ) : !conteos.length ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">No hay estudiantes para estos filtros.</p>
+          <p className="p-10 text-center text-sm text-muted-foreground">No hay estudiantes matriculados con los filtros elegidos.</p>
         ) : (
           <div className="flex flex-col gap-6">
             <Tabla

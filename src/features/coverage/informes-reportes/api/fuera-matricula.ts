@@ -8,10 +8,20 @@ export const SITUACIONES_FUERA = [
   { value: "SIN_CUPO_PLATAFORMA", label: "Sin cupo en la plataforma" },
 ]
 
+/** Una situación del estudiante, con su fecha y su motivo (de retiro o de liberación). */
+export interface SituacionFuera {
+  situacion: string
+  fecha: string | null
+  motivo: string | null
+  liberadaPorRetiro: boolean
+}
+
+/** Una fila por estudiante, con una etiqueta por situación (Sección 3.9). */
 export interface FueraMatricula {
   clave: string
+  situaciones: SituacionFuera[]
+  /** Resumen de las situaciones en texto (el export lo usa como columna). */
   situacion: string
-  liberadaPorRetiro: boolean
   estudiante: string
   grado: string | null
   municipio: string | null

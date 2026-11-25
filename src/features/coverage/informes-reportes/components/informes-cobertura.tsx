@@ -169,7 +169,7 @@ export function InformeDemanda({ encabezado }: { encabezado: ReactNode }) {
     <Resumen
       encabezado={encabezado}
       informe="demanda"
-      vacio="No hay demanda no atendida para estos filtros."
+      vacio="No hay demanda no atendida con estos filtros: la redistribución es solo del circuito oficial."
       columnas={[
         { key: "grado", label: "Grado" },
         { key: "modalidad", label: "Modalidad" },

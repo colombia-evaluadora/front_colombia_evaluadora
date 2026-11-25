@@ -27,7 +27,7 @@ import { coberturaInformesReportesRoute } from "@/router"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { camelizar } from "@/features/coverage/matricula-complementaria/api/convocatorias"
 import { useOrientar } from "@/features/coverage/inscripcion-reservas/api/mutations/territorial"
-import { TEMAS_ORIENTACION } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
+import { TEMAS_ORIENTACION, useContextoTerritorialQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import { informesKeys } from "@/features/coverage/informes-reportes/api/informes"
 import { filtrosFuera, SITUACIONES_FUERA, type FueraMatricula } from "@/features/coverage/informes-reportes/api/fuera-matricula"
 
@@ -39,13 +39,19 @@ const COLOR: Record<string, "neutral" | "destructive" | "warning"> = {
 const etiqueta = (s: string) => SITUACIONES_FUERA.find((x) => x.value === s)?.label ?? s
 const fecha = (v: string | null) => (v ? v.slice(0, 10).split("-").reverse().join("/") : "—")
 
-function Situacion({ f }: { f: FueraMatricula }) {
+const tiene = (f: FueraMatricula, s: string) => f.situaciones.some((x) => x.situacion === s)
+const liberada = (f: FueraMatricula) => f.situaciones.some((x) => x.liberadaPorRetiro)
+
+/** Una etiqueta por situación del estudiante (y Liberada por retiro si su reserva se liberó por el retiro). */
+function Situaciones({ f }: { f: FueraMatricula }) {
   return (
-    <div className="flex flex-col items-start gap-1">
-      <Badge variant="soft" color={COLOR[f.situacion] ?? "neutral"} className="text-xs">
-        {etiqueta(f.situacion)}
-      </Badge>
-      {f.liberadaPorRetiro ? (
+    <div className="flex flex-wrap items-start gap-1">
+      {f.situaciones.map((x) => (
+        <Badge key={x.situacion} variant="soft" color={COLOR[x.situacion] ?? "neutral"} className="text-xs">
+          {etiqueta(x.situacion)}
+        </Badge>
+      ))}
+      {liberada(f) ? (
         <Badge variant="soft" color="warning" className="text-xs">
           Liberada por retiro
         </Badge>
@@ -54,26 +60,49 @@ function Situacion({ f }: { f: FueraMatricula }) {
   )
 }
 
-function Accion({ label, children, ...rest }: { label: string; children: ReactNode } & ({ to: string } | { onClick: () => void })) {
+/** Acción de fila: siempre visible; inactiva, el texto emergente dice por qué (Sección 3.9). */
+function Accion({
+  label,
+  motivo,
+  children,
+  ...rest
+}: { label: string; motivo: string | null; children: ReactNode } & ({ to: string } | { onClick: () => void })) {
+  const inactiva = motivo !== null
   return (
     <Tooltip>
       <TooltipTrigger
         render={
-          "to" in rest ? (
-            <Button render={<Link to={rest.to} />} nativeButton={false} variant="ghost" color="neutral" size="icon-sm" aria-label={label} />
-          ) : (
-            <Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={label} onClick={rest.onClick} />
-          )
+          <span>
+            {"to" in rest && !inactiva ? (
+              <Button render={<Link to={rest.to} />} nativeButton={false} variant="ghost" color="neutral" size="icon-sm" aria-label={label}>
+                {children}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={label}
+                disabled={inactiva}
+                onClick={"onClick" in rest ? rest.onClick : undefined}
+              >
+                {children}
+              </Button>
+            )}
+          </span>
         }
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      />
+      <TooltipContent>{inactiva ? `${label}: ${motivo}` : label}</TooltipContent>
     </Tooltip>
   )
 }
 
-function columnas(onVer: (f: FueraMatricula) => void, onOrientar: (f: FueraMatricula) => void): ColumnDef<FueraMatricula>[] {
+function columnas(
+  territorial: boolean,
+  onVer: (f: FueraMatricula) => void,
+  onOrientar: (f: FueraMatricula) => void,
+): ColumnDef<FueraMatricula>[] {
   const c = (key: keyof FueraMatricula, label: string, cell?: (f: FueraMatricula) => ReactNode): ColumnDef<FueraMatricula> => ({
     id: key,
     accessorFn: (f) => f[key],
@@ -87,35 +116,58 @@ function columnas(onVer: (f: FueraMatricula) => void, onOrientar: (f: FueraMatri
     c("grado", "Grado"),
     c("municipio", "Municipio"),
     c("origen", "Origen"),
-    c("situacion", "Situación", (f) => <Situacion f={f} />),
+    c("situacion", "Situación", (f) => <Situaciones f={f} />),
     c("fecha", "Fecha", (f) => fecha(f.fecha)),
     c("motivo", "Motivo"),
     {
       id: "actions",
-      size: 48 * 4,
+      size: 48 * 5,
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
         const f = row.original
         return (
           <div className="flex items-center justify-end gap-1">
-            <Accion label="Ver detalle" onClick={() => onVer(f)}>
+            <Accion label="Ver detalle" motivo={null} onClick={() => onVer(f)}>
               <EyeIcon />
             </Accion>
-            {f.matriculaId ? (
-              <Accion label="Ir a la matrícula" to={paths.app.coberturaMatriculaDetalle.getHref(String(f.matriculaId))}>
-                <FileTextIcon />
-              </Accion>
-            ) : null}
-            {f.situacion === "SIN_CUPO_PLATAFORMA" ? (
-              <Accion label="Ir a Redistribución" to={`${paths.app.coberturaInscritos.getHref()}?tab=territorial&terr=redistribucion`}>
-                <UsersIcon />
-              </Accion>
-            ) : (
-              <Accion label="Ir a Reservas de cupo" to={`${paths.app.coberturaInscritos.getHref()}?tab=reservas`}>
-                <CalendarDotsIcon />
-              </Accion>
-            )}
-            <Accion label="Orientar al establecimiento" onClick={() => onOrientar(f)}>
+            <Accion
+              label="Ir a la matrícula"
+              motivo={
+                territorial
+                  ? "es del establecimiento"
+                  : !(tiene(f, "RETIRADO") || liberada(f)) || !f.matriculaId
+                    ? "solo con Retirado o Liberada por retiro"
+                    : null
+              }
+              to={f.matriculaId ? paths.app.coberturaMatriculaDetalle.getHref(String(f.matriculaId)) : ""}
+            >
+              <FileTextIcon />
+            </Accion>
+            <Accion
+              label="Ir a Reservas de cupo"
+              motivo={
+                territorial
+                  ? "es del establecimiento"
+                  : !(tiene(f, "SIN_CONTINUIDAD") || liberada(f))
+                    ? "solo con Sin continuidad o Liberada por retiro"
+                    : null
+              }
+              to={`${paths.app.coberturaInscritos.getHref()}?tab=reservas`}
+            >
+              <CalendarDotsIcon />
+            </Accion>
+            <Accion
+              label="Ir a Redistribución"
+              motivo={!territorial ? "es de la entidad territorial" : !tiene(f, "SIN_CONTINUIDAD") ? "solo con Sin continuidad" : null}
+              to={`${paths.app.coberturaInscritos.getHref()}?tab=territorial&terr=redistribucion`}
+            >
+              <UsersIcon />
+            </Accion>
+            <Accion
+              label="Orientar al establecimiento"
+              motivo={territorial ? null : "solo la entidad territorial orienta"}
+              onClick={() => onOrientar(f)}
+            >
               <ChatCircleDotsIcon />
             </Accion>
           </div>
@@ -137,6 +189,7 @@ export function FueraMatriculaInforme({ encabezado }: { encabezado: ReactNode })
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const [ver, setVer] = useState<FueraMatricula | null>(null)
   const [orientar, setOrientar] = useState<FueraMatricula | null>(null)
+  const { data: territorial } = useContextoTerritorialQuery()
   const body = { ...filtrosFuera(search), PAGEINDEX: pageIndex, PAGESIZE: pageSize }
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: [...informesKeys.all, "fuera-matricula", body] as const,
@@ -147,7 +200,7 @@ export function FueraMatriculaInforme({ encabezado }: { encabezado: ReactNode })
     placeholderData: keepPreviousData,
   })
   const { table } = useDataTable({
-    columns: columnas(setVer, setOrientar),
+    columns: columnas(Boolean(territorial), setVer, setOrientar),
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
     getRowId: (f) => f.clave,
@@ -203,9 +256,6 @@ function DialogDetalle({ f, onClose }: { f: FueraMatricula; onClose: () => void 
     ["Estudiante", f.estudiante],
     ["Grado", f.grado ?? "—"],
     ["Origen", [f.origen, f.municipio].filter(Boolean).join(" · ") || "—"],
-    ["Situación", <Situacion key="s" f={f} />],
-    ["Fecha", fecha(f.fecha)],
-    ["Motivo", f.motivo ?? "—"],
   ]
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -221,6 +271,27 @@ function DialogDetalle({ f, onClose }: { f: FueraMatricula; onClose: () => void 
             </div>
           ))}
         </dl>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium">Situaciones</p>
+          <ul className="flex flex-col gap-2 text-sm">
+            {f.situaciones.map((x) => (
+              <li key={x.situacion} className="rounded-md border px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="soft" color={COLOR[x.situacion] ?? "neutral"} className="text-xs">
+                    {etiqueta(x.situacion)}
+                  </Badge>
+                  {x.liberadaPorRetiro ? (
+                    <Badge variant="soft" color="warning" className="text-xs">
+                      Liberada por retiro
+                    </Badge>
+                  ) : null}
+                  <span className="text-muted-foreground">{fecha(x.fecha)}</span>
+                </div>
+                <p className="mt-1">{x.motivo ?? "—"}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
         <DialogFooter>
           <Button type="button" variant="fill" color="primary" onClick={onClose}>
             Volver
@@ -237,7 +308,7 @@ function DialogOrientar({ f, onClose }: { f: FueraMatricula; onClose: () => void
   const orientar = useOrientar()
   const [tema, setTema] = useState("Permanencia")
   const [texto, setTexto] = useState(
-    `Seguimiento de un estudiante ${etiqueta(f.situacion).toLowerCase()} del grado ${f.grado ?? ""}: por favor contacte a la familia y registre la gestión de permanencia.`,
+    `Seguimiento de un estudiante ${f.situaciones.map((x) => etiqueta(x.situacion).toLowerCase()).join(" y ")} del grado ${f.grado ?? ""}: por favor contacte a la familia y registre la gestión de permanencia.`,
   )
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
   const valido = texto.trim().length > 0 && texto.length <= 1000
