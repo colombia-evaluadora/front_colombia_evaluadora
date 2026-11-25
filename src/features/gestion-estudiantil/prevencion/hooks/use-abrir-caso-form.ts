@@ -5,11 +5,13 @@ import { queueNotice } from "@/components/notice/notice-context"
 import { codigoDe, useCatalogo } from "@/features/gestion-estudiantil/commons/api/use-catalogo"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { esGrave } from "@/features/gestion-estudiantil/convivencia/api/ui-mappings"
-import { useSecuelasHabilitadas } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
+import type { EstudianteFila, InvolucradoFila } from "@/features/gestion-estudiantil/convivencia/api/form-types"
+import { erroresInvolucrado, useSecuelasHabilitadas } from "@/features/gestion-estudiantil/convivencia/api/validaciones"
 import {
   CAMPOS_SIUCE,
   datosDeCaso,
   desdeCaso,
+  toInvolucradoInput,
   validarCaso,
   type ErroresCaso,
   type ValoresCaso,
@@ -25,34 +27,44 @@ import { useNavegacionPrevencion } from "@/features/gestion-estudiantil/prevenci
  */
 export function useAbrirCasoForm(plan: PlanDetalle) {
   const { volver } = useNavegacionPrevencion()
-  const [v, setValores] = useState<ValoresCaso>(() => desdeCaso(undefined))
-  const [rol, setRol] = useState("")
+  // El estudiante del plan va primero y no se quita; los demás son adicionales (ESTUDIANTES).
+  const propio: EstudianteFila = {
+    fk_matricula: plan.fk_tmatricula,
+    nombre: plan.estudiante_nombre,
+    grado: plan.grado_grupo,
+    rol: "",
+  }
+  const [v, setValores] = useState<ValoresCaso>(() => ({ ...desdeCaso(undefined), estudiantes: [propio] }))
   const [intento, setIntento] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [siuceAbierto, setSiuceAbierto] = useState(false)
 
   const tipos = useCatalogo("TIPO_SITUACION")
-  const roles = useCatalogo("ROL_SITUACION")
+  const tiposInv = useCatalogo("TIPO_INVOLUCRADO")
+  const rolesSit = useCatalogo("ROL_SITUACION")
   const grave = esGrave(codigoDe(tipos, v.tipo))
   const secuelas = useSecuelasHabilitadas(v.siuce)
   // NUE.2: el gestor lo asigna Convivencia por Sede y Jornada del estudiante del plan (VINCULADO).
   const previsto = useGestorPrevistoQuery(v.tipo ? Number(v.tipo) : null, [plan.fk_tmatricula], true)
 
   const set = (patch: Partial<ValoresCaso>) => setValores({ ...v, ...patch })
+  const setEstudiantes = (lista: EstudianteFila[]) => {
+    const suyo = lista.find((e) => e.fk_matricula === plan.fk_tmatricula) ?? v.estudiantes[0]
+    set({ estudiantes: [suyo, ...lista.filter((e) => e.fk_matricula !== plan.fk_tmatricula)] })
+  }
+  const rol = v.estudiantes[0]?.rol ?? ""
   const cambiarTipo = (tipo: string) => {
     set({ tipo })
     if (esGrave(codigoDe(tipos, tipo))) setSiuceAbierto(true)
   }
 
-  // El estudiante del plan entra como única persona; «Tipo I requiere dos» lo valida el backend con sus involucrados.
-  const validar = (): ErroresCaso =>
-    validarCaso(
-      { ...v, estudiantes: [{ fk_matricula: plan.fk_tmatricula, nombre: "", grado: "", rol, rolOriginal: rol }], involucrados: [] },
-      { grave, tipoI: false, secuelas, fechasCambiaron: false, involucradoConError: () => false },
-    )
+  // «Tipo I requiere dos» lo valida el backend con los involucrados del plan y los adicionales.
+  const involucradoConError = (i: InvolucradoFila) =>
+    erroresInvolucrado(i, codigoDe(tiposInv, i.tipo), codigoDe(rolesSit, i.rol), v.involucrados) != null
+  const validar = (): ErroresCaso => validarCaso(v, { grave, tipoI: false, secuelas, fechasCambiaron: false, involucradoConError })
   const errores: ErroresCaso = intento ? validar() : {}
-  const errorRol = errores.estudiantes ? "El rol del estudiante en la situación es obligatorio." : undefined
-  if (errores.estudiantes) delete errores.estudiantes
+  const errorEstudiantes = errores.estudiantes
+  delete errores.estudiantes
 
   const mut = useAbrirCasoConvivencia({
     mutationConfig: {
@@ -73,7 +85,17 @@ export function useAbrirCasoForm(plan: PlanDetalle) {
       enfocarPrimerError()
       return
     }
-    mut.mutate({ planId: plan.id, datos: datosDeCaso(v, secuelas), tipoId: Number(v.tipo), rolId: Number(rol), soporte: v.soporte[0] ?? null })
+    mut.mutate({
+      planId: plan.id,
+      datos: datosDeCaso(v, secuelas),
+      tipoId: Number(v.tipo),
+      rolId: Number(rol),
+      estudiantes: v.estudiantes
+        .filter((e) => e.fk_matricula !== plan.fk_tmatricula)
+        .map((e) => ({ fk_matricula: e.fk_matricula, fk_tlv_rol: Number(e.rol) })),
+      involucrados: v.involucrados.map(toInvolucradoInput),
+      soporte: v.soporte[0] ?? null,
+    })
   }
 
   return {
@@ -88,10 +110,9 @@ export function useAbrirCasoForm(plan: PlanDetalle) {
     siuceAbierto,
     setSiuceAbierto,
     gestorPrevisto: v.tipo ? previsto.data : undefined,
-    roles,
-    rol,
-    setRol,
-    errorRol,
+    intento,
+    setEstudiantes,
+    errorEstudiantes,
     error,
     guardando: mut.isPending,
     guardar,
