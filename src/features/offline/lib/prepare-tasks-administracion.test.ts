@@ -76,7 +76,7 @@ describe("administracionTasks", () => {
       areaOficialKeys.lista, superadministradorKeys.lista, superadministradorKeys.tiposDocumento,
       supervisorKeys.lista, supervisorKeys.catalogos, administradorKeys.lista, administradorKeys.catalogos,
       criterioPrioridadKeys.lista, criterioPrioridadKeys.campos, parametrosEdadKeys.all, relacionesAlumnoGrupoKeys.all,
-      festivoKeys.lista, conservacionKeys.politicas, conservacionKeys.modulos, conservacionKeys.ampliaciones(null),
+      festivoKeys.lista, conservacionKeys.politicas, conservacionKeys.modulos, conservacionKeys.establecimientos,
       // Con las claves indefinidas que arman los hooks de filtros.
       auditKeys.sesiones.lista({
         ...pagina,

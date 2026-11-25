@@ -75,10 +75,11 @@ const estudiantes = [
 
 const registros = (n: number, anio: number, vence: string): RegistroVencido[] =>
   Array.from({ length: n }, (_, i) => ({
+    pkRegistro: anio * 1000 + i + 1,
     estudiante: estudiantes[i % estudiantes.length][0],
     documento: String(1098765432 + i),
-    anio,
-    vencidoDesde: vence,
+    fechaRegistro: `${anio}-${String((i % 12) + 1).padStart(2, "0")}-15`,
+    vence,
   }))
 
 export const vencidosDb: VencidoRecord[] = [

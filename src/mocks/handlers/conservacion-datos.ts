@@ -120,6 +120,12 @@ export const conservacionDatosHandlers = [
     return resultado(modulosDb)
   }),
 
+  // El mock no distingue roles: devuelve todos, como al Superadministrador.
+  http.get(`${BASE}/establecimientos`, async () => {
+    await delay(100)
+    return resultado(establishmentsRowsDb.map((e) => ({ id: e.id, name: e.name })))
+  }),
+
   http.get(`${BASE}/politicas`, async () => {
     await delay(200)
     const lista = [...politicasDb].sort(
@@ -216,7 +222,7 @@ export const conservacionDatosHandlers = [
         pkEstablecimiento: v.pkEstablecimiento,
         establecimiento: establecimiento(v.pkEstablecimiento)?.name ?? "",
         cantidad: v.registros.length,
-        vencidoDesde: v.registros.map((r) => r.vencidoDesde).sort()[0],
+        vencidoDesde: v.registros.map((r) => r.vence).sort()[0],
         disposicion: p.disposicion,
       }]
     })
@@ -244,11 +250,7 @@ export const conservacionDatosHandlers = [
     if (!(acta instanceof File)) return error(400, "El acta es obligatoria.")
     if (motivo.length < 10 || motivo.length > 500) return error(400, "El motivo debe tener entre 10 y 500 caracteres.")
     const p = politicasDb.find((x) => x.pkPolitica === pkPolitica)
-    let disposicion = p?.disposicion ?? "ANONIMIZAR"
-    const pedida = form.get("DISPOSICION")
-    if (pedida === "ANONIMIZAR" && disposicion === "ARCHIVAR" && !conservacionConfigDb.almacenamientoArchivo)
-      disposicion = "ANONIMIZAR"
-    else if (pedida && pedida !== disposicion) return error(400, "La disposición debe ser la de la política.")
+    const disposicion = p?.disposicion ?? "ANONIMIZAR"
     if (disposicion === "ARCHIVAR" && !conservacionConfigDb.almacenamientoArchivo)
       return error(400, "Archivar no está disponible hasta que se configure el almacenamiento del archivo histórico.")
     const cantidad = vencidosDb[i].registros.length
@@ -287,10 +289,12 @@ export const conservacionDatosHandlers = [
     await delay(150)
     const a = archivoDb.find((x) => x.pkArchivo === Number(params.id))
     if (!a) return error(404, "El archivo no existe.")
+    if (params.accion === "huella-no-coincide") return resultado(null)
     return resultado({
       pkArchivo: a.pkArchivo,
       ubicacion: `data:text/plain;charset=utf-8,${encodeURIComponent(a.contenido)}`,
-      huella: await sha256(a.contenido),
+      // El último archivo del mock trae una huella que no coincide, para ver la ventana de error.
+      huella: a.pkArchivo === archivoDb.length ? "0".repeat(64) : await sha256(a.contenido),
       fkTarchivoActa: a.fkTarchivoActa,
     })
   }),
