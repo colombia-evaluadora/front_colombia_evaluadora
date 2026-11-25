@@ -143,6 +143,10 @@ export function EstablishmentDetailPage() {
                             label="Modalidad de prestación del servicio"
                             value={nameOf(modalities, establishment.basicInfo.serviceModality)}
                           />
+                          <DetailItem
+                            label="Oferente de cupo contratado"
+                            value={yesNo(establishment.basicInfo.contractedQuotaProvider)}
+                          />
                         </DetailSection>
                         <DetailSection title="Domicilio">
                           <DetailItem

@@ -16,6 +16,8 @@ interface EstablishmentDetailsFormProps {
     /** Escudo elegido y todavía sin subir; lo manda la página al guardar. */
     shield: File | null
     onShieldChange: (file: File | null) => void
+    /** Si puede cambiar el Oferente de cupo contratado (Superadministrador o rol territorial, Regla 110). */
+    oferenteEditable?: boolean
 }
 
 const SECCIONES = ["identificacion", "domicilio", "contacto", "complementaria"]
@@ -29,7 +31,7 @@ const triggerClassName =
  * abiertos al entrar. `keepMounted`: cerrar uno no desmonta sus campos, así que
  * no pierden lo escrito ni el foco de validación.
  */
-export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange }: EstablishmentDetailsFormProps) {
+export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange, oferenteEditable = false }: EstablishmentDetailsFormProps) {
     const comunes = { invalidFields, errors, showValidation }
     // El detalle trae la naturaleza solo con su id: el sector sale del catálogo.
     const { data: legalTypes = [] } = useOwnershipTypesQuery()
@@ -45,6 +47,7 @@ export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], 
                     onChange={(basicInfo) => onChange({ ...value, basicInfo })}
                     shield={shield}
                     onShieldChange={onShieldChange}
+                    oferenteEditable={oferenteEditable}
                 />
             ),
         },

@@ -394,6 +394,7 @@ export const campusHandlers = [
         nit: body.basicInfo.nit,
         ownershipType: { id: body.basicInfo.ownershipType, code: "", name: "" },
         serviceModality: { id: body.basicInfo.serviceModality, code: "", name: "" },
+        contractedQuotaProvider: false,
       },
       address: { municipality: null, zone, district: null, commune: null, locality: null, address: body.address.address ?? "" },
       contact: { email: "", website: "", phone: body.contact.phone ?? "" },

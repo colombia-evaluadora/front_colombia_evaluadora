@@ -4,12 +4,12 @@ export const EMPLOYEE_ROLES: CatalogItem[] = [
   {
     id: 1,
     code: "RECTOR",
-    name: "Rector",
+    name: "Administrador del establecimiento",
   },
   {
     id: 2,
     code: "SECRETARY",
-    name: "Secretaria",
+    name: "Gestor administrativo del establecimiento",
   },
   {
     id: 3,

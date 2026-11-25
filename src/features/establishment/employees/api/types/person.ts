@@ -55,6 +55,20 @@ export interface Person {
      * documento/correo en vez de crear una nueva.
      */
     accountExists?: boolean
+
+    /**
+     * Persona que ya existía, mostrada protegida (Regla 11): identidad completa, correo y teléfono
+     * enmascarados y todo en solo lectura menos el documento (cambiarlo es elegir a otra persona). Al
+     * guardar no se envía nada de su ficha: solo se usa su funcionario (`id`) o, si solo tenía cuenta,
+     * se le crea el perfil con `accountEmail`. Rector y secretaria del establecimiento.
+     */
+    protegida?: boolean
+
+    /** Correo de la cuenta de una persona que aún no es funcionario (ver `protegida`). */
+    accountEmail?: string | null
+
+    /** El establecimiento espera su autorización de datos (Regla 116): el SSO no manda su contacto. */
+    datosRestringidos?: boolean
 }
 
 /**

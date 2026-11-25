@@ -254,7 +254,7 @@ describe("cambiar establecimiento", () => {
     const { rows } = await lista()
     const anexa = rows.find((r) => !r.isPrincipal)!
     const valores = {
-      basicInfo: { name: "IE Nueva", dane: "168001000999", nit: "900765432-6", ownershipType: { id: 1, code: "", name: "" }, serviceModality: { id: 2, code: "", name: "" } },
+      basicInfo: { name: "IE Nueva", dane: "168001000999", nit: "900765432-6", ownershipType: { id: 1, code: "", name: "" }, serviceModality: { id: 2, code: "", name: "" }, contractedQuotaProvider: false },
       address: { municipality: null, zone: null, district: null, commune: null, locality: null, address: "" },
       contact: { email: "", website: "", phone: "" },
       additionalInfo: { calendar: { id: 3, code: "", name: "A" } } as never,

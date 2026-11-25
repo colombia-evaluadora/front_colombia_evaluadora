@@ -295,6 +295,10 @@ function makePersonSchema(required: boolean) {
 
       require("documentType", p.documentType?.name, "Selecciona el tipo de documento.")
       require("identification", p.identification, "Ingresa el número de documento.")
+
+      // Persona existente (Regla 11): sus datos vienen del SSO, enmascarados, y no se guardan desde aquí.
+      if (p.protegida) return
+
       require("firstName", p.firstName, "Ingresa el primer nombre.")
       require("lastName", p.lastName, "Ingresa el primer apellido.")
 

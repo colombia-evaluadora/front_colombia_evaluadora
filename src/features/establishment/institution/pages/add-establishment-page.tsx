@@ -8,14 +8,15 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 import { paths } from "@/config/paths"
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { establishmentCreatedMessage, SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
 import {
+  personHasAnyData,
   useDirectivosPersistence,
   type PendingInvitation,
 } from "@/features/establishment/institution/hooks/use-directivos-persistence"
@@ -38,6 +39,10 @@ import { findPredeterminado, useCatalogQuery } from "@/features/establishment/em
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
 import { createEmptyPerson } from "@/features/establishment/employees/api/types/person"
+import {
+  fetchDirectivoPorDocumento,
+  toPersonaProtegida,
+} from "@/features/establishment/institution/api/query/use-directivo-por-documento"
 
 /** Caret a la izquierda del título solo en esta página, sin tocar el Accordion compartido. */
 const accordionTriggerClassName =
@@ -56,6 +61,7 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
       nit: "",
       ownershipType: null,
       serviceModality: null,
+      contractedQuotaProvider: false,
     },
     address: {
       municipality: null,
@@ -168,6 +174,33 @@ export function AddEstablishmentPage() {
       secretaryMatchRef.current = null
     }
   }, [establishmentQuery.data, isEditMode])
+
+  // Al editar, el rector y la secretaria guardados son funcionarios existentes: se muestran protegidos
+  // (Regla 11), con su contacto enmascarado. Solo para quien puede cambiarlos; los demás los ven en tabla.
+  const datosEditados = isEditMode && establishmentQuery.data?.status === "ok" ? establishmentQuery.data.establishment : null
+  useEffect(() => {
+    if (!datosEditados || !establishmentId || puedeGestionarDirectivos !== true) return
+    let cancelado = false
+    for (const rol of ["principal", "secretary"] as const) {
+      const actual = datosEditados[rol]
+      if (!actual?.id || !actual.documentType?.id || !actual.identification) continue
+      fetchDirectivoPorDocumento(actual.documentType.id, actual.identification, establishmentId)
+        .then((persona) => {
+          if (cancelado || !persona) return
+          setFormValues((current) => {
+            // Si ya se eligió a otra persona, no se pisa.
+            if (current[rol]?.id !== actual.id) return current
+            return { ...current, [rol]: { ...toPersonaProtegida(persona, actual.documentType), id: actual.id } }
+          })
+        })
+        .catch(() => {
+          // Sin la vista protegida se queda lo cargado; guardar no toca su ficha igual.
+        })
+    }
+    return () => {
+      cancelado = true
+    }
+  }, [datosEditados, establishmentId, puedeGestionarDirectivos])
 
   // Predeterminados de Listas valor: solo al agregar y sobre campos vacíos
   const { data: zonesCat } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
@@ -390,7 +423,7 @@ export function AddEstablishmentPage() {
     await directivos.enviarInvitacionesPendientes(pendingInvitations)
     const { avisos, variant } = directivos.takeActivationNotices()
     notify(
-      [SUCCESS_MESSAGES.establishment.created, ...avisos].join(" "),
+      [establishmentCreatedMessage(personHasAnyData(nextSecretary)), ...avisos].join(" "),
       variant ? { variant } : undefined,
     )
     lastNoticeIsErrorRef.current = false
@@ -463,6 +496,7 @@ export function AddEstablishmentPage() {
                     showValidation={hasSubmitted}
                     shield={shield}
                     onShieldChange={setShield}
+                    oferenteEditable={puedeGestionarDirectivos === true}
                   />
                 </div>
               </AccordionContent>
@@ -485,11 +519,20 @@ export function AddEstablishmentPage() {
                     </div>
                   ) : (
                   <div className="space-y-5 rounded-lg border border-border bg-card p-4">
+                    {isEditMode ? null : (
+                      <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+                        <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden />
+                        Al guardar se crea la Sede principal con estos datos (jornada Única, consecutivo 1); el Rector
+                        recibe el rol Administrador del establecimiento y la Secretaria el de Gestor administrativo del
+                        establecimiento. Cada uno recibe un correo para asignar su contraseña.
+                      </p>
+                    )}
                     <UserDetailsForm
                       role="RECTOR"
                       layout="two-columns"
                       title="Rector"
                       fieldPrefix="principal"
+                      establishmentId={isEditMode ? establishmentId : null}
                       disabled={directivosSoloLectura}
                       value={formValues.principal}
                       onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
@@ -517,6 +560,7 @@ export function AddEstablishmentPage() {
                       errors={fieldErrors}
                       showValidation={hasSubmitted}
                       required={false}
+                      establishmentId={isEditMode ? establishmentId : null}
                       disabled={directivosSoloLectura}
                       photo={photos["secretary"] ?? null}
                       onPhotoChange={(file) =>

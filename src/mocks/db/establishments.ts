@@ -126,6 +126,7 @@ function createEstablishmentDetails(): EstablishmentDetails {
       ownershipType: createCatalogItem(LEGAL_TYPES),
       // Fija (sin faker) para no correr la secuencia sembrada del resto.
       serviceModality: MODALIDADES_PRESTACION[0],
+      contractedQuotaProvider: false,
     },
     address: {
       municipality,

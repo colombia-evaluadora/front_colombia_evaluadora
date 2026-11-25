@@ -19,11 +19,11 @@ export interface RolAsignado {
   expired: boolean
   /** Días que le quedan si está activo y vence; `null` si no. */
   daysToExpire: number | null
-  /** Rol del Rector o Secretario(a) del panel del Establecimiento (Regla 83): no se gestiona aquí. */
+  /** Rol del Rector o Secretario(a) del panel del Establecimiento (Administrador o Gestor administrativo del establecimiento, Regla 83): no se gestiona aquí. */
   principalDe: string | null
   /** Inactivar, Activar, Prorrogar y Eliminar (Regla 26). */
   canManage: boolean
-  /** Restringir sus permisos: solo el Rector o el Jefe de Sistemas (Regla 25). */
+  /** Restringir sus permisos: solo el Administrador del establecimiento o el Gestor administrativo del establecimiento (Regla 25). */
   canRestrict: boolean
 }
 

@@ -38,6 +38,7 @@ interface RealEstablishmentDetailRow {
   pagina_web: string | null
   fk_tpropiedad_juridica: number | null
   fk_tlv_modalidad_prestacion: number | null
+  oferente_cupo_contratado: boolean | null
   /** Calculados por `fn_est_poblacion_atendida` (sso V571.2). */
   poblacion_genero: string | null
   poblacion_etnias: boolean | null
@@ -84,6 +85,7 @@ function toEstablishmentDetails(
       nit: row.nit,
       ownershipType: toStub(row.fk_tpropiedad_juridica),
       serviceModality: toStub(row.fk_tlv_modalidad_prestacion),
+      contractedQuotaProvider: row.oferente_cupo_contratado === true,
       logoArchivoId: row.fk_tarchivo ?? null,
     },
     address: {

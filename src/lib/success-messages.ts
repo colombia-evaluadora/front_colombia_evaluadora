@@ -266,6 +266,16 @@ export function employeeInvitationNotice(result: {
 
 // Guardar un Superadministrador: el texto del requerimiento ("Superadministrador
 // creado. Se envió el enlace a [correo].") y sus variantes sin enlace o con falla.
+/**
+ * Crear un establecimiento (informe de diseño, 2.2): con él se crean la sede principal y los usuarios de los
+ * directivos. Sin secretaria solo se nombra al rector.
+ */
+export function establishmentCreatedMessage(conSecretaria: boolean): string {
+  return conSecretaria
+    ? "Establecimiento creado. Se crearon la sede principal y los usuarios del Rector y la Secretaria."
+    : "Establecimiento creado. Se crearon la sede principal y el usuario del Rector."
+}
+
 /** Mover una sede a otro establecimiento (Regla 75). */
 export function campusMovedMessage(campus: string, establishment: string): string {
   return `La sede ${campus} se movió a ${establishment}.`

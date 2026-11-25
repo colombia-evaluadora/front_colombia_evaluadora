@@ -5,8 +5,9 @@ import { employeeKeys } from "@/features/establishment/employees/api/query-keys"
 
 import type { PersonaPorDocumento } from "@/features/establishment/employees/api/types/funcionario"
 
-/** Fila de `fn_fun_por_documento` (V579.5): correo y teléfono ya enmascarados (Regla 11). */
-interface PersonaRow {
+/** Fila de `fn_fun_por_documento` (V579.5): correo y teléfono ya enmascarados (Regla 11). La misma forma
+ * devuelve la búsqueda de rector y secretaria (`fn_est_directivo_por_documento`, V574). */
+export interface PersonaRow {
   pk_tusuario: number
   pk_funcionario: number | null
   fk_tlv_tipo_documento: number
@@ -28,7 +29,7 @@ interface PersonaRow {
   datos_restringidos?: boolean | null
 }
 
-const toPersona = (row: PersonaRow): PersonaPorDocumento => ({
+export const toPersona = (row: PersonaRow): PersonaPorDocumento => ({
   userId: row.pk_tusuario,
   funcionarioId: row.pk_funcionario,
   documentTypeId: row.fk_tlv_tipo_documento,

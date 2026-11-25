@@ -49,6 +49,7 @@ function createValues(overrides: Partial<EstablishmentDetails> = {}): Establishm
       nit: "900123456-7",
       ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
       serviceModality: { id: 90, code: "PRESTACION_DIRECTA", name: "Prestación directa" },
+      contractedQuotaProvider: false,
     },
     address: {
       municipality: {
@@ -127,6 +128,7 @@ describe("validateEstablishmentForm", () => {
         nit: "900123456-7",
         ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
         serviceModality: { id: 90, code: "PRESTACION_DIRECTA", name: "Prestación directa" },
+        contractedQuotaProvider: false,
       },
     })
 
@@ -193,6 +195,34 @@ describe("validateEstablishmentForm", () => {
     expect(errors).toContain("Rector: correo electrónico")
     expect(invalidFields).not.toContain("principal.password")
     expect(invalidFields).not.toContain("principal.confirmPassword")
+  })
+
+  it("rector existente (Regla 11): con el correo enmascarado y solo con cuenta no exige ni valida su ficha", () => {
+    const values = createValues({
+      principal: createPerson({
+        id: undefined,
+        protegida: true,
+        accountExists: true,
+        accountEmail: "rector@example.com",
+        email: "re****@ex***.com",
+        phone: "315***4321",
+        gender: null,
+      }),
+    })
+
+    const { errors } = validateEstablishmentForm(values)
+
+    expect(errors).toEqual([])
+  })
+
+  it("rector existente sin documento sigue exigiendo el documento", () => {
+    const values = createValues({
+      principal: createPerson({ protegida: true, identification: "" }),
+    })
+
+    const { invalidFields } = validateEstablishmentForm(values)
+
+    expect(invalidFields).toContain("principal.identification")
   })
 
   it("permite campos opcionales del establecimiento vacíos (contacto, complementaria)", () => {

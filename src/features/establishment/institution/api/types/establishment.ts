@@ -59,6 +59,12 @@ export interface EstablishmentBasicInfo {
     serviceModality: CatalogItem | null
 
     /**
+     * Oferente de cupo contratado (`TESTABLECIMIENTO.OFERENTE_CUPO_CONTRATADO`, Regla 110): solo en el
+     * sector No oficial y lo cambian el Superadministrador y los roles territoriales. Por defecto No.
+     */
+    contractedQuotaProvider: boolean
+
+    /**
      * `pk_tarchivo` del escudo ya cargado (`TESTABLECIMIENTO.FK_TARCHIVO`).
      * Solo de LECTURA: para verlo se pasa a `ArchivoImage`, que resuelve el
      * token de vista. Al guardar no viaja en el JSON — el escudo se manda como

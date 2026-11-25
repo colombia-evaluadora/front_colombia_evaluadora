@@ -137,6 +137,24 @@ export function useDirectivosPersistence(notify: Notify) {
 
     if (!env.ENABLE_API_MOCKING) {
       try {
+        // Persona existente (Regla 11): su ficha no se toca desde aquí. Ya funcionario: se usa tal cual.
+        // Solo con cuenta (p. ej. acudiente): se le crea el perfil con esa cuenta, sin contacto ni foto,
+        // y sin enlace de activación porque ya tiene contraseña (Regla 12).
+        if (person.protegida) {
+          if (person.id) return { person, pkFuncionarioRegistrado: null, pendingInvitation: null }
+          const registered = await registerFuncionario(
+            { ...person, email: person.accountEmail ?? "", phone: "" },
+            null,
+            { enviarInvitacion: false },
+          )
+          registradosRef.current.push(registered.pkFuncionario)
+          return {
+            person: { ...person, id: registered.pkFuncionario },
+            pkFuncionarioRegistrado: registered.pkFuncionario,
+            pendingInvitation: null,
+          }
+        }
+
         if (person.id) {
           // `fn_fun_actualizar` solo devuelve el PK: se devuelve el `person` enviado.
           await updateFuncionario(
