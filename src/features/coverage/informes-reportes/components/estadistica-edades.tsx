@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { coberturaInformesReportesRoute } from "@/router"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { useContextoTerritorialQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import { camelizar } from "@/features/coverage/matricula-complementaria/api/convocatorias"
 import { useMatriculaStatusOptionsQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { AGE_SITUATION_LABELS } from "@/features/coverage/matricula/components/table/columns-matricula"
@@ -104,7 +105,9 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
 
   const agrupar = search.agrupar ?? "GRADO"
   const modo = search.columnas ?? "AUTOMATICO"
-  const variosEstablecimientos = new Set(periodos.map((p) => p.establecimiento)).size > 1
+  // Agrupar por Establecimiento: roles territoriales, o quien ve varios (Regla 79).
+  const { data: contexto } = useContextoTerritorialQuery()
+  const variosEstablecimientos = Boolean(contexto) || new Set(periodos.map((p) => p.establecimiento)).size > 1
   const { data: conteos = [], isPending, isError, error } = useConteos(search)
 
   const raiz = armarArbol(conteos)
@@ -522,14 +525,40 @@ export function FiltrosEdades() {
   const { data: estados = [] } = useMatriculaStatusOptionsQuery()
   const { data: metodologias = [] } = useMetodologiasQuery()
 
+  // Establecimiento solo para roles territoriales; sus períodos ya vienen limitados a su alcance (Regla 79).
+  const { data: contexto } = useContextoTerritorialQuery()
+  const territorial = Boolean(contexto)
+  const ees = search.eEstablecimientos ?? []
   const sedes = search.eSedes ?? []
   const jornadas = search.eJornadas ?? []
-  const enSede = periodos.filter((p) => !sedes.length || sedes.includes(p.sede))
+  const enEe = periodos.filter((p) => !ees.length || ees.includes(p.establecimiento))
+  const enSede = enEe.filter((p) => !sedes.length || sedes.includes(p.sede))
   const enAnio = enSede.filter((p) => !search.anio || p.anio === search.anio)
   const enJornada = enAnio.filter((p) => !jornadas.length || jornadas.includes(p.jornada))
 
+  // El back filtra por períodos: con establecimientos elegidos y ningún período, van los de esos
+  // establecimientos (con sede, año y jornada); [-1] si no hay ninguno, para no caer en «todos».
   const set = (cambios: Partial<InformesSearch>) =>
-    navigate({ search: (prev) => ({ ...prev, ...cambios, grupoEdad: undefined, page: 0 }), replace: true })
+    navigate({
+      search: (prev) => {
+        const next = { ...prev, ...cambios, grupoEdad: undefined, page: 0 }
+        const e = next.eEstablecimientos ?? []
+        if (e.length && !next.ePeriodos?.length) {
+          const ids = periodos
+            .filter(
+              (p) =>
+                e.includes(p.establecimiento) &&
+                (!next.eSedes?.length || next.eSedes.includes(p.sede)) &&
+                (!next.eJornadas?.length || next.eJornadas.includes(p.jornada)) &&
+                (!next.anio || p.anio === next.anio),
+            )
+            .map((p) => p.id)
+          next.ePeriodos = ids.length ? ids : [-1]
+        }
+        return next
+      },
+      replace: true,
+    })
   const multi = (id: string, label: string, value: string[], opciones: { value: string; label: string }[], onChange: (v: string[]) => void) => (
     <Field variant="outlined" className="gap-1.5">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -540,7 +569,12 @@ export function FiltrosEdades() {
 
   return (
     <>
-      {multi("eda-sedes", "Sede", sedes, unicos(periodos.map((p) => p.sede)), (v) =>
+      {territorial
+        ? multi("eda-establecimientos", "Establecimiento", ees, unicos(periodos.map((p) => p.establecimiento)), (v) =>
+            set({ eEstablecimientos: vacioANull(v), eSedes: undefined, eJornadas: undefined, ePeriodos: undefined }),
+          )
+        : null}
+      {multi("eda-sedes", "Sede", sedes, unicos(enEe.map((p) => p.sede)), (v) =>
         set({ eSedes: vacioANull(v), eJornadas: undefined, ePeriodos: undefined }),
       )}
       <ComboOpciones
@@ -556,7 +590,7 @@ export function FiltrosEdades() {
         onChange={(v) => {
           const anio = v ? Number(v) : undefined
           const ids = periodos
-            .filter((p) => p.anio === anio && (!sedes.length || sedes.includes(p.sede)) && (!jornadas.length || jornadas.includes(p.jornada)))
+            .filter((p) => p.anio === anio && (!ees.length || ees.includes(p.establecimiento)) && (!sedes.length || sedes.includes(p.sede)) && (!jornadas.length || jornadas.includes(p.jornada)))
             .map((p) => p.id)
           set({ anio, ePeriodos: anio ? ids : undefined })
         }}
