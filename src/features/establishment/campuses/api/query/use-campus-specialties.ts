@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { catalogoMeta, proveedorMeta } from "@/lib/offline/query-meta"
+import { fetchSelectCategoryWithParent } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 
 import type {
@@ -22,15 +23,6 @@ interface RealCampusSpecialtyRow {
   estado: CampusStatus
   descripcion: string | null
   actividades: string | null
-}
-
-/** Fila de `GET /establecimientos/sedes/especialidades/catalogo`. */
-interface RealSpecialtyCatalogRow {
-  id: number
-  nombre: string
-  fk_caracter: number
-  caracter_nombre: string
-  es_otra: boolean
 }
 
 export function toCampusSpecialty(row: RealCampusSpecialtyRow): CampusSpecialty {
@@ -62,15 +54,32 @@ export function useCampusSpecialtiesQuery(campusId: number | null) {
   })
 }
 
+/** VALOR de "Otra" en ESPECIALIDAD (C600): la única con nombre propio (sso `fn_sed_esp_es_otra`). */
+const ESPECIALIDAD_OTRA = "7"
+/** VALOR de "No aplica" en CARACTER: no se ofrece en el catálogo de la sede. */
+const CARACTER_NO_APLICA = "0"
+
+/**
+ * Lista valor ESPECIALIDAD con su carácter, que es el valor padre (lista
+ * CARACTER, sso V104.1). Mismo criterio que el catálogo de sedes del back
+ * (V449): sin "No aplica", por orden del carácter y "Otra" al final.
+ */
 export async function fetchSpecialtyCatalog(): Promise<SpecialtyCatalogItem[]> {
-  const rows = await evalCol.getRows<RealSpecialtyCatalogRow>("/establecimientos/sedes/especialidades/catalogo")
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.nombre,
-    characterId: row.fk_caracter,
-    characterName: row.caracter_nombre,
-    isOther: row.es_otra === true,
-  }))
+  const rows = await fetchSelectCategoryWithParent("ESPECIALIDAD", "CARACTER")
+  return rows
+    .filter(({ padre }) => padre && padre.valor !== CARACTER_NO_APLICA)
+    .map(({ row, padre }) => ({
+      orden: padre!.orden ?? 0,
+      item: {
+        id: row.pk_lista_valor,
+        name: row.nombre,
+        characterId: padre!.pk_lista_valor,
+        characterName: padre!.nombre,
+        isOther: row.valor === ESPECIALIDAD_OTRA,
+      },
+    }))
+    .sort((a, b) => a.orden - b.orden || Number(a.item.isOther) - Number(b.item.isOther))
+    .map(({ item }) => item)
 }
 
 /** Lista general de especialidades con su carácter: de ahí salen los dos selectores del diálogo. */
