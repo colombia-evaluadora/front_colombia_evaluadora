@@ -53,6 +53,13 @@ import { fetchSedesOpciones } from "@/features/academic-management/asistencia/ap
 import { fetchAsistenciaCalendario } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { fetchAsistenciaResumenHoras } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
 import { fetchEstudiantesSesion } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
+import {
+  fetchDiariaBloques,
+  fetchDiariaCalendario,
+  fetchDiariaGrupos,
+  fetchDiariaPlanilla,
+} from "@/features/academic-management/asistencia/api/query/use-asistencia-diaria-query"
+import { fetchDiasInhabiles } from "@/features/academic-management/asistencia/api/query/use-asistencia-dias-inhabiles-query"
 import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type {
   AsistenciaSesionEstudiantesParams,
@@ -442,9 +449,26 @@ function rosterTasks(sesiones: SesionCalendario[], desde: string, hasta: string)
   return tasks
 }
 
+/**
+ * Planilla diaria (Regla 115) de los días ya pasados del rango: la pantalla no la pide para un día
+ * futuro (`esFechaFutura`), así que solo se siembra hasta hoy.
+ */
+function diariaTasks(entradas: { fkGrupo: number; fecha: string }[], desde: string, hoy: string): PrepareTask[] {
+  return entradas
+    .filter((e) => e.fecha >= desde && e.fecha <= hoy)
+    .flatMap((e) => {
+      const params = { GRUPO: e.fkGrupo, FECHA: e.fecha }
+      return [
+        seed(asistenciaKeys.diaria.planilla(params), () => fetchDiariaPlanilla(params), estudiantesMeta(), { optional: true }),
+        seed(asistenciaKeys.diaria.bloques(params), () => fetchDiariaBloques(params), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
+      ]
+    })
+}
+
 function asistenciaTasks(meses: { anio: number; mes: number }[], now: Date): PrepareTask[] {
   const hoy = toIsoDate(now)
   const limite = toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + ASISTENCIA_DIAS_ROSTER))
+  const atras = toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - ASISTENCIA_DIAS_ROSTER))
   const mesActual = { anio: now.getFullYear(), mes: now.getMonth() + 1 }
   const mesSiguiente = { anio: new Date(now.getFullYear(), now.getMonth() + 1, 1).getFullYear(), mes: new Date(now.getFullYear(), now.getMonth() + 1, 1).getMonth() + 1 }
   const conMesesCercanos = [...meses]
@@ -469,8 +493,17 @@ function asistenciaTasks(meses: { anio: number; mes: number }[], now: Date): Pre
                   optional: true,
                   then: (sesiones) => (cercano ? rosterTasks(sesiones, hoy, limite) : []),
                 }),
+                // Días inhábiles y grupos en modo Diaria (sin MIAS, igual que `asistencia-page.tsx`).
+                seed(asistenciaKeys.diasInhabiles(todas), () => fetchDiasInhabiles(todas), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
+                // Solo lo ve quien registra (`puedeRegistrar`): a los demás el backend responde vacío o 403.
+                seed(asistenciaKeys.diaria.calendario(todas), () => fetchDiariaCalendario(todas), offlineMeta(TTL_OFFLINE.grupo), {
+                  optional: true,
+                  then: (entradas) => diariaTasks(entradas, atras, hoy),
+                }),
               ]
             }),
+            // Vista «Asistencia por grupo» y la pantalla de la planilla diaria.
+            seed(asistenciaKeys.diaria.grupos(SEDE), () => fetchDiariaGrupos(SEDE), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
             ...[mesActual, mesSiguiente].flatMap(({ anio, mes }) =>
               fechasResumenDelMes(anio, mes).map((FECHA) => {
                 const params = { SEDE, FECHA }

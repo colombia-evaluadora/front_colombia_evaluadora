@@ -20,10 +20,13 @@ export interface MatriculaCapacidades {
  * Supervisor de sede. Mientras carga, se ocultan; si el endpoint falla (o con
  * mocks), se muestran: cada acción la vuelve a validar su gate en el back.
  */
+export const fetchMatriculaCapacidades = async () =>
+  (await evalCol.getRows<CapacidadesRow>("/cobertura-academica/matricula/capacidades"))[0] ?? null
+
 export function useMatriculaCapacidades(): MatriculaCapacidades {
   const { data, isError } = useQuery({
     queryKey: matriculaKeys.capacidades,
-    queryFn: async () => (await evalCol.getRows<CapacidadesRow>("/cobertura-academica/matricula/capacidades"))[0] ?? null,
+    queryFn: fetchMatriculaCapacidades,
     enabled: !env.ENABLE_API_MOCKING,
     staleTime: Infinity,
   })

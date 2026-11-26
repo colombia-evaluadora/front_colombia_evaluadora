@@ -40,7 +40,7 @@ const toDiaInhabil = (row: DiaInhabilRow): DiaInhabil => ({
  *  festivos, suspensiones y vacaciones, uno por día y período (jornada). El
  *  calendario de asistencia ya no proyecta clases en ellos (V457); esto solo
  *  da el motivo para pintarlos deshabilitados (V542.1). */
-async function fetchDiasInhabiles(params: DiasInhabilesParams): Promise<DiaInhabil[]> {
+export async function fetchDiasInhabiles(params: DiasInhabilesParams): Promise<DiaInhabil[]> {
   const raw = await api.get<{ rows: DiaInhabilRow[] } | DiaInhabilRow[]>(
     "/eval-col/asistencias/dias-inhabiles",
     { params },
