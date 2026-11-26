@@ -52,6 +52,7 @@ export type ReportKey =
   | "informes-edades"
   | "informes-edades-tabla"
   | "reporte-externo"
+  | "hoja-apoyo-c600"
   | "informes-fuera-matricula"
   | "informes-calidad"
   | "informes-certificado-calificaciones"

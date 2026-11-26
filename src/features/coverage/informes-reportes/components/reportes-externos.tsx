@@ -5,16 +5,14 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
 import { TableScreen, TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
-import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { FileDownloadOutlinedIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
-import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { FileDownloadOutlinedIcon, InfoIcon, SpinnerIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -23,22 +21,36 @@ import { getErrorMessage } from "@/lib/api-client"
 import { coberturaInformesReportesRoute } from "@/router"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
-import { useAuth } from "@/features/auth/hooks/use-auth"
-import { usePeriodosInformeQuery } from "@/features/coverage/informes-reportes/api/informes"
+import { usePeriodosInformeQuery, type PeriodoInforme } from "@/features/coverage/informes-reportes/api/informes"
 import {
-  CODIGO_EXTERNO,
   descargarGenerado,
-  useFaltantesExterno,
+  useFaltantesQuery,
   useGeneradosQuery,
   useGenerarExterno,
+  usePuedeGenerarExterno,
   useVersionesExternasQuery,
   type AvisoFaltantes,
   type Generado,
   type GenerarExternoInput,
+  type VersionExterna,
 } from "@/features/coverage/informes-reportes/api/reportes-externos"
 
 const fecha = (v: string | null) => (v ? v.slice(0, 10).split("-").reverse().join("/") : "—")
 const FORMATO = { EXCEL: "Excel", CSV: "CSV", TEXTO: "Texto plano" } as const
+const unicos = (xs: string[]) => [...new Set(xs.filter(Boolean))]
+
+/** Versiones Activas del SIMAT (el C600 va aparte, sin versión). */
+function useVersionesSimat() {
+  const { data = [], ...q } = useVersionesExternasQuery()
+  return { ...q, data: data.filter((v) => v.codigo === "SIMAT") }
+}
+
+/** Versión elegida en el filtro de la lista; sin elegir, la Activa más reciente. */
+function useVersionElegida(): VersionExterna | undefined {
+  const { versionExterna } = coberturaInformesReportesRoute.useSearch()
+  const { data } = useVersionesSimat()
+  return data.find((v) => v.reporteId === versionExterna) ?? data[0]
+}
 
 function columnas(descargando: number | null, onDescargar: (g: Generado) => void): ColumnDef<Generado>[] {
   const c = (key: keyof Generado, label: string, cell?: (g: Generado) => ReactNode, centro = false): ColumnDef<Generado> => ({
@@ -50,22 +62,12 @@ function columnas(descargando: number | null, onDescargar: (g: Generado) => void
     enableSorting: false,
   })
   return [
-    c("fecha", "Fecha", (g) => <span className="tabular-nums">{fecha(g.fecha)}</span>, true),
+    c("fecha", "Fecha", (g) => <span className="tabular-nums">{fecha(g.fecha)}</span>),
     c("usuario", "Usuario"),
-    c("reporte", "Reporte", (g) => <span className="font-medium">{g.reporte}</span>),
-    c("version", "Versión", (g) => (
-      <span className="flex flex-wrap items-center gap-1">
-        {g.version}
-        {g.provisional ? (
-          <Badge variant="soft" color="warning" className="text-xs">
-            Provisional
-          </Badge>
-        ) : null}
-      </span>
-    )),
-    c("sede", "Alcance", (g) => g.sede ?? `Todo ${g.establecimiento}`),
+    c("version", "Versión"),
+    c("sede", "Alcance", (g) => g.sede ?? "Todo el establecimiento"),
     c("periodo", "Período académico", (g) => (g.corte ? `${g.periodo} · corte ${fecha(g.corte)}` : g.periodo)),
-    c("filas", "Filas", (g) => <span className="tabular-nums">{g.filas}</span>, true),
+    c("filas", "Filas", (g) => <span className="tabular-nums">{g.filas.toLocaleString("es-CO")}</span>, true),
     c("estado", "Estado", (g) =>
       g.estado === "COMPLETO" ? (
         <Badge variant="soft" color="success" className="text-xs">
@@ -110,15 +112,34 @@ function columnas(descargando: number | null, onDescargar: (g: Generado) => void
   ]
 }
 
+/** Filtro Versión de la lista del SIMAT (C.4.EXT.1). */
+export function FiltrosSimat() {
+  const navigate = coberturaInformesReportesRoute.useNavigate()
+  const { data } = useVersionesSimat()
+  const elegida = useVersionElegida()
+  return (
+    <ComboOpciones
+      id="rex-version"
+      label="Versión"
+      size="sm"
+      todos=""
+      value={elegida ? String(elegida.reporteId) : ""}
+      options={data.map((v) => ({ value: String(v.reporteId), label: `${v.version} (Activa)` }))}
+      onChange={(v) => navigate({ search: (prev) => ({ ...prev, versionExterna: v ? Number(v) : undefined, page: 0 }), replace: true })}
+    />
+  )
+}
+
 /**
- * Reportes externos (Sección 3.9, Regla 70): archivos generados del DANE C600 y del SIMAT, con
- * Descargar del archivo guardado tal cual. Genera el Administrador o el Gestor administrativo del
- * establecimiento; el Supervisor territorial consulta y descarga los de sus establecimientos.
+ * SIMAT (Sección 3.9, Regla 70): archivos generados de la versión elegida, con Descargar del archivo
+ * guardado tal cual. Genera el Administrador o el Gestor administrativo del establecimiento; el
+ * Supervisor territorial consulta y descarga los de sus establecimientos.
  */
 export function ReportesExternosInforme({ encabezado }: { encabezado: ReactNode }) {
   const { notify } = useNotify()
+  const version = useVersionElegida()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const { data, isPending, isError, error, refetch } = useGeneradosQuery({ pageIndex, pageSize })
+  const { data, isPending, isError, error, refetch } = useGeneradosQuery(version?.reporteId ?? null, { pageIndex, pageSize })
   const [descargando, setDescargando] = useState<number | null>(null)
 
   async function descargar(g: Generado) {
@@ -148,11 +169,11 @@ export function ReportesExternosInforme({ encabezado }: { encabezado: ReactNode 
       <TableScreenBody>
         <DataTable
           table={table}
-          isPending={isPending}
+          isPending={isPending && Boolean(version)}
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
-          emptyMessage="No hay reportes externos generados. Use Generar reporte para crear el primero."
+          emptyMessage="No hay archivos generados de esta versión. Use Generar reporte para crear el primero."
         />
         {data ? (
           <Pagination
@@ -172,17 +193,15 @@ export function ReportesExternosInforme({ encabezado }: { encabezado: ReactNode 
   )
 }
 
-/** Roles que generan (Regla 70); el gate del SSO decide igual. Los demás consultan y descargan. */
-const GENERAN = ["CEVAL-RECTOR", "CEVAL-AUXILIAR_ADMINISTRATIVO"]
-
 /** Botón Generar reporte: Administrador o Gestor administrativo del establecimiento, o el Superadministrador. */
 export function GenerarReporteExterno() {
-  const user = useAuth().user
+  const puede = usePuedeGenerarExterno()
   const [abierto, setAbierto] = useState(false)
-  if (!user?.isSuperAdmin && !user?.roles?.some((r) => GENERAN.includes(r))) return null
+  if (!puede) return null
   return (
     <>
       <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setAbierto(true)}>
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         Generar reporte
       </Button>
       {abierto ? <DialogGenerarExterno onClose={() => setAbierto(false)} /> : null}
@@ -190,42 +209,36 @@ export function GenerarReporteExterno() {
   )
 }
 
-/** Modal Generar reporte externo: versión Activa, período, alcance y corte; aviso de faltantes antes de generar. */
+/** Un período por nombre (cada sede tiene el suyo): el SSO toma el año en todas las sedes del alcance. */
+function periodosUnicos(periodos: PeriodoInforme[], sede: string | null) {
+  const vistos = new Map<string, PeriodoInforme>()
+  for (const p of periodos) if ((!sede || p.sede === sede) && !vistos.has(p.nombre)) vistos.set(p.nombre, p)
+  return [...vistos.values()]
+}
+
+/** Generar reporte externo (C.4.EXT.3): versión Activa, alcance y período; el aviso de faltantes sale solo. */
 function DialogGenerarExterno({ onClose }: { onClose: () => void }) {
-  const { informe } = coberturaInformesReportesRoute.useSearch()
   const { notify } = useNotify()
-  const { data: versiones = [] } = useVersionesExternasQuery()
+  const { data: versiones } = useVersionesSimat()
+  const elegida = useVersionElegida()
   const { data: periodos = [] } = usePeriodosInformeQuery()
-  const faltantes = useFaltantesExterno()
   const generar = useGenerarExterno()
-  const codigo = informe === "simat" || informe === "c600" ? CODIGO_EXTERNO[informe] : null
-  const sugerida = versiones.find((v) => v.codigo === codigo) ?? versiones[0]
   const [reporte, setReporte] = useState("")
+  const [porSede, setPorSede] = useState(false)
+  const [sede, setSede] = useState("")
   const [periodo, setPeriodo] = useState("")
-  const [soloSede, setSoloSede] = useState(false)
-  const [corte, setCorte] = useState("")
-  const [aviso, setAviso] = useState<AvisoFaltantes | null>(null)
   const [detalle, setDetalle] = useState(false)
   const [errorMsg, setErrorMsg] = useState<{ id: number; message: string } | null>(null)
 
-  const reporteId = reporte || (sugerida ? String(sugerida.reporteId) : "")
+  const reporteId = reporte || (elegida ? String(elegida.reporteId) : "")
   const version = versiones.find((v) => String(v.reporteId) === reporteId)
+  const establecimiento = periodos[0]?.establecimiento
+  const opcionesPeriodo = periodosUnicos(periodos, porSede ? sede || null : null)
   const input: GenerarExternoInput | null =
-    reporteId && periodo ? { reporte: Number(reporteId), periodo: Number(periodo), soloSede, corte: corte || null } : null
-  const ocupado = faltantes.isPending || generar.isPending
-
-  // Cambiar un dato invalida el aviso: hay que revisarlo de nuevo antes de generar.
-  const cambiar = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v)
-    setAviso(null)
-    setDetalle(false)
-  }
-
-  function revisar() {
-    if (!input) return
-    setErrorMsg(null)
-    faltantes.mutate(input, { onSuccess: setAviso, onError: (e) => setErrorMsg({ id: Date.now(), message: getErrorMessage(e) }) })
-  }
+    reporteId && periodo && (!porSede || sede)
+      ? { reporte: Number(reporteId), periodo: Number(periodo), sede: porSede ? sede : null, corte: null }
+      : null
+  const { data: aviso, isFetching: revisando } = useFaltantesQuery(input)
 
   function confirmar() {
     if (!input) return
@@ -245,124 +258,164 @@ function DialogGenerarExterno({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Dialog open onOpenChange={(o) => !o && !ocupado && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
+    <Dialog open onOpenChange={(o) => !o && !generar.isPending && onClose()}>
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Generar reporte externo</DialogTitle>
-          <DialogDescription>El archivo sale en el formato de la versión elegida y se carga en el sistema externo.</DialogDescription>
+          <DialogTitle>Generar reporte externo{establecimiento ? ` — ${establecimiento}` : ""}</DialogTitle>
         </DialogHeader>
         <NoticeBanner notice={errorMsg} onClose={() => setErrorMsg(null)} variant="error" />
         <ComboOpciones
           id="rex-reporte"
           label="Reporte"
           required
+          todos=""
           value={reporteId}
-          options={versiones.map((v) => ({ value: String(v.reporteId), label: `${v.nombre} · versión ${v.version}` }))}
-          onChange={cambiar(setReporte)}
+          options={versiones.map((v) => ({ value: String(v.reporteId), label: `${v.codigo} · versión ${v.version}` }))}
+          onChange={setReporte}
           description={version ? `Formato del archivo: ${FORMATO[version.formato] ?? version.formato}.` : undefined}
         />
-        {version?.provisional ? (
-          <p className="text-xs text-muted-foreground">
-            Versión provisional: la estructura vigente del Ministerio está pendiente y se configurará en Configuración de Reportes.
-          </p>
-        ) : null}
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+          <Field variant="outlined" className="gap-1.5">
+            <FieldLabel>
+              Alcance<span data-required-mark="">*</span>
+            </FieldLabel>
+            <RadioGroup value={porSede ? "SEDE" : "EE"} onValueChange={(v) => setPorSede(v === "SEDE")} className="flex h-9 items-center gap-x-5">
+              <label className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="EE" />
+                Todo el establecimiento
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <RadioGroupItem value="SEDE" />
+                Sede
+              </label>
+            </RadioGroup>
+          </Field>
+          <ComboOpciones
+            id="rex-sede"
+            label="Sede"
+            todos=""
+            disabled={!porSede}
+            value={porSede ? sede : ""}
+            options={unicos(periodos.map((p) => p.sede)).map((s) => ({ value: s, label: s }))}
+            onChange={(v) => {
+              setSede(v)
+              setPeriodo("")
+            }}
+          />
+        </div>
         <ComboOpciones
           id="rex-periodo"
-          label="Período académico"
+          label="Período Académico o fecha de corte"
           required
+          todos=""
           value={periodo}
-          options={periodos.map((p) => ({ value: String(p.id), label: `${p.nombre} · ${p.sede} · ${p.jornada}` }))}
-          onChange={cambiar(setPeriodo)}
+          options={opcionesPeriodo.map((p) => ({ value: String(p.id), label: p.nombre }))}
+          onChange={setPeriodo}
         />
-        <MarcoOpciones id="rex-alcance" label="Alcance" required>
-          <RadioGroup value={soloSede ? "SEDE" : "EE"} onValueChange={(v) => cambiar(setSoloSede)(v === "SEDE")} className="flex flex-wrap gap-x-5">
-            <label className="flex items-center gap-2 text-sm">
-              <RadioGroupItem value="EE" />
-              Todo el establecimiento
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <RadioGroupItem value="SEDE" />
-              Solo la sede del período
-            </label>
-          </RadioGroup>
-        </MarcoOpciones>
-        <Field variant="outlined" className="gap-1.5">
-          <FieldLabel htmlFor="rex-corte">Fecha de corte</FieldLabel>
-          <Input id="rex-corte" type="date" variant="outlined" value={corte} onChange={(e) => cambiar(setCorte)(e.target.value)} />
-          <FieldDescription>Opcional: solo las matrículas registradas hasta ese día.</FieldDescription>
-        </Field>
-        {aviso ? <Aviso aviso={aviso} detalle={detalle} onDetalle={() => setDetalle((d) => !d)} /> : null}
-        <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" onClick={onClose} disabled={ocupado}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </Button>
-          {aviso ? (
-            <Button type="button" variant="fill" color="primary" disabled={ocupado} onClick={confirmar}>
-              {generar.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : null}
-              {aviso.faltantes ? "Generar igual" : "Generar"}
+        {revisando ? (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <SpinnerIcon className="animate-spin" /> Revisando los datos obligatorios…
+          </p>
+        ) : aviso ? (
+          <AvisoFaltantesCaja aviso={aviso} onDetalle={() => setDetalle(true)} />
+        ) : null}
+        {aviso?.sensiblesVacias ? (
+          <div className="flex items-center gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+            <InfoIcon className="size-4 shrink-0 text-blue" />
+            Las columnas con información sensible que usted no puede ver saldrán vacías.
+          </div>
+        ) : null}
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="text-xs text-muted-foreground">
+            Los campos marcados con <span className="text-red">*</span> son obligatorios
+          </span>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" color="neutral" onClick={onClose} disabled={generar.isPending}>
+              <XIcon data-icon="inline-start" />
+              Cancelar
             </Button>
-          ) : (
-            <Button type="button" variant="fill" color="primary" disabled={!input || ocupado} onClick={revisar}>
-              {faltantes.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : null}
-              Revisar datos
+            <Button type="button" variant="fill" color="primary" disabled={!input || !aviso || revisando || generar.isPending} onClick={confirmar}>
+              {generar.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FileDownloadOutlinedIcon data-icon="inline-start" />}
+              Generar
             </Button>
-          )}
+          </div>
         </DialogFooter>
+        {detalle && aviso && version ? (
+          <DialogDetalleFaltantes aviso={aviso} titulo={`${version.codigo} · ${version.version}`} onClose={() => setDetalle(false)} />
+        ) : null}
       </DialogContent>
     </Dialog>
   )
 }
 
-/** «Faltan N datos obligatorios en M filas.» con Ver detalle: cada fila, el dato y dónde se corrige. */
-function Aviso({ aviso, detalle, onDetalle }: { aviso: AvisoFaltantes; detalle: boolean; onDetalle: () => void }) {
+/** «Faltan N datos obligatorios en M filas.» con Ver detalle (C.4.EXT.3). */
+function AvisoFaltantesCaja({ aviso, onDetalle }: { aviso: AvisoFaltantes; onDetalle: () => void }) {
+  if (!aviso.faltantes) {
+    return (
+      <div className="rounded-md border border-green-stroke bg-green-22 px-3 py-2 text-sm">
+        Todos los datos obligatorios están completos ({aviso.totalFilas.toLocaleString("es-CO")} filas).
+      </div>
+    )
+  }
   return (
-    <div className="flex flex-col gap-2 rounded-md border p-3 text-sm">
-      {aviso.faltantes ? (
+    <div className="flex gap-3 rounded-md border border-yellow-stroke bg-yellow-22 p-4 text-sm">
+      <WarningCircleIcon className="mt-0.5 size-5 shrink-0 text-yellow" />
+      <div className="flex flex-1 flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-red">
-            Faltan {aviso.faltantes} datos obligatorios en {aviso.filasConFaltantes} filas.
+          <span className="font-medium">
+            Faltan {aviso.faltantes.toLocaleString("es-CO")} datos obligatorios en {aviso.filasConFaltantes.toLocaleString("es-CO")} filas.
           </span>
-          <Button type="button" variant="link" color="primary" size="sm" onClick={onDetalle}>
-            {detalle ? "Ocultar detalle" : "Ver detalle"}
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={onDetalle}>
+            Ver detalle
           </Button>
         </div>
-      ) : (
-        <span>
-          Todos los datos obligatorios están completos ({aviso.totalFilas} filas).
-        </span>
-      )}
-      {aviso.faltantes ? (
-        <span className="text-xs text-muted-foreground">Puede generar igual: el archivo quedará marcado Con datos faltantes.</span>
-      ) : null}
-      {aviso.sensiblesVacias ? (
-        <span className="text-xs text-muted-foreground">Las columnas con información sensible que usted no puede ver saldrán vacías.</span>
-      ) : null}
-      {detalle && aviso.detalle.length < aviso.faltantes ? (
-        <span className="text-xs text-muted-foreground">Se muestran los primeros {aviso.detalle.length} datos faltantes.</span>
-      ) : null}
-      {detalle && aviso.detalle.length ? (
-        <div className="max-h-60 overflow-auto">
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-background text-left text-muted-foreground">
+        <span>Puede generar igual: el archivo quedará marcado Con datos faltantes.</span>
+      </div>
+    </div>
+  )
+}
+
+/** Ver detalle (C.4.EXT.4): fila del archivo, sede, dato que falta y dónde se corrige. */
+function DialogDetalleFaltantes({ aviso, titulo, onClose }: { aviso: AvisoFaltantes; titulo: string; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent showCloseButton={false} className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Datos obligatorios faltantes — {titulo}</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-96 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted text-left">
               <tr>
-                <th className="py-1 pr-2 font-medium">Estudiante</th>
-                <th className="py-1 pr-2 font-medium">Dato que falta</th>
-                <th className="py-1 font-medium">Dónde se corrige</th>
+                <th className="px-3 py-2 text-right font-medium">Fila</th>
+                <th className="px-3 py-2 font-medium">Sede</th>
+                <th className="px-3 py-2 font-medium">Dato que falta</th>
+                <th className="px-3 py-2 font-medium">Dónde se corrige</th>
               </tr>
             </thead>
             <tbody>
               {aviso.detalle.map((f, i) => (
                 <tr key={`${f.fila}-${f.columna}-${i}`} className="border-t">
-                  <td className="py-1 pr-2">{f.estudiante ?? `Fila ${f.fila}`}</td>
-                  <td className="py-1 pr-2">{f.columna}</td>
-                  <td className="py-1">{f.donde ?? "—"}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{f.fila}</td>
+                  <td className="px-3 py-2">{f.sede ?? "—"}</td>
+                  <td className="px-3 py-2">{f.columna}</td>
+                  <td className="px-3 py-2">{f.donde ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      ) : null}
-    </div>
+        {aviso.detalle.length < aviso.faltantes ? (
+          <p className="text-xs text-muted-foreground">
+            Se muestran los primeros {aviso.detalle.length} de {aviso.faltantes.toLocaleString("es-CO")} datos faltantes.
+          </p>
+        ) : null}
+        <DialogFooter>
+          <Button type="button" variant="fill" color="primary" onClick={onClose}>
+            Cerrar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

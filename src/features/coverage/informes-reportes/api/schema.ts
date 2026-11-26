@@ -91,6 +91,8 @@ export const informesReportesSearchSchema = z.object({
   estadoTraslado: z.enum(["PENDIENTE", "ACEPTADO", "RECHAZADO", "CANCELADO"]).optional().catch(undefined),
   libroModo: z.enum(["GRUPO", "ESTUDIANTE"]).optional().catch(undefined),
   situacionGrado: z.enum(["PENDIENTES"]).optional().catch(undefined),
+  // Reportes externos: versión del SIMAT cuya lista de generados se muestra (sin valor = la Activa).
+  versionExterna: z.coerce.number().optional().catch(undefined),
   page: z.coerce.number().catch(0).default(0),
   pageSize: z.coerce.number().catch(10).default(10),
 })

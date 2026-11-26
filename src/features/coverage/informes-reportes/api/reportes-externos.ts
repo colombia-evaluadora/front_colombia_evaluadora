@@ -5,6 +5,7 @@ import { AUDIT_API_PREFIX } from "@/lib/api-routes"
 import { evalCol } from "@/lib/eval-col-client"
 import { toPaginated } from "@/lib/pagination"
 import { downloadReport } from "@/lib/report-client"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 import { camelizar } from "@/features/coverage/matricula-complementaria/api/convocatorias"
 import { informesKeys } from "@/features/coverage/informes-reportes/api/informes"
 
@@ -18,8 +19,13 @@ const externosKeys = {
   generados: (body: unknown) => [...informesKeys.all, "reportes-externos", "generados", body] as const,
 }
 
-/** Código del reporte según la opción del selector de informes. */
-export const CODIGO_EXTERNO = { simat: "SIMAT", c600: "C600" } as const
+/** Roles que generan (Regla 70); el gate del SSO decide igual. Los demás consultan y descargan. */
+const GENERAN = ["CEVAL-RECTOR", "CEVAL-AUXILIAR_ADMINISTRATIVO"]
+
+export function usePuedeGenerarExterno() {
+  const user = useAuth().user
+  return Boolean(user?.isSuperAdmin || user?.roles?.some((r) => GENERAN.includes(r)))
+}
 
 export type FormatoExterno = "EXCEL" | "CSV" | "TEXTO"
 
@@ -56,7 +62,7 @@ export interface Generado {
 
 export interface Faltante {
   fila: number | null
-  estudiante: string | null
+  sede: string | null
   columna: string | null
   donde: string | null
 }
@@ -72,11 +78,12 @@ export interface AvisoFaltantes {
 export interface GenerarExternoInput {
   reporte: number
   periodo: number
-  soloSede: boolean
+  /** Nombre de la sede; null = todo el establecimiento. */
+  sede: string | null
   corte: string | null
 }
 
-const cuerpo = (v: GenerarExternoInput) => ({ REPORTE: v.reporte, PERIODO: v.periodo, SOLO_SEDE: v.soloSede, CORTE: v.corte })
+const cuerpo = (v: GenerarExternoInput) => ({ REPORTE: v.reporte, PERIODO: v.periodo, SEDE: v.sede, CORTE: v.corte })
 
 export function useVersionesExternasQuery() {
   return useQuery({
@@ -86,23 +93,27 @@ export function useVersionesExternasQuery() {
   })
 }
 
-export function useGeneradosQuery(p: { pageIndex: number; pageSize: number }) {
-  const body = { PAGEINDEX: p.pageIndex, PAGESIZE: p.pageSize }
+export function useGeneradosQuery(reporte: number | null, p: { pageIndex: number; pageSize: number }) {
+  const body = { REPORTE: reporte, PAGEINDEX: p.pageIndex, PAGESIZE: p.pageSize }
   return useQuery({
     queryKey: externosKeys.generados(body),
     queryFn: async () => {
       const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/generados/query`, body)
       return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Generado>(r) })
     },
+    enabled: reporte != null,
     placeholderData: keepPreviousData,
   })
 }
 
-/** Aviso previo a generar: «Faltan N datos obligatorios en M filas» con el detalle. */
-export function useFaltantesExterno() {
-  return useMutation({
-    mutationFn: async (v: GenerarExternoInput): Promise<AvisoFaltantes> => {
-      const rows = camelizar<(Faltante & Omit<AvisoFaltantes, "detalle">)[]>(await evalCol.postRows(`${BASE}/faltantes`, cuerpo(v)))
+/** Aviso de datos obligatorios faltantes: se calcula al elegir reporte, alcance y período (C.4.EXT.3). */
+export function useFaltantesQuery(input: GenerarExternoInput | null) {
+  return useQuery({
+    queryKey: [...externosKeys.all, "faltantes", input] as const,
+    queryFn: async (): Promise<AvisoFaltantes> => {
+      const rows = camelizar<(Faltante & Omit<AvisoFaltantes, "detalle">)[]>(
+        await evalCol.postRows(`${BASE}/faltantes`, cuerpo(input as GenerarExternoInput)),
+      )
       const t = rows[0]
       return {
         totalFilas: Number(t?.totalFilas ?? 0),
@@ -112,6 +123,8 @@ export function useFaltantesExterno() {
         detalle: rows.filter((r) => r.columna),
       }
     },
+    enabled: input != null,
+    staleTime: 0,
   })
 }
 

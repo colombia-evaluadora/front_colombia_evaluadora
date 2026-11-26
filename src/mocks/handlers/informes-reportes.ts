@@ -159,7 +159,6 @@ export const informesReportesHandlers = [
     await delay(100)
     return HttpResponse.json({
       rows: [
-        { reporte_id: 1, codigo: "C600", nombre: "DANE C600 - Matricula", version: "Provisional", formato: "EXCEL", provisional: true },
         { reporte_id: 2, codigo: "SIMAT", nombre: "SIMAT - Anexo 6a", version: "Provisional", formato: "CSV", provisional: true },
       ],
     })
@@ -169,9 +168,9 @@ export const informesReportesHandlers = [
     const t = { total_filas: 412, filas_con_faltantes: 2, faltantes: 3, sensibles_vacias: false }
     return HttpResponse.json({
       rows: [
-        { fila: 11, estudiante: "Ruiz Ana", columna: "Estrato", donde: "Matrícula > Residencia", ...t },
-        { fila: 11, estudiante: "Ruiz Ana", columna: "Dirección de residencia", donde: "Matrícula > Residencia", ...t },
-        { fila: 27, estudiante: "Pérez Luis", columna: "Género", donde: "Matrícula > Datos del estudiante", ...t },
+        { fila: 12, sede: "IE Central", columna: "Estrato", donde: "Cobertura Educativa › Matrícula", ...t },
+        { fila: 48, sede: "IE Central", columna: "SISBÉN", donde: "Cobertura Educativa › Matrícula", ...t },
+        { fila: 96, sede: "Sede 2", columna: "Género", donde: "Cobertura Educativa › Matrícula", ...t },
       ],
     })
   }),
@@ -185,7 +184,7 @@ export const informesReportesHandlers = [
     return HttpResponse.json({
       rows: conTotal([
         { generado_id: 2, reporte: "SIMAT - Anexo 6a", codigo: "SIMAT", formato: "CSV", sede: null, filas: 412, faltantes: 3, filas_con_faltantes: 2, estado: "CON_FALTANTES", fecha: "2027-04-03T09:00:00", ...base },
-        { generado_id: 1, reporte: "DANE C600 - Matricula", codigo: "C600", formato: "EXCEL", sede: "Sede principal", filas: 24, faltantes: 0, filas_con_faltantes: 0, estado: "COMPLETO", fecha: "2027-04-02T08:00:00", ...base },
+        { generado_id: 1, reporte: "SIMAT - Anexo 6a", codigo: "SIMAT", formato: "CSV", sede: "Sede 2", filas: 312, faltantes: 0, filas_con_faltantes: 0, estado: "COMPLETO", fecha: "2027-04-02T08:00:00", ...base },
       ]),
     })
   }),
@@ -196,6 +195,36 @@ export const informesReportesHandlers = [
       rows: [
         { n: 1, encabezados, valores: ["105001000001", "Sexto", "1012345678", "Ruiz", "Ana"] },
         { n: 2, encabezados, valores: ["105001000001", "Sexto", "1012345679", "Pérez", "Luis"] },
+      ],
+    })
+  }),
+
+  // Hoja de apoyo C600 (C.4.EXT.5 a 7): generados y contenido del libro.
+  http.post("*/api/eval-col/informes-reportes/c600/generados/query", async () => {
+    await delay(150)
+    return HttpResponse.json({
+      rows: conTotal([
+        { generado_id: 2, fecha: "2028-02-12T09:00:00", usuario: "M. López", periodo: "2027 · Anual · Ciclo 1", alcance: "Todas las sedes (2)" },
+        { generado_id: 1, fecha: "2027-03-20T10:00:00", usuario: "C. Medina", periodo: "2026 · Anual · Ciclo 1", alcance: "IE Central" },
+      ]),
+    })
+  }),
+  http.post("*/api/eval-col/informes-reportes/c600/generar", async () => {
+    await delay(300)
+    return HttpResponse.json({ rows: [{ generado: 3 }] })
+  }),
+  http.get("*/api/eval-col/informes-reportes/c600/:id/contenido", async () => {
+    await delay(150)
+    const m = "IV y V. Matrícula y docentes por jornada"
+    const mat = "Cobertura Educativa › Matrícula"
+    return HttpResponse.json({
+      rows: [
+        { hoja: 1, modulo: "I. Carátula", numero: 1, pregunta: "1 · Código DANE del establecimiento", sede_jornada: "", valor: "105001000001", fuente: "Establecimiento Educativo › Datos generales" },
+        { hoja: 4, modulo: m, numero: 40, pregunta: "40 · Estudiantes de Preescolar, matrícula propia", sede_jornada: "IE Central · Mañana", valor: "62", fuente: mat },
+        { hoja: 4, modulo: m, numero: 41, pregunta: "41 · Estudiantes de Primaria, matrícula propia", sede_jornada: "IE Central · Mañana", valor: "318", fuente: mat },
+        { hoja: 4, modulo: m, numero: 41, pregunta: "41 · Estudiantes de Primaria, matrícula propia", sede_jornada: "IE Central · Tarde", valor: "287", fuente: mat },
+        { hoja: 4, modulo: m, numero: 44, pregunta: "44 · Horas impartidas por carácter y asignatura", sede_jornada: "IE Central", valor: "Sin dato en la plataforma", fuente: null },
+        { hoja: 8, modulo: "VIII. TIC", numero: 60, pregunta: "60 · ¿La sede dispone de conexión y acceso a internet?", sede_jornada: "IE Central", valor: "Sin dato en la plataforma", fuente: null },
       ],
     })
   }),

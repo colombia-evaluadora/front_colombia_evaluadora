@@ -44,7 +44,8 @@ import { FiltrosGraduacion, GraduacionInforme } from "@/features/coverage/inform
 import { filtrosGraduacion } from "@/features/coverage/informes-reportes/api/graduacion"
 import { filtrosCulminacion } from "@/features/coverage/informes-reportes/api/culminacion"
 import { CulminacionInforme, FiltrosCulminacion } from "@/features/coverage/informes-reportes/components/culminacion"
-import { GenerarReporteExterno, ReportesExternosInforme } from "@/features/coverage/informes-reportes/components/reportes-externos"
+import { FiltrosSimat, GenerarReporteExterno, ReportesExternosInforme } from "@/features/coverage/informes-reportes/components/reportes-externos"
+import { GenerarHojaC600, HojaApoyoC600 } from "@/features/coverage/informes-reportes/components/hoja-c600"
 import { ActasGraduacionInforme, FiltrosActasGraduacion, GenerarLibroActas } from "@/features/coverage/informes-reportes/components/actas-graduacion"
 
 const ITEMS = Object.fromEntries(INFORMES.flatMap((g) => g.opciones.map((o) => [o.value, o.label])))
@@ -204,7 +205,8 @@ function Contenido() {
           <div className="flex items-center gap-2">
             {informe === "calidad" ? <GenerarCalidad /> : null}
             {informe === "actas-graduacion" ? <GenerarLibroActas /> : null}
-            {informe === "simat" || informe === "c600" ? <GenerarReporteExterno /> : null}
+            {informe === "simat" ? <GenerarReporteExterno /> : null}
+            {informe === "c600" ? <GenerarHojaC600 /> : null}
             <Exportar informe={informe} />
           </div>
         }
@@ -222,6 +224,7 @@ function Contenido() {
           {informe === "actas-graduacion" ? <FiltrosActasGraduacion /> : null}
           {informe === "culminacion" ? <FiltrosCulminacion /> : null}
           {informe === "calidad" ? <FiltrosCalidad /> : null}
+          {informe === "simat" ? <FiltrosSimat /> : null}
         </div>
       </TableScreenToolbar>
     </>
@@ -243,7 +246,8 @@ function Contenido() {
   if (informe === "graduacion") return <GraduacionInforme encabezado={encabezado} />
   if (informe === "actas-graduacion") return <ActasGraduacionInforme encabezado={encabezado} />
   if (informe === "culminacion") return <CulminacionInforme encabezado={encabezado} />
-  if (informe === "simat" || informe === "c600") return <ReportesExternosInforme encabezado={encabezado} />
+  if (informe === "simat") return <ReportesExternosInforme encabezado={encabezado} />
+  if (informe === "c600") return <HojaApoyoC600 encabezado={encabezado} />
 
   return (
     <TableScreen>
