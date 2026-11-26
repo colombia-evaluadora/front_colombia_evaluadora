@@ -21,7 +21,7 @@ import {
   InformeListaCobertura,
   InformeListaSorteo,
 } from "@/features/coverage/informes-reportes/components/informes-cobertura"
-import { EstadisticaEdades } from "@/features/coverage/informes-reportes/components/estadistica-edades"
+import { EstadisticaEdades, FiltrosEdades } from "@/features/coverage/informes-reportes/components/estadistica-edades"
 import { filtrosEdades } from "@/features/coverage/informes-reportes/api/edades"
 import { FiltrosFuera, FueraMatriculaInforme } from "@/features/coverage/informes-reportes/components/fuera-matricula"
 import { filtrosFuera } from "@/features/coverage/informes-reportes/api/fuera-matricula"
@@ -138,7 +138,6 @@ const CAMPOS: Partial<Record<InformeId, Parameters<typeof FiltrosInforme>[0]["ca
   inscripciones: ["sede", "jornada", "grupoAdmision", "grado", "edad"],
   "lista-sorteo": ["jornada", "grado", "grupoAdmision"],
   "demanda-no-atendida": ["periodo", "grado"],
-  edades: ["sede", "jornada", "periodo", "grado"],
   "fuera-matricula": ["grado"],
   calidad: ["sede", "jornada", "periodo", "grado"],
   "libro-calificaciones": ["sede", "jornada", "periodo", "grado"],
@@ -167,6 +166,7 @@ function Contenido() {
         <div className="grid w-full grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SelectorInforme value={informe} />
           {informe === "fuera-matricula" ? <FiltrosFuera /> : null}
+          {informe === "edades" ? <FiltrosEdades /> : null}
           {campos ? <FiltrosInforme campos={campos} soloCerrados={informe === "libro-calificaciones"} /> : null}
           {informe === "libro-calificaciones" ? <ControlesLibro /> : null}
           {informe === "graduacion" ? <FiltrosGraduacion /> : null}
