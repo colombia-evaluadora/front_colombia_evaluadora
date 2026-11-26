@@ -117,6 +117,7 @@ const NOMBRE_GE = {
   SERVICIO_SOCIAL_CERTIFICADO: "Certificado de servicio social",
   MENCION_HONOR: "Mención de honor",
   CONSTANCIA_ESTUDIO: "Constancia de estudio",
+  CERTIFICADO_CALIFICACIONES: "Certificado de calificaciones",
 } as const
 
 /** Certificado de servicio social y mención de honor (Gestión Estudiantil): mismo resultado y tabla que el carné. */

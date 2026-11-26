@@ -121,7 +121,7 @@ export const MATRICULA_EXPORT_COLUMN_KEYS: Partial<Record<string, string | strin
   ageSituation: "age_situation",
 }
 
-const AGE_SITUATION_LABELS: Record<AgeSituation, string> = {
+export const AGE_SITUATION_LABELS: Record<AgeSituation, string> = {
   EN_EDAD: "En edad",
   PREEXTRAEDAD: "Preextraedad",
   EXTRAEDAD: "Extraedad",
@@ -485,7 +485,11 @@ function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
  * «Con matrícula complementaria»; la complementaria, «Complementaria» o, por
  * adscripción, «Complementaria de [Establecimiento de origen]».
  */
-function MarcaComplementaria({ matricula }: { matricula: Matricula }) {
+export function MarcaComplementaria({
+  matricula,
+}: {
+  matricula: Pick<Matricula, "tipo" | "origenAdscripcion" | "tieneComplementaria">
+}) {
   if (matricula.tipo === "COMPLEMENTARIA")
     return (
       <Badge variant="soft" color="secondary" className="rounded-full text-xs font-medium tracking-normal">

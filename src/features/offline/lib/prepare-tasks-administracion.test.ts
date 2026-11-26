@@ -27,7 +27,8 @@ import { procesosKeys } from "@/features/comunicaciones/procesos/api/procesos"
 import { territorialKeys } from "@/features/comunicaciones/territorial/api/comunicados-territorial"
 import { navigationKeys } from "@/features/navigation/api/query-keys"
 import type { PrepareContext, PrepareTask } from "@/features/offline/lib/prepare-engine"
-import { administracionTasks, partesEleccion } from "@/features/offline/lib/prepare-tasks-administracion"
+import { administracionTasks, auditoriaSesionesParams, partesEleccion } from "@/features/offline/lib/prepare-tasks-administracion"
+import { fetchAudits } from "@/features/administration/audits/api/query/use-audits-query"
 import { esModuloPersistible } from "@/lib/offline/modulos-persistibles"
 
 vi.mock("@/features/offline/lib/prepare-query", () => ({
@@ -36,6 +37,11 @@ vi.mock("@/features/offline/lib/prepare-query", () => ({
 vi.mock("@/features/comunicaciones/comunicados/api/comunicados-gestion", async (original) => ({
   ...(await original<object>()),
   fetchComunicadosGestion: vi.fn(),
+}))
+
+vi.mock("@/features/administration/audits/api/query/use-audits-query", async (original) => ({
+  ...(await original<object>()),
+  fetchAudits: vi.fn(),
 }))
 
 const ROLES_MENU = [
@@ -121,7 +127,7 @@ describe("administracionTasks", () => {
     expect(keys.some((k) => k.includes("PUBLICADOS"))).toBe(false)
   })
 
-  it("de los comunicados solo baja el detalle de los propios y los ya leídos, y las páginas hasta 20", async () => {
+  it("de los comunicados solo baja el detalle de los propios y los ya leídos, y todas las páginas", async () => {
     const queryClient = cliente([{ url: "/app/comunicaciones/comunicados" }], [])
     vi.mocked(fetchComunicadosGestion).mockResolvedValue({
       items: [
@@ -141,7 +147,7 @@ describe("administracionTasks", () => {
     expect(keys).toContain(hashKey(chatKeys.comunicado(3)))
     expect(keys).not.toContain(hashKey(chatKeys.comunicado(2)))
     expect(keys).not.toContain(hashKey(chatKeys.comunicado(4)))
-    expect(keys.filter((k) => k.includes("RECIBIDOS"))).toHaveLength(19)
+    expect(keys.filter((k) => k.includes("RECIBIDOS"))).toHaveLength(89)
   })
 })
 
@@ -151,5 +157,17 @@ describe("partes de una elección", () => {
     expect(partesEleccion({ misFunciones: ["ADMINISTRADOR"] }, "VOTACION")).toContain("padron")
     expect(partesEleccion({ misFunciones: ["ADMINISTRADOR"] }, "SELECCION_MOTIVADA")).not.toContain("padron")
     expect(partesEleccion({ misFunciones: ["REVISOR"] }, "VOTACION")).toContain("postulaciones")
+  })
+})
+
+describe("registro de actividad", () => {
+  it("sesiones: todas las páginas hasta el tope de 200 (antes solo 5)", async () => {
+    const queryClient = cliente([{ url: "/app/registro-de-actividad/sesiones" }])
+    vi.mocked(fetchAudits).mockResolvedValue({ rows: [], pageCount: 500, totalCount: 5000 } as never)
+    const [sesiones] = administracionTasks(queryClient, [])
+    expect(hashKey(sesiones.queryKey)).toBe(hashKey(auditKeys.sesiones.lista(auditoriaSesionesParams(0))))
+    const hijas = (await sesiones.run(queryClient, {} as PrepareContext)) as PrepareTask[]
+    expect(hijas).toHaveLength(199)
+    expect(hashes(hijas)).toContain(hashKey(auditKeys.sesiones.lista(auditoriaSesionesParams(199))))
   })
 })

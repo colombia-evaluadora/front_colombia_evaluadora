@@ -3,6 +3,7 @@ import { useCallback, useState } from "react"
 import { TableScreen, TableScreenBody } from "@/components/layout/table-screen"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TablePaginationProvider, useTablePagination } from "@/hooks/use-table-pagination"
 
@@ -24,7 +25,7 @@ import {
 
 function ConfiguracionContent() {
   const { goToPage } = useTablePagination()
-  const { establecimiento: ee, acceso, cargando, error } = useConfiguracionAcceso()
+  const { establecimiento: ee, acceso, cargando, sinEstablecimiento, error } = useConfiguracionAcceso()
 
   const [pestana, setPestanaEstado] = useState<PestanaConfiguracion>(pestanaConfiguracionGuardada)
   const setPestana = useCallback((siguiente: PestanaConfiguracion) => {
@@ -69,6 +70,21 @@ function ConfiguracionContent() {
         <EncabezadoConfiguracion tabs={tabs} />
         <TableScreenBody>
           <ErrorNoticeBanner error={error} />
+        </TableScreenBody>
+      </>
+    )
+  }
+
+  if (sinEstablecimiento) {
+    return (
+      <>
+        <EncabezadoConfiguracion tabs={tabs} />
+        <TableScreenBody>
+          <Alert className="m-4 w-auto">
+            <AlertDescription>
+              No tiene establecimientos asignados para configurar. Solicite al administrador que le asigne una sede.
+            </AlertDescription>
+          </Alert>
         </TableScreenBody>
       </>
     )

@@ -20,6 +20,11 @@ import { prevencionKeys } from "@/features/gestion-estudiantil/prevencion/api/qu
 import { toEstrategiasFilters } from "@/features/gestion-estudiantil/prevencion/api/query/use-estrategias-query"
 import { toTableroFilters } from "@/features/gestion-estudiantil/prevencion/api/query/use-tablero-query"
 import { ESTRATEGIAS_FILTROS_VACIOS, TABLERO_FILTROS_VACIOS } from "@/features/gestion-estudiantil/prevencion/api/types"
+import { capacidadesGeKeys } from "@/features/gestion-estudiantil/commons/api/use-capacidades-ge"
+import { configuracionKeys } from "@/features/gestion-estudiantil/configuracion/api/query-keys"
+import { reconocimientosKeys } from "@/features/gestion-estudiantil/reconocimientos/api/query-keys"
+import { toReconocimientosFilters } from "@/features/gestion-estudiantil/reconocimientos/api/query/use-reconocimientos-query"
+import { RECONOCIMIENTOS_FILTROS_VACIOS } from "@/features/gestion-estudiantil/reconocimientos/api/types"
 import { reintegracionKeys } from "@/features/gestion-estudiantil/reintegracion/api/query-keys"
 import { toCasosFilters } from "@/features/gestion-estudiantil/reintegracion/api/query/use-casos-query"
 import { CASOS_FILTROS_VACIOS } from "@/features/gestion-estudiantil/reintegracion/api/types"
@@ -31,6 +36,8 @@ function responder(url: string): unknown[] {
   http.urls.push(url)
   if (url.includes("/opciones/sedes-jornadas"))
     return [{ fk_testablecimiento: 7, fk_tsede: 1, sede_nombre: "S", fk_tlv_jornada: 3, jornada_nombre: "M" }]
+  if (url.includes("/opciones/establecimientos"))
+    return Array.from({ length: http.sedes }, (_, i) => ({ fk_testablecimiento: 7 + i, establecimiento_nombre: "EE" }))
   if (url.includes("/opciones/sedes"))
     return Array.from({ length: http.sedes }, (_, i) => ({ fk_tsede: i + 1, fk_testablecimiento: 7 + i, nombre: "S" }))
   if (url.includes("/opciones/anos")) return [{ anio: 2026, es_actual: true }]
@@ -168,6 +175,23 @@ describe("gestionEstudiantilTasks", () => {
     expect(varias.tiene(observacionesKeys.lista({ filters: vacios, pageIndex: 0, pageSize: 10 }))).toBe(true)
   })
 
+  it("con varios colegios guarda capacidades, reconocimientos, observaciones y configuración de todos", async () => {
+    http.sedes = 2
+    const { tiene } = await preparar(MODULOS)
+    expect(tiene(capacidadesGeKeys.establecimiento(7))).toBe(true)
+    expect(tiene(capacidadesGeKeys.establecimiento(8))).toBe(true)
+    const pagina = (filters: unknown) => ({ filters, pageIndex: 0, pageSize: 10 })
+    expect(tiene(reconocimientosKeys.lista(pagina(toReconocimientosFilters(7, "", RECONOCIMIENTOS_FILTROS_VACIOS))))).toBe(true)
+    // El segundo colegio se abre eligiendo su sede (id 2) en el filtro.
+    const otro = { ...RECONOCIMIENTOS_FILTROS_VACIOS, sede: "2" }
+    expect(tiene(reconocimientosKeys.lista(pagina(toReconocimientosFilters(8, "", otro))))).toBe(true)
+    const obs = { ...OBSERVACIONES_FILTROS_VACIOS, sede: "2" }
+    expect(tiene(observacionesKeys.lista(pagina(toObservacionesFilters(8, "", obs))))).toBe(true)
+    expect(tiene(opcionesGeKeys.establecimientos())).toBe(true)
+    expect(tiene(configuracionKeys.acceso(7))).toBe(true)
+    expect(tiene(configuracionKeys.acceso(8))).toBe(true)
+  })
+
   it("nunca pide los detalles que dejan traza de consulta o cambian estado", async () => {
     await preparar(MODULOS, ["CEVAL-RECTOR", "CEVAL-PSICO_ORIENTADOR"])
     const prohibidas =
@@ -183,8 +207,10 @@ describe("gestionEstudiantilTasks", () => {
     const { cola } = await preparar(MODULOS)
     const paginas = cola.filter((t) => t.queryKey[0] === "citaciones-compromisos" && t.queryKey[1] === "compromisos" && t.queryKey[2] === "lista")
     expect(paginas).toHaveLength(MAX_PAGINAS_GE)
+    expect(MAX_PAGINAS_GE).toBe(200)
     expect(paginas[0].optional).toBeFalsy()
     expect(paginas[1].optional).toBe(true)
     expect(cola.filter((t) => !esModuloPersistible(t.queryKey))).toEqual([])
-  })
+    // Con el tope en 200 páginas por listado la cola es larga: en CI tarda más que el default.
+  }, 60_000)
 })

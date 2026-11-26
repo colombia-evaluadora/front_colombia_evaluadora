@@ -23,7 +23,7 @@ export interface AreaOption {
 // `useSubjectsQuery`. Selección por `id` (el nombre de área sí es único por
 // período, pero se mantiene consistente con subjects para compartir el mismo
 // campo `requiredSubjects: number[]` del form).
-async function fetchPeriodAreas(academicPeriodId: number): Promise<AreaOption[]> {
+export async function fetchPeriodAreas(academicPeriodId: number): Promise<AreaOption[]> {
   const raw: AreasListRawResponse = await api.query("/eval-col/areas/query", {
     FK_PERIODO: academicPeriodId,
     NOMBRE_INTERNO: null,

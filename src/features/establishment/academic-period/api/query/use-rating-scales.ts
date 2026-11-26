@@ -76,7 +76,7 @@ function groupRatingScales(
   return Array.from(groups.values())
 }
 
-async function fetchRatingScales(
+export async function fetchRatingScales(
   params: UseRatingScalesQueryParams
 ): Promise<RatingScalesQueryResponse> {
   if (params.academicPeriodId == null) return { rows: [] }

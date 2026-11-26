@@ -149,6 +149,16 @@ export const navigationMenu: MockMenu[] = [
     roleIds: [1, 2],
   },
   {
+    id: 73,
+    name: "Informes y reportes",
+    icon: "",
+    path: "/app/cobertura/informes-reportes",
+    menuOrder: 6,
+    type: "ITEM",
+    idParent: 12,
+    roleIds: [1, 2],
+  },
+  {
     id: 9,
     name: "Administración",
     icon: "Admin-Panel-Settings-Icon",

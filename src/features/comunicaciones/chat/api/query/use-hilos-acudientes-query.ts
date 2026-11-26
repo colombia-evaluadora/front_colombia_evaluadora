@@ -10,6 +10,9 @@ import type {
 
 export const HILOS_ACUDIENTES = "/comunicaciones/hilos-acudientes"
 
+export const fetchHilosAcudientes = () => evalCol.getRows<HiloAcudientesResumen>(HILOS_ACUDIENTES)
+export const fetchOpcionesHilo = () => evalCol.getRows<OpcionHiloAcudientes>(`${HILOS_ACUDIENTES}/opciones`)
+
 /**
  * Hilos con acudientes en los que participa el usuario (comms-service los sincroniza al leer). La
  * bandeja la usa para la línea "Grupo · N acudientes" y para saber qué conversación es un hilo.
@@ -17,7 +20,7 @@ export const HILOS_ACUDIENTES = "/comunicaciones/hilos-acudientes"
 export function useHilosAcudientesQuery() {
   return useQuery({
     queryKey: chatKeys.hilosAcudientes,
-    queryFn: () => evalCol.getRows<HiloAcudientesResumen>(HILOS_ACUDIENTES),
+    queryFn: fetchHilosAcudientes,
     staleTime: 60_000,
   })
 }
@@ -32,7 +35,7 @@ export function useResumenHilo(conversacionId: number | undefined) {
 export function useOpcionesHiloQuery() {
   return useQuery({
     queryKey: chatKeys.hilosAcudientesOpciones,
-    queryFn: () => evalCol.getRows<OpcionHiloAcudientes>(`${HILOS_ACUDIENTES}/opciones`),
+    queryFn: fetchOpcionesHilo,
     staleTime: 5 * 60_000,
   })
 }

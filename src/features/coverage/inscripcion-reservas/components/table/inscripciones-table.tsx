@@ -160,6 +160,9 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
     !!grupo?.fechaCierre &&
     grupo.fechaCierre <= format(new Date(), "yyyy-MM-dd") &&
     (grupo.desempate !== "SORTEO" || sorteoEjecutado)
+  // Ampliar se cierra con la fecha de cierre aunque no haya sorteo (desempate por orden).
+  const inscripcionCerrada =
+    sorteoEjecutado || (!!grupo?.fechaCierre && grupo.fechaCierre <= format(new Date(), "yyyy-MM-dd"))
 
   // Un modal a la vez: por fila o desde la selección.
   const [porAdmitir, setPorAdmitir] = useState<OpcionInscripcion[]>([])
@@ -173,7 +176,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
   const columns = useMemo(
     () =>
       createInscripcionesColumns({
-        sorteoEjecutado,
+        inscripcionCerrada,
         admisionAbierta,
         fechaSorteo,
         onAction: (accion, o) => {
@@ -196,7 +199,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
           }
         },
       }),
-    [sorteoEjecutado, admisionAbierta, fechaSorteo, grado, navigate],
+    [inscripcionCerrada, admisionAbierta, fechaSorteo, grado, navigate],
   )
 
   const { table, selectedIds, selectedRows, hasSelection, resetSelection } = useDataTable({

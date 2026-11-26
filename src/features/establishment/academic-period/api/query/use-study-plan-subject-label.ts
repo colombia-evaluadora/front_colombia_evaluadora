@@ -20,7 +20,7 @@ interface GradoRotulosRow {
   nombre_asignatura: string | null
 }
 
-function fetchGradoRotulos(gradeId: number): Promise<GradoRotulosRow[]> {
+export function fetchGradoRotulos(gradeId: number): Promise<GradoRotulosRow[]> {
   return evalCol.getRows<GradoRotulosRow>(`/grados/${gradeId}/rotulos-referente`)
 }
 

@@ -15,7 +15,7 @@ interface GeneralAreasResponse {
   rows: GeneralAreaRow[]
 }
 
-async function fetchGeneralAreas(): Promise<GeneralArea[]> {
+export async function fetchGeneralAreas(): Promise<GeneralArea[]> {
   const raw: GeneralAreasResponse = await api.get("/eval-col/areas/general")
   return (raw.rows ?? []).map((row) => ({
     id: row.id,

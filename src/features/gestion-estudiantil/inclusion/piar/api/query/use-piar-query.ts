@@ -34,14 +34,16 @@ export function toPiarFilters(search: string, f: PiarFiltros) {
   }
 }
 
+export const fetchGradosFiltroPiar = () =>
+  evalCol
+    .getRows<{ id: number; nombre: string }>(`${PIAR}/opciones/grados-filtro`)
+    .then((r): Opcion[] => r.map((g) => ({ value: String(g.id), label: g.nombre })))
+
 /** `GET /piar/opciones/grados-filtro`: grados de los PIAR visibles. */
 export function useGradosFiltroQuery() {
   return useQuery({
     queryKey: piarKeys.gradosFiltro(),
-    queryFn: () =>
-      evalCol
-        .getRows<{ id: number; nombre: string }>(`${PIAR}/opciones/grados-filtro`)
-        .then((r): Opcion[] => r.map((g) => ({ value: String(g.id), label: g.nombre }))),
+    queryFn: fetchGradosFiltroPiar,
     staleTime: 60_000,
   })
 }
