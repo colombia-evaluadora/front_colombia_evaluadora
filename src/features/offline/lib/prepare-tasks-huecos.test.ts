@@ -122,7 +122,7 @@ describe("huecos de la preparación (auditoría como rector)", async () => {
     const grados = { filters: {}, sorting: [], pageIndex: 0, pageSize: 200, academicPeriodId: 5 }
     expect(tiene(academicPeriodKeys.grades.list(grados))).toBe(true)
     expect(tiene(academicPeriodKeys.horario.byGrade(5))).toBe(true)
-    expect(tiene(academicPeriodKeys.gradeGroups.list({ filters: {}, sorting: [], pageIndex: 0, pageSize: 100, gradeId: 5 }))).toBe(true)
+    expect(tiene(academicPeriodKeys.gradeGroups.list({ filters: {}, sorting: [], pageIndex: 0, pageSize: 100, gradeId: 5, enabled: true }))).toBe(true)
   })
 
   it("cobertura: capacidades de matrícula y opciones de cupo", () => {
