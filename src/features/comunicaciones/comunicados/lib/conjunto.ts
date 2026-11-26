@@ -2,6 +2,7 @@ import { required } from "@/lib/forms/messages"
 import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import {
   esAcademico,
+  esAspirantes,
   TIPOS,
   TODOS,
   type Cascada,
@@ -38,7 +39,11 @@ export function textoPeriodo(c: Conjunto, datos: Cascada | undefined): string | 
 /** "Sexto · Todos los grupos" y, con funcionarios, sus roles. */
 export function textoFiltros(c: Conjunto, datos: Cascada | undefined): string {
   const partes: string[] = []
-  if (esAcademico(c)) {
+  if (esAspirantes(c)) {
+    // Aspirantes: el grado es el solicitado; no hay grupo ni estudiantes.
+    partes.push("Aspirantes")
+    partes.push(c.grado === TODOS ? "Todos los grados" : `Grado solicitado ${etiquetaDe(datos?.grados, c.grado)}`)
+  } else if (esAcademico(c)) {
     partes.push(c.grado === TODOS ? "Todos los grados" : etiquetaDe(datos?.grados, c.grado))
     if (c.grado && c.grado !== TODOS) {
       partes.push(c.grupo === TODOS ? "Todos los grupos" : etiquetaDe(datos?.grupos, c.grupo))
@@ -100,9 +105,10 @@ export function erroresConjunto(c: Conjunto, numero: number): ErroresCampos {
     if (!c.anio) e[id("anio")] = required("El año")
     if (!c.modalidad) e[id("modalidad")] = required("La modalidad", { femenino: true })
     if (!c.ciclo) e[id("ciclo")] = required("El ciclo")
-    if (!c.grado) e[id("grado")] = required("El grado")
-    if (c.grado && c.grado !== TODOS && !c.grupo) e[id("grupo")] = required("El grupo")
-    if (c.grupo && c.grupo !== TODOS && !c.todosEstudiantes && c.estudiantes.length === 0) {
+    if (!c.grado) e[id("grado")] = required(esAspirantes(c) ? "El grado solicitado" : "El grado")
+    // Aspirantes: no hay Grupo ni Estudiantes de referencia.
+    if (!esAspirantes(c) && c.grado && c.grado !== TODOS && !c.grupo) e[id("grupo")] = required("El grupo")
+    if (!esAspirantes(c) && c.grupo && c.grupo !== TODOS && !c.todosEstudiantes && c.estudiantes.length === 0) {
       e[id("estudiantes")] = "Selecciona al menos un estudiante de referencia"
     }
   }
@@ -161,10 +167,20 @@ export const FUNCIONARIOS_VACIO = {
   funcionarios: [] as string[],
 }
 
-export type Nivel = "establecimiento" | "sede" | "jornada" | "anio" | "modalidad" | "ciclo" | "grado" | "grupo"
+export type Nivel =
+  | "establecimiento"
+  | "sede"
+  | "jornada"
+  | "poblacion"
+  | "anio"
+  | "modalidad"
+  | "ciclo"
+  | "grado"
+  | "grupo"
 
 export const NOMBRE_NIVEL: Record<Nivel, string> = {
   establecimiento: "el establecimiento",
+  poblacion: "la población académica",
   sede: "la sede",
   jornada: "la jornada",
   anio: "el año",
@@ -182,6 +198,9 @@ export function alCambiar(c: Conjunto, nivel: Nivel, valor: string): Conjunto {
       return { ...c, ...ACADEMICO_VACIO, ...FUNCIONARIOS_VACIO, sede: valor, jornada: "" }
     case "jornada":
       return { ...c, ...ACADEMICO_VACIO, ...FUNCIONARIOS_VACIO, jornada: valor }
+    case "poblacion":
+      // Matriculados y Aspirantes usan períodos distintos (Abiertos / en Inscripciones): la cascada se limpia.
+      return { ...c, ...ACADEMICO_VACIO, poblacion: valor }
     case "anio":
       return { ...c, ...ACADEMICO_VACIO, anio: valor }
     case "modalidad":
@@ -207,6 +226,8 @@ export function descarta(c: Conjunto, nivel: Nivel): boolean {
       return !!c.jornada || academico || funcionarios
     case "jornada":
       return academico || funcionarios
+    case "poblacion":
+      return academico
     case "anio":
       return !!c.modalidad
     case "modalidad":

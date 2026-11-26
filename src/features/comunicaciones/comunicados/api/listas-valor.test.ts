@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { predeterminadoDe, puedeElegirAspirantes, toOpcionesLista } from "./listas-valor"
+import { predeterminadoDe, puedeElegirAspirantes, soloPublicaAspirantes, toOpcionesLista } from "./listas-valor"
 
 describe("listas de valor del comunicado", () => {
   const filas = [
@@ -26,5 +26,12 @@ describe("listas de valor del comunicado", () => {
     expect(puedeElegirAspirantes(["CEVAL-AUXILIAR_ADMINISTRATIVO"])).toBe(true)
     expect(puedeElegirAspirantes(["CEVAL-COORDINADOR"])).toBe(false)
     expect(puedeElegirAspirantes(undefined)).toBe(false)
+  })
+
+  it("el gestor administrativo sin un rol mayor solo publica a aspirantes", () => {
+    expect(soloPublicaAspirantes(["CEVAL-AUXILIAR_ADMINISTRATIVO"])).toBe(true)
+    expect(soloPublicaAspirantes(["CEVAL-AUXILIAR_ADMINISTRATIVO", "CEVAL-RECTOR"])).toBe(false)
+    expect(soloPublicaAspirantes(["CEVAL-RECTOR"])).toBe(false)
+    expect(soloPublicaAspirantes(undefined)).toBe(false)
   })
 })

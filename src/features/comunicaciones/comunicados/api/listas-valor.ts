@@ -24,6 +24,20 @@ const ROLES_ASPIRANTES = ["CEVAL-RECTOR", "CEVAL-AUXILIAR_ADMINISTRATIVO"]
 export const puedeElegirAspirantes = (roles: string[] | undefined) =>
   (roles ?? []).some((r) => ROLES_ASPIRANTES.includes(r))
 
+/**
+ * Roles que publican comunicados por encima del Gestor administrativo (RolEmision en comms-service):
+ * con alguno de ellos ya no es "solo gestor".
+ */
+const ROLES_EMISION_MAYORES = ["CEVAL-SUPER_ADMINISTRADOR", "CEVAL-RECTOR", "CEVAL-COORDINADOR"]
+
+/**
+ * Gestor administrativo del establecimiento sin un rol mayor (Guía M.1.AGR.4): solo publica a
+ * Aspirantes; Matriculados, Estudiantes y Funcionarios quedan deshabilitados. comms-service lo exige igual.
+ */
+export const soloPublicaAspirantes = (roles: string[] | undefined) =>
+  (roles ?? []).includes("CEVAL-AUXILIAR_ADMINISTRATIVO") &&
+  !(roles ?? []).some((r) => ROLES_EMISION_MAYORES.includes(r))
+
 export interface OpcionLista {
   valor: string
   etiqueta: string
