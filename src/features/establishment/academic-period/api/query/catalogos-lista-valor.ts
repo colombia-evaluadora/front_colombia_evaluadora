@@ -86,7 +86,7 @@ export function useRatingSymbolsQuery() {
 
 // Categoría de cada `FK_TLV_*` de TCRITERIO_EVALUACION. `initialGrade` y
 // `maxRecoveryGrade` no son catálogos: quedan vacías.
-const CATEGORY_BY_FIELD = {
+export const CATEGORY_BY_FIELD = {
   gradingFormat: "FORMATO_CALIFICACION",
   periodCalculationElements: "ELEMENTO_CALCULO_DEF",
   subjectGradeCriteria: "TIPO_CALCULO",

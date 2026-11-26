@@ -121,7 +121,7 @@ describe("administracionTasks", () => {
     expect(keys.some((k) => k.includes("PUBLICADOS"))).toBe(false)
   })
 
-  it("de los comunicados solo baja el detalle de los propios y los ya leídos, y las páginas hasta 20", async () => {
+  it("de los comunicados solo baja el detalle de los propios y los ya leídos, y todas las páginas", async () => {
     const queryClient = cliente([{ url: "/app/comunicaciones/comunicados" }], [])
     vi.mocked(fetchComunicadosGestion).mockResolvedValue({
       items: [
@@ -141,7 +141,7 @@ describe("administracionTasks", () => {
     expect(keys).toContain(hashKey(chatKeys.comunicado(3)))
     expect(keys).not.toContain(hashKey(chatKeys.comunicado(2)))
     expect(keys).not.toContain(hashKey(chatKeys.comunicado(4)))
-    expect(keys.filter((k) => k.includes("RECIBIDOS"))).toHaveLength(19)
+    expect(keys.filter((k) => k.includes("RECIBIDOS"))).toHaveLength(89)
   })
 })
 

@@ -23,7 +23,7 @@ export interface SubjectOption {
   areaId: number | null
 }
 
-async function fetchSubjectRows(academicPeriodId?: number): Promise<SubjectRow[]> {
+export async function fetchSubjectRows(academicPeriodId?: number): Promise<SubjectRow[]> {
   if (academicPeriodId == null) return []
   const raw: SubjectsResponse = await api.query("/eval-col/areas/asignaturas", {
     FK_PERIODO: academicPeriodId,

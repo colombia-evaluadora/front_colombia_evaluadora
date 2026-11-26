@@ -69,7 +69,7 @@ function toGrade(row: GradeRow): Grade {
   }
 }
 
-async function fetchGrades(
+export async function fetchGrades(
   params: UseGradesQueryParams
 ): Promise<GradesQueryResponse> {
   if (params.academicPeriodId == null) {
