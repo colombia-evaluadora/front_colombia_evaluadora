@@ -90,7 +90,11 @@ function columnas(gradeLabel: (g: number) => string, onCertificado: (m: Matricul
       accessorFn: (m) => m.situacionEdad,
       meta: { label: "Edad" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Edad" />,
-      cell: ({ row }) => AGE_SITUATION_LABELS[row.original.situacionEdad],
+      cell: ({ row }) => (
+        <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
+          {AGE_SITUATION_LABELS[row.original.situacionEdad ?? "SIN_CALCULAR"]}
+        </Badge>
+      ),
       enableSorting: false,
     },
     {
@@ -300,6 +304,7 @@ export function ConsultaMatriculados({ encabezado }: { encabezado: ReactNode }) 
             open={abierto}
             onOpenChange={setAbierto}
             onApply={() => aplicar(b)}
+            onClearFilters={() => setB({})}
             size="lg"
           >
             <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2">

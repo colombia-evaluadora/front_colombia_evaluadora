@@ -73,6 +73,7 @@ export const informesReportesSearchSchema = z.object({
   grupoAdmision: z.coerce.number().optional().catch(undefined),
   agrupar: z.enum(["GRADO", "GRUPO", "SEDE", "JORNADA", "NIVEL", "METODOLOGIA", "ESTADO", "ESTABLECIMIENTO"]).optional().catch(undefined),
   // Estadística de edades: filtros múltiples (C.4.EDA). Sin valor = todos; estados sin valor = Cursando.
+  eEstablecimientos: z.array(z.string()).optional().catch(undefined),
   eSedes: z.array(z.string()).optional().catch(undefined),
   eJornadas: z.array(z.string()).optional().catch(undefined),
   ePeriodos: z.array(z.coerce.number()).optional().catch(undefined),
