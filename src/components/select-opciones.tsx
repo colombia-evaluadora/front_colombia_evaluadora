@@ -49,6 +49,9 @@ type Comunes = {
 type Simple = Comunes & { multiple?: false; value: string; onValueChange: (valor: string) => void }
 type Multiple = Comunes & { multiple: true; value: string[]; onValueChange: (valores: string[]) => void }
 
+/** Caracteres de etiquetas que caben en el campo de un selector múltiple antes del «+ N». */
+const MAX_CARACTERES = 36
+
 export function SelectOpciones(props: Simple | Multiple) {
   const { id, opciones, placeholder = "Seleccione", disabled, size, variant, className } = props
   const etiquetas = etiquetasSelect(opciones)
@@ -68,15 +71,28 @@ export function SelectOpciones(props: Simple | Multiple) {
           {/* Siempre una línea: las dos primeras etiquetas y el resto como «+ N». */}
           {(valores: string[]) =>
             valores?.length ? (
-              // El «+ N» va aparte para que el recorte de las etiquetas largas no lo esconda.
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate">{valores.slice(0, 2).map((v) => etiquetas[v] ?? v).join(", ")}</span>
-                {valores.length > 2 ? (
-                  <span className="shrink-0 rounded-full bg-muted px-1.5 text-xs font-medium tabular-nums text-muted-foreground">
-                    + {valores.length - 2}
+              (() => {
+                // Tantas etiquetas como quepan en el presupuesto de caracteres, al menos una (la larga se recorta).
+                const textos = valores.map((v) => String(etiquetas[v] ?? v))
+                let visibles = 1
+                let largo = textos[0].length
+                while (visibles < textos.length && largo + 2 + textos[visibles].length <= MAX_CARACTERES) {
+                  largo += 2 + textos[visibles].length
+                  visibles++
+                }
+                const resto = textos.length - visibles
+                return (
+                  // El «+ N» va aparte para que el recorte de la etiqueta no lo esconda.
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate">{textos.slice(0, visibles).join(", ")}</span>
+                    {resto > 0 ? (
+                      <span className="shrink-0 rounded-full bg-muted px-1.5 text-xs font-medium tabular-nums text-muted-foreground">
+                        + {resto}
+                      </span>
+                    ) : null}
                   </span>
-                ) : null}
-              </span>
+                )
+              })()
             ) : (
               placeholder
             )
