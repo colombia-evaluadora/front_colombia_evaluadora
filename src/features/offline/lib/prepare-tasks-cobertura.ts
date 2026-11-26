@@ -1,5 +1,12 @@
 // Cobertura y Funcionarios para "Preparar": las MISMAS keys que arma cada pantalla al abrir sin filtros.
 // Las pantallas solo-mock (pre-matrícula, reserva de cupo vieja, detalle de inscrito) no se siembran.
+import {
+  fetchMatriculados,
+  fetchPeriodosInforme,
+  informesKeys,
+  matriculadosBody,
+} from "@/features/coverage/informes-reportes/api/informes"
+import type { InformesSearch } from "@/features/coverage/informes-reportes/api/schema"
 import type { QueryClient, QueryKey } from "@tanstack/react-query"
 
 import type { PrepareTask } from "@/features/offline/lib/prepare-engine"
@@ -543,6 +550,17 @@ function funcionariosTasks(): PrepareTask[] {
   ]
 }
 
+// ---- Informes y reportes ----------------------------------------------------------
+
+/** Consulta de matriculados como abre (sin filtros, sin orden) y los períodos del filtro. */
+function informesReportesTasks(): PrepareTask[] {
+  const body = (pageIndex: number) => matriculadosBody({} as InformesSearch, { pageIndex, pageSize: PAGE_SIZE, sorting: [] })
+  return [
+    seed(informesKeys.periodos, fetchPeriodosInforme, proveedorMeta(), OPCIONAL),
+    paginas({ key: (p) => informesKeys.matriculados(body(p)), fetch: (p) => fetchMatriculados(body(p)), optional: true }),
+  ]
+}
+
 // ---- Todo junto -----------------------------------------------------------------
 
 /** El alcance lo pone el menú (y el backend en cada respuesta): `_roles` queda por el contrato común. */
@@ -556,6 +574,7 @@ export function coberturaTasks(queryClient: QueryClient, _roles: readonly string
   if (menuIncludes(queryClient, "/app/cobertura/matricula-complementaria")) tasks.push(...complementariaTasks())
   if (menuIncludes(queryClient, "/app/cobertura/promocion-nivelacion")) tasks.push(...promocionTasks())
   if (menuIncludes(queryClient, "/app/cobertura/actualizacion-datos")) tasks.push(...actualizacionDatosTasks())
+  if (menuIncludes(queryClient, "/app/cobertura/informes-reportes")) tasks.push(...informesReportesTasks())
   if (menuIncludes(queryClient, "/app/establecimiento-educativo/funcionarios")) tasks.push(...funcionariosTasks())
   return tasks
 }
