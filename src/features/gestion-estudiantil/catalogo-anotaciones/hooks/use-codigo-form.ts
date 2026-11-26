@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useActualizarCodigo, useCambiarEstadoCodigo, useCrearCodigo } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/mutations/codigos"
 import type { CodigoRow } from "@/features/gestion-estudiantil/catalogo-anotaciones/api/types"
@@ -19,6 +20,7 @@ export function useCodigoForm({ establecimiento, codigo, esNegativo, onClose }: 
   const [v, setV] = useState<ValoresCodigo>(() => (codigo ? valoresDe(codigo) : valoresVacios()))
   const [intento, setIntento] = useState(false)
   const [error, setError] = useState<unknown>(null)
+  const [errorCodigo, setErrorCodigo] = useState<string | null>(null)
   const crear = useCrearCodigo()
   const actualizar = useActualizarCodigo()
   const cambiarEstado = useCambiarEstadoCodigo()
@@ -46,7 +48,14 @@ export function useCodigoForm({ establecimiento, codigo, esNegativo, onClose }: 
         notify(codigo ? "Código actualizado." : "Código creado.", { variant: "success" as const })
         onClose()
       },
-      onError: (error: Error) => setError(error),
+      onError: (error: Error) => {
+        // Código repetido (G.10.CAT.4): va debajo del campo Código, no en el aviso del modal.
+        const mensaje = getErrorMessage(error)
+        if (/ya existe en el cat[aá]logo/i.test(mensaje)) {
+          setErrorCodigo(mensaje)
+          setError(null)
+        } else setError(error)
+      },
     }
     if (codigo) {
       // El estado tiene su propio endpoint: solo se llama si cambió.
@@ -62,7 +71,12 @@ export function useCodigoForm({ establecimiento, codigo, esNegativo, onClose }: 
 
   return {
     v,
-    set: (patch: Partial<ValoresCodigo>) => setV((p) => ({ ...p, ...patch })),
+    set: (patch: Partial<ValoresCodigo>) => {
+      if (patch.codigo !== undefined) setErrorCodigo(null)
+      setV((p) => ({ ...p, ...patch }))
+    },
+    /** Error del backend propio del campo Código (repetido). */
+    errorCodigo,
     cambiarTipo,
     errores,
     negativo,

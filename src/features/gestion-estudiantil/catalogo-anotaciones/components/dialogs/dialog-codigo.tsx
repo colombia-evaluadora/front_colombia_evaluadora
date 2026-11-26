@@ -1,5 +1,5 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Switch } from "@/components/ui/switch"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import {
@@ -37,43 +37,69 @@ interface Props {
 export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNegativo, onClose }: Props) {
   const f = useCodigoForm({ establecimiento, codigo, esNegativo, onClose })
   const enUso = codigo?.en_uso ?? false
+  const errorCodigo = f.errores.codigo ?? f.errorCodigo
 
   return (
     <Dialog open onOpenChange={(open) => !open && !f.pending && onClose()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-lg">
+      {/* `max-w-xl`: en `lg` la nota de obligatorios se partía en dos líneas. */}
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{codigo ? `Modificar ${codigo.codigo}` : "Nuevo código"}</DialogTitle>
+          <DialogTitle>{codigo ? "Modificar código" : "Nuevo código"}</DialogTitle>
           <DialogDescription>Códigos del manual de convivencia del establecimiento.</DialogDescription>
         </DialogHeader>
         <ErrorNoticeBanner error={f.error} />
 
+        {/* Orden del md (G.10.CAT.4): Código | Tipo de anotación, Tipo de situación, Descripción y Estado. */}
         <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
-          <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(f.errores.codigo) || undefined}>
-            <FieldLabel htmlFor="codigo-codigo">Código*</FieldLabel>
+          <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(errorCodigo) || undefined}>
+            <FieldLabel htmlFor="codigo-codigo">
+              <span>
+                Código<span data-required-mark="">*</span>
+              </span>
+            </FieldLabel>
             <Input
               id="codigo-codigo"
               maxLength={LIM.codigo}
               value={f.v.codigo}
-              aria-invalid={Boolean(f.errores.codigo) || undefined}
+              aria-invalid={Boolean(errorCodigo) || undefined}
               onChange={(e) => f.set({ codigo: e.target.value })}
             />
-            {f.errores.codigo && <FieldError>{f.errores.codigo}</FieldError>}
+            <div className="flex justify-between gap-2">
+              {errorCodigo ? <FieldError>{errorCodigo}</FieldError> : <span />}
+              <CharacterCounter value={f.v.codigo} max={LIM.codigo} />
+            </div>
           </Field>
-          <MarcoOpciones id="codigo-estado-marco" label="Estado">
-            <label htmlFor="codigo-estado" className="flex w-fit cursor-pointer items-center gap-3">
-              <Switch
-                round
-                id="codigo-estado"
-                checked={f.v.estado === "activo"}
-                onCheckedChange={(checked) => f.set({ estado: checked ? "activo" : "inactivo" })}
-              />
-              {f.v.estado === "activo" ? "Activo" : "Inactivo"}
-            </label>
-          </MarcoOpciones>
+          <ComboOpciones
+            id="codigo-tipo"
+            label="Tipo de anotación"
+            required
+            size="default"
+            todos={false}
+            disabled={enUso}
+            value={f.v.tipo}
+            options={tipos}
+            error={f.errores.tipo}
+            onChange={f.cambiarTipo}
+          />
         </div>
+        <ComboOpciones
+          id="codigo-situacion"
+          label="Tipo de situación"
+          size="default"
+          todos="Ninguno"
+          disabled={enUso || !f.negativo}
+          value={f.v.situacion}
+          options={situaciones}
+          description="Solo con Tipo de anotación Negativo."
+          onChange={(situacion) => f.set({ situacion })}
+        />
 
         <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(f.errores.descripcion) || undefined}>
-          <FieldLabel htmlFor="codigo-descripcion">Descripción*</FieldLabel>
+          <FieldLabel htmlFor="codigo-descripcion">
+            <span>
+              Descripción<span data-required-mark="">*</span>
+            </span>
+          </FieldLabel>
           <Textarea
             id="codigo-descripcion"
             rows={3}
@@ -89,30 +115,23 @@ export function DialogCodigo({ establecimiento, codigo, tipos, situaciones, esNe
           </div>
         </Field>
 
-        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
-          <ComboOpciones
-            id="codigo-tipo"
-            label="Tipo de anotación"
-            required
-            size="default"
-            todos={false}
-            disabled={enUso}
-            value={f.v.tipo}
-            options={tipos}
-            error={f.errores.tipo}
-            onChange={f.cambiarTipo}
-          />
-          <ComboOpciones
-            id="codigo-situacion"
-            label="Tipo de situación"
-            size="default"
-            todos="Ninguno"
-            disabled={enUso || !f.negativo}
-            value={f.v.situacion}
-            options={situaciones}
-            onChange={(situacion) => f.set({ situacion })}
-          />
-        </div>
+        {/* Estado con radios, como Nueva clasificación y Nueva sanción de esta misma vista (md G.10.CAT.4). */}
+        <MarcoOpciones id="codigo-estado" label="Estado" required>
+          <RadioGroup
+            aria-labelledby="codigo-estado-label"
+            value={f.v.estado}
+            onValueChange={(estado) => f.set({ estado: estado as "activo" | "inactivo" })}
+          >
+            <label className="flex items-center gap-2">
+              <RadioGroupItem value="activo" />
+              Activo
+            </label>
+            <label className="flex items-center gap-2">
+              <RadioGroupItem value="inactivo" />
+              Inactivo
+            </label>
+          </RadioGroup>
+        </MarcoOpciones>
         {enUso && (
           <p className="text-xs text-muted-foreground">
             Este código ya se usó en anotaciones: su tipo y tipo de situación no se pueden cambiar.

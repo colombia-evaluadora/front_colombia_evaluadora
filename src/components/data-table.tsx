@@ -1,6 +1,6 @@
 "use no memo"
 
-import { Fragment, type ReactNode } from "react"
+import { Fragment, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { flexRender, type Column, type Row, type RowData, type Table } from "@tanstack/react-table"
 import {
   ArrowDownIcon,
@@ -104,6 +104,13 @@ interface DataTableProps {
   growColumnId?: string
   /** Clases extra para `growColumnId`, a nivel de th/td. */
   growColumnClassName?: string
+  /**
+   * Ancho según el contenido (por defecto en todas las tablas): si todo cabe, cada columna va en una línea y
+   * el sobrante queda al final, con las líneas de las filas de borde a borde; si no cabe, se parten solo las
+   * celdas que pueden partirse (las de `whitespace-normal`, p. ej. `growColumnClassName`). Con `false` vuelve
+   * el reparto anterior, con `growColumnId` llevándose el sobrante.
+   */
+  ajustarAlContenido?: boolean
   insideSubRow?: boolean
   /** Clases para el contenedor con scroll de `Table` (borde/radio ya viven
    *  ahí — ver `containerClassName` en `ui/table.tsx`). Sirve para ponerle
@@ -126,6 +133,7 @@ export function DataTable({
   cellClassName,
   growColumnId,
   growColumnClassName,
+  ajustarAlContenido = true,
   insideSubRow = false,
   containerClassName,
 }: DataTableProps) {
@@ -140,6 +148,34 @@ export function DataTable({
   const showOfflineMessage = pendingStalled || (isError && offline)
   // Filas recién creadas o modificadas: se resaltan unos segundos (ver `useFilasResaltadas`).
   const resaltadas = useFilasResaltadas(table, isRowActive)
+
+  // `ajustarAlContenido`: primero se prueba todo en una línea (nada se parte) con una columna de relleno al
+  // final que se lleva el sobrante, así las líneas de las filas llegan al borde. Si así la tabla no cabe, se
+  // pasa a «partir»: la tabla ocupa el ancho y el navegador parte solo los textos largos. La prueba se hace en
+  // `useLayoutEffect` (antes de pintar, sin salto visible) y se repite al cambiar los datos, las columnas o el
+  // ancho del contenedor. Solo CSS no alcanza: un `width: 100%` de relleno encoge las demás columnas a su
+  // mínimo, y una tabla `w-max` deja las líneas cortas.
+  const tablaRef = useRef<HTMLTableElement>(null)
+  const [anchoContenedor, setAnchoContenedor] = useState(0)
+  const [modoAjuste, setModoAjuste] = useState<"una-linea" | "partir">("una-linea")
+  const datosTabla = table.options.data
+  useLayoutEffect(() => {
+    const contenedor = tablaRef.current?.parentElement
+    if (!ajustarAlContenido || !contenedor) return
+    const observador = new ResizeObserver(() => setAnchoContenedor(Math.round(contenedor.clientWidth)))
+    observador.observe(contenedor)
+    return () => observador.disconnect()
+  }, [ajustarAlContenido])
+  useLayoutEffect(() => {
+    if (ajustarAlContenido) setModoAjuste("una-linea")
+  }, [ajustarAlContenido, datosTabla, anchoContenedor, visibleColumns.length])
+  useLayoutEffect(() => {
+    if (!ajustarAlContenido || modoAjuste !== "una-linea") return
+    const tabla = tablaRef.current
+    const contenedor = tabla?.parentElement
+    if (tabla && contenedor && tabla.scrollWidth > contenedor.clientWidth + 1) setModoAjuste("partir")
+  }, [ajustarAlContenido, modoAjuste, datosTabla, anchoContenedor, visibleColumns.length])
+  const unaLinea = ajustarAlContenido && modoAjuste === "una-linea"
 
   // Los botones de fila son un overlay ABSOLUTO sobre la celda `actions`, no
   // contenido en flujo: así no empujan el layout y solo se revelan al hacer
@@ -204,7 +240,7 @@ export function DataTable({
   // reparte entre todas las columnas.
   const hayFilas = table.getRowModel().rows.length > 0
   const growCellStyle = (columnId: string) =>
-    hayFilas && columnId === growColumnId ? { width: "100%" } : undefined
+    !ajustarAlContenido && hayFilas && columnId === growColumnId ? { width: "100%" } : undefined
 
   // Columna de respiro, JUSTO ANTES de la de acciones: el overlay está anclado
   // al borde derecho de su celda y crece hacia la IZQUIERDA, así que el hueco
@@ -222,15 +258,36 @@ export function DataTable({
   // dibuja encima de las últimas columnas solo mientras dura el hover.
   const actionsColumn = visibleColumns.find((c) => isActionsColumn(c.id))
   const hasActionsColumn = actionsColumn !== undefined
-  const columnCount = visibleColumns.length + (hasActionsColumn ? 1 : 0)
+  // `ajustarAlContenido` sin columna de acciones: una celda vacía al final hace de relleno (la última columna
+  // de datos no, porque si es numérica y centrada quedaría flotando en medio del sobrante).
+  const conRellenoFinal = ajustarAlContenido && !hasActionsColumn
+  const rellenoStyle = { width: unaLinea && hayFilas ? "100%" : undefined }
+  const rellenoFinal = conRellenoFinal ? <td aria-hidden className="p-0" style={rellenoStyle} /> : null
+  const columnCount = visibleColumns.length + (hasActionsColumn ? 1 : 0) + (conRellenoFinal ? 1 : 0)
   const spacerWidth = actionsColumn?.getSize() ?? 96
-  const spacerCell = <td aria-hidden className="p-0" style={{ width: spacerWidth }} />
+  // `ajustarAlContenido`: en una línea el respiro se lleva el sobrante; al partir no se reserva (si no, sus
+  // ~120px vacíos obligaban a partir los textos de más) y el overlay se dibuja encima solo durante el hover.
+  const spacerStyle = {
+    width: unaLinea && hayFilas ? "100%" : ajustarAlContenido && hayFilas ? undefined : spacerWidth,
+  }
+  const spacerCell = <td aria-hidden className="p-0" style={spacerStyle} />
 
   return (
     // El borde, el radio y el scroll horizontal los pone el contenedor propio
     // de `Table`; acá no se envuelve en otro scroller para no anidar dos.
     <div className="w-full">
-      <UITable className="w-full" containerClassName={containerClassName}>
+      <UITable
+        ref={tablaRef}
+        // En una línea, nada se parte (también los `whitespace-normal` de las celdas). Al partir, cualquier celda de
+        // texto puede partirse (no solo las marcadas): así la tabla cabe sin scroll y se parte lo necesario. Lo que
+        // trae `whitespace-nowrap` propio (etiquetas, fechas, textos cortos) no se toca.
+        className={cn(
+          "w-full",
+          unaLinea && "[&_td]:whitespace-nowrap [&_td_*]:whitespace-nowrap",
+          ajustarAlContenido && !unaLinea && "[&_td]:whitespace-normal",
+        )}
+        containerClassName={containerClassName}
+      >
         <TableHeader>
           {/* El encabezado no lleva fondo propio ni hover: comparte el de la
               tabla en reposo, igual que una fila sin el puntero encima. */}
@@ -244,7 +301,7 @@ export function DataTable({
                 return (
                   <Fragment key={header.id}>
                     {isActions ? (
-                      <th aria-hidden className="p-0" style={{ width: spacerWidth }} />
+                      <th aria-hidden className="p-0" style={spacerStyle} />
                     ) : null}
                     <TableHead
                       className={cn(
@@ -263,6 +320,7 @@ export function DataTable({
                   </Fragment>
                 )
               })}
+              {conRellenoFinal ? <th aria-hidden className="p-0" style={rellenoStyle} /> : null}
             </TableRow>
           ))}
         </TableHeader>
@@ -287,6 +345,7 @@ export function DataTable({
                     </Fragment>
                   )
                 })}
+                {rellenoFinal}
               </TableRow>
             ))
           ) : isError ? (
@@ -346,6 +405,7 @@ export function DataTable({
                         </Fragment>
                       )
                     })}
+                    {rellenoFinal}
                   </TableRow>
                   {subRow != null && (
                     <TableRow className="hover:bg-transparent" data-sub-row>

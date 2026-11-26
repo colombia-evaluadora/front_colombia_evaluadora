@@ -4,6 +4,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { toDigitsOnly } from "@/lib/text-input"
 
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
+import { hayCambios } from "@/features/gestion-estudiantil/configuracion/utils/cambios"
 import { useEditarPlazoRemisiones } from "@/features/gestion-estudiantil/reintegracion/api/mutations/remisiones"
 
 /** Mensaje del plazo de seguimiento, o `undefined` si es un entero positivo. */
@@ -38,5 +39,14 @@ export function usePlazoRemisionesForm({ plazo, establecimiento }: { plazo: numb
     )
   }, [errorCampo, guardar, establecimiento, valor, notify])
 
-  return { valor, errorCampo: intento ? errorCampo : undefined, error, pendiente: guardar.isPending, cambiar, cancelar, guardar: enviar }
+  return {
+    valor,
+    errorCampo: intento ? errorCampo : undefined,
+    error,
+    pendiente: guardar.isPending,
+    cambios: hayCambios(valor, inicial),
+    cambiar,
+    cancelar,
+    guardar: enviar,
+  }
 }

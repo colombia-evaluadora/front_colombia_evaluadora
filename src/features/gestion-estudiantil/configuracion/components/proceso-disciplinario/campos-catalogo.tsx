@@ -22,8 +22,11 @@ export function CampoNombre({ id, label, value, max, required = true, error, onC
   return (
     <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(error) || undefined}>
       <FieldLabel htmlFor={id}>
-        {label}
-        {required && "*"}
+        {/* Texto y `*` en un solo hijo: el label flotante separa sus hijos con espacio. */}
+        <span>
+          {label}
+          {required && <span data-required-mark="">*</span>}
+        </span>
       </FieldLabel>
       <Input id={id} maxLength={max} value={value} aria-invalid={Boolean(error) || undefined} onChange={(e) => onChange(e.target.value)} />
       <div className="flex justify-between gap-2">

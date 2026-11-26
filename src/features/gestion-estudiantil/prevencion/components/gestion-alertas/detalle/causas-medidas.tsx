@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -123,7 +124,17 @@ export function CausasMedidas({ d }: { d: GestionAlertaDetalle }) {
             >
               <ComboboxFieldTrigger id="gestion-causas" className="w-full">
                 <ComboboxFieldValue placeholder="Sin causas registradas">
-                  {(ids: number[]) => (ids.length === 0 ? "Sin causas registradas" : ids.map(etiquetaCausa).join(", "))}
+                  {(ids: number[]) =>
+                    ids.length === 0 ? (
+                      "Sin causas registradas"
+                    ) : (
+                      <ChipsSeleccion
+                        elementos={ids.map((c) => ({ id: c, label: etiquetaCausa(c) }))}
+                        deshabilitado={!editaCausas}
+                        onQuitar={(c) => onCausas(ids.filter((x) => x !== c))}
+                      />
+                    )
+                  }
                 </ComboboxFieldValue>
               </ComboboxFieldTrigger>
               <ComboboxFieldContent>

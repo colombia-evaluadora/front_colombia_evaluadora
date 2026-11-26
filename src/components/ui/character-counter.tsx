@@ -9,13 +9,15 @@ interface CharacterCounterProps extends React.ComponentProps<"span"> {
 
 export function CharacterCounter({ value, max, className, ...props }: CharacterCounterProps) {
   const remaining = max - value.length
+  // El aviso en rojo es para cuando se acaba el espacio: en campos cortos (Código, 10) 50 los pintaba siempre.
+  const umbral = Math.min(LOW_REMAINING_THRESHOLD, Math.ceil(max * 0.1))
 
   return (
     <span
       data-slot="character-counter"
       className={cn(
         "block text-right text-xs text-muted-foreground",
-        remaining <= LOW_REMAINING_THRESHOLD && "text-red",
+        remaining <= umbral && "text-red",
         className,
       )}
       {...props}

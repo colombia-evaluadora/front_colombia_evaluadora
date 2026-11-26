@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import { TableScreenHeader, TableScreenTabs, TableScreenTitle } from "@/components/layout/table-screen"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 
@@ -19,7 +20,10 @@ export function EncabezadoConfiguracion({ tabs, children, action }: Props) {
     <TableScreenHeader>
       <TableScreenTitle action={action}>Configuración</TableScreenTitle>
       <TableScreenTabs>{tabs}</TableScreenTabs>
-      {children}
+      {/* El aviso de la pantalla lo pinta `TableScreenToolbar` (Catálogo de anotaciones). Las pestañas sin barra
+          (Proceso disciplinario y los formularios) no tenían dónde mostrarlo: «Sanción eliminada.», «Plazos del
+          proceso guardados.»… se enviaban y no se veían. */}
+      {children ?? <NoticeOutlet className="mx-(--screen-spacing) mt-4" />}
     </TableScreenHeader>
   )
 }
@@ -28,19 +32,23 @@ interface AccionesFormProps {
   guardando: boolean
   /** Sin permiso de edición: los botones se ven pero quedan deshabilitados. */
   deshabilitado: boolean
+  /** Los valores difieren de los cargados: sin cambios, Guardar va deshabilitado y Cancelar no aparece. */
+  cambios: boolean
   onCancelar: () => void
   onGuardar: () => void
 }
 
 /** Cancelar · Guardar de las pestañas de formulario (G.10.PLA.1, G.10.RIE.1, G.10.SOC.1). */
-export function AccionesFormulario({ guardando, deshabilitado, onCancelar, onGuardar }: AccionesFormProps) {
+export function AccionesFormulario({ guardando, deshabilitado, cambios, onCancelar, onGuardar }: AccionesFormProps) {
   return (
     <div className="flex shrink-0 items-center gap-2">
-      <Button size="sm" type="button" variant="outline" color="neutral" disabled={guardando || deshabilitado} onClick={onCancelar}>
-        <XIcon data-icon="inline-start" />
-        Cancelar
-      </Button>
-      <Button size="sm" type="button" disabled={guardando || deshabilitado} onClick={onGuardar}>
+      {cambios && (
+        <Button size="sm" type="button" variant="outline" color="neutral" disabled={guardando || deshabilitado} onClick={onCancelar}>
+          <XIcon data-icon="inline-start" />
+          Cancelar
+        </Button>
+      )}
+      <Button size="sm" type="button" disabled={guardando || deshabilitado || !cambios} onClick={onGuardar}>
         <IconoCarga cargando={guardando}>
           <FloppyDiskIcon data-icon="inline-start" />
         </IconoCarga>

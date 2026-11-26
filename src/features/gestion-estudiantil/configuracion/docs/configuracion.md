@@ -14,7 +14,7 @@ Ruta `/app/gestion-estudiantil/configuracion`, menú `CONFIGURACION_GE`. Todo es
   `select/TIPO_COMPORTAMIENTO`, `select/TIPO_SITUACION`, `select/AVISO_ACUDIENTE_SM_SEGUIMIENTO`,
   `select/CAUSA_INASISTENCIA`, `select/GRADOS`). Sin lista en el backend, y por eso fijas: Estado (Activo/Inactivo,
   booleano `HABILITADO`) y las condiciones de la matrícula (CHECK de V638). Tiene duración es un Switch.
-- Tablas: las tres muestran «Columnas visibles» con todas las columnas salvo acciones (clasificaciones, junto al título).
+- Tablas: «Columnas visibles» en la paginación del catálogo de anotaciones y de sanciones; clasificaciones (tres columnas, sin paginación) no lo lleva.
 - Lógica en `hooks/` (estado, validación y envío); los componentes son de presentación.
 
 | Pestaña | Endpoints | Permiso de escritura |

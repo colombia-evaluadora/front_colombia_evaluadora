@@ -32,6 +32,7 @@ import { conservacionDatosHandlers } from "@/mocks/handlers/conservacion-datos"
 import { citacionesCompromisosHandlers } from "@/mocks/handlers/citaciones-compromisos"
 import { reconocimientosHandlers } from "@/mocks/handlers/reconocimientos"
 import { observacionesSugerenciasHandlers } from "@/mocks/handlers/observaciones-sugerencias"
+import { configuracionGeHandlers } from "@/mocks/handlers/configuracion-ge"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { academicAssignmentListHandlers } from "@/mocks/handlers/academic-period/academic-assignment-list"
 import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
@@ -147,6 +148,7 @@ export const handlers = [
   ...citacionesCompromisosHandlers,
   ...reconocimientosHandlers,
   ...observacionesSugerenciasHandlers,
+  ...configuracionGeHandlers,
   ...academicAssignmentListHandlers,
   ...academicAssignmentsHandlers,
   ...horarioHandlers,

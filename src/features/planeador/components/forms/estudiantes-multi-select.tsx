@@ -1,3 +1,4 @@
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { CaretDownIcon } from "@/components/ui/icons"
 import {
   DropdownMenu,
@@ -44,7 +45,9 @@ interface EstudiantesMultiSelectProps {
 }
 
 /**
- * "Estudiantes": mismo patrón que `TeachingLevelsMultiSelect` (`<Select>`
+ * "Estudiantes": menú de checkboxes como `TeachingLevelsMultiSelect`. Una lista concreta se ve en chips con «+N»
+ * (`ChipsSeleccion`, como todos los selectores múltiples); el texto de abajo describe el resumen que queda
+ * para «todos» y «ninguno». Antes: mismo patrón que `TeachingLevelsMultiSelect` (`<Select>`
  * que abre un menú de checkboxes), pero sin la medición de overflow por
  * chips — un grupo puede tener 60+ estudiantes, y listarlos todos como
  * badges saturaría el trigger. En su lugar el trigger muestra un resumen
@@ -102,6 +105,7 @@ export function EstudiantesMultiSelect({
     )
   }
 
+  const nombres = new Map(estudiantes.map((e) => [e.id, e.nombre]))
   const label = isPending
     ? "Cargando…"
     : estudiantes.length === 0
@@ -114,24 +118,46 @@ export function EstudiantesMultiSelect({
 
   return (
     <DropdownMenu onOpenChange={onOpenChange ? (open) => onOpenChange(open) : undefined}>
-      <DropdownMenuTrigger
-        render={
-          <button
-            id={id}
-            type="button"
-            disabled={disabled || isPending}
-            aria-invalid={invalid || undefined}
-            className={cn(
-              inputVariants({ variant: resolvedVariant }),
-              inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-10 items-center justify-between gap-2 text-left",
-            )}
-          />
-        }
+      {/* Mismo armado que `SubjectsMultiSelect`: el recuadro es un div con el botón del menú por debajo
+          (`absolute inset-0`) y los chips encima, así la «×» de cada chip no queda dentro de un botón. */}
+      <div
+        aria-invalid={invalid || undefined}
+        className={cn(
+          inputVariants({ variant: resolvedVariant }),
+          inputTriggerVariants({ variant: resolvedVariant }),
+          "relative flex h-10 items-center justify-between gap-2 text-left",
+          (disabled || isPending) && "cursor-not-allowed bg-muted/50 opacity-70 hover:border-input",
+        )}
       >
-        <span className={cn("truncate", estudiantes.length === 0 && "text-muted-foreground")}>{label}</span>
-        <CaretDownIcon className="text-muted-foreground size-5 shrink-0" />
-      </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <button
+              id={id}
+              type="button"
+              disabled={disabled || isPending}
+              aria-label={label}
+              className="absolute inset-0 z-0 cursor-pointer bg-transparent outline-none disabled:cursor-not-allowed"
+            />
+          }
+        />
+        {/* Una lista concreta va en chips (como todos los selectores múltiples); «Todos los estudiantes del
+            grupo», «Ningún estudiante» o «Cargando…» siguen como texto. */}
+        {!isPending && !allSelected && value.length > 0 ? (
+          <ChipsSeleccion
+            className="relative z-10"
+            elementos={value.map((m) => ({ id: m, label: nombres.get(m) ?? `Matrícula ${m}` }))}
+            deshabilitado={disabled}
+            onQuitar={(m) => onChange({ matriculaIds: value.filter((x) => x !== m), allSelected: false })}
+          />
+        ) : (
+          <span
+            className={cn("pointer-events-none relative z-10 truncate", estudiantes.length === 0 && "text-muted-foreground")}
+          >
+            {label}
+          </span>
+        )}
+        <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-5 shrink-0" />
+      </div>
       <DropdownMenuContent align="start" className="max-h-72 min-w-72 overflow-y-auto">
         {estudiantes.length === 0 ? (
           <div className="text-muted-foreground px-3 py-2 text-sm">Sin estudiantes en este grupo.</div>

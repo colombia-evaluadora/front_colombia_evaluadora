@@ -25,7 +25,7 @@ function FormNiveles({ niveles, establecimiento, puedeEditar, tabs }: { niveles:
     <>
       <EncabezadoConfiguracion
         tabs={tabs}
-        action={<AccionesFormulario guardando={f.pendiente} deshabilitado={!puedeEditar} onCancelar={f.cancelar} onGuardar={f.guardar} />}
+        action={<AccionesFormulario guardando={f.pendiente} cambios={f.cambios} deshabilitado={!puedeEditar} onCancelar={f.cancelar} onGuardar={f.guardar} />}
       />
       <TableScreenBody>
         <div className="flex flex-col gap-4 pb-6">

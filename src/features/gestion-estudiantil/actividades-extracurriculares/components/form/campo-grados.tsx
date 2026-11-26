@@ -7,6 +7,7 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
@@ -32,7 +33,15 @@ export function CampoGrados({ id, opciones, value, disabled, placeholder, ayuda,
         <ComboboxFieldTrigger id={id} className="w-full" aria-invalid={Boolean(error) || undefined}>
           <ComboboxFieldValue placeholder={placeholder}>
             {(grados: number[]) =>
-              grados.length === 0 ? placeholder : grados.map((g) => nombres.get(g) ?? `Grado ${g}`).join(", ")
+              grados.length === 0 ? (
+                placeholder
+              ) : (
+                <ChipsSeleccion
+                  elementos={grados.map((g) => ({ id: g, label: nombres.get(g) ?? `Grado ${g}` }))}
+                  deshabilitado={disabled}
+                  onQuitar={(g) => onChange(grados.filter((x) => x !== g))}
+                />
+              )
             }
           </ComboboxFieldValue>
         </ComboboxFieldTrigger>
