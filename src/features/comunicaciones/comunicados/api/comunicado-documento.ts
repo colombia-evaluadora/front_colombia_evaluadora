@@ -4,6 +4,7 @@ import { evalCol } from "@/lib/eval-col-client"
 import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { subirAdjuntos } from "@/features/comunicaciones/chat/api/mutations/use-crear-comunicado"
 import { comunicadosGestionKey } from "@/features/comunicaciones/comunicados/api/comunicados-gestion"
+import { ASPIRANTES } from "@/features/comunicaciones/comunicados/api/listas-valor"
 import type { Comunicado, Conversacion, OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 
 /**
@@ -95,9 +96,29 @@ export interface Cascada {
 
 export const esAcademico = (c: Conjunto) => c.tipos.includes("ESTUDIANTES") || c.tipos.includes("ACUDIENTES")
 
+/**
+ * Población Aspirantes (Guía M.1.AGR.4): la cascada usa los períodos en Inscripciones, el Grado es el
+ * solicitado y no hay Grupo ni Estudiantes de referencia.
+ */
+export const esAspirantes = (c: Conjunto) => esAcademico(c) && c.poblacion === ASPIRANTES
+
 /** Parámetros de la cascada (van en la query key). */
 export function toCascadaParams(c: Conjunto) {
+  if (esAspirantes(c)) {
+    return {
+      establecimiento: c.establecimiento,
+      sede: c.sede,
+      jornada: c.jornada === "TODAS" ? "" : c.jornada,
+      anio: c.anio,
+      modalidad: c.modalidad,
+      ciclo: c.ciclo,
+      grado: "",
+      grupo: "",
+      poblacion: ASPIRANTES,
+    }
+  }
   return {
+    poblacion: "",
     establecimiento: c.establecimiento,
     sede: c.sede,
     // "Todas las jornadas" (conjunto solo de funcionarios) no acota por jornada.
@@ -179,9 +200,10 @@ const cuerpoConjunto = ({ conjunto: c, resumen }: { conjunto: Conjunto; resumen:
   MODALIDAD: c.modalidad || null,
   CICLO: c.ciclo ? Number(c.ciclo) : null,
   GRADO: c.grado || null,
-  GRUPO: c.grupo || null,
-  TODOS_ESTUDIANTES: c.todosEstudiantes ? "S" : "N",
-  ESTUDIANTES: numeros(c.estudiantes),
+  // Aspirantes: sin Grupo ni Estudiantes de referencia (el aspirante aún no tiene matrícula).
+  GRUPO: esAspirantes(c) ? null : c.grupo || null,
+  TODOS_ESTUDIANTES: !esAspirantes(c) && c.todosEstudiantes ? "S" : "N",
+  ESTUDIANTES: esAspirantes(c) ? [] : numeros(c.estudiantes),
   TODOS_ROLES: c.todosRoles ? "S" : "N",
   ROLES: c.roles,
   SELECCION_FUNCIONARIOS: c.seleccionFuncionarios || null,

@@ -22,6 +22,7 @@ import type { OpcionSeleccion } from "@/features/comunicaciones/chat/api/types"
 import { SelectorChips } from "@/features/comunicaciones/chat/components/selector-chips"
 import {
   esAcademico,
+  esAspirantes,
   TIPOS,
   TODOS,
   useCascadaQuery,
@@ -36,6 +37,7 @@ import {
   LISTA_SELECCION_FUNCIONARIOS,
   predeterminadoDe,
   puedeElegirAspirantes,
+  soloPublicaAspirantes,
   useListaComunicado,
 } from "@/features/comunicaciones/comunicados/api/listas-valor"
 import {
@@ -56,6 +58,8 @@ import {
 } from "@/features/comunicaciones/comunicados/lib/conjunto"
 
 const NO_APLICA = "No aplica a funcionarios"
+const NO_APLICA_ASPIRANTES = "No aplica a aspirantes"
+const SOLO_GESTOR = "Como Gestor administrativo, solo publica a aspirantes."
 const SUPERIOR = "Incluidos en la selección superior"
 const SIN = "Sin opciones"
 
@@ -90,26 +94,40 @@ export function ConjuntoDestinatarios({
   // Listas de valor (QA 90): las opciones de los radios no van quemadas.
   const poblaciones = useListaComunicado(LISTA_POBLACION).data ?? []
   const selecciones = useListaComunicado(LISTA_SELECCION_FUNCIONARIOS).data ?? []
-  const aspirantesPermitido = puedeElegirAspirantes(useUser().data?.roles)
-  // Aspirantes: solo el Administrador del establecimiento o el Gestor administrativo, y con Acudientes.
+  const rolesUsuario = useUser().data?.roles
+  const aspirantesPermitido = puedeElegirAspirantes(rolesUsuario)
+  // Gestor administrativo (M.1.AGR.4): solo Aspirantes con Acudientes; lo demás queda deshabilitado.
+  const soloAspirantes = soloPublicaAspirantes(rolesUsuario)
+  const aspirantes = esAspirantes(c)
+  // Aspirantes: solo el Administrador del establecimiento o el Gestor administrativo, y solo con Acudientes.
   const motivoPoblacion = (valor: string, tipos: TipoDestinatario[]) =>
     valor !== ASPIRANTES
-      ? undefined
+      ? soloAspirantes
+        ? SOLO_GESTOR
+        : undefined
       : !aspirantesPermitido
         ? "Solo el Administrador del establecimiento o el Gestor administrativo publican a aspirantes."
-        : !tipos.includes("ACUDIENTES")
-          ? "Aspirantes requiere el tipo Acudientes."
+        : !tipos.includes("ACUDIENTES") || tipos.includes("ESTUDIANTES")
+          ? "Aspirantes solo con Acudientes."
           : undefined
+  const motivoTipo = (t: TipoDestinatario) => (soloAspirantes && t !== "ACUDIENTES" ? SOLO_GESTOR : undefined)
 
-  // Con Estudiantes o Acudientes la población es obligatoria: por defecto, el predeterminado de la lista.
+  // El Gestor administrativo empieza con Acudientes marcado (su único tipo posible).
+  useEffect(() => {
+    if (soloAspirantes && c.tipos.length === 0) onChange({ ...c, tipos: ["ACUDIENTES"] })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soloAspirantes, c.tipos.length])
+
+  // Con Estudiantes o Acudientes la población es obligatoria: por defecto, el predeterminado de la lista
+  // (Aspirantes para el Gestor administrativo). Si la elegida deja de valer, se limpia la cascada.
   useEffect(() => {
     if (!academico || poblaciones.length === 0) return
     if (!c.poblacion || motivoPoblacion(c.poblacion, c.tipos)) {
-      const defecto = predeterminadoDe(poblaciones)
-      if (defecto !== c.poblacion) onChange({ ...c, poblacion: defecto })
+      const defecto = soloAspirantes ? ASPIRANTES : predeterminadoDe(poblaciones)
+      if (defecto !== c.poblacion) onChange(alCambiar(c, "poblacion", defecto))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [academico, poblaciones.length, c.poblacion, c.tipos.join(",")])
+  }, [academico, poblaciones.length, c.poblacion, c.tipos.join(","), soloAspirantes])
 
   useEffect(() => {
     onDatos(datos)
@@ -156,6 +174,12 @@ export function ConjuntoDestinatarios({
 
   return (
     <div className="space-y-4">
+      {soloAspirantes && (
+        <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+          <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
+          <span>{SOLO_GESTOR}</span>
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-3">
         <Selector
           errores={errores}
@@ -205,10 +229,15 @@ export function ConjuntoDestinatarios({
             )}
           >
             {TIPOS.map((t) => (
-              <label key={t.valor} className="flex items-center gap-2">
+              <label
+                key={t.valor}
+                className={cn("flex items-center gap-2", motivoTipo(t.valor) && "text-muted-foreground")}
+                title={motivoTipo(t.valor)}
+              >
                 <Checkbox
                   aria-invalid={errores?.[`${id}-tipos`] ? true : undefined}
                   checked={c.tipos.includes(t.valor)}
+                  disabled={!!motivoTipo(t.valor)}
                   onCheckedChange={(v) =>
                     ponerTipos(v === true ? [...c.tipos, t.valor] : c.tipos.filter((x) => x !== t.valor))
                   }
@@ -221,6 +250,7 @@ export function ConjuntoDestinatarios({
               size="sm"
               variant="outline"
               color="neutral"
+              disabled={soloAspirantes}
               onClick={() => ponerTipos(TIPOS.map((t) => t.valor))}
             >
               Toda la comunidad
@@ -249,13 +279,16 @@ export function ConjuntoDestinatarios({
                     name={`${id}-poblacion`}
                     checked={academico && c.poblacion === o.valor}
                     disabled={!!motivo}
-                    onChange={() => onChange({ ...c, poblacion: o.valor })}
+                    onChange={() => cambiar("poblacion", o.valor)}
                   />
                   {o.etiqueta}
                 </label>
               )
             })}
           </div>
+          {academico && aspirantesPermitido && !soloAspirantes && (
+            <p className="text-xs text-muted-foreground">Aspirantes solo con Acudientes.</p>
+          )}
           <ErrorCampo mensaje={errores?.[`${id}-poblacion`]} />
         </div>
       </div>
@@ -273,7 +306,11 @@ export function ConjuntoDestinatarios({
             vacio={!academico ? NO_APLICA : bloqueado ? SIN : undefined}
             onChange={(v) => cambiar("anio", v)}
           />
-          {bloqueado && <p className="mt-1 text-xs text-red">No hay años con períodos Abiertos</p>}
+          {bloqueado && (
+            <p className="mt-1 text-xs text-red">
+              {aspirantes ? "No hay años con períodos en Inscripciones" : "No hay años con períodos Abiertos"}
+            </p>
+          )}
         </div>
         <Selector
           errores={errores}
@@ -304,9 +341,15 @@ export function ConjuntoDestinatarios({
         <p className="flex flex-wrap items-center gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
           <InfoIcon aria-hidden className="size-4 shrink-0 text-blue" />
           <span className="min-w-0 break-words">Período: {periodo}</span>
-          <Badge variant="soft" color="success">
-            Abierto
-          </Badge>
+          {aspirantes ? (
+            <Badge variant="soft" color="info">
+              Inscripciones
+            </Badge>
+          ) : (
+            <Badge variant="soft" color="success">
+              Abierto
+            </Badge>
+          )}
         </p>
       )}
 
@@ -314,7 +357,7 @@ export function ConjuntoDestinatarios({
         <Selector
           errores={errores}
           id={`${id}-grado`}
-          etiqueta="Grado"
+          etiqueta={aspirantes ? "Grado solicitado" : "Grado"}
           requerido={academico}
           valor={c.grado}
           opciones={datos?.grados ?? []}
@@ -327,19 +370,29 @@ export function ConjuntoDestinatarios({
           errores={errores}
           id={`${id}-grupo`}
           etiqueta="Grupo"
-          requerido={academico}
+          requerido={academico && !aspirantes}
           valor={c.grupo}
           opciones={datos?.grupos ?? []}
           todos="Todos los grupos"
-          deshabilitado={!academico || !c.grado || c.grado === TODOS}
-          vacio={!academico ? NO_APLICA : c.grado === TODOS ? SUPERIOR : bloqueado ? SIN : undefined}
+          deshabilitado={!academico || aspirantes || !c.grado || c.grado === TODOS}
+          vacio={
+            !academico
+              ? NO_APLICA
+              : aspirantes
+                ? NO_APLICA_ASPIRANTES
+                : c.grado === TODOS
+                  ? SUPERIOR
+                  : bloqueado
+                    ? SIN
+                    : undefined
+          }
           onChange={(v) => cambiar("grupo", v)}
         />
         <Multiple
           errores={errores}
           id={`${id}-estudiantes`}
           etiqueta="Estudiantes de referencia"
-          requerido={academico && !!c.grupo && c.grupo !== TODOS}
+          requerido={academico && !aspirantes && !!c.grupo && c.grupo !== TODOS}
           opciones={estudiantes}
           seleccion={c.estudiantes}
           todos={c.todosEstudiantes}
@@ -347,7 +400,9 @@ export function ConjuntoDestinatarios({
           motivo={
             !academico
               ? NO_APLICA
-              : bloqueado
+              : aspirantes
+                ? NO_APLICA_ASPIRANTES
+                : bloqueado
                 ? SIN
                 : !c.grado || c.grado === TODOS || !c.grupo || c.grupo === TODOS
                   ? SUPERIOR
@@ -430,14 +485,32 @@ export function ConjuntoDestinatarios({
           <WarningCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-red" />
           <div className="min-w-0">
             <p className="font-medium">No se puede publicar para esta audiencia</p>
-            <p>
-              La sede {etiquetaDe(datos?.sedes, c.sede)}, jornada {etiquetaDe(datos?.jornadas, c.jornada)} no tiene
-              períodos Abiertos (se excluyen los Cerrados y los de Inscripciones), así que no se puede enviar a
-              Estudiantes ni Acudientes. El filtro no se amplía: elija otra jornada o quite Estudiantes y Acudientes de
-              este conjunto; a Funcionarios sí se puede enviar.
-            </p>
+            {aspirantes ? (
+              <p>
+                La sede {etiquetaDe(datos?.sedes, c.sede)}, jornada {etiquetaDe(datos?.jornadas, c.jornada)} no tiene
+                períodos en Inscripciones, así que no se puede enviar a aspirantes. El filtro no se amplía: elija otra
+                jornada{soloAspirantes ? "" : " o cambie la población a Matriculados"}.
+              </p>
+            ) : (
+              <p>
+                La sede {etiquetaDe(datos?.sedes, c.sede)}, jornada {etiquetaDe(datos?.jornadas, c.jornada)} no tiene
+                períodos Abiertos (se excluyen los Cerrados y los de Inscripciones), así que no se puede enviar a
+                Estudiantes ni Acudientes. El filtro no se amplía: elija otra jornada o quite Estudiantes y Acudientes
+                de este conjunto; a Funcionarios sí se puede enviar.
+              </p>
+            )}
           </div>
         </div>
+      )}
+
+      {aspirantes && !bloqueado && (
+        <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 px-3 py-2 text-sm">
+          <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
+          <span>
+            Reciben los acudientes de inscripciones con una opción Admitida y de las reservas Reservadas de este
+            período, sin duplicarlos. El aviso va por correo.
+          </span>
+        </p>
       )}
 
       {inactivos.length > 0 && (
