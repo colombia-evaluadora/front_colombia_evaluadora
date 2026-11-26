@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -11,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
-import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
+import { useDepartmentsQuery, useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { toDireccionInput, toTextoInput } from "@/features/establishment/shared/text-field-rules"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
@@ -36,16 +38,49 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
+    const { data: departments = [] } = useDepartmentsQuery()
     const { data: municipalities = [] } = useMunicipalitiesQuery()
     const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
-    const municipalityItems = municipalities.map((municipality) => ({
-        value: municipality.id,
-        label: `${municipality.code} - ${municipality.department.name} - ${municipality.name}`,
-    }))
+    // Cascada Departamento → Municipio (lista valor MUNICIPIO cuelga de
+    // DEPARTAMENTO). El departamento no se guarda: sale del municipio elegido,
+    // y solo hace falta en estado mientras todavía no hay municipio.
+    const [pickedDepartmentId, setPickedDepartmentId] = useState<number | null>(null)
+    const departmentId = value.municipality?.department?.id || pickedDepartmentId
+    const departmentItems = departments.map((department) => ({ value: department.id, label: department.name }))
+    const municipalityItems = municipalities
+        .filter((municipality) => !departmentId || municipality.department.id === departmentId)
+        .map((municipality) => ({ value: municipality.id, label: municipality.name }))
 
-    // Doce columnas: la segunda fila deja la comuna angosta, como en el diseño.
+    // Doce columnas: Departamento, Municipio y Zona arriba; la segunda fila deja la comuna angosta.
     return (
         <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-12">
+            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-4">
+                <FieldLabel htmlFor="establishment-departamento">Departamento*</FieldLabel>
+                <ComboboxField
+                    value={departmentId}
+                    onValueChange={(selectedValue) => {
+                        const next = typeof selectedValue === "number" ? selectedValue : null
+                        setPickedDepartmentId(next)
+                        // Cambiar de departamento descarta el municipio de otro.
+                        if (value.municipality && value.municipality.department?.id !== next) {
+                            onChange({ ...value, municipality: null })
+                        }
+                    }}
+                    items={toSelectItemsMap(departmentItems)}
+                >
+                    <ComboboxFieldTrigger id="establishment-departamento">
+                        <ComboboxFieldValue placeholder="Seleccione" />
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                        {departmentItems.map((item) => (
+                            <ComboboxFieldItem key={item.value} value={item.value}>
+                                {item.label}
+                            </ComboboxFieldItem>
+                        ))}
+                    </ComboboxFieldContent>
+                </ComboboxField>
+            </Field>
+
             <Field orientation="vertical" variant="outlined" className="w-full md:col-span-4" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
                 <FieldLabel htmlFor="establishment-municipio">Municipio*</FieldLabel>
                 <ComboboxField
@@ -57,7 +92,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     }}
                     items={toSelectItemsMap(municipalityItems)}
                 >
-                    <ComboboxFieldTrigger aria-invalid={isInvalid("address.municipality")}>
+                    <ComboboxFieldTrigger id="establishment-municipio" aria-invalid={isInvalid("address.municipality")} disabled={!departmentId}>
                         <ComboboxFieldValue placeholder="Seleccione" />
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
@@ -93,7 +128,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <FieldError>{errorFor("address.zone")}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-4" data-invalid={isInvalid("address.district") ? "true" : undefined}>
+            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-3" data-invalid={isInvalid("address.district") ? "true" : undefined}>
                 <FieldLabel htmlFor="establishment-barrio">Barrio</FieldLabel>
                 <Input
                     id="establishment-barrio"
@@ -119,7 +154,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <FieldError>{errorFor("address.commune")}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-5" data-invalid={isInvalid("address.locality") ? "true" : undefined}>
+            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-3" data-invalid={isInvalid("address.locality") ? "true" : undefined}>
                 <FieldLabel htmlFor="establishment-localidad">Localidad</FieldLabel>
                 <Input
                     id="establishment-localidad"
@@ -132,7 +167,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <FieldError>{errorFor("address.locality")}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-5" data-invalid={isInvalid("address.address") ? "true" : undefined}>
+            <Field orientation="vertical" variant="outlined" className="w-full md:col-span-4" data-invalid={isInvalid("address.address") ? "true" : undefined}>
                 <FieldLabel htmlFor="establishment-address">Dirección</FieldLabel>
                 <Input
                     id="establishment-address"
