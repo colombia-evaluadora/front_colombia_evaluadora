@@ -16,7 +16,7 @@ const RAICES = new Set([
   "inclusion", "observaciones-sugerencias", "observador", "orientacion", "piar", "prevencion",
   "reconocimientos", "reintegracion",
   // Cobertura
-  "actualizacion-datos", "enrollments", "entidad-territorial", "inscripcion-configuracion", "inscripciones",
+  "actualizacion-datos", "enrollments", "informes-reportes", "entidad-territorial", "inscripcion-configuracion", "inscripciones",
   "matricula", "matricula-complementaria", "pre-matricula", "promocion-nivelacion", "reservas-cupo", "reservations",
   // Administración
   "administradores-territoriales", "areas-oficiales", "audits", "audit-tables", "audit-operation-types", "audit-session-statuses", "bitacora",

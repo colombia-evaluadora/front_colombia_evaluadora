@@ -51,6 +51,12 @@ import { fetchUnidadActividades } from "@/features/planeador/api/query/use-unida
 import { fetchInstrumentoActividad } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { fetchRotuloActividad } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { fetchPlaneadorDocentes } from "@/features/planeador/api/query/use-planeador-docentes-query"
+import { fetchProgramacionActividad } from "@/features/planeador/api/query/use-programacion-actividad-query"
+import { fetchConfiguracionActividad } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import { BIBLIOTECA_PAGE_SIZE, fetchMaterialesReutilizables } from "@/features/planeador/api/query/use-materiales-reutilizables-query"
+import { fetchAdaptacionesReutilizables } from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
+import { fetchGradoGrupos } from "@/features/planeador/api/query/use-grado-grupos-query"
+import { toTipoAdaptacionOptions } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { fetchReferenteCurricular } from "@/features/planeador/api/query/use-referente-curricular-query"
 // Asistencia
 import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
@@ -269,6 +275,7 @@ function catalogosPlaneador(): PrepareTask[] {
     seedListaValor("MOMENTO_REGISTRO"),
     seedListaValor("AGRUPACION_PLANILLA"),
     seedListaValor("TIPO_ADAPTACION"),
+    seedListaValor("APLICA_A", { optional: true }),
     // Formulario de actividad (crear/editar sin red): instrumentos y dominios
     // permitidos de los materiales.
     seedListaValor("INSTRUMENTO_EVALUACION"),
@@ -372,6 +379,70 @@ function actividadExtrasTasks(actividad: Actividad): PrepareTask[] {
         ]
       : []),
     seed(calificaciones.queryKey, calificaciones.queryFn as () => Promise<unknown>, estudiantesMeta(), { optional: true }),
+    ...formularioEditarTasks(actividad),
+  ]
+}
+
+/**
+ * Listas que Editar actividad pide según lo elegido en el formulario, con los valores con los
+ * que abre: programación (fechas permitidas), configuración de la unidad (las dos variantes
+ * de `hooks.ts`), primera página de la biblioteca de recursos y de adaptaciones reutilizables
+ * (sin filtro y por cada tipo de adaptación) y los grupos del grado. Todas opcionales: una
+ * que falle no marca la preparación como fallida.
+ */
+function formularioEditarTasks(actividad: Actividad): PrepareTask[] {
+  const opcional = { optional: true }
+  const meta = offlineMeta(TTL_OFFLINE.grupo)
+  const unidadId = actividad.unidad?.id || undefined
+  const { grupoId, asignaturaId, gradoId } = actividad
+  const materiales = { actividadId: actividad.id, grupoId: grupoId ?? 0, search: "", pagina: 1, size: BIBLIOTECA_PAGE_SIZE }
+  const adaptaciones = (tipoAdaptacionId: number | undefined) => ({
+    actividadId: actividad.id,
+    grupoId: grupoId ?? 0,
+    tipoAdaptacionId,
+    search: "",
+    pagina: 1,
+    size: 100,
+  })
+  const adaptacionesTask = (tipoAdaptacionId: number | undefined) => {
+    const params = adaptaciones(tipoAdaptacionId)
+    return seed(planeadorKeys.adaptacionesReutilizables(params), () => fetchAdaptacionesReutilizables(params), meta, opcional)
+  }
+  return [
+    ...(grupoId != null && asignaturaId != null
+      ? [
+          seed(
+            planeadorKeys.actividades.programacion(grupoId, asignaturaId, unidadId),
+            () => fetchProgramacionActividad(grupoId, asignaturaId, unidadId),
+            meta,
+            opcional,
+          ),
+        ]
+      : []),
+    ...(unidadId != null
+      ? [...new Set([true, actividad.esEvaluativa])].map((esEvaluativa) =>
+          seed(
+            planeadorKeys.unidad.configuracionActividad(unidadId, esEvaluativa),
+            () => fetchConfiguracionActividad(unidadId, esEvaluativa),
+            meta,
+            opcional,
+          ),
+        )
+      : []),
+    seed(planeadorKeys.materialesReutilizables(materiales), () => fetchMaterialesReutilizables(materiales), meta, opcional),
+    adaptacionesTask(undefined),
+    // Una por tipo de adaptación: la clave es propia de la actividad (el catálogo ya se
+    // guardó en los catálogos del planeador y una semilla repetida no se vuelve a correr).
+    {
+      queryKey: ["offline", "prepare", "adaptaciones", actividad.id],
+      optional: true,
+      expands: true,
+      run: async (client) => {
+        const rows = await client.fetchQuery(selectCategoryQueryOptions("TIPO_ADAPTACION"))
+        return toTipoAdaptacionOptions(rows).map(({ id }) => adaptacionesTask(id))
+      },
+    },
+    ...(gradoId != null ? [seed(planeadorKeys.gradoGrupos(gradoId), () => fetchGradoGrupos(gradoId), proveedorMeta(), opcional)] : []),
   ]
 }
 
