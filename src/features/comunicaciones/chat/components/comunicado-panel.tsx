@@ -18,6 +18,7 @@ import {
   MegaphoneIcon,
   WarningCircleIcon,
   WarningIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { paths } from "@/config/paths"
@@ -129,12 +130,12 @@ export function ComunicadoArticulo({ comunicado: c }: { comunicado: Comunicado }
             </Badge>
           )}
           {c.estado && <EstadoComunicadoBadge estado={c.estado} />}
-          {gestiona && (c.estado === "PUBLICADO" || c.estado === "VENCIDO") && (
+          {(c.puedeAnular ?? (gestiona && (c.estado === "PUBLICADO" || c.estado === "VENCIDO"))) && (
             <Button size="sm" variant="outline" color="destructive" onClick={() => setDialogo("anular")}>
               Anular
             </Button>
           )}
-          {gestiona && c.estado === "PROGRAMADO" && (
+          {(c.puedeCancelar ?? (gestiona && c.estado === "PROGRAMADO")) && (
             <Button size="sm" variant="outline" color="destructive" onClick={() => setDialogo("cancelar")}>
               Cancelar
             </Button>
@@ -283,8 +284,10 @@ export function AnularDialog({ comunicado: c, onClose }: { comunicado: Comunicad
           <CharacterCounter value={motivo} max={MAX_MOTIVO} />
           {intentado && vacio && <FieldError>Escribe el motivo de la anulación.</FieldError>}
         </Field>
-        <DialogFooter>
-          <Button type="button" variant="ghost" color="neutral" onClick={cerrar} disabled={anular.isPending}>
+        <DialogFooter className="sm:items-center">
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          <Button type="button" variant="outline" color="neutral" onClick={cerrar} disabled={anular.isPending}>
+            <XIcon data-icon="inline-start" aria-hidden />
             Cancelar
           </Button>
           <Button

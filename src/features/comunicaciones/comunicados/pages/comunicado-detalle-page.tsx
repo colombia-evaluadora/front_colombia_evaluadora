@@ -96,9 +96,10 @@ function TarjetaComunicado({ c }: { c: Comunicado }) {
   const { notify } = useNotify()
   const [dialogo, setDialogo] = useState<"anular" | "cancelar" | null>(null)
   const gestiona = c.gestiona ?? c.esCreador
-  const modificable = !!c.esCreador && (c.estado === "PUBLICADO" || c.estado === "PROGRAMADO")
-  const cancelable = gestiona && c.estado === "PROGRAMADO"
-  const anulable = gestiona && (c.estado === "PUBLICADO" || c.estado === "VENCIDO")
+  // Lo decide comms-service (PermisosComunicado, 3.1); sin las marcas, la regla anterior.
+  const modificable = c.puedeModificar ?? (!!c.esCreador && (c.estado === "PUBLICADO" || c.estado === "PROGRAMADO"))
+  const cancelable = c.puedeCancelar ?? (gestiona && c.estado === "PROGRAMADO")
+  const anulable = c.puedeAnular ?? (gestiona && (c.estado === "PUBLICADO" || c.estado === "VENCIDO"))
   const adjuntos = c.adjuntos ?? []
   const conAcciones = modificable || cancelable || anulable
 
