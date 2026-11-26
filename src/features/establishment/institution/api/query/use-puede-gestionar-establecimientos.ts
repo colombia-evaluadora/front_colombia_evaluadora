@@ -10,7 +10,7 @@ interface PermisoGestionRow {
 }
 
 /** Con mocks no hay niveles: decide solo Eliminar del menú, como antes. */
-async function fetchPuedeGestionarEstablecimientos(): Promise<boolean> {
+export async function fetchPuedeGestionarEstablecimientos(): Promise<boolean> {
   if (env.ENABLE_API_MOCKING) return true
   const rows = await evalCol.getRows<PermisoGestionRow>("/establecimientos/permisos/gestion")
   return rows[0]?.puede_gestionar === true

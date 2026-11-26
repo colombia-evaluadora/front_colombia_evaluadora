@@ -4,9 +4,9 @@ import { useState, type ReactNode } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTable, DataTableColumnHeader } from "@/components/data-table"
+import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
 import { TableScreen, TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
-import { MarcoOpciones } from "@/components/marco-opciones"
 import { Pagination } from "@/components/pagination"
 import { SelectOpciones } from "@/components/select-opciones"
 import { TituloConAyuda } from "@/components/titulo-con-ayuda"
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { coberturaInformesReportesRoute } from "@/router"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { useContextoTerritorialQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import { camelizar } from "@/features/coverage/matricula-complementaria/api/convocatorias"
 import { useMatriculaStatusOptionsQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { AGE_SITUATION_LABELS } from "@/features/coverage/matricula/components/table/columns-matricula"
@@ -104,7 +105,9 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
 
   const agrupar = search.agrupar ?? "GRADO"
   const modo = search.columnas ?? "AUTOMATICO"
-  const variosEstablecimientos = new Set(periodos.map((p) => p.establecimiento)).size > 1
+  // Agrupar por Establecimiento: roles territoriales, o quien ve varios (Regla 79).
+  const { data: contexto } = useContextoTerritorialQuery()
+  const variosEstablecimientos = Boolean(contexto) || new Set(periodos.map((p) => p.establecimiento)).size > 1
   const { data: conteos = [], isPending, isError, error } = useConteos(search)
 
   const raiz = armarArbol(conteos)
@@ -119,7 +122,7 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
 
   const set = (k: keyof InformesSearch, v: string) => {
     setAbiertos(null)
-    navigate({ search: (prev) => ({ ...prev, [k]: v || undefined, grupoEdad: undefined, page: 0 }), replace: true })
+    navigate({ search: (prev) => ({ ...prev, [k]: v || undefined, grupoEdad: undefined, page: 0 }), replace: true, resetScroll: false })
   }
   const alternar = (n: NodoEdad) =>
     setAbiertos((prev) => {
@@ -165,42 +168,44 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
           <div className="w-48">
             <ComboOpciones id="eda-columnas" label="Columnas" size="sm" todos={false} value={modo} options={COLUMNAS} onChange={(v) => set("columnas", v)} />
           </div>
-          <MarcoOpciones id="eda-opciones" label="Opciones" className="w-auto">
-            <div className="flex flex-wrap items-center gap-4">
-              <Interruptor
-                label="Desglosar"
-                checked={desglosar}
-                onChange={(v) => {
-                  setDesglosar(v)
-                  setAbiertos(null)
-                }}
-                motivo={sinDetalle ? "Grupo es el último nivel: no tiene detalle." : incluir ? "Con Incluir estudiantes no se puede desglosar." : null}
-              />
-              {desglosar ? (
-                <Field variant="outlined" className="w-36 gap-1.5">
-                  <FieldLabel htmlFor="eda-niveles">Niveles de detalle</FieldLabel>
-                  <Input
-                    id="eda-niveles"
-                    variant="outlined"
-                    inputMode="numeric"
-                    value={String(niveles)}
-                    onChange={(e) => {
-                      const n = Number(e.target.value.replace(/\D/g, "")) || 1
-                      setNiveles(Math.min(Math.max(n, 1), Math.max(maxNiveles, 1)))
-                      setAbiertos(null)
-                    }}
-                  />
-                </Field>
-              ) : null}
-              <Interruptor label="Resumen por género" checked={genero} onChange={setGenero} motivo={null} />
-              <Interruptor
-                label="Incluir estudiantes"
-                checked={incluir}
-                onChange={setIncluir}
-                motivo={desglosar ? "Con Desglosar no se pueden incluir estudiantes: no se desglosan estudiantes." : null}
-              />
-            </div>
-          </MarcoOpciones>
+          {/* Como el prototipo: interruptores en línea y Niveles de detalle «[n] de N» junto a Desglosar. */}
+          <div className="flex h-9 flex-wrap items-center gap-x-6 gap-y-2">
+            <Interruptor
+              label="Incluir estudiantes"
+              checked={incluir}
+              onChange={setIncluir}
+              motivo={desglosar ? "Con Desglosar no se pueden incluir estudiantes: no se desglosan estudiantes." : null}
+            />
+            <Interruptor label="Resumen por género" checked={genero} onChange={setGenero} motivo={null} />
+            <Interruptor
+              label="Desglosar"
+              checked={desglosar}
+              onChange={(v) => {
+                setDesglosar(v)
+                setAbiertos(null)
+              }}
+              motivo={sinDetalle ? "Grupo es el último nivel: no tiene detalle." : incluir ? "Con Incluir estudiantes no se puede desglosar." : null}
+            />
+            {desglosar ? (
+              <label htmlFor="eda-niveles" className="flex items-center gap-2 text-sm">
+                Niveles de detalle
+                <Input
+                  id="eda-niveles"
+                  variant="outlined"
+                  size="sm"
+                  inputMode="numeric"
+                  className="h-8 w-12 rounded-md px-1 text-center tabular-nums"
+                  value={String(niveles)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value.replace(/\D/g, "")) || 1
+                    setNiveles(Math.min(Math.max(n, 1), Math.max(maxNiveles, 1)))
+                    setAbiertos(null)
+                  }}
+                />
+                <span className="text-muted-foreground tabular-nums">de {Math.max(maxNiveles, 1)}</span>
+              </label>
+            ) : null}
+          </div>
         </div>
       </TableScreenHeader>
       <TableScreenBody>
@@ -249,7 +254,14 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
             <Tabla
               cabecera={[
                 AGRUPAR.find((a) => a.value === agrupar)?.label ?? "Grado",
-                "Edad recomendada",
+                <Tooltip key="recomendada">
+                  <TooltipTrigger render={<span className="cursor-help underline decoration-dotted underline-offset-4" />}>
+                    Edad recomendada
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64">
+                    Edad recomendada del grado (Parámetros de edad); solo si la fila es de un único grado
+                  </TooltipContent>
+                </Tooltip>,
                 "Mínima",
                 "Máxima",
                 "Promedio",
@@ -293,7 +305,7 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
 function Interruptor({ label, checked, onChange, motivo }: { label: string; checked: boolean; onChange: (v: boolean) => void; motivo: string | null }) {
   const control = (
     <label className={cn("flex items-center gap-2 text-sm", motivo && "opacity-50")}>
-      <Switch checked={checked && !motivo} disabled={Boolean(motivo)} onCheckedChange={onChange} /> {label}
+      <Switch round checked={checked && !motivo} disabled={Boolean(motivo)} onCheckedChange={onChange} /> {label}
     </label>
   )
   if (!motivo) return control
@@ -312,7 +324,10 @@ function Tabla({ cabecera, filas }: { cabecera: ReactNode[]; filas: { id: string
         <thead className="bg-muted/50 text-muted-foreground">
           <tr>
             {cabecera.map((c, i) => (
-              <th key={i} className={i === 0 ? "px-3 py-2 text-left font-medium" : `${centro} font-medium`}>
+              <th
+                key={i}
+                className={i === 0 ? "sticky left-0 z-10 bg-muted px-3 py-2 text-left font-medium whitespace-nowrap" : `${centro} font-medium whitespace-nowrap`}
+              >
                 {i === cabecera.length - 1 ? <span className="flex justify-center">{c}</span> : c}
               </th>
             ))}
@@ -322,7 +337,13 @@ function Tabla({ cabecera, filas }: { cabecera: ReactNode[]; filas: { id: string
           {filas.map((f) => (
             <tr key={f.id} className={f.total ? "border-t border-border bg-muted/30 font-semibold" : "border-t border-border"}>
               {f.celdas.map((v, j) => (
-                <td key={j} className={j === 0 ? "px-3 py-2" : centro}>
+                // La primera columna queda fija al desplazar la tabla a lo ancho.
+                <td
+                  key={j}
+                  className={
+                    j === 0 ? cn("sticky left-0 z-10 px-3 py-2 whitespace-nowrap", f.total ? "bg-muted" : "bg-background") : cn(centro, "whitespace-nowrap")
+                  }
+                >
                   {v}
                 </td>
               ))}
@@ -360,17 +381,23 @@ const columnasEstudiantes: ColumnDef<Estudiante>[] = [
   header: ({ column }) => <DataTableColumnHeader column={column} title={label} />,
   cell: ({ row }) => {
     const e = row.original
-    if (key === "edad") {
-      if (e.edad != null) return e.edad
+    // Sin fecha de nacimiento o sin fecha de corte: edad vacía y Sin calcular con el motivo, para corregirlo en la matrícula.
+    if (key === "edad") return e.edad ?? ""
+    if (key === "grupo") return `${e.grado} · ${e.grupo}`
+    if (key === "situacion") {
+      const badge = (
+        <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
+          {AGE_SITUATION_LABELS[e.situacion ?? "SIN_CALCULAR"]}
+        </Badge>
+      )
+      if (e.edad != null && e.situacion && e.situacion !== "SIN_CALCULAR") return badge
       return (
         <Tooltip>
-          <TooltipTrigger render={<span className="text-muted-foreground underline decoration-dotted" />}>Sin calcular</TooltipTrigger>
-          <TooltipContent>{e.falta ?? "Falta un dato para calcular la edad"}</TooltipContent>
+          <TooltipTrigger render={<span className="cursor-help" />}>{badge}</TooltipTrigger>
+          <TooltipContent className="max-w-64">{e.falta ?? "Falta un dato para calcular la edad"}</TooltipContent>
         </Tooltip>
       )
     }
-    if (key === "grupo") return `${e.grado} · ${e.grupo}`
-    if (key === "situacion") return AGE_SITUATION_LABELS[e.situacion]
     return e[key as keyof Estudiante] ?? "—"
   },
   enableSorting: false,
@@ -404,6 +431,7 @@ function Estudiantes({
     placeholderData: keepPreviousData,
   })
   const { table } = useDataTable({
+    columnVisibilityStorageKey: "table-informes-edades-estudiantes",
     columns: columnasEstudiantes,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -417,6 +445,7 @@ function Estudiantes({
   })
   const valores = enCol(nodo)
   const max = Math.max(...cols.map((c) => valores[c.key] ?? 0), 1)
+  const total = nodo.total.cantidad
 
   return (
     <div className="flex flex-col gap-4">
@@ -432,22 +461,41 @@ function Estudiantes({
             options={raiz.hijos.map((n) => ({ value: n.label, label: n.label }))}
             onChange={(v) => {
               setPagina({ ...pagina, pageIndex: 0 })
-              navigate({ search: (prev) => ({ ...prev, grupoEdad: v || undefined }), replace: true })
+              // Sin resetScroll el router sube al inicio de la página en cada cambio de la URL.
+              navigate({ search: (prev) => ({ ...prev, grupoEdad: v || undefined }), replace: true, resetScroll: false })
             }}
           />
         </div>
-        <span className="text-sm text-muted-foreground">{nodo.total.cantidad} estudiantes</span>
       </div>
-      <div className="flex flex-col gap-1.5">
-        {cols.map((c) => (
-          <div key={c.key} className="grid grid-cols-[9rem_1fr_3rem] items-center gap-3 text-sm">
-            <span>{c.label}</span>
-            <div className="h-3 rounded-full bg-muted">
-              <div className="h-3 rounded-full bg-primary" style={{ width: `${((valores[c.key] ?? 0) / max) * 100}%` }} />
-            </div>
-            <span className="text-right tabular-nums">{valores[c.key] ?? 0}</span>
-          </div>
-        ))}
+      <div className="rounded-lg border bg-card p-4">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium">{grupo || "Total"}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {total === 1 ? "1 estudiante" : `${total.toLocaleString("es-CO")} estudiantes`}
+          </span>
+        </div>
+        <div className="flex flex-col gap-2">
+          {cols.map((c) => {
+            const v = valores[c.key] ?? 0
+            return (
+              <div key={c.key} className="grid grid-cols-[minmax(6rem,9rem)_1fr_5.5rem] items-center gap-3 text-sm">
+                <span className={cn("truncate", v === 0 && "text-muted-foreground")}>{c.label}</span>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-300"
+                    style={{ width: `${(v / max) * 100}%` }}
+                  />
+                </div>
+                <span className={cn("text-right tabular-nums", v === 0 && "text-muted-foreground")}>
+                  <span className="font-medium">{v}</span>
+                  <span className="ml-1.5 inline-block w-10 text-xs text-muted-foreground">
+                    {total ? `${Math.round((v / total) * 100)} %` : ""}
+                  </span>
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
       <DataTable
         table={table}
@@ -467,6 +515,7 @@ function Estudiantes({
           totalCount={data.totalCount}
           pageSize={pagina.pageSize}
           onPageSizeChange={(pageSize) => setPagina({ pageIndex: 0, pageSize })}
+          viewOptions={<DataTableViewOptions table={table} />}
         />
       ) : null}
     </div>
@@ -486,14 +535,40 @@ export function FiltrosEdades() {
   const { data: estados = [] } = useMatriculaStatusOptionsQuery()
   const { data: metodologias = [] } = useMetodologiasQuery()
 
+  // Establecimiento solo para roles territoriales; sus períodos ya vienen limitados a su alcance (Regla 79).
+  const { data: contexto } = useContextoTerritorialQuery()
+  const territorial = Boolean(contexto)
+  const ees = search.eEstablecimientos ?? []
   const sedes = search.eSedes ?? []
   const jornadas = search.eJornadas ?? []
-  const enSede = periodos.filter((p) => !sedes.length || sedes.includes(p.sede))
+  const enEe = periodos.filter((p) => !ees.length || ees.includes(p.establecimiento))
+  const enSede = enEe.filter((p) => !sedes.length || sedes.includes(p.sede))
   const enAnio = enSede.filter((p) => !search.anio || p.anio === search.anio)
   const enJornada = enAnio.filter((p) => !jornadas.length || jornadas.includes(p.jornada))
 
+  // El back filtra por períodos: con establecimientos elegidos y ningún período, van los de esos
+  // establecimientos (con sede, año y jornada); [-1] si no hay ninguno, para no caer en «todos».
   const set = (cambios: Partial<InformesSearch>) =>
-    navigate({ search: (prev) => ({ ...prev, ...cambios, grupoEdad: undefined, page: 0 }), replace: true })
+    navigate({
+      search: (prev) => {
+        const next = { ...prev, ...cambios, grupoEdad: undefined, page: 0 }
+        const e = next.eEstablecimientos ?? []
+        if (e.length && !next.ePeriodos?.length) {
+          const ids = periodos
+            .filter(
+              (p) =>
+                e.includes(p.establecimiento) &&
+                (!next.eSedes?.length || next.eSedes.includes(p.sede)) &&
+                (!next.eJornadas?.length || next.eJornadas.includes(p.jornada)) &&
+                (!next.anio || p.anio === next.anio),
+            )
+            .map((p) => p.id)
+          next.ePeriodos = ids.length ? ids : [-1]
+        }
+        return next
+      },
+      replace: true,
+    })
   const multi = (id: string, label: string, value: string[], opciones: { value: string; label: string }[], onChange: (v: string[]) => void) => (
     <Field variant="outlined" className="gap-1.5">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -504,7 +579,12 @@ export function FiltrosEdades() {
 
   return (
     <>
-      {multi("eda-sedes", "Sede", sedes, unicos(periodos.map((p) => p.sede)), (v) =>
+      {territorial
+        ? multi("eda-establecimientos", "Establecimiento", ees, unicos(periodos.map((p) => p.establecimiento)), (v) =>
+            set({ eEstablecimientos: vacioANull(v), eSedes: undefined, eJornadas: undefined, ePeriodos: undefined }),
+          )
+        : null}
+      {multi("eda-sedes", "Sede", sedes, unicos(enEe.map((p) => p.sede)), (v) =>
         set({ eSedes: vacioANull(v), eJornadas: undefined, ePeriodos: undefined }),
       )}
       <ComboOpciones
@@ -520,7 +600,7 @@ export function FiltrosEdades() {
         onChange={(v) => {
           const anio = v ? Number(v) : undefined
           const ids = periodos
-            .filter((p) => p.anio === anio && (!sedes.length || sedes.includes(p.sede)) && (!jornadas.length || jornadas.includes(p.jornada)))
+            .filter((p) => p.anio === anio && (!ees.length || ees.includes(p.establecimiento)) && (!sedes.length || sedes.includes(p.sede)) && (!jornadas.length || jornadas.includes(p.jornada)))
             .map((p) => p.id)
           set({ anio, ePeriodos: anio ? ids : undefined })
         }}

@@ -587,7 +587,14 @@ export const comunicacionesComunicadosHandlers = [
     const c = comunicados.find((x) => x.conversacionId === Number(params.id))
     if (!c) return sinComunicado()
     return HttpResponse.json({
-      rows: [{ comunicado: filaTerritorial(c), contenidoHtml: c.contenidoHtml, visibleHasta: c.visibleHasta ?? null, adjuntos: [] }],
+      rows: [
+        {
+          comunicado: filaTerritorial(c),
+          contenidoHtml: estadoDe(c) === "ANULADO" ? "" : c.contenidoHtml,
+          visibleHasta: c.visibleHasta ?? null,
+          adjuntos: estadoDe(c) === "ANULADO" ? [] : (c.adjuntos ?? []),
+        },
+      ],
     })
   }),
 

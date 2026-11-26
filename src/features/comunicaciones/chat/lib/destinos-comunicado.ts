@@ -106,11 +106,25 @@ export function esGrupoDestino(c: Conversacion): boolean {
   return !c.esBot && (c.tipo === "GRUPO" || (c.tipo === "CANAL" && c.categoria === "GENERAL"))
 }
 
+const TIPOS_CONJUNTO = [
+  { valor: "ESTUDIANTES", etiqueta: "Estudiantes" },
+  { valor: "ACUDIENTES", etiqueta: "Acudientes" },
+  { valor: "FUNCIONARIOS", etiqueta: "Funcionarios" },
+] as const
+
 /**
  * "Dirigido a" del panel: roles, grados, grupos, cargos, personas y grupos del chat en una línea
  * ("Estudiantes, Docentes, grado Sexto, grupo 601, Natalia Ruiz, grupo Coordinación").
  */
 export function resumenDestinatarios(audiencia: Audiencia[], d: DestinosComunicado | null | undefined): string {
+  // Formulario por documento: los destinatarios están en los conjuntos y la audiencia es derivada (no
+  // incluye a los funcionarios), así que no se mezcla.
+  if (d?.conjuntos?.length) {
+    return d.conjuntos
+      .map((c) => c.resumen || TIPOS_CONJUNTO.filter((t) => c.tipos?.includes(t.valor)).map((t) => t.etiqueta).join(", "))
+      .filter(Boolean)
+      .join("; ")
+  }
   const partes = AUDIENCIAS.filter((a) => audiencia.includes(a.value)).map((a) => a.label)
   if (d) {
     partes.push(
@@ -128,8 +142,6 @@ export function resumenDestinatarios(audiencia: Audiencia[], d: DestinosComunica
       ...(d.jornadas ?? []).map((o) => `jornada ${o.etiqueta}`),
     ].filter(Boolean)
     if (ambito.length > 0) partes.push(`solo en ${ambito.join(", ")}`)
-    // Formulario por documento (M.1.AGR): los conjuntos traen su propio resumen.
-    partes.push(...(d.conjuntos ?? []).map((cj) => cj.resumen?.trim()).filter((r): r is string => !!r))
   }
   return partes.join(", ")
 }

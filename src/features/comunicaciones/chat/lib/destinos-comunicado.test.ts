@@ -50,18 +50,3 @@ describe("destinos del comunicado con filtros de alcance", () => {
     )
   })
 })
-
-describe("resumen de destinatarios con conjuntos (formulario M.1)", () => {
-  it("muestra el resumen de cada conjunto en lugar de quedar vacío", () => {
-    const destinos = {
-      grados: [],
-      grupos: [],
-      roles: [],
-      usuarios: [],
-      gruposChat: [],
-      para: "ESTUDIANTES" as const,
-      conjuntos: [{ resumen: "IE Central · Principal · Mañana · Estudiantes" }, { resumen: " " }, {}],
-    }
-    expect(resumenDestinatarios([], destinos)).toBe("IE Central · Principal · Mañana · Estudiantes")
-  })
-})

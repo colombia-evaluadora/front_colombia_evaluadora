@@ -70,7 +70,7 @@ function toUnidadValoracion(row: UnidadValoracionRow): UnidadValoracion {
   }
 }
 
-async function fetchUnidadValoraciones(unidadId: number): Promise<UnidadValoracion[]> {
+export async function fetchUnidadValoraciones(unidadId: number): Promise<UnidadValoracion[]> {
   const rows = await evalCol.getRows<UnidadValoracionRow>(
     `/planeador/unidades/${unidadId}/valoraciones`,
   )

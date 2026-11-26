@@ -33,6 +33,8 @@ export interface Graduando {
   diploma: string | null
   diplomaEmitido: boolean
   entrega: string | null
+  /** «Egresado no graduado»: Aprobado que solo debe el Saber 11 (término del ICFES, Sección 4.6). */
+  leyenda: string | null
 }
 
 export interface RequisitoGrado {

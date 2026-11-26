@@ -126,10 +126,16 @@ import {
   type Proceso,
 } from "@/features/comunicaciones/procesos/api/procesos"
 
-const MAX_PAGINAS = 20
-/** Auditoría y bitácora son enormes: solo lo más reciente. */
-const MAX_PAGINAS_AUDITORIA = 5
-const MAX_DETALLES = 300
+/** Todas las páginas, con un tope de seguridad. */
+const MAX_PAGINAS = 200
+/** Auditoría y bitácora: todas las páginas, con el mismo tope de seguridad que el resto. */
+const MAX_PAGINAS_AUDITORIA = MAX_PAGINAS
+const MAX_DETALLES = 2000
+/**
+ * Módulos de la Bitácora que no se preparan: Evaluación del desempeño responde 400 a la lista
+ * por defecto (y sus valoraciones son reservadas, B.1.EVA.1).
+ */
+export const BITACORA_MODULOS_SIN_PREPARAR: readonly BitacoraModulo[] = ["EVALUACION_DESEMPENO"]
 /** Tamaño por defecto de las tablas (`useTablePagination`). */
 const PAGE_SIZE = 10
 const SUPER_ADMIN = "CEVAL-SUPER_ADMINISTRADOR"
@@ -238,10 +244,10 @@ function conservacionTasks(esSuperAdmin: boolean): PrepareTask[] {
           .map((p) => seed(conservacionKeys.politica(p.pkPolitica), () => fetchPolitica(p.pkPolitica), meta(), opcional)),
     }),
     seed(conservacionKeys.modulos, fetchModulos, meta(), opcional),
-    // Ampliaciones abre en el primer establecimiento que el usuario puede elegir.
+    // Ampliaciones abre en el primer establecimiento y deja elegir otro: se guardan todos (con tope).
     seed(conservacionKeys.establecimientos, fetchEstablecimientosConservacion, meta(), {
       optional: true,
-      then: (ees) => (ees[0] ? [ampliaciones(ees[0].id)] : []),
+      then: (ees) => ees.slice(0, MAX_DETALLES).map((e) => ampliaciones(e.id)),
     }),
     ...(esSuperAdmin
       ? [
@@ -335,8 +341,10 @@ function bitacoraModuloTasks(modulo: BitacoraModulo, esSuperAdmin: boolean, esta
 }
 
 function bitacoraTasks(queryClient: QueryClient, esSuperAdmin: boolean): PrepareTask[] {
-  const modulos = BITACORA_MODULO_IDS.filter((m) =>
-    menuIncludes(queryClient, paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG[m])),
+  const modulos = BITACORA_MODULO_IDS.filter(
+    (m) =>
+      !BITACORA_MODULOS_SIN_PREPARAR.includes(m) &&
+      menuIncludes(queryClient, paths.app.bitacoraModulo.getHref(BITACORA_MODULO_SLUG[m])),
   )
   if (modulos.length === 0) return []
   recordarDiaPreparado()

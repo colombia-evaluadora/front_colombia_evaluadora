@@ -9,7 +9,7 @@ interface SchoolYearsRawResponse {
   rows: SchoolYearOption[]
 }
 
-async function fetchSchoolYears(): Promise<SchoolYearOption[]> {
+export async function fetchSchoolYears(): Promise<SchoolYearOption[]> {
   const raw = await api.get<SchoolYearsRawResponse>(
     "/eval-col/periodos-academicos/anos-lectivos"
   )

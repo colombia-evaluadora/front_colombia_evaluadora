@@ -56,7 +56,7 @@ function toEmployeeListItem(row: AssignmentTeacherRow): EmployeeListItem {
   }
 }
 
-async function fetchAssignmentTeachers(
+export async function fetchAssignmentTeachers(
   params: UseAssignmentTeachersQueryParams,
 ): Promise<AssignmentTeachersResponse> {
   if (params.academicPeriodId == null) {

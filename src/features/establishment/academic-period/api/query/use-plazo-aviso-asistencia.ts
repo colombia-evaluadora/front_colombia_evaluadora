@@ -8,7 +8,7 @@ import { academicPeriodKeys } from "@/features/establishment/academic-period/api
 /** Regla 109.3: días hábiles que una clase puede seguir sin asistencia antes del
  *  aviso al docente y al Supervisor de sede. Vive en el período (sso V542.9);
  *  se lee y cambia junto al calendario académico (`/calendario/:ID/...`). */
-async function fetchPlazoAvisoAsistencia(academicPeriodId: number): Promise<number> {
+export async function fetchPlazoAvisoAsistencia(academicPeriodId: number): Promise<number> {
   const raw = await api.get<{ rows: { plazo_aviso_asistencia: number }[] }>(
     `/eval-col/calendario/${academicPeriodId}/plazo-aviso-asistencia`,
   )

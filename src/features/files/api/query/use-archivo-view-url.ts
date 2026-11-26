@@ -42,6 +42,8 @@ async function fetchViewUrlOrCached(archivoId: number): Promise<ArchivoViewToken
  */
 export function useArchivoViewUrl(archivoId: number | null | undefined) {
   return useQuery({
+    // Token de vista de 5 min: no se prepara; sin red cae al archivo guardado.
+    meta: { offlineOptional: true },
     queryKey: archivoViewUrlQueryKey(archivoId),
     queryFn: () => fetchViewUrlOrCached(archivoId as number),
     enabled: archivoId != null,

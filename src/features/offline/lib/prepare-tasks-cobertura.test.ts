@@ -51,7 +51,7 @@ describe("coberturaTasks: keys de las pantallas con sus valores por defecto", ()
   it("matrícula: lista obligatoria y recortada; detalle completo y opcional; páginas con tope", async () => {
     // Como la arma `useMatriculaFilters` sin filtros en la URL: claves en undefined.
     const lista = matriculaKeys.lista({ filters: { search: undefined, campus: undefined }, sorting: [], ...PAG })
-    const { get, tasks } = await sembradas("/app/cobertura/matricula", [[lista, pagina([{ id: "7" }], 99)]])
+    const { get, tasks } = await sembradas("/app/cobertura/matricula", [[lista, pagina([{ id: "7" }], 999)]])
     expect(get(lista)?.optional).toBeFalsy()
     expect(get(lista)?.meta?.persistSelect).toBeTypeOf("function")
     expect(get(matriculaKeys.detalle("7"))).toMatchObject({ optional: true })
@@ -59,14 +59,15 @@ describe("coberturaTasks: keys de las pantallas con sus valores por defecto", ()
     expect(get(matriculaKeys.notasHomologadas("7"))).toBeDefined()
     expect(get(matriculaKeys.solicitudesPendientes())).toBeDefined()
     const listas = tasks.filter((t) => hashKey(t.queryKey).includes('"pageIndex"') && t.queryKey[1] === "lista")
-    expect(listas).toHaveLength(20)
+    // Todas las páginas, con el tope de seguridad.
+    expect(listas).toHaveLength(200)
   })
 
-  it("detalles con tope de 300 por listado", async () => {
+  it("detalles con tope de 2000 por listado", async () => {
     const lista = matriculaKeys.lista({ filters: {}, sorting: [], ...PAG })
-    const filas = Array.from({ length: 400 }, (_, i) => ({ id: String(i) }))
+    const filas = Array.from({ length: 2100 }, (_, i) => ({ id: String(i) }))
     const { tasks } = await sembradas("/app/cobertura/matricula", [[lista, pagina(filas)]])
-    expect(tasks.filter((t) => t.queryKey[1] === "detail" && t.queryKey.length === 3)).toHaveLength(300)
+    expect(tasks.filter((t) => t.queryKey[1] === "detail" && t.queryKey.length === 3)).toHaveLength(2000)
   })
 
   it("inscripción y reservas, con la pestaña territorial solo si hay contexto", async () => {

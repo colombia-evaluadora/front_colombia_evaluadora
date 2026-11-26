@@ -78,8 +78,9 @@ export function rangoEdades(raiz: NodoEdad, conteos: ConteoEdad[]): { desde: num
   return edades.length ? { desde: Math.min(...edades), hasta: Math.max(...edades) } : null
 }
 
+const anios = (e: number) => (e === 1 ? "1 año" : `${e} años`)
 const edadLabel = (e: number, desde: number, hasta: number) =>
-  e === desde && desde !== hasta ? `${e} años o menos` : e === hasta && desde !== hasta ? `${e} años o más` : `${e} años`
+  e === desde && desde !== hasta ? `${anios(e)} o menos` : e === hasta && desde !== hasta ? `${anios(e)} o más` : anios(e)
 
 /**
  * Columnas de la tabla. Automático: por edad con 6 columnas o menos, si no por rango. El rango
