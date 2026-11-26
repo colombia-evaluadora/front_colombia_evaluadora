@@ -38,6 +38,7 @@ import { textoFallidos } from "@/features/comunicaciones/chat/api/mutations/use-
 import {
   CONJUNTO_VACIO,
   TIPOS,
+  esAspirantes,
   usePrevisualizarDocumento,
   usePublicarDocumento,
   type Cascada,
@@ -346,6 +347,7 @@ function NuevoComunicadoContent() {
           conjuntos={conjuntos.map((c, i) => ({
             periodo: textoPeriodo(c, datos.current[i]),
             filtros: textoFiltros(c, datos.current[i]),
+            inscripciones: esAspirantes(c),
           }))}
           // Tipos que no se eligieron en ningún conjunto: la previsualización lo dice antes de confirmar.
           tiposSinElegir={TIPOS.filter((t) => !conjuntos.some((c) => c.tipos.includes(t.valor))).map((t) => t.etiqueta)}
@@ -404,7 +406,8 @@ function PrevisualizarDialog({
 }: {
   datos: PrevisualizacionDocumento
   titulo: string
-  conjuntos: { periodo: string | null; filtros: string }[]
+  // `inscripciones`: conjunto de Aspirantes (período en Inscripciones, no Abierto).
+  conjuntos: { periodo: string | null; filtros: string; inscripciones: boolean }[]
   tiposSinElegir: string[]
   programada: boolean
   pendiente: boolean
@@ -464,9 +467,15 @@ function PrevisualizarDialog({
                   <span className="min-w-0 break-words">
                     <span className="font-semibold">Período:</span> {c.periodo}
                   </span>
-                  <Badge variant="soft" color="success">
-                    Abierto
-                  </Badge>
+                  {c.inscripciones ? (
+                    <Badge variant="soft" color="info">
+                      Inscripciones
+                    </Badge>
+                  ) : (
+                    <Badge variant="soft" color="success">
+                      Abierto
+                    </Badge>
+                  )}
                 </p>
               )}
               {c.filtros && (

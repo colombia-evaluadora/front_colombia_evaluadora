@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest"
-import { CONJUNTO_VACIO, type Cascada, type Conjunto } from "@/features/comunicaciones/comunicados/api/comunicado-documento"
 import {
+  CONJUNTO_VACIO,
+  toCascadaParams,
+  type Cascada,
+  type Conjunto,
+} from "@/features/comunicaciones/comunicados/api/comunicado-documento"
+import {
+  alCambiar,
   erroresConjunto,
   funcionariosDelConjunto,
   sinPeriodos,
   soloFuncionariosInactivos,
+  textoFiltros,
   TODAS_LAS_JORNADAS,
 } from "@/features/comunicaciones/comunicados/lib/conjunto"
 
@@ -100,5 +107,43 @@ describe("funcionarios inactivos en el EE (Regla 101)", () => {
 
   it("sin Funcionarios en los tipos no advierte", () => {
     expect(funcionariosDelConjunto({ ...funcionarios, tipos: ["ESTUDIANTES"] }, conInactiva).inactivos).toEqual([])
+  })
+})
+
+describe("Aspirantes (M.1.AGR.4)", () => {
+  const aspirante: Conjunto = {
+    ...base,
+    tipos: ["ACUDIENTES"],
+    poblacion: "ASPIRANTES",
+    anio: "2028",
+    modalidad: "ANUAL",
+    ciclo: "1",
+    grado: "6",
+  }
+
+  it("exige el grado solicitado pero no grupo ni estudiantes", () => {
+    expect(erroresConjunto(aspirante, 1)).toEqual({})
+    expect(erroresConjunto({ ...aspirante, grado: "" }, 1)).toEqual({ "conjunto-1-grado": "El grado solicitado es obligatorio" })
+  })
+
+  it("pide la cascada con la población y sin grupo", () => {
+    const p = toCascadaParams({ ...aspirante, grupo: "61" })
+    expect(p.poblacion).toBe("ASPIRANTES")
+    expect(p.grupo).toBe("")
+    expect(p.grado).toBe("")
+    expect(toCascadaParams({ ...aspirante, poblacion: "MATRICULADOS" }).poblacion).toBe("")
+  })
+
+  it("cambiar la población limpia la cascada académica", () => {
+    const c = alCambiar(aspirante, "poblacion", "MATRICULADOS")
+    expect(c.poblacion).toBe("MATRICULADOS")
+    expect(c.anio).toBe("")
+    expect(c.grado).toBe("")
+    expect(c.tipos).toEqual(["ACUDIENTES"])
+  })
+
+  it("el resumen dice Aspirantes y el grado solicitado", () => {
+    const datos = { ...sinAnios, grados: [{ valor: "6", etiqueta: "Sexto", detalle: null, total: 0 }] }
+    expect(textoFiltros(aspirante, datos)).toBe("Aspirantes · Grado solicitado Sexto")
   })
 })
