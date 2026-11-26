@@ -249,7 +249,14 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
             <Tabla
               cabecera={[
                 AGRUPAR.find((a) => a.value === agrupar)?.label ?? "Grado",
-                "Edad recomendada",
+                <Tooltip key="recomendada">
+                  <TooltipTrigger render={<span className="cursor-help underline decoration-dotted underline-offset-4" />}>
+                    Edad recomendada
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64">
+                    Edad recomendada del grado (Parámetros de edad); solo si la fila es de un único grado
+                  </TooltipContent>
+                </Tooltip>,
                 "Mínima",
                 "Máxima",
                 "Promedio",
