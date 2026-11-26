@@ -43,7 +43,6 @@ import { fetchGrados, fetchGrupos } from "@/features/coverage/matricula/api/quer
 import { informesKeys } from "@/features/coverage/informes-reportes/api/informes"
 import {
   CAUSALES_DUPLICADO,
-  REQUISITOS_MANUALES,
   SITUACIONES_GRADO,
   useAnularGraduacion,
   useExpedirDuplicado,
@@ -111,10 +110,10 @@ function columnas(onAccion: (g: Graduando, a: Accion) => void): ColumnDef<Gradua
     c("grupo", "Grupo"),
     c("estado", "Estado", (g) => (
       <div className="flex flex-col items-start gap-1">
-        <Badge variant="soft" color={g.estado === "Graduado" ? "success" : "info"} className="text-xs">
+        <Badge variant="soft" color={g.estado === "Graduado" ? "success" : g.estado === "Cursando" ? "neutral" : "info"} className="text-xs">
           {g.estado}
         </Badge>
-        {g.estado === "Aprobado" && g.cumplidos < g.requisitos ? (
+        {g.estado !== "Graduado" && g.cumplidos < g.requisitos ? (
           <Badge variant="soft" color="warning" className="text-xs">
             Con requisitos pendientes
           </Badge>
@@ -141,7 +140,12 @@ function columnas(onAccion: (g: Graduando, a: Accion) => void): ColumnDef<Gradua
             <Icono label="Requisitos de grado" onClick={() => onAccion(g, "requisitos")}>
               <ListChecksIcon />
             </Icono>
-            <Icono label="Registrar grado" onClick={() => onAccion(g, "registrar")} disabled={graduado} motivo="ya está graduado">
+            <Icono
+              label="Registrar grado"
+              onClick={() => onAccion(g, "registrar")}
+              disabled={g.estado !== "Aprobado"}
+              motivo={graduado ? "ya está graduado" : "solo con la matrícula Aprobado"}
+            >
               <GraduationCapIcon />
             </Icono>
             <Icono label="Generar diploma" onClick={() => onAccion(g, "diploma")} disabled={!graduado} motivo="solo con el estudiante Graduado">
@@ -387,7 +391,11 @@ function DialogRequisitos({ g, onClose }: { g: Graduando; onClose: () => void })
                         </span>
                       ) : (
                         <label className="flex items-center gap-2">
-                          <Switch checked={cumplido} onCheckedChange={(v) => setCambios((c) => ({ ...c, [r.codigo]: v }))} />
+                          <Switch
+                            checked={cumplido}
+                            disabled={g.estado === "Graduado"}
+                            onCheckedChange={(v) => setCambios((c) => ({ ...c, [r.codigo]: v }))}
+                          />
                           <span>{cumplido ? "Cumplido" : "Pendiente"}</span>
                         </label>
                       )}
@@ -398,6 +406,9 @@ function DialogRequisitos({ g, onClose }: { g: Graduando; onClose: () => void })
             </tbody>
           </table>
         )}
+        {g.estado === "Graduado" ? (
+          <p className="text-xs text-muted-foreground">La matrícula está Graduado: sus requisitos son de solo lectura.</p>
+        ) : null}
         <Pie pendiente={marcar.isPending} disabled={Object.keys(cambios).length === 0} onCancel={onClose} onOk={guardar} label="Guardar" obligatorios={false} />
       </DialogContent>
     </Dialog>
@@ -408,6 +419,9 @@ function DialogRequisitos({ g, onClose }: { g: Graduando; onClose: () => void })
 function DialogMarcarRequisito({ sel, onClose, onDone }: { sel: Graduando[]; onClose: () => void; onDone: () => void }) {
   const { notify } = useNotify()
   const marcar = useMarcarRequisito()
+  const { data: requisitos = [] } = useRequisitosGradoQuery(sel[0].matriculaId)
+  const manuales = requisitos.filter((r) => !r.delSistema).map((r) => ({ value: r.codigo, label: r.nombre }))
+  const graduadas = sel.filter((g) => g.estado === "Graduado").length
   const [codigo, setCodigo] = useState("")
   const [cumplido, setCumplido] = useState(true)
   const [aviso, setAviso] = useState<Aviso>(null)
@@ -419,7 +433,13 @@ function DialogMarcarRequisito({ sel, onClose, onDone }: { sel: Graduando[]; onC
           <DialogDescription>{sel.length} matrículas marcadas</DialogDescription>
         </DialogHeader>
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
-        <ComboOpciones id="gra-marcar-req" label="Requisito *" value={codigo} options={REQUISITOS_MANUALES} onChange={setCodigo} />
+        {graduadas ? (
+          <p className="text-sm text-red">
+            Hay {graduadas === 1 ? "1 matrícula Graduado" : `${graduadas} matrículas Graduado`} entre las marcadas: sus requisitos no se modifican.
+            Quítelas de la selección.
+          </p>
+        ) : null}
+        <ComboOpciones id="gra-marcar-req" label="Requisito *" value={codigo} options={manuales} onChange={setCodigo} />
         <MarcoOpciones id="gra-marcar-estado" label="Estado">
           <RadioGroup value={cumplido ? "S" : "N"} onValueChange={(v) => setCumplido(v === "S")} className="flex gap-x-5">
             <label className="flex items-center gap-2 text-sm">
@@ -434,7 +454,7 @@ function DialogMarcarRequisito({ sel, onClose, onDone }: { sel: Graduando[]; onC
         </MarcoOpciones>
         <Pie
           pendiente={marcar.isPending}
-          disabled={!codigo}
+          disabled={!codigo || graduadas > 0}
           onCancel={onClose}
           label="Marcar"
           onOk={() =>

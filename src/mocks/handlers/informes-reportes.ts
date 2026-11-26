@@ -210,7 +210,7 @@ export const informesReportesHandlers = [
         { orden: 2, codigo: "SERVICIO_SOCIAL", nombre: "Servicio social estudiantil", cumplido: true, detalle: "80 de 80 h", del_sistema: true },
         { orden: 3, codigo: "NIVELACIONES", nombre: "Sin áreas pendientes de nivelación", cumplido: true, detalle: "del sistema", del_sistema: true },
         { orden: 4, codigo: "CONSTITUCIONALES", nombre: "Estudios constitucionales (50 horas)", cumplido: true, detalle: "Cumplido", del_sistema: false },
-        { orden: 5, codigo: "SABER11", nombre: "Examen de Estado Saber 11", cumplido: false, detalle: "Pendiente", del_sistema: false },
+        { orden: 11, codigo: "PROPIO_1", nombre: "Presentó la prueba Saber 11", cumplido: false, detalle: "Pendiente", del_sistema: false },
       ],
     })
   }),

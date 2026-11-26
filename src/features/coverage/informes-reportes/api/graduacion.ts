@@ -23,7 +23,7 @@ export interface Graduando {
   documento: string
   estudiante: string
   grupo: string
-  estado: "Aprobado" | "Graduado"
+  estado: "Cursando" | "Aprobado" | "Graduado"
   cumplidos: number
   requisitos: number
   faltan: string | null
@@ -45,10 +45,6 @@ export interface RequisitoGrado {
 }
 
 export const SITUACIONES_GRADO = [{ value: "PENDIENTES", label: "Con requisitos pendientes" }]
-export const REQUISITOS_MANUALES = [
-  { value: "CONSTITUCIONALES", label: "Estudios constitucionales (50 horas)" },
-  { value: "SABER11", label: "Examen de Estado Saber 11" },
-]
 export const CAUSALES_DUPLICADO = [
   { value: "HURTO", label: "Hurto o robo", soporte: "copia de la denuncia penal" },
   { value: "EXTRAVIO", label: "Extravío definitivo", soporte: "constancia de pérdida" },
