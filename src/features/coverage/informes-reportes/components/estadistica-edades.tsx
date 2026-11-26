@@ -7,7 +7,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { TableScreen, TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
-import { MarcoOpciones } from "@/components/marco-opciones"
 import { Pagination } from "@/components/pagination"
 import { SelectOpciones } from "@/components/select-opciones"
 import { TituloConAyuda } from "@/components/titulo-con-ayuda"
@@ -169,42 +168,44 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
           <div className="w-48">
             <ComboOpciones id="eda-columnas" label="Columnas" size="sm" todos={false} value={modo} options={COLUMNAS} onChange={(v) => set("columnas", v)} />
           </div>
-          <MarcoOpciones id="eda-opciones" label="Opciones" className="w-auto">
-            <div className="flex flex-wrap items-center gap-4">
-              <Interruptor
-                label="Desglosar"
-                checked={desglosar}
-                onChange={(v) => {
-                  setDesglosar(v)
-                  setAbiertos(null)
-                }}
-                motivo={sinDetalle ? "Grupo es el último nivel: no tiene detalle." : incluir ? "Con Incluir estudiantes no se puede desglosar." : null}
-              />
-              {desglosar ? (
-                <Field variant="outlined" className="w-36 gap-1.5">
-                  <FieldLabel htmlFor="eda-niveles">Niveles de detalle</FieldLabel>
-                  <Input
-                    id="eda-niveles"
-                    variant="outlined"
-                    inputMode="numeric"
-                    value={String(niveles)}
-                    onChange={(e) => {
-                      const n = Number(e.target.value.replace(/\D/g, "")) || 1
-                      setNiveles(Math.min(Math.max(n, 1), Math.max(maxNiveles, 1)))
-                      setAbiertos(null)
-                    }}
-                  />
-                </Field>
-              ) : null}
-              <Interruptor label="Resumen por género" checked={genero} onChange={setGenero} motivo={null} />
-              <Interruptor
-                label="Incluir estudiantes"
-                checked={incluir}
-                onChange={setIncluir}
-                motivo={desglosar ? "Con Desglosar no se pueden incluir estudiantes: no se desglosan estudiantes." : null}
-              />
-            </div>
-          </MarcoOpciones>
+          {/* Como el prototipo: interruptores en línea y Niveles de detalle «[n] de N» junto a Desglosar. */}
+          <div className="flex h-9 flex-wrap items-center gap-x-6 gap-y-2">
+            <Interruptor
+              label="Incluir estudiantes"
+              checked={incluir}
+              onChange={setIncluir}
+              motivo={desglosar ? "Con Desglosar no se pueden incluir estudiantes: no se desglosan estudiantes." : null}
+            />
+            <Interruptor label="Resumen por género" checked={genero} onChange={setGenero} motivo={null} />
+            <Interruptor
+              label="Desglosar"
+              checked={desglosar}
+              onChange={(v) => {
+                setDesglosar(v)
+                setAbiertos(null)
+              }}
+              motivo={sinDetalle ? "Grupo es el último nivel: no tiene detalle." : incluir ? "Con Incluir estudiantes no se puede desglosar." : null}
+            />
+            {desglosar ? (
+              <label htmlFor="eda-niveles" className="flex items-center gap-2 text-sm">
+                Niveles de detalle
+                <Input
+                  id="eda-niveles"
+                  variant="outlined"
+                  size="sm"
+                  inputMode="numeric"
+                  className="h-8 w-12 rounded-md px-1 text-center tabular-nums"
+                  value={String(niveles)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value.replace(/\D/g, "")) || 1
+                    setNiveles(Math.min(Math.max(n, 1), Math.max(maxNiveles, 1)))
+                    setAbiertos(null)
+                  }}
+                />
+                <span className="text-muted-foreground tabular-nums">de {Math.max(maxNiveles, 1)}</span>
+              </label>
+            ) : null}
+          </div>
         </div>
       </TableScreenHeader>
       <TableScreenBody>
@@ -304,7 +305,7 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
 function Interruptor({ label, checked, onChange, motivo }: { label: string; checked: boolean; onChange: (v: boolean) => void; motivo: string | null }) {
   const control = (
     <label className={cn("flex items-center gap-2 text-sm", motivo && "opacity-50")}>
-      <Switch checked={checked && !motivo} disabled={Boolean(motivo)} onCheckedChange={onChange} /> {label}
+      <Switch round checked={checked && !motivo} disabled={Boolean(motivo)} onCheckedChange={onChange} /> {label}
     </label>
   )
   if (!motivo) return control
