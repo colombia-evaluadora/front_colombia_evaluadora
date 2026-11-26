@@ -154,6 +154,52 @@ export const informesReportesHandlers = [
     return HttpResponse.json({ rows: [] })
   }),
 
+  // Reportes externos (Regla 70): versiones provisionales, aviso de faltantes y archivos generados.
+  http.get("*/api/eval-col/informes-reportes/reportes-externos/versiones", async () => {
+    await delay(100)
+    return HttpResponse.json({
+      rows: [
+        { reporte_id: 1, codigo: "C600", nombre: "DANE C600 - Matricula", version: "Provisional", formato: "EXCEL", provisional: true },
+        { reporte_id: 2, codigo: "SIMAT", nombre: "SIMAT - Anexo 6a", version: "Provisional", formato: "CSV", provisional: true },
+      ],
+    })
+  }),
+  http.post("*/api/eval-col/informes-reportes/reportes-externos/faltantes", async () => {
+    await delay(300)
+    const t = { total_filas: 412, filas_con_faltantes: 2, faltantes: 3, sensibles_vacias: false }
+    return HttpResponse.json({
+      rows: [
+        { fila: 11, estudiante: "Ruiz Ana", columna: "Estrato", donde: "Matrícula > Residencia", ...t },
+        { fila: 11, estudiante: "Ruiz Ana", columna: "Dirección de residencia", donde: "Matrícula > Residencia", ...t },
+        { fila: 27, estudiante: "Pérez Luis", columna: "Género", donde: "Matrícula > Datos del estudiante", ...t },
+      ],
+    })
+  }),
+  http.post("*/api/eval-col/informes-reportes/reportes-externos/generar", async () => {
+    await delay(300)
+    return HttpResponse.json({ rows: [{ generado: 3 }] })
+  }),
+  http.post("*/api/eval-col/informes-reportes/reportes-externos/generados/query", async () => {
+    await delay(150)
+    const base = { establecimiento: "IE Central", periodo: "2027", corte: null, sensibles_vacias: false, usuario: "M. Gómez", provisional: true, version: "Provisional", encabezados: ["DANE sede", "Grado", "Documento", "Primer apellido", "Primer nombre"] }
+    return HttpResponse.json({
+      rows: conTotal([
+        { generado_id: 2, reporte: "SIMAT - Anexo 6a", codigo: "SIMAT", formato: "CSV", sede: null, filas: 412, faltantes: 3, filas_con_faltantes: 2, estado: "CON_FALTANTES", fecha: "2027-04-03T09:00:00", ...base },
+        { generado_id: 1, reporte: "DANE C600 - Matricula", codigo: "C600", formato: "EXCEL", sede: "Sede principal", filas: 24, faltantes: 0, filas_con_faltantes: 0, estado: "COMPLETO", fecha: "2027-04-02T08:00:00", ...base },
+      ]),
+    })
+  }),
+  http.get("*/api/eval-col/informes-reportes/reportes-externos/:id/contenido", async () => {
+    await delay(100)
+    const encabezados = ["DANE sede", "Grado", "Documento", "Primer apellido", "Primer nombre"]
+    return HttpResponse.json({
+      rows: [
+        { n: 1, encabezados, valores: ["105001000001", "Sexto", "1012345678", "Ruiz", "Ana"] },
+        { n: 2, encabezados, valores: ["105001000001", "Sexto", "1012345679", "Pérez", "Luis"] },
+      ],
+    })
+  }),
+
   // Graduación (C.4.GRA.1): los cuatro estudiantes del prototipo.
   // Certificados de culminación (C.4.CUL): grados de fin de nivel y lista.
   http.get("*/api/eval-col/informes-reportes/culminacion/grados/:periodo", async () => {
