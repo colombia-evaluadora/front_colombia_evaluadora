@@ -267,11 +267,11 @@ export const informesReportesHandlers = [
   }),
   http.post("*/api/eval-col/informes-reportes/graduacion/query", async () => {
     await delay(150)
-    const base = { grupo: "11°A", requisitos: 5, faltan: null, graduacion_id: null, acta: null, fecha_grado: null, diploma: null, diploma_emitido: false, entrega: null }
+    const base = { grupo: "11°A", requisitos: 5, faltan: null, graduacion_id: null, acta: null, fecha_grado: null, diploma: null, diploma_emitido: false, entrega: null, leyenda: null }
     return HttpResponse.json({
       rows: conTotal([
         { ...base, matricula_id: 1, documento: "1098765701", estudiante: "Laura Méndez Ríos", estado: "Aprobado", cumplidos: 5 },
-        { ...base, matricula_id: 2, documento: "1098765702", estudiante: "Camilo Andrés Pardo", estado: "Aprobado", cumplidos: 4, faltan: "Examen de Estado Saber 11" },
+        { ...base, matricula_id: 2, documento: "1098765702", estudiante: "Camilo Andrés Pardo", estado: "Aprobado", cumplidos: 4, faltan: "Presentar el Examen de Estado Saber 11", leyenda: "Egresado no graduado" },
         { ...base, matricula_id: 3, documento: "1098765703", estudiante: "Sofía Lozano Díaz", estado: "Aprobado", cumplidos: 3, faltan: "Servicio social estudiantil (62 de 80 h); Estudios constitucionales (50 horas)" },
         { ...base, matricula_id: 4, documento: "1098765704", estudiante: "Mateo Ríos Cárdenas", estado: "Graduado", cumplidos: 5, graduacion_id: 1, acta: "014", fecha_grado: "2027-12-02", diploma: "0415", diploma_emitido: true, entrega: "2027-12-05" },
       ]),
@@ -286,7 +286,8 @@ export const informesReportesHandlers = [
         { orden: 2, codigo: "SERVICIO_SOCIAL", nombre: "Servicio social estudiantil", cumplido: true, detalle: "80 de 80 h", del_sistema: true },
         { orden: 3, codigo: "NIVELACIONES", nombre: "Sin áreas pendientes de nivelación", cumplido: true, detalle: "del sistema", del_sistema: true },
         { orden: 4, codigo: "CONSTITUCIONALES", nombre: "Estudios constitucionales (50 horas)", cumplido: true, detalle: "Cumplido", del_sistema: false },
-        { orden: 11, codigo: "PROPIO_1", nombre: "Presentó la prueba Saber 11", cumplido: false, detalle: "Pendiente", del_sistema: false },
+        { orden: 6, codigo: "SABER_11", nombre: "Presentar el Examen de Estado Saber 11", cumplido: false, detalle: "Pendiente", del_sistema: false },
+        { orden: 11, codigo: "PROPIO_1", nombre: "Entregó el proyecto de vida", cumplido: true, detalle: "Cumplido", del_sistema: false },
       ],
     })
   }),
