@@ -4,7 +4,8 @@ import { useState, type ReactNode } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { DataTable, DataTableColumnHeader } from "@/components/data-table"
+import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
 import { TableScreen, TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
 import { MarcoOpciones } from "@/components/marco-opciones"
 import { Pagination } from "@/components/pagination"
@@ -379,17 +380,23 @@ const columnasEstudiantes: ColumnDef<Estudiante>[] = [
   header: ({ column }) => <DataTableColumnHeader column={column} title={label} />,
   cell: ({ row }) => {
     const e = row.original
-    if (key === "edad") {
-      if (e.edad != null) return e.edad
+    // Sin fecha de nacimiento o sin fecha de corte: edad vacía y Sin calcular con el motivo, para corregirlo en la matrícula.
+    if (key === "edad") return e.edad ?? ""
+    if (key === "grupo") return `${e.grado} · ${e.grupo}`
+    if (key === "situacion") {
+      const badge = (
+        <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
+          {AGE_SITUATION_LABELS[e.situacion ?? "SIN_CALCULAR"]}
+        </Badge>
+      )
+      if (e.edad != null && e.situacion && e.situacion !== "SIN_CALCULAR") return badge
       return (
         <Tooltip>
-          <TooltipTrigger render={<span className="text-muted-foreground underline decoration-dotted" />}>Sin calcular</TooltipTrigger>
-          <TooltipContent>{e.falta ?? "Falta un dato para calcular la edad"}</TooltipContent>
+          <TooltipTrigger render={<span className="cursor-help" />}>{badge}</TooltipTrigger>
+          <TooltipContent className="max-w-64">{e.falta ?? "Falta un dato para calcular la edad"}</TooltipContent>
         </Tooltip>
       )
     }
-    if (key === "grupo") return `${e.grado} · ${e.grupo}`
-    if (key === "situacion") return AGE_SITUATION_LABELS[e.situacion]
     return e[key as keyof Estudiante] ?? "—"
   },
   enableSorting: false,
@@ -423,6 +430,7 @@ function Estudiantes({
     placeholderData: keepPreviousData,
   })
   const { table } = useDataTable({
+    columnVisibilityStorageKey: "table-informes-edades-estudiantes",
     columns: columnasEstudiantes,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -506,6 +514,7 @@ function Estudiantes({
           totalCount={data.totalCount}
           pageSize={pagina.pageSize}
           onPageSizeChange={(pageSize) => setPagina({ pageIndex: 0, pageSize })}
+          viewOptions={<DataTableViewOptions table={table} />}
         />
       ) : null}
     </div>
