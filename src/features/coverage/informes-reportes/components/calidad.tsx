@@ -23,6 +23,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { coberturaInformesReportesRoute } from "@/router"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
+import { useContextoTerritorialQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import {
   CONTROLES,
   DONDE_CORREGIR,
@@ -57,7 +58,11 @@ function Icono({ label, disabled, motivo, children, ...rest }: { label: string; 
   )
 }
 
-function columnas(onVer: (h: Hallazgo) => void, onAccion: (h: Hallazgo, a: Accion) => void): ColumnDef<Hallazgo>[] {
+/** Rol de quien mira: el establecimiento justifica; la entidad territorial devuelve (Sección 3.9). */
+type RolCalidad = "ESTABLECIMIENTO" | "SUPERVISOR" | "ADMINISTRADOR"
+
+function columnas(rol: RolCalidad, onVer: (h: Hallazgo) => void, onAccion: (h: Hallazgo, a: Accion) => void): ColumnDef<Hallazgo>[] {
+  const territorial = rol !== "ESTABLECIMIENTO"
   const c = (key: keyof Hallazgo, label: string, cell?: (h: Hallazgo) => ReactNode): ColumnDef<Hallazgo> => ({
     id: key,
     accessorFn: (h) => h[key],
@@ -88,17 +93,37 @@ function columnas(onVer: (h: Hallazgo) => void, onAccion: (h: Hallazgo, a: Accio
               <EyeIcon />
             </Icono>
             {h.control === "C1" ? (
-              <Icono label="Unificar estudiantes" to={paths.app.coberturaMatriculaDetalle.getHref(String(h.matriculaId))} disabled={h.estado === "AJUSTADO"} motivo="el hallazgo ya está ajustado">
+              <Icono
+                label="Unificar estudiantes"
+                to={paths.app.coberturaMatriculaDetalle.getHref(String(h.matriculaId))}
+                disabled={h.estado === "AJUSTADO" || rol === "SUPERVISOR"}
+                motivo={h.estado === "AJUSTADO" ? "el hallazgo ya está ajustado" : "el Supervisor territorial solo consulta"}
+              >
                 <UsersIcon />
               </Icono>
             ) : null}
-            <Icono label="Justificar" onClick={() => onAccion(h, "JUSTIFICAR")} disabled={h.estado !== "PENDIENTE"} motivo="solo con el hallazgo Pendiente">
+            <Icono
+              label="Justificar"
+              onClick={() => onAccion(h, "JUSTIFICAR")}
+              disabled={h.estado !== "PENDIENTE" || territorial}
+              motivo={h.estado !== "PENDIENTE" ? "solo con el hallazgo Pendiente" : "justifica el establecimiento"}
+            >
               <CheckCircleIcon />
             </Icono>
-            <Icono label="Modificar justificación" onClick={() => onAccion(h, "MODIFICAR")} disabled={h.estado !== "JUSTIFICADO"} motivo="solo con el hallazgo Justificado">
+            <Icono
+              label="Modificar justificación"
+              onClick={() => onAccion(h, "MODIFICAR")}
+              disabled={h.estado !== "JUSTIFICADO" || territorial}
+              motivo={h.estado !== "JUSTIFICADO" ? "solo con el hallazgo Justificado" : "solo quien justificó"}
+            >
               <PencilIcon />
             </Icono>
-            <Icono label="Devolver a pendiente" onClick={() => onAccion(h, "DEVOLVER")} disabled={h.estado !== "JUSTIFICADO"} motivo="solo con el hallazgo Justificado y los roles territoriales">
+            <Icono
+              label="Devolver a pendiente"
+              onClick={() => onAccion(h, "DEVOLVER")}
+              disabled={h.estado !== "JUSTIFICADO" || !territorial}
+              motivo={h.estado !== "JUSTIFICADO" ? "solo con el hallazgo Justificado" : "solo los roles territoriales"}
+            >
               <ArrowUUpLeftIcon />
             </Icono>
           </div>
@@ -120,8 +145,10 @@ export function CalidadInforme({ encabezado }: { encabezado: ReactNode }) {
   const { data, isPending, isError, error, refetch } = useHallazgosQuery(search, { pageIndex, pageSize })
   const [ver, setVer] = useState<Hallazgo | null>(null)
   const [accion, setAccion] = useState<{ h: Hallazgo; a: Accion } | null>(null)
+  const { data: territorial } = useContextoTerritorialQuery()
+  const rol: RolCalidad = !territorial ? "ESTABLECIMIENTO" : /supervisor/i.test(territorial.rol) ? "SUPERVISOR" : "ADMINISTRADOR"
   const { table } = useDataTable({
-    columns: columnas(setVer, (h, a) => setAccion({ h, a })),
+    columns: columnas(rol, setVer, (h, a) => setAccion({ h, a })),
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
     getRowId: (h) => String(h.hallazgoId),
