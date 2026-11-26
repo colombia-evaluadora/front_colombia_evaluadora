@@ -35,6 +35,7 @@ import {
 } from "@/features/coverage/matricula-complementaria/api/schema"
 import { promocionNivelacionSearchSchema } from "@/features/coverage/promocion-nivelacion/api/schema"
 import { actualizacionDatosSearchSchema } from "@/features/coverage/actualizacion-datos/api/schema"
+import { informesReportesSearchSchema } from "@/features/coverage/informes-reportes/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -996,6 +997,39 @@ export const coberturaActualizacionDatosRoute = createRoute({
     breadcrumb: [COBERTURA_CRUMB, { label: "Actualización de datos", to: paths.app.coberturaActualizacionDatos.getHref() }],
   },
   component: ActualizacionDatosPage,
+})
+
+const InformesReportesPage = lazyRouteComponent(
+  () => import("@/features/coverage/informes-reportes/pages/informes-reportes-page"),
+  "InformesReportesPage",
+)
+
+export const coberturaInformesReportesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInformesReportes.path,
+  validateSearch: informesReportesSearchSchema,
+  staticData: {
+    breadcrumb: [COBERTURA_CRUMB, { label: "Informes y reportes", to: paths.app.coberturaInformesReportes.getHref() }],
+  },
+  component: InformesReportesPage,
+})
+
+const InformeMatriculaDetallePage = lazyRouteComponent(
+  () => import("@/features/coverage/informes-reportes/pages/informe-matricula-detalle-page"),
+  "InformeMatriculaDetallePage",
+)
+
+export const coberturaInformesMatriculaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInformesMatricula.path,
+  staticData: {
+    breadcrumb: (params: Record<string, string>) => [
+      COBERTURA_CRUMB,
+      { label: "Informes y reportes", to: paths.app.coberturaInformesReportes.getHref() },
+      { label: "Detalle de matrícula", to: paths.app.coberturaInformesMatricula.getHref(params.matriculaId) },
+    ],
+  },
+  component: InformeMatriculaDetallePage,
 })
 
 export const coberturaConvocatoriaNuevaRoute = createRoute({
@@ -2957,6 +2991,8 @@ const routeTree = rootRoute.addChildren([
     coberturaComplementariaRoute,
     coberturaPromocionRoute,
     coberturaActualizacionDatosRoute,
+    coberturaInformesReportesRoute,
+    coberturaInformesMatriculaRoute,
     coberturaConvocatoriaNuevaRoute,
     coberturaConvocatoriaDetalleRoute,
     coberturaConvocatoriaEditarRoute,

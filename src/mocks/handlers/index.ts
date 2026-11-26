@@ -57,6 +57,7 @@ import { verificacionBoletinHandlers } from "@/mocks/handlers/verificacion-bolet
 import { preMatriculaHandlers } from "@/mocks/handlers/pre-matricula"
 import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
 import { matriculaHandlers } from "@/mocks/handlers/matricula"
+import { informesReportesHandlers } from "@/mocks/handlers/informes-reportes"
 import { notasHomologadasHandlers } from "@/mocks/handlers/notas-homologadas"
 import { matriculaAsignaturasHandlers } from "@/mocks/handlers/matricula-asignaturas"
 import { matriculaSoportesHandlers } from "@/mocks/handlers/matricula-soportes"
@@ -182,6 +183,7 @@ export const handlers = [
   ...solicitudRetiroHandlers,
   ...reactivarHandlers,
   ...estudianteExistenteHandlers,
+  ...informesReportesHandlers,
   ...matriculaHandlers,
   ...curricularReferencesHandlers,
   ...curricularStatementsHandlers,
