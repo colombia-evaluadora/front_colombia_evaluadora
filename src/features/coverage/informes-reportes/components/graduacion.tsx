@@ -37,6 +37,7 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { coberturaInformesReportesRoute } from "@/router"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { fetchGrados, fetchGrupos } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
@@ -78,7 +79,13 @@ function Icono({ label, disabled, motivo, onClick, children }: { label: string; 
   )
 }
 
-function columnas(onAccion: (g: Graduando, a: Accion) => void): ColumnDef<Graduando>[] {
+/** Anular y expedir duplicado: solo el Administrador del establecimiento (Reglas 62 y 67) o el Superadministrador. */
+function useEsAdministrador() {
+  const user = useAuth().user
+  return Boolean(user?.isSuperAdmin || user?.roles?.includes("CEVAL-RECTOR"))
+}
+
+function columnas(onAccion: (g: Graduando, a: Accion) => void, esAdministrador: boolean): ColumnDef<Graduando>[] {
   const c = (key: keyof Graduando, label: string, cell?: (g: Graduando) => ReactNode, centro = false): ColumnDef<Graduando> => ({
     id: key,
     accessorFn: (g) => g[key],
@@ -154,10 +161,20 @@ function columnas(onAccion: (g: Graduando, a: Accion) => void): ColumnDef<Gradua
             <Icono label="Registrar entrega del diploma" onClick={() => onAccion(g, "entrega")} disabled={!g.diplomaEmitido} motivo="primero genere el diploma">
               <PersonCheckIcon />
             </Icono>
-            <Icono label="Expedir duplicado" onClick={() => onAccion(g, "duplicado")} disabled={!g.entrega} motivo="solo con el diploma entregado">
+            <Icono
+              label="Expedir duplicado"
+              onClick={() => onAccion(g, "duplicado")}
+              disabled={!g.entrega || !esAdministrador}
+              motivo={!g.entrega ? "solo con el diploma entregado" : "solo el Administrador del establecimiento"}
+            >
               <CopyIcon />
             </Icono>
-            <Icono label="Anular graduación" onClick={() => onAccion(g, "anular")} disabled={!graduado || g.diplomaEmitido} motivo={graduado ? "el diploma ya fue emitido" : "no está graduado"}>
+            <Icono
+              label="Anular graduación"
+              onClick={() => onAccion(g, "anular")}
+              disabled={!graduado || g.diplomaEmitido || !esAdministrador}
+              motivo={!graduado ? "no está graduado" : g.diplomaEmitido ? "el diploma ya fue emitido" : "solo el Administrador del establecimiento"}
+            >
               <ArrowUUpLeftIcon />
             </Icono>
           </div>
@@ -181,8 +198,9 @@ export function GraduacionInforme({ encabezado }: { encabezado: ReactNode }) {
   const { data, isPending, isError, error, refetch } = useGraduacionQuery(search, { pageIndex, pageSize })
   const [accion, setAccion] = useState<{ sel: Graduando[]; a: Accion | "marcar" } | null>(null)
   const diplomas = useGenerarDiplomas()
+  const esAdministrador = useEsAdministrador()
   const { table, selectedRows, hasSelection, resetSelection } = useDataTable({
-    columns: columnas((g, a) => (a === "diploma" ? generarDiplomas([g]) : setAccion({ sel: [g], a }))),
+    columns: columnas((g, a) => (a === "diploma" ? generarDiplomas([g]) : setAccion({ sel: [g], a })), esAdministrador),
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
     getRowId: (g) => g.matriculaId,
