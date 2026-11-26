@@ -179,7 +179,7 @@ function AccionesComunicado({
   onDialogo: (d: DialogoComunicado) => void
 }) {
   const navigate = useNavigate()
-  const vigente = c.estado === "PUBLICADO" || c.estado === "PROGRAMADO"
+  const { modificar, cancelar, anular } = accionesComunicado(c)
   const acciones: AccionFila[] = [
     {
       id: "ver",
@@ -188,21 +188,21 @@ function AccionesComunicado({
       onSelect: () => navigate({ to: paths.app.comunicacionesComunicadoDetalle.getHref(c.id) }),
     },
   ]
-  if (c.esAutor && vigente)
+  if (modificar)
     acciones.push({
       id: "modificar",
       label: "Modificar",
       icon: <PencilIcon />,
       onSelect: () => navigate({ to: paths.app.comunicacionesComunicadoEditar.getHref(c.id) }),
     })
-  if (c.estado === "PROGRAMADO")
+  if (cancelar)
     acciones.push({
       id: "cancelar",
       label: "Cancelar comunicado",
       icon: <XCircleIcon />,
       onSelect: () => onDialogo({ tipo: "cancelar", c }),
     })
-  if (c.estado === "PUBLICADO")
+  if (anular)
     acciones.push({
       id: "anular",
       label: "Anular",
@@ -212,7 +212,23 @@ function AccionesComunicado({
   return <AccionesFila etiqueta={`Opciones de ${c.titulo}`} acciones={acciones} />
 }
 
-/** Menú ⁞ para las tarjetas de móvil (M.1.LIS.2 y M.1.LIS.3): Modificar solo al autor; Cancelar los programados; Anular los publicados. */
+/**
+ * Qué acciones ofrece una fila (Comunicaciones 3.1): Modificar (Publicado: autor; Programado: autor o
+ * Administrador del establecimiento), Cancelar (Programado: autor o Administrador) y Anular (Publicado
+ * o Vencido: Supervisor de sede o Administrador), siempre en su alcance. Lo decide comms-service
+ * (`puedeModificar`/`puedeCancelar`/`puedeAnular`); sin esas marcas (backend anterior) se cae a la
+ * regla vieja por autoría y estado.
+ */
+export function accionesComunicado(c: ComunicadoGestion) {
+  const vigente = c.estado === "PUBLICADO" || c.estado === "PROGRAMADO"
+  return {
+    modificar: c.puedeModificar ?? (c.esAutor && vigente),
+    cancelar: c.puedeCancelar ?? c.estado === "PROGRAMADO",
+    anular: c.puedeAnular ?? (c.estado === "PUBLICADO" || c.estado === "VENCIDO"),
+  }
+}
+
+/** Menú ⁞ para las tarjetas de móvil (M.1.LIS.2 y M.1.LIS.3), con las mismas acciones que la fila. */
 export function MenuAccionesComunicado({
   c,
   onDialogo,
@@ -220,7 +236,7 @@ export function MenuAccionesComunicado({
   c: ComunicadoGestion
   onDialogo: (d: DialogoComunicado) => void
 }) {
-  const vigente = c.estado === "PUBLICADO" || c.estado === "PROGRAMADO"
+  const { modificar, cancelar, anular } = accionesComunicado(c)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -237,7 +253,7 @@ export function MenuAccionesComunicado({
           <EyeIcon aria-hidden />
           Ver detalle
         </DropdownMenuItem>
-        {c.esAutor && vigente && (
+        {modificar && (
           <DropdownMenuItem
             render={<Link to={paths.app.comunicacionesComunicadoEditar.getHref(c.id)} />}
             nativeButton={false}
@@ -246,13 +262,13 @@ export function MenuAccionesComunicado({
             Modificar
           </DropdownMenuItem>
         )}
-        {c.estado === "PROGRAMADO" && (
+        {cancelar && (
           <DropdownMenuItem onClick={() => onDialogo({ tipo: "cancelar", c })}>
             <XCircleIcon aria-hidden />
             Cancelar comunicado
           </DropdownMenuItem>
         )}
-        {c.estado === "PUBLICADO" && (
+        {anular && (
           <DropdownMenuItem variant="destructive" onClick={() => onDialogo({ tipo: "anular", c })}>
             <ProhibitIcon aria-hidden />
             Anular

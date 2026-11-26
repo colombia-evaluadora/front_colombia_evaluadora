@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { format } from "date-fns"
+import { addDays, format, parse } from "date-fns"
 import { useNavigate } from "@tanstack/react-router"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { DatePicker } from "@/components/date-picker"
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
@@ -15,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon, InfoIcon, LockIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, LockIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
@@ -40,8 +41,14 @@ import {
 const MAX_TITULO = 100
 const MAX_MENSAJE = 1000
 const MIN_MENSAJE = 10
+const MAX_DIAS_PROGRAMADO = 90
 const FORM_ID = "form-modificar-comunicado"
-const CAMPO = { titulo: "modificar-titulo", mensaje: "modificar-mensaje" } as const
+const CAMPO = {
+  titulo: "modificar-titulo",
+  mensaje: "modificar-mensaje",
+  fecha: "modificar-fecha-programada",
+  visibleHasta: "modificar-visible-hasta",
+} as const
 
 /** El contenido se guarda como HTML en párrafos; el formulario M.1 lo edita como texto plano. */
 function htmlATexto(html: string): string {
@@ -53,6 +60,10 @@ function htmlATexto(html: string): string {
 }
 
 const fechaHora = (iso: string | null | undefined) => (iso ? format(new Date(iso), "dd/MM/yyyy H:mm") : "—")
+
+/** Visible hasta llega como yyyy-MM-dd: se lee en hora local (new Date() lo tomaría en UTC). */
+const aFecha = (v: string | null | undefined) => (v ? parse(v.slice(0, 10), "yyyy-MM-dd", new Date()) : undefined)
+const aTexto = (d: Date | undefined) => (d ? format(d, "yyyy-MM-dd") : "")
 
 /** Dato de solo lectura como campo deshabilitado con candado (prototipo M.1.EDI.1). */
 function CampoBloqueado({ id, etiqueta, valor }: { id: string; etiqueta: string; valor: string }) {
@@ -70,8 +81,14 @@ function CampoBloqueado({ id, etiqueta, valor }: { id: string; etiqueta: string;
 /**
  * "Modificar comunicado" (Guía M.1.EDI.1): corrección del autor. Solo cambian título, mensaje y
  * adjuntos; los destinatarios quedan en solo lectura (un error de destinatarios se corrige anulando y
- * publicando otro) y la fecha de actualización la registra el sistema. Al guardar, comms-service avisa
- * a los destinatarios originales autorizados, sin agregar personas nuevas.
+ * publicando otro) y la fecha de actualización la registra el sistema. Al guardar un Publicado,
+ * comms-service avisa a los destinatarios originales autorizados, sin agregar personas nuevas.
+ *
+ * Programado (Comunicaciones 3.1, "Publicación programada"): lo modifican el autor o el Administrador
+ * del establecimiento en su alcance (comms-service `PermisosComunicado` → `puedeModificar`) y además
+ * cambian la fecha y hora programada (posterior a ahora, máx. 90 días) y Visible hasta. No se avisa a
+ * nadie: aún no se ha publicado. Los destinatarios siguen en solo lectura: M.1.EDI.1 solo dibuja el
+ * Publicado y el informe no dice que se abran en el Programado; para cambiarlos se cancela y se crea otro.
  */
 export function EditarComunicadoPage() {
   const { id } = comunicadoEditarRoute.useParams()
@@ -86,10 +103,14 @@ export function EditarComunicadoPage() {
     )
   }
   const c = q.data
-  if (!c.esCreador || (c.estado !== "PUBLICADO" && c.estado !== "PROGRAMADO")) {
+  // Sin la marca (backend anterior) se cae a la regla vieja: solo el autor.
+  const puede = (c.puedeModificar ?? c.esCreador) && (c.estado === "PUBLICADO" || c.estado === "PROGRAMADO")
+  if (!puede) {
     return (
       <p className="p-4 text-sm text-muted-foreground">
-        Solo quien publicó el comunicado puede modificarlo mientras esté publicado o programado.
+        {c.estado === "PROGRAMADO"
+          ? "Solo quien publicó el comunicado o el Administrador del establecimiento pueden modificarlo mientras esté programado."
+          : "Solo quien publicó el comunicado puede modificarlo mientras esté publicado o programado."}
       </p>
     )
   }
@@ -106,9 +127,14 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const corregir = useCorregirComunicado(c.conversacionId)
+  const programado = c.estado === "PROGRAMADO"
   const inicialMensaje = htmlATexto(c.contenidoHtml)
+  const inicialFecha = c.publicarEn ? new Date(c.publicarEn) : undefined
+  const inicialVisible = aFecha(c.visibleHasta)
   const [titulo, setTitulo] = useState(c.titulo)
   const [mensaje, setMensaje] = useState(inicialMensaje)
+  const [fecha, setFecha] = useState<Date | undefined>(inicialFecha)
+  const [visibleHasta, setVisibleHasta] = useState<Date | undefined>(inicialVisible)
   const [archivos, setArchivos] = useState<File[]>([])
   const [quitados, setQuitados] = useState<number[]>([])
   const [intentado, setIntentado] = useState(false)
@@ -118,13 +144,30 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
   const mensajeLimpio = mensaje.trim()
   // Errores por id de control en orden visual; se pintan tras el primer intento y se apagan al corregir.
   const errores: ErroresCampos = {}
+  if (programado) {
+    if (!fecha) errores[CAMPO.fecha] = required("La fecha y hora programada", { femenino: true })
+    else if (fecha <= new Date()) errores[CAMPO.fecha] = "La fecha y hora programada debe ser posterior a la actual."
+    else if (fecha > addDays(new Date(), MAX_DIAS_PROGRAMADO)) {
+      errores[CAMPO.fecha] = `La fecha programada puede ser como máximo ${MAX_DIAS_PROGRAMADO} días después de hoy.`
+    }
+  }
   if (tituloLimpio === "") errores[CAMPO.titulo] = required("El título")
   if (mensajeLimpio.length < MIN_MENSAJE) {
     errores[CAMPO.mensaje] = mensajeLimpio ? minLength(MIN_MENSAJE, "El mensaje") : required("El mensaje")
   }
+  if (programado && visibleHasta && aTexto(visibleHasta) <= aTexto(fecha ?? new Date())) {
+    errores[CAMPO.visibleHasta] = "Visible hasta debe ser posterior a la fecha de publicación."
+  }
   const visibles: ErroresCampos = intentado ? errores : {}
+  const cambiaFecha = programado && fecha?.getTime() !== inicialFecha?.getTime()
+  const cambiaVisible = programado && aTexto(visibleHasta) !== aTexto(inicialVisible)
   const sucio =
-    titulo !== c.titulo || mensaje !== inicialMensaje || archivos.length > 0 || quitados.length > 0
+    titulo !== c.titulo ||
+    mensaje !== inicialMensaje ||
+    archivos.length > 0 ||
+    quitados.length > 0 ||
+    cambiaFecha ||
+    cambiaVisible
   const volver = () => void navigate({ to: paths.app.comunicacionesComunicados.getHref() })
   const cancelar = () => {
     if (corregir.isPending) return
@@ -152,15 +195,20 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
 
       <p className="flex items-start gap-2 rounded-md border border-blue-stroke bg-blue-22 p-3 text-sm">
         <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
-        Al guardar se avisa a los destinatarios originales autorizados, sin agregar personas nuevas. Un error de
-        destinatarios se corrige anulando y publicando otro.
+        {programado
+          ? "Aún no se ha publicado: al guardar no se avisa a nadie y los destinatarios lo reciben con estos cambios en la fecha y hora programada. Para cambiar los destinatarios, cancélalo y crea otro."
+          : "Al guardar se avisa a los destinatarios originales autorizados, sin agregar personas nuevas. Un error de destinatarios se corrige anulando y publicando otro."}
       </p>
 
       <NoticeOutlet />
       <ErrorNoticeBanner error={corregir.isError ? corregir.error : null} />
 
       <div className="overflow-hidden rounded-lg border">
-      <SeccionPlegable titulo="Destinatarios (no se modifican después de publicar)">
+      <SeccionPlegable
+        titulo={
+          programado ? "Destinatarios (no se modifican en esta pantalla)" : "Destinatarios (no se modifican después de publicar)"
+        }
+      >
         <div className="space-y-3">
           <div className="grid gap-4 sm:grid-cols-3">
             <CampoBloqueado
@@ -168,17 +216,36 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
               etiqueta="Publicado por"
               valor={c.publicadoPorRol ? `${c.publicadoPor} (${c.publicadoPorRol})` : c.publicadoPor}
             />
-            <CampoBloqueado
-              id="modificar-fecha-publicacion"
-              etiqueta="Fecha y hora de publicación"
-              valor={fechaHora(c.publicarEn)}
-            />
+            {programado ? (
+              <Field variant="outlined" className="min-w-0" data-invalid={visibles[CAMPO.fecha] ? true : undefined}>
+                <FieldLabel htmlFor={CAMPO.fecha}>
+                  Fecha y hora programada<span className="text-red"> *</span>
+                </FieldLabel>
+                <DatePicker
+                  id={CAMPO.fecha}
+                  mode="datetime"
+                  aria-invalid={!!visibles[CAMPO.fecha]}
+                  value={fecha}
+                  onChange={setFecha}
+                  disabled={corregir.isPending}
+                  minDate={new Date()}
+                  maxDate={addDays(new Date(), MAX_DIAS_PROGRAMADO)}
+                />
+                {visibles[CAMPO.fecha] && <FieldError>{visibles[CAMPO.fecha]}</FieldError>}
+              </Field>
+            ) : (
+              <CampoBloqueado
+                id="modificar-fecha-publicacion"
+                etiqueta="Fecha y hora de publicación"
+                valor={fechaHora(c.publicarEn)}
+              />
+            )}
             <div className="min-w-0 space-y-1">
               <p className="text-xs text-muted-foreground">Estado</p>
               <div className="flex min-h-9 items-center">{c.estado && <EstadoComunicadoBadge estado={c.estado} />}</div>
             </div>
           </div>
-          {/* comms-service no devuelve el resumen por conjunto: se arma con los destinos guardados. */}
+          {/* Audiencia, destinos sueltos y el resumen de cada conjunto (destinos.conjuntos[].resumen). */}
           <p className="text-sm break-words text-muted-foreground">
             {[dirigidoA, total != null ? `${total.toLocaleString("es-CO")} destinatarios` : null]
               .filter(Boolean)
@@ -201,7 +268,16 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
             return
           }
           corregir.mutate(
-            { titulo: tituloLimpio, mensaje: mensajeLimpio, archivos, quitarAdjuntos: quitados },
+            {
+              titulo: tituloLimpio,
+              mensaje: mensajeLimpio,
+              archivos,
+              quitarAdjuntos: quitados,
+              // Solo un Programado manda fechas (comms-service las rechaza en un Publicado). Visible
+              // hasta se revalida contra la fecha nueva, así que viaja también si cambia la fecha.
+              ...(cambiaFecha && fecha ? { publicarEn: fecha.toISOString() } : {}),
+              ...(cambiaVisible || cambiaFecha ? { visibleHasta: aTexto(visibleHasta) } : {}),
+            },
             {
               onSuccess: ({ fallidos }) => {
                 const aviso = `Se modificó el comunicado ${tituloLimpio}.`
@@ -261,11 +337,28 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
           deshabilitado={corregir.isPending}
         />
         <p className="text-xs text-muted-foreground">Los adjuntos anteriores se conservan para auditoría.</p>
-        <CampoBloqueado
-          id="modificar-actualizado"
-          etiqueta="Fecha de actualización"
-          valor={c.actualizadoEn ? fechaHora(c.actualizadoEn) : "Se registra al guardar"}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {programado && (
+            <Field
+              variant="outlined"
+              className="min-w-0"
+              data-invalid={visibles[CAMPO.visibleHasta] ? true : undefined}
+            >
+              <FieldLabel htmlFor={CAMPO.visibleHasta}>Visible hasta</FieldLabel>
+              <DatePicker
+                id={CAMPO.visibleHasta}
+                aria-invalid={!!visibles[CAMPO.visibleHasta]}
+                value={visibleHasta}
+                onChange={setVisibleHasta}
+                disabled={corregir.isPending}
+                minDate={addDays(fecha ?? new Date(), 1)}
+              />
+              {visibles[CAMPO.visibleHasta] && <FieldError>{visibles[CAMPO.visibleHasta]}</FieldError>}
+            </Field>
+          )}
+          {/* M.1.EDI.1: la registra el sistema al guardar; antes se lee este texto. */}
+          <CampoBloqueado id="modificar-actualizado" etiqueta="Fecha de actualización" valor="Se registra al guardar" />
+        </div>
         </div>
         </SeccionPlegable>
       </form>
@@ -274,7 +367,8 @@ function FormularioModificar({ comunicado: c }: { comunicado: Comunicado }) {
       <TableScreenFooter>
         <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <div className="flex gap-2">
-          <Button variant="ghost" color="neutral" onClick={cancelar} disabled={corregir.isPending}>
+          <Button variant="outline" color="neutral" onClick={cancelar} disabled={corregir.isPending}>
+            <XIcon data-icon="inline-start" aria-hidden />
             Cancelar
           </Button>
           <Button type="submit" form={FORM_ID} disabled={corregir.isPending} aria-busy={corregir.isPending}>
