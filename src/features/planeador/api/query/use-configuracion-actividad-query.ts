@@ -51,7 +51,7 @@ function firstRow(body: unknown): ConfiguracionActividadRow | undefined {
   return body as ConfiguracionActividadRow | undefined
 }
 
-async function fetchConfiguracionActividad(
+export async function fetchConfiguracionActividad(
   unidadId: number,
   esEvaluativa: boolean,
 ): Promise<CamposDisponibles | undefined> {

@@ -37,7 +37,7 @@ interface GradoGrupoRow {
   jornada_name?: string
 }
 
-async function fetchGradoGrupos(gradoId: number): Promise<GradoGrupo[]> {
+export async function fetchGradoGrupos(gradoId: number): Promise<GradoGrupo[]> {
   const rows = await evalCol.postRows<GradoGrupoRow>(`/grados/${gradoId}/grupos/query`, {
     PAGE_INDEX: "0",
     PAGE_SIZE: "200",

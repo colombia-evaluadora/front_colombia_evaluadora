@@ -27,10 +27,12 @@ export interface PeriodoInforme {
   estado: "ABIERTO" | "CERRADO"
 }
 
+export const fetchPeriodosInforme = () => evalCol.getRows<PeriodoInforme>(`${BASE}/periodos`)
+
 export function usePeriodosInformeQuery() {
   return useQuery({
     queryKey: informesKeys.periodos,
-    queryFn: () => evalCol.getRows<PeriodoInforme>(`${BASE}/periodos`),
+    queryFn: fetchPeriodosInforme,
     staleTime: 5 * 60_000,
   })
 }
@@ -121,25 +123,32 @@ export const filtrosMatriculados = (s: InformesSearch) => ({
   NUEVO: s.nuevo ?? null,
 })
 
-type Pagina = { pageIndex: number; pageSize: number; sorting: { id: string; desc: boolean }[] }
+export type Pagina = { pageIndex: number; pageSize: number; sorting: { id: string; desc: boolean }[] }
 
-export function useMatriculadosQuery(s: InformesSearch, p: Pagina) {
+/** Body de la consulta (también la clave de la query): lo reusa la preparación offline. */
+export function matriculadosBody(s: InformesSearch, p: Pagina) {
   const [orden] = p.sorting
-  const body = {
+  return {
     ...filtrosMatriculados(s),
     PAGEINDEX: p.pageIndex,
     PAGESIZE: p.pageSize,
     SORTBY: orden?.id ?? null,
     SORTDIR: orden ? (orden.desc ? "desc" : "asc") : null,
   }
+}
+
+export async function fetchMatriculados(body: ReturnType<typeof matriculadosBody>) {
+  const rows = await evalCol.postRows<MatriculadoRow>(`${BASE}/matriculados/query`, body)
+  const pagina = toPaginated(rows, { pageSize: body.PAGESIZE, map: toMatriculado })
+  const estudiantes = Number(rows[0]?.total_estudiantes)
+  return { ...pagina, totalEstudiantes: Number.isFinite(estudiantes) ? estudiantes : pagina.totalCount }
+}
+
+export function useMatriculadosQuery(s: InformesSearch, p: Pagina) {
+  const body = matriculadosBody(s, p)
   return useQuery({
     queryKey: informesKeys.matriculados(body),
-    queryFn: async () => {
-      const rows = await evalCol.postRows<MatriculadoRow>(`${BASE}/matriculados/query`, body)
-      const pagina = toPaginated(rows, { pageSize: p.pageSize, map: toMatriculado })
-      const estudiantes = Number(rows[0]?.total_estudiantes)
-      return { ...pagina, totalEstudiantes: Number.isFinite(estudiantes) ? estudiantes : pagina.totalCount }
-    },
+    queryFn: () => fetchMatriculados(body),
     placeholderData: keepPreviousData,
   })
 }

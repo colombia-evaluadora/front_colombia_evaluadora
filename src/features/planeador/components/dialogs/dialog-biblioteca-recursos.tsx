@@ -24,6 +24,7 @@ import {
 
 import type { Recurso } from "@/features/planeador/api/types/actividad"
 import {
+  BIBLIOTECA_PAGE_SIZE,
   useMaterialesReutilizablesQuery,
   type MaterialReutilizable,
 } from "@/features/planeador/api/query/use-materiales-reutilizables-query"
@@ -31,8 +32,8 @@ import { toPageCount } from "@/lib/pagination"
 import { getErrorMessage } from "@/lib/api-client"
 
 const COLUMNS = 3
-const ROWS = 6
-const PAGE_SIZE = COLUMNS * ROWS
+
+const PAGE_SIZE = BIBLIOTECA_PAGE_SIZE
 
 // Misma ventana de páginas que `DialogSelectGeneralAreas`: muestra la
 // actual, las vecinas y los extremos, con elipsis para los saltos. Ver

@@ -410,7 +410,7 @@ export function InscripcionesTable({ encabezado }: { encabezado: ReactNode }) {
       <TableScreenBody>
         <DataTable
           table={table}
-          isPending={gruposPending || (!!grupo && isPending)}
+          isPending={gruposPending || (!!grupo && !!grado && isPending)}
           isError={isError}
           onRetry={refetch}
           emptyMessage={emptyMessage}

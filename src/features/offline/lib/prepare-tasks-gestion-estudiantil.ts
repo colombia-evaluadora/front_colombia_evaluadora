@@ -46,6 +46,7 @@ import { comiteKeys, convivenciaKeys, procesosKeys } from "@/features/gestion-es
 import {
   fetchCaso,
   fetchCasos,
+  fetchGestoresFiltro,
   fetchPasosCaso,
   toConvivenciaFilters,
 } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
@@ -395,6 +396,7 @@ function convivenciaTasks(): PrepareTask[] {
       fila: (p) => [extra(procesosKeys.detalle(p.id), () => fetchProcesoDetalle(p.id))],
     }),
     extra(procesosKeys.responsables(), fetchResponsablesFiltro),
+    extra(convivenciaKeys.gestoresFiltro(), fetchGestoresFiltro),
     extra([...convivenciaKeys.all, "opciones-grupos"], fetchOpcionesGrupos),
     ...catalogos(
       "TIPO_SITUACION",
