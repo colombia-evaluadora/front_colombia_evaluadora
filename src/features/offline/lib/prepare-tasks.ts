@@ -42,6 +42,11 @@ import {
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { fetchUnidadesTabs } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { fetchUnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { fetchUnidadCriterios } from "@/features/planeador/api/query/use-unidad-criterios-query"
+import { fetchUnidadValoraciones } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
+import { fetchInstrumentoActividadParaForm } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
+import { calificacionesQueryOptions } from "@/features/planeador/api/query/use-calificaciones-query"
+import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { fetchUnidadActividades } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { fetchInstrumentoActividad } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { fetchRotuloActividad } from "@/features/planeador/api/query/use-rotulo-actividad-query"
@@ -331,18 +336,42 @@ function actividadesTasks(meses: { anio: number; mes: number }[], hoy: string): 
           return {
             queryKey,
             meta,
+            expands: true,
             run: async (client, ctx) => {
               const options = actividadDetalleQueryOptions(actividad.id, client)
-              await prepareQuery(client, ctx, {
+              const detalle = await prepareQuery(client, ctx, {
                 queryKey,
                 meta,
                 fetch: () => client.fetchQuery({ ...options, staleTime: 0 }),
               })
+              return detalle ? actividadExtrasTasks(detalle as Actividad) : []
             },
           }
         })
       },
     },
+  ]
+}
+
+/**
+ * Lo que el panel de detalle y Editar de la actividad piden además del detalle: el instrumento
+ * guardado (`detail-sections.tsx`, solo evaluativas) y las calificaciones de los modos
+ * `?modo=grades|approval` (`calificaciones-view.tsx`, con `fechaInicio`). Los dos GET son STABLE.
+ */
+function actividadExtrasTasks(actividad: Actividad): PrepareTask[] {
+  const calificaciones = calificacionesQueryOptions(actividad.id, actividad.fechaInicio)
+  return [
+    ...(actividad.esEvaluativa
+      ? [
+          seed(
+            planeadorKeys.actividad.instrumentoForm(actividad.id),
+            () => fetchInstrumentoActividadParaForm(actividad.id),
+            offlineMeta(TTL_OFFLINE.grupo),
+            { optional: true },
+          ),
+        ]
+      : []),
+    seed(calificaciones.queryKey, calificaciones.queryFn as () => Promise<unknown>, estudiantesMeta(), { optional: true }),
   ]
 }
 
@@ -354,6 +383,9 @@ function unidadesTasks(): PrepareTask[] {
         result.rows.flatMap((unidad) => [
           seed(planeadorKeys.unidad.detalle(unidad.id), () => fetchUnidadDetalle(unidad.id), offlineMeta(TTL_OFFLINE.grupo)),
           seed(planeadorKeys.unidad.actividades(unidad.id), () => fetchUnidadActividades(unidad.id), offlineMeta(TTL_OFFLINE.grupo)),
+          // Panel de detalle (`?unidad=`) y la sección Unidad de Editar actividad.
+          seed(planeadorKeys.unidad.criterios(unidad.id), () => fetchUnidadCriterios(unidad.id), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
+          seed(planeadorKeys.unidad.valoraciones(unidad.id), () => fetchUnidadValoraciones(unidad.id), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
           seed(planeadorKeys.unidad.referente(unidad.id), () => fetchUnidadReferente(unidad.id), offlineMeta(TTL_OFFLINE.grupo), {
             then: (referente) => (referente.id != null ? [subjectLabelTask(referente.id)] : []),
           }),
