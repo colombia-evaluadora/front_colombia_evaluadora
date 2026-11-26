@@ -319,7 +319,10 @@ function Tabla({ cabecera, filas }: { cabecera: ReactNode[]; filas: { id: string
         <thead className="bg-muted/50 text-muted-foreground">
           <tr>
             {cabecera.map((c, i) => (
-              <th key={i} className={i === 0 ? "px-3 py-2 text-left font-medium" : `${centro} font-medium`}>
+              <th
+                key={i}
+                className={i === 0 ? "sticky left-0 z-10 bg-muted px-3 py-2 text-left font-medium whitespace-nowrap" : `${centro} font-medium whitespace-nowrap`}
+              >
                 {i === cabecera.length - 1 ? <span className="flex justify-center">{c}</span> : c}
               </th>
             ))}
@@ -329,7 +332,13 @@ function Tabla({ cabecera, filas }: { cabecera: ReactNode[]; filas: { id: string
           {filas.map((f) => (
             <tr key={f.id} className={f.total ? "border-t border-border bg-muted/30 font-semibold" : "border-t border-border"}>
               {f.celdas.map((v, j) => (
-                <td key={j} className={j === 0 ? "px-3 py-2" : centro}>
+                // La primera columna queda fija al desplazar la tabla a lo ancho.
+                <td
+                  key={j}
+                  className={
+                    j === 0 ? cn("sticky left-0 z-10 px-3 py-2 whitespace-nowrap", f.total ? "bg-muted" : "bg-background") : cn(centro, "whitespace-nowrap")
+                  }
+                >
                   {v}
                 </td>
               ))}

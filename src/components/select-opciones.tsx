@@ -65,8 +65,21 @@ export function SelectOpciones(props: Simple | Multiple) {
     >
       {props.multiple ? (
         <SelectValue placeholder={placeholder}>
+          {/* Siempre una línea: las dos primeras etiquetas y el resto como «+ N». */}
           {(valores: string[]) =>
-            valores?.length ? valores.map((v) => etiquetas[v] ?? v).join(", ") : placeholder
+            valores?.length ? (
+              // El «+ N» va aparte para que el recorte de las etiquetas largas no lo esconda.
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate">{valores.slice(0, 2).map((v) => etiquetas[v] ?? v).join(", ")}</span>
+                {valores.length > 2 ? (
+                  <span className="shrink-0 rounded-full bg-muted px-1.5 text-xs font-medium tabular-nums text-muted-foreground">
+                    + {valores.length - 2}
+                  </span>
+                ) : null}
+              </span>
+            ) : (
+              placeholder
+            )
           }
         </SelectValue>
       ) : (
