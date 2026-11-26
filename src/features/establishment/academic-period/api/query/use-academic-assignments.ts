@@ -37,7 +37,7 @@ export const toAcademicAssignment = (row: AcademicAssignmentRow): AcademicAssign
 // período, incluidas las automáticas del Responsable de grupo (Regla 108).
 // Se traen completas: la búsqueda, los filtros y la paginación son del front,
 // y el diálogo las necesita para avisar la asignación única (Regla 69).
-async function fetchAcademicAssignments(academicPeriodId: number): Promise<AcademicAssignment[]> {
+export async function fetchAcademicAssignments(academicPeriodId: number): Promise<AcademicAssignment[]> {
   const rows = await evalCol.getRows<AcademicAssignmentRow>(
     `/asignaciones/listar/${academicPeriodId}`,
   )

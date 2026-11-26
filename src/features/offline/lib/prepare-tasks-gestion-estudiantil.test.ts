@@ -183,8 +183,10 @@ describe("gestionEstudiantilTasks", () => {
     const { cola } = await preparar(MODULOS)
     const paginas = cola.filter((t) => t.queryKey[0] === "citaciones-compromisos" && t.queryKey[1] === "compromisos" && t.queryKey[2] === "lista")
     expect(paginas).toHaveLength(MAX_PAGINAS_GE)
+    expect(MAX_PAGINAS_GE).toBe(200)
     expect(paginas[0].optional).toBeFalsy()
     expect(paginas[1].optional).toBe(true)
     expect(cola.filter((t) => !esModuloPersistible(t.queryKey))).toEqual([])
-  })
+    // Con el tope en 200 páginas por listado la cola es larga: en CI tarda más que el default.
+  }, 60_000)
 })

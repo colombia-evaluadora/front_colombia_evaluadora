@@ -20,12 +20,26 @@ async function getRows<T>(url: string, params: object): Promise<T[]> {
   return Array.isArray(raw) ? raw : (raw.rows ?? [])
 }
 
+export const fetchDiariaCalendario = async (params: DiariaCalendarioParams) =>
+  (await getRows<DiariaCalendarioRow>("/eval-col/asistencias/diaria/calendario", params)).map(toEntradaDiaria)
+
+export const fetchDiariaPlanilla = async (params: DiariaPlanillaParams) =>
+  (await getRows<DiariaPlanillaRow>("/eval-col/asistencias/diaria/planilla", params)).map((r) => ({
+    ...r,
+    bloque_llegada: r.bloque_llegada == null ? null : Number(r.bloque_llegada),
+  }))
+
+export const fetchDiariaBloques = (params: DiariaPlanillaParams) =>
+  getRows<DiariaBloqueRow>("/eval-col/asistencias/diaria/bloques", params)
+
+export const fetchDiariaGrupos = (sede: number | null) =>
+  getRows<DiariaGrupoRow>("/eval-col/asistencias/diaria/grupos", { SEDE: sede })
+
 /** Regla 115: una entrada por día hábil y grupo Diaria donde el usuario registra (V747). */
 export function useAsistenciaDiariaCalendarioQuery(params: DiariaCalendarioParams, enabled = true) {
   return useQuery({
     queryKey: asistenciaKeys.diaria.calendario(params),
-    queryFn: async () =>
-      (await getRows<DiariaCalendarioRow>("/eval-col/asistencias/diaria/calendario", params)).map(toEntradaDiaria),
+    queryFn: () => fetchDiariaCalendario(params),
     enabled,
   })
 }
@@ -33,11 +47,7 @@ export function useAsistenciaDiariaCalendarioQuery(params: DiariaCalendarioParam
 export function useAsistenciaDiariaPlanillaQuery(params: DiariaPlanillaParams | null) {
   return useQuery({
     queryKey: asistenciaKeys.diaria.planilla(params ?? "none"),
-    queryFn: async () =>
-      (await getRows<DiariaPlanillaRow>("/eval-col/asistencias/diaria/planilla", params!)).map((r) => ({
-        ...r,
-        bloque_llegada: r.bloque_llegada == null ? null : Number(r.bloque_llegada),
-      })),
+    queryFn: () => fetchDiariaPlanilla(params!),
     enabled: params != null,
   })
 }
@@ -46,7 +56,7 @@ export function useAsistenciaDiariaPlanillaQuery(params: DiariaPlanillaParams | 
 export function useAsistenciaDiariaBloquesQuery(params: DiariaPlanillaParams | null) {
   return useQuery({
     queryKey: asistenciaKeys.diaria.bloques(params ?? "none"),
-    queryFn: () => getRows<DiariaBloqueRow>("/eval-col/asistencias/diaria/bloques", params!),
+    queryFn: () => fetchDiariaBloques(params!),
     enabled: params != null,
     staleTime: 5 * 60_000,
   })
@@ -66,7 +76,7 @@ export function useAsistenciaDiariaPorGrupoQuery(params: { GRUPO: number; PERIOD
 export function useAsistenciaDiariaGruposQuery(sede: number | null) {
   return useQuery({
     queryKey: asistenciaKeys.diaria.grupos(sede ?? "none"),
-    queryFn: () => getRows<DiariaGrupoRow>("/eval-col/asistencias/diaria/grupos", { SEDE: sede }),
+    queryFn: () => fetchDiariaGrupos(sede),
     enabled: sede != null,
     staleTime: 5 * 60_000,
   })

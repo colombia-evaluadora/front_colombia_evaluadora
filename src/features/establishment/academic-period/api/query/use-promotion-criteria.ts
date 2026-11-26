@@ -65,7 +65,7 @@ export function toPromotionCriteria(row: PromotionCriteriaRow): PromotionCriteri
   }
 }
 
-async function fetchPromotionCriteria(
+export async function fetchPromotionCriteria(
   academicPeriodId: number,
   gradeId?: number
 ): Promise<PromotionCriteria | null> {

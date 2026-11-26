@@ -86,7 +86,7 @@ import {
 import { FILTROS_VACIOS as ORIENTACION_VACIOS } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { fetchAccesoInclusion } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
-import { fetchPiarLista, fetchSinPiar, piarQueryOptions } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
+import { fetchGradosFiltroPiar, fetchPiarLista, fetchSinPiar, piarQueryOptions } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { FILTROS_VACIOS as PIAR_VACIOS } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 // Reconocimientos
 import { reconocimientosKeys } from "@/features/gestion-estudiantil/reconocimientos/api/query-keys"
@@ -169,6 +169,7 @@ import {
   fetchOpcionesPeriodos,
   fetchOpcionesPeriodosAcademicos,
   fetchOpcionesResponsables,
+  fetchOpcionesEstadosAcomp,
   fetchOpcionesSedesJornadas,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-opciones-prevencion-query"
 import {
@@ -222,8 +223,8 @@ import { SANCION_FILTROS_VACIOS } from "@/features/gestion-estudiantil/configura
 const PAGE_SIZE = 10
 /** Beneficiarios en el detalle de la estrategia (`estrategia-detalle-page.tsx`). */
 const BENEFICIARIOS_PAGE_SIZE = 20
-/** Tope por listado: 200 filas. */
-export const MAX_PAGINAS_GE = 20
+/** Todas las páginas de cada listado, con un tope de seguridad (2000 filas). */
+export const MAX_PAGINAS_GE = 200
 
 const ROOT = "/app/gestion-estudiantil"
 const meta = () => offlineMeta(TTL_OFFLINE.grupo)
@@ -309,7 +310,8 @@ function observadorTasks(): PrepareTask[] {
     listadoFiltrado(observadorKeys.lista, fetchAnotaciones, toObservadorFilters("", OBSERVADOR_VACIOS), {
       fila: (a) => [extra(observadorKeys.detalle(a.id), () => fetchAnotacion(a.id))],
     }),
-    ...catalogos("ESTADO_REMISION_ORIENTACION"),
+    // «Imprimir observador» elige qué firmar.
+    ...catalogos("ESTADO_REMISION_ORIENTACION", "TIPO_OBSERVADOR_FIRMAR"),
     conSedes((sedes) => {
       const unico = establecimientoUnico(sedes)
       const qs = toQueryString({ SEARCH: undefined, ESTABLECIMIENTO: unico, SEDE: undefined })
@@ -411,20 +413,23 @@ function citacionesTasks(): PrepareTask[] {
 
 // ---- Inclusión y orientación --------------------------------------------------------
 
-function inclusionTasks(roles: readonly string[]): PrepareTask[] {
+function inclusionTasks(): PrepareTask[] {
   // Las mismas banderas con que la pantalla arma sus pestañas (el rol solo no
   // alcanza: al superadministrador no le descargaba nada).
   return [
-    extra(["inclusion", "acceso"], fetchAccesoInclusion, (a) => inclusionSegunAcceso(roles, {
+    extra(["inclusion", "acceso"], fetchAccesoInclusion, (a) => inclusionSegunAcceso({
       veListado: Boolean(a?.puede_ver_piar),
       veOrientacion: Boolean(a?.puede_ver_orientacion),
       veAvisoSinPiar: Boolean(a?.puede_ver_aviso_sin_piar),
       veInforme: Boolean(a?.puede_ver_informe),
+      informeRequiereSede: Boolean(a?.informe_requiere_sede),
     })),
   ]
 }
 
-function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListado" | "veOrientacion" | "veAvisoSinPiar" | "veInforme", boolean>): PrepareTask[] {
+function inclusionSegunAcceso(
+  acceso: Record<"veListado" | "veOrientacion" | "veAvisoSinPiar" | "veInforme" | "informeRequiereSede", boolean>,
+): PrepareTask[] {
   // Solo quien NO ve lo sensible (el docente) abre el PIAR sin dejar traza de consulta.
   const sinTraza = acceso.veListado && !acceso.veOrientacion
   const tasks: PrepareTask[] = []
@@ -444,6 +449,9 @@ function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListad
         },
       ),
       ...catalogos("ESTADO_PIAR"),
+      // Filtros de la búsqueda del PIAR (`busqueda-piar.tsx`).
+      extra([...piarKeys.all, "opciones-grupos"], fetchOpcionesGrupos),
+      extra(piarKeys.gradosFiltro(), fetchGradosFiltroPiar),
     )
   }
   if (acceso.veAvisoSinPiar) tasks.push(extra(piarKeys.aviso("", ""), () => fetchSinPiar("", "")))
@@ -464,10 +472,17 @@ function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListad
   if (acceso.veInforme) {
     tasks.push(
       conSedes((sedes) => {
-        // `TabInforme`: el coordinador abre con su primera sede; el resto, con todo el colegio.
-        const deSede = roles.includes("CEVAL-COORDINADOR") && !roles.includes("CEVAL-RECTOR")
-        const params = { establecimiento: sedes[0].establecimientoId, sede: deSede ? String(sedes[0].id) : "", anio: "", grado: "" }
-        return [extra(["inclusion", "informe", params], () => fetchInformeInclusion(params))]
+        // `TabInforme`: con `informe_requiere_sede` abre en la primera sede, si no en todo el colegio;
+        // el año se fija solo en el mayor de los años de esa sede.
+        const primera = sedes[0]
+        const sede = acceso.informeRequiereSede ? String(primera.id) : ""
+        return [
+          extra(opcionesGeKeys.anios(primera.id), () => fetchAniosGe(primera.id), (anios) => {
+            const anio = anios.length > 0 ? String(Math.max(...anios.map((x) => x.anio))) : ""
+            const params = { establecimiento: primera.establecimientoId, sede, anio, grado: "" }
+            return [extra(["inclusion", "informe", params], () => fetchInformeInclusion(params))]
+          }),
+        ]
       }),
     )
   }
@@ -648,7 +663,11 @@ function prevencionPorAcceso(ee: number, acceso: AccesoPrevencion | null): Prepa
   }
   if (acceso?.ver_embarazo || acceso?.ver_consumo) {
     const responsables = { establecimiento: ee }
-    tasks.push(extra(prevencionKeys.opciones.responsables(responsables), () => fetchOpcionesResponsables(responsables)))
+    tasks.push(
+      extra(prevencionKeys.opciones.responsables(responsables), () => fetchOpcionesResponsables(responsables)),
+      // Filtro de estado de Embarazo, Consumo y Reportes recibidos.
+      extra(prevencionKeys.opciones.acompEstados(ee), () => fetchOpcionesEstadosAcomp(ee)),
+    )
   }
   for (const tipo of ["EMBARAZO", "CONSUMO"] as const) {
     if (!(tipo === "EMBARAZO" ? acceso?.ver_embarazo : acceso?.ver_consumo)) continue

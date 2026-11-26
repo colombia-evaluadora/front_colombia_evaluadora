@@ -35,7 +35,7 @@ export interface SubjectDetail {
 // que ese hook no necesita (abreviación, área, color, orden). Se usa para
 // mostrar el detalle completo de una asignatura ya seleccionada, sin tener
 // que abrir el diálogo de edición de área/asignatura solo para verla.
-async function fetchSubjectDetails(academicPeriodId?: number): Promise<SubjectDetail[]> {
+export async function fetchSubjectDetails(academicPeriodId?: number): Promise<SubjectDetail[]> {
   if (academicPeriodId == null) return []
   const raw: SubjectDetailsResponse = await api.query("/eval-col/areas/asignaturas", {
     FK_PERIODO: academicPeriodId,

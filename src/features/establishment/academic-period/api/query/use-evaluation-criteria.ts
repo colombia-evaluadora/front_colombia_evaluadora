@@ -81,7 +81,7 @@ function toEvaluationCriteria(row: EvaluationCriteriaRow): EvaluationCriteria {
   }
 }
 
-async function fetchEvaluationCriteria(
+export async function fetchEvaluationCriteria(
   academicPeriodId: number
 ): Promise<EvaluationCriteria> {
   const raw: EvaluationCriteriaResponse = await api.get(
