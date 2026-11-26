@@ -61,6 +61,8 @@ export interface Hallazgo {
   corte: string | null
   matriculaId: number
   porControl: Record<string, number> | null
+  /** Duplicado entre circuitos oficial y no oficial (Regla 78): lo ve y lo valora la entidad territorial. */
+  soloTerritorial: boolean
 }
 
 /** Filtros de la lista; los reusa el export. */

@@ -129,6 +129,7 @@ export const informesReportesHandlers = [
         { hallazgo_id: 1, control: "C1", estudiante: "Ana Ruiz", establecimiento: "IE Central", dato: "Mismo nombre y fecha de nacimiento que otro estudiante", estado: "PENDIENTE", justificacion: null, corte: "2027-04-02", matricula_id: 1, por_control: por },
         { hallazgo_id: 2, control: "C4", estudiante: "Luis Pérez", establecimiento: "IE Central", dato: "14 años en Sexto", estado: "AJUSTADO", justificacion: null, corte: "2027-04-02", matricula_id: 2, por_control: por },
         { hallazgo_id: 3, control: "C10", estudiante: "Sara Gil", establecimiento: "IE Central", dato: "Sin boletín del año anterior", estado: "JUSTIFICADO", justificacion: "La estudiante llegó del exterior; el boletín está en trámite de apostilla.", corte: "2027-04-02", matricula_id: 3, por_control: por },
+        { hallazgo_id: 4, control: "C1", estudiante: "Ana Ruiz", establecimiento: "IE Central", dato: "Cursando en los circuitos oficial y no oficial: también en Colegio San José", estado: "PENDIENTE", justificacion: null, corte: "2027-04-02", matricula_id: 1, por_control: por, solo_territorial: true },
       ]),
     })
   }),

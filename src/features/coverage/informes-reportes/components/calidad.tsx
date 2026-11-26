@@ -63,6 +63,10 @@ type RolCalidad = "ESTABLECIMIENTO" | "SUPERVISOR" | "ADMINISTRADOR"
 
 function columnas(rol: RolCalidad, onVer: (h: Hallazgo) => void, onAccion: (h: Hallazgo, a: Accion) => void): ColumnDef<Hallazgo>[] {
   const territorial = rol !== "ESTABLECIMIENTO"
+  // Los duplicados entre circuitos los valora el Administrador territorial; el resto, el establecimiento.
+  const justifica = (h: Hallazgo) => (h.soloTerritorial ? rol === "ADMINISTRADOR" : !territorial)
+  const quienJustifica = (h: Hallazgo) =>
+    h.soloTerritorial ? "lo valora el Administrador territorial" : "justifica el establecimiento"
   const c = (key: keyof Hallazgo, label: string, cell?: (h: Hallazgo) => ReactNode): ColumnDef<Hallazgo> => ({
     id: key,
     accessorFn: (h) => h[key],
@@ -72,7 +76,16 @@ function columnas(rol: RolCalidad, onVer: (h: Hallazgo) => void, onAccion: (h: H
     enableSorting: false,
   })
   return [
-    c("control", "Control", (h) => CONTROLES[h.control] ?? h.control),
+    c("control", "Control", (h) => (
+      <span className="flex flex-wrap items-center gap-1">
+        {CONTROLES[h.control] ?? h.control}
+        {h.soloTerritorial ? (
+          <Badge variant="soft" color="info" className="text-xs">
+            Entre circuitos
+          </Badge>
+        ) : null}
+      </span>
+    )),
     c("estudiante", "Estudiante", (h) => <span className="font-medium">{h.estudiante}</span>),
     c("establecimiento", "Establecimiento"),
     c("dato", "Dato que falla"),
@@ -92,7 +105,7 @@ function columnas(rol: RolCalidad, onVer: (h: Hallazgo) => void, onAccion: (h: H
             <Icono label="Ver detalle" onClick={() => onVer(h)}>
               <EyeIcon />
             </Icono>
-            {h.control === "C1" ? (
+            {h.control === "C1" && !h.soloTerritorial ? (
               <Icono
                 label="Unificar estudiantes"
                 to={paths.app.coberturaMatriculaDetalle.getHref(String(h.matriculaId))}
@@ -105,15 +118,15 @@ function columnas(rol: RolCalidad, onVer: (h: Hallazgo) => void, onAccion: (h: H
             <Icono
               label="Justificar"
               onClick={() => onAccion(h, "JUSTIFICAR")}
-              disabled={h.estado !== "PENDIENTE" || territorial}
-              motivo={h.estado !== "PENDIENTE" ? "solo con el hallazgo Pendiente" : "justifica el establecimiento"}
+              disabled={h.estado !== "PENDIENTE" || !justifica(h)}
+              motivo={h.estado !== "PENDIENTE" ? "solo con el hallazgo Pendiente" : quienJustifica(h)}
             >
               <CheckCircleIcon />
             </Icono>
             <Icono
               label="Modificar justificación"
               onClick={() => onAccion(h, "MODIFICAR")}
-              disabled={h.estado !== "JUSTIFICADO" || territorial}
+              disabled={h.estado !== "JUSTIFICADO" || !justifica(h)}
               motivo={h.estado !== "JUSTIFICADO" ? "solo con el hallazgo Justificado" : "solo quien justificó"}
             >
               <PencilIcon />
