@@ -577,6 +577,12 @@ export interface OpcionDestino {
   etiqueta: string
 }
 
+/** Conjunto del formulario por documento (Sección 3.1): `resumen` es el contexto que confirmó el emisor. */
+export interface ConjuntoDestino {
+  tipos: ("ESTUDIANTES" | "ACUDIENTES" | "FUNCIONARIOS")[]
+  resumen?: string | null
+}
+
 export interface DestinosComunicado {
   grados: OpcionDestino[]
   grupos: OpcionDestino[]
@@ -590,6 +596,8 @@ export interface DestinosComunicado {
   sedes?: OpcionDestino[]
   jornadas?: OpcionDestino[]
   poblacion?: "MATRICULADOS" | "ASPIRANTES"
+  // Formulario por documento: reemplaza a todo lo anterior.
+  conjuntos?: ConjuntoDestino[]
 }
 
 export interface AdjuntoComunicado {
