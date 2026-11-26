@@ -222,7 +222,10 @@ function ConvertCampusForm({ campus, onClose, onConverted }: { campus: CampusDet
   // Cascada Departamento → Municipio: el departamento sale del municipio
   // elegido; en estado solo mientras todavía no hay municipio.
   const [pickedDepartmentId, setPickedDepartmentId] = useState<number | null>(null)
-  const departmentId = values.address.municipality?.department?.id || pickedDepartmentId
+  const departmentId =
+    values.address.municipality?.department?.id ||
+    municipalities.find((item) => item.id === values.address.municipality?.id)?.department.id ||
+    pickedDepartmentId
   const { data: calendars = [] } = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
   const { data: ownershipTypes = [] } = useOwnershipTypesQuery()
   const { data: modalities = [] } = useCatalogQuery<CatalogItem>(CATALOGS.MODALIDADES_PRESTACION)

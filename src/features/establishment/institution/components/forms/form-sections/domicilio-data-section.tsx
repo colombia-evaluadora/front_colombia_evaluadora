@@ -45,7 +45,12 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     // DEPARTAMENTO). El departamento no se guarda: sale del municipio elegido,
     // y solo hace falta en estado mientras todavía no hay municipio.
     const [pickedDepartmentId, setPickedDepartmentId] = useState<number | null>(null)
-    const departmentId = value.municipality?.department?.id || pickedDepartmentId
+    // El municipio que llega del detalle del establecimiento no trae su departamento:
+    // se toma del catálogo, donde cada municipio lleva su valor padre.
+    const savedDepartmentId =
+        value.municipality?.department?.id ||
+        municipalities.find((municipality) => municipality.id === value.municipality?.id)?.department.id
+    const departmentId = savedDepartmentId || pickedDepartmentId
     const departmentItems = departments.map((department) => ({ value: department.id, label: department.name }))
     const municipalityItems = municipalities
         .filter((municipality) => !departmentId || municipality.department.id === departmentId)
