@@ -1,41 +1,24 @@
 import { catalogoMeta } from "@/lib/offline/query-meta"
 import { useQuery } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
+import {
+  fetchSelectCategoryWithParent,
+  LISTA_VALOR_STALE_TIME,
+} from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import { unwrapRows } from "@/lib/response-envelope"
 
-// `TETNIA`/resguardo no es `TLISTA_VALOR`: tiene su propia tabla y su propio
-// endpoint (igual que discapacidades y municipios, ver `use-disability-
-// types.ts`) — no lo cubre el catálogo genérico `/select/:categoria`.
-// El endpoint devuelve una fila por RESGUARDO (no por etnia): una misma
-// etnia puede tener varios resguardos, cada uno con su propio pk. El campo
-// que persiste el formulario es `fk_tresguardo`/`ETNIA_RESGUARDO`, así que
-// el id de cada opción tiene que ser `pk_resguardo` (único), no `pk_etnia`
-// (se repite entre resguardos de la misma etnia) — confirmado contra la
-// respuesta real de `/eval-col/catalogos/etnias`.
-interface RealEtniaRow {
-  pk_resguardo: number
-  codigo_resguardo: string
-  nombre_resguardo: string
-  pk_etnia: number
-  nombre_etnia: string
-  etiqueta: string
-}
-
+/**
+ * Lista valor RESGUARDO, con su etnia como valor padre (lista ETNIA, sso
+ * V104.1). El campo que persiste la matrícula es `ETNIA_RESGUARDO`
+ * (`fk_tresguardo`), así que cada opción es un resguardo (su
+ * `pk_lista_valor`) y se rotula "Etnia - Resguardo", como el catálogo viejo.
+ */
 export async function fetchEtnias(): Promise<CatalogItem[]> {
-  if (env.ENABLE_API_MOCKING) {
-    return []
-  }
-  const response = (await api.get("/eval-col/catalogos/etnias")) as unknown as
-    | { rows: RealEtniaRow[] }
-    | RealEtniaRow[]
-  const rows = unwrapRows<RealEtniaRow>(response)
-  return rows.map((row) => ({
-    id: row.pk_resguardo,
-    code: row.codigo_resguardo,
-    name: row.etiqueta,
+  const rows = await fetchSelectCategoryWithParent("RESGUARDO", "ETNIA")
+  return rows.map(({ row, padre }) => ({
+    id: row.pk_lista_valor,
+    code: row.valor,
+    name: padre ? `${padre.nombre} - ${row.nombre}` : row.nombre,
   }))
 }
 
@@ -43,7 +26,7 @@ export async function fetchEtnias(): Promise<CatalogItem[]> {
 export function useEtniasQuery({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     enabled,
-    staleTime: Infinity,
+    staleTime: LISTA_VALOR_STALE_TIME,
     queryKey: ["catalogs", "etnias"],
     meta: catalogoMeta(),
     queryFn: fetchEtnias,
