@@ -3,10 +3,19 @@ import { useState } from "react"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle, TableScreenToolbar } from "@/components/layout/table-screen"
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { CaretDownIcon, FileDownloadOutlinedIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { api } from "@/lib/api-client"
+import { AUDIT_API_PREFIX } from "@/lib/api-routes"
 import { downloadReport, type ReportKey } from "@/lib/report-client"
 import { coberturaInformesReportesRoute } from "@/router"
 
@@ -82,7 +91,14 @@ function SelectorInforme({ value }: { value: InformeId }) {
 }
 
 /** Cada informe disponible: su vista, su reporte y los filtros que exporta (Regla 57). */
-const DISPONIBLES: Partial<Record<InformeId, { reporte: ReportKey; filtros: (s: InformesSearch) => Record<string, unknown> }>> = {
+interface Disponible {
+  reporte: ReportKey
+  filtros: (s: InformesSearch) => Record<string, unknown>
+  /** Más de un archivo: cada uno con su nombre en el menú. */
+  opciones?: { label: string; reporte: ReportKey }[]
+}
+
+const DISPONIBLES: Partial<Record<InformeId, Disponible>> = {
   matriculados: { reporte: "informes-matriculados", filtros: filtrosMatriculados },
   "informe-matricula": { reporte: "informes-matricula", filtros: filtrosInformeMatricula },
   nivelaciones: { reporte: "informes-nivelaciones", filtros: filtrosBase },
@@ -91,7 +107,14 @@ const DISPONIBLES: Partial<Record<InformeId, { reporte: ReportKey; filtros: (s: 
   traslados: { reporte: "informes-traslados", filtros: filtrosCobertura.traslados },
   inscripciones: { reporte: "informes-inscripciones", filtros: filtrosCobertura.inscripciones },
   "demanda-no-atendida": { reporte: "informes-demanda", filtros: filtrosCobertura.demanda },
-  edades: { reporte: "informes-edades", filtros: filtrosEdades },
+  edades: {
+    reporte: "informes-edades-tabla",
+    filtros: filtrosEdades,
+    opciones: [
+      { label: "Tabla de edades", reporte: "informes-edades-tabla" },
+      { label: "Estudiantes", reporte: "informes-edades" },
+    ],
+  },
   "fuera-matricula": { reporte: "informes-fuera-matricula", filtros: filtrosFuera },
   calidad: { reporte: "informes-calidad", filtros: filtrosCalidad },
   graduacion: { reporte: "informes-graduacion", filtros: filtrosGraduacion },
@@ -106,9 +129,21 @@ function Exportar({ informe }: { informe: InformeId }) {
   const config = DISPONIBLES[informe]
   if (!config) return null
 
-  async function exportar(format: "excel" | "pdf") {
+  async function exportar(format: "excel" | "pdf", reporte: ReportKey = config!.reporte) {
     setPendiente(true)
-    const r = await downloadReport(config!.reporte, { format, filters: config!.filtros(search) })
+    const filters = config!.filtros(search)
+    const r = await downloadReport(reporte, { format, filters })
+    // Bitácora (Regla 47): usuario, filtros y filas; un fallo del registro no tumba la descarga.
+    if (r.status === "ok") {
+      await api
+        .post(`${AUDIT_API_PREFIX}/bitacora/exportaciones`, {
+          MODULO: "COBERTURA",
+          FORMATO: format === "excel" ? "EXCEL" : "PDF",
+          FILTROS: JSON.stringify({ reporte, ...filters }),
+          FILAS: String(r.filas ?? 0),
+        })
+        .catch(() => undefined)
+    }
     setPendiente(false)
     notify(r.message, { variant: r.status === "error" ? "error" : "success" })
   }
@@ -121,8 +156,20 @@ function Exportar({ informe }: { informe: InformeId }) {
         <CaretDownIcon data-icon="inline-end" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => void exportar("excel")}>Excel</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => void exportar("pdf")}>PDF</DropdownMenuItem>
+        {config.opciones ? (
+          config.opciones.map((o) => (
+            <DropdownMenuGroup key={o.reporte}>
+              <DropdownMenuLabel>{o.label}</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => void exportar("excel", o.reporte)}>Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void exportar("pdf", o.reporte)}>PDF</DropdownMenuItem>
+            </DropdownMenuGroup>
+          ))
+        ) : (
+          <>
+            <DropdownMenuItem onClick={() => void exportar("excel")}>Excel</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => void exportar("pdf")}>PDF</DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
