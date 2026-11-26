@@ -133,6 +133,8 @@ import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { fetchConversaciones } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { fetchPoliticaChat } from "@/features/comunicaciones/chat/api/query/use-politica-chat-query"
 import { fetchInvitaciones } from "@/features/comunicaciones/chat/api/query/use-invitaciones-query"
+import { fetchHilosAcudientes, fetchOpcionesHilo } from "@/features/comunicaciones/chat/api/query/use-hilos-acudientes-query"
+import { fetchJornadasEleccion } from "@/features/comunicaciones/chat/api/query/use-jornadas-eleccion-query"
 import { contadorQueryKey, fetchContador } from "@/features/notificaciones/api/query/use-contador-query"
 import {
   fetchNotificaciones,
@@ -146,6 +148,15 @@ import { fetchEstablishmentsOptions } from "@/features/establishment/institution
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 import { campusesQueryKey, fetchCampuses } from "@/features/establishment/campuses/api/query/use-campuses"
 import { fetchZonasSede } from "@/features/establishment/campuses/api/query/use-zonas-sede"
+import { fetchCampus } from "@/features/establishment/campuses/api/query/use-campus"
+import { fetchCampusSpecialties, fetchSpecialtyCatalog } from "@/features/establishment/campuses/api/query/use-campus-specialties"
+import { fetchEstablishment } from "@/features/establishment/institution/api/query/use-establishment"
+import { fetchOwnershipTypes } from "@/features/establishment/institution/api/query/use-ownership-types"
+import { fetchPuedeGestionarEstablecimientos } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
+import { fetchMunicipalities } from "@/features/establishment/institution/api/query/use-municipalities"
+import { fetchEtnias } from "@/features/establishment/institution/api/query/use-etnias"
+import { fetchDisabilityTypes } from "@/features/establishment/institution/api/query/use-disability-types"
+import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { getCatalog } from "@/features/establishment/employees/api/query/use-catalogs"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { fetchAcademicPeriods } from "@/features/establishment/academic-period/api/query/use-academic-periods"
@@ -683,6 +694,12 @@ function comunicacionesTasks(): PrepareTask[] {
     seed(chatKeys.politica, fetchPoliticaChat, catalogoMeta(), { optional: true }),
     // Invitaciones pendientes a grupos: la pantalla de chat las pide al abrir.
     seed(chatKeys.invitaciones, fetchInvitaciones, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
+    // Hilos con acudientes: comms-service recalcula sus participantes al leer, igual que su tarea
+    // periódica (`SincronizacionHilosAcudientes`): idempotente, sin avisos si no cambió nada.
+    seed(chatKeys.hilosAcudientes, fetchHilosAcudientes, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
+    seed(chatKeys.hilosAcudientesOpciones, fetchOpcionesHilo, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
+    // «Jornada» del formulario de elección.
+    seed(chatKeys.jornadasEleccion, fetchJornadasEleccion, catalogoMeta(), { optional: true }),
   ]
 }
 
@@ -716,19 +733,93 @@ function notificacionesTasks(): PrepareTask[] {
 }
 
 const LISTA_POR_DEFECTO = { filters: {}, sorting: [], pageIndex: 0, pageSize: 10 }
+/** Todas las páginas de un listado, con un tope de seguridad. */
+export const MAX_PAGINAS_LISTADO = 200
+
+const listaPagina = (pageIndex: number) => ({ ...LISTA_POR_DEFECTO, pageIndex })
+
+/** Página 0 y, desde ella, las siguientes (hasta `MAX_PAGINAS_LISTADO`) con el detalle de cada fila. */
+function paginasEstablecimiento<R>(
+  key: (pageIndex: number) => readonly unknown[],
+  fetch: (pageIndex: number) => Promise<{ rows: R[]; pageCount: number }>,
+  detalle: (row: R) => PrepareTask[],
+  pageIndex = 0,
+): PrepareTask {
+  return seed(key(pageIndex), () => fetch(pageIndex), proveedorMeta(), {
+    optional: pageIndex > 0,
+    then: (data) => [
+      ...(pageIndex === 0
+        ? Array.from({ length: Math.max(0, Math.min(data.pageCount, MAX_PAGINAS_LISTADO) - 1) }, (_, i) =>
+            paginasEstablecimiento(key, fetch, detalle, i + 1),
+          )
+        : []),
+      ...data.rows.flatMap(detalle),
+    ],
+  })
+}
+
+const catalogoEe = (catalogo: (typeof CATALOGS)[keyof typeof CATALOGS]) =>
+  seed(["catalogs", catalogo], () => getCatalog(catalogo), catalogoMeta(), { optional: true })
+
+/** Catálogos de la ficha, el detalle y el formulario de editar del EE (y de convertir una sede). */
+function catalogosEstablecimiento(): PrepareTask[] {
+  const jornada = selectCategoryQueryOptions("JORNADA")
+  return [
+    seed(["catalogs", "ownership-types"], fetchOwnershipTypes, catalogoMeta(), { optional: true }),
+    seed(["catalogs", "municipalities"], fetchMunicipalities, catalogoMeta(), { optional: true }),
+    seed(["catalogs", "etnias"], fetchEtnias, catalogoMeta(), { optional: true }),
+    seed(["catalogs", "disability-types"], fetchDisabilityTypes, catalogoMeta(), { optional: true }),
+    seed(jornada.queryKey, jornada.queryFn, jornada.meta, { optional: true }),
+    ...[
+      CATALOGS.ENTITY_STATUSES,
+      CATALOGS.ZONES,
+      CATALOGS.IDIOMAS,
+      CATALOGS.CALENDARIOS,
+      CATALOGS.COST_REGIMEN,
+      CATALOGS.POPULATION_GENDERS,
+      CATALOGS.RANGO_TARIFAS,
+      CATALOGS.DISABILITIES_ATTENDED,
+      CATALOGS.DOCUMENT_TYPES,
+      CATALOGS.GENDERS,
+      CATALOGS.MODALIDADES_PRESTACION,
+      CATALOGS.SECTORES,
+    ].map(catalogoEe),
+  ]
+}
 
 function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]): PrepareTask[] {
   const tasks: PrepareTask[] = []
-  if (menuIncludes(queryClient, "/app/establecimiento-educativo/general")) {
+  const general = menuIncludes(queryClient, "/app/establecimiento-educativo/general")
+  const sedes = menuIncludes(queryClient, "/app/establecimiento-educativo/sedes")
+  if (general || sedes) tasks.push(...catalogosEstablecimiento())
+  if (general) {
     tasks.push(
-      seed(establishmentsQueryKey(LISTA_POR_DEFECTO), () => fetchEstablishments(LISTA_POR_DEFECTO), proveedorMeta()),
-      seed(["catalogs", CATALOGS.ENTITY_STATUSES], () => getCatalog(CATALOGS.ENTITY_STATUSES), catalogoMeta(), { optional: true }),
+      // Detalle y editar comparten la key (`useEstablishmentQuery`).
+      paginasEstablecimiento(
+        (p) => establishmentsQueryKey(listaPagina(p)),
+        (p) => fetchEstablishments(listaPagina(p)),
+        (ee) => [seed(establishmentKeys.detalle(ee.id), () => fetchEstablishment(ee.id), proveedorMeta(), { optional: true })],
+      ),
+      seed(establishmentKeys.permisoGestion(), fetchPuedeGestionarEstablecimientos, offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
     )
   }
-  if (menuIncludes(queryClient, "/app/establecimiento-educativo/sedes")) {
+  if (sedes) {
     tasks.push(
-      seed(campusesQueryKey(LISTA_POR_DEFECTO), () => fetchCampuses(LISTA_POR_DEFECTO), proveedorMeta()),
-      seed(["catalogs", CATALOGS.ZONES], () => getCatalog(CATALOGS.ZONES), catalogoMeta(), { optional: true }),
+      paginasEstablecimiento(
+        (p) => campusesQueryKey(listaPagina(p)),
+        (p) => fetchCampuses(listaPagina(p)),
+        (sede) => [
+          seed(campusKeys.detalle(sede.id), () => fetchCampus(sede.id), proveedorMeta(), {
+            optional: true,
+            // Editar pide las zonas válidas del EE de la sede.
+            then: (campus) => [
+              seed(campusKeys.zonas(campus.establishmentId), () => fetchZonasSede(campus.establishmentId), catalogoMeta(), { optional: true }),
+            ],
+          }),
+          seed(campusKeys.especialidades(sede.id), () => fetchCampusSpecialties(sede.id), proveedorMeta(), { optional: true }),
+        ],
+      ),
+      seed(campusKeys.catalogoEspecialidades(), fetchSpecialtyCatalog, catalogoMeta(), { optional: true }),
       // Solo super administrador; a los demás les responde 403.
       ...(roles.includes("CEVAL-SUPER_ADMINISTRADOR")
         ? [seed(establishmentKeys.options(), fetchEstablishmentsOptions, proveedorMeta(), { optional: true })]

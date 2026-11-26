@@ -21,7 +21,7 @@ export interface OwnershipType extends CatalogItem {
   sector?: string | null
 }
 
-async function fetchOwnershipTypes(): Promise<OwnershipType[]> {
+export async function fetchOwnershipTypes(): Promise<OwnershipType[]> {
   // TPROPIEDAD_JURIDICA no es TLISTA_VALOR: no lo cubre el catálogo
   // genérico `/select/:categoria` (ver use-catalogs.ts). Ojo: existe una
   // categoría "PROPIEDAD_JURIDICA_OFICIAL" en tlista_valor, pero es otra
