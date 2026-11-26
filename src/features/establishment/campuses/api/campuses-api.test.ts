@@ -18,6 +18,7 @@ vi.mock("sonner", () => ({ toast: { error: vi.fn() } }))
 
 const { api } = await import("@/lib/api-client")
 const { campusHandlers } = await import("@/mocks/handlers/campuses")
+const { selectCatalogHandlers } = await import("@/mocks/handlers/academic-period/select-catalog")
 const { fetchCampuses } = await import("@/features/establishment/campuses/api/query/use-campuses")
 const { fetchCampus } = await import("@/features/establishment/campuses/api/query/use-campus")
 const { fetchNextConsecutive } = await import("@/features/establishment/campuses/api/query/use-establishment-campuses")
@@ -34,7 +35,7 @@ const { toInfluenceArea } = await import("@/features/establishment/campuses/lib/
 const { geocodeCampusAddress } = await import("@/features/establishment/campuses/api/query/geocode")
 
 api.defaults.baseURL = "http://localhost/api"
-const server = setupServer(...campusHandlers)
+const server = setupServer(...campusHandlers, ...selectCatalogHandlers)
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }))
 afterEach(() => server.resetHandlers())
