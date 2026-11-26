@@ -57,7 +57,7 @@ function toCriterioUnidad(row: UnidadCriterioRow): CriterioUnidad {
   }
 }
 
-async function fetchUnidadCriterios(unidadId: number): Promise<CriterioUnidad[]> {
+export async function fetchUnidadCriterios(unidadId: number): Promise<CriterioUnidad[]> {
   const rows = await evalCol.getRows<UnidadCriterioRow>(
     `/planeador/unidades/${unidadId}/criterios`,
   )

@@ -128,8 +128,8 @@ import {
 
 /** Todas las páginas, con un tope de seguridad. */
 const MAX_PAGINAS = 200
-/** Auditoría y bitácora son enormes: solo lo más reciente. */
-const MAX_PAGINAS_AUDITORIA = 5
+/** Auditoría y bitácora: todas las páginas, con el mismo tope de seguridad que el resto. */
+const MAX_PAGINAS_AUDITORIA = MAX_PAGINAS
 const MAX_DETALLES = 2000
 /**
  * Módulos de la Bitácora que no se preparan: Evaluación del desempeño responde 400 a la lista
@@ -244,10 +244,10 @@ function conservacionTasks(esSuperAdmin: boolean): PrepareTask[] {
           .map((p) => seed(conservacionKeys.politica(p.pkPolitica), () => fetchPolitica(p.pkPolitica), meta(), opcional)),
     }),
     seed(conservacionKeys.modulos, fetchModulos, meta(), opcional),
-    // Ampliaciones abre en el primer establecimiento que el usuario puede elegir.
+    // Ampliaciones abre en el primer establecimiento y deja elegir otro: se guardan todos (con tope).
     seed(conservacionKeys.establecimientos, fetchEstablecimientosConservacion, meta(), {
       optional: true,
-      then: (ees) => (ees[0] ? [ampliaciones(ees[0].id)] : []),
+      then: (ees) => ees.slice(0, MAX_DETALLES).map((e) => ampliaciones(e.id)),
     }),
     ...(esSuperAdmin
       ? [

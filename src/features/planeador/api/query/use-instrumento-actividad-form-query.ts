@@ -303,7 +303,7 @@ export function toInstrumentoActividadParaForm(row: RawInstrumentoActividadRow |
   return { ...base, instrumentoPersonalizado }
 }
 
-async function fetchInstrumentoActividadParaForm(actividadId: number): Promise<InstrumentoActividadParaForm> {
+export async function fetchInstrumentoActividadParaForm(actividadId: number): Promise<InstrumentoActividadParaForm> {
   const rows = await evalCol.getRows<RawInstrumentoActividadRow>(
     `/planeador/actividades/${actividadId}/instrumento`,
   )
