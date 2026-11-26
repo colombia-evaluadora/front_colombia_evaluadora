@@ -119,7 +119,7 @@ export function EstadisticaEdades({ encabezado }: { encabezado: ReactNode }) {
 
   const set = (k: keyof InformesSearch, v: string) => {
     setAbiertos(null)
-    navigate({ search: (prev) => ({ ...prev, [k]: v || undefined, grupoEdad: undefined, page: 0 }), replace: true })
+    navigate({ search: (prev) => ({ ...prev, [k]: v || undefined, grupoEdad: undefined, page: 0 }), replace: true, resetScroll: false })
   }
   const alternar = (n: NodoEdad) =>
     setAbiertos((prev) => {
@@ -424,6 +424,7 @@ function Estudiantes({
   })
   const valores = enCol(nodo)
   const max = Math.max(...cols.map((c) => valores[c.key] ?? 0), 1)
+  const total = nodo.total.cantidad
 
   return (
     <div className="flex flex-col gap-4">
@@ -439,22 +440,41 @@ function Estudiantes({
             options={raiz.hijos.map((n) => ({ value: n.label, label: n.label }))}
             onChange={(v) => {
               setPagina({ ...pagina, pageIndex: 0 })
-              navigate({ search: (prev) => ({ ...prev, grupoEdad: v || undefined }), replace: true })
+              // Sin resetScroll el router sube al inicio de la página en cada cambio de la URL.
+              navigate({ search: (prev) => ({ ...prev, grupoEdad: v || undefined }), replace: true, resetScroll: false })
             }}
           />
         </div>
-        <span className="text-sm text-muted-foreground">{nodo.total.cantidad} estudiantes</span>
       </div>
-      <div className="flex flex-col gap-1.5">
-        {cols.map((c) => (
-          <div key={c.key} className="grid grid-cols-[9rem_1fr_3rem] items-center gap-3 text-sm">
-            <span>{c.label}</span>
-            <div className="h-3 rounded-full bg-muted">
-              <div className="h-3 rounded-full bg-primary" style={{ width: `${((valores[c.key] ?? 0) / max) * 100}%` }} />
-            </div>
-            <span className="text-right tabular-nums">{valores[c.key] ?? 0}</span>
-          </div>
-        ))}
+      <div className="rounded-lg border bg-card p-4">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium">{grupo || "Total"}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {total === 1 ? "1 estudiante" : `${total.toLocaleString("es-CO")} estudiantes`}
+          </span>
+        </div>
+        <div className="flex flex-col gap-2">
+          {cols.map((c) => {
+            const v = valores[c.key] ?? 0
+            return (
+              <div key={c.key} className="grid grid-cols-[minmax(6rem,9rem)_1fr_5.5rem] items-center gap-3 text-sm">
+                <span className={cn("truncate", v === 0 && "text-muted-foreground")}>{c.label}</span>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-300"
+                    style={{ width: `${(v / max) * 100}%` }}
+                  />
+                </div>
+                <span className={cn("text-right tabular-nums", v === 0 && "text-muted-foreground")}>
+                  <span className="font-medium">{v}</span>
+                  <span className="ml-1.5 inline-block w-10 text-xs text-muted-foreground">
+                    {total ? `${Math.round((v / total) * 100)} %` : ""}
+                  </span>
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
       <DataTable
         table={table}
