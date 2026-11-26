@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import { ErrorNoticeBanner } from "@/components/notice/error-notice-banner"
 import { Button } from "@/components/ui/button"
-import { FloppyDiskIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, XIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { IconoCarga } from "@/features/gestion-estudiantil/commons/components/icono-carga"
@@ -35,12 +35,22 @@ function FormPlazos({ plazos, establecimiento, puedeEditar }: { plazos: PlazosDi
   return (
     <Marco
       accion={
-        <Button size="sm" type="button" variant="outline" color="neutral" disabled={!puedeEditar || f.pendiente} onClick={f.guardar}>
-          <IconoCarga cargando={f.pendiente}>
-            <FloppyDiskIcon data-icon="inline-start" />
-          </IconoCarga>
-          Guardar plazos
-        </Button>
+        // Cancelar solo con cambios (como las pestañas de formulario) y Guardar plazos, la acción principal del
+        // bloque, en azul al final (CLAUDE.md §13).
+        <div className="flex shrink-0 items-center gap-2">
+          {f.cambios && (
+            <Button size="sm" type="button" variant="outline" color="neutral" disabled={!puedeEditar || f.pendiente} onClick={f.cancelar}>
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </Button>
+          )}
+          <Button size="sm" type="button" disabled={!puedeEditar || f.pendiente || !f.cambios} onClick={f.guardar}>
+            <IconoCarga cargando={f.pendiente}>
+              <FloppyDiskIcon data-icon="inline-start" />
+            </IconoCarga>
+            Guardar plazos
+          </Button>
+        </div>
       }
     >
       <ErrorNoticeBanner error={f.error} />

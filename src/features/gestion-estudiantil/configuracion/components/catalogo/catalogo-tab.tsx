@@ -7,7 +7,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
-import { TableScreenBody, TableScreenToolbar } from "@/components/layout/table-screen"
+import { TableScreenActions, TableScreenBody, TableScreenToolbar } from "@/components/layout/table-screen"
 import { useNotify } from "@/components/notice/notice-context"
 import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -96,15 +96,7 @@ export function CatalogoTab({ tabs, establecimiento, cargandoEstablecimiento, ac
 
   return (
     <>
-      <EncabezadoConfiguracion
-        tabs={tabs}
-        action={
-          <Button size="sm" disabled={establecimiento == null || !acceso.puede_crear} onClick={() => setModal({ tipo: "nuevo" })}>
-            <ControlPointIcon data-icon="inline-start" />
-            Nuevo código
-          </Button>
-        }
-      >
+      <EncabezadoConfiguracion tabs={tabs}>
         <TableScreenToolbar>
           <SearchCodigos
             search={search}
@@ -125,6 +117,13 @@ export function CatalogoTab({ tabs, establecimiento, cargandoEstablecimiento, ac
             tipos={tipos}
             situaciones={situaciones}
           />
+          {/* Crear en la línea del buscador, a la derecha (CLAUDE.md §13), no en el título. */}
+          <TableScreenActions>
+            <Button size="sm" disabled={establecimiento == null || !acceso.puede_crear} onClick={() => setModal({ tipo: "nuevo" })}>
+              <ControlPointIcon data-icon="inline-start" />
+              Nuevo código
+            </Button>
+          </TableScreenActions>
         </TableScreenToolbar>
       </EncabezadoConfiguracion>
 
@@ -135,7 +134,6 @@ export function CatalogoTab({ tabs, establecimiento, cargandoEstablecimiento, ac
           isError={isError}
           onRetry={refetch}
           isRowMuted={(row) => !row.original.habilitado}
-          growColumnId="descripcion"
           emptyMessage={hayFiltros ? "No hay códigos para los filtros aplicados." : "Aún no hay códigos. Cargue los del manual de convivencia."}
           errorMessage={error ? getErrorMessage(error) : undefined}
         />

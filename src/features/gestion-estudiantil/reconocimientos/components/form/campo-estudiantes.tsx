@@ -7,6 +7,7 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
@@ -62,7 +63,15 @@ export function CampoEstudiantes({ id, establecimiento, value, error, onChange }
             {(matriculas: number[]) =>
               matriculas.length === 0
                 ? "Buscar por nombre o documento"
-                : `${matriculas.length} · ${matriculas.map((m) => (conocidos.current.get(m) ?? `Matrícula ${m}`).split(" · ")[0]).join(", ")}`
+                : (
+                    <ChipsSeleccion
+                      elementos={matriculas.map((m) => ({
+                        id: m,
+                        label: (conocidos.current.get(m) ?? `Matrícula ${m}`).split(" · ")[0],
+                      }))}
+                      onQuitar={(m) => onChange(matriculas.filter((x) => x !== m))}
+                    />
+                  )
             }
           </ComboboxFieldValue>
         </ComboboxFieldTrigger>

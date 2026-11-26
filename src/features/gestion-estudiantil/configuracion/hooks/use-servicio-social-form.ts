@@ -7,6 +7,7 @@ import { toDigitsOnly } from "@/lib/text-input"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useGuardarServicioSocial } from "@/features/gestion-estudiantil/configuracion/api/mutations/riesgo-servicio"
 import type { ParametrosServicioSocialConfig } from "@/features/gestion-estudiantil/configuracion/api/types"
+import { hayCambios } from "@/features/gestion-estudiantil/configuracion/utils/cambios"
 import { validarServicioSocial, type ValoresServicioSocial } from "@/features/gestion-estudiantil/configuracion/utils/servicio-social"
 
 /** Estado, validación y envío de G.10.SOC.1. */
@@ -68,6 +69,7 @@ export function useServicioSocialForm({ parametros, establecimiento }: { paramet
     errores: { ...(intento ? errores : {}), ...(errorGradosBackend ? { grados: errorGradosBackend } : {}) },
     error,
     pendiente: guardar.isPending,
+    cambios: hayCambios(valores, inicial),
     cambiarHoras,
     cambiarAnticipacion,
     cambiarGrados,

@@ -5,6 +5,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useGuardarCausasReservadas } from "@/features/gestion-estudiantil/configuracion/api/mutations/riesgo-servicio"
 import type { CausasReservadas } from "@/features/gestion-estudiantil/configuracion/api/types"
+import { hayCambios } from "@/features/gestion-estudiantil/configuracion/utils/cambios"
 import { causasConFijas, causasParaBackend } from "@/features/gestion-estudiantil/configuracion/utils/riesgo"
 import { useGuardarParametros } from "@/features/gestion-estudiantil/prevencion/api/mutations/parametros"
 import type { ParametrosRiesgo } from "@/features/gestion-estudiantil/prevencion/api/types"
@@ -89,6 +90,7 @@ export function useParametrosRiesgoForm({ parametros, causas, establecimiento }:
     errores: intento ? errores : {},
     error,
     pendiente: guardarParametros.isPending || guardarCausas.isPending,
+    cambios: hayCambios({ valores, reservadas }, { valores: inicial, reservadas: causasIniciales }),
     cambiar,
     cambiarAviso,
     marcarCondicion,

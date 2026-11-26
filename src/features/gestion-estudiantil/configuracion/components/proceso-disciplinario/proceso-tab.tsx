@@ -130,38 +130,28 @@ export function ProcesoTab({ tabs, establecimiento, acceso }: Props) {
 
   return (
     <>
-      <EncabezadoConfiguracion
-        tabs={tabs}
-        action={
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              color="neutral"
-              disabled={sinEstablecimiento || !acceso.puede_crear}
-              onClick={() => setModal({ tipo: "clasificacion", fila: null })}
-            >
-              <ControlPointIcon data-icon="inline-start" />
-              Nueva clasificación
-            </Button>
-            <Button size="sm" disabled={sinEstablecimiento || !acceso.puede_crear} onClick={() => setModal({ tipo: "sancion", fila: null })}>
-              <ControlPointIcon data-icon="inline-start" />
-              Nueva sanción
-            </Button>
-          </div>
-        }
-      />
+      {/* Los botones de crear van con su bloque (CLAUDE.md §13), no en el título: la pestaña tiene dos catálogos. */}
+      <EncabezadoConfiguracion tabs={tabs} />
       <TableScreenBody>
         <div className="flex flex-col gap-6 pt-2 pb-6">
           <BloquePlazos establecimiento={establecimiento} puedeEditar={acceso.puede_editar} />
 
-          <section className="flex flex-col gap-3" aria-labelledby="clasificaciones-titulo">
-            {/* Sin paginación: «Columnas visibles» va junto al título. */}
+          {/* Mismo recuadro que «Plazos del proceso» (bloque-plazos.tsx): los tres bloques de la pestaña se ven iguales. */}
+          <section className="flex flex-col gap-4 rounded-lg border border-border p-4" aria-labelledby="clasificaciones-titulo">
+            {/* Sin paginación ni buscador: «Nueva clasificación» va junto al título. Sin «Columnas visibles»: son
+                tres columnas y su lugar en las demás tablas es la paginación, que esta no tiene. */}
             <div className="flex items-center justify-between gap-2">
-              <h2 id="clasificaciones-titulo" className="text-base font-semibold">
+              <h2 id="clasificaciones-titulo" className="text-sm font-semibold">
                 Clasificación de faltas
               </h2>
-              <DataTableViewOptions table={tablaClasificaciones} />
+              <Button
+                size="sm"
+                disabled={sinEstablecimiento || !acceso.puede_crear}
+                onClick={() => setModal({ tipo: "clasificacion", fila: null })}
+              >
+                <ControlPointIcon data-icon="inline-start" />
+                Nueva clasificación
+              </Button>
             </div>
             <DataTable
               table={tablaClasificaciones}
@@ -169,17 +159,17 @@ export function ProcesoTab({ tabs, establecimiento, acceso }: Props) {
               isError={clasificacionesQ.isError}
               onRetry={clasificacionesQ.refetch}
               isRowMuted={(row) => !row.original.habilitado}
-              growColumnId="descripcion"
               emptyMessage="Aún no hay clasificaciones de faltas."
               errorMessage={clasificacionesQ.error ? getErrorMessage(clasificacionesQ.error) : undefined}
             />
           </section>
 
-          <section className="flex flex-col gap-3" aria-labelledby="sanciones-titulo">
-            <h2 id="sanciones-titulo" className="text-base font-semibold">
+          <section className="flex flex-col gap-4 rounded-lg border border-border p-4" aria-labelledby="sanciones-titulo">
+            <h2 id="sanciones-titulo" className="text-sm font-semibold">
               Catálogo de sanciones
             </h2>
-            <div className="flex items-center justify-between gap-2">
+            {/* `items-end`: el label flotante del buscador desalinea con `items-center`. */}
+            <div className="flex flex-wrap items-end justify-between gap-2">
               <SearchSanciones
                 search={search}
                 onSearchChange={(v) => {
@@ -198,6 +188,10 @@ export function ProcesoTab({ tabs, establecimiento, acceso }: Props) {
                 }}
                 instancias={instancias}
               />
+              <Button size="sm" disabled={sinEstablecimiento || !acceso.puede_crear} onClick={() => setModal({ tipo: "sancion", fila: null })}>
+                <ControlPointIcon data-icon="inline-start" />
+                Nueva sanción
+              </Button>
             </div>
             <DataTable
               table={tablaSanciones}
@@ -205,8 +199,9 @@ export function ProcesoTab({ tabs, establecimiento, acceso }: Props) {
               isError={sancionesQ.isError}
               onRetry={sancionesQ.refetch}
               isRowMuted={(row) => !row.original.habilitado}
-              growColumnId="nombre"
-              emptyMessage={hayFiltros ? "No hay sanciones para los filtros aplicados." : "Aún no hay sanciones en el catálogo."}
+              emptyMessage={
+                hayFiltros ? "No hay sanciones para los filtros aplicados." : "Aún no hay sanciones. Cargue las del manual de convivencia."
+              }
               errorMessage={sancionesQ.error ? getErrorMessage(sancionesQ.error) : undefined}
             />
             <Pagination

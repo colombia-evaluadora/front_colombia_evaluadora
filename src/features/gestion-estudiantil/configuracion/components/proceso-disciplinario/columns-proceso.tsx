@@ -81,7 +81,7 @@ export function buildColumnsClasificaciones(a: Acciones<ClasificacionRow>): Colu
       cell: ({ row }) => <span className="font-semibold">{row.original.nombre}</span>,
     }),
     texto<ClasificacionRow>("descripcion", "Descripción", (f) => f.descripcion ?? "", {
-      cell: ({ row }) => <span className="whitespace-normal">{row.original.descripcion || "—"}</span>,
+      cell: ({ row }) => <span className="whitespace-normal [overflow-wrap:anywhere]">{row.original.descripcion || "—"}</span>,
     }),
     estado<ClasificacionRow>(),
     acciones(a),
@@ -92,7 +92,7 @@ export function buildColumnsClasificaciones(a: Acciones<ClasificacionRow>): Colu
 export function buildColumnsSanciones(a: Acciones<SancionRow>): ColumnDef<SancionRow>[] {
   return [
     texto<SancionRow>("nombre", "Nombre", (f) => f.nombre, {
-      cell: ({ row }) => <span className="font-semibold whitespace-normal">{row.original.nombre}</span>,
+      cell: ({ row }) => <span className="font-semibold whitespace-normal [overflow-wrap:anywhere]">{row.original.nombre}</span>,
     }),
     texto<SancionRow>("instancia", "Instancia que decide", (f) => f.instancia_nombre),
     texto<SancionRow>("duracion", "Duración", (f) => (f.tiene_duracion ? "Sí" : "No")),

@@ -7,6 +7,7 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 import type { OpcionGrupoObservacion } from "@/features/gestion-estudiantil/observaciones/api/types"
@@ -38,7 +39,13 @@ export function CampoGrupos({ id, grupos, value, error, onChange }: Props) {
                 ? sinGrupos
                   ? "No dirige ningún grupo"
                   : "Seleccionar"
-                : elegidos.map((g) => etiquetas.get(g) ?? `Grupo ${g}`).join(", ")
+                : (
+                    <ChipsSeleccion
+                      elementos={elegidos.map((g) => ({ id: g, label: etiquetas.get(g) ?? `Grupo ${g}` }))}
+                      deshabilitado={sinGrupos}
+                      onQuitar={(g) => onChange(elegidos.filter((x) => x !== g))}
+                    />
+                  )
             }
           </ComboboxFieldValue>
         </ComboboxFieldTrigger>

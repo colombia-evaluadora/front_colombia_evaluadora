@@ -44,7 +44,7 @@ function FormServicioSocial({
     <>
       <EncabezadoConfiguracion
         tabs={tabs}
-        action={<AccionesFormulario guardando={f.pendiente} deshabilitado={deshabilitado} onCancelar={f.cancelar} onGuardar={f.guardar} />}
+        action={<AccionesFormulario guardando={f.pendiente} cambios={f.cambios} deshabilitado={deshabilitado} onCancelar={f.cancelar} onGuardar={f.guardar} />}
       />
       <TableScreenBody>
         <div className="flex flex-col gap-4 pt-2 pb-6">
@@ -61,7 +61,11 @@ function FormServicioSocial({
               onChange={f.cambiarHoras}
             />
             <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={Boolean(f.errores.grados) || undefined}>
-              <FieldLabel htmlFor="servicio-grados">Grados del servicio social*</FieldLabel>
+              <FieldLabel htmlFor="servicio-grados">
+                <span>
+                  Grados del servicio social<span data-required-mark="">*</span>
+                </span>
+              </FieldLabel>
               <SubjectsMultiSelect
                 id="servicio-grados"
                 options={gradoOpciones}

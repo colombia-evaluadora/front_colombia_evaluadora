@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useStore } from "@tanstack/react-form"
 
 import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner, type Notice } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
@@ -415,7 +416,13 @@ function SupervisorForm({
                                 {(pks: number[]) =>
                                   pks.length === 0
                                     ? "Buscar por nombre o código DANE"
-                                    : `${pks.length} · ${seleccion.map((e) => e.nombre).join(", ")}`
+                                    : (
+                                        <ChipsSeleccion
+                                          elementos={seleccion.map((e) => ({ id: e.pk, label: e.nombre }))}
+                                          deshabilitado={soloLectura}
+                                          onQuitar={(pk) => field.handleChange(pks.filter((x) => x !== pk))}
+                                        />
+                                      )
                                 }
                               </ComboboxFieldValue>
                             </ComboboxFieldTrigger>

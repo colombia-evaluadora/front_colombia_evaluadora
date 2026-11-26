@@ -7,6 +7,7 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 
 import type {
@@ -48,7 +49,13 @@ export function CampoEstudiantes({ id, grupos, estudiantes, cargando, value, err
             {(matriculas: number[]) =>
               matriculas.length === 0
                 ? vacio
-                : `${matriculas.length} · ${matriculas.map((m) => nombres.get(m) ?? `Matrícula ${m}`).join(", ")}`
+                : (
+                    <ChipsSeleccion
+                      elementos={matriculas.map((m) => ({ id: m, label: nombres.get(m) ?? `Matrícula ${m}` }))}
+                      deshabilitado={sinGrupos}
+                      onQuitar={(m) => onChange(matriculas.filter((x) => x !== m))}
+                    />
+                  )
             }
           </ComboboxFieldValue>
         </ComboboxFieldTrigger>

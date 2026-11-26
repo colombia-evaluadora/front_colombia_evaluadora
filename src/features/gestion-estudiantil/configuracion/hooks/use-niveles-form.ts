@@ -5,6 +5,7 @@ import { useNotify } from "@/components/notice/notice-context"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useGuardarNiveles } from "@/features/gestion-estudiantil/configuracion/api/mutations/niveles"
 import type { NivelesConvivencia } from "@/features/gestion-estudiantil/configuracion/api/types"
+import { hayCambios } from "@/features/gestion-estudiantil/configuracion/utils/cambios"
 import { aTexto, limpiarUmbral, validarNiveles, type ValoresNiveles } from "@/features/gestion-estudiantil/configuracion/utils/niveles"
 
 /** Estado, validación y envío de los umbrales del nivel de convivencia (§3.6). */
@@ -40,5 +41,14 @@ export function useNivelesForm({ niveles, establecimiento }: { niveles: NivelesC
     )
   }, [errores, guardar, establecimiento, valores, notify])
 
-  return { valores, errores: intento ? errores : {}, error, pendiente: guardar.isPending, cambiar, cancelar, guardar: enviar }
+  return {
+    valores,
+    errores: intento ? errores : {},
+    error,
+    pendiente: guardar.isPending,
+    cambios: hayCambios(valores, inicial),
+    cambiar,
+    cancelar,
+    guardar: enviar,
+  }
 }

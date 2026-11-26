@@ -23,7 +23,7 @@ function FormPlazo({ plazo, establecimiento, puedeEditar, tabs }: { plazo: numbe
     <>
       <EncabezadoConfiguracion
         tabs={tabs}
-        action={<AccionesFormulario guardando={f.pendiente} deshabilitado={!puedeEditar} onCancelar={f.cancelar} onGuardar={f.guardar} />}
+        action={<AccionesFormulario guardando={f.pendiente} cambios={f.cambios} deshabilitado={!puedeEditar} onCancelar={f.cancelar} onGuardar={f.guardar} />}
       />
       <TableScreenBody>
         <div className="flex flex-col gap-2 pb-6">
@@ -37,6 +37,8 @@ function FormPlazo({ plazo, establecimiento, puedeEditar, tabs }: { plazo: numbe
               value={f.valor}
               error={f.errorCampo}
               ayuda="Número entero positivo. Predeterminado: 5. Rige solo para remisiones nuevas."
+              // ⓘ del prototipo (G.10.PLA.1): qué hace el plazo (§10.4).
+              ayudaTitulo="Propone la fecha esperada de respuesta de cada remisión nueva: la fecha de remisión más este plazo, de lunes a viernes. No recalcula las remisiones existentes."
               onChange={f.cambiar}
             />
           </div>

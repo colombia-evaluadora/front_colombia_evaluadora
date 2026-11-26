@@ -1,7 +1,12 @@
-/** Color del tipo por su código (POSITIVO, NEGATIVO, NEUTRO), no por la etiqueta de la lista. */
-export function colorDeTipo(tipoCodigo: string | null | undefined): "success" | "destructive" | "info" {
-  if (tipoCodigo === "POSITIVO") return "success"
-  if (tipoCodigo === "NEGATIVO") return "destructive"
+/**
+ * Color del tipo: Positivo verde, Negativo rojo, el resto azul. Acepta el código (POSITIVO, NEGATIVO, NEUTRO) o
+ * el nombre de la lista («Negativo»): el catálogo de anotaciones solo trae `tipo_nombre` y con la comparación
+ * exacta todo salía azul.
+ */
+export function colorDeTipo(tipo: string | null | undefined): "success" | "destructive" | "info" {
+  const t = tipo?.trim().toUpperCase()
+  if (t === "POSITIVO") return "success"
+  if (t === "NEGATIVO") return "destructive"
   return "info"
 }
 

@@ -6,6 +6,7 @@ import { toDigitsOnly } from "@/lib/text-input"
 import { enfocarPrimerError } from "@/features/gestion-estudiantil/commons/utils/validaciones"
 import { useGuardarPlazos } from "@/features/gestion-estudiantil/configuracion/api/mutations/proceso"
 import type { PlazosDisciplinario } from "@/features/gestion-estudiantil/configuracion/api/types"
+import { hayCambios } from "@/features/gestion-estudiantil/configuracion/utils/cambios"
 import { errorBackendACampo, validarPlazos, type Errores, type ValoresPlazos } from "@/features/gestion-estudiantil/configuracion/utils/proceso"
 
 /** Estado, validación y envío de los plazos del proceso disciplinario. */
@@ -23,6 +24,13 @@ export function usePlazosForm({ plazos, establecimiento }: { plazos: PlazosDisci
     setValores((p) => ({ ...p, [campo]: toDigitsOnly(valor, 2) }))
     setErroresBackend({})
   }, [])
+
+  const cancelar = useCallback(() => {
+    setValores(inicial)
+    setIntento(false)
+    setError(null)
+    setErroresBackend({})
+  }, [inicial])
 
   const enviar = useCallback(() => {
     setIntento(true)
@@ -46,5 +54,5 @@ export function usePlazosForm({ plazos, establecimiento }: { plazos: PlazosDisci
     )
   }, [valores, guardar, establecimiento, notify])
 
-  return { valores, errores, error, pendiente: guardar.isPending, cambiar, guardar: enviar }
+  return { valores, errores, error, pendiente: guardar.isPending, cambios: hayCambios(valores, inicial), cambiar, cancelar, guardar: enviar }
 }

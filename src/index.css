@@ -521,8 +521,8 @@
    `scrollbar-width`/`scrollbar-color` es el estándar (Firefox, Chrome nuevos);
    las reglas `::-webkit-scrollbar` cubren el resto de navegadores WebKit.
 
-   Es opt-in a propósito: hoy solo la usa el contenedor de `Table`. El resto de
-   las barras del sitio siguen siendo las nativas. */
+   Es opt-in: la usa el contenedor de `Table` (6px, sin flechas). El resto de las barras
+   del sitio usa la delgada de `@layer base` (más abajo). */
 @utility scrollbar-slim {
   scrollbar-width: thin;
   scrollbar-color: var(--muted) transparent;
@@ -550,6 +550,14 @@
 /* Base styles */
 
 @layer base {
+  /* Barras de desplazamiento delgadas en todo el sitio (pedido del usuario, nov-2026): la nativa de Windows
+     es una franja gris de ~16px. `scrollbar-width: thin` la deja en la versión fina del sistema, con el
+     pulgar gris y la pista transparente. Va en `base`, así `scrollbar-slim` (tablas, 6px) y `scrollbar-none`
+     siguen ganando donde se usan. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent) transparent;
+  }
   * {
     @apply border-border outline-ring/50;
   }

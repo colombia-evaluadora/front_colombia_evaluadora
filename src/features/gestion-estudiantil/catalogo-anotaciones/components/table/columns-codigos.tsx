@@ -33,7 +33,9 @@ export function buildColumnsCodigos({ puedeEditar, puedeEliminar, onModificar, o
       enableSorting: false,
       meta: { label: "Descripción" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Descripción" />,
-      cell: ({ row }) => <span className="whitespace-normal">{row.original.descripcion}</span>,
+      // Se parte solo si la tabla no cabe (DataTable ajusta el ancho al contenido); `overflow-wrap:anywhere` parte también
+      // una palabra sin espacios, que si no se montaba sobre la columna Tipo.
+      cell: ({ row }) => <span className="whitespace-normal [overflow-wrap:anywhere]">{row.original.descripcion}</span>,
     },
     {
       id: "tipo",

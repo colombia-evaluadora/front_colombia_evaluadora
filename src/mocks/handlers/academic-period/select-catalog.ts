@@ -24,6 +24,13 @@ import {
 import { TIPOS_RECONOCIMIENTO_MOCK } from "@/mocks/db/reconocimientos"
 import { LISTAS_VALOR_COMUNICADO } from "@/mocks/db/comunicaciones-listas-valor"
 import { DESTINATARIOS_OBSERVACION_MOCK } from "@/mocks/handlers/observaciones-sugerencias"
+import {
+  AVISO_SM_MOCK,
+  CAUSA_INASISTENCIA_MOCK,
+  INSTANCIA_DISCIPLINARIA_MOCK,
+  TIPO_COMPORTAMIENTO_MOCK,
+  TIPO_SITUACION_MOCK,
+} from "@/mocks/db/configuracion-ge"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -53,6 +60,12 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
   DESTINATARIOS_OBSERVACION: () => DESTINATARIOS_OBSERVACION_MOCK,
   ESTADO_COMPROMISO: () => deMock(ESTADOS_COMPROMISO_MOCK),
   TIPO_RECONOCIMIENTO: () => deMock(TIPOS_RECONOCIMIENTO_MOCK),
+  // Configuración de Gestión estudiantil (mocks/db/configuracion-ge): pk estables 84xx.
+  TIPO_COMPORTAMIENTO: () => TIPO_COMPORTAMIENTO_MOCK,
+  TIPO_SITUACION: () => TIPO_SITUACION_MOCK,
+  INSTANCIA_DISCIPLINARIA: () => INSTANCIA_DISCIPLINARIA_MOCK,
+  AVISO_ACUDIENTE_SM_SEGUIMIENTO: () => AVISO_SM_MOCK,
+  CAUSA_INASISTENCIA: () => CAUSA_INASISTENCIA_MOCK,
   JORNADA: () =>
     jornadasDb.map((jornada) => ({
       pk_lista_valor: jornada.id,

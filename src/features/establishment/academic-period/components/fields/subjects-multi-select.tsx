@@ -1,8 +1,6 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from "react"
+import { ChipsSeleccion } from "@/components/chips-seleccion"
+import { CaretDownIcon } from "@/components/ui/icons"
 
-import { CaretDownIcon, XIcon } from "@/components/ui/icons"
-
-import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -26,37 +24,10 @@ interface SubjectsMultiSelectProps<T extends string | number> {
   placeholder?: string
   emptyMessage?: string
   disabled?: boolean
+  /** Opciones que no se pueden quitar: su chip va sin «×» y su casilla queda deshabilitada en la lista. */
+  fijos?: T[]
 }
 
-// Cuenta cuántos chips entran en una sola línea del contenedor, achicando de a
-// uno hasta que deje de desbordar. Arranca mostrando todos (sin badge "+N") y
-// cada línea de layout siguiente mide de nuevo: si el badge "+N" que aparece
-// al recortar no alcanza a entrar, se sigue recortando hasta que sí — así
-// nunca se ve un "+1" solo cayendo a una segunda línea.
-function useVisibleChipCount(containerRef: RefObject<HTMLDivElement | null>, total: number): number {
-  const [count, setCount] = useState(total)
-
-  useLayoutEffect(() => {
-    setCount(total)
-  }, [total])
-
-  useLayoutEffect(() => {
-    const el = containerRef.current
-    if (el && el.scrollWidth > el.clientWidth && count > 0) {
-      setCount((current) => current - 1)
-    }
-  })
-
-  useLayoutEffect(() => {
-    const el = containerRef.current
-    if (!el || typeof ResizeObserver === "undefined") return
-    const observer = new ResizeObserver(() => setCount(total))
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [containerRef, total])
-
-  return count
-}
 
 // Select de varias opciones: chips en el trigger + un dropdown con checkboxes
 // al estilo de "Columnas visibles" (DataTableViewOptions). Selecciona por
@@ -70,18 +41,14 @@ export function SubjectsMultiSelect<T extends string | number>({
   placeholder = "Seleccionar",
   emptyMessage = "No hay áreas/asignaturas en este periodo.",
   disabled = false,
+  fijos = [],
 }: SubjectsMultiSelectProps<T>) {
   const resolvedVariant = useInputVariant()
   const labelById = new Map(options.map((o) => [o.id, o.label]))
-  const chipsRef = useRef<HTMLDivElement>(null)
-  const visibleCount = useVisibleChipCount(chipsRef, value.length)
 
   function toggle(optionId: T) {
     onChange(value.includes(optionId) ? value.filter((v) => v !== optionId) : [...value, optionId])
   }
-
-  const visible = value.slice(0, visibleCount)
-  const extra = value.length - visible.length
 
   return (
     <DropdownMenu>
@@ -104,45 +71,21 @@ export function SubjectsMultiSelect<T extends string | number>({
             />
           }
         />
-        <div
-          ref={chipsRef}
-          className="pointer-events-none relative z-10 flex flex-1 flex-nowrap items-center gap-1 overflow-hidden"
-        >
-          {value.length === 0 ? (
-            <span className="text-muted-foreground">{placeholder}</span>
-          ) : (
-            <>
-              {visible.map((optionId) => (
-                <Badge
-                  key={optionId}
-                  variant="soft"
-                  color="muted"
-                  className="text-xs"
-                  title={labelById.get(optionId)}
-                >
-                  {labelById.get(optionId) ?? optionId}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggle(optionId)
-                    }}
-                    aria-label={`Quitar ${labelById.get(optionId) ?? optionId}`}
-                    data-icon="inline-end"
-                    className="pointer-events-auto inline-flex cursor-pointer items-center hover:text-foreground"
-                  >
-                    <XIcon className="size-3" />
-                  </button>
-                </Badge>
-              ))}
-              {extra > 0 && (
-                <Badge variant="soft" color="muted" className="text-xs normal-case tracking-normal">
-                  +{extra}
-                </Badge>
-              )}
-            </>
-          )}
-        </div>
+        {/* Los chips son el componente común (`ChipsSeleccion`): el mismo aspecto en todos los selectores múltiples. */}
+        {value.length === 0 ? (
+          <span className="pointer-events-none relative z-10 flex-1 text-muted-foreground">{placeholder}</span>
+        ) : (
+          <ChipsSeleccion
+            className="relative z-10"
+            elementos={value.map((optionId) => ({
+              id: optionId,
+              label: labelById.get(optionId) ?? String(optionId),
+              fijo: fijos.includes(optionId),
+            }))}
+            deshabilitado={disabled}
+            onQuitar={toggle}
+          />
+        )}
         <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-5 shrink-0" />
       </div>
       <DropdownMenuContent align="start" className="min-w-64">
@@ -156,8 +99,8 @@ export function SubjectsMultiSelect<T extends string | number>({
                   <DropdownMenuCheckboxItem
                     checked={value.includes(option.id)}
                     onCheckedChange={() => toggle(option.id)}
-                    disabled={disabled}
-                    className="capitalize"
+                    disabled={disabled || fijos.includes(option.id)}
+                    // Sin `capitalize`: el texto va como viene (mayúscula solo inicial, CLAUDE.md §13).
                   />
                 }
               >

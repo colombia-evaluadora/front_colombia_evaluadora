@@ -76,7 +76,7 @@ function FormParametros({ parametros, causas, establecimiento, puedeEditar, tabs
     <>
       <EncabezadoConfiguracion
         tabs={tabs}
-        action={<AccionesFormulario guardando={f.pendiente} deshabilitado={deshabilitado} onCancelar={f.cancelar} onGuardar={f.guardar} />}
+        action={<AccionesFormulario guardando={f.pendiente} cambios={f.cambios} deshabilitado={deshabilitado} onCancelar={f.cancelar} onGuardar={f.guardar} />}
       />
       <TableScreenBody>
         <div className="flex flex-col gap-4 pt-2 pb-6">
@@ -130,6 +130,8 @@ function FormParametros({ parametros, causas, establecimiento, puedeEditar, tabs
                 id="parametros-causas"
                 options={causaOpciones}
                 value={f.reservadas}
+                // Las cuatro predeterminadas no se quitan: sin «×» y con la casilla deshabilitada.
+                fijos={causas.fijas}
                 disabled={deshabilitado}
                 placeholder="Seleccione"
                 emptyMessage="No hay causas de inasistencia."

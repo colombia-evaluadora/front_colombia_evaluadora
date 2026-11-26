@@ -9,11 +9,13 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/components/ui/combobox"
+import { badgeVariants } from "@/components/ui/badge"
 import { CaretDownIcon, CheckIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-const CHIP =
-  "inline-flex h-7 max-w-full min-w-0 items-center rounded-full border bg-muted/40 px-3 text-sm font-normal text-muted-foreground"
+// Mismo chip que el selector múltiple unificado (`ChipsSeleccion`, CLAUDE.md §13): la etiqueta gris
+// (`Badge` soft muted) en 12px, con su «×» chica. Antes era una píldora de 28px con borde y letra de 14px.
+const CHIP = cn(badgeVariants({ variant: "soft", color: "muted" }), "max-w-full min-w-0 text-xs")
 
 // Selección múltiple con chips. Muestra los chips que caben en una línea (o
 // `visibles` como tope) y el resto como "+N" para que el campo no crezca. El popup es claro, como los menús del chat
@@ -130,7 +132,7 @@ export function SelectorChips<T>({
         ref={anchor}
         aria-invalid={invalido || undefined}
         className={cn(
-          "relative min-h-10 w-full min-w-0 gap-2 rounded-sm border border-input px-3 py-2 focus-within:border-primary has-data-[slot=combobox-chip]:px-3",
+          "relative min-h-10 w-full min-w-0 gap-1 rounded-sm border border-input px-3 py-2 focus-within:border-primary has-data-[slot=combobox-chip]:px-3",
           invalido && "border-red",
         )}
       >
@@ -138,40 +140,45 @@ export function SelectorChips<T>({
         <div
           ref={medidas}
           aria-hidden
-          className="pointer-events-none invisible absolute top-0 left-0 flex w-max gap-2 whitespace-nowrap"
+          className="pointer-events-none invisible absolute top-0 left-0 flex w-max gap-1 whitespace-nowrap"
         >
           {value.map((item) => (
-            // Mismo ancho que `ComboboxChip`: texto + botón X (`icon-xs`, `-ml-1`, `pr-0`).
-            <span key={getId(item)} className={cn(CHIP, "gap-1 pr-0")}>
+            // Mismo ancho que el chip de abajo: texto + «×» de 12px.
+            <span key={getId(item)} className={CHIP}>
               {getLabel(item)}
-              <span className="-ml-1 size-7 shrink-0" />
+              <span className="size-3 shrink-0" />
             </span>
           ))}
-          <span className={cn(CHIP, "gap-1 pr-1")}>
-            +{value.length}
-            <span className="size-5" />
+          <span className={CHIP}>
+            <span>+{value.length}</span>
           </span>
         </div>
         <ComboboxValue>
           {() => (
             <>
               {mostrados.map((item) => (
-                <ComboboxChip key={getId(item)} className={CHIP} aria-label={getLabel(item)} title={getLabel(item)}>
+                <ComboboxChip
+                  key={getId(item)}
+                  showRemove={false}
+                  className={CHIP}
+                  aria-label={getLabel(item)}
+                  title={getLabel(item)}
+                >
                   {/* Un nombre largo se recorta en vez de salirse de la columna. */}
                   <span className="min-w-0 truncate">{getLabel(item)}</span>
-                </ComboboxChip>
-              ))}
-              {resto.length > 0 && (
-                <span className={cn(CHIP, "gap-1 pr-1")} title={resto.map(getLabel).join(", ")}>
-                  +{resto.length}
-                  <button
-                    type="button"
-                    aria-label={`Quitar ${resto.length} más`}
-                    onClick={() => onChange(mostrados)}
-                    className="grid size-5 place-items-center rounded-full text-current focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  <ComboboxPrimitive.ChipRemove
+                    aria-label={`Quitar ${getLabel(item)}`}
+                    className="inline-flex shrink-0 cursor-pointer items-center hover:text-foreground"
                   >
                     <XIcon className="size-3" />
-                  </button>
+                  </ComboboxPrimitive.ChipRemove>
+                </ComboboxChip>
+              ))}
+              {/* «+N» como en el selector unificado: solo cuenta los que no caben (sus nombres, en el tooltip). */}
+              {resto.length > 0 && (
+                <span className={CHIP} title={resto.map(getLabel).join(", ")}>
+                  {/* En un `<span>`: el Badge soft pinta un punto de estado cuando solo lleva texto. */}
+                  <span>+{resto.length}</span>
                 </span>
               )}
             </>
