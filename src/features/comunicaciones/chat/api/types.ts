@@ -542,6 +542,11 @@ export interface Comunicado {
   // Nombre del establecimiento del comunicado (bandeja de estudiantes y acudientes, 3.1). Opcional.
   establecimiento?: string | null
   esCreador: boolean
+  // Acciones según estado, autoría, rol y alcance (comms-service PermisosComunicado, 3.1). Opcionales:
+  // un backend anterior no las trae y se cae a esCreador/gestiona.
+  puedeModificar?: boolean
+  puedeCancelar?: boolean
+  puedeAnular?: boolean
   // Gestiona la actividad (comms-service `BaseActividades#gestiona`): su creador mientras siga en el
   // canal, los ADMIN del canal y los directivos miembros. Opcional: el mock no lo manda.
   gestiona?: boolean
@@ -590,6 +595,9 @@ export interface DestinosComunicado {
   sedes?: OpcionDestino[]
   jornadas?: OpcionDestino[]
   poblacion?: "MATRICULADOS" | "ASPIRANTES"
+  // Conjuntos del formulario por documento (M.1.AGR): cada uno trae su resumen legible
+  // ("IE Central · Principal · Mañana · Estudiantes"), armado al publicar.
+  conjuntos?: { resumen?: string | null }[]
 }
 
 export interface AdjuntoComunicado {

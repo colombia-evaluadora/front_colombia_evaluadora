@@ -128,6 +128,8 @@ export function resumenDestinatarios(audiencia: Audiencia[], d: DestinosComunica
       ...(d.jornadas ?? []).map((o) => `jornada ${o.etiqueta}`),
     ].filter(Boolean)
     if (ambito.length > 0) partes.push(`solo en ${ambito.join(", ")}`)
+    // Formulario por documento (M.1.AGR): los conjuntos traen su propio resumen.
+    partes.push(...(d.conjuntos ?? []).map((cj) => cj.resumen?.trim()).filter((r): r is string => !!r))
   }
   return partes.join(", ")
 }
