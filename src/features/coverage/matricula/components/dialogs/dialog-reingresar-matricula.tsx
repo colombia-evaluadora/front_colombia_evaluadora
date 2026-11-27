@@ -29,6 +29,7 @@ import {
 import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 
 const OBSERVACION_MAX = 500
+const OBSERVACION_MIN = 10
 const agrupar = (ps: PreviaReingreso[]) => {
   const m = new Map<string, PreviaReingreso[]>()
   for (const p of ps) m.set(p.grupoActual, [...(m.get(p.grupoActual) ?? []), p])
@@ -113,9 +114,11 @@ export function DialogReingresar({
     )
   }
 
+  const observacionValida = !observacion.trim() || observacion.trim().length >= OBSERVACION_MIN
+
   function confirmar() {
     setIntentado(true)
-    if (!fechaValida || faltanGrupos.length || aplicables.length === 0 || loteBloqueado) return
+    if (!fechaValida || !observacionValida || faltanGrupos.length || aplicables.length === 0 || loteBloqueado) return
     reingresar.mutate(
       {
         fecha,
@@ -247,7 +250,7 @@ export function DialogReingresar({
             ) : null}
 
 
-            <Field variant="outlined" className="gap-1.5">
+            <Field variant="outlined" className="gap-1.5" data-invalid={(intentado && !observacionValida) || undefined}>
               <FieldLabel htmlFor="reingreso-observacion">Observación</FieldLabel>
               <div className="relative">
                 <Textarea
@@ -261,6 +264,9 @@ export function DialogReingresar({
                 />
                 <CharacterCounter value={observacion} max={OBSERVACION_MAX} className="absolute top-3 right-3" />
               </div>
+              <FieldDescription className={cn(intentado && !observacionValida && "text-red")}>
+                Opcional; de {OBSERVACION_MIN} a {OBSERVACION_MAX} caracteres.
+              </FieldDescription>
             </Field>
 
             {!uno ? (

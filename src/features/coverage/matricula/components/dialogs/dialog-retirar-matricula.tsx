@@ -31,6 +31,7 @@ import {
 import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 
 const OBSERVACION_MAX = 500
+const OBSERVACION_MIN = 10
 const MOTIVO_TRASLADO = "Traslado a otro establecimiento"
 const NOVEDAD_INICIAL = "Solicitud del acudiente o del estudiante mayor de edad"
 const NOVEDAD_REQUERIMIENTO = "Requerimiento de otra entidad territorial o establecimiento"
@@ -92,10 +93,12 @@ export function DialogRetirar({
   const destino = institucionDestino.trim()
   const destinoValido = !esTraslado || !destino || (destino.length >= DESTINO_MIN && destino.length <= DESTINO_MAX)
 
+  const observacionValida = !observacion.trim() || observacion.trim().length >= OBSERVACION_MIN
+
   function confirmar() {
     setIntentado(true)
     if (porSolicitud) {
-      if (!fechaValida) return
+      if (!fechaValida || !observacionValida) return
       responder.mutate(
         { matriculaId: ids[0], accion: "retirar", fecha, observacion: observacion.trim() },
         {
@@ -105,7 +108,7 @@ export function DialogRetirar({
       )
       return
     }
-    if (!fechaValida || !motivoRetiro || !motivoNovedad || !destinoValido) return
+    if (!fechaValida || !motivoRetiro || !motivoNovedad || !destinoValido || !observacionValida) return
     retirar.mutate(
       {
         matriculaIds: ids,
@@ -221,7 +224,7 @@ export function DialogRetirar({
           descripcion={porSolicitud ? undefined : "Quién originó el retiro. Sale en el acta de retiro para el SIMPADE."}
         />
 
-        <Field variant="outlined" className="gap-1.5">
+        <Field variant="outlined" className="gap-1.5" data-invalid={(intentado && !observacionValida) || undefined}>
           <FieldLabel htmlFor="retiro-observacion">Observación</FieldLabel>
           <div className="relative">
             <Textarea
@@ -235,6 +238,9 @@ export function DialogRetirar({
             />
             <CharacterCounter value={observacion} max={OBSERVACION_MAX} className="absolute top-3 right-3" />
           </div>
+          <FieldDescription className={cn(intentado && !observacionValida && "text-red")}>
+            Opcional; de {OBSERVACION_MIN} a {OBSERVACION_MAX} caracteres.
+          </FieldDescription>
         </Field>
 
         <Aviso
