@@ -363,7 +363,8 @@ const FUERA_DEL_MENU = ["Generar paquete de soporte"]
 function ActionsCell({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
   // Retirar y reingresar: Administrador, Gestor o Supervisor de sede (Sección 4.1).
-  const { operar } = useMatriculaCapacidades()
+  // Editar: Administrador o Gestor (V177, mismo gate que reactivar).
+  const { operar, reactivar } = useMatriculaCapacidades()
   const navigate = useNavigate()
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   const retiroTraslado = matricula.status === "Retirado" && Boolean(matricula.retiroTraslado)
@@ -399,7 +400,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
     <AccionesFila limite={0} ocultar={FUERA_DEL_MENU}>
       <SolicitudRetiroAccion matricula={matricula} />
       {conSolicitud ? null : verDetalle}
-      {puedeEditar && matricula.status === "Cursando" && (
+      {puedeEditar && reactivar && matricula.status === "Cursando" && (
         <OnlineOnlyAction>
           <BotonAccion
             modo="icon"
@@ -442,11 +443,13 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
  */
 function RetiroTrasladoAcciones({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  // SIMPADE y acta: Administrador o Gestor con la sede y jornada (V178, V281).
+  const { reactivar } = useMatriculaCapacidades()
   const { notify } = useNotify()
   const [abierto, setAbierto] = useState(false)
   const [generando, setGenerando] = useState(false)
   // El acta es opcional y solo para el Administrador o el Gestor administrativo (Sección 4.1).
-  if (!puedeEditar || matricula.status !== "Retirado" || !matricula.retiroTraslado) return null
+  if (!puedeEditar || !reactivar || matricula.status !== "Retirado" || !matricula.retiroTraslado) return null
   const nombre = `${matricula.firstName} ${matricula.lastName}`
 
   async function generarActa() {

@@ -103,7 +103,13 @@ export function DialogReactivarMatricula({ matricula, onOpenChange, onDone }: Pr
     reactivar.mutate(
       { matriculaId: matricula.id, motivo, soporte, decision: pideDecision ? decision : null },
       {
-        onSuccess: () => onDone(`La matrícula de ${nombre} volvió a Cursando.`),
+        onSuccess: ({ complementariaSinCupo }) =>
+          onDone(
+            `La matrícula de ${nombre} volvió a Cursando.` +
+              (complementariaSinCupo
+                ? ` La complementaria del grupo ${complementariaSinCupo} no volvió por falta de cupo.`
+                : ""),
+          ),
         onError: (err) => setError({ id: Date.now(), message: getErrorMessage(err) }),
       },
     )

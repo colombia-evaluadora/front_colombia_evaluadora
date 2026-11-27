@@ -23,11 +23,11 @@ interface MatriculaToolbarProps {
 
 export function MatriculaToolbar({ matricula, showModificar = true, abrirRetiro = false }: MatriculaToolbarProps) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
-  const { operar } = useMatriculaCapacidades()
+  const { operar, reactivar } = useMatriculaCapacidades()
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {puedeEditar && showModificar && matricula.status === "Cursando" && (
+      {puedeEditar && reactivar && showModificar && matricula.status === "Cursando" && (
         <Button
           render={<Link to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)} search={(prev) => prev} />}
           variant="fill"
