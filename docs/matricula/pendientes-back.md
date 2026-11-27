@@ -384,7 +384,7 @@ Cuando se haga el front de cada una con mock, se anota aquí su ruta y su contra
 
 ### 30. Actualización de datos (C.6.CFG.1, C.6.SOL.1–3; Sección 2.19, Reglas 43 y 69)
 - **Hecho en el SSO (sin desplegar), rama `feat/CU-1dfvn9h8d9a-actualizacion-datos`:** V734–V739, con el contrato de abajo tal cual. Además:
-  - La configuración es la del único establecimiento que alcanza el usuario; con varios o ninguno responde 22023.
+  - La configuración es la del establecimiento elegido (`GET /establecimientos` y `ESTABLECIMIENTO` / `FK_TESTABLECIMIENTO`); sin elegir, la del único que alcanza (22023 con varios o ninguno).
   - `POST /portal/actualizacion-datos/solicitudes` (multipart, roles estudiante y acudiente) `{ MATRICULA, CAMPO, VALOR, MOTIVO, SOPORTE }`, para Mi cuenta. `CAMPO`: TIPO_DOCUMENTO, IDENTIFICACION, PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, FECHA_NACIMIENTO (YYYY-MM-DD), MUNICIPIO_NACIMIENTO, MUNICIPIO_DOCUMENTO o GENERO (los de catálogo, con el pk). Solo datos del estudiante; los del acudiente quedan pendientes.
   - Aviso `SOLICITUD_CORRECCION_DECIDIDA` al solicitante al aprobar o rechazar.
 - Pantalla: vista nueva `/app/cobertura/actualizacion-datos`, pestañas Configuración y Solicitudes de corrección. Menú TMENU `ACTUALIZACION_DATOS` bajo Cobertura; acceso y Guardar para el Administrador del establecimiento y el Gestor administrativo del establecimiento (con solo acceso, solo lectura).

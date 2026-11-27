@@ -7,8 +7,7 @@ import { camelizar } from "@/features/coverage/matricula-complementaria/api/conv
 import type { ActualizacionDatosSearch } from "@/features/coverage/actualizacion-datos/api/schema"
 import type { ConfiguracionActualizacion, SolicitudCorreccion } from "@/features/coverage/actualizacion-datos/api/types"
 
-// Actualización de datos (Sección 2.19; Regla 69). Pendiente en el back
-// (docs/matricula/pendientes-back.md, tarea 30).
+// Actualización de datos (Sección 2.19; Regla 69). Back: V734–V739 del SSO.
 
 export const MENU_ACTUALIZACION = "ACTUALIZACION_DATOS"
 const BASE = "/cobertura-academica/actualizacion-datos"

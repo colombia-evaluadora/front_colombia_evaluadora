@@ -115,8 +115,8 @@ const texto = (id: keyof SolicitudCorreccion, title: string, completo?: (s: Soli
 
 function columnas(onAbrir: (s: SolicitudCorreccion, d: Dialogo) => void): ColumnDef<SolicitudCorreccion>[] {
   return [
-    texto("solicitante", "Solic.", (s) => s.solicitante),
-    texto("estudiante", "Estud.", (s) => s.estudiante),
+    texto("solicitante", "Solicitante", (s) => s.solicitante),
+    texto("estudiante", "Estudiante", (s) => s.estudiante),
     { ...texto("dato", "Dato"), enableHiding: false },
     { ...texto("valorActual", "Valor actual"), enableHiding: false },
     { ...texto("valorSolicitado", "Valor solicitado"), enableHiding: false },
