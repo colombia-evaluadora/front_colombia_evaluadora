@@ -93,6 +93,30 @@ function CeldaRecuperada({ asignatura }: { asignatura: AsignaturaInforme }) {
   )
 }
 
+/** Regla 70 (fila Final): la final original junto a la de nivelación del área pendiente
+ *  («5,2 → 7,0 Nivelada»), o «Pendiente» mientras no se nivele. No cambia el promedio. */
+function CeldaNivelacion({
+  asignatura,
+  n,
+}: {
+  asignatura: AsignaturaInforme
+  n: NonNullable<AsignaturaInforme["nivelacion"]>
+}) {
+  const texto = (nota: number | null, valoracion: string | null) =>
+    asignatura.esNumerico ? formatNota(nota) : (valoracion ?? "—")
+  const original = texto(asignatura.nota, asignatura.valoracion)
+  return (
+    <span className="inline-flex flex-col items-center leading-tight">
+      <span className="tabular-nums">
+        {n.estado === "NIVELADA" ? `${original} → ${texto(n.nota, n.valoracion)}` : original}
+      </span>
+      <span className={n.estado === "NIVELADA" ? "text-[10px] text-green" : "text-[10px] text-yellow"}>
+        {n.estado === "NIVELADA" ? "Nivelada" : "Pendiente"}
+      </span>
+    </span>
+  )
+}
+
 function CeldaAsignatura({ asignatura }: { asignatura: AsignaturaInforme | undefined }) {
   if (!asignatura || asignatura.estado === "sin_nota") {
     return <span className="text-muted-foreground">—</span>
@@ -112,6 +136,10 @@ function CeldaAsignatura({ asignatura }: { asignatura: AsignaturaInforme | undef
         <TooltipContent>No se consolida: {asignatura.errorConfiguracion}</TooltipContent>
       </Tooltip>
     )
+  }
+
+  if (asignatura.estado === "final" && asignatura.nivelacion) {
+    return <CeldaNivelacion asignatura={asignatura} n={asignatura.nivelacion} />
   }
 
   if (asignatura.conRecuperacion && asignatura.estado !== "requerido") {

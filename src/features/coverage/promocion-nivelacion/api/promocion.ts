@@ -25,7 +25,8 @@ const BASE = "/cobertura-academica/promocion-nivelacion"
 const all = ["promocion-nivelacion"] as const
 export const promocionKeys = {
   all,
-  opciones: [...all, "opciones"] as const,
+  establecimientos: [...all, "establecimientos"] as const,
+  opciones: (ee: number | null) => [...all, "opciones", ee ?? "todos"] as const,
   reprobados: (p: unknown) => [...all, "reprobados", p] as const,
   areasDelAnio: (id: number) => [...all, "reprobados", id, "areas"] as const,
   previa: (ids: number[]) => [...all, "previa", ids] as const,
@@ -35,15 +36,31 @@ export const promocionKeys = {
 
 const nulo = (v: string | undefined) => (v ? Number(v) : null)
 
-export async function fetchOpcionesPromocion() {
-  return camelizar<OpcionesPromocion>(await evalCol.getRow(`${BASE}/opciones`))
+export async function fetchOpcionesPromocion(ee: number | null = null) {
+  return camelizar<OpcionesPromocion>(await evalCol.getRow(`${BASE}/opciones${ee != null ? `?ESTABLECIMIENTO=${ee}` : ""}`))
 }
 
-export function useOpcionesPromocionQuery() {
+/** Filtros del alcance; con establecimiento elegido, solo los suyos. */
+export function useOpcionesPromocionQuery(ee: number | null) {
   return useQuery({
-    queryKey: promocionKeys.opciones,
-    queryFn: fetchOpcionesPromocion,
+    queryKey: promocionKeys.opciones(ee),
+    queryFn: () => fetchOpcionesPromocion(ee),
     staleTime: 5 * 60_000,
+  })
+}
+
+export type EstablecimientoPromocion = { id: number; nombre: string }
+
+export async function fetchEstablecimientosPromocion() {
+  return evalCol.getRows<EstablecimientoPromocion>(`${BASE}/establecimientos`)
+}
+
+/** Establecimientos del alcance: el selector aparece solo con más de uno (roles territoriales). */
+export function useEstablecimientosPromocionQuery() {
+  return useQuery({
+    queryKey: promocionKeys.establecimientos,
+    queryFn: fetchEstablecimientosPromocion,
+    staleTime: 10 * 60_000,
   })
 }
 
@@ -51,6 +68,7 @@ type FiltrosPromocion = Omit<PromocionSearch, "tab" | "page" | "pageSize">
 
 /** Filtros de cada pestaña; los reusa el export (mismos que la tabla). */
 export const filtrosReprobados = (s: FiltrosPromocion) => ({
+  ESTABLECIMIENTO: nulo(s.ee),
   SEARCH: s.q || null,
   ANIO: s.anio ?? null,
   PERIODO: nulo(s.periodo),
@@ -61,10 +79,12 @@ export const filtrosReprobados = (s: FiltrosPromocion) => ({
 })
 
 export const filtrosPendientes = (s: FiltrosPromocion) => ({
+  ESTABLECIMIENTO: nulo(s.ee),
   SEARCH: s.q || null,
   ANIO: s.anio ?? null,
   SEDE: nulo(s.sede),
   JORNADA: nulo(s.jornada),
+  GRADO: nulo(s.grado),
   SEGUIMIENTO: s.seguimiento ?? null,
 })
 

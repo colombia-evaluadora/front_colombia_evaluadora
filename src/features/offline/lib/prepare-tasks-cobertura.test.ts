@@ -102,7 +102,7 @@ describe("coberturaTasks: keys de las pantallas con sus valores por defecto", ()
     expect(com.get(postulacionKeys.lista({ search: undefined, convocatoria: undefined, grado: undefined, ...PAG }))).toBeDefined()
 
     const reprobados = promocionKeys.reprobados({
-      SEARCH: null, ANIO: null, PERIODO: null, SEDE: null, JORNADA: null, GRADO: null, GRUPO: null, PAGE_INDEX: 0, PAGE_SIZE: 10,
+      ESTABLECIMIENTO: null, SEARCH: null, ANIO: null, PERIODO: null, SEDE: null, JORNADA: null, GRADO: null, GRUPO: null, PAGE_INDEX: 0, PAGE_SIZE: 10,
     })
     const pro = await sembradas("/app/cobertura/promocion-nivelacion", [[reprobados, pagina([{ matriculaId: 5 }])]])
     expect(pro.get(reprobados)?.optional).toBeFalsy()

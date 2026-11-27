@@ -103,6 +103,8 @@ export interface AsignaturaInforme {
   valoracion: string | null
   simbolo: string | null
   aprobada: boolean | null
+  /** Regla 70 (fila Final): área promovida con áreas pendientes. `nota` sigue siendo la final original. */
+  nivelacion?: { estado: "PENDIENTE" | "NIVELADA"; nota: number | null; valoracion: string | null; simbolo: string | null } | null
   /** Recuperación (Regla 68): `nota` es la resultante y estas tres la original. */
   conRecuperacion: boolean
   notaOriginal: number | null

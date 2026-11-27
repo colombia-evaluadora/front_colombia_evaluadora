@@ -24,6 +24,7 @@ const SEARCH_INPUT_ID = "matricula-search"
 const EMPTY_FILTERS: MatriculaFiltersFormInput = {
   search: "",
   statuses: [],
+  establecimiento: "",
   campus: "",
   shift: "",
   grade: "",
@@ -133,7 +134,7 @@ export function SearchMatricula({ filters, applyFilters, clearAllFilters, active
   }, [open, filters])
 
   // Cambiar un campo de la cascada limpia los que dependen de él.
-  const CASCADA = ["campus", "shift", "periodo", "grade", "group"] as const
+  const CASCADA = ["establecimiento", "campus", "shift", "periodo", "grade", "group"] as const
   function setCascada(key: (typeof CASCADA)[number], value: string) {
     const index = CASCADA.indexOf(key)
     setDraft((prev) => {
@@ -154,7 +155,13 @@ export function SearchMatricula({ filters, applyFilters, clearAllFilters, active
     setOpen(false)
   }
 
-  const campusItems = [{ value: "", label: "Todas" }, ...(catalogs?.campuses ?? []).map((c) => ({ value: c, label: c }))]
+  // Con un establecimiento elegido, solo sus sedes (el backend filtra la sede por nombre).
+  const establecimientos = catalogs?.establecimientos ?? []
+  const establecimientoItems = [{ value: "", label: "Todos" }, ...establecimientos.map((e) => ({ value: String(e.id), label: e.nombre }))]
+  const campuses = draft.establecimiento
+    ? [...new Set((catalogs?.sedes ?? []).filter((s) => String(s.establecimientoId) === draft.establecimiento).map((s) => s.nombre))]
+    : (catalogs?.campuses ?? [])
+  const campusItems = [{ value: "", label: "Todas" }, ...campuses.map((c) => ({ value: c, label: c }))]
   const shiftItems = [{ value: "", label: "Todas" }, ...(dependentCatalogs?.shifts ?? []).map((s) => ({ value: s, label: s }))]
   const periodoItems = [{ value: "", label: "Todos" }, ...periodos]
   const gradeItems = [
@@ -187,6 +194,15 @@ export function SearchMatricula({ filters, applyFilters, clearAllFilters, active
         size="lg"
       >
         <div className="grid grid-cols-1 gap-3 px-4 sm:grid-cols-2">
+          {establecimientos.length > 1 ? (
+            <FilterSelect
+              id="matricula-establecimiento"
+              label="Establecimiento"
+              items={establecimientoItems}
+              value={draft.establecimiento}
+              onChange={(v) => setCascada("establecimiento", v)}
+            />
+          ) : null}
           <FilterSelect id="matricula-campus" label="Sede" items={campusItems} value={draft.campus} onChange={(v) => setCascada("campus", v)} />
           <FilterSelect
             id="matricula-shift"

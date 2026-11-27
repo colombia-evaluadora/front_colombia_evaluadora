@@ -136,6 +136,8 @@ export type CreateReservationFormValues = z.infer<typeof createReservationFormSc
 export const matriculaFiltersFormSchema = z.object({
   search: z.string(),
   statuses: z.array(z.string()),
+  /** pk del establecimiento; solo lo eligen los roles territoriales, que alcanzan varios. "" = todos. */
+  establecimiento: z.string(),
   campus: z.string(),
   // No es el `Shift` de reservas — la Jornada de matrícula sale del catálogo
   // de `TLISTA_VALOR` (ver `types/matricula.ts`), sin un conjunto fijo.
@@ -163,6 +165,7 @@ export const matriculaSearchSchema = z.object({
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
   search: z.string().optional().catch(undefined),
   statuses: z.array(z.string()).optional().catch(undefined),
+  establecimiento: z.coerce.number().int().positive().optional().catch(undefined),
   campus: z.string().optional().catch(undefined),
   shift: z.string().optional().catch(undefined),
   grade: z.coerce.number().optional().catch(undefined),

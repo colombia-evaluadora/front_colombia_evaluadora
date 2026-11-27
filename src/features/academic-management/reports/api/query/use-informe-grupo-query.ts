@@ -32,6 +32,7 @@ interface AsignaturaRow {
   ya_asegurado: boolean | null
   alcanzable: boolean | null
   error_configuracion?: string | null
+  nivelacion?: { estado: "PENDIENTE" | "NIVELADA"; nota: number | null; valoracion: string | null; simbolo: string | null } | null
 }
 
 interface FilaInformeRow {
@@ -79,6 +80,7 @@ function toAsignatura(row: AsignaturaRow): AsignaturaInforme {
     yaAsegurado: row.ya_asegurado ?? false,
     alcanzable: row.alcanzable ?? true,
     errorConfiguracion: row.error_configuracion?.trim() || null,
+    nivelacion: row.nivelacion ?? null,
   }
 }
 

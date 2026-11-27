@@ -23,6 +23,11 @@ const resultado = (error: string | null) => (error ? HttpResponse.json({ message
 
 // Sección 4.7 (pendientes-back, tarea 28). Rutas estáticas antes que las de `:id`.
 export const promocionNivelacionHandlers = [
+  // Uno solo: como un rol de establecimiento, sin selector.
+  http.get(`${BASE}/establecimientos`, async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [{ id: 1, nombre: "Institución Educativa San José" }] })
+  }),
   http.get(`${BASE}/opciones`, async () => {
     await delay(150)
     return filas(opcionesPromocion())

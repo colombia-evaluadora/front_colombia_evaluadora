@@ -26,6 +26,7 @@ import {
 import type { Reprobado } from "@/features/coverage/promocion-nivelacion/api/types"
 import { DialogPromover } from "@/features/coverage/promocion-nivelacion/components/dialogs-promocion"
 import { BotonExpandir, FiltrosFila } from "@/features/coverage/promocion-nivelacion/components/filtros"
+import { LIMPIAR_POR_ESTABLECIMIENTO, useFiltroEstablecimiento } from "@/features/coverage/promocion-nivelacion/hooks/use-filtro-establecimiento"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const num = "block text-center tabular-nums"
@@ -224,7 +225,8 @@ export function ReprobadosTab({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaPromocionRoute.useSearch()
   const navigate = coberturaPromocionRoute.useNavigate()
   const { puedeEditar } = useMenuPermission(MENU_PROMOCION)
-  const { data: op } = useOpcionesPromocionQuery()
+  const { data: op } = useOpcionesPromocionQuery(search.ee ? Number(search.ee) : null)
+  const filtroEe = useFiltroEstablecimiento(search.ee)
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { data, isPending, isError, error, refetch } = useReprobadosQuery(search, { pageIndex, pageSize })
   const [expandidoId, setExpandidoId] = useState<number | null>(null)
@@ -252,13 +254,15 @@ export function ReprobadosTab({ encabezado }: { encabezado: ReactNode }) {
       search: (prev) => ({
         ...prev,
         [key]: key === "anio" ? (value ? Number(value) : undefined) : value || undefined,
-        // El período depende del año.
+        // El período depende del año; todo depende del establecimiento.
         ...(key === "anio" ? { periodo: undefined } : {}),
+        ...(key === "ee" ? LIMPIAR_POR_ESTABLECIMIENTO : {}),
         page: 0,
       }),
       replace: true,
     })
   const filtros = [
+    ...filtroEe,
     { key: "sede", label: "Sede", options: op?.sedes ?? [], value: search.sede ?? "", todos: "Todas" },
     { key: "anio", label: "Año", options: (op?.anios ?? []).map((a) => ({ value: String(a), label: String(a) })), value: search.anio ? String(search.anio) : "" },
     { key: "jornada", label: "Jornada", options: op?.jornadas ?? [], value: search.jornada ?? "", todos: "Todas" },

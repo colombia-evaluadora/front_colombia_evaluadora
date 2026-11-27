@@ -22,6 +22,7 @@ export function useMatriculaFilters(): MatriculaFilters {
           ...prev,
           search: values.search || undefined,
           statuses: values.statuses.length ? values.statuses : undefined,
+          establecimiento: values.establecimiento ? Number(values.establecimiento) : undefined,
           campus: values.campus || undefined,
           shift: values.shift || undefined,
           grade: values.grade ? Number(values.grade) : undefined,
@@ -43,6 +44,7 @@ export function useMatriculaFilters(): MatriculaFilters {
         ...prev,
         search: undefined,
         statuses: undefined,
+        establecimiento: undefined,
         campus: undefined,
         shift: undefined,
         grade: undefined,
@@ -61,6 +63,7 @@ export function useMatriculaFilters(): MatriculaFilters {
   const queryFilters = {
       search: search.search,
       statuses: search.statuses,
+      establecimiento: search.establecimiento,
       campus: search.campus,
       shift: search.shift,
       grade: search.grade,
@@ -76,6 +79,7 @@ export function useMatriculaFilters(): MatriculaFilters {
     let count = 0
     if (search.search) count += 1
     count += search.statuses?.length ?? 0
+    if (search.establecimiento != null) count += 1
     if (search.campus) count += 1
     if (search.shift) count += 1
     if (search.grade != null) count += 1
@@ -91,6 +95,7 @@ export function useMatriculaFilters(): MatriculaFilters {
   const filtrosForm = {
     search: search.search ?? "",
     statuses: search.statuses ?? [],
+    establecimiento: search.establecimiento != null ? String(search.establecimiento) : "",
     campus: search.campus ?? "",
     shift: search.shift ?? "",
     grade: search.grade != null ? String(search.grade) : "",

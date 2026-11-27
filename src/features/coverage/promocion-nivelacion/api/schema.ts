@@ -8,6 +8,8 @@ const texto = z.string().optional().catch(undefined)
 export const promocionNivelacionSearchSchema = z.object({
   tab: z.enum(PESTANAS_PROMOCION).optional().catch(undefined),
   q: texto,
+  /** Establecimiento: solo lo eligen los roles territoriales, que alcanzan varios (Sección 7). */
+  ee: texto,
   anio: z.coerce.number().optional().catch(undefined),
   /** Reprobados. */
   periodo: texto,
