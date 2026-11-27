@@ -52,6 +52,8 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   "matricula-hoja": "hoja-matricula",
   "matricula-constancia": "constancia-estudio",
   "matricula-paquete-soporte": "paquete-soporte",
+  // Acta de retiro (RET.5 / SIMPADE): estaba en `ReportKey` pero faltaba acá y «Generar acta» daba 404 en mock.
+  "matricula-acta-retiro": "acta-retiro",
   "promocion-reprobados": "reprobados",
   "promocion-areas-pendientes": "areas-pendientes",
   funcionarios: "funcionarios",

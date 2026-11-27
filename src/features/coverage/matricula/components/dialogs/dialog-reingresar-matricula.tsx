@@ -7,7 +7,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { DatePicker } from "@/components/date-picker"
-import { PersonAddIcon, ProhibitIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, PersonAddIcon, ProhibitIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -103,6 +103,7 @@ export function DialogReingresar({
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+              <CheckIcon data-icon="inline-start" />
               Entendido
             </Button>
           </DialogFooter>
@@ -276,11 +277,11 @@ export function DialogReingresar({
                 ; el reingreso quedará registrado en el caso.
               </Aviso>
             ) : null}
-            <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
           </>
         )}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

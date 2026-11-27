@@ -112,18 +112,32 @@ export function Seccion({
   value,
   titulo,
   extra,
-  tabla,
+  accion,
   children,
 }: {
   value: string
   titulo: string
   /** Badge junto al título (p. ej. el estado del traslado). */
   extra?: ReactNode
-  /** La tabla llena el cuerpo, sin relleno interno. */
-  tabla?: boolean
+  /** Botón a la derecha de la cabecera (p. ej. «Agregar cupo»), como `SeccionPlegable` de Gestión estudiantil. */
+  accion?: ReactNode
   children: ReactNode
 }) {
   const { abiertas, alternar } = use(AbiertasContext)
+  const trigger = (
+    <CollapsibleTrigger
+      className={cn(
+        "flex items-center gap-2 text-left text-base font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+        accion ? "min-w-0 flex-1 py-1" : "w-full bg-table-screen-title px-4 py-3",
+      )}
+    >
+      <CaretDownIcon className="size-5 shrink-0 -rotate-90 text-muted-foreground transition-transform group-data-[open]/section:rotate-0 motion-reduce:transition-none" />
+      <span className="flex items-center gap-3">
+        {titulo}
+        {extra}
+      </span>
+    </CollapsibleTrigger>
+  )
   return (
     <Collapsible
       id={`seccion-${value}`}
@@ -131,20 +145,17 @@ export function Seccion({
       onOpenChange={(open) => alternar(value, open)}
       className="group/section overflow-hidden rounded-lg border border-border bg-background"
     >
-      <CollapsibleTrigger className="flex w-full items-center gap-2 bg-table-screen-title px-4 py-3 text-left text-base font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
-        <CaretDownIcon className="size-5 shrink-0 -rotate-90 text-muted-foreground transition-transform group-data-[open]/section:rotate-0 motion-reduce:transition-none" />
-        <span className="flex items-center gap-3">
-          {titulo}
-          {extra}
-        </span>
-      </CollapsibleTrigger>
-      <CollapsibleContent keepMounted className="px-4 py-5 data-[closed]:hidden">
-        {/* La tabla va dentro del relleno, en su propio recuadro (prototipo). */}
-        {tabla ? (
-          <div className="overflow-hidden rounded-md border border-border">{children}</div>
-        ) : (
-          children
-        )}
+      {accion ? (
+        <div className="flex items-center gap-2 bg-table-screen-title px-4 py-2">
+          {trigger}
+          {accion}
+        </div>
+      ) : (
+        trigger
+      )}
+      <CollapsibleContent keepMounted className="border-t border-border px-4 py-5 data-[closed]:hidden">
+        {/* La tabla va dentro del relleno; su recuadro ya lo pone `Table` (otro borde aquí la dejaba con doble línea). */}
+        {children}
       </CollapsibleContent>
     </Collapsible>
   )

@@ -220,36 +220,20 @@ export function SolicitudesTab({ pestanas }: { pestanas: ReactNode }) {
         <TableScreenTitle action={<ExportarExcel />}>Actualización de datos</TableScreenTitle>
         {pestanas}
         <TableScreenToolbar>
+          {/* Filtros escritos en el buscador, como el Observador (CLAUDE.md §13). */}
           <Buscador
             id="solicitudes-buscar"
             placeholder="Buscar por solicitante o estudiante"
             texto={search.q ?? ""}
-            onTexto={(q) => setSearch({ q: q || undefined })}
             filtros={[{ key: "estado", label: "Estado", items: ESTADOS_FILTRO, value: estado }]}
-            onAplicar={(v) => setSearch({ estado: v.estado === "PENDIENTE" || !v.estado ? undefined : (v.estado as typeof search.estado) })}
+            onBuscar={(v, q) =>
+              setSearch({
+                q: q || undefined,
+                estado: v.estado === "PENDIENTE" ? undefined : ((v.estado || "TODOS") as typeof search.estado),
+              })
+            }
             onLimpiar={() => setSearch({ estado: "TODOS", q: undefined })}
           />
-          {conFiltro || search.q ? (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              {conFiltro ? (
-                <Badge variant="soft" color="info" className="text-xs font-medium tracking-normal">
-                  Estado: {ESTADO[estado].label}
-                  <button
-                    type="button"
-                    aria-label="Quitar filtro de estado"
-                    className="rounded-xs hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                    onClick={() => setSearch({ estado: "TODOS" })}
-                  >
-                    <XIcon className="size-3.5" />
-                  </button>
-                </Badge>
-              ) : null}
-              <Button type="button" variant="link" color="primary" size="sm" onClick={() => setSearch({ estado: "TODOS", q: undefined })}>
-                <XIcon data-icon="inline-start" />
-                Limpiar filtros
-              </Button>
-            </div>
-          ) : null}
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>

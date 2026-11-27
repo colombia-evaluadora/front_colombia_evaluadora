@@ -60,7 +60,7 @@ export function SeccionPlegable({
           {flecha}
           {titulo}
         </CollapsibleTrigger>
-        <CollapsibleContent keepMounted className="px-4 pt-5 pb-5 data-[closed]:hidden">
+        <CollapsibleContent keepMounted className="border-t border-border px-4 pt-5 pb-5 data-[closed]:hidden">
           {children}
         </CollapsibleContent>
       </Collapsible>

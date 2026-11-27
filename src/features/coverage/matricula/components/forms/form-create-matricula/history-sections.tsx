@@ -1,8 +1,10 @@
+import { Fragment, useContext } from "react"
+import { normalizarBusqueda, useBusquedaDetalle } from "@/components/busqueda-detalle"
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaConflictVictimInfo, MatriculaOriginSectorInfo, MatriculaPreviousYearInfo } from "@/features/coverage/matricula/api/types/matricula"
 import { anySettingVisible, catalogLabelFor, catalogOptions } from "./catalog-utils"
-import { type DepartmentOption, MatriculaFormSection, MatriculaSelectField, MatriculaTextField, MatriculaYesNoField } from "./fields"
+import { type DepartmentOption, MatriculaFormSection, MatriculaSelectField, MatriculaTextField, MatriculaYesNoField, MatriculaLecturaContext } from "./fields"
 
 interface PreviousYearSectionProps {
   value: MatriculaPreviousYearInfo
@@ -97,6 +99,10 @@ export function MatriculaOriginSectorSection({
   invalidFields = [],
   fieldSettings,
 }: OriginSectorSectionProps) {
+  const lectura = useContext(MatriculaLecturaContext)
+  // Mientras se busca, la ayuda suelta no se muestra (su campo puede estar oculto).
+  const buscando = normalizarBusqueda(useBusquedaDetalle()) !== ""
+  const Envoltorio = lectura ? Fragment : "div"
   if (
     !anySettingVisible(fieldSettings, [
       "origin-private-sector",
@@ -137,7 +143,9 @@ export function MatriculaOriginSectorSection({
         />
       )}
       {isFieldVisible(fieldSettings, "origin-which-municipality") && (
-        <div className="flex flex-col gap-1">
+        // En el detalle (ficha) sin envoltorio: el par tiene que ser hijo directo de la ficha para que, si
+        // queda solo al final, ocupe la fila entera. La ayuda tampoco se muestra.
+        <Envoltorio {...(lectura ? {} : { className: "flex flex-col gap-1" })}>
           <MatriculaTextField
             id="origin-which-municipality"
             label="¿Cuál?"
@@ -148,10 +156,10 @@ export function MatriculaOriginSectorSection({
             disabled={value.fromAnotherMunicipality !== "Sí"}
             onChange={(whichMunicipality) => onChange({ ...value, whichMunicipality })}
           />
-          {value.fromAnotherMunicipality !== "Sí" ? (
+          {!lectura && !buscando && value.fromAnotherMunicipality !== "Sí" ? (
             <p className="text-xs text-muted-foreground">Se habilita con Sí.</p>
           ) : null}
-        </div>
+        </Envoltorio>
       )}
     </MatriculaFormSection>
   )

@@ -44,6 +44,8 @@ function toRawRow(row: GradeRecord, totalCount?: number) {
     id: row.id,
     nombre: row.nombre,
     grado: row.grado,
+    // `TGRADO.CODIGO`: el ordinal del grado. Matrícula arma su select con él (`fetchGrados`).
+    codigo: row.grado,
     teaching_level_id: row.teachingLevelId,
     teaching_level_name: row.teachingLevelName,
     grado_siguiente: row.gradoSiguiente ?? null,
@@ -116,6 +118,10 @@ export const gradesHandlers = [
     await delay(250)
     const body = (await request.json()) as { FILTRO: string | null; PAGE_INDEX: number; PAGE_SIZE: number }
     const scoped = gradesDb.filter((row) => row.academicPeriodId === Number(params.academicPeriodId))
+    // Catálogo completo de Matrícula/Inscripciones (PAGE_SIZE 200) sobre un período sin grados sembrados:
+    // cede al generador de `handlers/matricula.ts` (los 12 grados). La pantalla de Grados pagina de a
+    // 10–100, así que la configuración sigue viendo el período vacío para probar el alta.
+    if (!scoped.length && body.PAGE_SIZE >= 200) return
     const filtered = applyFilters(scoped, body.FILTRO)
     const start = body.PAGE_INDEX * body.PAGE_SIZE
     const rows = filtered.slice(start, start + body.PAGE_SIZE).map((row) => toRawRow(row, filtered.length))

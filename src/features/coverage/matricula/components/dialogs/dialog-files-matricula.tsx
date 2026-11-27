@@ -160,7 +160,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
         <Button
           type="button"
           variant="outline"
-          color="primary"
+          color="neutral"
           size="sm"
           aria-label={`Archivos de ${fullName}`}
           onClick={() => setOpen(true)}

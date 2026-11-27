@@ -70,8 +70,10 @@ export const gradeGroupsHandlers = [
   // `use-grade-groups.ts`), no el `/api/grade-groups/query` viejo. `/query`
   // porque el POST sin sufijo en esta misma ruta ya es la creación de grupo.
   http.post("/api/eval-col/grados/:gradeId/grupos/query", async ({ params, request }) => {
-    await delay(250)
     const gradeId = Number(params.gradeId)
+    // Grado generado por el mock de matrícula (no sembrado acá): sus grupos los arma `handlers/matricula.ts`.
+    if (!gradesDb.some((g) => g.id === gradeId)) return
+    await delay(250)
     const body = (await request.json()) as {
       FILTRO?: string
       PAGE_INDEX?: string | number

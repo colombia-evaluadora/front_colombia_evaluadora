@@ -50,7 +50,7 @@ export function DialogMatricularYSolicitar({
 
   return (
     <Dialog open onOpenChange={(open) => !open && !saving && onCancel()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Agregar estudiante › Matrícula</DialogTitle>
           <DialogDescription>
@@ -59,7 +59,7 @@ export function DialogMatricularYSolicitar({
         </DialogHeader>
         <div className="flex flex-col items-start gap-1.5">
           <span id="solicitud-evidencia-label" className="text-sm">
-            Evidencia <span className="text-red">*</span>
+            Evidencia<span data-required-mark="">*</span>
           </span>
           <input
             ref={fileInput}
@@ -99,6 +99,7 @@ export function DialogMatricularYSolicitar({
           )}
         </div>
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" disabled={saving} onClick={onCancel}>
             <XIcon data-icon="inline-start" />
             Cancelar

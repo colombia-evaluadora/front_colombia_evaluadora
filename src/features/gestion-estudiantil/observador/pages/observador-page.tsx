@@ -1,7 +1,7 @@
 "use no memo"
 
 import { lazy, Suspense, useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -33,6 +33,11 @@ import { FILTROS_VACIOS, type AnotacionRow, type ObservadorFiltros } from "@/fea
 import { buildColumnsAnotaciones } from "@/features/gestion-estudiantil/observador/components/table/columns-anotaciones"
 import { SearchAnotaciones } from "@/features/gestion-estudiantil/observador/components/search/search-anotaciones"
 import { DialogAnularAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-anular-anotacion"
+import {
+  DialogAnotacion,
+  DialogEditarAnotacion,
+} from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-anotacion"
+import { observadorRoute } from "@/router"
 import { DialogDetalleAnotacion } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-detalle-anotacion"
 import { DialogImprimirObservador } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-imprimir-observador"
 import { DialogCargarObservadorFirmado } from "@/features/gestion-estudiantil/observador/components/dialogs/dialog-cargar-observador-firmado"
@@ -70,6 +75,12 @@ function ObservadorContent() {
   // El panel abierto pide las opciones de lo que se está eligiendo, no de lo aplicado.
   const [borrador, setBorrador] = useState<ObservadorFiltros>(FILTROS_VACIOS)
   const [verDetalle, setVerDetalle] = useState<AnotacionRow | null>(null)
+  const searchUrl = observadorRoute.useSearch()
+  const navegarObservador = observadorRoute.useNavigate()
+  const abrirAnotacion = (p: { nueva?: boolean; editar?: number }) =>
+    navegarObservador({ search: (prev) => ({ ...prev, nueva: p.nueva, editar: p.editar }) })
+  const cerrarAnotacion = () =>
+    navegarObservador({ search: (prev) => ({ ...prev, nueva: undefined, editar: undefined }), replace: true })
   const [anular, setAnular] = useState<AnotacionRow | null>(null)
   const [remitir, setRemitir] = useState<AnotacionRow | "nuevo" | null>(null)
   const [reportarConsumo, setReportarConsumo] = useState<AnotacionRow | null>(null)
@@ -109,7 +120,7 @@ function ObservadorContent() {
   const columns = buildColumnsAnotaciones({
     onVer: setVerDetalle,
     onAnular: setAnular,
-    onModificar: (a) => navigate({ to: paths.app.observadorEditar.getHref(a.id) }),
+    onModificar: (a) => abrirAnotacion({ editar: a.id }),
     puedeAnular: access.puedeAnular,
     puedeRemitir: access.puedeRemitir,
     puedeReportarSaludMental: access.puedeReportarSaludMental,
@@ -188,7 +199,7 @@ function ObservadorContent() {
             <DialogCargarObservadorFirmado disabled={!access.puedeCargarFirmado} />
             <DialogExportarAnotaciones filters={queryFilters} />
             {access.puedeCrear && (
-              <Button size="sm" render={<Link to={paths.app.observadorNueva.getHref()} />} nativeButton={false}>
+              <Button size="sm" onClick={() => abrirAnotacion({ nueva: true })}>
                 <ControlPointIcon data-icon="inline-start" />
                 Nueva anotación
               </Button>
@@ -258,6 +269,9 @@ function ObservadorContent() {
         </Suspense>
       )}
       <DialogDetalleAnotacion anotacion={verDetalle} onClose={() => setVerDetalle(null)} />
+      {/* Nueva y Modificar anotación, en modal; la URL lo abre para que sirvan los enlaces directos. */}
+      {searchUrl.nueva ? <DialogAnotacion onClose={cerrarAnotacion} /> : null}
+      {searchUrl.editar != null ? <DialogEditarAnotacion id={searchUrl.editar} onClose={cerrarAnotacion} /> : null}
       <DialogAnularAnotacion anotacion={anular} onClose={() => setAnular(null)} />
     </>
   )

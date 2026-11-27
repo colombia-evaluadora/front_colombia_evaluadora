@@ -1,11 +1,13 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { CheckCircleIcon, FilePdfIcon, FileTextIcon, FileZipIcon, IdentificationCardIcon, SpinnerIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CheckCircleIcon, FilePdfIcon, FileTextIcon, FileZipIcon, IdentificationCardIcon, LockIcon, SpinnerIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { OnlineOnlyAction } from "@/components/offline/online-only-action"
@@ -99,24 +101,36 @@ export function DialogGenerarConstancias({
           </FieldDescription>
         </Field>
 
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 text-sm">
-          <dt className="text-muted-foreground">Fecha de expedición</dt>
-          <dd>{new Date().toLocaleDateString("es-CO")}</dd>
-        </dl>
+        {/* La fecha la pone el sistema (hoy): campo de solo lectura con candado (§13). */}
+        <Field variant="outlined" className="gap-1.5">
+          <FieldLabel htmlFor="constancia-fecha">Fecha de expedición</FieldLabel>
+          <div className="relative">
+            <Input
+              id="constancia-fecha"
+              variant="outlined"
+              readOnly
+              className="pr-9"
+              value={new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" })}
+            />
+            <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+        </Field>
 
         {config?.numeracion ? (
-          <label className="flex cursor-pointer items-start gap-3 text-sm">
-            <Switch checked={borrador} onCheckedChange={setBorrador} className="mt-0.5" />
-            <span>
-              <span className="font-medium">Generar como borrador</span>
-              <span className="block text-muted-foreground">
-                No consume número y sale con la marca BORRADOR, sin código QR.
-              </span>
-            </span>
-          </label>
+          <MarcoOpciones
+            id="constancia-borrador-marco"
+            label="Generar como borrador"
+            descripcion="No consume número y sale con la marca BORRADOR, sin código QR."
+          >
+            <label className="flex cursor-pointer items-center gap-2">
+              <Switch aria-labelledby="constancia-borrador-marco-label" checked={borrador} onCheckedChange={setBorrador} />
+              {borrador ? "Sí" : "No"}
+            </label>
+          </MarcoOpciones>
         ) : null}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -170,7 +184,7 @@ export function DialogGenerarCarnes({
 
   return (
     <Dialog open onOpenChange={(o) => !generar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {sinFoto ? <WarningCircleIcon className="size-5 shrink-0 text-yellow" aria-hidden /> : null}
@@ -308,13 +322,64 @@ export function DialogPaqueteSoporte({ matricula, onOpenChange }: { matricula: M
 }
 
 /** Documentos de una matrícula Cursando: hoja de matrícula, constancia, carné y paquete de soporte (fila y detalle). */
-export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Matricula; modo?: "icon" | "button" }) {
+export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Matricula; modo?: "icon" | "button" | "menu" }) {
   const { notify } = useNotify()
   const hojas = useGenerarHojas()
   const [abierto, setAbierto] = useState<"constancia" | "carne" | "paquete" | null>(null)
   if (matricula.status !== "Cursando") return null
   const nombre = nombreDe(matricula)
   const cerrar = (open: boolean) => !open && setAbierto(null)
+  const generarHoja = () =>
+    hojas.mutate([matricula.id], {
+      onSuccess: () => notify(`Se generó la hoja de matrícula de ${nombre}.`),
+      onError: (err) => notify(getErrorMessage(err), { variant: "error" }),
+    })
+  const dialogos = (
+    <>
+      {abierto === "constancia" ? <DialogGenerarConstancias matriculas={[matricula]} onOpenChange={cerrar} /> : null}
+      {abierto === "carne" ? <DialogGenerarCarnes matriculas={[matricula]} onOpenChange={cerrar} /> : null}
+      {abierto === "paquete" ? <DialogPaqueteSoporte matricula={matricula} onOpenChange={cerrar} /> : null}
+    </>
+  )
+
+  // Encabezado del detalle: los cuatro documentos en un solo botón desplegable, para que buscador y
+  // acciones quepan en la misma línea (CLAUDE.md §13).
+  if (modo === "menu")
+    return (
+      <>
+        <OnlineOnlyAction>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button type="button" variant="outline" color="neutral" size="sm" disabled={hojas.isPending} />}
+            >
+              {hojas.isPending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <FileTextIcon data-icon="inline-start" />}
+              Generar documento
+              <CaretDownIcon data-icon="inline-end" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={generarHoja}>
+                <FileTextIcon />
+                Hoja de matrícula
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAbierto("constancia")}>
+                <FilePdfIcon />
+                Constancia de estudio
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAbierto("carne")}>
+                <IdentificationCardIcon />
+                Carné estudiantil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAbierto("paquete")}>
+                <FileZipIcon />
+                Paquete de soporte
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </OnlineOnlyAction>
+        {dialogos}
+      </>
+    )
+
   return (
     <>
       <OnlineOnlyAction>
@@ -324,12 +389,7 @@ export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Ma
           ariaLabel={`Generar hoja de matrícula de ${nombre}`}
           Icon={hojas.isPending ? SpinnerIcon : FileTextIcon}
           disabled={hojas.isPending}
-          onClick={() =>
-            hojas.mutate([matricula.id], {
-              onSuccess: () => notify(`Se generó la hoja de matrícula de ${nombre}.`),
-              onError: (err) => notify(getErrorMessage(err), { variant: "error" }),
-            })
-          }
+          onClick={generarHoja}
         />
       </OnlineOnlyAction>
       <OnlineOnlyAction>
@@ -359,9 +419,7 @@ export function AccionesDocumentos({ matricula, modo = "icon" }: { matricula: Ma
           onClick={() => setAbierto("paquete")}
         />
       </OnlineOnlyAction>
-      {abierto === "constancia" ? <DialogGenerarConstancias matriculas={[matricula]} onOpenChange={cerrar} /> : null}
-      {abierto === "carne" ? <DialogGenerarCarnes matriculas={[matricula]} onOpenChange={cerrar} /> : null}
-      {abierto === "paquete" ? <DialogPaqueteSoporte matricula={matricula} onOpenChange={cerrar} /> : null}
+      {dialogos}
     </>
   )
 }

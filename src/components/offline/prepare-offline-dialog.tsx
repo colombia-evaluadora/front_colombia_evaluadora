@@ -494,7 +494,7 @@ export function PrepareOfflineDialog({
                     className="transition-transform group-data-[panel-open]:rotate-180"
                   />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="flex min-w-0 flex-col gap-3 px-3 pt-1 pb-3">
+                <CollapsibleContent className="flex min-w-0 flex-col gap-3 border-t border-border px-3 pt-3 pb-3">
                   {conGrupos && (
                     <div className="grid min-w-0 gap-3 sm:grid-cols-3">
                       <CheckList

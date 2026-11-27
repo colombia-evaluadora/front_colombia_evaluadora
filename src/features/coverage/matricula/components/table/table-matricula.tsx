@@ -1,6 +1,5 @@
 "use no memo"
 
-import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { AvisoSolicitudesRetiro } from "@/features/coverage/matricula/components/aviso-solicitudes-retiro"
 import type { ReactNode } from "react"
 
@@ -27,12 +26,8 @@ import {
   MATRICULA_EXPORT_COLUMN_KEYS,
   MATRICULA_INITIAL_VISIBILITY,
 } from "@/features/coverage/matricula/components/table/columns-matricula"
-import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
-import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
-import { useMatriculaPeriodosAbiertosQuery } from "@/features/coverage/matricula/api/query/use-matricula-periodos-abiertos"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "@/components/ui/icons"
+import { FunnelXIcon } from "@/components/ui/icons"
 import { SearchMatricula } from "@/features/coverage/matricula/components/search/search-matricula"
 import { ExportMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-export-matricula"
 import { BarraLote } from "@/features/coverage/matricula/components/dialogs/acciones/barra-lote"
@@ -53,10 +48,11 @@ const EXPORT_KEYS_EXTRA: Partial<Record<string, string | string[]>> = {
 interface MatriculaDataTableProps {
   title: ReactNode
   action?: ReactNode
-  titleAction?: ReactNode
+  /** Acciones secundarias de la línea del buscador, antes de Exportar (p. ej. la configuración de parámetros). */
+  accionesSecundarias?: ReactNode
 }
 
-export function MatriculaDataTable({ title, action, titleAction }: MatriculaDataTableProps) {
+export function MatriculaDataTable({ title, action, accionesSecundarias }: MatriculaDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
@@ -84,68 +80,16 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     columnVisibilityStorageKey: "table-matricula-column-visibility-v3",
     initialColumnVisibility: MATRICULA_INITIAL_VISIBILITY,
   })
-  const gradeLabel = useMatriculaGradeLabel()
-  // Para el texto del chip del periodo ("2027 · Anual · Ciclo 1").
-  const { sedeId, jornadaId } = useMatriculaDependentCatalogsQuery({
-    campus: filters.campus || undefined,
-    shift: filters.shift || undefined,
-    periodoId: filters.periodo ? Number(filters.periodo) : null,
-  })
-  const { data: metodologias } = useMatriculaCatalogQuery("metodologia")
-  const { data: periodos = [] } = useMatriculaPeriodosAbiertosQuery(
-    filters.periodo ? sedeId : null,
-    filters.periodo ? jornadaId : null,
-  )
 
   const exportColumns = table
     .getVisibleLeafColumns()
     .flatMap((column) => MATRICULA_EXPORT_COLUMN_KEYS[column.id] ?? EXPORT_KEYS_EXTRA[column.id] ?? [])
 
-  // Chips de filtros activos (prototipo C.1.LIS): quitar uno reaplica el resto.
-  type Chip = { key: string; label: string; clear: () => void }
-  const chips = [
-    filters.campus && { key: "campus", label: filters.campus, clear: () => applyFilters({ ...filters, campus: "" }) },
-    filters.shift && { key: "shift", label: filters.shift, clear: () => applyFilters({ ...filters, shift: "" }) },
-    filters.periodo && {
-      key: "periodo",
-      label: periodos.find((p) => p.value === filters.periodo)?.label ?? "Período",
-      // El grado y el grupo cuelgan del periodo.
-      clear: () => applyFilters({ ...filters, periodo: "", grade: "", group: "" }),
-    },
-    filters.grade && { key: "grade", label: gradeLabel(Number(filters.grade)), clear: () => applyFilters({ ...filters, grade: "" }) },
-    filters.group && { key: "group", label: `Grupo ${filters.group}`, clear: () => applyFilters({ ...filters, group: "" }) },
-    filters.tipo && {
-      key: "tipo",
-      label: filters.tipo === "COMPLEMENTARIA" ? "Complementaria" : "Principal",
-      clear: () => applyFilters({ ...filters, tipo: "" }),
-    },
-    filters.metodologia && {
-      key: "metodologia",
-      label: metodologias?.find((m) => String(m.id) === filters.metodologia)?.nombre ?? "Metodología",
-      clear: () => applyFilters({ ...filters, metodologia: "" }),
-    },
-    filters.nuevo && {
-      key: "nuevo",
-      label: filters.nuevo === "S" ? "Nuevos" : "No nuevos",
-      clear: () => applyFilters({ ...filters, nuevo: "" }),
-    },
-    filters.solicitud && {
-      key: "solicitud",
-      label: "Con solicitud pendiente",
-      clear: () => applyFilters({ ...filters, solicitud: "" }),
-    },
-    ...filters.statuses.map((status) => ({
-      key: `status-${status}`,
-      label: status,
-      clear: () => applyFilters({ ...filters, statuses: filters.statuses.filter((s) => s !== status) }),
-    })),
-  ].filter((chip): chip is Chip => Boolean(chip))
-
   return (
     <NoticeProvider>
       <TableScreen>
         <TableScreenHeader>
-          <TableScreenTitle action={titleAction}>{title}</TableScreenTitle>
+          <TableScreenTitle>{title}</TableScreenTitle>
           <AvisoSolicitudesRetiro
             filtrando={filters.solicitud === "CON_SOLICITUD"}
             onFiltrar={() => applyFilters({ ...filters, solicitud: "CON_SOLICITUD" })}
@@ -165,42 +109,20 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
               />
 
               <TableScreenActions>
+                {accionesSecundarias}
                 <OnlineOnlyAction>
                   <ExportMatriculaDialog filters={queryFilters} columns={exportColumns} />
                 </OnlineOnlyAction>
                 {action}
               </TableScreenActions>
 
-              {chips.length > 0 ? (
-                <div className="flex w-full flex-wrap items-center gap-2">
-                  {chips.map((chip) => (
-                    <Badge key={chip.key} variant="soft" color="info" className="text-xs font-medium tracking-normal">
-                      {chip.label}
-                      <button
-                        type="button"
-                        aria-label={`Quitar filtro ${chip.label}`}
-                        className="rounded-xs hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                        onClick={chip.clear}
-                      >
-                        <XIcon className="size-3.5" />
-                      </button>
-                    </Badge>
-                  ))}
-                  <Button type="button" variant="link" color="primary" size="sm" onClick={clearAllFilters}>
-                    Limpiar filtros
-                  </Button>
-                </div>
-              ) : null}
             </TableScreenToolbar>
           )}
         </TableScreenHeader>
 
+        {/* Sin la línea «N estudiantes» sobre la tabla: el total ya está en el pie de la paginación (como en
+            Observaciones y sugerencias). */}
         <TableScreenBody>
-          {data ? (
-            <p className="mb-3 text-sm text-muted-foreground tabular-nums">
-              {data.totalCount === 1 ? "1 estudiante" : `${data.totalCount.toLocaleString("es-CO")} estudiantes`}
-            </p>
-          ) : null}
           <DataTable
             table={table}
             isPending={isPending}
@@ -214,6 +136,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
                 <span className="inline-flex flex-col items-center gap-1">
                   No hay estudiantes que coincidan con la búsqueda y los filtros aplicados.
                   <Button type="button" variant="link" color="primary" size="sm" onClick={clearAllFilters}>
+                    <FunnelXIcon data-icon="inline-start" />
                     Limpiar filtros
                   </Button>
                 </span>

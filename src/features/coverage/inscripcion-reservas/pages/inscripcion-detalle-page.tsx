@@ -102,7 +102,6 @@ export function InscripcionDetallePage() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          description={<Marca {...ESTADO_INSCRIPCION_UI[data.estado]} />}
           action={
             editable || elegible ? (
               <div className="flex flex-wrap justify-end gap-2">
@@ -126,6 +125,8 @@ export function InscripcionDetallePage() {
         >
           Inscripción {data.numeroInscripcion}
           {nombre ? ` · ${nombre}` : ""}
+          {/* Estado junto al título, en su misma línea (hay espacio a la derecha). */}
+          <span className="ml-3 inline-flex align-middle text-sm font-normal"><Marca {...ESTADO_INSCRIPCION_UI[data.estado]} /></span>
         </TableScreenTitle>
       </TableScreenHeader>
 
@@ -140,7 +141,7 @@ export function InscripcionDetallePage() {
           </div>
         )}
         <Secciones abiertas={["opciones", "datos", "personas", "soportes"]}>
-          <Seccion value="opciones" titulo="Opciones de cupo" tabla>
+          <Seccion value="opciones" titulo="Opciones de cupo">
             <Opciones d={data} />
           </Seccion>
           <Seccion value="datos" titulo="Datos de la inscripción">
@@ -169,7 +170,7 @@ export function InscripcionDetallePage() {
             </Seccion>
           )}
           {!restringido && (
-            <Seccion value="soportes" titulo="Archivo de soporte" tabla>
+            <Seccion value="soportes" titulo="Archivo de soporte">
               <Soportes d={data} />
             </Seccion>
           )}

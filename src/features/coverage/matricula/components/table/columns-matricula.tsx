@@ -360,17 +360,20 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     cell: ({ row }) => <ActionsCell matricula={row.original} />,
     enableSorting: false,
     enableHiding: false,
-    // Solo el ⁞: todas las acciones van al menú.
-    size: 48,
+    // Hasta 6 íconos (32px + 4px de separación) y el ⁞ de «Más acciones», más el relleno del bloque.
+    size: 7 * 36 + 16,
   },
 ]
 
 /** Acciones de la fila que el menú ⁞ del prototipo no ofrece (siguen en el detalle). */
 const FUERA_DEL_MENU = ["Generar paquete de soporte"]
 
+/** Acciones de fila: hasta 6 como íconos y el resto en «Más acciones» (⁞), CLAUDE.md §13. */
+const ICONOS_FILA = 6
+
 /**
- * Menú ⁞ de la fila (C.1.LIS.3/3a-3d, SOL.4a/8a): todas las acciones van al
- * menú, en el orden del prototipo. Sin conexión (P6) «Ver detalle» queda activo
+ * Acciones de la fila (C.1.LIS.3/3a-3d, SOL.4a/8a): las 6 primeras como íconos y el resto en el
+ * menú ⁞, en el orden del prototipo. Sin conexión (P6) «Ver detalle» queda activo
  * y las demás salen inactivas con el aviso estándar.
  */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
@@ -378,8 +381,6 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
   const navigate = useNavigate()
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   const retiroTraslado = matricula.status === "Retirado" && Boolean(matricula.retiroTraslado)
-  // Con solicitud pendiente, Responder o Anular encabeza y Ver detalle cierra (SOL.4a/8a).
-  const conSolicitud = matricula.status === "Cursando" && Boolean(matricula.retiroSolicitado || matricula.anulacionPendiente)
   const verDetalle = (
     <BotonAccion
       modo="icon"
@@ -395,7 +396,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
   // Retirada por traslado (C.1.LIS.3b): solo Ver detalle, Reingresar, Generar acta y Marcar SIMPADE.
   if (retiroTraslado)
     return (
-      <AccionesFila limite={0}>
+      <AccionesFila limite={ICONOS_FILA}>
         {verDetalle}
         {puedeEditar ? (
           <OnlineOnlyAction>
@@ -407,9 +408,11 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
     )
 
   return (
-    <AccionesFila limite={0} ocultar={FUERA_DEL_MENU}>
+    <AccionesFila limite={ICONOS_FILA} ocultar={FUERA_DEL_MENU}>
+      {/* «Ver detalle» siempre es el primer ícono de la fila (CLAUDE.md §13); con solicitud pendiente, Responder
+          o Anular va justo después (el prototipo SOL.4a/8a lo dejaba al final y el orden cambiaba entre filas). */}
+      {verDetalle}
       <SolicitudRetiroAccion matricula={matricula} />
-      {conSolicitud ? null : verDetalle}
       {puedeEditar && matricula.status === "Cursando" && (
         <OnlineOnlyAction>
           <BotonAccion
@@ -442,7 +445,6 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
       <HomologarSnapshotAccion matricula={matricula} />
       <AccionesDocumentos matricula={matricula} />
       <CambiarEspecialidadAccion matricula={matricula} />
-      {conSolicitud ? verDetalle : null}
     </AccionesFila>
   )
 }

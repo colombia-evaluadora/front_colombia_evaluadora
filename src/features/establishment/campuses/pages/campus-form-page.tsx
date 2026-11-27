@@ -446,7 +446,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
           <AccordionItem value="datos" className={accordionItemClassName}>
             <AccordionTrigger className={accordionTriggerClassName}>Datos de la sede</AccordionTrigger>
             <AccordionContent>
-              <div className="-mx-4 border-t border-border bg-card px-4 pt-4">
+              <div className="-mx-4 bg-card px-4 pt-4">
                 <form
                   id={FORM_ID}
                   noValidate
@@ -692,7 +692,7 @@ function CampusForm({ mode, campus }: { mode: Mode; campus: CampusDetail | null 
             <AccordionItem value="especialidades" className={accordionItemClassName}>
               <AccordionTrigger className={accordionTriggerClassName}>Especialidades de la sede</AccordionTrigger>
               <AccordionContent>
-                <div className="-mx-4 border-t border-border bg-card px-4 py-4">
+                <div className="-mx-4 bg-card px-4 py-4">
                   <CampusSpecialtiesSection campusId={campus.id} readOnly={readOnly || !puedeEditar} />
                 </div>
               </AccordionContent>

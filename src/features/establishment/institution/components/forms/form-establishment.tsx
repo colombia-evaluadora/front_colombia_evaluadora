@@ -82,7 +82,7 @@ export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], 
                 <AccordionItem key={seccion.key} value={seccion.key} className="rounded-lg border border-border bg-card not-last:border-b">
                     <AccordionTrigger className={triggerClassName}>{seccion.titulo}</AccordionTrigger>
                     <AccordionContent>
-                        <div className="-mx-4 border-t border-border px-4 pt-4">{seccion.contenido}</div>
+                        <div className="-mx-4 px-4 pt-4">{seccion.contenido}</div>
                     </AccordionContent>
                 </AccordionItem>
             ))}

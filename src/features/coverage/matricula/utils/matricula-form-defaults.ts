@@ -172,8 +172,8 @@ const OPTIONAL_MATRICULA_FIELD_GETTERS: Record<string, (values: CreateMatriculaI
   "previous-year-condition": (v) => v.previousYear.condition,
   "previous-institution": (v) => v.previousYear.previousInstitution,
   "welfare-institution": (v) => v.previousYear.welfareInstitution,
-  "origin-private-sector": (v) => v.originSector.fromPrivateSector,
-  "origin-another-municipality": (v) => v.originSector.fromAnotherMunicipality,
+  "origin-private-sector": (v) => v.originSector.fromPrivateSector || "No", // interruptor: sin tocar es No
+  "origin-another-municipality": (v) => v.originSector.fromAnotherMunicipality || "No", // interruptor: sin tocar es No
   "origin-which-municipality": (v) => v.originSector.whichMunicipality,
   "conflict-victim-population": (v) => v.conflictVictim.population,
   "conflict-last-expelling-municipality": (v) => v.conflictVictim.lastExpellingMunicipality,
@@ -183,12 +183,12 @@ const OPTIONAL_MATRICULA_FIELD_GETTERS: Record<string, (values: CreateMatriculaI
   "complementary-ars": (v) => v.complementary.ars,
   "complementary-special-conditions": (v) => v.complementary.specialConditions,
   "complementary-talent": (v) => v.complementary.talent,
-  "benefits-subsidized": (v) => v.benefits.subsidized,
+  "benefits-subsidized": (v) => v.benefits.subsidized || "No", // interruptor: sin tocar es No
   "benefits-funding-source": (v) => v.benefits.fundingSource,
-  "benefits-head-household-student": (v) => v.benefits.headOfHouseholdStudent,
-  "benefits-head-household-children": (v) => v.benefits.headOfHouseholdChildren,
-  "benefits-public-force-veteran": (v) => v.benefits.publicForceVeteran,
-  "benefits-national-heroes": (v) => v.benefits.nationalHeroes,
+  "benefits-head-household-student": (v) => v.benefits.headOfHouseholdStudent || "No", // interruptor: sin tocar es No
+  "benefits-head-household-children": (v) => v.benefits.headOfHouseholdChildren || "No", // interruptor: sin tocar es No
+  "benefits-public-force-veteran": (v) => v.benefits.publicForceVeteran || "No", // interruptor: sin tocar es No
+  "benefits-national-heroes": (v) => v.benefits.nationalHeroes || "No", // interruptor: sin tocar es No
   "guardian-first-name": (v) => v.guardian.firstName,
   "guardian-second-name": (v) => v.guardian.secondName,
   "guardian-last-name": (v) => v.guardian.lastName,
@@ -381,4 +381,22 @@ function tieneMotivoEspecifico(id: string, values: CreateMatriculaInput): boolea
 
 export function pickMatriculaErrorField(missing: string[], values: CreateMatriculaInput): string {
   return missing.find((id) => tieneMotivoEspecifico(id, values)) ?? missing[0]!
+}
+
+/** «A», «A y B», «A, B y C». */
+function enumerar(nombres: string[]): string {
+  return nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}` : (nombres[0] ?? "")
+}
+
+/**
+ * Aviso de la pantalla mientras falte algo: un dato mal escrito se dice tal cual (es lo que hay que corregir);
+ * si solo faltan obligatorios y son varios, cuántos y cuáles, en el orden del formulario
+ * («Faltan 3 campos obligatorios: Sede, Jornada y Grado.»); con uno, cuál.
+ */
+export function getMatriculaPendingMessage(missing: string[], values: CreateMatriculaInput): string {
+  const especifico = missing.find((id) => tieneMotivoEspecifico(id, values))
+  if (especifico) return getMatriculaFieldErrorMessage(especifico, values)
+  if (missing.length === 1) return getMatriculaFieldErrorMessage(missing[0]!, values)
+  const nombres = missing.map((id) => REQUIRED_MATRICULA_FIELD_LABELS[id] ?? id)
+  return `Faltan ${missing.length} campos obligatorios: ${enumerar(nombres)}.`
 }

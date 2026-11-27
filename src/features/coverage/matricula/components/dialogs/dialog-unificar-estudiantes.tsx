@@ -171,7 +171,7 @@ export function DialogUnificarEstudiantes({ open, onOpenChange, documentoInicial
 
         <div className="flex flex-col items-start gap-1.5">
           <span id="unificar-soporte-label" className="text-sm">
-            <span className="text-red">*</span> Soporte
+            Soporte<span data-required-mark="">*</span>
           </span>
           <input
             ref={fileInput}
@@ -212,8 +212,6 @@ export function DialogUnificarEstudiantes({ open, onOpenChange, documentoInicial
             PDF, JPG o PNG · máx. {SOPORTE_MAX_MB} MB.
           </span>
         </div>
-        <p className="-mt-2 text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
         {conserva && duplicado ? (
           ambosCursando ? (
             <div role="alert" className="flex gap-3 rounded-md border border-red-stroke bg-red-22 px-4 py-3 text-sm">
@@ -235,6 +233,7 @@ export function DialogUnificarEstudiantes({ open, onOpenChange, documentoInicial
         ) : null}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

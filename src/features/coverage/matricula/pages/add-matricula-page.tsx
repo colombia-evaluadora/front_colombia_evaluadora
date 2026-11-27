@@ -1,5 +1,6 @@
 import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
 import { useEstudianteExistenteQuery } from "@/features/coverage/matricula/api/query/use-estudiante-existente"
+import { DetalleConBusqueda } from "@/components/busqueda-detalle"
 import {
   AvisoGradoTraslado,
   VerificacionEstudianteExistente,
@@ -15,7 +16,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { CaretRightIcon, FloppyDiskIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { FloppyDiskIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
@@ -44,7 +45,6 @@ import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-
 import { StudentAlreadyMatriculatedDialog } from "@/features/coverage/matricula/components/dialogs/dialog-student-already-matriculated"
 import {
   MatriculaPendingContext,
-  OPEN_SECTION_EVENT,
   type DepartmentOption,
   type MatriculaSupportFiles,
 } from "@/features/coverage/matricula/components/forms/form-create-matricula"
@@ -53,8 +53,7 @@ import { MatriculaFormBody } from "@/features/coverage/matricula/components/form
 import {
   createEmptySupportFiles,
   createInitialMatriculaValues,
-  getMatriculaFieldErrorMessage,
-  pickMatriculaErrorField,
+  getMatriculaPendingMessage,
   validateMatricula,
   type MatriculaAccountsFound,
 } from "@/features/coverage/matricula/utils/matricula-form-defaults"
@@ -392,7 +391,7 @@ function AddMatriculaPageContent() {
       dismiss()
       return
     }
-    notify(getMatriculaFieldErrorMessage(pickMatriculaErrorField(missingFields, values), values), {
+    notify(getMatriculaPendingMessage(missingFields, values), {
       variant: "error",
       autoCloseMs: 0,
     })
@@ -541,49 +540,46 @@ function AddMatriculaPageContent() {
   // Conteo en vivo (prototipo C.1.AGR): lo mismo que bloquearía el Guardar.
   const pendingFields = validateMatricula(values, undefined, fieldSettings, accountsFound, validacion)
 
-  function showFirstPending() {
-    const id = pendingFields.find((fieldId) => document.getElementById(fieldId))
-    if (!id) return
-    window.dispatchEvent(new CustomEvent(OPEN_SECTION_EVENT, { detail: id }))
-    // La sección se abre en el próximo render; recién ahí el campo es enfocable.
-    requestAnimationFrame(() => {
-      const field = document.getElementById(id)
-      field?.scrollIntoView({ block: "center", behavior: "smooth" })
-      field?.focus({ preventScroll: true })
-    })
-  }
-
   const saving = createMatricula.isPending
+  // Sin nada escrito (los valores por defecto no cuentan): Guardar deshabilitado y Cerrar en lugar de Cancelar
+  // (CLAUDE.md §13, igual que Editar matrícula). La base ya trae los predeterminados del establecimiento.
+  const hayCambios =
+    JSON.stringify(values) !== JSON.stringify(initialValuesRef.current) ||
+    Object.values(files).some((lista) => Array.isArray(lista) && lista.length > 0)
   const nombreEstudiante = [values.student.firstName, values.student.lastName].filter(Boolean).join(" ")
 
   return (
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          // Miga: la pantalla cuelga de Matrícula (CLAUDE.md §13, encabezado con miga).
+          ruta="Matrícula"
           action={
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {pendingFields.length > 0 ? (
-                <Button type="button" variant="link" color="primary" size="sm" onClick={showFirstPending}>
-                  {pendingFields.length === 1 ? "Ver 1 pendiente" : `Ver ${pendingFields.length} pendientes`}
-                  <CaretRightIcon data-icon="inline-end" />
+              {hayCambios ? (
+                // Cancelar vacía el formulario (vuelve a como se abrió), como en Editar.
+                <Button type="button" variant="outline" color="neutral" size="sm" disabled={saving} onClick={resetForm}>
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
                 </Button>
-              ) : null}
-              <Button
-                render={<Link to={paths.app.coberturaMatricula.getHref()} />}
-                variant="outline"
-                color="neutral"
-                size="sm"
-                nativeButton={false}
-              >
-                <XIcon data-icon="inline-start" />
-                Cancelar
-              </Button>
+              ) : (
+                <Button
+                  render={<Link to={paths.app.coberturaMatricula.getHref()} />}
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                  nativeButton={false}
+                >
+                  <XIcon data-icon="inline-start" />
+                  Cerrar
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="fill"
                 color="primary"
                 size="sm"
-                disabled={saving}
+                disabled={saving || !hayCambios}
                 aria-busy={saving}
                 onClick={() => handleSave("close")}
               >
@@ -605,6 +601,8 @@ function AddMatriculaPageContent() {
       <TableScreenBody>
         <MatriculaPendingContext value={pendingFields}>
         <div id={ADD_MATRICULA_FORM_ID} className="flex flex-col gap-4 [counter-reset:seccion]">
+          {/* Formulario largo: buscador de campos (CLAUDE.md §13), como en Editar y Ver detalle. */}
+          <DetalleConBusqueda etiqueta="Buscar un campo o valor">
           <MatriculaFormBody
             // AGR.2: el aviso del traslado va en el bloque 2; en el 1 queda el error corto del Grado.
             avisoEstudiante={
@@ -642,6 +640,7 @@ function AddMatriculaPageContent() {
               Las asignaturas obligatorias del plan quedan matriculadas solas.
             </p>
           </div>
+          </DetalleConBusqueda>
         </div>
         </MatriculaPendingContext>
       </TableScreenBody>

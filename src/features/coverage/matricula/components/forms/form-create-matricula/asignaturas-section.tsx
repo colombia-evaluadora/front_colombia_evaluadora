@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/components/ui/empty"
-import { InboxIcon, LockIcon, PlusCircleIcon, RemoveCircleOutlineIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, InboxIcon, LockIcon, PlusCircleIcon, RemoveCircleOutlineIcon, XIcon } from "@/components/ui/icons"
 import type {
   MatriculaAsignatura,
   MatriculaAsignaturasCambios,
@@ -234,12 +234,15 @@ export function MatriculaAsignaturasSection({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel variant="outline" color="neutral"><XIcon data-icon="inline-start" />Cancelar</AlertDialogCancel>
+            {/* Quita la asignatura de la matrícula: primario en rojo (CLAUDE.md §13). */}
             <AlertDialogAction
+              color="destructive"
               onClick={() => {
                 if (porDesmatricular) cambiar(porDesmatricular, { matriculada: false, externa: false })
                 setPorDesmatricular(null)
               }}
             >
+              <RemoveCircleOutlineIcon data-icon="inline-start" />
               Desmatricular
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -265,7 +268,10 @@ export function MatriculaAsignaturasSection({
             </ul>
           ) : null}
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setConRegistros(null)}>Entendido</AlertDialogAction>
+            <AlertDialogAction onClick={() => setConRegistros(null)}>
+              <CheckIcon data-icon="inline-start" />
+              Entendido
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

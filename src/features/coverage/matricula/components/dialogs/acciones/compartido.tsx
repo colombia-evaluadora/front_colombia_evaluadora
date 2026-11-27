@@ -143,6 +143,7 @@ export function CampoSelect({
   disabled,
   placeholder = "Seleccione",
   className,
+  onBuscar,
 }: {
   id: string
   label?: string
@@ -155,6 +156,8 @@ export function CampoSelect({
   disabled?: boolean
   placeholder?: string
   className?: string
+  /** Lo que se escribe en el selector (para buscar en el back); "" al elegir o cerrar. */
+  onBuscar?: (texto: string) => void
 }) {
   const items = Object.fromEntries(opciones.map((o) => [o.value, o.label]))
   return (
@@ -165,7 +168,17 @@ export function CampoSelect({
           {required ? <span data-required-mark="">*</span> : null}
         </FieldLabel>
       ) : null}
-      <ComboboxField items={items} value={value} onValueChange={(next) => onChange(next ? String(next) : "")} disabled={disabled}>
+      <ComboboxField
+        items={items}
+        value={value}
+        onValueChange={(next) => onChange(next ? String(next) : "")}
+        disabled={disabled}
+        onInputValueChange={
+          onBuscar
+            ? (next, details) => onBuscar(["input-change", "input-paste", "input-clear"].includes(details.reason) ? next : "")
+            : undefined
+        }
+      >
         <ComboboxFieldTrigger id={id} size="sm" variant="outlined" className="w-full" aria-invalid={invalido} aria-label={label ? undefined : placeholder}>
           <ComboboxFieldValue placeholder={placeholder} />
         </ComboboxFieldTrigger>

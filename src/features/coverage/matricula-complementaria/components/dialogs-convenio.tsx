@@ -6,16 +6,7 @@ import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import {
-  ArrowCounterClockwiseIcon,
-  CheckIcon,
-  FloppyDiskIcon,
-  InfoIcon,
-  ProhibitIcon,
-  SpinnerIcon,
-  WarningIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, CheckIcon, ControlPointIcon, FloppyDiskIcon, InfoIcon, LockIcon, ProhibitIcon, SpinnerIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
@@ -70,6 +61,9 @@ function Botones({
   icon,
   destructivo,
   disabled,
+  requeridos,
+  hayCambios,
+  onDeshacer,
 }: {
   onCancel: () => void
   pending: boolean
@@ -78,14 +72,35 @@ function Botones({
   icon: ReactNode
   destructivo?: boolean
   disabled?: boolean
+  /** Nota «Los campos marcados con * son obligatorios» en la línea de los botones (§13). */
+  requeridos?: boolean
+  /** Formularios que guardan: sin cambios, «Cerrar» y el primario deshabilitado; con cambios, «Cancelar» deshace (§13). */
+  hayCambios?: boolean
+  onDeshacer?: () => void
 }) {
+  const conRegla = hayCambios !== undefined
   return (
     <DialogFooter>
-      <Button variant="outline" color="neutral" type="button" size="sm" onClick={onCancel}>
+      {requeridos ? <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p> : null}
+      <Button
+        variant="outline"
+        color="neutral"
+        type="button"
+        size="sm"
+        disabled={conRegla && hayCambios && pending}
+        onClick={conRegla && hayCambios && onDeshacer ? onDeshacer : onCancel}
+      >
         <XIcon data-icon="inline-start" />
-        Cancelar
+        {conRegla && !hayCambios ? "Cerrar" : "Cancelar"}
       </Button>
-      <Button type="button" variant="fill" color={destructivo ? "destructive" : "primary"} size="sm" disabled={pending || disabled} onClick={onConfirm}>
+      <Button
+        type="button"
+        variant="fill"
+        color={destructivo ? "destructive" : "primary"}
+        size="sm"
+        disabled={pending || disabled || (conRegla && !hayCambios)}
+        onClick={onConfirm}
+      >
         {pending ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : icon}
         {label}
       </Button>
@@ -93,7 +108,6 @@ function Botones({
   )
 }
 
-const Requeridos = () => <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
 /** Los datos del convenio, en orden: los usa el resumen de las acciones y la ficha de Ver detalle. */
 function filasConvenio(c: Convenio) {
@@ -111,20 +125,17 @@ function filasConvenio(c: Convenio) {
   return filas
 }
 
-/** Los datos del convenio en una tabla de dos columnas. */
+/** Los datos del convenio en la ficha de solo lectura (`FichaDatos`, CLAUDE.md §13), como en Ver detalle. */
 export function ResumenConvenio({ c }: { c: Convenio }) {
-  const filas = filasConvenio(c)
-  return (
-    <dl className="grid overflow-hidden rounded-md border border-border text-sm sm:grid-cols-[auto_1fr] [&>:last-child]:border-b-0 sm:[&>:nth-last-child(2)]:border-b-0">
-      {filas.map(([t, v]) => (
-        <div key={t} className="contents">
-          <dt className="border-b border-border bg-muted/40 px-4 py-2.5 text-muted-foreground">{t}</dt>
-          <dd className="border-b border-border px-4 py-2.5">{v}</dd>
-        </div>
-      ))}
-    </dl>
-  )
+  return <FichaDatos datos={datosConvenio(c)} />
 }
+
+const datosConvenio = (c: Convenio) =>
+  filasConvenio(c).map(([etiqueta, valor]) =>
+    etiqueta === "Motivo"
+      ? { etiqueta, valor: <span className="whitespace-pre-line">{valor}</span>, ancho: true }
+      : { etiqueta, valor, ancho: etiqueta === "Documentos requeridos" },
+  )
 
 function Motivo({ id, value, onChange, invalido }: { id: string; value: string; onChange: (v: string) => void; invalido: boolean }) {
   return (
@@ -156,19 +167,14 @@ const motivoValido = (m: string) => m.trim().length >= MOTIVO_MIN && m.trim().le
 export function DialogDetalleConvenio({ convenio: c, onOpenChange }: { convenio: Convenio; onOpenChange: (o: boolean) => void }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Convenio con {c.contraparte}</DialogTitle>
         </DialogHeader>
-        <FichaDatos
-          datos={filasConvenio(c).map(([etiqueta, valor]) =>
-            etiqueta === "Motivo"
-              ? { etiqueta, valor: <span className="whitespace-pre-line">{valor}</span>, ancho: true }
-              : { etiqueta, valor, ancho: etiqueta === "Documentos requeridos" },
-          )}
-        />
+        <ResumenConvenio c={c} />
         <DialogFooter>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>
@@ -193,7 +199,7 @@ export function DialogAceptarConvenio({ convenio: c, onOpenChange }: { convenio:
 
   return (
     <Dialog open onOpenChange={(o) => !aceptar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <Titulo icono={conflictos.length ? "alerta" : "info"}>Aceptar convenio con {c.receptor}</Titulo>
         </DialogHeader>
@@ -270,15 +276,15 @@ export function DialogRechazarConvenio({ convenio: c, onOpenChange }: { convenio
   const [aviso, setAviso] = useState<AvisoError>(null)
   return (
     <Dialog open onOpenChange={(o) => !rechazar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <Titulo icono="alerta">Rechazar convenio con {c.receptor}</Titulo>
         </DialogHeader>
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
         <ResumenConvenio c={c} />
         <Motivo id="rechazar-motivo" value={motivo} onChange={setMotivo} invalido={intentado && !motivoValido(motivo)} />
-        <Requeridos />
         <Botones
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={rechazar.isPending}
           label="Rechazar"
@@ -312,7 +318,7 @@ export function DialogFinalizarConvenio({ convenio: c, onOpenChange }: { conveni
   const [aviso, setAviso] = useState<AvisoError>(null)
   return (
     <Dialog open onOpenChange={(o) => !finalizar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <Titulo icono="alerta">Finalizar convenio con {c.contraparte}</Titulo>
           <DialogDescription>Las complementarias ya creadas siguen hasta el cierre del año.</DialogDescription>
@@ -320,8 +326,8 @@ export function DialogFinalizarConvenio({ convenio: c, onOpenChange }: { conveni
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
         <Motivo id="finalizar-motivo" value={motivo} onChange={setMotivo} invalido={intentado && !motivoValido(motivo)} />
         <Aviso tono="advertencia" titulo={`Las postulaciones de ${c.origen} que no estén Adscrito quedarán Descartadas.`} />
-        <Requeridos />
         <Botones
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={finalizar.isPending}
           label="Finalizar"
@@ -348,9 +354,13 @@ export function DialogFinalizarConvenio({ convenio: c, onOpenChange }: { conveni
 
 function Lectura({ id, label, valor }: { id: string; label: string; valor: string }) {
   return (
+    // Solo lectura con candado (CLAUDE.md §13).
     <Field variant="outlined" className="gap-1.5">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} size="sm" value={valor} disabled readOnly />
+      <div className="relative">
+        <Input id={id} size="sm" value={valor} disabled readOnly className="pr-9" />
+        <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
     </Field>
   )
 }
@@ -368,7 +378,7 @@ export function DialogRenovarConvenio({ convenio: c, onOpenChange }: { convenio:
 
   return (
     <Dialog open onOpenChange={(o) => !renovar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <Titulo>Renovar convenio con {c.origen}</Titulo>
         </DialogHeader>
@@ -404,10 +414,10 @@ export function DialogRenovarConvenio({ convenio: c, onOpenChange }: { convenio:
             <Aviso tono="info" titulo="Se crea un convenio Propuesto con los mismos datos.">
               {c.origen} debe aceptarlo de nuevo. La continuidad automática solo se genera con el convenio Aceptado.
             </Aviso>
-            <Requeridos />
           </>
         )}
         <Botones
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={renovar.isPending}
           label="Renovar"
@@ -447,6 +457,18 @@ export function DialogNuevoConvenio({ onOpenChange }: { onOpenChange: (o: boolea
   const [documento, setDocumento] = useState("")
   const [intentado, setIntentado] = useState(false)
   const [aviso, setAviso] = useState<AvisoError>(null)
+  // Guardar sin cambios = deshabilitado; Cancelar vuelve a vacío (CLAUDE.md §13).
+  const hayCambios = Boolean(origenes.length || periodos.length || grados.length || especialidades.length || cupo || documentos.length || documento.trim())
+  function deshacer() {
+    setOrigenes([])
+    setPeriodos([])
+    setGrados([])
+    setEspecialidades([])
+    setCupo("")
+    setDocumentos([])
+    setDocumento("")
+    setIntentado(false)
+  }
 
   const periodosOp = (op?.periodos ?? []).filter((p) => !periodos.length || p.anio === (op?.periodos.find((x) => x.id === periodos[0].id)?.anio ?? p.anio))
   const anio = op?.periodos.find((p) => p.id === periodos[0]?.id)?.anio
@@ -488,7 +510,7 @@ export function DialogNuevoConvenio({ onOpenChange }: { onOpenChange: (o: boolea
 
   return (
     <Dialog open onOpenChange={(o) => !crear.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Nuevo convenio de adscripción</DialogTitle>
         </DialogHeader>
@@ -497,7 +519,8 @@ export function DialogNuevoConvenio({ onOpenChange }: { onOpenChange: (o: boolea
           <Cargando />
         ) : (
           <div className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
+            {/* Recibe y origen, mismo ancho. */}
+            <div className="grid gap-4 sm:grid-cols-2">
               <Lectura id="convenio-receptor" label="Establecimiento que recibe" valor={op.establecimiento} />
               <Chips
                 label="Establecimientos de origen"
@@ -595,6 +618,7 @@ export function DialogNuevoConvenio({ onOpenChange }: { onOpenChange: (o: boolea
                   disabled={!documentoValido || documentos.length >= 10}
                   onClick={agregarDocumento}
                 >
+                  <ControlPointIcon data-icon="inline-start" />
                   Agregar
                 </Button>
               </div>
@@ -623,18 +647,18 @@ export function DialogNuevoConvenio({ onOpenChange }: { onOpenChange: (o: boolea
             {faltantes.length ? (
               <Aviso tono="advertencia" titulo={`Para que los estudiantes continúen, incluya también ${faltantes.join(" y ")}.`} />
             ) : null}
-            <div className="grid gap-1 text-xs text-muted-foreground">
-              <p>Al guardar quedan Propuestos hasta que cada origen lo acepte o lo rechace.</p>
-              <p>Los campos marcados con * son obligatorios</p>
-            </div>
+            <p className="text-xs text-muted-foreground">Al guardar quedan Propuestos hasta que cada origen lo acepte o lo rechace.</p>
           </div>
         )}
         <Botones
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={crear.isPending}
           label="Guardar"
           icon={<FloppyDiskIcon data-icon="inline-start" />}
           disabled={!op}
+          hayCambios={hayCambios}
+          onDeshacer={deshacer}
           onConfirm={() => {
             setIntentado(true)
             if (Object.values(errores).some(Boolean)) return

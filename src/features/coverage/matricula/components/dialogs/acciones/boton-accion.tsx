@@ -177,7 +177,8 @@ export function BotonAccion({
 
   if (modo === "button") {
     return (
-      <Button type="button" variant="outline" color="primary" size="sm" aria-label={ariaLabel} onClick={onClick} disabled={disabled}>
+      // Botón del encabezado del detalle: secundario (outline neutro), como el resto de acciones en modo ver (§13).
+      <Button type="button" variant="outline" color="neutral" size="sm" aria-label={ariaLabel} onClick={onClick} disabled={disabled}>
         <Icon data-icon="inline-start" />
         {label}
       </Button>

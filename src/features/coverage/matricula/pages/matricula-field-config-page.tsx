@@ -1,21 +1,19 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 import {
   TableScreen,
   TableScreenBody,
-  TableScreenFooter,
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
-import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
@@ -29,8 +27,6 @@ import {
 import { MatriculaFormSection } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import type { MatriculaConfigCampo, MatriculaConfigSeccion } from "@/features/coverage/matricula/api/types/matricula"
 
-const ROUND_SWITCH_CLASSNAME = "rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
-
 interface FieldConfigBoxProps {
   campo: MatriculaConfigCampo
   onChange: (patch: { requerido: boolean; visible: boolean }) => void
@@ -40,43 +36,31 @@ function FieldConfigBox({ campo, onChange }: FieldConfigBoxProps) {
   const id = `campo-${campo.fkCampo}`
   const locked = !campo.editable
 
+  // Interruptores en su recuadro (`MarcoOpciones`), juntos a la izquierda y cada uno antes de su texto
+  // (CLAUDE.md §13), como «¿Media técnica…?». Visible primero: Requerido depende de él.
   return (
-    <Field orientation="vertical" variant="outlined" className="w-full gap-2">
-      <FieldLabel htmlFor={id}>{campo.nombre}</FieldLabel>
-      <div
-        className={cn(
-          inputVariants({ variant: "outlined", size: "sm" }),
-          "flex items-center justify-between gap-4",
-        )}
-      >
-        <label htmlFor={`${id}-required`} className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Requerido</span>
-          <Switch
-            id={`${id}-required`}
-            size="sm"
-            className={ROUND_SWITCH_CLASSNAME}
-            checked={campo.requerido}
-            disabled={locked}
-            onCheckedChange={(requerido) =>
-              onChange({ requerido, visible: requerido ? true : campo.visible })
-            }
-          />
-        </label>
-        <label htmlFor={`${id}-visible`} className="flex items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Visible</span>
-          <Switch
-            id={`${id}-visible`}
-            size="sm"
-            className={ROUND_SWITCH_CLASSNAME}
-            checked={campo.visible}
-            disabled={locked}
-            onCheckedChange={(visible) =>
-              onChange({ visible, requerido: visible ? campo.requerido : false })
-            }
-          />
-        </label>
-      </div>
-    </Field>
+    <MarcoOpciones id={id} label={campo.nombre}>
+      <label htmlFor={`${id}-visible`} className="flex cursor-pointer items-center gap-2 has-disabled:cursor-not-allowed">
+        <Switch
+          id={`${id}-visible`}
+          size="sm"
+          checked={campo.visible}
+          disabled={locked}
+          onCheckedChange={(visible) => onChange({ visible, requerido: visible ? campo.requerido : false })}
+        />
+        Visible
+      </label>
+      <label htmlFor={`${id}-required`} className="flex cursor-pointer items-center gap-2 has-disabled:cursor-not-allowed">
+        <Switch
+          id={`${id}-required`}
+          size="sm"
+          checked={campo.requerido}
+          disabled={locked}
+          onCheckedChange={(requerido) => onChange({ requerido, visible: requerido ? true : campo.visible })}
+        />
+        Requerido
+      </label>
+    </MarcoOpciones>
   )
 }
 
@@ -183,16 +167,54 @@ function MatriculaFieldConfigPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          // Miga como en Agregar, Editar y Detalle de matrícula.
+          ruta="Matrícula"
           action={
-            <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} />}
-              variant="fill"
-              color="neutral"
-              size="sm"
-              nativeButton={false}
-            >
-              Cerrar
-            </Button>
+            // Guardar arriba junto a Cerrar (como Agregar/Editar matrícula). Sin cambios: Cerrar y Guardar
+            // deshabilitado; con cambios: Cancelar (vuelve a lo guardado) y Guardar (CLAUDE.md §13).
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {changes.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                  disabled={updateConfig.isPending}
+                  onClick={() => data && setSecciones(data.secciones)}
+                >
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </Button>
+              ) : (
+                <Button
+                  render={<Link to={paths.app.coberturaMatricula.getHref()} />}
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                  nativeButton={false}
+                >
+                  <XIcon data-icon="inline-start" />
+                  Cerrar
+                </Button>
+              )}
+              {secciones ? (
+                <Button
+                  type="button"
+                  variant="fill"
+                  color="primary"
+                  size="sm"
+                  disabled={updateConfig.isPending || changes.length === 0}
+                  onClick={() => updateConfig.mutate({ establecimientoId, changes })}
+                >
+                  {updateConfig.isPending ? (
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <CheckIcon data-icon="inline-start" />
+                  )}
+                  Guardar
+                </Button>
+              ) : null}
+            </div>
           }
         >
           Configuración de parámetros requeridos
@@ -234,7 +256,7 @@ function MatriculaFieldConfigPageContent() {
               <FieldDescription>
                 {changes.length > 0
                   ? "Guarda los cambios antes de pasar a otro establecimiento."
-                  : "Cada establecimiento tiene su propia configuración."}
+                  : "Cada establecimiento tiene su propia configuración; los cambios aplican al próximo formulario de matrícula que se abra."}
               </FieldDescription>
             </Field>
           )}
@@ -267,28 +289,6 @@ function MatriculaFieldConfigPageContent() {
         </div>
       </TableScreenBody>
 
-      {secciones && (
-        <TableScreenFooter>
-          <p className="text-sm text-muted-foreground">
-            Los cambios aplican al próximo formulario de matrícula que se abra.
-          </p>
-          <Button
-            type="button"
-            variant="fill"
-            color="primary"
-            size="sm"
-            disabled={updateConfig.isPending || changes.length === 0}
-            onClick={() => updateConfig.mutate({ establecimientoId, changes })}
-          >
-            {updateConfig.isPending ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <CheckIcon data-icon="inline-start" />
-            )}
-            Guardar
-          </Button>
-        </TableScreenFooter>
-      )}
     </TableScreen>
   )
 }

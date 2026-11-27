@@ -8,6 +8,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaFile } from "@/features/coverage/matricula/api/types/matricula"
+import { cn } from "@/lib/utils"
+import { Aviso } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
+import { ACTIONS_BUTTON_HOVER_CLASS } from "@/components/table-row-actions"
 import { MatriculaFormSection } from "./fields"
 import { type MatriculaSupportFiles, SUPPORT_FILE_FIELDS, type SupportFileFieldConfig, acceptDe, fileKey, formatFileSize, formatosTexto, groupExistingFilesByKey, validarArchivoSoporte } from "./support-files"
 
@@ -179,15 +182,24 @@ function SupportFilesSheetField({
       onFileReject={(file, message) => setRejection(`${file.name} ${message}`)}
       className="gap-2"
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex flex-col">
+      <div className={cn("flex items-center justify-between gap-4", isEmpty && "border-b border-border pb-3")}>
+        <span className="flex min-w-0 flex-col gap-1">
           <span className="text-sm font-semibold text-foreground">
             {config.label}
             {required ? <span data-required-mark="">*</span> : ""}
           </span>
-          {canAttach && (
-            <span className="text-xs text-muted-foreground">{formatosTexto(config)}</span>
-          )}
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            {isEmpty ? (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <FolderOpenIcon aria-hidden className="size-4 shrink-0" />
+                  Sin datos
+                </span>
+                {canAttach ? <span aria-hidden className="h-4 w-px bg-border" /> : null}
+              </>
+            ) : null}
+            {canAttach ? <span>{formatosTexto(config)}</span> : null}
+          </span>
         </span>
         {canAttach && (
           <Tooltip>
@@ -198,7 +210,7 @@ function SupportFilesSheetField({
                     <Button
                       type="button"
                       variant="ghost"
-                      color="primary"
+                      color="neutral"
                       size="icon-sm"
                       aria-label={`Adjuntar ${config.label}`}
                     />
@@ -214,9 +226,7 @@ function SupportFilesSheetField({
       </div>
       {rejection && <p className="text-xs text-red">{rejection}</p>}
 
-      {isEmpty ? (
-        <SupportFileEmptyRow />
-      ) : (
+      {isEmpty ? null : (
         <div className="flex flex-col gap-2">
           {visibleExisting.map((file) => (
             <ExistingFileRow
@@ -398,13 +408,19 @@ export function SupportFilesSheet({
       <SheetContent className="w-full gap-0 data-[side=right]:sm:max-w-lg">
         <SheetHeader className="px-4">
           <SheetTitle>Archivos de soporte</SheetTitle>
-          <SheetDescription>
-            {viewOnly
-              ? "Documentos cargados para este estudiante."
-              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante. Se aceptan archivos PDF, JPG o PNG (la foto, solo JPG o PNG) de hasta 10 MB."}
-          </SheetDescription>
+          {viewOnly ? (
+            <SheetDescription>Documentos cargados para este estudiante.</SheetDescription>
+          ) : (
+            // La instrucción va en un aviso azul (informativo), no como texto suelto bajo el título.
+            <SheetDescription render={<div />}>
+              <Aviso tono="info" className="text-foreground">
+                Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante. Se
+                aceptan archivos PDF, JPG o PNG (la foto, solo JPG o PNG) de hasta 10 MB.
+              </Aviso>
+            </SheetDescription>
+          )}
         </SheetHeader>
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
+        <div className={cn("flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8", ACTIONS_BUTTON_HOVER_CLASS)}>
           {visibleFields.map((field) => (
             <SupportFilesSheetField
               key={field.key}
@@ -476,7 +492,7 @@ export function MatriculaSupportFilesSection({
         const required = isFieldRequired(fieldSettings, field.fieldId)
         const invalid = files.length === 0 && invalidFields.includes(field.key)
         return (
-          <div key={field.key} className="flex flex-col gap-1.5">
+          <div key={field.key} className={cn("flex flex-col gap-1.5", ACTIONS_BUTTON_HOVER_CLASS)}>
             <div className="flex items-center justify-between gap-2">
               <span className={invalid ? "font-semibold text-red" : "font-semibold text-foreground"}>
                 {field.label}
@@ -489,7 +505,7 @@ export function MatriculaSupportFilesSection({
                       <Button
                         type="button"
                         variant="ghost"
-                        color="primary"
+                        color="neutral"
                         size="icon-sm"
                         aria-label={`Adjuntar ${field.label}`}
                         onClick={() => setOpen(true)}

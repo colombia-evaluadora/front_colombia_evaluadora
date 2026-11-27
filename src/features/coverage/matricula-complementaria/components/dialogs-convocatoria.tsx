@@ -51,7 +51,7 @@ export function DialogResultadoSeleccion({
   const orden = c.desempate === "SORTEO" ? "Continuidad primero y luego sorteo" : "Continuidad primero y luego orden de inscripción"
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Resultado de la selección automática — Convocatoria {c.anio}</DialogTitle>
           {data ? (
@@ -67,37 +67,37 @@ export function DialogResultadoSeleccion({
             {getErrorMessage(error)}
           </Aviso>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cupo</TableHead>
-                  <TableHead className={num}>Postulaciones</TableHead>
-                  <TableHead className={num}>Registrados</TableHead>
-                  <TableHead className={num}>De ellos, con continuidad</TableHead>
-                  <TableHead className={num}>En lista de espera</TableHead>
-                  <TableHead className={num}>Descartadas</TableHead>
-                  <TableHead className={num}>Lugares libres</TableHead>
+          // El borde y el radio los pone `Table`: otra caja alrededor dejaba doble línea.
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cupo</TableHead>
+                <TableHead className={num}>Postulaciones</TableHead>
+                <TableHead className={num}>Registrados</TableHead>
+                <TableHead className={num}>De ellos, con continuidad</TableHead>
+                <TableHead className={num}>En lista de espera</TableHead>
+                <TableHead className={num}>Descartadas</TableHead>
+                <TableHead className={num}>Lugares libres</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.cupos.map((r) => (
+                <TableRow key={r.cupo}>
+                  <TableCell className="font-medium whitespace-normal">{r.cupo}</TableCell>
+                  <TableCell className={num}>{r.postulaciones}</TableCell>
+                  <TableCell className={num}>{r.registrados}</TableCell>
+                  <TableCell className={num}>{r.continuidad}</TableCell>
+                  <TableCell className={num}>{r.enListaEspera}</TableCell>
+                  <TableCell className={num}>{r.descartadas}</TableCell>
+                  <TableCell className={num}>{r.libres}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.cupos.map((r) => (
-                  <TableRow key={r.cupo}>
-                    <TableCell className="font-medium whitespace-normal">{r.cupo}</TableCell>
-                    <TableCell className={num}>{r.postulaciones}</TableCell>
-                    <TableCell className={num}>{r.registrados}</TableCell>
-                    <TableCell className={num}>{r.continuidad}</TableCell>
-                    <TableCell className={num}>{r.enListaEspera}</TableCell>
-                    <TableCell className={num}>{r.descartadas}</TableCell>
-                    <TableCell className={num}>{r.libres}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         )}
         <DialogFooter>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>
@@ -136,7 +136,7 @@ export function DialogListaSorteo({
 
   return (
     <Dialog open onOpenChange={(o) => !descargar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Lista del sorteo{cupo ? ` — ${nombreCupo(cupo)}` : ""}</DialogTitle>
           {data ? (
@@ -156,7 +156,6 @@ export function DialogListaSorteo({
             value={cupoId == null ? "" : String(cupoId)}
             onChange={(v) => setCupoId(v ? Number(v) : null)}
             opciones={c.cupos.map((x) => ({ value: String(x.id), label: nombreCupo(x) }))}
-            className="sm:max-w-sm"
           />
         ) : null}
 
@@ -167,35 +166,35 @@ export function DialogListaSorteo({
             {getErrorMessage(error)}
           </Aviso>
         ) : (
-          <div className="max-h-96 overflow-auto rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className={num}>Posición</TableHead>
-                  <TableHead>Postulación</TableHead>
-                  <TableHead className={num}>Número de sorteo</TableHead>
-                  <TableHead>Estado de la opción</TableHead>
+          // El borde y el radio los pone `Table`: otra caja alrededor dejaba doble línea.
+          <Table containerClassName="max-h-96">
+            <TableHeader>
+              <TableRow>
+                <TableHead className={num}>Posición</TableHead>
+                <TableHead>Postulación</TableHead>
+                <TableHead className={num}>Número de sorteo</TableHead>
+                <TableHead>Estado de la opción</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.filas.map((f) => (
+                <TableRow key={f.postulacion}>
+                  <TableCell className={num}>{f.posicion}</TableCell>
+                  <TableCell className="tabular-nums">{f.postulacion}</TableCell>
+                  <TableCell className={num}>{f.sorteo}</TableCell>
+                  <TableCell>
+                    <Marca {...ESTADO_OPCION[f.estado]} />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.filas.map((f) => (
-                  <TableRow key={f.postulacion}>
-                    <TableCell className={num}>{f.posicion}</TableCell>
-                    <TableCell className="tabular-nums">{f.postulacion}</TableCell>
-                    <TableCell className={num}>{f.sorteo}</TableCell>
-                    <TableCell>
-                      <Marca {...ESTADO_OPCION[f.estado]} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         )}
         <Aviso tono="info" titulo="Sin datos personales: solo números de postulación y de sorteo." />
 
         <DialogFooter>
           <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
           <Button
@@ -243,7 +242,7 @@ export function DialogEliminarConvocatoria({
   const [aviso, setAviso] = useState<Error>(null)
   return (
     <Dialog open onOpenChange={(o) => !eliminar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <WarningIcon className="size-6 shrink-0 text-red" aria-hidden />

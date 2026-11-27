@@ -15,6 +15,13 @@ export const matriculaComplementariaSearchSchema = z.object({
   /** Continuidad: estado y especialidad. */
   estado: z.enum(["PREVISTA", "PENDIENTE_GRUPO", "CREADA", "SIN_CONTINUIDAD"]).optional().catch(undefined),
   especialidad: z.string().optional().catch(undefined),
+  /** Convocatorias: estado y modo de selección (el texto va en `q` y el año en `anio`). */
+  estadoConvocatoria: z.enum(["PROGRAMADA", "EN_POSTULACION", "EN_SELECCION", "PUBLICADA", "CERRADA"]).optional().catch(undefined),
+  modoSeleccion: z.enum(["MANUAL", "AUTOMATICA"]).optional().catch(undefined),
+  /** Abre el modal de Nueva postulación (enlace directo `postulaciones/nueva`). */
+  postular: z.coerce.boolean().optional().catch(undefined),
+  /** Abre el modal de Cambiar cupo de esa postulación (enlace directo `…/cambiar-cupo`). */
+  cambiarCupo: z.coerce.number().optional().catch(undefined),
   page: z.coerce.number().catch(0).default(0),
   pageSize: z.coerce.number().catch(10).default(10),
   sortBy: z.string().optional().catch(undefined),

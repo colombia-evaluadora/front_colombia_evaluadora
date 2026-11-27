@@ -22,7 +22,10 @@ import {
   findMatriculaConfigCampo,
   matriculaFieldConfigDb,
 } from "@/mocks/db/matricula-field-config"
-import { CAMPUSES, GRADES } from "@/mocks/db/reservations"
+import { CAMPUSES, GRADES, GROUPS } from "@/mocks/db/reservations"
+import { academicPeriodConfigsDb, academicPeriodsDb } from "@/mocks/db/academic-period/academic-periods"
+import { gradesDb } from "@/mocks/db/academic-period/grades"
+import { gradeGroupsDb } from "@/mocks/db/academic-period/grade-groups"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import { formatGrade } from "@/features/coverage/shared/api/ui-mappings"
 import type {
@@ -220,25 +223,61 @@ function toRawSN(label: string): "S" | "N" | null {
   return null
 }
 
+// Ids de grado y grupo del mock: los mismos en el catálogo (`grados/query`, `grupos/query`) y en el detalle.
+function idGradoMock(periodoId: number | string, codigo: number | string): number {
+  return mixHash(hashString(`grado-${periodoId}-${codigo}`)) % 1000000
+}
+function idGrupoMock(gradoId: number, jornada: string, codigo: string): number {
+  return mixHash(hashString(`grupo-${gradoId}-${jornada}-${codigo}`)) % 1000000
+}
+
+/**
+ * Período, grado y grupo del detalle resueltos contra los mismos catálogos que usa el formulario, para que
+ * Editar/Detalle muestren lo que dice la lista. Antes iban fijos (jornada 1 con nombre «Noche», período 1,
+ * `fk_tgrado` = el ordinal) y los selects quedaban en «Seleccionar».
+ */
+function academicoDelDetalle(matricula: Matricula) {
+  const sedeId = 1
+  const jornada = jornadasDb.find((j) => j.name === matricula.shift) ?? jornadasDb[0]
+  // Período de la sede y jornada (el Abierto primero), como lo lista `periodos-academicos/query`.
+  const candidatos = academicPeriodConfigsDb
+    .filter((c) => c.jornadaId === jornada.id)
+    .map((c) => academicPeriodsDb.find((p) => p.id === c.academicPeriodId))
+    .filter((p): p is NonNullable<typeof p> => p != null && p.sedeId === String(sedeId))
+    .sort((a, b) => Number(b.status === "A") - Number(a.status === "A"))
+  const periodoId =
+    candidatos[0]?.id ?? mixHash(hashString(`periodo-${sedeId}-${jornada.id}`)) % 100000
+  const codigo = String(matricula.grade)
+  const sembrado = gradesDb.find((g) => g.academicPeriodId === periodoId && g.grado === codigo)
+  const sinSembrar = !gradesDb.some((g) => g.academicPeriodId === periodoId)
+  const gradoId = sembrado?.id ?? (sinSembrar ? idGradoMock(periodoId, codigo) : null)
+  const grupoSembrado = sembrado
+    ? gradeGroupsDb.find((g) => g.gradeId === sembrado.id && g.codigo === matricula.group)
+    : undefined
+  const grupoId = grupoSembrado?.id ?? (gradoId != null && !sembrado ? idGrupoMock(gradoId, jornada.name, matricula.group) : null)
+  return { sedeId, jornadaId: jornada.id, periodoId, gradoId, grupoId }
+}
+
 function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
   const pk = Number(matricula.id)
+  const academico = academicoDelDetalle(matricula)
 
   return {
     matricula: {
       matricula: {
-        fk_tsede: 1,
-        fk_tgrado: matricula.grade,
-        fk_tgrupo: 1,
+        fk_tsede: academico.sedeId,
+        fk_tgrado: academico.gradoId,
+        fk_tgrupo: academico.grupoId,
         fk_tpadre: null,
         fk_enfasis: toNum(details.academic.specialty),
         sede_nombre: matricula.campus,
-        grado_nombre: `Grado ${matricula.grade}`,
+        grado_nombre: formatGrade(matricula.grade),
         grupo_nombre: matricula.group,
         pk_tmatricula: pk,
         fk_testudiante: pk,
-        fk_tlv_jornada: 1,
+        fk_tlv_jornada: academico.jornadaId,
         jornada_nombre: matricula.shift,
-        fk_tperiodo_academico: 1,
+        fk_tperiodo_academico: academico.periodoId,
         created_at: matricula.enrollmentDate,
         estado_matricula_nombre: matricula.status,
         // Variedad fija por pk para ver cada bloqueo de Editar.
@@ -387,6 +426,21 @@ export const matriculaHandlers = [
     return HttpResponse.json({ rows: [{ periodo_id: periodoId }] })
   }),
 
+  // Grupos de un grado generado: 01–04 en cada jornada, con el mismo id que pone el detalle.
+  http.post("*/api/eval-col/grados/:gradoId/grupos/query", async ({ params }) => {
+    await delay(150)
+    const gradoId = Number(Array.isArray(params.gradoId) ? params.gradoId[0] : params.gradoId)
+    const rows = jornadasDb.flatMap((jornada) =>
+      GROUPS.map((codigo) => ({
+        id: idGrupoMock(gradoId, jornada.name, codigo),
+        codigo,
+        jornada_id: jornada.id,
+        jornada_name: jornada.name,
+      })),
+    )
+    return HttpResponse.json({ rows: rows.map((row) => ({ ...row, total_count: rows.length })) })
+  }),
+
   http.post("*/api/eval-col/grados/query/:periodoId", async ({ params }) => {
     await delay(150)
     const periodoId = Array.isArray(params.periodoId) ? params.periodoId[0] : params.periodoId
@@ -400,7 +454,7 @@ export const matriculaHandlers = [
       // ver `fetchGrados`): ya es el valor ordinal del grado, no hace falta
       // resolverlo por nombre contra el catálogo `GRADOS`.
       rows: grados.map((codigo, index) => ({
-        id: mixHash(hashString(`grado-${periodoId}-${codigo}`)) % 1000000,
+        id: idGradoMock(periodoId, codigo),
         nombre: formatGrade(codigo),
         grado: formatGrade(codigo),
         codigo,

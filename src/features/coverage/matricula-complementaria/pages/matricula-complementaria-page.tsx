@@ -5,7 +5,7 @@ import { TableScreenTabs, TableScreenTitle } from "@/components/layout/table-scr
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
 import { coberturaComplementariaRoute } from "@/router"
@@ -13,6 +13,10 @@ import { coberturaComplementariaRoute } from "@/router"
 import type { PestanaComplementaria } from "@/features/coverage/matricula-complementaria/api/schema"
 import { ContinuidadTab } from "@/features/coverage/matricula-complementaria/components/continuidad-tab"
 import { ConveniosTab } from "@/features/coverage/matricula-complementaria/components/convenios-tab"
+import {
+  DialogCambiarCupoPorId,
+  DialogPostulacion,
+} from "@/features/coverage/matricula-complementaria/components/dialog-postulacion"
 import { DialogNuevoConvenio } from "@/features/coverage/matricula-complementaria/components/dialogs-convenio"
 import { PostulacionesTab } from "@/features/coverage/matricula-complementaria/components/postulaciones-tab"
 import { ConvocatoriasTab, MENU_COMPLEMENTARIA } from "@/features/coverage/matricula-complementaria/components/convocatorias-tab"
@@ -39,44 +43,54 @@ export function MatriculaComplementariaPage() {
 }
 
 function Contenido() {
-  const { tab = "convocatorias" } = coberturaComplementariaRoute.useSearch()
+  const { tab = "convocatorias", postular, cambiarCupo } = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
   const { puedeCrear } = useMenuPermission(MENU_COMPLEMENTARIA)
   const [nuevoConvenio, setNuevoConvenio] = useState(false)
+  // Nueva postulación y Cambiar cupo van en modal; la URL lo abre para que sirvan los enlaces directos.
+  const cerrarPostulacion = () =>
+    navigate({ search: (prev) => ({ ...prev, postular: undefined, cambiarCupo: undefined }), replace: true })
+
+  // Botón de crear de cada pestaña: va en su barra, a la derecha del buscador (CLAUDE.md §13).
+  const accion =
+    tab === "convenios" && puedeCrear ? (
+      <OnlineOnlyAction>
+        <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setNuevoConvenio(true)}>
+          <ControlPointIcon data-icon="inline-start" />
+          Nuevo convenio
+        </Button>
+      </OnlineOnlyAction>
+    ) : tab === "postulaciones" && puedeCrear ? (
+      <OnlineOnlyAction>
+        <Button
+          type="button"
+          variant="fill"
+          color="primary"
+          size="sm"
+          onClick={() => navigate({ search: (prev) => ({ ...prev, postular: true }) })}
+        >
+          <ControlPointIcon data-icon="inline-start" />
+          Nueva postulación
+        </Button>
+      </OnlineOnlyAction>
+    ) : tab === "convocatorias" && puedeCrear ? (
+      <OnlineOnlyAction>
+        <Button
+          render={<Link to={paths.app.coberturaConvocatoriaNueva.getHref()} />}
+          nativeButton={false}
+          variant="fill"
+          color="primary"
+          size="sm"
+        >
+          <ControlPointIcon data-icon="inline-start" />
+          Nueva convocatoria
+        </Button>
+      </OnlineOnlyAction>
+    ) : null
 
   const encabezado = (
     <>
-      <TableScreenTitle
-        action={
-          tab === "convenios" && puedeCrear ? (
-            <OnlineOnlyAction>
-              <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setNuevoConvenio(true)}>
-                <PlusIcon data-icon="inline-start" />
-                Nuevo convenio
-              </Button>
-            </OnlineOnlyAction>
-          ) : (tab === "convocatorias" || tab === "postulaciones") && puedeCrear ? (
-            <OnlineOnlyAction>
-              <Button
-                render={
-                  <Link
-                    to={tab === "convocatorias" ? paths.app.coberturaConvocatoriaNueva.getHref() : paths.app.coberturaPostulacionNueva.getHref()}
-                  />
-                }
-                nativeButton={false}
-                variant="fill"
-                color="primary"
-                size="sm"
-              >
-                <PlusIcon data-icon="inline-start" />
-                {tab === "convocatorias" ? "Nueva convocatoria" : "Nueva postulación"}
-              </Button>
-            </OnlineOnlyAction>
-          ) : null
-        }
-      >
-        Matrícula complementaria
-      </TableScreenTitle>
+      <TableScreenTitle>Matrícula complementaria</TableScreenTitle>
       <TableScreenTabs>
         <Tabs
           value={tab}
@@ -96,12 +110,21 @@ function Contenido() {
     </>
   )
 
-  if (tab === "convocatorias") return <ConvocatoriasTab encabezado={encabezado} />
-  if (tab === "postulaciones") return <PostulacionesTab encabezado={encabezado} />
+  if (tab === "convocatorias") return <ConvocatoriasTab encabezado={encabezado} accion={accion} />
+  if (tab === "postulaciones")
+    return (
+      <>
+        <PostulacionesTab encabezado={encabezado} accion={accion} />
+        {postular ? <DialogPostulacion onOpenChange={(open) => !open && cerrarPostulacion()} /> : null}
+        {cambiarCupo != null ? (
+          <DialogCambiarCupoPorId id={cambiarCupo} onOpenChange={(open) => !open && cerrarPostulacion()} />
+        ) : null}
+      </>
+    )
   if (tab === "convenios")
     return (
       <>
-        <ConveniosTab encabezado={encabezado} />
+        <ConveniosTab encabezado={encabezado} accion={accion} />
         {nuevoConvenio ? <DialogNuevoConvenio onOpenChange={setNuevoConvenio} /> : null}
       </>
     )
