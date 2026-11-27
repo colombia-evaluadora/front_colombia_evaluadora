@@ -34,7 +34,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import type { Person } from "@/features/establishment/employees/api/types/person"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
 import { createEmptyPerson } from "@/features/establishment/employees/api/types/person"
-import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
+import { useDepartmentsQuery, useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import {
@@ -217,7 +217,15 @@ function ConvertCampusForm({ campus, onClose, onConverted }: { campus: CampusDet
   const directivos = useDirectivosPersistence((message, options) => showNotice(message, options?.variant ?? "info"))
   const convert = useConvertCampus()
 
+  const { data: departments = [] } = useDepartmentsQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
+  // Cascada Departamento → Municipio: el departamento sale del municipio
+  // elegido; en estado solo mientras todavía no hay municipio.
+  const [pickedDepartmentId, setPickedDepartmentId] = useState<number | null>(null)
+  const departmentId =
+    values.address.municipality?.department?.id ||
+    municipalities.find((item) => item.id === values.address.municipality?.id)?.department.id ||
+    pickedDepartmentId
   const { data: calendars = [] } = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
   const { data: ownershipTypes = [] } = useOwnershipTypesQuery()
   const { data: modalities = [] } = useCatalogQuery<CatalogItem>(CATALOGS.MODALIDADES_PRESTACION)
@@ -409,11 +417,24 @@ function ConvertCampusForm({ campus, onClose, onConverted }: { campus: CampusDet
             </Field>
 
             <CatalogCombobox
+              id="convert-department"
+              label="Departamento"
+              items={departments}
+              value={departments.find((department) => department.id === departmentId) ?? null}
+              onChange={(department) => {
+                const next = department?.id ?? null
+                setPickedDepartmentId(next)
+                if (values.address.municipality && values.address.municipality.department?.id !== next) {
+                  setValues((current) => ({ ...current, address: { ...current.address, municipality: null } }))
+                }
+              }}
+              error={errors["address.municipality"] && !departmentId ? errors["address.municipality"] : undefined}
+            />
+            <CatalogCombobox
               id="convert-municipality"
               label="Municipio"
-              items={municipalities}
+              items={municipalities.filter((item) => !departmentId || item.department.id === departmentId)}
               value={values.address.municipality}
-              itemLabel={(item) => `${item.department.name} - ${item.name}`}
               onChange={(municipality) =>
                 setValues((current) => ({ ...current, address: { ...current.address, municipality } }))
               }

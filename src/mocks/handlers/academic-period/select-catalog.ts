@@ -23,18 +23,22 @@ import {
 } from "@/mocks/db/citaciones-compromisos"
 import { TIPOS_RECONOCIMIENTO_MOCK } from "@/mocks/db/reconocimientos"
 import { LISTAS_VALOR_COMUNICADO } from "@/mocks/db/comunicaciones-listas-valor"
+import { LISTAS_JERARQUICAS } from "@/mocks/db/catalogs/listas-jerarquicas"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
   nombre: string
   valor: string
   accion: string | null
+  etiqueta?: string | null
+  fk_tlista_valor_padre?: number | null
 }
 
 const deMock = (lista: CatalogoMock[]): SelectCategoryRow[] =>
   lista.map((c) => ({ pk_lista_valor: c.pk, nombre: c.nombre, valor: c.valor, accion: null }))
 
 const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
+  ...Object.fromEntries(Object.entries(LISTAS_JERARQUICAS).map(([k, filas]) => [k, () => filas])),
   ...Object.fromEntries(Object.entries(LISTAS_VALOR_COMUNICADO).map(([k, filas]) => [k, () => filas])),
   METODOLOGIA: () => METODOLOGIAS.map((m) => ({ ...m, valor: m.nombre, accion: null })),
   ...Object.fromEntries(
@@ -301,7 +305,7 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
 }
 
 export const selectCatalogHandlers = [
-  http.get("/api/eval-col/select/:categoria", async ({ params }) => {
+  http.get("*/api/eval-col/select/:categoria", async ({ params }) => {
     await delay(150)
     const categoria = String(params.categoria).toUpperCase()
     const criteria = EVALUATION_CRITERIA_CATALOGS[categoria as keyof typeof EVALUATION_CRITERIA_CATALOGS]

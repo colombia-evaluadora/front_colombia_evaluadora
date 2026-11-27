@@ -41,7 +41,8 @@ const catalogNames: Partial<Record<CatalogSlug, string>> = {
 
 /**
  * Categoría de `TLISTA_VALOR` por slug, para `GET /select/:categoria`.
- * Municipios, propiedad jurídica, discapacidades y roles tienen endpoint propio.
+ * Las listas con padre (municipio, naturaleza jurídica, discapacidad, resguardo,
+ * especialidad) se leen con `fetchSelectCategoryWithParent`; roles tiene endpoint propio.
  */
 const CATALOG_CATEGORIAS: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.DOCUMENT_TYPES]: "TIPO_DOCUMENTO",
