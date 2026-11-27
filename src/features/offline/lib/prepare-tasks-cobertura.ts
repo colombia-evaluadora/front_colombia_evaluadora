@@ -100,6 +100,7 @@ import {
   actualizacionKeys,
   cuerpoSolicitudes,
   fetchConfiguracionActualizacion,
+  fetchEstablecimientosActualizacion,
   fetchPendientesCount,
   fetchSolicitudes,
 } from "@/features/coverage/actualizacion-datos/api/actualizacion"
@@ -487,8 +488,13 @@ function promocionTasks(): PrepareTask[] {
 function actualizacionDatosTasks(): PrepareTask[] {
   const cuerpo = (pageIndex: number) => cuerpoSolicitudes({}, { pageIndex, pageSize: PAGE_SIZE })
   return [
-    // Pestaña con la que abre la pantalla.
-    seed(actualizacionKeys.configuracion, fetchConfiguracionActualizacion, grupoMeta()),
+    // Pestaña con la que abre la pantalla: la configuración de cada establecimiento que alcanza (territorial: varios).
+    seed(actualizacionKeys.establecimientos, fetchEstablecimientosActualizacion, grupoMeta(), {
+      then: (ees) =>
+        ees.slice(0, MAX_ESTABLECIMIENTOS).map((e) =>
+          seed(actualizacionKeys.configuracionDe(e.id), () => fetchConfiguracionActualizacion(e.id), grupoMeta()),
+        ),
+    }),
     seed(actualizacionKeys.pendientes, fetchPendientesCount, grupoMeta(), OPCIONAL),
     paginas({
       key: (p) => actualizacionKeys.lista(cuerpo(p)),

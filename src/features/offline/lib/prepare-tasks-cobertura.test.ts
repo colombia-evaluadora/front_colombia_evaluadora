@@ -108,8 +108,9 @@ describe("coberturaTasks: keys de las pantallas con sus valores por defecto", ()
     expect(pro.get(reprobados)?.optional).toBeFalsy()
     expect(pro.get(promocionKeys.areasDelAnio(5))).toBeDefined()
 
-    const act = await sembradas("/app/cobertura/actualizacion-datos")
-    expect(act.get(actualizacionKeys.configuracion)?.optional).toBeFalsy()
+    const act = await sembradas("/app/cobertura/actualizacion-datos", [[actualizacionKeys.establecimientos, [{ id: 7, nombre: "IE" }]]])
+    expect(act.get(actualizacionKeys.establecimientos)?.optional).toBeFalsy()
+    expect(act.get(actualizacionKeys.configuracionDe(7))).toBeDefined()
     expect(act.get(actualizacionKeys.lista({ SEARCH: null, ESTADO: "PENDIENTE", PAGE_INDEX: 0, PAGE_SIZE: 10 }))).toBeDefined()
   })
 

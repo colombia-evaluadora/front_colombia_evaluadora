@@ -16,10 +16,12 @@ import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import {
   MENU_ACTUALIZACION,
   useConfiguracionQuery,
+  useEstablecimientosActualizacionQuery,
   useGuardarConfiguracion,
 } from "@/features/coverage/actualizacion-datos/api/actualizacion"
 import type { CampoActualizable, ConfiguracionActualizacion } from "@/features/coverage/actualizacion-datos/api/types"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { SelectCampo } from "@/features/administration/conservacion-datos/components/select-campo"
 
 type Perfil = "acudiente" | "estudiante"
 
@@ -81,7 +83,16 @@ const celda = "px-3 py-3 text-center"
  * establecimiento para todas sus Sedes y Jornadas. Con solo acceso se ve en solo lectura.
  */
 export function ConfiguracionTab({ pestanas }: { pestanas: ReactNode }) {
-  const { data, isPending, error } = useConfiguracionQuery()
+  // Un registro por establecimiento: con uno se usa ese; con varios (roles territoriales, Sección 7) se elige.
+  const establecimientosQ = useEstablecimientosActualizacionQuery()
+  const opcionesEe = (establecimientosQ.data ?? []).map((e) => ({ value: String(e.id), label: e.nombre }))
+  const [eeElegido, setEeElegido] = useState("")
+  const eeValor = eeElegido || opcionesEe[0]?.value || ""
+  const ee = eeValor ? Number(eeValor) : null
+  const configQ = useConfiguracionQuery(ee)
+  const data = configQ.data
+  const isPending = establecimientosQ.isPending || configQ.isPending
+  const error = establecimientosQ.error ?? configQ.error
   const { puedeEditar } = useMenuPermission(MENU_ACTUALIZACION)
   const guardar = useGuardarConfiguracion()
   const { notify } = useNotify()
@@ -103,9 +114,9 @@ export function ConfiguracionTab({ pestanas }: { pestanas: ReactNode }) {
     setForm((f) => f && { ...f, campos: f.campos.map((c) => (codigos.includes(c.codigo) && c[perfil] !== null ? { ...c, [perfil]: valor } : c)) })
 
   function onGuardar() {
-    if (!form || errorCierre) return
+    if (!form || errorCierre || ee == null) return
     setErrorGuardar(null)
-    guardar.mutate(form, {
+    guardar.mutate({ ee, config: form }, {
       onSuccess: () => notify("Se guardó la configuración de la actualización de datos.", { variant: "success" }),
       onError: setErrorGuardar,
     })
@@ -130,7 +141,26 @@ export function ConfiguracionTab({ pestanas }: { pestanas: ReactNode }) {
         {pestanas}
       </TableScreenHeader>
       <TableScreenBody>
-        {isPending || !form ? (
+        {opcionesEe.length > 1 ? (
+          <SelectCampo
+            id="actualizacion-establecimiento"
+            label="Establecimiento"
+            className="mb-6 w-full max-w-md"
+            buscable
+            value={eeValor}
+            options={opcionesEe}
+            disabled={guardar.isPending}
+            onChange={(v) => {
+              if (!v) return
+              setForm(null)
+              setErrorGuardar(null)
+              setEeElegido(v)
+            }}
+          />
+        ) : null}
+        {establecimientosQ.isSuccess && opcionesEe.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No tiene establecimientos para configurar.</p>
+        ) : isPending || !form ? (
           error ? (
             <p className="text-sm text-red">{getErrorMessage(error)}</p>
           ) : (

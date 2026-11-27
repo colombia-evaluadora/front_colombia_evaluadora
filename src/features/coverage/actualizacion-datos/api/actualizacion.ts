@@ -16,20 +16,38 @@ const BASE = "/cobertura-academica/actualizacion-datos"
 const all = ["actualizacion-datos"] as const
 export const actualizacionKeys = {
   all,
+  establecimientos: [...all, "establecimientos"] as const,
   configuracion: [...all, "configuracion"] as const,
+  configuracionDe: (ee: number | "none") => [...all, "configuracion", ee] as const,
   solicitudes: [...all, "solicitudes"] as const,
   lista: (p: unknown) => [...all, "solicitudes", "lista", p] as const,
   pendientes: [...all, "solicitudes", "pendientes"] as const,
 }
 
-export async function fetchConfiguracionActualizacion() {
-  return camelizar<ConfiguracionActualizacion>(await evalCol.getRow(`${BASE}/configuracion`))
+export type EstablecimientoActualizacion = { id: number; nombre: string }
+
+/** Los que el usuario alcanza: el suyo o, si es territorial, los de su entidad (Sección 7). */
+export async function fetchEstablecimientosActualizacion() {
+  return evalCol.getRows<EstablecimientoActualizacion>(`${BASE}/establecimientos`)
 }
 
-export function useConfiguracionQuery() {
+export function useEstablecimientosActualizacionQuery() {
   return useQuery({
-    queryKey: actualizacionKeys.configuracion,
-    queryFn: fetchConfiguracionActualizacion,
+    queryKey: actualizacionKeys.establecimientos,
+    queryFn: fetchEstablecimientosActualizacion,
+    staleTime: 1000 * 60 * 10,
+  })
+}
+
+export async function fetchConfiguracionActualizacion(ee: number) {
+  return camelizar<ConfiguracionActualizacion>(await evalCol.getRow(`${BASE}/configuracion?ESTABLECIMIENTO=${ee}`))
+}
+
+export function useConfiguracionQuery(ee: number | null) {
+  return useQuery({
+    queryKey: actualizacionKeys.configuracionDe(ee ?? "none"),
+    queryFn: () => fetchConfiguracionActualizacion(ee as number),
+    enabled: ee != null,
   })
 }
 
@@ -88,8 +106,9 @@ function useMutacion<V>(fn: (v: V) => Promise<unknown>, key: readonly unknown[])
 
 export const useGuardarConfiguracion = () =>
   useMutacion(
-    (c: ConfiguracionActualizacion) =>
+    ({ ee, config: c }: { ee: number; config: ConfiguracionActualizacion }) =>
       evalCol.putRow(`${BASE}/configuracion`, {
+        FK_TESTABLECIMIENTO: ee,
         ACTIVO: c.activo ? "S" : "N",
         FECHA_INICIO: c.fechaInicio,
         FECHA_CIERRE: c.fechaCierre,
