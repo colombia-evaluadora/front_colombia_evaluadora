@@ -44,6 +44,21 @@ interface RealEstablishmentDetailRow {
   poblacion_etnias: boolean | null
   poblacion_talentos: boolean | null
   poblacion_subsidio: boolean | null
+  /** Organización y articulación (`fn_est_organizacion`, sso V571.2): NULL = Sin información. */
+  org_consejo_directivo: boolean | null
+  org_consejo_academico: boolean | null
+  org_consejo_estudiantil: boolean | null
+  org_consejo_padres: boolean | null
+  org_asociacion_padres: boolean | null
+  org_escuela_padres: boolean | null
+  art_educacion_superior: boolean | null
+  art_sena: boolean | null
+  art_sector_productivo: boolean | null
+  art_educacion_inicial: boolean | null
+  art_programas_salud: boolean | null
+  /** Calculadas: comité en un período Abierto y orientador con el rol activo. */
+  org_comite_convivencia: boolean | null
+  org_profesor_orientador: boolean | null
   /** Única query que expone el escudo. */
   fk_tarchivo: number | null
   resolucion_aprobacion: string | null
@@ -126,6 +141,21 @@ function toEstablishmentDetails(
         exceptionalTalents: row.poblacion_talentos === true,
         subsidy: row.poblacion_subsidio === true,
       },
+    },
+    organization: {
+      directiveCouncil: row.org_consejo_directivo ?? null,
+      academicCouncil: row.org_consejo_academico ?? null,
+      studentCouncil: row.org_consejo_estudiantil ?? null,
+      parentsCouncil: row.org_consejo_padres ?? null,
+      parentsAssociation: row.org_asociacion_padres ?? null,
+      parentsSchool: row.org_escuela_padres ?? null,
+      higherEducation: row.art_educacion_superior ?? null,
+      sena: row.art_sena ?? null,
+      productiveSector: row.art_sector_productivo ?? null,
+      earlyEducation: row.art_educacion_inicial ?? null,
+      healthPrograms: row.art_programas_salud ?? null,
+      coexistenceCommittee: row.org_comite_convivencia === true,
+      counselor: row.org_profesor_orientador === true,
     },
     // Rector/secretaria se resuelven aparte en `fetchEstablishment`.
     principal: principal?.person ?? null,

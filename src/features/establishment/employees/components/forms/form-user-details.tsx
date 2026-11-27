@@ -20,6 +20,7 @@ import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import { toEmailInput } from "@/lib/text-input"
 import {
+    CORREO_MAX,
     DOCUMENTO_MAX,
     esDocumentoNumerico,
     fechaLimiteMayorDeEdad,
@@ -376,6 +377,7 @@ export function UserDetailsForm({
                 disabled={bloqueada}
                 placeholder="Agregar"
                 value={person.email}
+                maxLength={CORREO_MAX}
                 aria-invalid={isInvalid(`${fieldPrefix}.email`)}
                 onChange={(event) => emitChange({ email: toEmailInput(event.target.value) })}
             />

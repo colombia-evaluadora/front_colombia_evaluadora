@@ -16,7 +16,6 @@ import { establishmentCreatedMessage, SUCCESS_MESSAGES } from "@/lib/success-mes
 import { getErrorMessage } from "@/lib/api-client"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
 import {
-  personHasAnyData,
   useDirectivosPersistence,
   type PendingInvitation,
 } from "@/features/establishment/institution/hooks/use-directivos-persistence"
@@ -24,7 +23,15 @@ import { useCreate } from "@/features/establishment/institution/api/mutations/us
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
 import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
-import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import {
+  createEmptyOrganization,
+  type EstablishmentDetails,
+} from "@/features/establishment/institution/api/types/establishment"
+import {
+  DialogBloqueo,
+  type Bloqueo,
+} from "@/features/administration/listas-valor/components/dialog-bloqueo"
+import { toBloqueoZona } from "@/features/establishment/institution/utils/bloqueo-zona"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-details"
@@ -32,7 +39,7 @@ import {
   DirectivosReadOnly,
   DirectivosSoloLecturaNota,
 } from "@/features/establishment/institution/components/directivos-read-only"
-import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
+import { isPersonEmpty, validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { findPredeterminado, useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
@@ -92,6 +99,7 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
       giftedAttention: false,
       subsidy: false,
     },
+    organization: createEmptyOrganization(),
     principal: createEmptyPerson(),
     secretary: createEmptyPerson(),
   }
@@ -295,9 +303,17 @@ export function AddEstablishmentPage() {
   const directivos = useDirectivosPersistence(notify)
 
   // Sin `onSuccess`: igual que en `createMutation`.
+  // Cambiar la zona con sedes anexas que no la permiten (Regla 21): bloqueo con Entendido, no un aviso.
+  const [bloqueoZona, setBloqueoZona] = useState<Bloqueo | null>(null)
+
   const updateMutation = useUpdate({
     mutationConfig: {
       onError: (error) => {
+        const bloqueo = toBloqueoZona(getErrorMessage(error))
+        if (bloqueo) {
+          setBloqueoZona(bloqueo)
+          return
+        }
         notify(getErrorMessage(error) || "No se pudo actualizar el establecimiento.", {
           variant: "error",
         })
@@ -423,7 +439,8 @@ export function AddEstablishmentPage() {
     await directivos.enviarInvitacionesPendientes(pendingInvitations)
     const { avisos, variant } = directivos.takeActivationNotices()
     notify(
-      [establishmentCreatedMessage(personHasAnyData(nextSecretary)), ...avisos].join(" "),
+      // Tipo de documento y género vienen precargados: no cuentan como secretaria diligenciada.
+      [establishmentCreatedMessage(!isPersonEmpty(nextSecretary)), ...avisos].join(" "),
       variant ? { variant } : undefined,
     )
     lastNoticeIsErrorRef.current = false
@@ -559,7 +576,8 @@ export function AddEstablishmentPage() {
                       invalidFields={invalidFields}
                       errors={fieldErrors}
                       showValidation={hasSubmitted}
-                      required={false}
+                      // Con cualquier dato de la secretaria, sus obligatorios llevan asterisco (Regla 77).
+                      required={!isPersonEmpty(formValues.secretary)}
                       establishmentId={isEditMode ? establishmentId : null}
                       disabled={directivosSoloLectura}
                       photo={photos["secretary"] ?? null}
@@ -578,6 +596,7 @@ export function AddEstablishmentPage() {
           </Accordion>
         </form>
       </TableScreenBody>
+      <DialogBloqueo bloqueo={bloqueoZona} onClose={() => setBloqueoZona(null)} />
     </TableScreen>
   )
 }

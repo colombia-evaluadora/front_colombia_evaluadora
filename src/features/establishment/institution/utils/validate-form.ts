@@ -240,7 +240,7 @@ function isBlank(value: string | null | undefined): boolean {
  * secretaria con solo el correo o el teléfono se descartaba sin avisar. Tipo de
  * documento y género no cuentan: la página los precarga con el predeterminado.
  */
-function isPersonEmpty(person: Person | null): boolean {
+export function isPersonEmpty(person: Person | null): boolean {
   if (!person) {
     return true
   }

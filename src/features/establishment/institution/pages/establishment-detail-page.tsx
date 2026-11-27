@@ -30,6 +30,12 @@ import {
   DirectivosSoloLecturaNota,
 } from "@/features/establishment/institution/components/directivos-read-only"
 import { esSectorNoOficial } from "@/features/establishment/institution/utils/sector"
+import {
+  PREGUNTAS_ARTICULACION,
+  PREGUNTAS_CALCULADAS,
+  PREGUNTAS_ORGANIZACION,
+  respuestaTexto,
+} from "@/features/establishment/institution/utils/organizacion"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
@@ -211,6 +217,23 @@ export function EstablishmentDetailPage() {
                           value={yesNo(poblacion?.exceptionalTalents === true)}
                         />
                         <DetailItem label="Ofrece subsidio" value={yesNo(poblacion?.subsidy === true)} />
+                      </DetailSection>
+                    </CardContent>
+                  </Card>
+                  <Card className={accordionCardClassName}>
+                    <CardContent className="flex flex-col gap-6">
+                      <DetailSection title="Organización">
+                        {PREGUNTAS_ORGANIZACION.map(({ key, label }) => (
+                          <DetailItem key={key} label={label} value={respuestaTexto(establishment.organization?.[key])} />
+                        ))}
+                        {PREGUNTAS_CALCULADAS.map(({ key, label }) => (
+                          <DetailItem key={key} label={label} value={yesNo(establishment.organization?.[key] === true)} />
+                        ))}
+                      </DetailSection>
+                      <DetailSection title="Articulación">
+                        {PREGUNTAS_ARTICULACION.map(({ key, label }) => (
+                          <DetailItem key={key} label={label} value={respuestaTexto(establishment.organization?.[key])} />
+                        ))}
                       </DetailSection>
                     </CardContent>
                   </Card>

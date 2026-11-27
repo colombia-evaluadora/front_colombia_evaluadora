@@ -3,7 +3,11 @@ import { IdentificationDataFormSection } from "@/features/establishment/institut
 import { DomicilioDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/domicilio-data-section"
 import { ContactDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/contact-data-section"
 import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
-import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import { OrganizationFormSection } from "@/features/establishment/institution/components/forms/form-sections/organization-section"
+import {
+    createEmptyOrganization,
+    type EstablishmentDetails,
+} from "@/features/establishment/institution/api/types/establishment"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 
 interface EstablishmentDetailsFormProps {
@@ -20,6 +24,7 @@ interface EstablishmentDetailsFormProps {
     oferenteEditable?: boolean
 }
 
+// Organización y articulación arranca plegado (informe, E.1.EST.1; desplegado es la variante E.1.EST.1a).
 const SECCIONES = ["identificacion", "domicilio", "contacto", "complementaria"]
 
 /** Caret a la izquierda del título, como el acordeón de afuera. */
@@ -27,8 +32,8 @@ const triggerClassName =
   "flex-row-reverse justify-end items-center gap-2 py-3 text-base **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-4"
 
 /**
- * Los cuatro bloques del establecimiento, cada uno en su acordeón y todos
- * abiertos al entrar. `keepMounted`: cerrar uno no desmonta sus campos, así que
+ * Los bloques del establecimiento, cada uno en su acordeón: los cuatro de datos
+ * abiertos al entrar y Organización y articulación plegado. `keepMounted`: cerrar uno no desmonta sus campos, así que
  * no pierden lo escrito ni el foco de validación.
  */
 export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange, oferenteEditable = false }: EstablishmentDetailsFormProps) {
@@ -74,6 +79,16 @@ export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], 
                     value={value.additionalInfo}
                     sector={sector}
                     onChange={(additionalInfo) => onChange({ ...value, additionalInfo })}
+                />
+            ),
+        },
+        {
+            key: "organizacion",
+            titulo: "Organización y articulación",
+            contenido: (
+                <OrganizationFormSection
+                    value={value.organization ?? createEmptyOrganization()}
+                    onChange={(organization) => onChange({ ...value, organization })}
                 />
             ),
         },

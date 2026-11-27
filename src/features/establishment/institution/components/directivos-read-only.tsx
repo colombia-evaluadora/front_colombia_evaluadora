@@ -70,7 +70,7 @@ export function DirectivosSoloLecturaNota() {
   return (
     <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
       <LockIcon className="size-3.5" />
-      Solo lectura: solo el Superadministrador cambia al Rector y a la Secretaria.
+      Solo lectura: solo el Superadministrador y el Supervisor territorial cambian al Rector y a la Secretaria.
     </span>
   )
 }
