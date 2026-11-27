@@ -695,9 +695,11 @@ function UnificarAccion({ matricula }: { matricula: Matricula }) {
  */
 function SolicitudRetiroAccion({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  // Responder y anular: Administrador o Gestor con la sede y jornada (V439).
+  const { reactivar } = useMatriculaCapacidades()
   const { notify } = useNotify()
   const [abierto, setAbierto] = useState(false)
-  if (!puedeEditar || matricula.status !== "Cursando") return null
+  if (!puedeEditar || !reactivar || matricula.status !== "Cursando") return null
   if (!matricula.retiroSolicitado && !matricula.anulacionPendiente) return null
   const origen = Boolean(matricula.retiroSolicitado)
   const label = origen ? "Responder solicitud de retiro" : "Anular matrícula"

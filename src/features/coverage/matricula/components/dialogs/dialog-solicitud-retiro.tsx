@@ -18,6 +18,7 @@ import {
   useSolicitudRetiroQuery,
 } from "@/features/coverage/matricula/api/solicitud-retiro"
 import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
+import { useMatriculaCapacidades } from "@/features/coverage/matricula/api/query/use-matricula-capacidades"
 import { Aviso, CampoSelect, MatriculasAfectadas } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
 import { DialogRetirar } from "@/features/coverage/matricula/components/dialogs/dialog-retirar-matricula"
 
@@ -272,6 +273,8 @@ export function DialogAccionBloqueada({
 }) {
   const { notify } = useNotify()
   const [verSolicitud, setVerSolicitud] = useState(false)
+  // Responder es del Administrador o el Gestor (V439): el Coordinador solo ve el aviso.
+  const { reactivar: puedeResponder } = useMatriculaCapacidades()
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   if (verSolicitud)
     return (
@@ -292,15 +295,19 @@ export function DialogAccionBloqueada({
         </DialogHeader>
         <p className="text-sm">
           La matrícula de {nombre} tiene un retiro solicitado por {matricula.retiroSolicitadoPor || "otro establecimiento"}.
-          Responda la solicitud (Retirar u Objetar) para continuar.
+          {puedeResponder
+            ? "Responda la solicitud (Retirar u Objetar) para continuar."
+            : "El Administrador o el Gestor del establecimiento debe responderla (Retirar u Objetar) para continuar."}
         </p>
         <DialogFooter>
           <Button type="button" variant="outline" color="neutral" size="sm" onClick={onClose}>
             Entendido
           </Button>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setVerSolicitud(true)}>
-            Ver solicitud
-          </Button>
+          {puedeResponder ? (
+            <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setVerSolicitud(true)}>
+              Ver solicitud
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
