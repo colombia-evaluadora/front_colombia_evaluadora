@@ -59,6 +59,7 @@ interface Definicion {
 const ACCIONES: Definicion[] = [
   {
     accion: "retirar",
+    capacidad: "operar",
     label: () => "Retirar",
     Icon: PersonRemoveIcon,
     editar: true,
@@ -71,6 +72,7 @@ const ACCIONES: Definicion[] = [
   },
   {
     accion: "reingresar",
+    capacidad: "operar",
     label: () => "Reingresar",
     Icon: PersonAddIcon,
     editar: true,
@@ -93,6 +95,7 @@ const ACCIONES: Definicion[] = [
   },
   {
     accion: "cambiar-grupo",
+    capacidad: "operar",
     label: () => "Cambiar de grupo",
     Icon: ArrowsLeftRightIcon,
     editar: true,

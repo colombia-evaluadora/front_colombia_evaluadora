@@ -10,6 +10,7 @@ import { AccionesDocumentos } from "@/features/coverage/matricula/components/dia
 import { ReingresarMatriculaDialog } from "@/features/coverage/matricula/components/dialogs/dialog-reingresar-matricula"
 import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { useMatriculaCapacidades } from "@/features/coverage/matricula/api/query/use-matricula-capacidades"
 
 interface MatriculaToolbarProps {
   matricula: Matricula
@@ -22,6 +23,7 @@ interface MatriculaToolbarProps {
 
 export function MatriculaToolbar({ matricula, showModificar = true, abrirRetiro = false }: MatriculaToolbarProps) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  const { operar } = useMatriculaCapacidades()
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -44,8 +46,8 @@ export function MatriculaToolbar({ matricula, showModificar = true, abrirRetiro 
         Asignaturas
       </Button>
       */}
-      {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" porInasistencia={abrirRetiro} /> : null}
-      {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
+      {puedeEditar && operar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" porInasistencia={abrirRetiro} /> : null}
+      {puedeEditar && operar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
       <AccionesDocumentos matricula={matricula} modo="button" />
     </div>
   )

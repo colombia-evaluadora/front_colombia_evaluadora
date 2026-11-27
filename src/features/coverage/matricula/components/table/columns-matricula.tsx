@@ -362,6 +362,8 @@ const FUERA_DEL_MENU = ["Generar paquete de soporte"]
  */
 function ActionsCell({ matricula }: { matricula: Matricula }) {
   const { puedeEditar } = useMenuPermission("MATRICULA")
+  // Retirar y reingresar: Administrador, Gestor o Supervisor de sede (Sección 4.1).
+  const { operar } = useMatriculaCapacidades()
   const navigate = useNavigate()
   const nombre = `${matricula.firstName} ${matricula.lastName}`
   const retiroTraslado = matricula.status === "Retirado" && Boolean(matricula.retiroTraslado)
@@ -384,7 +386,7 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
     return (
       <AccionesFila limite={0}>
         {verDetalle}
-        {puedeEditar ? (
+        {puedeEditar && operar ? (
           <OnlineOnlyAction>
             <ReingresarMatriculaDialog matricula={matricula} />
           </OnlineOnlyAction>
@@ -411,12 +413,12 @@ function ActionsCell({ matricula }: { matricula: Matricula }) {
         </OnlineOnlyAction>
       )}
       <RegistrarAutorizacionAccion matricula={matricula} />
-      {puedeEditar && matricula.status === "Cursando" && !matricula.retiroSolicitado && !matricula.anulacionPendiente ? (
+      {puedeEditar && operar && matricula.status === "Cursando" && !matricula.retiroSolicitado && !matricula.anulacionPendiente ? (
         <OnlineOnlyAction>
           <RetirarMatriculaDialog matricula={matricula} />
         </OnlineOnlyAction>
       ) : null}
-      {puedeEditar && matricula.status === "Retirado" ? (
+      {puedeEditar && operar && matricula.status === "Retirado" ? (
         <OnlineOnlyAction>
           <ReingresarMatriculaDialog matricula={matricula} />
         </OnlineOnlyAction>
@@ -607,8 +609,9 @@ function AccionesEditar({ matricula, parte }: { matricula: Matricula; parte: "ca
   const abrir = (accion: "grupo" | "grado", label: string) =>
     matricula.retiroSolicitado ? setBloqueada(label) : setAbierto(accion)
   // Partido en dos: Agregar complementaria va entre los cambios y Corregir identidad (C.1.LIS.3).
+  // Corregir identidad es del Administrador o el Gestor del establecimiento (Regla 43).
   if (parte === "identidad")
-    return (
+    return !capacidades.reactivar ? null : (
       <OnlineOnlyAction>
         <BotonAccion
           modo="icon"
@@ -625,9 +628,11 @@ function AccionesEditar({ matricula, parte }: { matricula: Matricula; parte: "ca
     <>
       {cambios ? (
         <>
+          {capacidades.operar ? (
           <OnlineOnlyAction>
             <BotonAccion modo="icon" label="Cambiar de grupo" ariaLabel={`Cambiar de grupo a ${nombre}`} Icon={ArrowsLeftRightIcon} onClick={() => abrir("grupo", "Cambiar de grupo")} />
           </OnlineOnlyAction>
+          ) : null}
           {capacidades.cambiarGrado ? (
             <OnlineOnlyAction>
               <BotonAccion modo="icon" label="Cambiar de grado" ariaLabel={`Cambiar de grado a ${nombre}`} Icon={ArrowsDownUpIcon} onClick={() => abrir("grado", "Cambiar de grado")} />
