@@ -13,6 +13,7 @@ import {
 } from "@/mocks/db/convocatorias"
 
 const BASE = "*/api/eval-col/cobertura-academica/matricula-complementaria/convocatorias"
+const ESTABLECIMIENTOS = "*/api/eval-col/cobertura-academica/matricula-complementaria/establecimientos"
 
 type Resultado = { error: string; status: number } | { data: unknown }
 const responder = (r: Resultado) =>
@@ -22,6 +23,11 @@ const cupoDe = (request: Request) => Number(new URL(request.url).searchParams.ge
 
 // Rutas estáticas antes que las de `:id` (MSW usa el primer match).
 export const convocatoriasHandlers = [
+  // Usuario del mock: un solo establecimiento (no territorial), sin selector.
+  http.get(ESTABLECIMIENTOS, async () => {
+    await delay(150)
+    return HttpResponse.json({ rows: [{ id: 1, nombre: "IE Central" }] })
+  }),
   http.post(`${BASE}/query`, async ({ request }) => {
     await delay(250)
     const body = (await request.json()) as { PAGE_INDEX: number; PAGE_SIZE: number; SORTING?: { DESC: boolean } }

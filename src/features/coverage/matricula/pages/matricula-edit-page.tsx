@@ -379,7 +379,14 @@ function MatriculaEditPageContent() {
             onSaved()
             return
           }
-          notify(SUCCESS_MESSAGES.matricula.updated)
+          // Complementaria propia y especialidad cambiada: avisar que la complementaria debe retirarse o cambiar de grupo.
+          const comp = data.details?.restricciones?.complementaria
+          if (comp && !comp.porAdscripcion && values.academic.specialty !== data.details?.academic.specialty)
+            notify(
+              `Cambió la especialidad de la matrícula principal. Su matrícula complementaria (${comp.sede} · ${comp.jornada} · ${comp.especialidad}) debe retirarse o cambiarse de grupo.`,
+              { variant: "warning" },
+            )
+          else notify(SUCCESS_MESSAGES.matricula.updated)
           navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId), search: (prev) => ({ ...prev, accion: undefined }) })
         },
       },
@@ -746,11 +753,12 @@ function MatriculaEditPageContent() {
                   // La de una complementaria se cambia con su acción, con grupo y cupo (Sección 2.16).
                   restricciones?.tipo === "COMPLEMENTARIA"
                     ? "Cambie la especialidad con Cambiar de especialidad, en la lista de Matrícula."
-                    : restricciones?.tieneComplementaria
-                    ? "Cambie la especialidad desde su matrícula complementaria."
-                    : restricciones?.postulacionRegistrada
-                      ? "Cambie la especialidad con Cambiar cupo."
-                      : undefined
+                    : // Con complementaria propia se cambia aquí y se avisa al guardar.
+                      restricciones?.tieneComplementaria && restricciones.complementaria?.porAdscripcion !== false
+                      ? "Cambie la especialidad desde su matrícula complementaria."
+                      : restricciones?.postulacionRegistrada
+                        ? "La especialidad la toma la opción seleccionada de su postulación."
+                        : undefined
                 }
                 guardianIdentityDisabled={guardianSinCambio}
                 studentIdentityDisabled

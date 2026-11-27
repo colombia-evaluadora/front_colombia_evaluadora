@@ -56,8 +56,7 @@ function Contenido() {
 
   const s = seleccion.data
   const enSeleccion = c?.estado === "EN_SELECCION"
-  // Con la lista de espera de la forma por el origen, el orden es siempre la fecha de registro.
-  const conSorteo = c?.forma === "ABIERTA" && c.desempate === "SORTEO"
+  const conSorteo = c?.desempate === "SORTEO"
   const disponibles = s ? Math.max(0, s.cupo.cupo - s.cupo.seleccionados) : 0
 
   return (
@@ -158,11 +157,12 @@ function Contenido() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className={num} title={c.forma === "ORIGEN" ? "Orden de selección: fecha y hora de registro." : "Orden de selección: Continuidad primero y luego el desempate."}>
+                      <TableHead className={num} title="Orden de selección: Continuidad primero y luego el desempate.">
                         Pos.
                       </TableHead>
                       <TableHead>Postulación</TableHead>
                       <TableHead>Estudiante</TableHead>
+                      <TableHead className={num}>Preferencia</TableHead>
                       <TableHead>Establecimiento de origen</TableHead>
                       <TableHead className={conSorteo ? num : undefined}>{conSorteo ? "Sorteo" : "Registro"}</TableHead>
                       <TableHead>Estado</TableHead>
@@ -171,7 +171,7 @@ function Contenido() {
                   <TableBody>
                     {!s || s.opciones.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                           {enSeleccion ? "No quedan postulaciones Inscrito en este cupo." : "No hay postulaciones en lista de espera en este cupo."}
                         </TableCell>
                       </TableRow>
@@ -186,6 +186,7 @@ function Contenido() {
                               {o.continuidad ? <Marca label="Continuidad" color="secondary" /> : null}
                             </span>
                           </TableCell>
+                          <TableCell className={num}>{o.preferencia}</TableCell>
                           <TableCell>{o.origen}</TableCell>
                           <TableCell className={conSorteo ? num : "tabular-nums"}>
                             {conSorteo ? o.sorteo : fechaHora(o.registro)}
@@ -257,11 +258,9 @@ function DialogConfirmarSeleccion({
   const p = previaSeleccion(s)
   const lugares = Math.max(0, s.cupo.cupo - s.cupo.seleccionados)
   const orden =
-    c.forma === "ORIGEN"
-      ? "la fecha y hora de registro"
-      : c.desempate === "SORTEO"
+    c.desempate === "SORTEO"
         ? "Continuidad primero y luego el sorteo"
-        : "Continuidad primero y luego el orden de inscripción"
+      : "Continuidad primero y luego el orden de inscripción"
   const publicada = c.estado !== "EN_SELECCION"
 
   return (

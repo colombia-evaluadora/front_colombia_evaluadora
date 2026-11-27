@@ -46,10 +46,13 @@ export interface ConvocatoriasParams {
   pageIndex: number
   pageSize: number
   sorting: { id: string; desc: boolean }[]
+  /** Roles territoriales: establecimiento elegido. */
+  establecimiento?: number
 }
 
 export async function fetchConvocatorias(params: ConvocatoriasParams) {
   const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
+    ESTABLECIMIENTO: params.establecimiento ?? null,
     PAGE_INDEX: params.pageIndex,
     PAGE_SIZE: params.pageSize,
     SORTING: params.sorting[0] ? { ID: params.sorting[0].id, DESC: params.sorting[0].desc } : { ID: "anio", DESC: true },
@@ -87,9 +90,6 @@ export function useOpcionesConvocatoriaQuery(anio: number) {
 const toBody = (v: ConvocatoriaInput) => ({
   ANIO: v.anio,
   ORIGENES: v.origenIds,
-  FORMA_POSTULACION: v.forma,
-  CONTINUIDAD_AUTOMATICA: v.continuidadAutomatica ? "S" : "N",
-  LISTA_ESPERA: v.listaEspera ? "S" : "N",
   MODO_SELECCION: v.modo,
   DESEMPATE: v.desempate,
   FECHA_INICIO_POSTULACION: v.inicioPostulacion,

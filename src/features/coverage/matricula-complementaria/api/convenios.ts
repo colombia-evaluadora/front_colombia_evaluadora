@@ -29,6 +29,8 @@ export const convenioKeys = {
 export interface ConveniosParams {
   search?: string
   anio?: number
+  /** Roles territoriales: establecimiento elegido. */
+  establecimiento?: number
   pageIndex: number
   pageSize: number
 }
@@ -37,6 +39,7 @@ export async function fetchConvenios(p: ConveniosParams) {
   const rows = await evalCol.postRows<Record<string, unknown> & { total_count: number }>(`${BASE}/query`, {
     SEARCH: p.search || null,
     ANIO: p.anio ?? null,
+    ESTABLECIMIENTO: p.establecimiento ?? null,
     PAGE_INDEX: p.pageIndex,
     PAGE_SIZE: p.pageSize,
   })

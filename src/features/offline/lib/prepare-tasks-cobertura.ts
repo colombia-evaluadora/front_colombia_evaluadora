@@ -75,8 +75,11 @@ import {
 } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import { ESTADOS_OPCION_POR_DEFECTO } from "@/features/coverage/inscripcion-reservas/api/types/inscripcion"
 // Matrícula complementaria
-import { continuidadKeys, fetchContinuidad } from "@/features/coverage/matricula-complementaria/api/continuidad"
 import { convenioKeys, fetchConvenios } from "@/features/coverage/matricula-complementaria/api/convenios"
+import {
+  establecimientosComplementariaKey,
+  fetchEstablecimientosComplementaria,
+} from "@/features/coverage/matricula-complementaria/api/establecimientos"
 import {
   convocatoriaKeys,
   fetchConvocatoria,
@@ -429,19 +432,20 @@ function complementariaTasks(): PrepareTask[] {
   const params = (pageIndex: number) => ({ pageIndex, pageSize: PAGE_SIZE })
   const conOrden = (pageIndex: number) => ({ ...params(pageIndex), sorting: [] })
   return [
+    // Más de uno = territorial: muestra el selector de establecimiento.
+    seed(establecimientosComplementariaKey, fetchEstablecimientosComplementaria, grupoMeta(), OPCIONAL),
     paginas({
       key: (p) => convocatoriaKeys.lista(conOrden(p)),
       fetch: (p) => fetchConvocatorias(conOrden(p)),
-      detalle: ({ id, cupos, estado, forma, modo, listaEspera, ejecutadaEl }) => [
+      detalle: ({ id, cupos, estado, modo, ejecutadaEl }) => [
         seed(convocatoriaKeys.detalle(id), () => fetchConvocatoria(id), grupoMeta(), OPCIONAL),
         // Mismas condiciones que `accionesDe` (Seleccionar y Ver resultado).
-        ...((estado === "EN_SELECCION" || estado === "PUBLICADA") &&
-        ((forma === "ABIERTA" && modo === "MANUAL") || (forma === "ORIGEN" && listaEspera))
+        ...(modo === "MANUAL" && (estado === "EN_SELECCION" || estado === "PUBLICADA")
           ? (cupos ?? []).map((cupo) =>
               seed(convocatoriaKeys.seleccion(id, cupo.id), () => fetchSeleccionCupo(id, cupo.id), grupoMeta(), OPCIONAL),
             )
           : []),
-        ...(ejecutadaEl && forma === "ABIERTA" && modo === "AUTOMATICA"
+        ...(ejecutadaEl && modo === "AUTOMATICA"
           ? [seed(convocatoriaKeys.resultado(id), () => fetchResultado(id), grupoMeta(), OPCIONAL)]
           : []),
       ],
@@ -455,11 +459,6 @@ function complementariaTasks(): PrepareTask[] {
     paginas({
       key: (p) => convenioKeys.lista(params(p)),
       fetch: (p) => fetchConvenios(params(p)),
-      optional: true,
-    }),
-    paginas({
-      key: (p) => continuidadKeys.lista(params(p)),
-      fetch: (p) => fetchContinuidad(params(p)),
       optional: true,
     }),
   ]

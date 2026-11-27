@@ -3,13 +3,11 @@ import { Badge } from "@/components/ui/badge"
 import type {
   CupoConvocatoria,
   Desempate,
-  EstadoContinuidad,
   EstadoConvenio,
   EstadoConvocatoria,
   EstadoOpcion,
-  FormaPostulacion,
+  EstadoPostulacion,
   ModoSeleccion,
-  MotivoSinContinuidad,
 } from "@/features/coverage/matricula-complementaria/api/types"
 
 type Color = "muted" | "info" | "warning" | "success" | "destructive" | "secondary"
@@ -23,14 +21,24 @@ export const ESTADO_CONVOCATORIA: Record<EstadoConvocatoria, { label: string; co
 }
 
 export const ESTADO_OPCION: Record<EstadoOpcion, { label: string; color: Color }> = {
-  INSCRITO: { label: "Inscrito", color: "info" },
-  REGISTRADO: { label: "Registrado", color: "success" },
-  ADSCRITO: { label: "Adscrito", color: "success" },
+  INSCRITO: { label: "Pendiente", color: "info" },
+  REGISTRADO: { label: "Seleccionada", color: "success" },
+  ADSCRITO: { label: "Matriculada", color: "success" },
   EN_LISTA_ESPERA: { label: "En lista de espera", color: "warning" },
   DESCARTADA: { label: "Descartada", color: "destructive" },
   NO_SELECCIONADA: { label: "No seleccionada", color: "muted" },
   ANULADA: { label: "Anulada", color: "muted" },
   RETIRADA: { label: "Retirada", color: "muted" },
+}
+
+export const ESTADO_POSTULACION: Record<EstadoPostulacion, { label: string; color: Color }> = {
+  POSTULADA: { label: "Postulada", color: "info" },
+  EN_LISTA_ESPERA: { label: "En lista de espera", color: "warning" },
+  SELECCIONADA: { label: "Seleccionada", color: "success" },
+  MATRICULADA: { label: "Matriculada", color: "success" },
+  NO_SELECCIONADA: { label: "No seleccionada", color: "muted" },
+  RETIRADA: { label: "Retirada", color: "muted" },
+  ANULADA: { label: "Anulada", color: "muted" },
 }
 
 export const ESTADO_CONVENIO: Record<EstadoConvenio, { label: string; color: Color }> = {
@@ -40,24 +48,6 @@ export const ESTADO_CONVENIO: Record<EstadoConvenio, { label: string; color: Col
   FINALIZADO: { label: "Finalizado", color: "muted" },
 }
 
-export const ESTADO_CONTINUIDAD: Record<EstadoContinuidad, { label: string; color: Color }> = {
-  PREVISTA: { label: "Prevista", color: "info" },
-  PENDIENTE_GRUPO: { label: "Pendiente de grupo", color: "warning" },
-  CREADA: { label: "Creada", color: "success" },
-  SIN_CONTINUIDAD: { label: "Sin continuidad", color: "destructive" },
-}
-
-export const MOTIVO_SIN_CONTINUIDAD: Record<MotivoSinContinuidad, string> = {
-  PRINCIPAL_REPROBADA: "Principal reprobada",
-  COMPLEMENTARIA_REPROBADA: "Complementaria reprobada",
-  PRINCIPAL_RETIRADA: "Principal retirada",
-  SIN_CONVENIO: "Sin convenio del año siguiente",
-}
-
-export const FORMA_LABEL: Record<FormaPostulacion, string> = {
-  ABIERTA: "Abierta",
-  ORIGEN: "Por el establecimiento de origen",
-}
 export const MODO_LABEL: Record<ModoSeleccion, string> = { MANUAL: "Manual", AUTOMATICA: "Automática" }
 export const DESEMPATE_LABEL: Record<Desempate, string> = { SORTEO: "Sorteo", ORDEN: "Orden de inscripción" }
 

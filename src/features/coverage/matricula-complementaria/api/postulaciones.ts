@@ -7,14 +7,14 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 
 import { camelizar, convocatoriaKeys } from "@/features/coverage/matricula-complementaria/api/convocatorias"
 import type {
-  EstadoConvocatoria,
   OpcionesPostulacion,
+  OpcionPostulacion,
   Postulacion,
   PrincipalPostulable,
 } from "@/features/coverage/matricula-complementaria/api/types"
 
-// Postulaciones de la matrícula complementaria (Sección 2.16.2). Pendiente en
-// el back (docs/matricula/pendientes-back.md, tarea 13).
+// Postulaciones de la matrícula complementaria (Sección 2.16.2): cada una con
+// 1 a 3 opciones de especialidad ordenadas por preferencia.
 
 const BASE = "/cobertura-academica/matricula-complementaria/postulaciones"
 
@@ -34,8 +34,17 @@ export interface PostulacionesParams {
   search?: string
   convocatoria?: number
   grado?: string
+  /** Roles territoriales: establecimiento elegido. */
+  establecimiento?: number
   pageIndex: number
   pageSize: number
+}
+
+/** `opciones` puede llegar como texto JSON. */
+function aPostulacion(r: unknown): Postulacion {
+  const p = camelizar<Postulacion & { opciones: unknown }>(r)
+  const opciones = typeof p.opciones === "string" ? camelizar<OpcionPostulacion[]>(JSON.parse(p.opciones)) : p.opciones
+  return { ...p, opciones: ((opciones as OpcionPostulacion[]) ?? []).slice().sort((a, b) => a.orden - b.orden) }
 }
 
 export async function fetchPostulaciones(p: PostulacionesParams) {
@@ -43,10 +52,11 @@ export async function fetchPostulaciones(p: PostulacionesParams) {
     SEARCH: p.search || null,
     FK_CONVOCATORIA: p.convocatoria ?? null,
     GRADO: p.grado || null,
+    ESTABLECIMIENTO: p.establecimiento ?? null,
     PAGE_INDEX: p.pageIndex,
     PAGE_SIZE: p.pageSize,
   })
-  return toPaginated(rows, { pageSize: p.pageSize, map: (r) => camelizar<Postulacion>(r) })
+  return toPaginated(rows, { pageSize: p.pageSize, map: aPostulacion })
 }
 
 export function usePostulacionesQuery(p: PostulacionesParams) {
@@ -58,7 +68,7 @@ export function usePostulacionesQuery(p: PostulacionesParams) {
 }
 
 export async function fetchPostulacion(id: number) {
-  return camelizar<Postulacion>(await evalCol.getRow(`${BASE}/${id}`))
+  return aPostulacion(await evalCol.getRow(`${BASE}/${id}`))
 }
 
 export function usePostulacionQuery(id: number | null) {
@@ -110,31 +120,26 @@ function useMutacion<V, R = unknown>(fn: (v: V) => Promise<R>) {
   })
 }
 
+/** Alta: cupos en orden de preferencia (1 a 3, sin repetir); la autorización es obligatoria. */
 export const usePostular = () =>
-  useMutacion((v: { matriculaId: number; cupoId: number; autorizacion: boolean; listaEspera: boolean }) =>
+  useMutacion((v: { matriculaId: number; cupoIds: number[] }) =>
     evalCol.postRow<{ pk_postulacion: number; numero: string; estado: string }>(BASE, {
       FK_MATRICULA: v.matriculaId,
-      FK_CUPO: v.cupoId,
-      AUTORIZACION: v.autorizacion ? "S" : "N",
-      LISTA_ESPERA: v.listaEspera ? "S" : "N",
+      FK_CUPOS: v.cupoIds,
+      AUTORIZACION: "S",
     }),
   )
 
-export const useCambiarCupo = () =>
-  useMutacion((v: { id: number; cupoId: number; listaEspera: boolean }) =>
-    evalCol.putRow<{ estado: string; posicion: number | null }>(`${BASE}/${v.id}/cupo`, {
-      FK_CUPO: v.cupoId,
-      LISTA_ESPERA: v.listaEspera ? "S" : "N",
-    }),
+/** Editar opciones: reemplaza las opciones de la postulación. */
+export const useEditarOpciones = () =>
+  useMutacion((v: { id: number; cupoIds: number[] }) =>
+    evalCol.putRow<{ estado: string }>(`${BASE}/${v.id}/opciones`, { FK_CUPOS: v.cupoIds }),
   )
 
 export const useAnularPostulacion = () =>
   useMutacion((v: { id: number; motivoId: number }) =>
     evalCol.put(`${BASE}/${v.id}/anular`, { FK_TLV_MOTIVO_ANULACION: v.motivoId }),
   )
-
-export const useLiberarCupo = () =>
-  useMutacion((v: { id: number; motivo: string }) => evalCol.put(`${BASE}/${v.id}/liberar`, { MOTIVO: v.motivo || null }))
 
 /* Agregar matrícula complementaria por adscripción (C.2.POS.5). */
 
@@ -203,22 +208,16 @@ export function useCambiarEspecialidad() {
 /* Reglas de las acciones del menú ⁞ (Sección 2.16.2, Acciones sobre una postulación). */
 
 const antesDe = (iso: string) => new Date().toISOString().slice(0, 10) <= iso
-const enPostulacion = (e: EstadoConvocatoria) => e === "EN_POSTULACION"
+
+/** Opción seleccionada (Seleccionada o Matriculada), si la hay. */
+export const opcionSeleccionada = (p: Postulacion) =>
+  p.opciones.find((o) => o.id === p.opcionSeleccionadaId) ?? null
 
 export function accionesPostulacion(p: Postulacion) {
-  const abierta = p.forma === "ABIERTA"
+  const sel = opcionSeleccionada(p)
   return {
-    // Abierta: desde la publicación de resultados; por el origen, desde que queda Registrado.
-    agregarMatricula:
-      p.esReceptor && p.estado === "REGISTRADO" && antesDe(p.limiteMatricula) && (!abierta || p.estadoConvocatoria === "PUBLICADA"),
-    liberar: p.esReceptor && p.estado === "REGISTRADO" && !abierta && antesDe(p.limiteMatricula),
-    cambiarCupo:
-      p.esOrigen &&
-      (abierta
-        ? (p.estado === "INSCRITO" || p.estado === "EN_LISTA_ESPERA") && enPostulacion(p.estadoConvocatoria)
-        : // En la fecha de cierre ya no se hacen cambios.
-          (p.estado === "REGISTRADO" && enPostulacion(p.estadoConvocatoria)) ||
-          (p.listaEspera && p.estado === "EN_LISTA_ESPERA" && enPostulacion(p.estadoConvocatoria))),
-    anular: p.esOrigen && ["INSCRITO", "EN_LISTA_ESPERA", "REGISTRADO"].includes(p.estado),
+    agregarMatricula: p.estado === "SELECCIONADA" && sel != null && sel.esReceptor && antesDe(sel.limiteMatricula),
+    editarOpciones: p.esOrigen && p.enPostulacion && (p.estado === "POSTULADA" || p.estado === "EN_LISTA_ESPERA"),
+    anular: p.esOrigen && ["POSTULADA", "EN_LISTA_ESPERA", "SELECCIONADA"].includes(p.estado),
   }
 }

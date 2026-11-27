@@ -11,18 +11,18 @@ import { paths } from "@/config/paths"
 import { coberturaComplementariaRoute } from "@/router"
 
 import type { PestanaComplementaria } from "@/features/coverage/matricula-complementaria/api/schema"
-import { ContinuidadTab } from "@/features/coverage/matricula-complementaria/components/continuidad-tab"
 import { ConveniosTab } from "@/features/coverage/matricula-complementaria/components/convenios-tab"
 import { DialogNuevoConvenio } from "@/features/coverage/matricula-complementaria/components/dialogs-convenio"
 import { PostulacionesTab } from "@/features/coverage/matricula-complementaria/components/postulaciones-tab"
 import { ConvocatoriasTab, MENU_COMPLEMENTARIA } from "@/features/coverage/matricula-complementaria/components/convocatorias-tab"
+import { useEstablecimiento } from "@/features/coverage/matricula-complementaria/hooks/use-establecimiento"
+import { CampoSelect } from "@/features/coverage/matricula/components/dialogs/acciones/compartido"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const PESTANAS: { value: PestanaComplementaria; label: string }[] = [
   { value: "convocatorias", label: "Convocatorias" },
   { value: "postulaciones", label: "Postulaciones" },
   { value: "convenios", label: "Convenios de adscripción" },
-  { value: "continuidad", label: "Continuidad" },
 ]
 
 /**
@@ -41,7 +41,10 @@ export function MatriculaComplementariaPage() {
 function Contenido() {
   const { tab = "convocatorias" } = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
-  const { puedeCrear } = useMenuPermission(MENU_COMPLEMENTARIA)
+  const { puedeCrear: permisoCrear } = useMenuPermission(MENU_COMPLEMENTARIA)
+  const { establecimientos, territorial, establecimientoId, setEstablecimiento } = useEstablecimiento()
+  // Territoriales: solo lectura (el back responde 403 a las escrituras).
+  const puedeCrear = permisoCrear && !territorial
   const [nuevoConvenio, setNuevoConvenio] = useState(false)
 
   const encabezado = (
@@ -77,11 +80,28 @@ function Contenido() {
       >
         Matrícula complementaria
       </TableScreenTitle>
+      {territorial ? (
+        <CampoSelect
+          id="complementaria-establecimiento"
+          label="Establecimiento"
+          value={establecimientoId != null ? String(establecimientoId) : ""}
+          onChange={(v) => v && setEstablecimiento(Number(v))}
+          opciones={establecimientos.map((e) => ({ value: String(e.id), label: e.nombre }))}
+          className="sm:max-w-md"
+        />
+      ) : null}
       <TableScreenTabs>
         <Tabs
           value={tab}
           onValueChange={(value) =>
-            navigate({ search: { tab: value === "convocatorias" ? undefined : (value as PestanaComplementaria) } })
+            navigate({
+              search: (prev) => ({
+                establecimiento: prev.establecimiento,
+                tab: value === "convocatorias" ? undefined : (value as PestanaComplementaria),
+                page: 0,
+                pageSize: prev.pageSize,
+              }),
+            })
           }
         >
           <TabsList className="border-b-0">
@@ -98,12 +118,10 @@ function Contenido() {
 
   if (tab === "convocatorias") return <ConvocatoriasTab encabezado={encabezado} />
   if (tab === "postulaciones") return <PostulacionesTab encabezado={encabezado} />
-  if (tab === "convenios")
-    return (
-      <>
-        <ConveniosTab encabezado={encabezado} />
-        {nuevoConvenio ? <DialogNuevoConvenio onOpenChange={setNuevoConvenio} /> : null}
-      </>
-    )
-  return <ContinuidadTab encabezado={encabezado} />
+  return (
+    <>
+      <ConveniosTab encabezado={encabezado} />
+      {nuevoConvenio ? <DialogNuevoConvenio onOpenChange={setNuevoConvenio} /> : null}
+    </>
+  )
 }

@@ -15,7 +15,6 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { FloppyDiskIcon, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
@@ -31,7 +30,6 @@ import {
 import type {
   Convocatoria,
   Desempate,
-  FormaPostulacion,
   ModoSeleccion,
   Opcion,
   OpcionesConvocatoria,
@@ -62,9 +60,6 @@ interface CupoForm {
 
 interface Valores {
   origenes: Opcion[]
-  forma: FormaPostulacion
-  continuidad: boolean
-  listaEspera: boolean
   modo: ModoSeleccion
   desempate: Desempate
   inicio: string
@@ -90,9 +85,6 @@ function iniciales(c: Convocatoria | undefined): Valores {
   if (!c)
     return {
       origenes: [],
-      forma: "ABIERTA",
-      continuidad: false,
-      listaEspera: false,
       modo: "MANUAL",
       desempate: "SORTEO",
       inicio: "",
@@ -103,9 +95,6 @@ function iniciales(c: Convocatoria | undefined): Valores {
     }
   return {
     origenes: c.origenes,
-    forma: c.forma,
-    continuidad: c.continuidadAutomatica,
-    listaEspera: c.listaEspera,
     modo: c.modo,
     desempate: c.desempate,
     inicio: c.inicioPostulacion,
@@ -188,14 +177,10 @@ function Formulario({
   // Restricciones de Cambios (Sección 2.16.2, Comportamiento).
   const estado = convocatoria?.estado ?? "PROGRAMADA"
   const cerro = ["EN_SELECCION", "PUBLICADA", "CERRADA"].includes(estado)
-  const conPostulaciones = convocatoria?.tienePostulaciones ?? false
   const origenesFijos = cerro ? (convocatoria?.origenes ?? []).map((o) => o.id) : []
   // Una fecha que ya pasó no se ajusta.
   const pasada = (original: string | null | undefined) =>
     Boolean(id && original && original < hoy())
-
-  const abierta = v.forma === "ABIERTA"
-  const conPublicacion = abierta || v.listaEspera
 
   // Lo que se puede elegir en cada cupo.
   const sedeDe = (c: CupoForm) => opciones.sedes.find((s) => String(s.id) === c.sedeId)
@@ -205,9 +190,6 @@ function Formulario({
     gradoDe(c)?.especialidades.find((e) => String(e.id) === c.especialidadId)
 
   const periodosElegidos = v.cupos.map(periodoDe).filter((p) => p != null)
-  const todosAnuales = periodosElegidos.length > 0 && periodosElegidos.every((p) => p.anual)
-  // Independiente de la forma: con ella se reserva el cupo de los que continúan.
-  const continuidadActiva = v.continuidad && todosAnuales
   // La fecha límite no pasa la menor Fecha límite de matrícula de los períodos de sus cupos.
   const topeLimite = periodosElegidos.map((p) => p.limiteMatricula).sort()[0] ?? ""
   const claveDe = (c: CupoForm) => `${c.periodoId}-${c.gradoId}-${c.especialidadId}`
@@ -229,19 +211,15 @@ function Formulario({
       : v.cierre < v.inicio
         ? "No puede ser anterior al inicio."
         : "",
-    publicacion: !conPublicacion
-      ? ""
-      : !v.publicacion
+    publicacion: !v.publicacion
         ? "Indique la fecha."
         : v.publicacion < v.cierre
           ? "No puede ser anterior al cierre."
           : "",
     limite: !v.limite
       ? "Indique la fecha."
-      : v.limite < (conPublicacion ? v.publicacion : v.cierre)
-        ? conPublicacion
-          ? "No puede ser anterior a la publicación."
-          : "No puede ser anterior al cierre."
+      : v.limite < v.publicacion
+        ? "No puede ser anterior a la publicación."
         : topeLimite && v.limite > topeLimite
           ? `Hasta el ${fecha(topeLimite)}.`
           : "",
@@ -274,14 +252,11 @@ function Formulario({
         input: {
           anio,
           origenIds: v.origenes.map((o) => o.id),
-          forma: v.forma,
-          continuidadAutomatica: v.continuidad && todosAnuales,
-          listaEspera: !abierta && v.listaEspera,
           modo: v.modo,
           desempate: v.desempate,
           inicioPostulacion: v.inicio,
           cierrePostulacion: v.cierre,
-          publicacion: conPublicacion ? v.publicacion : null,
+          publicacion: v.publicacion,
           limiteMatricula: v.limite,
           cupos: v.cupos.map((c) => ({
             id: c.id,
@@ -347,7 +322,7 @@ function Formulario({
   /** Cada cupo muestra cuántos continúan en su especialidad y grado (Regla 80). */
   const continuanEn = (especialidad: string, grado: string | undefined) => {
     const n = continuan.find((x) => x.especialidad === especialidad && x.grado === grado)?.cantidad
-    return n ? ` Continúan ${n}.` : ""
+    return n ? ` ${n} adscritos del año anterior continúan en ${especialidad}. Considérelos al fijar el cupo.` : ""
   }
 
   return (
@@ -449,91 +424,40 @@ function Formulario({
               </div>
             </Seccion>
 
-            <Seccion value="postulacion" titulo="Postulación y selección">
+            <Seccion value="postulacion" titulo="Selección">
               <div className="grid gap-x-4 gap-y-6 md:grid-cols-4">
                 <div className="grid content-start gap-2 md:col-span-2">
-                  <Etiqueta requerido>Forma de postulación</Etiqueta>
+                  <Etiqueta requerido>Modo de selección</Etiqueta>
                   <RadioGroup
                     className="flex flex-wrap gap-x-6 gap-y-2"
-                    value={v.forma}
-                    disabled={conPostulaciones}
-                    onValueChange={(f) => {
-                      const forma = f as FormaPostulacion
-                      // Continuidad por defecto: No con Abierta, Sí por el origen.
-                      set({ forma, continuidad: forma === "ORIGEN", listaEspera: false })
-                    }}
+                    value={v.modo}
+                    disabled={cerro}
+                    onValueChange={(m) => set({ modo: m as ModoSeleccion })}
                   >
-                    <Opcion valor="ABIERTA">Abierta</Opcion>
-                    <Opcion valor="ORIGEN">Por el establecimiento de origen</Opcion>
+                    <Opcion valor="MANUAL">Manual</Opcion>
+                    <Opcion valor="AUTOMATICA">Automática</Opcion>
                   </RadioGroup>
-                  <Ayuda>No se cambia desde la primera postulación.</Ayuda>
+                  <Ayuda>Automática: el sistema selecciona en la fecha de cierre.</Ayuda>
                 </div>
-                <div className="grid content-start gap-2">
-                  <Etiqueta>Continuidad automática</Etiqueta>
-                  <Interruptor
-                    checked={v.continuidad && todosAnuales}
-                    disabled={!todosAnuales || cerro}
-                    onChange={(continuidad) => set({ continuidad })}
-                  />
-                  <Ayuda>
-                    {periodosElegidos.length && !todosAnuales
-                      ? "La continuidad automática solo aplica a períodos de modalidad Anual."
-                      : "Solo con períodos de modalidad Anual."}
-                  </Ayuda>
+                <div className="grid content-start gap-2 md:col-span-2">
+                  <Etiqueta requerido>Desempate</Etiqueta>
+                  <RadioGroup
+                    className="flex flex-wrap gap-x-6 gap-y-2"
+                    value={v.desempate}
+                    disabled={cerro}
+                    onValueChange={(d) => set({ desempate: d as Desempate })}
+                  >
+                    <Opcion valor="SORTEO">Sorteo</Opcion>
+                    <Opcion valor="ORDEN">Orden de inscripción</Opcion>
+                  </RadioGroup>
+                  <Ayuda>Orden de inscripción es el orden de registro de la postulación.</Ayuda>
                 </div>
-                {!abierta ? (
-                  <div className="grid content-start gap-2">
-                    <Etiqueta>Lista de espera</Etiqueta>
-                    <Interruptor
-                      checked={v.listaEspera}
-                      disabled={conPostulaciones}
-                      onChange={(listaEspera) => set({ listaEspera })}
-                    />
-                    <Ayuda>
-                      Al agotarse el cupo, la postulación entra a la lista por orden de llegada.
-                    </Ayuda>
-                  </div>
-                ) : null}
               </div>
-
-              {abierta ? (
-                <div className="mt-6 grid gap-x-4 gap-y-6 border-t border-border pt-5 md:grid-cols-4">
-                  <div className="grid content-start gap-2 md:col-span-2">
-                    <Etiqueta requerido>Modo de selección</Etiqueta>
-                    <RadioGroup
-                      className="flex flex-wrap gap-x-6 gap-y-2"
-                      value={v.modo}
-                      disabled={cerro}
-                      onValueChange={(m) => set({ modo: m as ModoSeleccion })}
-                    >
-                      <Opcion valor="MANUAL">Manual</Opcion>
-                      <Opcion valor="AUTOMATICA">Automática</Opcion>
-                    </RadioGroup>
-                    <Ayuda>Automática: el sistema selecciona en la fecha de cierre.</Ayuda>
-                  </div>
-                  <div className="grid content-start gap-2 md:col-span-2">
-                    <Etiqueta requerido>Desempate</Etiqueta>
-                    <RadioGroup
-                      className="flex flex-wrap gap-x-6 gap-y-2"
-                      value={v.desempate}
-                      disabled={cerro}
-                      onValueChange={(d) => set({ desempate: d as Desempate })}
-                    >
-                      <Opcion valor="SORTEO">Sorteo</Opcion>
-                      <Opcion valor="ORDEN">Orden de inscripción</Opcion>
-                    </RadioGroup>
-                    <Ayuda>Orden de inscripción es el orden de registro de la postulación.</Ayuda>
-                  </div>
-                </div>
-              ) : null}
             </Seccion>
 
             <Seccion value="fechas" titulo="Fechas">
               <div
-                className={cn(
-                  "grid gap-x-4 gap-y-5",
-                  conPublicacion ? "md:grid-cols-4" : "md:grid-cols-3",
-                )}
+                className="grid gap-x-4 gap-y-5 md:grid-cols-4"
               >
                 {fechaCampo(
                   "inicio",
@@ -547,19 +471,12 @@ function Formulario({
                   convocatoria?.cierrePostulacion,
                   v.inicio,
                 )}
-                {conPublicacion
-                  ? fechaCampo(
-                      "publicacion",
-                      "Publicación de resultados",
-                      convocatoria?.publicacion,
-                      v.cierre,
-                    )
-                  : null}
+                {fechaCampo("publicacion", "Publicación de resultados", convocatoria?.publicacion, v.cierre)}
                 {fechaCampo(
                   "limite",
                   "Fecha límite para matricular",
                   convocatoria?.limiteMatricula,
-                  conPublicacion ? v.publicacion : v.cierre,
+                  v.publicacion,
                   topeLimite
                     ? `Hasta la menor Fecha límite de matrícula de los períodos (${fecha(topeLimite)}).`
                     : undefined,
@@ -573,10 +490,7 @@ function Formulario({
                   const sede = sedeDe(c)
                   const periodo = periodoDe(c)
                   const grado = gradoDe(c)
-                  // Con la forma por el origen y continuidad, solo el grado inicial de la especialidad.
-                  const grados = (periodo?.grados ?? []).filter(
-                    (g) => !(v.forma === "ORIGEN" && v.continuidad) || g.inicial,
-                  )
+                  const grados = periodo?.grados ?? []
                   const err = intentado ? errorCupo(c) : ""
                   const especialidad = especialidadDe(c)
                   // Un cupo con seleccionados no cambia de combinación ni se quita: se baja hasta ellos.
@@ -700,15 +614,9 @@ function Formulario({
                   <Aviso
                     key={`${x.especialidad}-${x.grado}`}
                     tono="info"
-                    titulo={
-                      continuidadActiva
-                        ? `Continúan ${x.cantidad} en ${x.especialidad}, ${x.grado}.`
-                        : `${x.cantidad} adscritos del año anterior continúan en ${x.especialidad}. Considérelos al fijar el cupo.`
-                    }
+                    titulo={`${x.cantidad} adscritos del año anterior continúan en ${x.especialidad}. Considérelos al fijar el cupo.`}
                   >
-                    {continuidadActiva
-                      ? "Su cupo del grado siguiente queda reservado hasta que el cierre confirme quiénes continúan."
-                      : "Tienen prioridad en la selección (marca Continuidad), pero el cupo no se reserva. Al abrirse la convocatoria se les avisa y 3 días antes del cierre se les recuerda postularse."}
+                    {x.grado}: tienen prioridad en la selección (marca Continuidad), pero el cupo no se reserva.
                   </Aviso>
                 ))}
 
@@ -754,33 +662,6 @@ function Opcion({ valor, children }: { valor: string; children: ReactNode }) {
     <label className="flex cursor-pointer items-center gap-2 text-sm has-disabled:cursor-not-allowed has-disabled:opacity-60">
       <RadioGroupItem value={valor} />
       {children}
-    </label>
-  )
-}
-
-function Interruptor({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean
-  disabled?: boolean
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <label
-      className={cn(
-        "flex w-fit items-center gap-2",
-        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-      )}
-    >
-      <Switch
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={onChange}
-        className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
-      />
-      <span className="text-sm">{checked ? "Sí" : "No"}</span>
     </label>
   )
 }

@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 import { unwrapRow } from "@/lib/response-envelope"
 import { fetchGrados } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
 import type {
+  ComplementariaDeMatricula,
   Matricula,
   MatriculaDetailResult,
   MatriculaDetails,
@@ -90,6 +91,8 @@ interface RawMatriculaCore {
   tipo_matricula?: "PRINCIPAL" | "COMPLEMENTARIA"
   tiene_complementaria?: "S" | "N"
   postulacion_registrada?: "S" | "N"
+  /** Su complementaria (objeto o texto JSON), o null. */
+  complementaria?: ComplementariaRow | string | null
   retiro_solicitado_por?: string | null
   anulacion_pendiente?: "S" | "N"
   origen_adscripcion?: string | null
@@ -142,6 +145,26 @@ export interface RawMatriculaDetail {
   estudiante: RawMatriculaEstudiante
   socioeconomico: RawMatriculaSocioeconomico | null
   archivos: RawMatriculaArchivo[]
+}
+
+interface ComplementariaRow {
+  pk_matricula: number
+  sede: string
+  jornada: string
+  especialidad: string
+  por_adscripcion: boolean | "S" | "N"
+}
+
+function toComplementaria(raw: ComplementariaRow | string | null | undefined): ComplementariaDeMatricula | null {
+  const r: ComplementariaRow | null = typeof raw === "string" ? JSON.parse(raw) : (raw ?? null)
+  if (!r) return null
+  return {
+    pkMatricula: r.pk_matricula,
+    sede: r.sede,
+    jornada: r.jornada,
+    especialidad: r.especialidad,
+    porAdscripcion: r.por_adscripcion === true || r.por_adscripcion === "S",
+  }
 }
 
 function toBoolSNLabel(value: "S" | "N" | null | undefined): "Sí" | "No" | "" {
@@ -208,6 +231,7 @@ export function toMatriculaDetailResult(ficha: RawMatriculaDetail, gradoValor: n
       tipo: m.tipo_matricula ?? "PRINCIPAL",
       tieneComplementaria: m.tiene_complementaria === "S",
       postulacionRegistrada: m.postulacion_registrada === "S",
+      complementaria: toComplementaria(m.complementaria),
       retiroSolicitadoPor: m.retiro_solicitado_por?.trim() || null,
       anulacionPendiente: m.anulacion_pendiente === "S",
       sinAutorizacion: m.sin_autorizacion === "S",

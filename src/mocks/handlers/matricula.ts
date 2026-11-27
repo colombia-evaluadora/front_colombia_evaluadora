@@ -245,6 +245,10 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
         // Variedad fija por pk para ver cada bloqueo de Editar.
         tipo_matricula: tipoDe(pk),
         tiene_complementaria: complementariaDe(pk) ? ("S" as const) : ("N" as const),
+        // Pk múltiplo de 6: complementaria propia (la especialidad de la principal no se bloquea).
+        complementaria: complementariaDe(pk)
+          ? { pk_matricula: 9200 + pk, ...complementariaDe(pk), por_adscripcion: pk % 6 !== 0 }
+          : null,
         postulacion_registrada: pk % 3 === 1 ? ("S" as const) : ("N" as const),
         retiro_solicitado_por: retiroSolicitadoPor(pk),
         anulacion_pendiente: anulacionPendiente(pk) ? ("S" as const) : ("N" as const),

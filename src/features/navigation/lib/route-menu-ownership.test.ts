@@ -100,7 +100,7 @@ const ROUTE_OWNERS: Record<string, Owner> = {
   "/app/cobertura/matricula-complementaria/convocatorias/detalle/$convocatoriaId/seleccionar": MENU.complementaria,
   "/app/cobertura/matricula-complementaria/postulaciones/nueva": MENU.complementaria,
   "/app/cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId": MENU.complementaria,
-  "/app/cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/cambiar-cupo": MENU.complementaria,
+  "/app/cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/editar-opciones": MENU.complementaria,
 
   "/app/registro-de-actividad/sesiones": MENU.registroActividad,
   "/app/registro-de-actividad/sesiones/$sessionId/operaciones": MENU.registroActividad,

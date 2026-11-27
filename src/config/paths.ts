@@ -184,9 +184,9 @@ export const paths = {
       path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId",
       getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}`,
     },
-    coberturaPostulacionCambiarCupo: {
-      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/cambiar-cupo",
-      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}/cambiar-cupo`,
+    coberturaPostulacionEditarOpciones: {
+      path: "cobertura/matricula-complementaria/postulaciones/detalle/$postulacionId/editar-opciones",
+      getHref: (id: number | string) => `/app/cobertura/matricula-complementaria/postulaciones/detalle/${id}/editar-opciones`,
     },
     // Mismo prefijo para las dos vistas: el ítem del menú se marca en ambas.
     auditoriaSesiones: {

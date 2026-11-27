@@ -2,9 +2,8 @@ import { delay, http, HttpResponse } from "msw"
 
 import {
   anular,
-  cambiarCupo,
   cambiarEspecialidad,
-  liberar,
+  editarOpciones,
   listarPostulaciones,
   matricular,
   obtenerPostulacion,
@@ -46,10 +45,10 @@ export const postulacionesHandlers = [
     await delay(400)
     return responder(postular((await request.json()) as Parameters<typeof postular>[0]))
   }),
-  http.put(`${BASE}/:id/cupo`, async ({ params, request }) => {
+  http.put(`${BASE}/:id/opciones`, async ({ params, request }) => {
     await delay(400)
-    const b = (await request.json()) as { FK_CUPO: number; LISTA_ESPERA: "S" | "N" }
-    return responder(cambiarCupo(Number(params.id), b.FK_CUPO, b.LISTA_ESPERA === "S"))
+    const b = (await request.json()) as { FK_CUPOS: number[] }
+    return responder(editarOpciones(Number(params.id), b.FK_CUPOS))
   }),
   http.put(`${BASE}/:id/anular`, async ({ params, request }) => {
     await delay(300)
@@ -57,10 +56,6 @@ export const postulacionesHandlers = [
     const motivo = CATALOGOS_MATRICULA_NUEVOS.MOTIVO_ANULACION_POSTULACION.find((m) => m.pk_lista_valor === b.FK_TLV_MOTIVO_ANULACION)
     if (!motivo) return HttpResponse.json({ message: "Elija el motivo de anulación." }, { status: 400 })
     return responder(anular(Number(params.id), motivo.nombre))
-  }),
-  http.put(`${BASE}/:id/liberar`, async ({ params }) => {
-    await delay(300)
-    return responder(liberar(Number(params.id)))
   }),
   http.get(`${BASE}/:id/matricula/previa`, async ({ params }) => {
     await delay(200)

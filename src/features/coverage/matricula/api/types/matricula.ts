@@ -174,12 +174,22 @@ export interface MatriculaDetails extends CreateMatriculaInput {
   restricciones?: MatriculaRestricciones
 }
 
+export interface ComplementariaDeMatricula {
+  pkMatricula: number
+  sede: string
+  jornada: string
+  especialidad: string
+  porAdscripcion: boolean
+}
+
 export interface MatriculaRestricciones {
   tipo: "PRINCIPAL" | "COMPLEMENTARIA"
   /** Con complementaria la especialidad se cambia desde ella (Sección 2.16). */
   tieneComplementaria: boolean
-  /** Con una postulación Registrado se cambia con Cambiar cupo (Sección 2.16.2). */
+  /** Con una postulación Seleccionada la especialidad la toma su opción (Sección 2.16.2). */
   postulacionRegistrada: boolean
+  /** Su complementaria: la propia no bloquea la especialidad; la de adscripción sí. */
+  complementaria: ComplementariaDeMatricula | null
   /** Establecimiento que pidió el retiro (Regla 71); bloquea los cambios académicos. */
   retiroSolicitadoPor: string | null
   /** Destino con la matrícula por anular tras «Cerrar sin retiro»: mismas restricciones. */

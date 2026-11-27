@@ -1,6 +1,5 @@
 // Matrícula complementaria por adscripción (Sección 2.16.2): convocatorias.
 
-export type FormaPostulacion = "ABIERTA" | "ORIGEN"
 export type ModoSeleccion = "MANUAL" | "AUTOMATICA"
 export type Desempate = "SORTEO" | "ORDEN"
 /** Lo deduce el sistema de las fechas. */
@@ -37,26 +36,25 @@ export interface CupoConvocatoria {
   /** Registrados y Adscritos en el cupo. */
   seleccionados: number
   enListaEspera: number
+  /** Adscritos del año anterior que continúan en la especialidad. */
+  continuan?: number
 }
 
 export interface Convocatoria {
   id: number
   anio: number
   establecimiento: string
+  establecimientoId: number
   origenes: Opcion[]
-  forma: FormaPostulacion
-  continuidadAutomatica: boolean
-  listaEspera: boolean
   modo: ModoSeleccion
   desempate: Desempate
   inicioPostulacion: string
   cierrePostulacion: string
-  /** null con la forma Por el establecimiento de origen sin lista de espera. */
-  publicacion: string | null
+  publicacion: string
   limiteMatricula: string
   estado: EstadoConvocatoria
   cupos: CupoConvocatoria[]
-  /** Con al menos una postulación (aunque esté Anulada) no se elimina, y la forma y la lista de espera quedan fijas. */
+  /** Con al menos una postulación (aunque esté Anulada) no se elimina. */
   tienePostulaciones: boolean
   /** Fecha en que corrió el proceso automático o el sorteo, si ya corrió. */
   ejecutadaEl: string | null
@@ -65,14 +63,11 @@ export interface Convocatoria {
 export interface ConvocatoriaInput {
   anio: number
   origenIds: number[]
-  forma: FormaPostulacion
-  continuidadAutomatica: boolean
-  listaEspera: boolean
   modo: ModoSeleccion
   desempate: Desempate
   inicioPostulacion: string
   cierrePostulacion: string
-  publicacion: string | null
+  publicacion: string
   limiteMatricula: string
   cupos: { id: number | null; periodoId: number; gradoId: number; especialidadId: number; cupo: number }[]
 }
@@ -115,13 +110,16 @@ export interface OpcionesConvocatoria {
   origenes: Opcion[]
   sedes: SedeOpcion[]
   /** Adscritos del año anterior que continúan (Regla 52). */
-  continuan: { especialidad: string; grado: string; cantidad: number }[]
+  continuan: { especialidad: string; grado: string; gradoCodigo: string; cantidad: number }[]
 }
 
 /* Selección por cupo (Regla 53). */
 
 export interface OpcionSeleccion {
   id: number
+  postulacionId: number
+  /** 1..3: orden de la opción en su postulación. */
+  preferencia: number
   posicion: number
   postulacion: string
   estudiante: string
@@ -163,7 +161,43 @@ export interface ListaSorteo {
 
 /* Postulaciones (Sección 2.16.2, Postulación). */
 
-export type EstadoPostulacion = "INSCRITO" | "EN_LISTA_ESPERA" | "REGISTRADO" | "ADSCRITO" | "NO_SELECCIONADA" | "DESCARTADA" | "RETIRADA" | "ANULADA"
+export type EstadoPostulacion =
+  | "POSTULADA"
+  | "EN_LISTA_ESPERA"
+  | "SELECCIONADA"
+  | "MATRICULADA"
+  | "NO_SELECCIONADA"
+  | "RETIRADA"
+  | "ANULADA"
+
+/** Opción de especialidad de una postulación (de 1 a 3, por preferencia). */
+export interface OpcionPostulacion {
+  id: number
+  orden: number
+  convocatoriaId: number
+  convocatoriaAnio: number
+  estadoConvocatoria: EstadoConvocatoria
+  cierrePostulacion: string
+  publicacion: string
+  limiteMatricula: string
+  receptorId: number
+  receptor: string
+  esReceptor: boolean
+  cupoId: number
+  sede: string
+  jornada: string
+  grado: string
+  especialidadId: number
+  especialidad: string
+  estado: EstadoOpcion
+  continuidad: boolean
+  sorteo: string | null
+  autorizacionPendiente: boolean
+  /** En lista de espera: su posición. */
+  posicion: number | null
+  motivoDescarte: string | null
+  matriculaComplementariaId: number | null
+}
 
 export interface Postulacion {
   id: number
@@ -177,37 +211,19 @@ export interface Postulacion {
   gradoPrincipal: string
   /** Establecimiento de la matrícula principal. */
   origen: string
-  /** El usuario está en el establecimiento de la principal: postula, cambia el cupo, anula. */
+  /** El usuario está en el establecimiento de la principal: postula, edita opciones, anula. */
   esOrigen: boolean
-  /** El usuario está en el establecimiento que recibe: matricula, libera el cupo. */
   esReceptor: boolean
-  convocatoriaId: number
-  convocatoriaAnio: number
-  forma: FormaPostulacion
-  listaEspera: boolean
-  estadoConvocatoria: EstadoConvocatoria
-  cierrePostulacion: string
-  limiteMatricula: string
-  receptorId: number
-  receptor: string
-  cupoId: number
-  sede: string
-  jornada: string
-  grado: string
-  especialidadId: number
-  especialidad: string
-  estadoOpcion: EstadoOpcion
   estado: EstadoPostulacion
-  /** En lista de espera: su posición. */
-  posicion: number | null
-  sorteo: string | null
-  motivoDescarte: string | null
-  motivoAnulacion: string | null
-  /** Autorización de tratamiento de datos (Regla 81): opcional. */
+  /** Autorización de tratamiento de datos (Ley 1581 de 2012): obligatoria. */
   autorizacion: boolean
+  motivoAnulacion: string | null
   registro: string
-  /** Su matrícula complementaria, si ya es Adscrito. */
+  /** Alguna convocatoria de sus opciones sigue En postulación. */
+  enPostulacion: boolean
+  opcionSeleccionadaId: number | null
   matriculaComplementariaId: number | null
+  opciones: OpcionPostulacion[]
 }
 
 export interface FichaEspecialidad {
@@ -225,15 +241,16 @@ export interface CupoPostulable {
   disponibles: number
   /** Cuántos hay ya en su lista de espera. */
   enEspera: number
+  /** La opción tendría prioridad por continuidad. */
+  continuidad: boolean
 }
 
 export interface ConvocatoriaPostulable {
   id: number
   receptorId: number
   receptor: string
-  forma: FormaPostulacion
-  listaEspera: boolean
   cierrePostulacion: string
+  publicacion: string
   limiteMatricula: string
   especialidades: (Opcion & { ficha: FichaEspecialidad })[]
   cupos: CupoPostulable[]
@@ -300,24 +317,7 @@ export interface PreviaRenovar {
   equivalentes: number[]
 }
 
-/* Continuidad automática (Sección 2.16.2, Regla 80). */
-
-export type EstadoContinuidad = "PREVISTA" | "PENDIENTE_GRUPO" | "CREADA" | "SIN_CONTINUIDAD"
-export type MotivoSinContinuidad = "PRINCIPAL_REPROBADA" | "COMPLEMENTARIA_REPROBADA" | "PRINCIPAL_RETIRADA" | "SIN_CONVENIO"
-
-export interface Continuidad {
+export interface EstablecimientoComplementaria {
   id: number
-  estudiante: string
-  documento: string
-  origen: string
-  especialidad: string
-  gradoActual: string
-  gradoSiguiente: string
-  /** «IE Central · Tarde»: sede y jornada de su cupo. */
-  sedeJornada: string
-  convocatoriaAnio: number
-  estado: EstadoContinuidad
-  motivo: MotivoSinContinuidad | null
-  /** Creada: su grupo. */
-  grupo: string | null
+  nombre: string
 }

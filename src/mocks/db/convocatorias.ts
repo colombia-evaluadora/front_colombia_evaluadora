@@ -21,21 +21,21 @@ interface CupoRow {
   cupo: number
   seleccionados: number
   en_lista_espera: number
+  /** Adscritos del año anterior que continúan en la especialidad. */
+  continuan: number
 }
 
 interface ConvocatoriaRow {
   id: number
   anio: number
   establecimiento: string
+  establecimiento_id: number
   origenes: { id: number; nombre: string }[]
-  forma: "ABIERTA" | "ORIGEN"
-  continuidad_automatica: boolean
-  lista_espera: boolean
   modo: "MANUAL" | "AUTOMATICA"
   desempate: "SORTEO" | "ORDEN"
   inicio_postulacion: string
   cierre_postulacion: string
-  publicacion: string | null
+  publicacion: string
   limite_matricula: string
   estado: Estado
   cupos: CupoRow[]
@@ -45,6 +45,8 @@ interface ConvocatoriaRow {
 
 interface OpcionRow {
   id: number
+  postulacion_id: number
+  preferencia: number
   posicion: number
   postulacion: string
   estudiante: string
@@ -56,6 +58,7 @@ interface OpcionRow {
 }
 
 const ESTABLECIMIENTO = "IE Central"
+const ESTABLECIMIENTO_ID = 1
 const ORIGENES = [
   { id: 2, nombre: "IE Norte" },
   { id: 3, nombre: "IE Sur" },
@@ -117,6 +120,7 @@ function cupo(id: number, periodoId: number, gradoId: number, especialidadId: nu
     cupo: n,
     seleccionados: sel,
     en_lista_espera: espera,
+    continuan: gradoId === 11 && especialidadId === 1 ? 3 : 0,
   }
 }
 
@@ -126,10 +130,8 @@ const convocatorias: ConvocatoriaRow[] = [
     id: 2,
     anio: 2027,
     establecimiento: ESTABLECIMIENTO,
+    establecimiento_id: ESTABLECIMIENTO_ID,
     origenes: [ORIGENES[0], ORIGENES[1]],
-    forma: "ABIERTA",
-    continuidad_automatica: false,
-    lista_espera: false,
     modo: "MANUAL",
     desempate: "SORTEO",
     inicio_postulacion: "2027-02-01",
@@ -145,10 +147,8 @@ const convocatorias: ConvocatoriaRow[] = [
     id: 1,
     anio: 2025,
     establecimiento: ESTABLECIMIENTO,
+    establecimiento_id: ESTABLECIMIENTO_ID,
     origenes: [ORIGENES[0]],
-    forma: "ABIERTA",
-    continuidad_automatica: false,
-    lista_espera: false,
     modo: "AUTOMATICA",
     desempate: "SORTEO",
     inicio_postulacion: "2025-02-02",
@@ -173,6 +173,8 @@ function opcionesDe(c: CupoRow, conv: ConvocatoriaRow): OpcionRow[] {
     const n = (c.id * 7 + i * 5) % 90
     return {
       id: c.id * 100 + i,
+      postulacion_id: c.id * 100 + i,
+      preferencia: 1 + (i % 3),
       posicion: i + 1,
       postulacion: String(10 + n).padStart(4, "0"),
       estudiante: NOMBRES[(c.id + i) % NOMBRES.length],
@@ -203,6 +205,7 @@ export const obtenerConvocatoria = (id: number) => porId(id) ?? null
 export function opcionesConvocatoria(anio: number) {
   return {
     establecimiento: ESTABLECIMIENTO,
+    establecimiento_id: ESTABLECIMIENTO_ID,
     origenes: ORIGENES,
     sedes: SEDES.map((s) => ({
       id: s.id,
@@ -219,7 +222,7 @@ export function opcionesConvocatoria(anio: number) {
         })),
       })),
     })),
-    continuan: [{ especialidad: "Sistemas", grado: "Undécimo", cantidad: 3 }],
+    continuan: [{ especialidad: "Sistemas", grado: "Undécimo", grado_codigo: "11", cantidad: 3 }],
   }
 }
 
@@ -228,14 +231,11 @@ export function opcionesConvocatoria(anio: number) {
 interface Body {
   ANIO: number
   ORIGENES: number[]
-  FORMA_POSTULACION: "ABIERTA" | "ORIGEN"
-  CONTINUIDAD_AUTOMATICA: "S" | "N"
-  LISTA_ESPERA: "S" | "N"
   MODO_SELECCION: "MANUAL" | "AUTOMATICA"
   DESEMPATE: "SORTEO" | "ORDEN"
   FECHA_INICIO_POSTULACION: string
   FECHA_CIERRE_POSTULACION: string
-  FECHA_PUBLICACION: string | null
+  FECHA_PUBLICACION: string
   FECHA_LIMITE_MATRICULA: string
   CUPOS: { ID: number | null; FK_TPERIODO_ACADEMICO: number; FK_TGRADO: number; FK_ESPECIALIDAD: number; CUPO: number }[]
 }
@@ -274,10 +274,8 @@ export function guardarConvocatoria(id: number | null, b: Body): { error: string
     id: id ?? Math.max(0, ...convocatorias.map((c) => c.id)) + 1,
     anio: b.ANIO,
     establecimiento: ESTABLECIMIENTO,
+    establecimiento_id: ESTABLECIMIENTO_ID,
     origenes: ORIGENES.filter((o) => b.ORIGENES.includes(o.id)),
-    forma: b.FORMA_POSTULACION,
-    continuidad_automatica: b.CONTINUIDAD_AUTOMATICA === "S",
-    lista_espera: b.LISTA_ESPERA === "S",
     modo: b.MODO_SELECCION,
     desempate: b.DESEMPATE,
     inicio_postulacion: b.FECHA_INICIO_POSTULACION,

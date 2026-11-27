@@ -21,16 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  ArrowsLeftRightIcon,
-  DotsThreeVerticalIcon,
-  EyeIcon,
-  
-  PersonRemoveIcon,
-  ProhibitIcon,
-  PersonAddIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { DotsThreeVerticalIcon, EyeIcon, PencilIcon, PersonAddIcon, ProhibitIcon, XIcon } from "@/components/ui/icons"
 import { Buscador } from "@/features/coverage/matricula-complementaria/components/buscador"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -40,13 +31,12 @@ import { coberturaComplementariaRoute } from "@/router"
 
 import { accionesPostulacion, usePostulacionesQuery } from "@/features/coverage/matricula-complementaria/api/postulaciones"
 import type { Postulacion } from "@/features/coverage/matricula-complementaria/api/types"
-import { ESTADO_OPCION, Marca } from "@/features/coverage/matricula-complementaria/api/ui-mappings"
+import { ESTADO_OPCION, ESTADO_POSTULACION, Marca } from "@/features/coverage/matricula-complementaria/api/ui-mappings"
 import {
   DialogAgregarMatriculaAdscripcion,
   DialogAnularPostulacion,
-  DialogCambiarCupo,
-  DialogLiberarCupo,
 } from "@/features/coverage/matricula-complementaria/components/dialogs-postulacion"
+import { useEstablecimiento } from "@/features/coverage/matricula-complementaria/hooks/use-establecimiento"
 
 const GRADOS = ["Décimo", "Undécimo"]
 
@@ -83,28 +73,29 @@ const columns: ColumnDef<Postulacion>[] = [
     enableSorting: false,
   },
   {
-    id: "opcion",
-    accessorFn: (r) => r.id,
-    meta: { label: "Opción de especialidad" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Opción de especialidad" />,
-    cell: ({ row }) => {
-      const p = row.original
-      return (
-        <span className="inline-flex flex-wrap items-center gap-2">
-          {p.receptor} · {p.jornada} · {p.especialidad}
-          <Marca {...ESTADO_OPCION[p.estadoOpcion]} />
-          {p.posicion ? <span className="text-xs text-muted-foreground">Posición {p.posicion}</span> : null}
-        </span>
-      )
-    },
-    enableSorting: false,
-  },
-  {
     id: "estado",
     accessorFn: (r) => r.id,
     meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-    cell: ({ row }) => <Marca {...ESTADO_OPCION[row.original.estado]} />,
+    cell: ({ row }) => <Marca {...ESTADO_POSTULACION[row.original.estado]} />,
+    enableSorting: false,
+  },
+  {
+    id: "opciones",
+    accessorFn: (r) => r.id,
+    meta: { label: "Opciones de especialidad" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Opciones de especialidad" />,
+    // «1. Especialidad (estado)», en orden de preferencia.
+    cell: ({ row }) => (
+      <ol className="grid gap-0.5 text-sm">
+        {row.original.opciones.map((o) => (
+          <li key={o.id}>
+            {o.orden}. {o.especialidad}{" "}
+            <span className="text-muted-foreground">({ESTADO_OPCION[o.estado].label})</span>
+          </li>
+        ))}
+      </ol>
+    ),
     enableSorting: false,
   },
   {
@@ -117,12 +108,14 @@ const columns: ColumnDef<Postulacion>[] = [
   },
 ]
 
-type Dialogo = "matricula" | "liberar" | "cupo" | "anular" | null
+type Dialogo = "matricula" | "anular" | null
 
 function AccionesPostulacion({ postulacion: p }: { postulacion: Postulacion }) {
   const navigate = useNavigate()
+  const { territorial } = useEstablecimiento()
   const [abierto, setAbierto] = useState<Dialogo>(null)
-  const a = accionesPostulacion(p)
+  // Territoriales: solo lectura.
+  const a = territorial ? { agregarMatricula: false, editarOpciones: false, anular: false } : accionesPostulacion(p)
   const cerrar = (open: boolean) => !open && setAbierto(null)
 
   return (
@@ -139,26 +132,14 @@ function AccionesPostulacion({ postulacion: p }: { postulacion: Postulacion }) {
           <DropdownMenuItem onClick={() => navigate({ to: paths.app.coberturaPostulacionDetalle.getHref(p.id) })}>
             <EyeIcon /> Ver detalle
           </DropdownMenuItem>
-          {a.cambiarCupo ? (
-            <DropdownMenuItem
-              // Con la forma Abierta va a la página (como la postulación); por el origen, al modal.
-              onClick={() =>
-                p.forma === "ABIERTA"
-                  ? navigate({ to: paths.app.coberturaPostulacionCambiarCupo.getHref(p.id) })
-                  : setAbierto("cupo")
-              }
-            >
-              <ArrowsLeftRightIcon /> Cambiar cupo
+          {a.editarOpciones ? (
+            <DropdownMenuItem onClick={() => navigate({ to: paths.app.coberturaPostulacionEditarOpciones.getHref(p.id) })}>
+              <PencilIcon /> Editar opciones
             </DropdownMenuItem>
           ) : null}
           {a.agregarMatricula ? (
             <DropdownMenuItem onClick={() => setAbierto("matricula")}>
               <PersonAddIcon /> Agregar matrícula complementaria
-            </DropdownMenuItem>
-          ) : null}
-          {a.liberar ? (
-            <DropdownMenuItem onClick={() => setAbierto("liberar")}>
-              <PersonRemoveIcon /> Liberar cupo
             </DropdownMenuItem>
           ) : null}
           {a.anular ? (
@@ -172,8 +153,6 @@ function AccionesPostulacion({ postulacion: p }: { postulacion: Postulacion }) {
         </DropdownMenuContent>
       </DropdownMenu>
       {abierto === "matricula" ? <DialogAgregarMatriculaAdscripcion postulacion={p} onOpenChange={cerrar} /> : null}
-      {abierto === "liberar" ? <DialogLiberarCupo postulacion={p} onOpenChange={cerrar} /> : null}
-      {abierto === "cupo" ? <DialogCambiarCupo postulacion={p} onOpenChange={cerrar} /> : null}
       {abierto === "anular" ? <DialogAnularPostulacion postulacion={p} onOpenChange={cerrar} /> : null}
     </>
   )
@@ -184,7 +163,9 @@ export function PostulacionesTab({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
+  const { establecimientoId } = useEstablecimiento()
   const { data, isPending, isError, error, refetch } = usePostulacionesQuery({
+    establecimiento: establecimientoId,
     search: search.q,
     convocatoria: search.convocatoria,
     grado: search.grado,
@@ -208,7 +189,7 @@ export function PostulacionesTab({ encabezado }: { encabezado: ReactNode }) {
   const setSearch = (patch: Partial<typeof search>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch, page: 0 }), replace: true })
 
-  const anio = data?.rows.find((r) => r.convocatoriaId === search.convocatoria)?.convocatoriaAnio
+  const anio = data?.rows.flatMap((r) => r.opciones).find((o) => o.convocatoriaId === search.convocatoria)?.convocatoriaAnio
   const chips = [
     search.convocatoria != null && {
       key: "convocatoria",

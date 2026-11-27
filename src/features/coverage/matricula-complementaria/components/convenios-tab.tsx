@@ -46,6 +46,7 @@ import {
   DialogRenovarConvenio,
 } from "@/features/coverage/matricula-complementaria/components/dialogs-convenio"
 import { MENU_COMPLEMENTARIA } from "@/features/coverage/matricula-complementaria/components/convocatorias-tab"
+import { useEstablecimiento } from "@/features/coverage/matricula-complementaria/hooks/use-establecimiento"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const ANIOS = [2028, 2027, 2026, 2025]
@@ -133,7 +134,10 @@ const columns: ColumnDef<Convenio>[] = [
 type Dialogo = "detalle" | "aceptar" | "rechazar" | "renovar" | "finalizar" | null
 
 function AccionesConvenio({ convenio: c }: { convenio: Convenio }) {
-  const { puedeEditar } = useMenuPermission(MENU_COMPLEMENTARIA)
+  const permiso = useMenuPermission(MENU_COMPLEMENTARIA)
+  const { territorial } = useEstablecimiento()
+  // Territoriales: solo lectura.
+  const puedeEditar = permiso.puedeEditar && !territorial
   const [abierto, setAbierto] = useState<Dialogo>(null)
   const a = accionesConvenio(c)
   const cerrar = (open: boolean) => !open && setAbierto(null)
@@ -188,7 +192,14 @@ export function ConveniosTab({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const { data, isPending, isError, error, refetch } = useConveniosQuery({ search: search.q, anio: search.anio, pageIndex, pageSize })
+  const { establecimientoId } = useEstablecimiento()
+  const { data, isPending, isError, error, refetch } = useConveniosQuery({
+    search: search.q,
+    anio: search.anio,
+    establecimiento: establecimientoId,
+    pageIndex,
+    pageSize,
+  })
   const { table } = useDataTable({
     columns,
     data: data?.rows ?? [],

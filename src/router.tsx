@@ -1084,10 +1084,10 @@ export const coberturaPostulacionDetalleRoute = createRoute({
   component: PostulacionDetallePage,
 })
 
-export const coberturaPostulacionCambiarCupoRoute = createRoute({
+export const coberturaPostulacionEditarOpcionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.coberturaPostulacionCambiarCupo.path,
-  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Cambiar cupo" }] },
+  path: paths.app.coberturaPostulacionEditarOpciones.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, COMPLEMENTARIA_CRUMB, { label: "Editar opciones" }] },
   component: PostulacionFormPage,
 })
 
@@ -2999,7 +2999,7 @@ const routeTree = rootRoute.addChildren([
     coberturaConvocatoriaSeleccionarRoute,
     coberturaPostulacionNuevaRoute,
     coberturaPostulacionDetalleRoute,
-    coberturaPostulacionCambiarCupoRoute,
+    coberturaPostulacionEditarOpcionesRoute,
     auditsLayoutRoute.addChildren([
       auditoriaSesionesRoute,
       auditoriaTablasRoute,

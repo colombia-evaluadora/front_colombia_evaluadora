@@ -44,6 +44,7 @@ import {
   DialogListaSorteo,
   DialogResultadoSeleccion,
 } from "@/features/coverage/matricula-complementaria/components/dialogs-convocatoria"
+import { useEstablecimiento } from "@/features/coverage/matricula-complementaria/hooks/use-establecimiento"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 /** Código del menú (TMENU) de la vista Matrícula complementaria. */
@@ -56,12 +57,10 @@ const cerroPostulacion = (c: Convocatoria) => ["EN_SELECCION", "PUBLICADA", "CER
 export function accionesDe(c: Convocatoria) {
   return {
     editar: c.estado !== "CERRADA",
-    // Manual con la forma Abierta, o la lista de espera de la forma por el origen.
-    seleccionar:
-      (c.estado === "EN_SELECCION" || c.estado === "PUBLICADA") &&
-      ((c.forma === "ABIERTA" && c.modo === "MANUAL") || (c.forma === "ORIGEN" && c.listaEspera)),
-    resultado: cerroPostulacion(c) && c.forma === "ABIERTA" && c.modo === "AUTOMATICA",
-    sorteo: cerroPostulacion(c) && c.forma === "ABIERTA" && c.desempate === "SORTEO",
+    // Manual en selección, y en Publicada para la lista de espera.
+    seleccionar: c.modo === "MANUAL" && (c.estado === "EN_SELECCION" || c.estado === "PUBLICADA"),
+    resultado: c.modo === "AUTOMATICA" && c.ejecutadaEl != null,
+    sorteo: cerroPostulacion(c) && c.desempate === "SORTEO",
     eliminar: !c.tienePostulaciones,
   }
 }
@@ -114,8 +113,7 @@ const columns: ColumnDef<Convocatoria>[] = [
     accessorFn: (r) => r.id,
     meta: { label: "Modo" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Modo" />,
-    // La forma por el origen no tiene modo de selección: selecciona el origen al postular.
-    cell: ({ row }) => (row.original.forma === "ORIGEN" ? "Por el origen" : MODO_LABEL[row.original.modo]),
+    cell: ({ row }) => MODO_LABEL[row.original.modo],
     enableSorting: false,
   },
   {
@@ -150,7 +148,11 @@ const columns: ColumnDef<Convocatoria>[] = [
 
 function AccionesConvocatoria({ convocatoria: c }: { convocatoria: Convocatoria }) {
   const navigate = useNavigate()
-  const { puedeEditar, puedeEliminar } = useMenuPermission(MENU_COMPLEMENTARIA)
+  const permiso = useMenuPermission(MENU_COMPLEMENTARIA)
+  const { territorial } = useEstablecimiento()
+  // Territoriales: solo lectura.
+  const puedeEditar = permiso.puedeEditar && !territorial
+  const puedeEliminar = permiso.puedeEliminar && !territorial
   const [abierto, setAbierto] = useState<"resultado" | "sorteo" | "eliminar" | null>(null)
   const a = accionesDe(c)
   const cerrar = (open: boolean) => !open && setAbierto(null)
@@ -227,7 +229,13 @@ function AccionesConvocatoria({ convocatoria: c }: { convocatoria: Convocatoria 
 /** Pestaña Convocatorias (Sección 2.16.2). */
 export function ConvocatoriasTab({ encabezado }: { encabezado: ReactNode }) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const { data, isPending, isError, error, refetch } = useConvocatoriasQuery({ pageIndex, pageSize, sorting })
+  const { establecimientoId } = useEstablecimiento()
+  const { data, isPending, isError, error, refetch } = useConvocatoriasQuery({
+    pageIndex,
+    pageSize,
+    sorting,
+    establecimiento: establecimientoId,
+  })
   const { table } = useDataTable({
     columns,
     data: data?.rows ?? [],

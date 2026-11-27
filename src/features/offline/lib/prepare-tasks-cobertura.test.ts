@@ -7,6 +7,7 @@ import { reservaKeys } from "@/features/coverage/inscripcion-reservas/api/query/
 import { reservasCupoKeys } from "@/features/coverage/inscripcion-reservas/api/query/use-reservas-cupo-query"
 import { territorialKeys } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import { convocatoriaKeys } from "@/features/coverage/matricula-complementaria/api/convocatorias"
+import { establecimientosComplementariaKey } from "@/features/coverage/matricula-complementaria/api/establecimientos"
 import { postulacionKeys } from "@/features/coverage/matricula-complementaria/api/postulaciones"
 import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 import { promocionKeys } from "@/features/coverage/promocion-nivelacion/api/promocion"
@@ -99,6 +100,7 @@ describe("coberturaTasks: keys de las pantallas con sus valores por defecto", ()
     const com = await sembradas("/app/cobertura/matricula-complementaria", [[convocatorias, pagina([{ id: 3 }])]])
     expect(com.get(convocatorias)?.optional).toBeFalsy()
     expect(com.get(convocatoriaKeys.detalle(3))).toBeDefined()
+    expect(com.get(establecimientosComplementariaKey)).toBeDefined()
     expect(com.get(postulacionKeys.lista({ search: undefined, convocatoria: undefined, grado: undefined, ...PAG }))).toBeDefined()
 
     const reprobados = promocionKeys.reprobados({

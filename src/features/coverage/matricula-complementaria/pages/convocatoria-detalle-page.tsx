@@ -9,7 +9,6 @@ import { useConvocatoriaQuery } from "@/features/coverage/matricula-complementar
 import {
   DESEMPATE_LABEL,
   ESTADO_CONVOCATORIA,
-  FORMA_LABEL,
   Marca,
   MODO_LABEL,
   fecha,
@@ -42,8 +41,6 @@ export function ConvocatoriaDetallePage() {
     )
   }
 
-  const abierta = c.forma === "ABIERTA"
-
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -72,24 +69,14 @@ export function ConvocatoriaDetallePage() {
             <Rejilla>
               <CampoLectura id="conv-inicio" label="Fecha de inicio de postulación" value={fecha(c.inicioPostulacion)} />
               <CampoLectura id="conv-cierre" label="Fecha de cierre de postulación" value={fecha(c.cierrePostulacion)} />
-              {c.publicacion ? (
-                <CampoLectura id="conv-publicacion" label="Publicación de resultados" value={fecha(c.publicacion)} />
-              ) : null}
+              <CampoLectura id="conv-publicacion" label="Publicación de resultados" value={fecha(c.publicacion)} />
               <CampoLectura id="conv-limite" label="Fecha límite para matricular" value={fecha(c.limiteMatricula)} />
             </Rejilla>
           </Seccion>
           <Seccion value="seleccion" titulo="Postulación y selección">
             <Rejilla>
-              <CampoLectura id="conv-forma" label="Forma de postulación" value={FORMA_LABEL[c.forma]} />
-              <CampoLectura id="conv-continuidad" label="Continuidad automática" value={c.continuidadAutomatica ? "Sí" : "No"} />
-              {abierta ? (
-                <>
-                  <CampoLectura id="conv-modo" label="Modo de selección" value={MODO_LABEL[c.modo]} />
-                  <CampoLectura id="conv-desempate" label="Desempate" value={DESEMPATE_LABEL[c.desempate]} />
-                </>
-              ) : (
-                <CampoLectura id="conv-espera" label="Lista de espera" value={c.listaEspera ? "Sí" : "No"} />
-              )}
+              <CampoLectura id="conv-modo" label="Modo de selección" value={MODO_LABEL[c.modo]} />
+              <CampoLectura id="conv-desempate" label="Desempate" value={DESEMPATE_LABEL[c.desempate]} />
             </Rejilla>
           </Seccion>
           <Seccion value="cupos" titulo="Cupos por especialidad" tabla>
@@ -103,6 +90,7 @@ export function ConvocatoriaDetallePage() {
                   <TableHead className={num}>Cupo</TableHead>
                   <TableHead className={num}>Seleccionados</TableHead>
                   <TableHead className={num}>En lista de espera</TableHead>
+                  <TableHead className={num}>Continúan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -115,6 +103,7 @@ export function ConvocatoriaDetallePage() {
                     <TableCell className={num}>{x.cupo}</TableCell>
                     <TableCell className={num}>{x.seleccionados}</TableCell>
                     <TableCell className={num}>{x.enListaEspera}</TableCell>
+                    <TableCell className={num}>{x.continuan ?? 0}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
