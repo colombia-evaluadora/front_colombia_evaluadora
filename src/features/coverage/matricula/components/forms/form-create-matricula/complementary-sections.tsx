@@ -23,6 +23,7 @@ export function MatriculaComplementarySection({
   const { data: talento } = useMatriculaCatalogQuery("talento")
   const { data: apoyos } = useMatriculaCatalogQuery("apoyoAcademico")
   const { data: trastornos } = useMatriculaCatalogQuery("trastorno")
+  const { data: gruposSanguineos } = useMatriculaCatalogQuery("grupoSanguineo")
   const { data: srpa } = useMatriculaCatalogQuery("srpa")
   const srpaNoAplica = (id: string) => /no aplica/i.test(srpa?.find((s) => String(s.id) === id)?.nombre ?? "")
   const conMedida = Boolean(value.srpa) && !srpaNoAplica(value.srpa ?? "")
@@ -81,6 +82,22 @@ export function MatriculaComplementarySection({
           onChange={(eps) => onChange({ ...value, eps })}
         />
       )}
+      <MatriculaTextField
+        id="complementary-ips"
+        label="IPS"
+        invalid={invalidFields.includes("complementary-ips")}
+        value={value.ips ?? ""}
+        maxLength={100}
+        onChange={(ips) => onChange({ ...value, ips })}
+      />
+      <MatriculaSelectField
+        id="complementary-blood-type"
+        label="Tipo de sangre y RH"
+        value={value.tipoSangre ?? ""}
+        options={catalogOptions(gruposSanguineos)}
+        labelFor={catalogLabelFor(gruposSanguineos)}
+        onChange={(tipoSangre) => onChange({ ...value, tipoSangre })}
+      />
       {isFieldVisible(fieldSettings, "complementary-ars") && (
         <MatriculaTextField
           id="complementary-ars"

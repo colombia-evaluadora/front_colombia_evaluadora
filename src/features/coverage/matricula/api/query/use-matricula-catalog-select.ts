@@ -29,6 +29,7 @@ export const MATRICULA_CATALOG_CATEGORIA = {
   condicionMigratoria: "CONDICION_MIGRATORIA",
   apoyoAcademico: "APOYO_ACADEMICO_ESPECIAL",
   trastorno: "TRASTORNO_ESPECIFICO",
+  grupoSanguineo: "GRUPO_SANGUINEO",
   srpa: "SITUACION_SRPA",
   institucionBienestar: "INSTITUCION_BIENESTAR",
   motivoRetiro: "MOTIVO_RETIRO",

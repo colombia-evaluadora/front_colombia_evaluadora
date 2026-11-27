@@ -313,6 +313,10 @@ export interface MatriculaComplementaryInfo {
   socioeconomicStratum: string
   sisben: string
   eps: string
+  /** Dato del SIMAT (Sección 2.8). */
+  ips?: string
+  /** pk de GRUPO_SANGUINEO (sso V191.1). */
+  tipoSangre?: string
   ars: string
   specialConditions: string
   talent: string

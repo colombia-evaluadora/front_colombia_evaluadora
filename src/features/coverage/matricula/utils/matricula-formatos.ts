@@ -82,6 +82,7 @@ export const MATRICULA_FORMATOS: Record<string, Regla> = {
   "origin-which-municipality": { get: (v) => v.originSector.whichMunicipality, check: largo(3, 100) },
   "complementary-eps": { get: (v) => v.complementary.eps, check: largo(2, 100) },
   "complementary-ars": { get: (v) => v.complementary.ars, check: largo(2, 100) },
+  "complementary-ips": { get: (v) => v.complementary.ips ?? "", check: largo(2, 100) },
   "guardian-employment-entity-name": { get: (v) => v.guardianEmployment.entityName, check: largo(3, 150) },
   "guardian-employment-entity-address": { get: (v) => v.guardianEmployment.entityAddress, check: largo(8, 150) },
   "guardian-employment-entity-phone": { get: (v) => v.guardianEmployment.entityPhone, check: telefono },

@@ -86,7 +86,7 @@ export function toCreateMatriculaBody(
 
 /**
  * Bloques 2.1, 2.2 y 2.8 (internado, autorización, digitación SIMAT, país, lengua,
- * migratoria, apoyo, trastorno y SRPA). El SSO los declara en los endpoints de crear
+ * migratoria, apoyo, trastorno, IPS, tipo de sangre y SRPA). El SSO los declara en los endpoints de crear
  * y editar (V179); el núcleo es fn_matricula_datos_complementarios_guardar_interno.
  */
 export function camposNuevosBody(values: CreateMatriculaInput) {
@@ -101,6 +101,8 @@ export function camposNuevosBody(values: CreateMatriculaInput) {
     CONDICION_MIGRATORIA: toIntOrNull(student.condicionMigratoria),
     APOYO_ACADEMICO_ESPECIAL: toIntOrNull(complementary.apoyoAcademico),
     TRASTORNO_ESPECIFICO: toIntOrNull(complementary.trastorno),
+    IPS: toTextOrNull(complementary.ips ?? ""),
+    GRUPO_SANGUINEO: toIntOrNull(complementary.tipoSangre ?? ""),
     SITUACION_SRPA: toIntOrNull(complementary.srpa),
     FECHA_INICIO_MEDIDA: toTextOrNull(complementary.srpaInicio),
     FECHA_FIN_MEDIDA: toTextOrNull(complementary.srpaFin),
