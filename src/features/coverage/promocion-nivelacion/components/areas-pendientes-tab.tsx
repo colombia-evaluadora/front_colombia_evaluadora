@@ -37,6 +37,7 @@ import {
   DialogRegistrarNivelacion,
 } from "@/features/coverage/promocion-nivelacion/components/dialogs-promocion"
 import { BotonExpandir, FiltrosFila } from "@/features/coverage/promocion-nivelacion/components/filtros"
+import { LIMPIAR_POR_ESTABLECIMIENTO, useFiltroEstablecimiento } from "@/features/coverage/promocion-nivelacion/hooks/use-filtro-establecimiento"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 const SEGUIMIENTO: Record<Seguimiento, { label: string; color: "warning" | "destructive" | "success" }> = {
@@ -273,7 +274,8 @@ function columnas(expandidoId: number | null, onToggle: (id: number) => void): C
 export function AreasPendientesTab({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaPromocionRoute.useSearch()
   const navigate = coberturaPromocionRoute.useNavigate()
-  const { data: op } = useOpcionesPromocionQuery()
+  const { data: op } = useOpcionesPromocionQuery(search.ee ? Number(search.ee) : null)
+  const filtroEe = useFiltroEstablecimiento(search.ee)
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { data, isPending, isError, error, refetch } = usePendientesQuery(search, { pageIndex, pageSize })
   const [expandidoId, setExpandidoId] = useState<number | null>(null)
@@ -293,10 +295,16 @@ export function AreasPendientesTab({ encabezado }: { encabezado: ReactNode }) {
 
   const setFiltro = (key: string, value: string) =>
     navigate({
-      search: (prev) => ({ ...prev, [key]: key === "anio" ? (value ? Number(value) : undefined) : value || undefined, page: 0 }),
+      search: (prev) => ({
+        ...prev,
+        [key]: key === "anio" ? (value ? Number(value) : undefined) : value || undefined,
+        ...(key === "ee" ? LIMPIAR_POR_ESTABLECIMIENTO : {}),
+        page: 0,
+      }),
       replace: true,
     })
   const filtros = [
+    ...filtroEe,
     {
       key: "anio",
       label: "Año de la promoción",
@@ -305,6 +313,7 @@ export function AreasPendientesTab({ encabezado }: { encabezado: ReactNode }) {
     },
     { key: "sede", label: "Sede", options: op?.sedes ?? [], value: search.sede ?? "", todos: "Todas" },
     { key: "jornada", label: "Jornada", options: op?.jornadas ?? [], value: search.jornada ?? "", todos: "Todas" },
+    { key: "grado", label: "Grado", options: op?.grados ?? [], value: search.grado ?? "", todos: "Todos" },
     {
       key: "seguimiento",
       label: "Seguimiento",

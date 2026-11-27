@@ -469,7 +469,7 @@ function complementariaTasks(): PrepareTask[] {
 function promocionTasks(): PrepareTask[] {
   const pagina = (pageIndex: number) => ({ pageIndex, pageSize: PAGE_SIZE })
   return [
-    seed(promocionKeys.opciones, fetchOpcionesPromocion, proveedorMeta(), OPCIONAL),
+    seed(promocionKeys.opciones(null), () => fetchOpcionesPromocion(null), proveedorMeta(), OPCIONAL),
     paginas({
       key: (p) => promocionKeys.reprobados(cuerpoReprobados({}, pagina(p))),
       fetch: (p) => fetchReprobados(cuerpoReprobados({}, pagina(p))),
