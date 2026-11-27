@@ -40,9 +40,7 @@ export function SelectorEstudianteObservador({ idPrefix, proposito, value, onCha
         options={todos.map((e) => ({ value: String(e.fk_tmatricula), label: etiquetaEstudiante(e) }))}
         error={error}
         onChange={(x) => onChange(todos.find((e) => String(e.fk_tmatricula) === x) ?? null)}
-        // Al elegir, el combo escribe la etiqueta del estudiante en el buscador: usarla como búsqueda
-        // dejaba la lista reducida a ese estudiante y no se podía cambiar por otro.
-        onInputChange={(t) => b.setConsulta(value && t === etiquetaEstudiante(value) ? "" : t)}
+        onInputChange={b.setConsulta}
         description="Busca por nombre o documento."
       />
     </div>
