@@ -453,7 +453,10 @@ function AddMatriculaPageContent() {
     setMissingFields(missing)
     if (missing.length > 0) return
     if (gradoDistintoTraslado) {
-      notify(`Por traslado, debe ser ${traslado?.gradoNombre}.`, { variant: "error" })
+      notify(
+        `El estudiante viene de ${traslado?.institucion}, donde cursaba ${traslado?.gradoNombre}. Por traslado, debe matricularse en el mismo grado.`,
+        { variant: "error" },
+      )
       return
     }
     if (existingMatricula) {

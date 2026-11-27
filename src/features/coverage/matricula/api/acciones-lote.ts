@@ -53,17 +53,24 @@ export interface Complementaria {
 export interface PreviaRetiro {
   matriculaId: string
   complementaria: Complementaria | null
+  /** Inicio del período académico: la fecha de retiro no puede ser anterior. */
+  inicioPeriodo: string | null
 }
 
 export function usePreviaRetiroQuery(matriculaIds: string[]) {
   return useQuery({
     queryKey: [...matriculaKeys.loteAll, "retiro", matriculaIds],
     queryFn: async (): Promise<PreviaRetiro[]> => {
-      const rows = await evalCol.postRows<{ pk_matricula: number; complementaria: Complementaria | null }>(
-        `${BASE}/retirar/previa`,
-        { IDS: ids(matriculaIds) },
-      )
-      return rows.map((r) => ({ matriculaId: String(r.pk_matricula), complementaria: r.complementaria }))
+      const rows = await evalCol.postRows<{
+        pk_matricula: number
+        complementaria: Complementaria | null
+        inicio_periodo: string | null
+      }>(`${BASE}/retirar/previa`, { IDS: ids(matriculaIds) })
+      return rows.map((r) => ({
+        matriculaId: String(r.pk_matricula),
+        complementaria: r.complementaria,
+        inicioPeriodo: r.inicio_periodo ? r.inicio_periodo.slice(0, 10) : null,
+      }))
     },
     staleTime: 0,
   })

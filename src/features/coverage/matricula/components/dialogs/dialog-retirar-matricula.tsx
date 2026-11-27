@@ -89,7 +89,11 @@ export function DialogRetirar({
   const conComplementaria = (previa ?? []).filter((p) => p.complementaria)
   const hoy = new Date()
   const esTraslado = motivos.find((m) => String(m.id) === motivoRetiro)?.nombre === MOTIVO_TRASLADO
-  const fechaValida = Boolean(fecha) && (parseDateValue(fecha) ?? hoy) <= hoy
+  // El back exige que no sea anterior al inicio del período (V179.3): el más tardío de la selección.
+  const inicioPeriodo = (previa ?? []).map((p) => p.inicioPeriodo).filter(Boolean).sort().at(-1) ?? null
+  const minFecha = inicioPeriodo ? parseDateValue(inicioPeriodo) : undefined
+  const fechaElegida = parseDateValue(fecha) ?? hoy
+  const fechaValida = Boolean(fecha) && fechaElegida <= hoy && (!minFecha || fechaElegida >= minFecha)
   const destino = institucionDestino.trim()
   const destinoValido = !esTraslado || !destino || (destino.length >= DESTINO_MIN && destino.length <= DESTINO_MAX)
 
@@ -160,11 +164,14 @@ export function DialogRetirar({
               size="sm"
               variant="outlined"
               value={parseDateValue(fecha)}
+              minDate={minFecha}
               maxDate={hoy}
               aria-invalid={intentado && !fechaValida}
               onChange={(d) => setFecha(formatDateValue(d))}
             />
-            <FieldDescription className={cn(intentado && !fechaValida && "text-red")}>No admite fechas futuras.</FieldDescription>
+            <FieldDescription className={cn(intentado && !fechaValida && "text-red")}>
+              {minFecha ? `Entre el inicio del período (${inicioPeriodo}) y hoy.` : "No admite fechas futuras."}
+            </FieldDescription>
           </Field>
           {porSolicitud ? (
             // SOL.6: motivo elegido y protegido.
