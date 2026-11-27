@@ -15,6 +15,14 @@ const resultado = (error: string | null) => (error ? HttpResponse.json({ message
 
 // Sección 2.19 (pendientes-back, tarea 30).
 export const actualizacionDatosHandlers = [
+  // Dos, para ver el selector que usan los roles territoriales; la configuración del mock es una sola.
+  http.get(`${BASE}/establecimientos`, async () => {
+    await delay(150)
+    return filas([
+      { id: 1, nombre: "Institución Educativa San José" },
+      { id: 2, nombre: "Institución Educativa La Esperanza" },
+    ])
+  }),
   http.get(`${BASE}/configuracion`, async () => {
     await delay(200)
     return filas(configuracionActualizacion())
