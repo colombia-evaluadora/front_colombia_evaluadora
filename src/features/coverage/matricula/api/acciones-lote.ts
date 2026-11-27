@@ -121,6 +121,8 @@ export interface PreviaReingreso {
   casoReintegracion: string | null
   /** La complementaria no tiene cupo para volver: el reingreso se bloquea. */
   complementariaSinCupo: string | null
+  /** Especialidad de la complementaria que no reingresa porque su convenio está Finalizado (Regla 12). */
+  complementariaConvenioFinalizado: string | null
 }
 
 interface PreviaReingresoRow {
@@ -134,6 +136,7 @@ interface PreviaReingresoRow {
   periodos_durante_retiro: string[]
   caso_reintegracion: string | null
   complementaria_sin_cupo: string | null
+  complementaria_convenio_finalizado?: string | null
 }
 
 export function usePreviaReingresoQuery(matriculaIds: string[]) {
@@ -158,6 +161,7 @@ export function usePreviaReingresoQuery(matriculaIds: string[]) {
         periodosDuranteRetiro: r.periodos_durante_retiro ?? [],
         casoReintegracion: r.caso_reintegracion,
         complementariaSinCupo: r.complementaria_sin_cupo,
+        complementariaConvenioFinalizado: r.complementaria_convenio_finalizado ?? null,
       }))
     },
     staleTime: 0,

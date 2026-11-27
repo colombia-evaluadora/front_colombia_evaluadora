@@ -68,7 +68,9 @@ export function DialogReingresar({
   // Si reingresa la principal, la complementaria no se reactiva: solo se avisa.
   const esComplementaria = (id: string) => matriculaDe.get(id)?.tipo === "COMPLEMENTARIA"
   const bloqueadas = (previas ?? []).filter((p) => p.complementariaSinCupo && esComplementaria(p.matriculaId))
-  const sinComplementaria = (previas ?? []).filter((p) => p.complementariaSinCupo && !esComplementaria(p.matriculaId))
+  const sinComplementaria = (previas ?? []).filter(
+    (p) => (p.complementariaSinCupo || p.complementariaConvenioFinalizado) && !esComplementaria(p.matriculaId),
+  )
   const aplicables = uno ? (previas ?? []).filter((p) => !bloqueadas.includes(p)) : (previas ?? [])
   const sinCupo = uno ? aplicables.filter((p) => p.sinCupo) : []
   // Lote: solo con el período Abierto y sin pasarse de los cupos de cada grupo.
@@ -224,9 +226,13 @@ export function DialogReingresar({
             {sinComplementaria.length || (!uno && bloqueadas.length) ? (
               <Aviso tono="advertencia" titulo="La matrícula complementaria no reingresa">
                 {[...sinComplementaria, ...(uno ? [] : bloqueadas)]
-                  .map((p) => `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaSinCupo})`)
+                  .map((p) =>
+                    p.complementariaConvenioFinalizado
+                      ? `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaConvenioFinalizado}: convenio finalizado)`
+                      : `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaSinCupo}: sin cupo)`,
+                  )
                   .join(", ")}
-                : sin cupo o con el convenio finalizado. La matrícula principal sí reingresa.
+                . La matrícula principal sí reingresa; la situación de la jornada complementaria se resuelve aparte.
               </Aviso>
             ) : null}
 
