@@ -34,6 +34,11 @@ export async function fetchMatriculaCampuses(): Promise<MatriculaCampusCatalog> 
         activa: sede.estado !== "I",
       }
     }),
+    establecimientos: variosColegios
+      ? [...new Set(sedes.map((sede) => sede.fk_establecimiento))]
+          .map((id) => ({ id, nombre: colegios.get(id) ?? `Establecimiento ${id}` }))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      : [],
   }
 }
 

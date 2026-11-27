@@ -23,6 +23,7 @@ export interface UseMatriculaQueryParams {
 interface MatriculaListRequest {
   SEARCH: string | null
   STATUSES: string[] | null
+  ESTABLECIMIENTO: number | null
   CAMPUS: string | null
   SHIFT: string | null
   GRADE: number | null
@@ -54,6 +55,7 @@ function toListRequest(params: UseMatriculaQueryParams): MatriculaListRequest {
   return {
     SEARCH: filters.search || null,
     STATUSES: filters.statuses?.length ? filters.statuses : null,
+    ESTABLECIMIENTO: filters.establecimiento ?? null,
     CAMPUS: filters.campus || null,
     SHIFT: filters.shift || null,
     GRADE: filters.grade ?? null,

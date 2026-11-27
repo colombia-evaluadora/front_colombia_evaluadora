@@ -8,6 +8,8 @@ export interface MatriculaCampusCatalog {
    *  nombre en el backend. Para elegir una sede usar `sedes`. */
   campuses: string[]
   sedes: MatriculaSedeOption[]
+  /** Los colegios de esas sedes, solo si son varios (roles territoriales): el filtro Establecimiento. */
+  establecimientos: { id: number; nombre: string }[]
 }
 
 /** Una sede elegible: el valor del select es `id`, nunca el nombre, porque
@@ -110,6 +112,7 @@ export type AgeSituation = "EN_EDAD" | "PREEXTRAEDAD" | "EXTRAEDAD" | "BAJA_EDAD
 export interface MatriculaQueryFilters {
   search?: string
   statuses?: string[]
+  establecimiento?: number
   campus?: string
   shift?: string
   grade?: number
