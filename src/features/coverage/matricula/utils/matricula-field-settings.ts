@@ -77,7 +77,15 @@ export function applyGradeFieldRules(
     [STUDENT_EMAIL_ID]: isPreescolarPrimariaGrado(grade)
       ? { requerido: false, visible: false }
       : { requerido: true, visible: true },
+    // B7: la institución bienestar de origen solo aplica a Preescolar y Primero.
+    ...(esPreescolarOPrimero(grade) ? {} : { [WELFARE_INSTITUTION_ID]: { requerido: false, visible: false } }),
   }
+}
+
+const WELFARE_INSTITUTION_ID = "welfare-institution"
+
+function esPreescolarOPrimero(grade: string): boolean {
+  return isPreescolarPrimariaGrado(grade) && Number(grade) <= 1
 }
 
 /** Sin config cargada (o campo sin entrada, ej. archivos de soporte) el
