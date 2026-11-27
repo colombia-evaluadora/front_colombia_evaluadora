@@ -338,7 +338,7 @@ function isLookupMap(items: unknown): items is ComboboxItemsMap {
 }
 
 /** Razones por las que el input cambia por tecleo del usuario (y no por selección). */
-const TYPING_REASONS = new Set(["input-change", "input-paste", "input-clear"])
+export const TYPING_REASONS: ReadonlySet<string> = new Set(["input-change", "input-paste", "input-clear"])
 
 /** Sin tildes, sin mayúsculas: "bogota" tiene que encontrar "BOGOTÁ D.C.". */
 function normalizeText(text: string) {

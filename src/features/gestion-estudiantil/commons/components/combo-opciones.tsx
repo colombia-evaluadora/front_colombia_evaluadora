@@ -7,6 +7,7 @@ import {
   ComboboxFieldItem,
   ComboboxFieldTrigger,
   ComboboxFieldValue,
+  TYPING_REASONS,
 } from "@/components/ui/combobox"
 
 import type { Opcion } from "@/features/gestion-estudiantil/commons/utils/opcion"
@@ -64,7 +65,11 @@ export function ComboOpciones({
         items={Object.fromEntries(items.map((i) => [i.value, i.label]))}
         value={value}
         onValueChange={(v) => onChange(v ?? "")}
-        onInputValueChange={onInputChange ? (texto) => onInputChange(texto) : undefined}
+        // Solo lo tecleado es búsqueda. Al elegir, Base UI reporta el valor elegido (el id) como texto:
+        // pasarlo al servidor dejaba la lista reducida a esa opción y no se podía cambiar por otra.
+        onInputValueChange={
+          onInputChange ? (texto, d) => onInputChange(TYPING_REASONS.has(d.reason) ? texto : "") : undefined
+        }
       >
         <ComboboxFieldTrigger id={id} size={size} className="w-full" aria-invalid={Boolean(error) || undefined}>
           <ComboboxFieldValue placeholder={placeholder ?? (todos || "Seleccione")} />
