@@ -18,7 +18,6 @@ import { coberturaPromocionRoute } from "@/router"
 
 import { formatoNota } from "@/features/coverage/promocion-nivelacion/api/formato"
 import {
-  MENU_PROMOCION,
   useAreasDelAnioQuery,
   useOpcionesPromocionQuery,
   useReprobadosQuery,
@@ -27,12 +26,12 @@ import type { Reprobado } from "@/features/coverage/promocion-nivelacion/api/typ
 import { DialogPromover } from "@/features/coverage/promocion-nivelacion/components/dialogs-promocion"
 import { BotonExpandir, FiltrosFila } from "@/features/coverage/promocion-nivelacion/components/filtros"
 import { LIMPIAR_POR_ESTABLECIMIENTO, useFiltroEstablecimiento } from "@/features/coverage/promocion-nivelacion/hooks/use-filtro-establecimiento"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePermisosPromocion } from "../hooks/use-permisos-promocion"
 
 const num = "block text-center tabular-nums"
 
 function Acciones({ r }: { r: Reprobado }) {
-  const { puedeEditar } = useMenuPermission(MENU_PROMOCION)
+  const { puedeGestionar: puedeEditar } = usePermisosPromocion()
   const [abierto, setAbierto] = useState(false)
   if (!puedeEditar) return null
   return (
@@ -224,7 +223,7 @@ function columnas({
 export function ReprobadosTab({ encabezado }: { encabezado: ReactNode }) {
   const search = coberturaPromocionRoute.useSearch()
   const navigate = coberturaPromocionRoute.useNavigate()
-  const { puedeEditar } = useMenuPermission(MENU_PROMOCION)
+  const { puedeGestionar: puedeEditar } = usePermisosPromocion()
   const { data: op } = useOpcionesPromocionQuery(search.ee ? Number(search.ee) : null)
   const filtroEe = useFiltroEstablecimiento(search.ee)
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()

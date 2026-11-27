@@ -23,7 +23,6 @@ import { coberturaPromocionRoute } from "@/router"
 
 import { formatoFecha, formatoNota } from "@/features/coverage/promocion-nivelacion/api/formato"
 import {
-  MENU_PROMOCION,
   useDetallePromocionQuery,
   useOpcionesPromocionQuery,
   usePendientesQuery,
@@ -38,7 +37,7 @@ import {
 } from "@/features/coverage/promocion-nivelacion/components/dialogs-promocion"
 import { BotonExpandir, FiltrosFila } from "@/features/coverage/promocion-nivelacion/components/filtros"
 import { LIMPIAR_POR_ESTABLECIMIENTO, useFiltroEstablecimiento } from "@/features/coverage/promocion-nivelacion/hooks/use-filtro-establecimiento"
-import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { usePermisosPromocion } from "../hooks/use-permisos-promocion"
 
 const SEGUIMIENTO: Record<Seguimiento, { label: string; color: "warning" | "destructive" | "success" }> = {
   CON_PENDIENTES: { label: "Con áreas pendientes", color: "warning" },
@@ -60,7 +59,7 @@ function ultimoRegistro(a: AreaPendiente) {
 type DialogoArea = { tipo: "registrar" | "corregir"; area: AreaPendiente } | null
 
 function AccionesArea({ area, onAbrir }: { area: AreaPendiente; onAbrir: (d: DialogoArea) => void }) {
-  const { puedeEditar } = useMenuPermission(MENU_PROMOCION)
+  const { puedeNivelar: puedeEditar } = usePermisosPromocion()
   const registrar = area.estado === "PENDIENTE"
   const corregir = area.intentos.length > 0
   if (!puedeEditar || (!registrar && !corregir)) return null
@@ -148,10 +147,10 @@ function AmpliarPlazo({ p, onClose }: { p: Promovido; onClose: () => void }) {
 type Dialogo = "plazo" | "anular" | "bloqueada" | null
 
 function AccionesPromovido({ p }: { p: Promovido }) {
-  const { puedeEditar, puedeEliminar } = useMenuPermission(MENU_PROMOCION)
+  const { puedeGestionar, puedeAnular: puedeEliminar } = usePermisosPromocion()
   const [abierto, setAbierto] = useState<Dialogo>(null)
   const cerrar = () => setAbierto(null)
-  const plazo = puedeEditar && p.seguimiento !== "NIVELADO"
+  const plazo = puedeGestionar && p.seguimiento !== "NIVELADO"
   if (!plazo && !puedeEliminar) return null
   // Sin áreas niveladas y sin matrícula en el período siguiente se puede anular.
   const anulable = p.niveladas === 0 && !p.grupoActual

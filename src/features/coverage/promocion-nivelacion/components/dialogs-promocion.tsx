@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
-import { useUser } from "@/lib/auth"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { cn } from "@/lib/utils"
 
@@ -643,7 +642,6 @@ export function DialogRegistrarNivelacion({ promovido: p, detalle: d, area, onCl
 /** Corregir nivelación: solo el último intento; fecha y nota con motivo. El responsable no se edita. */
 export function DialogCorregirNivelacion({ promovido: p, detalle: d, area, onClose }: PropsNivelacion) {
   const { notify } = useNotify()
-  const { data: usuario } = useUser()
   const corregir = useCorregirNivelacion()
   const ultimo = area.intentos.at(-1)
   const [fecha, setFecha] = useState<Date | undefined>(() => (ultimo ? parseDateValue(ultimo.fecha) : undefined))
@@ -702,7 +700,7 @@ export function DialogCorregirNivelacion({ promovido: p, detalle: d, area, onClo
         </div>
         <Field variant="outlined" className="gap-2">
           <FieldLabel htmlFor="corregir-responsable">Responsable de enseñanza que evaluó</FieldLabel>
-          <Input id="corregir-responsable" value={usuario?.name ?? ""} disabled />
+          <Input id="corregir-responsable" value={ultimo.responsable} disabled />
           <FieldDescription>No se edita: queda quien corrige.</FieldDescription>
         </Field>
         <Motivo id="corregir-motivo" value={motivo} onChange={setMotivo} intento={intento} />
