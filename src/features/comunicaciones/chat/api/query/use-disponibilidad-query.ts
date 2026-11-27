@@ -15,6 +15,8 @@ export const DISPONIBILIDAD_PATH = "/comunicaciones/disponibilidad"
 /** Estado propio y preferencias (respuesta automática, quién lo ve). */
 export function useMiDisponibilidadQuery() {
   return useQuery({
+    // Estado en vivo: no se prepara; sin red su falta no deja la pantalla "incompleta".
+    meta: { offlineOptional: true },
     queryKey: chatKeys.disponibilidad,
     queryFn: async () => (await evalCol.getRows<MiDisponibilidad>(DISPONIBILIDAD_PATH))[0] ?? null,
     staleTime: Infinity,
@@ -28,6 +30,7 @@ export function useMiDisponibilidadQuery() {
 export function useDisponibilidadDirectosQuery(idsDirectos: number[]) {
   const ids = [...idsDirectos].sort((a, b) => a - b).join(",")
   return useQuery({
+    meta: { offlineOptional: true },
     queryKey: [...chatKeys.disponibilidadDirectos, ids],
     queryFn: () => evalCol.getRows<DisponibilidadDirecto>(`${DISPONIBILIDAD_PATH}/directos`),
     enabled: ids.length > 0,
@@ -46,6 +49,7 @@ export function usePresenciaMap(): MapaPresencia {
   const queryClient = useQueryClient()
   return (
     useQuery({
+      meta: { offlineOptional: true },
       queryKey: chatKeys.presencia,
       queryFn: () => queryClient.getQueryData<MapaPresencia>(chatKeys.presencia) ?? {},
       staleTime: Infinity,

@@ -42,10 +42,21 @@ import {
 } from "@/features/planeador/api/query/use-actividades-tabs-query"
 import { fetchUnidadesTabs } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { fetchUnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { fetchUnidadCriterios } from "@/features/planeador/api/query/use-unidad-criterios-query"
+import { fetchUnidadValoraciones } from "@/features/planeador/api/query/use-unidad-valoraciones-query"
+import { fetchInstrumentoActividadParaForm } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
+import { calificacionesQueryOptions } from "@/features/planeador/api/query/use-calificaciones-query"
+import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { fetchUnidadActividades } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { fetchInstrumentoActividad } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { fetchRotuloActividad } from "@/features/planeador/api/query/use-rotulo-actividad-query"
 import { fetchPlaneadorDocentes } from "@/features/planeador/api/query/use-planeador-docentes-query"
+import { fetchProgramacionActividad } from "@/features/planeador/api/query/use-programacion-actividad-query"
+import { fetchConfiguracionActividad } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import { BIBLIOTECA_PAGE_SIZE, fetchMaterialesReutilizables } from "@/features/planeador/api/query/use-materiales-reutilizables-query"
+import { fetchAdaptacionesReutilizables } from "@/features/planeador/api/query/use-adaptaciones-reutilizables-query"
+import { fetchGradoGrupos } from "@/features/planeador/api/query/use-grado-grupos-query"
+import { toTipoAdaptacionOptions } from "@/features/planeador/api/query/catalogos-lista-valor"
 import { fetchReferenteCurricular } from "@/features/planeador/api/query/use-referente-curricular-query"
 // Asistencia
 import { asistenciaKeys } from "@/features/academic-management/asistencia/api/query-keys"
@@ -53,6 +64,13 @@ import { fetchSedesOpciones } from "@/features/academic-management/asistencia/ap
 import { fetchAsistenciaCalendario } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { fetchAsistenciaResumenHoras } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
 import { fetchEstudiantesSesion } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
+import {
+  fetchDiariaBloques,
+  fetchDiariaCalendario,
+  fetchDiariaGrupos,
+  fetchDiariaPlanilla,
+} from "@/features/academic-management/asistencia/api/query/use-asistencia-diaria-query"
+import { fetchDiasInhabiles } from "@/features/academic-management/asistencia/api/query/use-asistencia-dias-inhabiles-query"
 import { agruparPorBloquesContinuos, compararPorHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type {
   AsistenciaSesionEstudiantesParams,
@@ -126,6 +144,8 @@ import { chatKeys } from "@/features/comunicaciones/chat/api/query-keys"
 import { fetchConversaciones } from "@/features/comunicaciones/chat/api/query/use-conversaciones-query"
 import { fetchPoliticaChat } from "@/features/comunicaciones/chat/api/query/use-politica-chat-query"
 import { fetchInvitaciones } from "@/features/comunicaciones/chat/api/query/use-invitaciones-query"
+import { fetchHilosAcudientes, fetchOpcionesHilo } from "@/features/comunicaciones/chat/api/query/use-hilos-acudientes-query"
+import { fetchJornadasEleccion } from "@/features/comunicaciones/chat/api/query/use-jornadas-eleccion-query"
 import { contadorQueryKey, fetchContador } from "@/features/notificaciones/api/query/use-contador-query"
 import {
   fetchNotificaciones,
@@ -139,6 +159,15 @@ import { fetchEstablishmentsOptions } from "@/features/establishment/institution
 import { campusKeys } from "@/features/establishment/campuses/api/query-keys"
 import { campusesQueryKey, fetchCampuses } from "@/features/establishment/campuses/api/query/use-campuses"
 import { fetchZonasSede } from "@/features/establishment/campuses/api/query/use-zonas-sede"
+import { fetchCampus } from "@/features/establishment/campuses/api/query/use-campus"
+import { fetchCampusSpecialties, fetchSpecialtyCatalog } from "@/features/establishment/campuses/api/query/use-campus-specialties"
+import { fetchEstablishment } from "@/features/establishment/institution/api/query/use-establishment"
+import { fetchOwnershipTypes } from "@/features/establishment/institution/api/query/use-ownership-types"
+import { fetchPuedeGestionarEstablecimientos } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
+import { fetchMunicipalities } from "@/features/establishment/institution/api/query/use-municipalities"
+import { fetchEtnias } from "@/features/establishment/institution/api/query/use-etnias"
+import { fetchDisabilityTypes } from "@/features/establishment/institution/api/query/use-disability-types"
+import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { getCatalog } from "@/features/establishment/employees/api/query/use-catalogs"
 import { academicPeriodKeys } from "@/features/establishment/academic-period/api/query-keys"
 import { fetchAcademicPeriods } from "@/features/establishment/academic-period/api/query/use-academic-periods"
@@ -146,6 +175,27 @@ import { fetchAcademicPeriod } from "@/features/establishment/academic-period/ap
 import { fetchEvaluationPeriods } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
 import { fetchSedeOptions } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { fetchSedePreviousPeriods } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
+import { CATEGORY_BY_FIELD } from "@/features/establishment/academic-period/api/query/catalogos-lista-valor"
+import { fetchAcademicAssignments } from "@/features/establishment/academic-period/api/query/use-academic-assignments"
+import { fetchAcademicCalendar } from "@/features/establishment/academic-period/api/query/use-academic-calendar"
+import { fetchAssignmentTeachers } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
+import { fetchCurriculumNodes } from "@/features/establishment/academic-period/api/query/use-curriculum-nodes"
+import { fetchEspecialidades } from "@/features/establishment/academic-period/api/query/use-especialidades"
+import { fetchEvaluationCriteria } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
+import { fetchGeneralAreas } from "@/features/establishment/academic-period/api/query/use-general-areas"
+import { fetchGradeGroups } from "@/features/establishment/academic-period/api/query/use-grade-groups"
+import { fetchGrades } from "@/features/establishment/academic-period/api/query/use-grades"
+import { fetchHorario } from "@/features/establishment/academic-period/api/query/use-horario"
+import { fetchPeriodAreas } from "@/features/establishment/academic-period/api/query/use-period-areas"
+import { fetchPlazoAvisoAsistencia } from "@/features/establishment/academic-period/api/query/use-plazo-aviso-asistencia"
+import { fetchPromotionCriteria } from "@/features/establishment/academic-period/api/query/use-promotion-criteria"
+import { fetchRatingScales } from "@/features/establishment/academic-period/api/query/use-rating-scales"
+import { fetchSchoolYears } from "@/features/establishment/academic-period/api/query/use-school-years"
+import { fetchGradoRotulos } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
+import { fetchStudyPlans } from "@/features/establishment/academic-period/api/query/use-study-plans"
+import { fetchSubjectDetails } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
+import { fetchSubjectRows } from "@/features/establishment/academic-period/api/query/use-subjects"
+import { fetchTeachingLevels } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 // Cobertura › Matrícula (solo consulta, datos básicos: P6)
 import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 import {
@@ -225,6 +275,7 @@ function catalogosPlaneador(): PrepareTask[] {
     seedListaValor("MOMENTO_REGISTRO"),
     seedListaValor("AGRUPACION_PLANILLA"),
     seedListaValor("TIPO_ADAPTACION"),
+    seedListaValor("APLICA_A", { optional: true }),
     // Formulario de actividad (crear/editar sin red): instrumentos y dominios
     // permitidos de los materiales.
     seedListaValor("INSTRUMENTO_EVALUACION"),
@@ -292,18 +343,106 @@ function actividadesTasks(meses: { anio: number; mes: number }[], hoy: string): 
           return {
             queryKey,
             meta,
+            expands: true,
             run: async (client, ctx) => {
               const options = actividadDetalleQueryOptions(actividad.id, client)
-              await prepareQuery(client, ctx, {
+              const detalle = await prepareQuery(client, ctx, {
                 queryKey,
                 meta,
                 fetch: () => client.fetchQuery({ ...options, staleTime: 0 }),
               })
+              return detalle ? actividadExtrasTasks(detalle as Actividad) : []
             },
           }
         })
       },
     },
+  ]
+}
+
+/**
+ * Lo que el panel de detalle y Editar de la actividad piden además del detalle: el instrumento
+ * guardado (`detail-sections.tsx`, solo evaluativas) y las calificaciones de los modos
+ * `?modo=grades|approval` (`calificaciones-view.tsx`, con `fechaInicio`). Los dos GET son STABLE.
+ */
+function actividadExtrasTasks(actividad: Actividad): PrepareTask[] {
+  const calificaciones = calificacionesQueryOptions(actividad.id, actividad.fechaInicio)
+  return [
+    ...(actividad.esEvaluativa
+      ? [
+          seed(
+            planeadorKeys.actividad.instrumentoForm(actividad.id),
+            () => fetchInstrumentoActividadParaForm(actividad.id),
+            offlineMeta(TTL_OFFLINE.grupo),
+            { optional: true },
+          ),
+        ]
+      : []),
+    seed(calificaciones.queryKey, calificaciones.queryFn as () => Promise<unknown>, estudiantesMeta(), { optional: true }),
+    ...formularioEditarTasks(actividad),
+  ]
+}
+
+/**
+ * Listas que Editar actividad pide según lo elegido en el formulario, con los valores con los
+ * que abre: programación (fechas permitidas), configuración de la unidad (las dos variantes
+ * de `hooks.ts`), primera página de la biblioteca de recursos y de adaptaciones reutilizables
+ * (sin filtro y por cada tipo de adaptación) y los grupos del grado. Todas opcionales: una
+ * que falle no marca la preparación como fallida.
+ */
+function formularioEditarTasks(actividad: Actividad): PrepareTask[] {
+  const opcional = { optional: true }
+  const meta = offlineMeta(TTL_OFFLINE.grupo)
+  const unidadId = actividad.unidad?.id || undefined
+  const { grupoId, asignaturaId, gradoId } = actividad
+  const materiales = { actividadId: actividad.id, grupoId: grupoId ?? 0, search: "", pagina: 1, size: BIBLIOTECA_PAGE_SIZE }
+  const adaptaciones = (tipoAdaptacionId: number | undefined) => ({
+    actividadId: actividad.id,
+    grupoId: grupoId ?? 0,
+    tipoAdaptacionId,
+    search: "",
+    pagina: 1,
+    size: 100,
+  })
+  const adaptacionesTask = (tipoAdaptacionId: number | undefined) => {
+    const params = adaptaciones(tipoAdaptacionId)
+    return seed(planeadorKeys.adaptacionesReutilizables(params), () => fetchAdaptacionesReutilizables(params), meta, opcional)
+  }
+  return [
+    ...(grupoId != null && asignaturaId != null
+      ? [
+          seed(
+            planeadorKeys.actividades.programacion(grupoId, asignaturaId, unidadId),
+            () => fetchProgramacionActividad(grupoId, asignaturaId, unidadId),
+            meta,
+            opcional,
+          ),
+        ]
+      : []),
+    ...(unidadId != null
+      ? [...new Set([true, actividad.esEvaluativa])].map((esEvaluativa) =>
+          seed(
+            planeadorKeys.unidad.configuracionActividad(unidadId, esEvaluativa),
+            () => fetchConfiguracionActividad(unidadId, esEvaluativa),
+            meta,
+            opcional,
+          ),
+        )
+      : []),
+    seed(planeadorKeys.materialesReutilizables(materiales), () => fetchMaterialesReutilizables(materiales), meta, opcional),
+    adaptacionesTask(undefined),
+    // Una por tipo de adaptación: la clave es propia de la actividad (el catálogo ya se
+    // guardó en los catálogos del planeador y una semilla repetida no se vuelve a correr).
+    {
+      queryKey: ["offline", "prepare", "adaptaciones", actividad.id],
+      optional: true,
+      expands: true,
+      run: async (client) => {
+        const rows = await client.fetchQuery(selectCategoryQueryOptions("TIPO_ADAPTACION"))
+        return toTipoAdaptacionOptions(rows).map(({ id }) => adaptacionesTask(id))
+      },
+    },
+    ...(gradoId != null ? [seed(planeadorKeys.gradoGrupos(gradoId), () => fetchGradoGrupos(gradoId), proveedorMeta(), opcional)] : []),
   ]
 }
 
@@ -315,6 +454,9 @@ function unidadesTasks(): PrepareTask[] {
         result.rows.flatMap((unidad) => [
           seed(planeadorKeys.unidad.detalle(unidad.id), () => fetchUnidadDetalle(unidad.id), offlineMeta(TTL_OFFLINE.grupo)),
           seed(planeadorKeys.unidad.actividades(unidad.id), () => fetchUnidadActividades(unidad.id), offlineMeta(TTL_OFFLINE.grupo)),
+          // Panel de detalle (`?unidad=`) y la sección Unidad de Editar actividad.
+          seed(planeadorKeys.unidad.criterios(unidad.id), () => fetchUnidadCriterios(unidad.id), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
+          seed(planeadorKeys.unidad.valoraciones(unidad.id), () => fetchUnidadValoraciones(unidad.id), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
           seed(planeadorKeys.unidad.referente(unidad.id), () => fetchUnidadReferente(unidad.id), offlineMeta(TTL_OFFLINE.grupo), {
             then: (referente) => (referente.id != null ? [subjectLabelTask(referente.id)] : []),
           }),
@@ -442,9 +584,26 @@ function rosterTasks(sesiones: SesionCalendario[], desde: string, hasta: string)
   return tasks
 }
 
+/**
+ * Planilla diaria (Regla 115) de los días ya pasados del rango: la pantalla no la pide para un día
+ * futuro (`esFechaFutura`), así que solo se siembra hasta hoy.
+ */
+function diariaTasks(entradas: { fkGrupo: number; fecha: string }[], desde: string, hoy: string): PrepareTask[] {
+  return entradas
+    .filter((e) => e.fecha >= desde && e.fecha <= hoy)
+    .flatMap((e) => {
+      const params = { GRUPO: e.fkGrupo, FECHA: e.fecha }
+      return [
+        seed(asistenciaKeys.diaria.planilla(params), () => fetchDiariaPlanilla(params), estudiantesMeta(), { optional: true }),
+        seed(asistenciaKeys.diaria.bloques(params), () => fetchDiariaBloques(params), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
+      ]
+    })
+}
+
 function asistenciaTasks(meses: { anio: number; mes: number }[], now: Date): PrepareTask[] {
   const hoy = toIsoDate(now)
   const limite = toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + ASISTENCIA_DIAS_ROSTER))
+  const atras = toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - ASISTENCIA_DIAS_ROSTER))
   const mesActual = { anio: now.getFullYear(), mes: now.getMonth() + 1 }
   const mesSiguiente = { anio: new Date(now.getFullYear(), now.getMonth() + 1, 1).getFullYear(), mes: new Date(now.getFullYear(), now.getMonth() + 1, 1).getMonth() + 1 }
   const conMesesCercanos = [...meses]
@@ -469,8 +628,17 @@ function asistenciaTasks(meses: { anio: number; mes: number }[], now: Date): Pre
                   optional: true,
                   then: (sesiones) => (cercano ? rosterTasks(sesiones, hoy, limite) : []),
                 }),
+                // Días inhábiles y grupos en modo Diaria (sin MIAS, igual que `asistencia-page.tsx`).
+                seed(asistenciaKeys.diasInhabiles(todas), () => fetchDiasInhabiles(todas), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
+                // Solo lo ve quien registra (`puedeRegistrar`): a los demás el backend responde vacío o 403.
+                seed(asistenciaKeys.diaria.calendario(todas), () => fetchDiariaCalendario(todas), offlineMeta(TTL_OFFLINE.grupo), {
+                  optional: true,
+                  then: (entradas) => diariaTasks(entradas, atras, hoy),
+                }),
               ]
             }),
+            // Vista «Asistencia por grupo» y la pantalla de la planilla diaria.
+            seed(asistenciaKeys.diaria.grupos(SEDE), () => fetchDiariaGrupos(SEDE), offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
             ...[mesActual, mesSiguiente].flatMap(({ anio, mes }) =>
               fechasResumenDelMes(anio, mes).map((FECHA) => {
                 const params = { SEDE, FECHA }
@@ -650,6 +818,12 @@ function comunicacionesTasks(): PrepareTask[] {
     seed(chatKeys.politica, fetchPoliticaChat, catalogoMeta(), { optional: true }),
     // Invitaciones pendientes a grupos: la pantalla de chat las pide al abrir.
     seed(chatKeys.invitaciones, fetchInvitaciones, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
+    // Hilos con acudientes: comms-service recalcula sus participantes al leer, igual que su tarea
+    // periódica (`SincronizacionHilosAcudientes`): idempotente, sin avisos si no cambió nada.
+    seed(chatKeys.hilosAcudientes, fetchHilosAcudientes, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
+    seed(chatKeys.hilosAcudientesOpciones, fetchOpcionesHilo, offlineMeta(TTL_OFFLINE.detalle), { optional: true }),
+    // «Jornada» del formulario de elección.
+    seed(chatKeys.jornadasEleccion, fetchJornadasEleccion, catalogoMeta(), { optional: true }),
   ]
 }
 
@@ -683,19 +857,184 @@ function notificacionesTasks(): PrepareTask[] {
 }
 
 const LISTA_POR_DEFECTO = { filters: {}, sorting: [], pageIndex: 0, pageSize: 10 }
+/** Todas las páginas de un listado, con un tope de seguridad; y el detalle de hasta `MAX_DETALLES_LISTADO` filas. */
+export const MAX_PAGINAS_LISTADO = 200
+export const MAX_DETALLES_LISTADO = 2000
+
+const listaPagina = (pageIndex: number) => ({ ...LISTA_POR_DEFECTO, pageIndex })
+
+/** Página 0 y, desde ella, las siguientes (hasta `MAX_PAGINAS_LISTADO`) con el detalle de cada fila. */
+function paginasEstablecimiento<R>(
+  key: (pageIndex: number) => readonly unknown[],
+  fetch: (pageIndex: number) => Promise<{ rows: R[]; pageCount: number }>,
+  detalle: (row: R) => PrepareTask[],
+): PrepareTask {
+  let detalles = 0
+  const pagina = (pageIndex: number): PrepareTask =>
+    seed(key(pageIndex), () => fetch(pageIndex), proveedorMeta(), {
+      optional: pageIndex > 0,
+      then: (data) => {
+        const filas = data.rows.slice(0, Math.max(0, MAX_DETALLES_LISTADO - detalles))
+        detalles += filas.length
+        return [
+          ...(pageIndex === 0
+            ? Array.from({ length: Math.max(0, Math.min(data.pageCount, MAX_PAGINAS_LISTADO) - 1) }, (_, i) => pagina(i + 1))
+            : []),
+          ...filas.flatMap(detalle),
+        ]
+      },
+    })
+  return pagina(0)
+}
+
+// ---- Periodos académicos (lista, Ver/Editar con sus pestañas y cada grado) ----------
+
+/** Pestañas que cargan todas las filas y paginan en el front (`tab-evaluation-periods.tsx`, `tab-grades.tsx`…). */
+const PERIODO_TODAS = 200
+const OPCIONAL = { optional: true } as const
+
+/** Pestañas Grupos y Plan de estudio del grado, su horario y sus criterios de promoción. */
+function gradoTasks(academicPeriodId: number, gradeId: number): PrepareTask[] {
+  // `enabled` no entra en la key (`withoutEnabled`): se pasa solo para el tipo.
+  const grupos = { filters: {}, sorting: [], pageIndex: 0, pageSize: 100, gradeId, enabled: true }
+  const plan = { ...grupos, academicPeriodId }
+  return [
+    seed(academicPeriodKeys.gradeGroups.list(grupos), () => fetchGradeGroups(grupos), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.studyPlans.list(plan), () => fetchStudyPlans(plan), proveedorMeta(), OPCIONAL),
+    // El horario del grupo pide el plan sin período (`group-schedule.tsx`).
+    seed(academicPeriodKeys.studyPlans.list(grupos), () => fetchStudyPlans(grupos), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.horario.byGrade(gradeId), () => fetchHorario(gradeId), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.promotionCriteria.byPeriod(academicPeriodId, gradeId), () => fetchPromotionCriteria(academicPeriodId, gradeId), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.gradeRotulos.byGrade(gradeId), () => fetchGradoRotulos(gradeId), catalogoMeta(), OPCIONAL),
+  ]
+}
+
+/** Lo que monta Ver/Editar del período: cada pestaña con los params con que abre. */
+function periodoTasks(id: number): PrepareTask[] {
+  const evaluacion = { filters: {}, sorting: [], pageIndex: 0, pageSize: PERIODO_TODAS, academicPeriodId: id, enabled: true }
+  const escalas = { filters: {}, sorting: [], academicPeriodId: id }
+  const grados = { filters: {}, sorting: [], pageIndex: 0, pageSize: PERIODO_TODAS, academicPeriodId: id }
+  const docentes = { academicPeriodId: id, sorting: [{ id: "name", desc: false }], pageIndex: 0, pageSize: 500 }
+  const docentesGrupo = { academicPeriodId: id, sorting: [], pageIndex: 0, pageSize: 200 }
+  return [
+    seed(academicPeriodKeys.academicPeriod.detail(id), () => fetchAcademicPeriod(id), proveedorMeta(), {
+      then: (detalle) => {
+        const sedeId = (detalle as { sedeId?: string | number | null }).sedeId
+        if (sedeId == null || sedeId === "") return []
+        return [
+          seed(
+            academicPeriodKeys.academicPeriods.previousBySede(String(sedeId), id),
+            () => fetchSedePreviousPeriods(String(sedeId), id),
+            proveedorMeta(),
+            OPCIONAL,
+          ),
+        ]
+      },
+    }),
+    // `enabled` no entra en la key (`withoutEnabled`), igual que en la pantalla.
+    seed(academicPeriodKeys.evaluationPeriods.list(evaluacion), () => fetchEvaluationPeriods(evaluacion), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.academicCalendar.byPeriod(id), () => fetchAcademicCalendar(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.academicCalendar.plazoAviso(id), () => fetchPlazoAvisoAsistencia(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.promotionCriteria.byPeriod(id, undefined), () => fetchPromotionCriteria(id, undefined), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.evaluationCriteria.byPeriod(id), () => fetchEvaluationCriteria(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.ratingScales.list(escalas), () => fetchRatingScales(escalas), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.subjects.byPeriod(id), () => fetchSubjectRows(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.subjectDetails.byPeriod(id), () => fetchSubjectDetails(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.periodAreas.byPeriod(id), () => fetchPeriodAreas(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.especialidades.byPeriod(id), () => fetchEspecialidades(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.academicAssignments.byPeriod(id), () => fetchAcademicAssignments(id), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.assignmentTeachers.list(docentes), () => fetchAssignmentTeachers(docentes), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.assignmentTeachers.list(docentesGrupo), () => fetchAssignmentTeachers(docentesGrupo), proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.grades.list(grados), () => fetchGrades(grados), proveedorMeta(), {
+      ...OPCIONAL,
+      then: (data) => data.rows.flatMap((grado) => gradoTasks(id, grado.id)),
+    }),
+  ]
+}
+
+function periodosTasks(): PrepareTask[] {
+  const criterios = Object.values(CATEGORY_BY_FIELD).map((c) => seedListaValor(c, OPCIONAL))
+  return [
+    ...["ESTADOPERIODO", "ESTADOPERIODOEVALUACION", "JORNADA", "GRADOS", "MODELO_PEDAGOGICO", "TIPO_VALORACION", "ICONOGRAFIA"].map((c) =>
+      seedListaValor(c, c === "ESTADOPERIODO" ? undefined : OPCIONAL),
+    ),
+    ...criterios,
+    seed(academicPeriodKeys.sedeOptions(), fetchSedeOptions, proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.academicPeriods.schoolYears(), fetchSchoolYears, proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.teachingLevels(), fetchTeachingLevels, proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.generalAreas(), fetchGeneralAreas, proveedorMeta(), OPCIONAL),
+    seed(academicPeriodKeys.curriculumNodes(), fetchCurriculumNodes, catalogoMeta(), OPCIONAL),
+    // Todas las páginas de la lista y, de cada período, Ver/Editar con sus pestañas (hasta `MAX_PERIODOS`).
+    paginasEstablecimiento(
+      (p) => academicPeriodKeys.academicPeriods.list(listaPagina(p)),
+      (p) => fetchAcademicPeriods(listaPagina(p)),
+      (periodo) => periodoTasks(periodo.id),
+    ),
+  ]
+}
+
+const catalogoEe = (catalogo: (typeof CATALOGS)[keyof typeof CATALOGS]) =>
+  seed(["catalogs", catalogo], () => getCatalog(catalogo), catalogoMeta(), { optional: true })
+
+/** Catálogos de la ficha, el detalle y el formulario de editar del EE (y de convertir una sede). */
+function catalogosEstablecimiento(): PrepareTask[] {
+  const jornada = selectCategoryQueryOptions("JORNADA")
+  return [
+    seed(["catalogs", "ownership-types"], fetchOwnershipTypes, catalogoMeta(), { optional: true }),
+    seed(["catalogs", "municipalities"], fetchMunicipalities, catalogoMeta(), { optional: true }),
+    seed(["catalogs", "etnias"], fetchEtnias, catalogoMeta(), { optional: true }),
+    seed(["catalogs", "disability-types"], fetchDisabilityTypes, catalogoMeta(), { optional: true }),
+    seed(jornada.queryKey, jornada.queryFn, jornada.meta, { optional: true }),
+    ...[
+      CATALOGS.ENTITY_STATUSES,
+      CATALOGS.ZONES,
+      CATALOGS.IDIOMAS,
+      CATALOGS.CALENDARIOS,
+      CATALOGS.COST_REGIMEN,
+      CATALOGS.POPULATION_GENDERS,
+      CATALOGS.RANGO_TARIFAS,
+      CATALOGS.DISABILITIES_ATTENDED,
+      CATALOGS.DOCUMENT_TYPES,
+      CATALOGS.GENDERS,
+      CATALOGS.MODALIDADES_PRESTACION,
+      CATALOGS.SECTORES,
+    ].map(catalogoEe),
+  ]
+}
 
 function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]): PrepareTask[] {
   const tasks: PrepareTask[] = []
-  if (menuIncludes(queryClient, "/app/establecimiento-educativo/general")) {
+  const general = menuIncludes(queryClient, "/app/establecimiento-educativo/general")
+  const sedes = menuIncludes(queryClient, "/app/establecimiento-educativo/sedes")
+  if (general || sedes) tasks.push(...catalogosEstablecimiento())
+  if (general) {
     tasks.push(
-      seed(establishmentsQueryKey(LISTA_POR_DEFECTO), () => fetchEstablishments(LISTA_POR_DEFECTO), proveedorMeta()),
-      seed(["catalogs", CATALOGS.ENTITY_STATUSES], () => getCatalog(CATALOGS.ENTITY_STATUSES), catalogoMeta(), { optional: true }),
+      // Detalle y editar comparten la key (`useEstablishmentQuery`).
+      paginasEstablecimiento(
+        (p) => establishmentsQueryKey(listaPagina(p)),
+        (p) => fetchEstablishments(listaPagina(p)),
+        (ee) => [seed(establishmentKeys.detalle(ee.id), () => fetchEstablishment(ee.id), proveedorMeta(), { optional: true })],
+      ),
+      seed(establishmentKeys.permisoGestion(), fetchPuedeGestionarEstablecimientos, offlineMeta(TTL_OFFLINE.grupo), { optional: true }),
     )
   }
-  if (menuIncludes(queryClient, "/app/establecimiento-educativo/sedes")) {
+  if (sedes) {
     tasks.push(
-      seed(campusesQueryKey(LISTA_POR_DEFECTO), () => fetchCampuses(LISTA_POR_DEFECTO), proveedorMeta()),
-      seed(["catalogs", CATALOGS.ZONES], () => getCatalog(CATALOGS.ZONES), catalogoMeta(), { optional: true }),
+      paginasEstablecimiento(
+        (p) => campusesQueryKey(listaPagina(p)),
+        (p) => fetchCampuses(listaPagina(p)),
+        (sede) => [
+          seed(campusKeys.detalle(sede.id), () => fetchCampus(sede.id), proveedorMeta(), {
+            optional: true,
+            // Editar pide las zonas válidas del EE de la sede.
+            then: (campus) => [
+              seed(campusKeys.zonas(campus.establishmentId), () => fetchZonasSede(campus.establishmentId), catalogoMeta(), { optional: true }),
+            ],
+          }),
+          seed(campusKeys.especialidades(sede.id), () => fetchCampusSpecialties(sede.id), proveedorMeta(), { optional: true }),
+        ],
+      ),
+      seed(campusKeys.catalogoEspecialidades(), fetchSpecialtyCatalog, catalogoMeta(), { optional: true }),
       // Solo super administrador; a los demás les responde 403.
       ...(roles.includes("CEVAL-SUPER_ADMINISTRADOR")
         ? [seed(establishmentKeys.options(), fetchEstablishmentsOptions, proveedorMeta(), { optional: true })]
@@ -703,39 +1042,7 @@ function establecimientoTasks(queryClient: QueryClient, roles: readonly string[]
       seed(campusKeys.zonas(null), () => fetchZonasSede(null), catalogoMeta(), { optional: true }),
     )
   }
-  if (menuIncludes(queryClient, "/app/establecimiento-educativo/periodos")) {
-    tasks.push(
-      seedListaValor("ESTADOPERIODO"),
-      seedListaValor("ESTADOPERIODOEVALUACION", { optional: true }),
-      seed(academicPeriodKeys.sedeOptions(), fetchSedeOptions, proveedorMeta(), { optional: true }),
-      seed(academicPeriodKeys.academicPeriods.list(LISTA_POR_DEFECTO), () => fetchAcademicPeriods(LISTA_POR_DEFECTO), proveedorMeta(), {
-        then: (result) =>
-          result.rows.flatMap((periodo) => {
-            const evaluacion = { ...LISTA_POR_DEFECTO, academicPeriodId: periodo.id }
-            return [
-              seed(academicPeriodKeys.academicPeriod.detail(periodo.id), () => fetchAcademicPeriod(periodo.id), proveedorMeta(), {
-                then: (detalle) => {
-                  const sedeId = (detalle as { sedeId?: string | number | null }).sedeId
-                  if (sedeId == null || sedeId === "") return []
-                  return [
-                    seed(
-                      academicPeriodKeys.academicPeriods.previousBySede(String(sedeId), periodo.id),
-                      () => fetchSedePreviousPeriods(String(sedeId), periodo.id),
-                      proveedorMeta(),
-                      { optional: true },
-                    ),
-                  ]
-                },
-              }),
-              // `enabled` no entra en la key (`withoutEnabled`), igual que en la pantalla.
-              seed(academicPeriodKeys.evaluationPeriods.list({ ...evaluacion, enabled: true }), () => fetchEvaluationPeriods(evaluacion), proveedorMeta(), {
-                optional: true,
-              }),
-            ]
-          }),
-      }),
-    )
-  }
+  if (menuIncludes(queryClient, "/app/establecimiento-educativo/periodos")) tasks.push(...periodosTasks())
   return tasks
 }
 

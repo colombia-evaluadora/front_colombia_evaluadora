@@ -151,6 +151,15 @@ export const paths = {
       path: "cobertura/actualizacion-datos",
       getHref: () => "/app/cobertura/actualizacion-datos",
     },
+    // Informes y reportes (Sección 3.9): consultas e informes de todos los períodos (Regla 55).
+    coberturaInformesReportes: {
+      path: "cobertura/informes-reportes",
+      getHref: () => "/app/cobertura/informes-reportes",
+    },
+    coberturaInformesMatricula: {
+      path: "cobertura/informes-reportes/matricula/$matriculaId",
+      getHref: (matriculaId: string) => `/app/cobertura/informes-reportes/matricula/${matriculaId}`,
+    },
     coberturaConvocatoriaNueva: {
       path: "cobertura/matricula-complementaria/convocatorias/nueva",
       getHref: () => "/app/cobertura/matricula-complementaria/convocatorias/nueva",

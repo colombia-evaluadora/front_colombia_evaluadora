@@ -93,16 +93,18 @@ export function usePasosCasoQuery(casoId: number | undefined, enabled = true) {
 }
 
 /** `GET /casos/opciones/gestores-filtro`: gestores de los casos visibles; «Sin gestor» va primero. */
+export const fetchGestoresFiltro = () =>
+  evalCol
+    .getRows<{ id: number; nombre: string }>(`${BASE}/casos/opciones/gestores-filtro`)
+    .then((r): Opcion[] => [
+      { value: SIN_GESTOR, label: "Sin gestor" },
+      ...r.map((g) => ({ value: String(g.id), label: g.nombre })),
+    ])
+
 export function useGestoresFiltroQuery() {
   return useQuery({
     queryKey: convivenciaKeys.gestoresFiltro(),
-    queryFn: () =>
-      evalCol
-        .getRows<{ id: number; nombre: string }>(`${BASE}/casos/opciones/gestores-filtro`)
-        .then((r): Opcion[] => [
-          { value: SIN_GESTOR, label: "Sin gestor" },
-          ...r.map((g) => ({ value: String(g.id), label: g.nombre })),
-        ]),
+    queryFn: fetchGestoresFiltro,
     staleTime: 60_000,
   })
 }

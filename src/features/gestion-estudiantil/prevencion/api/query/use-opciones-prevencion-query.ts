@@ -73,14 +73,16 @@ export function useOpcionesResponsablesQuery(params: OpcionesResponsablesParams,
   })
 }
 
+export const fetchOpcionesEstadosAcomp = (establecimiento: number | null) =>
+  evalCol
+    .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/acompanamientos/opciones/estados${queryString({ ESTABLECIMIENTO: establecimiento })}`)
+    .then((r) => desenvolver<OpcionesEstadosAcomp>(r[0], "datos", "No se pudieron cargar los estados."))
+
 /** `GET /acompanamientos/opciones/estados`: estados de Embarazo, Consumo y Reportes recibidos (una fila con `datos`). */
 export function useOpcionesEstadosAcompQuery(establecimiento: number | null) {
   return useQuery({
     queryKey: prevencionKeys.opciones.acompEstados(establecimiento ?? "none"),
-    queryFn: () =>
-      evalCol
-        .getRows<Record<string, unknown>>(`${BASE_PREVENCION}/acompanamientos/opciones/estados${queryString({ ESTABLECIMIENTO: establecimiento })}`)
-        .then((r) => desenvolver<OpcionesEstadosAcomp>(r[0], "datos", "No se pudieron cargar los estados.")),
+    queryFn: () => fetchOpcionesEstadosAcomp(establecimiento),
     enabled: establecimiento != null,
     staleTime: 60_000,
   })

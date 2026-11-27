@@ -28,7 +28,7 @@ export const toCalendarEntry = (row: CalendarEntryRow): CalendarEntry => ({
 
 // `GET /eval-col/calendario/:periodId`: las entradas registradas y los
 // festivos del período (Sección 5.8), ordenados por fecha.
-async function fetchAcademicCalendar(academicPeriodId: number): Promise<CalendarEntry[]> {
+export async function fetchAcademicCalendar(academicPeriodId: number): Promise<CalendarEntry[]> {
   const rows = await evalCol.getRows<CalendarEntryRow>(`/calendario/${academicPeriodId}`)
   return rows.map(toCalendarEntry).sort((a, b) => a.from.localeCompare(b.from))
 }

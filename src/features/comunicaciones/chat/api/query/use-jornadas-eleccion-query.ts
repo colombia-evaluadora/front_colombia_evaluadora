@@ -13,10 +13,12 @@ export interface JornadaEleccion {
 // en comms-service). Antes se usaba el catálogo global JORNADA (`useJornadasQuery`), que ofrecía
 // Nocturna, Fin de semana… aunque ninguna sede las tuviera. El backend valida contra esta misma
 // lista al crear/editar.
+export const fetchJornadasEleccion = () => evalCol.getRows<JornadaEleccion>("/comunicaciones/elecciones/jornadas")
+
 export function useJornadasEleccionQuery() {
   return useQuery({
     queryKey: chatKeys.jornadasEleccion,
-    queryFn: () => evalCol.getRows<JornadaEleccion>("/comunicaciones/elecciones/jornadas"),
+    queryFn: fetchJornadasEleccion,
     staleTime: 5 * 60_000,
   })
 }

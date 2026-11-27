@@ -10,7 +10,7 @@ interface CurriculumNodesResponse {
 
 // `GET /eval-col/catalogos/nodos-curriculares` (confirmado): solo dos nodos,
 // `{key: "AS", label: "Asignatura"}` / `{key: "AR", label: "Area"}`.
-async function fetchCurriculumNodes(): Promise<CurriculumNodeOption[]> {
+export async function fetchCurriculumNodes(): Promise<CurriculumNodeOption[]> {
   const raw: CurriculumNodesResponse = await api.get(
     "/eval-col/catalogos/nodos-curriculares"
   )

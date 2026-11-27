@@ -119,7 +119,7 @@ function toRangoFecha(raw: RangoFecha | undefined): ProgramacionActividad["fecha
   }
 }
 
-async function fetchProgramacionActividad(
+export async function fetchProgramacionActividad(
   grupoId: number,
   asignaturaId: number,
   unidadId: number | undefined,

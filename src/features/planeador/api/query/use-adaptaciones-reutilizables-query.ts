@@ -98,7 +98,7 @@ interface Params {
   size: number
 }
 
-async function fetchAdaptacionesReutilizables({
+export async function fetchAdaptacionesReutilizables({
   actividadId,
   grupoId,
   tipoAdaptacionId,

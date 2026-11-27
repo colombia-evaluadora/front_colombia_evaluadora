@@ -39,12 +39,13 @@ import {
   type EstadoTerritorial,
 } from "@/features/comunicaciones/territorial/api/comunicados-territorial"
 import type { ComunicadosTerritorialSearch } from "@/features/comunicaciones/territorial/api/schema"
+import { AdjuntosTerritorial } from "@/features/comunicaciones/territorial/components/adjuntos-territorial"
 import {
   createTerritorialColumns,
-  dirigidoA,
   ESTADOS_TERRITORIAL,
   EstadoTerritorialBadge,
 } from "@/features/comunicaciones/territorial/components/table/columns-territorial"
+import { dirigidoA } from "@/features/comunicaciones/territorial/lib/destinatarios"
 
 const ESTADOS = Object.keys(ESTADOS_TERRITORIAL) as EstadoTerritorial[]
 
@@ -358,7 +359,7 @@ function DetalleDialog({ id, onClose }: { id: number; onClose: () => void }) {
               // Saneado con DOMPurify: solo etiquetas de formato, sin scripts ni on*.
               <div className={CLASES_HTML} dangerouslySetInnerHTML={{ __html: htmlSeguro(d.contenidoHtml) }} />
             )}
-            {d.adjuntos.length > 0 && <p className="text-xs text-muted-foreground">Adjuntos: {d.adjuntos.join(", ")}</p>}
+            <AdjuntosTerritorial adjuntos={d.adjuntos ?? []} />
           </div>
         )}
       </DialogContent>

@@ -446,6 +446,33 @@ export const comunicacionesComunicadosHandlers = [
     const op = (valor: string, etiqueta: string, detalle: string | null = null) => ({ valor, etiqueta, detalle, total: 0 })
     const sede = q.get("sede")
     const jornada = q.get("jornada")
+    // Aspirantes (M.1.AGR.4): períodos en Inscripciones; la Mañana (1) tiene uno de 2028 y la Tarde no.
+    const aspirantes = q.get("poblacion") === "ASPIRANTES"
+    if (aspirantes) {
+      const conInscripciones = !!sede && jornada === "1"
+      const periodoInsc =
+        conInscripciones && q.get("anio") === "2028" && q.get("modalidad") && q.get("ciclo")
+          ? { id: 310, anio: 2028, modalidad: "ANUAL", nombreModalidad: "Anual", ciclo: 1, fechaInicio: "2028-01-24", nombre: null }
+          : null
+      return HttpResponse.json({
+        rows: [
+          {
+            establecimientos: [op("1", "IE Central")],
+            sedes: q.get("establecimiento") ? [op("1", "Principal"), op("2", "Norte")] : [],
+            jornadas: sede ? [op("1", "Mañana"), op("3", "Tarde")] : [],
+            anios: conInscripciones ? [op("2028", "2028")] : [],
+            modalidades: conInscripciones && q.get("anio") ? [op("ANUAL", "Anual")] : [],
+            ciclos: conInscripciones && q.get("modalidad") ? [op("1", "1")] : [],
+            periodo: periodoInsc,
+            grados: periodoInsc ? [op("1", "Primero"), op("6", "Sexto")] : [],
+            grupos: [],
+            estudiantes: [],
+            roles: sede ? [op("COORDINADOR", "Coordinador"), op("DOCENTE", "Docente")] : [],
+            funcionarios: [],
+          },
+        ],
+      })
+    }
     const abierto = !!sede && !!jornada && jornada !== "3"
     const periodo =
       abierto && q.get("anio") === "2027" && q.get("modalidad") && q.get("ciclo")
@@ -587,7 +614,14 @@ export const comunicacionesComunicadosHandlers = [
     const c = comunicados.find((x) => x.conversacionId === Number(params.id))
     if (!c) return sinComunicado()
     return HttpResponse.json({
-      rows: [{ comunicado: filaTerritorial(c), contenidoHtml: c.contenidoHtml, visibleHasta: c.visibleHasta ?? null, adjuntos: [] }],
+      rows: [
+        {
+          comunicado: filaTerritorial(c),
+          contenidoHtml: estadoDe(c) === "ANULADO" ? "" : c.contenidoHtml,
+          visibleHasta: c.visibleHasta ?? null,
+          adjuntos: estadoDe(c) === "ANULADO" ? [] : (c.adjuntos ?? []),
+        },
+      ],
     })
   }),
 

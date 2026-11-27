@@ -71,6 +71,9 @@ function toMaterial(row: MaterialReutilizableRow): MaterialReutilizable {
   }
 }
 
+/** Página de la biblioteca de recursos: 3 columnas × 6 filas (la usa también la preparación offline). */
+export const BIBLIOTECA_PAGE_SIZE = 18
+
 interface Params {
   /** 0 mientras se CREA la actividad: ahí manda `grupoId`. */
   actividadId: number
@@ -82,7 +85,7 @@ interface Params {
   size: number
 }
 
-async function fetchMaterialesReutilizables({
+export async function fetchMaterialesReutilizables({
   actividadId,
   grupoId,
   search,

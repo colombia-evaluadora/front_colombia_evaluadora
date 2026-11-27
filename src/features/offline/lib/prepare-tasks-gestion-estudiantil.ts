@@ -22,6 +22,7 @@ import { capacidadesGeKeys, fetchCapacidadesGe } from "@/features/gestion-estudi
 import { fetchOpcionesGrupos } from "@/features/gestion-estudiantil/commons/api/use-opciones-grupos"
 import {
   fetchAniosGe,
+  fetchEstablecimientosGe,
   fetchJornadasGe,
   fetchPeriodosGe,
   fetchSedesGe,
@@ -45,6 +46,7 @@ import { comiteKeys, convivenciaKeys, procesosKeys } from "@/features/gestion-es
 import {
   fetchCaso,
   fetchCasos,
+  fetchGestoresFiltro,
   fetchPasosCaso,
   toConvivenciaFilters,
 } from "@/features/gestion-estudiantil/convivencia/api/query/use-casos-query"
@@ -86,7 +88,7 @@ import {
 import { FILTROS_VACIOS as ORIENTACION_VACIOS } from "@/features/gestion-estudiantil/inclusion/orientacion/api/types"
 import { fetchAccesoInclusion } from "@/features/gestion-estudiantil/inclusion/piar/api/use-piar-access"
 import { piarKeys } from "@/features/gestion-estudiantil/inclusion/piar/api/query-keys"
-import { fetchPiarLista, fetchSinPiar, piarQueryOptions } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
+import { fetchGradosFiltroPiar, fetchPiarLista, fetchSinPiar, piarQueryOptions } from "@/features/gestion-estudiantil/inclusion/piar/api/query/use-piar-query"
 import { FILTROS_VACIOS as PIAR_VACIOS } from "@/features/gestion-estudiantil/inclusion/piar/api/types"
 // Reconocimientos
 import { reconocimientosKeys } from "@/features/gestion-estudiantil/reconocimientos/api/query-keys"
@@ -169,6 +171,7 @@ import {
   fetchOpcionesPeriodos,
   fetchOpcionesPeriodosAcademicos,
   fetchOpcionesResponsables,
+  fetchOpcionesEstadosAcomp,
   fetchOpcionesSedesJornadas,
 } from "@/features/gestion-estudiantil/prevencion/api/query/use-opciones-prevencion-query"
 import {
@@ -222,8 +225,8 @@ import { SANCION_FILTROS_VACIOS } from "@/features/gestion-estudiantil/configura
 const PAGE_SIZE = 10
 /** Beneficiarios en el detalle de la estrategia (`estrategia-detalle-page.tsx`). */
 const BENEFICIARIOS_PAGE_SIZE = 20
-/** Tope por listado: 200 filas. */
-export const MAX_PAGINAS_GE = 20
+/** Todas las páginas de cada listado, con un tope de seguridad (2000 filas). */
+export const MAX_PAGINAS_GE = 200
 
 const ROOT = "/app/gestion-estudiantil"
 const meta = () => offlineMeta(TTL_OFFLINE.grupo)
@@ -302,6 +305,25 @@ function capacidades(establecimiento: number, then?: SeedOptions<Awaited<ReturnT
   return extra(capacidadesGeKeys.establecimiento(establecimiento), () => fetchCapacidadesGe(establecimiento), then)
 }
 
+/** Colegios del alcance, en el orden de las sedes (el primero es el que abre la pantalla). */
+function establecimientosDe(sedes: Sede[]): number[] {
+  return [...new Set(sedes.map((s) => s.establecimientoId))]
+}
+
+/**
+ * Capacidades de TODOS los colegios del usuario: al elegir una sede de otro colegio la pantalla
+ * pide las de ese (`useCapacidadesGe(establecimiento)`). `then` solo cuelga del que abre por defecto.
+ */
+function capacidadesTodas(sedes: Sede[], then?: Parameters<typeof capacidades>[1]): PrepareTask[] {
+  return establecimientosDe(sedes).map((ee, i) => capacidades(ee, i === 0 ? then : undefined))
+}
+
+/** Sedes de los colegios que NO abren por defecto: elegir una de ellas en el filtro cambia de colegio. */
+function sedesDeOtrosColegios(sedes: Sede[]): Sede[] {
+  const primero = sedes[0]?.establecimientoId
+  return sedes.filter((s) => s.establecimientoId !== primero)
+}
+
 // ---- Observador -----------------------------------------------------------------
 
 function observadorTasks(): PrepareTask[] {
@@ -309,7 +331,8 @@ function observadorTasks(): PrepareTask[] {
     listadoFiltrado(observadorKeys.lista, fetchAnotaciones, toObservadorFilters("", OBSERVADOR_VACIOS), {
       fila: (a) => [extra(observadorKeys.detalle(a.id), () => fetchAnotacion(a.id))],
     }),
-    ...catalogos("ESTADO_REMISION_ORIENTACION"),
+    // «Imprimir observador» elige qué firmar.
+    ...catalogos("ESTADO_REMISION_ORIENTACION", "TIPO_OBSERVADOR_FIRMAR"),
     conSedes((sedes) => {
       const unico = establecimientoUnico(sedes)
       const qs = toQueryString({ SEARCH: undefined, ESTABLECIMIENTO: unico, SEDE: undefined })
@@ -319,7 +342,7 @@ function observadorTasks(): PrepareTask[] {
         ...[...new Set(sedes.map((s) => s.establecimientoId))].map((ee) =>
           extra(observadorKeys.codigos(ee), () => fetchCodigosAnotacion(ee)),
         ),
-        capacidades(sedes[0].establecimientoId, (cap) => {
+        ...capacidadesTodas(sedes, (cap) => {
           if (!cap?.observador_puede_ver_mis_reportes) return []
           return [
             listado(
@@ -373,6 +396,7 @@ function convivenciaTasks(): PrepareTask[] {
       fila: (p) => [extra(procesosKeys.detalle(p.id), () => fetchProcesoDetalle(p.id))],
     }),
     extra(procesosKeys.responsables(), fetchResponsablesFiltro),
+    extra(convivenciaKeys.gestoresFiltro(), fetchGestoresFiltro),
     extra([...convivenciaKeys.all, "opciones-grupos"], fetchOpcionesGrupos),
     ...catalogos(
       "TIPO_SITUACION",
@@ -389,7 +413,7 @@ function convivenciaTasks(): PrepareTask[] {
       "EVENTO_GENERADOR",
     ),
     // El Comité se precarga solo si el backend dice que el usuario lo ve (comite_puede_ver).
-    conSedes((sedes) => [capacidades(sedes[0].establecimientoId, (cap) => (cap?.comite_puede_ver ? comiteTasks() : []))]),
+    conSedes((sedes) => capacidadesTodas(sedes, (cap) => (cap?.comite_puede_ver ? comiteTasks() : []))),
   ]
 }
 
@@ -405,26 +429,29 @@ function citacionesTasks(): PrepareTask[] {
     }),
     extra([...citacionesKeys.all, "opciones-grupos"], fetchOpcionesGrupos),
     ...catalogos("ESTADO_CITACION", "MOTIVO_CITACION", "TIPO_COMPROMISO", "ESTADO_COMPROMISO"),
-    conSedes((sedes) => [capacidades(sedes[0].establecimientoId)]),
+    conSedes((sedes) => capacidadesTodas(sedes)),
   ]
 }
 
 // ---- Inclusión y orientación --------------------------------------------------------
 
-function inclusionTasks(roles: readonly string[]): PrepareTask[] {
+function inclusionTasks(): PrepareTask[] {
   // Las mismas banderas con que la pantalla arma sus pestañas (el rol solo no
   // alcanza: al superadministrador no le descargaba nada).
   return [
-    extra(["inclusion", "acceso"], fetchAccesoInclusion, (a) => inclusionSegunAcceso(roles, {
+    extra(["inclusion", "acceso"], fetchAccesoInclusion, (a) => inclusionSegunAcceso({
       veListado: Boolean(a?.puede_ver_piar),
       veOrientacion: Boolean(a?.puede_ver_orientacion),
       veAvisoSinPiar: Boolean(a?.puede_ver_aviso_sin_piar),
       veInforme: Boolean(a?.puede_ver_informe),
+      informeRequiereSede: Boolean(a?.informe_requiere_sede),
     })),
   ]
 }
 
-function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListado" | "veOrientacion" | "veAvisoSinPiar" | "veInforme", boolean>): PrepareTask[] {
+function inclusionSegunAcceso(
+  acceso: Record<"veListado" | "veOrientacion" | "veAvisoSinPiar" | "veInforme" | "informeRequiereSede", boolean>,
+): PrepareTask[] {
   // Solo quien NO ve lo sensible (el docente) abre el PIAR sin dejar traza de consulta.
   const sinTraza = acceso.veListado && !acceso.veOrientacion
   const tasks: PrepareTask[] = []
@@ -444,6 +471,9 @@ function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListad
         },
       ),
       ...catalogos("ESTADO_PIAR"),
+      // Filtros de la búsqueda del PIAR (`busqueda-piar.tsx`).
+      extra([...piarKeys.all, "opciones-grupos"], fetchOpcionesGrupos),
+      extra(piarKeys.gradosFiltro(), fetchGradosFiltroPiar),
     )
   }
   if (acceso.veAvisoSinPiar) tasks.push(extra(piarKeys.aviso("", ""), () => fetchSinPiar("", "")))
@@ -464,10 +494,17 @@ function inclusionSegunAcceso(roles: readonly string[], acceso: Record<"veListad
   if (acceso.veInforme) {
     tasks.push(
       conSedes((sedes) => {
-        // `TabInforme`: el coordinador abre con su primera sede; el resto, con todo el colegio.
-        const deSede = roles.includes("CEVAL-COORDINADOR") && !roles.includes("CEVAL-RECTOR")
-        const params = { establecimiento: sedes[0].establecimientoId, sede: deSede ? String(sedes[0].id) : "", anio: "", grado: "" }
-        return [extra(["inclusion", "informe", params], () => fetchInformeInclusion(params))]
+        // `TabInforme`: con `informe_requiere_sede` abre en la primera sede, si no en todo el colegio;
+        // el año se fija solo en el mayor de los años de esa sede.
+        const primera = sedes[0]
+        const sede = acceso.informeRequiereSede ? String(primera.id) : ""
+        return [
+          extra(opcionesGeKeys.anios(primera.id), () => fetchAniosGe(primera.id), (anios) => {
+            const anio = anios.length > 0 ? String(Math.max(...anios.map((x) => x.anio))) : ""
+            const params = { establecimiento: primera.establecimientoId, sede, anio, grado: "" }
+            return [extra(["inclusion", "informe", params], () => fetchInformeInclusion(params))]
+          }),
+        ]
       }),
     )
   }
@@ -481,16 +518,23 @@ function reconocimientosTasks(roles: readonly string[]): PrepareTask[] {
     ...catalogos("TIPO_RECONOCIMIENTO"),
     conSedes((sedes) => {
       const establecimiento = sedes[0].establecimientoId
-      const sugerencias = { establecimiento, sede: null, jornada: null }
-      return [
+      const lista = (ee: number, sede: string) =>
         listadoFiltrado(
           reconocimientosKeys.lista,
           fetchReconocimientos,
-          toReconocimientosFilters(establecimiento, "", RECONOCIMIENTOS_FILTROS_VACIOS),
+          toReconocimientosFilters(ee, "", { ...RECONOCIMIENTOS_FILTROS_VACIOS, sede }),
           { fila: (r) => [extra(reconocimientosKeys.detalle(r.id), () => fetchReconocimiento(r.id))] },
-        ),
-        ...(ROLES_SUPERVISAN_RECONOCIMIENTO.some((r) => roles.includes(r))
-          ? [extra(reconocimientosKeys.sugerencias(sugerencias), () => fetchSugerencias(sugerencias))]
+        )
+      const supervisa = ROLES_SUPERVISAN_RECONOCIMIENTO.some((r) => roles.includes(r))
+      return [
+        lista(establecimiento, ""),
+        // Otro colegio se abre eligiendo una de sus sedes en el filtro (el colegio sale de la sede).
+        ...sedesDeOtrosColegios(sedes).map((s) => lista(s.establecimientoId, String(s.id))),
+        ...(supervisa
+          ? establecimientosDe(sedes).map((ee) => {
+              const sugerencias = { establecimiento: ee, sede: null, jornada: null }
+              return extra(reconocimientosKeys.sugerencias(sugerencias), () => fetchSugerencias(sugerencias))
+            })
           : []),
       ]
     }),
@@ -518,8 +562,15 @@ function observacionesTasks(): PrepareTask[] {
     ...catalogos("DESTINATARIOS_OBSERVACION"),
     conSedes((sedes) => {
       const establecimiento = sedes[0].establecimientoId
-      const comunes = [capacidades(establecimiento)]
-      if (sedes.length > 1) return [...comunes, observacionesListado(establecimiento, {})]
+      const comunes = capacidadesTodas(sedes)
+      if (sedes.length > 1) {
+        return [
+          ...comunes,
+          observacionesListado(establecimiento, {}),
+          // Otro colegio se abre eligiendo una de sus sedes en el filtro.
+          ...sedesDeOtrosColegios(sedes).map((s) => observacionesListado(s.establecimientoId, { sede: String(s.id) })),
+        ]
+      }
       const sedeId = sedes[0].id
       const sede = String(sedeId)
       return [
@@ -595,7 +646,7 @@ function actividadesTasks(): PrepareTask[] {
     }),
     extra(actividadesKeys.servicioSocial.parametros, fetchParametrosServicioSocial),
     ...catalogos("TIPO_ACTIVIDAD_EXTRA", "ESTADO_PARTICIPACION_EXTRA"),
-    conSedes((sedes) => [capacidades(sedes[0].establecimientoId)]),
+    conSedes((sedes) => capacidadesTodas(sedes)),
   ]
 }
 
@@ -648,7 +699,11 @@ function prevencionPorAcceso(ee: number, acceso: AccesoPrevencion | null): Prepa
   }
   if (acceso?.ver_embarazo || acceso?.ver_consumo) {
     const responsables = { establecimiento: ee }
-    tasks.push(extra(prevencionKeys.opciones.responsables(responsables), () => fetchOpcionesResponsables(responsables)))
+    tasks.push(
+      extra(prevencionKeys.opciones.responsables(responsables), () => fetchOpcionesResponsables(responsables)),
+      // Filtro de estado de Embarazo, Consumo y Reportes recibidos.
+      extra(prevencionKeys.opciones.acompEstados(ee), () => fetchOpcionesEstadosAcomp(ee)),
+    )
   }
   for (const tipo of ["EMBARAZO", "CONSUMO"] as const) {
     if (!(tipo === "EMBARAZO" ? acceso?.ver_embarazo : acceso?.ver_consumo)) continue
@@ -768,9 +823,19 @@ function configuracionTasks(): PrepareTask[] {
       "CAUSA_INASISTENCIA",
       "GRADOS",
     ),
-    conSedes((sedes) => {
-      const ee = sedes[0].establecimientoId
-      return [
+    // `useEstablecimientoConfiguracion`: los colegios salen de `/opciones/establecimientos` (no de las
+    // sedes, que exigen período) y con varios se elige uno: se guardan las pestañas de todos.
+    seed(opcionesGeKeys.establecimientos(), fetchEstablecimientosGe, meta(), {
+      then: (ees) => ees.slice(0, MAX_COLEGIOS).flatMap((e) => configuracionColegioTasks(e.id)),
+    }),
+  ]
+}
+
+/** Tope de colegios por usuario (un superadministrador puede ver muchos). */
+const MAX_COLEGIOS = 50
+
+function configuracionColegioTasks(ee: number): PrepareTask[] {
+  return [
         extra(configuracionKeys.acceso(ee), () => fetchAccesoConfiguracion(ee)),
         extra(configuracionKeys.niveles(ee), () => fetchNivelesConvivencia(ee)),
         listado((pageIndex) =>
@@ -784,8 +849,6 @@ function configuracionTasks(): PrepareTask[] {
         extra(prevencionKeys.parametros(ee), () => fetchParametrosRiesgo(ee)),
         extra(configuracionKeys.causasReservadas(ee), () => fetchCausasReservadas(ee)),
         extra(configuracionKeys.servicioSocial(ee), () => fetchServicioSocialConfig(ee)),
-      ]
-    }),
   ]
 }
 

@@ -1,5 +1,12 @@
 // Cobertura y Funcionarios para "Preparar": las MISMAS keys que arma cada pantalla al abrir sin filtros.
 // Las pantallas solo-mock (pre-matrícula, reserva de cupo vieja, detalle de inscrito) no se siembran.
+import {
+  fetchMatriculados,
+  fetchPeriodosInforme,
+  informesKeys,
+  matriculadosBody,
+} from "@/features/coverage/informes-reportes/api/informes"
+import type { InformesSearch } from "@/features/coverage/informes-reportes/api/schema"
 import type { QueryClient, QueryKey } from "@tanstack/react-query"
 
 import type { PrepareTask } from "@/features/offline/lib/prepare-engine"
@@ -11,6 +18,7 @@ import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 import { fetchSolicitudesPendientes } from "@/features/coverage/matricula/api/query/fetch-solicitudes-pendientes"
 import { fetchMatriculaAsignaturas } from "@/features/coverage/matricula/api/query/use-matricula-asignaturas"
 import { fetchMatriculaCampuses } from "@/features/coverage/matricula/api/query/use-matricula-campuses-query"
+import { fetchMatriculaCapacidades } from "@/features/coverage/matricula/api/query/use-matricula-capacidades"
 import { MATRICULA_CATALOG_CATEGORIA } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { fetchGrados, fetchGrupos } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
 import { fetchMatriculaDetail } from "@/features/coverage/matricula/api/query/use-matricula-detail-query"
@@ -40,7 +48,9 @@ import {
   fetchGruposAdmision,
   fetchInscripcionDetalle,
   fetchInscripciones,
+  fetchOpcionesCupo,
   inscripcionesKeys,
+  opcionesCupoKey,
 } from "@/features/coverage/inscripcion-reservas/api/query/use-inscripciones-query"
 import { reservaKeys } from "@/features/coverage/inscripcion-reservas/api/query/use-reserva-detalle-query"
 import { fetchReservaFicha } from "@/features/coverage/inscripcion-reservas/api/query/use-reserva-ficha-query"
@@ -118,11 +128,12 @@ import { fetchSedeJornadasActivas, sedeJornadasActivasQueryKey } from "@/feature
 
 /** `pageSize` por defecto de todas estas pantallas (search schemas y `useTablePagination`). */
 const PAGE_SIZE = 10
-const MAX_PAGINAS = 20
-const MAX_DETALLES = 300
-/** Un rol territorial o nacional ve muchos colegios: las cascadas se bajan de los primeros. */
-const MAX_SEDES = 20
-const MAX_ESTABLECIMIENTOS = 5
+/** Todas las páginas, con un tope de seguridad. */
+export const MAX_PAGINAS = 200
+export const MAX_DETALLES = 2000
+/** Con varios colegios o sedes se bajan todos (las pantallas dejan elegir cualquiera); el tope es de seguridad. */
+const MAX_SEDES = 2000
+const MAX_ESTABLECIMIENTOS = 2000
 
 const OPCIONAL = { optional: true } as const
 const grupoMeta = () => offlineMeta(TTL_OFFLINE.grupo)
@@ -249,6 +260,8 @@ function matriculaTasks(): PrepareTask[] {
       ],
     }),
     seed(matriculaKeys.solicitudesPendientes(), fetchSolicitudesPendientes, grupoMeta(), OPCIONAL),
+    // Acciones que el backend le habilita al rol (Cambiar de grado, Reactivar).
+    seed(matriculaKeys.capacidades, fetchMatriculaCapacidades, grupoMeta(), OPCIONAL),
     // Configuración de parámetros requeridos: con un solo colegio se pide sin id; con varios, la cascada trae la de cada uno.
     seed(establishmentKeys.options(), fetchEstablishmentsOptions, proveedorMeta(), {
       ...OPCIONAL,
@@ -311,6 +324,8 @@ function reservasTasks(): PrepareTask[] {
 function inscripcionesTasks(): PrepareTask[] {
   return [
     seed(inscripcionesKeys.catalogos, fetchCatalogosInscripcion, catalogoMeta(), OPCIONAL),
+    // Cascada de Nueva inscripción y Ampliar.
+    seed(opcionesCupoKey, fetchOpcionesCupo, proveedorMeta(), OPCIONAL),
     seed(inscripcionesKeys.gruposAdmision, fetchGruposAdmision, proveedorMeta(), {
       ...OPCIONAL,
       then: (grupos) =>
@@ -535,6 +550,17 @@ function funcionariosTasks(): PrepareTask[] {
   ]
 }
 
+// ---- Informes y reportes ----------------------------------------------------------
+
+/** Consulta de matriculados como abre (sin filtros, sin orden) y los períodos del filtro. */
+function informesReportesTasks(): PrepareTask[] {
+  const body = (pageIndex: number) => matriculadosBody({} as InformesSearch, { pageIndex, pageSize: PAGE_SIZE, sorting: [] })
+  return [
+    seed(informesKeys.periodos, fetchPeriodosInforme, proveedorMeta(), OPCIONAL),
+    paginas({ key: (p) => informesKeys.matriculados(body(p)), fetch: (p) => fetchMatriculados(body(p)), optional: true }),
+  ]
+}
+
 // ---- Todo junto -----------------------------------------------------------------
 
 /** El alcance lo pone el menú (y el backend en cada respuesta): `_roles` queda por el contrato común. */
@@ -548,6 +574,7 @@ export function coberturaTasks(queryClient: QueryClient, _roles: readonly string
   if (menuIncludes(queryClient, "/app/cobertura/matricula-complementaria")) tasks.push(...complementariaTasks())
   if (menuIncludes(queryClient, "/app/cobertura/promocion-nivelacion")) tasks.push(...promocionTasks())
   if (menuIncludes(queryClient, "/app/cobertura/actualizacion-datos")) tasks.push(...actualizacionDatosTasks())
+  if (menuIncludes(queryClient, "/app/cobertura/informes-reportes")) tasks.push(...informesReportesTasks())
   if (menuIncludes(queryClient, "/app/establecimiento-educativo/funcionarios")) tasks.push(...funcionariosTasks())
   return tasks
 }

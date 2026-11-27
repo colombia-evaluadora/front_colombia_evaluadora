@@ -41,6 +41,12 @@ export interface ComunicadoGestion {
   actualizadoEn: string | null
   // Establecimiento del comunicado: quien recibe (estudiante o acudiente) ve de dónde viene (3.1).
   establecimiento?: string | null
+  // Acciones del menú (comms-service PermisosComunicado): Modificar (Publicado: autor; Programado: autor
+  // o Administrador del establecimiento), Cancelar (Programado) y Anular (Supervisor de sede o
+  // Administrador, Publicado o Vencido), siempre dentro de su alcance.
+  puedeModificar?: boolean
+  puedeCancelar?: boolean
+  puedeAnular?: boolean
 }
 
 export interface PaginaComunicados {
@@ -149,6 +155,9 @@ export interface CorregirComunicadoInput {
   // Archivos nuevos y adjuntos guardados a quitar (se conservan para auditoría en comms-service).
   archivos: File[]
   quitarAdjuntos: number[]
+  // Solo Programado: fecha y hora ISO y Visible hasta (yyyy-MM-dd, "" = sin fecha). Sin ellos se conservan.
+  publicarEn?: string
+  visibleHasta?: string
 }
 
 /**
@@ -164,6 +173,8 @@ export function useCorregirComunicado(conversacionId: number) {
       const c = await evalCol.patchRow<Comunicado>(`${base}/corregir`, {
         TITULO: v.titulo.trim(),
         MENSAJE: v.mensaje.trim(),
+        ...(v.publicarEn ? { PUBLICAR_EN: v.publicarEn } : {}),
+        ...(v.visibleHasta != null ? { VISIBLE_HASTA: v.visibleHasta } : {}),
       })
       return aplicarCambiosAdjuntos(conversacionId, c, v.quitarAdjuntos, v.archivos)
     },

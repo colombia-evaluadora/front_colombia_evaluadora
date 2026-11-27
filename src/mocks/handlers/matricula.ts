@@ -415,6 +415,108 @@ export const matriculaHandlers = [
     })
   }),
 
+  // Informes y reportes (3.9): un período 2026 Abierto y uno 2025 Cerrado por sede y jornada.
+  http.get("*/api/eval-col/informes-reportes/periodos", async () => {
+    await delay(150)
+    const pares = [...new Set(matriculaDb.map((m) => `${m.campus}|${m.shift}`))]
+    const rows = pares.flatMap((par, i) => {
+      const [sede, jornada] = par.split("|")
+      return [2026, 2025].map((anio) => ({
+        id: anio * 100 + i,
+        nombre: `Período ${anio}`,
+        anio,
+        sede,
+        jornada,
+        establecimiento: matriculaDb[0]?.institution ?? "",
+        estado: anio === 2026 ? "ABIERTO" : "CERRADO",
+      }))
+    })
+    return HttpResponse.json({ rows })
+  }),
+
+  // Informe de matrícula (C.4.MAT.1): conteos por grupo de la base del mock.
+  http.post("*/api/eval-col/informes-reportes/matricula/query", async () => {
+    await delay(200)
+    const grupos = new Map<string, Matricula[]>()
+    for (const m of matriculaDb) {
+      const k = `${m.grade}|${m.group}|${m.campus}|${m.shift}`
+      grupos.set(k, [...(grupos.get(k) ?? []), m])
+    }
+    const rows = [...grupos.entries()].map(([k, ms]) => {
+      const [grado, grupo, sede, jornada] = k.split("|")
+      const principales = ms.filter((m) => m.tipo !== "COMPLEMENTARIA").length
+      const adscritos = ms.filter((m) => m.tipo === "COMPLEMENTARIA" && m.origenAdscripcion).length
+      return {
+        grado_codigo: Number(grado),
+        grado: formatGrade(Number(grado)),
+        grupo,
+        sede,
+        jornada,
+        principales,
+        complementarias: ms.length - principales - adscritos,
+        adscritos,
+        total: ms.length,
+        extraedad: ms.filter((m) => m.ageSituation === "EXTRAEDAD").length,
+      }
+    })
+    return HttpResponse.json({ rows: rows.sort((a, b) => a.grado_codigo - b.grado_codigo) })
+  }),
+
+  // Nivelaciones pendientes (C.4.MAT.2): dos estudiantes de ejemplo.
+  http.post("*/api/eval-col/informes-reportes/nivelaciones/query", async () => {
+    await delay(200)
+    const base = matriculaDb.slice(0, 2)
+    const rows = base.flatMap((m, i) =>
+      [
+        { asignatura: "Matemáticas", periodos: "P1", motivo: "Reingreso" },
+        { asignatura: "Inglés", periodos: i ? "P1,P2" : "P1", motivo: i ? "Traslado sin homologar" : "Reingreso" },
+      ].map((n) => ({
+        matricula_id: Number(m.id),
+        documento: m.documentNumber,
+        estudiante: `${m.firstName} ${m.lastName}`,
+        grupo: m.group,
+        responsable: "María López",
+        ...n,
+      })),
+    )
+    return HttpResponse.json({ rows: rows.map((r) => ({ ...r, total_count: rows.length })) })
+  }),
+
+  http.post("*/api/eval-col/informes-reportes/matriculados/query", async ({ request }) => {
+    await delay(250)
+    const body = (await request.json()) as MatriculaListRequestBody & { ANIO?: number | null; SITUACION_EDAD?: string | null }
+    const filters: MatriculaQueryFilters = {
+      search: body.SEARCH ?? undefined,
+      statuses: body.STATUSES ?? undefined,
+      campus: body.CAMPUS ?? undefined,
+      shift: body.SHIFT ?? undefined,
+      grade: body.GRADE ?? undefined,
+      group: body.GROUP ?? undefined,
+      metodologia: body.METODOLOGIA ?? undefined,
+      nuevo: body.NUEVO ?? undefined,
+      tipo: (body.TIPO as MatriculaQueryFilters["tipo"]) ?? undefined,
+    }
+    const sorting: MatriculaQueryRequest["sorting"] = body.SORTBY ? [{ id: body.SORTBY, desc: body.SORTDIR === "desc" }] : []
+    // Las impares quedan en el período Cerrado de 2025.
+    const anioDe = (m: Matricula) => (Number(m.id) % 2 ? 2025 : 2026)
+    const filtered = applySorting(applyFilters(matriculaDb, filters), sorting).filter(
+      (m) =>
+        (!body.ANIO || anioDe(m) === body.ANIO) &&
+        (!body.SITUACION_EDAD || (m.ageSituation ?? "SIN_CALCULAR") === body.SITUACION_EDAD),
+    )
+    const size = body.PAGESIZE > 0 ? body.PAGESIZE : 10
+    const page = filtered.slice(body.PAGEINDEX * size, body.PAGEINDEX * size + size)
+    const estudiantes = new Set(filtered.map((r) => r.documentNumber)).size
+    return HttpResponse.json({
+      rows: page.map((m) => ({
+        ...toRawMatriculaRow(m, filtered.length, estudiantes),
+        anio: anioDe(m),
+        periodo: `Período ${anioDe(m)}`,
+        periodo_estado: anioDe(m) === 2025 ? "CERRADO" : "ABIERTO",
+      })),
+    })
+  }),
+
   http.post("*/api/eval-col/matricula/query", async ({ request }) => {
     await delay(250)
 
