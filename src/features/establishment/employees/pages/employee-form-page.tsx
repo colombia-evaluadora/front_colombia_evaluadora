@@ -143,7 +143,7 @@ function ExistingPersonNotice({ persona, documentTypeName }: { persona: PersonaP
           <p className="text-sm text-muted-foreground">
             {persona.linked
               ? "Ya pertenece a este establecimiento: búsquelo en el listado para modificarlo."
-              : "Sus datos están protegidos. Los de identidad los corrige el Rector o el Jefe de Sistemas, con motivo y soporte."}
+              : "Sus datos están protegidos. Los de identidad los corrige el Administrador del establecimiento o el Gestor administrativo del establecimiento, con motivo y soporte."}
           </p>
           {persona.dataRestricted ? <SinAutorizacionBadge /> : null}
         </div>
@@ -672,7 +672,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
                       {persona ? <ExistingPersonNotice persona={persona} documentTypeName={documentTypeName} /> : null}
                       {mode === "edit" && !ficha?.canCorrectIdentity ? (
                         <p className="text-xs text-muted-foreground md:col-span-2">
-                          Los datos de identidad los corrige el Rector o el Jefe de Sistemas, con motivo y soporte.
+                          Los datos de identidad los corrige el Administrador del establecimiento o el Gestor administrativo del establecimiento, con motivo y soporte.
                         </p>
                       ) : null}
                     </div>

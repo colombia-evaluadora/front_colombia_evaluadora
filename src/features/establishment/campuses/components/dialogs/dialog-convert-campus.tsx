@@ -73,6 +73,7 @@ function fromCampus(campus: CampusDetail): EstablishmentDetails {
       nit: "",
       ownershipType: null,
       serviceModality: null,
+      contractedQuotaProvider: false,
     },
     address: {
       municipality: null,

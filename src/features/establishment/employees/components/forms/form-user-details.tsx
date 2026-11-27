@@ -3,12 +3,12 @@ import { format } from "date-fns"
 
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
-import { NoticeBanner } from "@/components/notice/notice-banner"
 import { ImageUploadField } from "@/components/image-upload-field"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { InfoIcon } from "@/components/ui/icons"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -20,6 +20,7 @@ import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import { toEmailInput } from "@/lib/text-input"
 import {
+    CORREO_MAX,
     DOCUMENTO_MAX,
     esDocumentoNumerico,
     fechaLimiteMayorDeEdad,
@@ -31,8 +32,11 @@ import {
 } from "@/features/establishment/shared/person-field-rules"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
-import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
 import type { Person } from "@/features/establishment/employees/api/types/person"
+import {
+    fetchDirectivoPorDocumento,
+    toPersonaProtegida,
+} from "@/features/establishment/institution/api/query/use-directivo-por-documento"
 
 type EmployeeRoleCode = (typeof EMPLOYEE_ROLES)[number]["code"]
 
@@ -69,6 +73,8 @@ interface UserFormProps {
     layout?: "default" | "two-columns" | "essentials"
     /** Título del bloque; por defecto el nombre del rol (`role`). */
     title?: string
+    /** Establecimiento que se edita; `null` en el alta. Lo usa la búsqueda de la persona existente. */
+    establishmentId?: number | null
 }
 
 function createEmptyPerson(): Person {
@@ -82,6 +88,31 @@ function createEmptyPerson(): Person {
         email: "",
         phone: "",
     }
+}
+
+/**
+ * Aviso de la persona que ya existía (Regla 11): sus datos se ven protegidos y no se guardan cambios
+ * desde aquí. Si ya era funcionario de otro establecimiento, al guardar recibe el aviso para autorizar
+ * a este a consultar su información (Regla 116).
+ */
+function PersonaProtegidaAviso({ restringida }: { restringida: boolean }) {
+    return (
+        <div className="flex items-start gap-2 rounded-lg border border-blue-stroke bg-blue-22 p-3 text-sm">
+            <InfoIcon className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden />
+            <div className="flex flex-col gap-1">
+                <p className="font-medium">Funcionario existente — verifique que es la persona correcta</p>
+                <p className="text-muted-foreground">
+                    Sus datos están protegidos. Los de identidad los corrige el Administrador del establecimiento o el
+                    Gestor administrativo del establecimiento, con motivo y soporte.
+                </p>
+                <p className="text-muted-foreground">
+                    {restringida
+                        ? "Aún no autoriza a este establecimiento a consultar sus datos de contacto."
+                        : "Si ya es funcionario de otro establecimiento, al guardar recibirá el aviso para autorizar a este a consultar su información."}
+                </p>
+            </div>
+        </div>
+    )
 }
 
 /** Vista previa de un `File` ya subido. */
@@ -114,15 +145,10 @@ export function UserDetailsForm({
     onMatched,
     layout = "default",
     title,
+    establishmentId = null,
 }: UserFormProps) {
     const roleName = title ?? EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
     const twoColumns = layout === "two-columns"
-
-    // Aviso local: rector y secretaria comparten pantalla.
-    const [accountNotice, setAccountNotice] = useState<{ id: number; message: string } | null>(
-        null,
-    )
-    const accountNoticeIdRef = useRef(0)
 
     const { data: documentTypes = [] } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
     const { data: genders = [] } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
@@ -145,6 +171,9 @@ export function UserDetailsForm({
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     const isNewAccount = !person.id && !person.accountExists
+    // Persona existente: todo en solo lectura menos el documento, que elige a otra persona (Regla 11).
+    const bloqueada = disabled || person.protegida === true
+    const aviso = person.protegida ? <PersonaProtegidaAviso restringida={person.datosRestringidos === true} /> : null
 
     const documentTypeCode =
         documentTypes.find((item) => item.id === person.documentType?.id)?.code ?? person.documentType?.code
@@ -174,34 +203,29 @@ export function UserDetailsForm({
                 documentType: person.documentType,
                 identification: person.identification,
                 accountExists: false,
+                protegida: false,
+                accountEmail: null,
+                datosRestringidos: false,
                 id: undefined,
                 photoArchivoId: null,
             })
             preMatchValuesRef.current = null
             onMatched?.(null)
-            setAccountNotice(null)
         }
 
         if (!documentTypeId || !identification.trim()) return
 
         let cancelled = false
         const timer = setTimeout(() => {
-            findPersonByDocument(documentTypeId, identification)
-                .then((found) => {
-                    if (cancelled || !found) return
+            fetchDirectivoPorDocumento(documentTypeId, identification, establishmentId)
+                .then((persona) => {
+                    if (cancelled || !persona) return
+                    const found = toPersonaProtegida(persona, person.documentType)
                     preMatchValuesRef.current = Object.fromEntries(
                         Object.keys(found).map((key) => [key, person[key as keyof Person]]),
                     ) as Partial<Person>
                     onMatched?.(found)
                     emitChange(found)
-                    if (isUserEditingDocument.current) {
-                        accountNoticeIdRef.current += 1
-                        setAccountNotice({
-                            id: accountNoticeIdRef.current,
-                            message:
-                                "Ya existe una cuenta con este documento: se completaron sus datos automáticamente.",
-                        })
-                    }
                 })
                 .catch(() => {
                     // Opcional: si falla se llena a mano.
@@ -282,7 +306,7 @@ export function UserDetailsForm({
             <Input
                 id="user-name"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 placeholder="Agregar"
                 value={person.firstName}
                 aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
@@ -299,7 +323,7 @@ export function UserDetailsForm({
             <Input
                 id="user-second-name"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 placeholder="Agregar"
                 value={person.middleName ?? ""}
                 aria-invalid={isInvalid(`${fieldPrefix}.middleName`)}
@@ -316,7 +340,7 @@ export function UserDetailsForm({
             <Input
                 id="user-last-name"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 placeholder="Agregar"
                 value={person.lastName}
                 aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
@@ -333,7 +357,7 @@ export function UserDetailsForm({
             <Input
                 id="user-second-last-name"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 placeholder="Agregar"
                 value={person.secondLastName ?? ""}
                 aria-invalid={isInvalid(`${fieldPrefix}.secondLastName`)}
@@ -350,9 +374,10 @@ export function UserDetailsForm({
             <Input
                 id="user-email"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 placeholder="Agregar"
                 value={person.email}
+                maxLength={CORREO_MAX}
                 aria-invalid={isInvalid(`${fieldPrefix}.email`)}
                 onChange={(event) => emitChange({ email: toEmailInput(event.target.value) })}
             />
@@ -372,7 +397,7 @@ export function UserDetailsForm({
             <Input
                 id="user-phone"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 placeholder="Agregar"
                 type="tel"
                 // De 7 a 15 dígitos, con + opcional para el indicativo.
@@ -395,7 +420,7 @@ export function UserDetailsForm({
                 id="birth-date"
                 mode="date"
                 size="sm"
-                disabled={disabled}
+                disabled={bloqueada}
                 // Entre hace 80 años y hace 18 (informe de diseño, 2.2).
                 minDate={parseDateValue(fechaMinimaNacimiento())}
                 maxDate={parseDateValue(fechaLimiteMayorDeEdad())}
@@ -414,7 +439,7 @@ export function UserDetailsForm({
             </FieldLabel>
             <ComboboxField
                 id="gender-user"
-                disabled={disabled}
+                disabled={bloqueada}
                 items={genderLabels}
                 aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
                 value={person.gender?.id ?? null}
@@ -449,7 +474,7 @@ export function UserDetailsForm({
             deleteLabel="Eliminar foto"
             error={errorFor(`${fieldPrefix}.photo`)}
             className={twoColumns ? "h-36" : "md:row-span-3"}
-            disabled={disabled}
+            disabled={bloqueada}
             existingPreview={
                 person.photoArchivoId != null ? (
                     <ArchivoImage
@@ -461,7 +486,7 @@ export function UserDetailsForm({
                 ) : undefined
             }
             onRemoveExisting={
-                disabled || (person.photoArchivoId == null && !uploadedPhoto)
+                bloqueada || (person.photoArchivoId == null && !uploadedPhoto)
                     ? undefined
                     : () => {
                           emitChange({ photoArchivoId: null })
@@ -474,12 +499,7 @@ export function UserDetailsForm({
     if (layout === "essentials") {
         return (
             <div className="grid grid-cols-1 gap-2">
-                <NoticeBanner
-                    notice={accountNotice}
-                    onClose={() => setAccountNotice(null)}
-                    variant="success"
-                    autoCloseMs={7000}
-                />
+                {aviso}
                 {roleName ? <h3 className="text-sm font-medium">{roleName}</h3> : null}
                 <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-3">
                     {documentTypeField}
@@ -496,12 +516,7 @@ export function UserDetailsForm({
     if (twoColumns) {
         return (
             <div className="grid grid-cols-1 gap-3">
-                <NoticeBanner
-                    notice={accountNotice}
-                    onClose={() => setAccountNotice(null)}
-                    variant="success"
-                    autoCloseMs={7000}
-                />
+                {aviso}
                 {roleName ? <h3 className="text-sm font-semibold">{roleName}</h3> : null}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-[11rem_1fr]">
                     <div className="flex flex-col gap-1.5">
@@ -529,13 +544,7 @@ export function UserDetailsForm({
 
     return (
         <div className="grid grid-cols-1 gap-2">
-
-            <NoticeBanner
-                notice={accountNotice}
-                onClose={() => setAccountNotice(null)}
-                variant="success"
-                autoCloseMs={7000}
-            />
+                {aviso}
             {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 {photoField}

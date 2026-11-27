@@ -67,6 +67,13 @@ describe("correo", () => {
     "rechaza %s",
     (email) => expect(issuesDe({ email })).toHaveProperty("email"),
   )
+  it("exige de 8 a 254 caracteres (informe de diseño, 2.2)", () => {
+    expect(issuesDe({ email: "a@b.com" }).email).toBe("El correo debe tener entre 8 y 254 caracteres.")
+    expect(issuesDe({ email: "ab@c.com" })).toEqual({})
+    expect(issuesDe({ email: `${"a".repeat(64)}@${"b".repeat(186)}.com` }).email).toBe(
+      "El correo debe tener entre 8 y 254 caracteres.",
+    )
+  })
 })
 
 describe("teléfono", () => {

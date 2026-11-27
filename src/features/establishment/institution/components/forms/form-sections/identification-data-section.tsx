@@ -2,6 +2,9 @@ import { ImageUploadField } from "@/components/image-upload-field"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { MarcoOpciones } from "@/components/marco-opciones"
+import { TituloConAyuda } from "@/components/titulo-con-ayuda"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -17,6 +20,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import { toTextoInput } from "@/features/establishment/shared/text-field-rules"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
+import { esSectorNoOficial } from "@/features/establishment/institution/utils/sector"
 
 // TESTABLECIMIENTO.NOMBRE es VARCHAR(130).
 const NOMBRE_MAX = 130
@@ -34,6 +38,11 @@ interface IdentificationDataFormSectionProps {
      */
     shield: File | null
     onShieldChange: (file: File | null) => void
+    /**
+     * Oferente de cupo contratado (Regla 110): lo cambian el Superadministrador y los roles
+     * territoriales; los demás lo ven en solo lectura. Además solo aplica al sector No oficial.
+     */
+    oferenteEditable?: boolean
 }
 
 /** "900123456-7" → número y dígito de verificación, para los dos inputs del NIT. */
@@ -42,7 +51,7 @@ function partirNit(nit: string): [string, string] {
     return [numero, dv]
 }
 
-export function IdentificationDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange }: IdentificationDataFormSectionProps) {
+export function IdentificationDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange, oferenteEditable = false }: IdentificationDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
@@ -53,6 +62,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
 
     // El detalle trae la naturaleza solo con su id: el sector sale del catálogo.
     const sector = legalTypes.find((item) => item.id === value.ownershipType?.id)?.sector ?? ""
+    const noOficial = esSectorNoOficial(sector)
     const [nitNumero, nitDv] = partirNit(value.nit)
     const setNit = (numero: string, dv: string) => onChange({ ...value, nit: dv ? `${numero}-${dv}` : numero })
 
@@ -152,7 +162,13 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     value={value.ownershipType?.id ?? null}
                     onValueChange={(selectedValue) => {
                         const option = legalTypes.find((item) => item.id === selectedValue)
-                        onChange({ ...value, ownershipType: option ?? null })
+                        // Fuera del sector No oficial no hay oferente de cupo contratado (Regla 110).
+                        const sigueNoOficial = esSectorNoOficial(option?.sector)
+                        onChange({
+                            ...value,
+                            ownershipType: option ?? null,
+                            contractedQuotaProvider: sigueNoOficial && value.contractedQuotaProvider,
+                        })
                     }}
                     items={toSelectItemsMap(legalTypeItems)}
                 >
@@ -170,11 +186,35 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                 <FieldError>{errorFor("basicInfo.ownershipType")}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined" className="w-full">
-                <FieldLabel htmlFor="establishment-sector">Sector</FieldLabel>
-                <Input id="establishment-sector" readOnly disabled placeholder="—" value={sector} />
-                <FieldDescription>Se deriva de la Naturaleza jurídica.</FieldDescription>
-            </Field>
+            <div className="flex flex-col gap-3">
+                <Field orientation="vertical" variant="outlined" className="w-full">
+                    <FieldLabel htmlFor="establishment-sector">Sector</FieldLabel>
+                    <Input id="establishment-sector" readOnly disabled placeholder="—" value={sector} />
+                    <FieldDescription>Se deriva de la Naturaleza jurídica.</FieldDescription>
+                </Field>
+
+                <MarcoOpciones
+                    id="establishment-oferente"
+                    className="self-start"
+                    label={
+                        <TituloConAyuda
+                            titulo="Oferente de cupo contratado"
+                            ayuda="Lleva aparte sus inscripciones, reservas y matrículas, y sus grupos reciben el cupo contratado que define el Administrador territorial. Solo aplica al sector No oficial; lo definen el Superadministrador y el Supervisor territorial."
+                        />
+                    }
+                >
+                    <label className="flex items-center gap-3">
+                        <Switch
+                            round
+                            checked={noOficial && value.contractedQuotaProvider}
+                            disabled={!oferenteEditable || !noOficial}
+                            onCheckedChange={(checked) => onChange({ ...value, contractedQuotaProvider: checked })}
+                            aria-label="Oferente de cupo contratado"
+                        />
+                        {noOficial && value.contractedQuotaProvider ? "Sí" : "No"}
+                    </label>
+                </MarcoOpciones>
+            </div>
 
             <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("basicInfo.serviceModality") ? "true" : undefined}>
                 <FieldLabel htmlFor="establishment-service-modality">Modalidad de prestación del servicio*</FieldLabel>

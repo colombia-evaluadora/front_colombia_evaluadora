@@ -36,6 +36,9 @@ export interface EstablishmentDetails {
 
     additionalInfo: EstablishmentAdditionalInfo
 
+    /** Organización y articulación (SIMPADE). Ausente = no se envía (el PATCH no cambia nada). */
+    organization?: EstablishmentOrganization
+
     principal: Person | null
 
     secretary: Person | null
@@ -57,6 +60,12 @@ export interface EstablishmentBasicInfo {
      * la traen en `null` hasta que alguien los edite.
      */
     serviceModality: CatalogItem | null
+
+    /**
+     * Oferente de cupo contratado (`TESTABLECIMIENTO.OFERENTE_CUPO_CONTRATADO`, Regla 110): solo en el
+     * sector No oficial y lo cambian el Superadministrador y los roles territoriales. Por defecto No.
+     */
+    contractedQuotaProvider: boolean
 
     /**
      * `pk_tarchivo` del escudo ya cargado (`TESTABLECIMIENTO.FK_TARCHIVO`).
@@ -129,6 +138,44 @@ export interface EstablishmentAdditionalInfo {
      * lectura: no viaja al guardar. Ausente en el alta.
      */
     population?: EstablishmentPopulation | null
+}
+
+/**
+ * Organización y articulación (informe de diseño, 2.1): preguntas Sí o No del formato de establecimiento del
+ * SIMPADE. `null` = Sin información (no tienen valor predeterminado). Columnas `ORG_*` / `ART_*` de
+ * TESTABLECIMIENTO (sso V571.1).
+ */
+export interface EstablishmentOrganization {
+    directiveCouncil: boolean | null
+    academicCouncil: boolean | null
+    studentCouncil: boolean | null
+    parentsCouncil: boolean | null
+    parentsAssociation: boolean | null
+    parentsSchool: boolean | null
+    higherEducation: boolean | null
+    sena: boolean | null
+    productiveSector: boolean | null
+    earlyEducation: boolean | null
+    healthPrograms: boolean | null
+    /** Calculadas por el sistema (sso `fn_est_organizacion`): solo lectura, no viajan al guardar. */
+    coexistenceCommittee?: boolean
+    counselor?: boolean
+}
+
+export function createEmptyOrganization(): EstablishmentOrganization {
+    return {
+        directiveCouncil: null,
+        academicCouncil: null,
+        studentCouncil: null,
+        parentsCouncil: null,
+        parentsAssociation: null,
+        parentsSchool: null,
+        higherEducation: null,
+        sena: null,
+        productiveSector: null,
+        earlyEducation: null,
+        healthPrograms: null,
+    }
 }
 
 export interface EstablishmentsQueryFilters {

@@ -240,7 +240,7 @@ function isBlank(value: string | null | undefined): boolean {
  * secretaria con solo el correo o el teléfono se descartaba sin avisar. Tipo de
  * documento y género no cuentan: la página los precarga con el predeterminado.
  */
-function isPersonEmpty(person: Person | null): boolean {
+export function isPersonEmpty(person: Person | null): boolean {
   if (!person) {
     return true
   }
@@ -295,6 +295,10 @@ function makePersonSchema(required: boolean) {
 
       require("documentType", p.documentType?.name, "Selecciona el tipo de documento.")
       require("identification", p.identification, "Ingresa el número de documento.")
+
+      // Persona existente (Regla 11): sus datos vienen del SSO, enmascarados, y no se guardan desde aquí.
+      if (p.protegida) return
+
       require("firstName", p.firstName, "Ingresa el primer nombre.")
       require("lastName", p.lastName, "Ingresa el primer apellido.")
 

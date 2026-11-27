@@ -73,6 +73,10 @@ export function toTelefonoInput(value: string): string {
  */
 export const CORREO = CORREO_REGEX
 
+/** Largo del correo (informe de diseño, 2.2): 8 como mínimo útil (a@b.co ya son 6) y 254, el tope de RFC 5321. */
+export const CORREO_MIN = 8
+export const CORREO_MAX = 254
+
 /**
  * Nombres y apellidos: palabras de letras de cualquier alfabeto (tildes,
  * diéresis, ñ, ç…) unidas por un espacio, un apóstrofo (' o ’) o un guion:
@@ -105,6 +109,7 @@ export const MENSAJES = {
     "El documento debe tener entre 5 y 20 letras o números, con al menos un número y sin símbolos.",
   telefono: "El teléfono debe tener entre 7 y 15 dígitos; admite + al inicio para el indicativo.",
   correo: MENSAJE_CORREO_INVALIDO,
+  correoLargo: `El correo debe tener entre ${CORREO_MIN} y ${CORREO_MAX} caracteres.`,
   menorDeEdad: "La persona debe ser mayor de edad.",
   nacimientoMuyAntiguo: "La fecha de nacimiento no puede ser de hace más de 80 años.",
   nombre: (campo: string) =>
@@ -192,7 +197,12 @@ export function validarFormatoPersona(
     revisar("identification", persona.identification, DOCUMENTO_ALFANUMERICO, MENSAJES.documentoAlfanumerico)
   }
   revisar("phone", persona.phone, TELEFONO, MENSAJES.telefono)
-  revisar("email", persona.email, CORREO, MENSAJES.correo)
+  const correo = (persona.email ?? "").trim()
+  if (correo && (correo.length < CORREO_MIN || correo.length > CORREO_MAX)) {
+    ctx.addIssue({ code: "custom", path: ["email"], message: MENSAJES.correoLargo })
+  } else {
+    revisar("email", persona.email, CORREO, MENSAJES.correo)
+  }
 
   for (const [path, campo] of NOMBRES) {
     const message = validarNombrePersona(persona[path], campo)

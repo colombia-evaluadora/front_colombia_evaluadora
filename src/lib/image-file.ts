@@ -37,8 +37,15 @@ export const IMAGE_ACCEPT = IMAGE_MIME_TYPES.join(",")
  */
 export const IMAGE_MAX_DIMENSION = 4000
 
+/**
+ * Mínimo por lado, en píxeles (informe de diseño de Establecimiento, 2.2: foto del rector y la secretaria,
+ * y la misma regla para cualquier imagen que se sube). Más chica se ve pixelada en la ficha. Un SVG no
+ * tiene tamaño en píxeles y no se mide.
+ */
+export const IMAGE_MIN_DIMENSION = 100
+
 /** Texto de ayuda: tiene que decir lo mismo que validan las reglas de acá. */
-export const IMAGE_HINT = "JPG, PNG o SVG · Máximo 2 MB y 4000 × 4000 px"
+export const IMAGE_HINT = "JPG, PNG o SVG · Máximo 2 MB · De 100 × 100 a 4000 × 4000 px"
 
 /** Solo para los mensajes de error: 2 MB, 1,5 MB, 800 KB. */
 export function formatBytes(bytes: number): string {
@@ -69,6 +76,8 @@ export interface ImageFileRules {
   types?: readonly string[]
   /** Máximo de píxeles por lado. Por defecto `IMAGE_MAX_DIMENSION`. */
   maxDimension?: number
+  /** Mínimo de píxeles por lado. Por defecto `IMAGE_MIN_DIMENSION`. */
+  minDimension?: number
 }
 
 export interface ImageDimensions {
@@ -111,6 +120,7 @@ export function imageFileSchema({
   maxSize = IMAGE_MAX_SIZE,
   types = IMAGE_MIME_TYPES,
   maxDimension = IMAGE_MAX_DIMENSION,
+  minDimension = IMAGE_MIN_DIMENSION,
 }: ImageFileRules = {}) {
   const allowed = types.map(typeLabel).join(", ")
 
@@ -129,15 +139,18 @@ export function imageFileSchema({
       const dimensions = measuredDimensions.get(file)
       if (!dimensions) return
 
-      const issue = dimensionsIssue(dimensions, maxDimension)
+      const issue = dimensionsIssue(dimensions, maxDimension, minDimension)
       if (issue) {
         ctx.addIssue({ code: "custom", message: issue })
       }
     })
 }
 
-/** El mensaje de "demasiados píxeles", o `null` si las dimensiones sirven. */
-function dimensionsIssue(dimensions: ImageDimensions, maxDimension: number): string | null {
+/** El mensaje de "demasiados" o "muy pocos" píxeles, o `null` si las dimensiones sirven. */
+function dimensionsIssue(dimensions: ImageDimensions, maxDimension: number, minDimension: number): string | null {
+  if (dimensions.width < minDimension || dimensions.height < minDimension) {
+    return `La imagen mide ${dimensions.width} × ${dimensions.height} px y el mínimo es ${minDimension} × ${minDimension} px.`
+  }
   if (dimensions.width <= maxDimension && dimensions.height <= maxDimension) {
     return null
   }
@@ -268,5 +281,9 @@ export async function validateImageFileAsync(
   const dimensions = await readImageDimensions(file)
   if (!dimensions) return null
 
-  return dimensionsIssue(dimensions, rules?.maxDimension ?? IMAGE_MAX_DIMENSION)
+  return dimensionsIssue(
+    dimensions,
+    rules?.maxDimension ?? IMAGE_MAX_DIMENSION,
+    rules?.minDimension ?? IMAGE_MIN_DIMENSION,
+  )
 }

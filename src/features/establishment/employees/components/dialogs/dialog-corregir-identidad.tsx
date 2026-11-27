@@ -44,7 +44,7 @@ interface DialogCorregirIdentidadProps {
 }
 
 /**
- * Corregir datos de identidad (Regla 93): lo hacen el Rector o el Jefe de Sistemas, con motivo
+ * Corregir datos de identidad (Regla 93): lo hacen el Administrador del establecimiento o el Gestor administrativo del establecimiento, con motivo
  * y soporte, y actualiza la ficha única en todos los establecimientos.
  */
 export function DialogCorregirIdentidad({ open, onOpenChange, ficha, establishmentId, onCorrected }: DialogCorregirIdentidadProps) {

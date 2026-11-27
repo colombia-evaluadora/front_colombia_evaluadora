@@ -41,7 +41,7 @@ function toRealBackendPayload(values: EstablishmentDetails) {
   // declaran `BODY.ID` (el PK de actualizar va por la URL, `PARAM.ID`) — si
   // viaja igual, el validador de placeholders lo rechaza como el resto de
   // los campos sin tipo declarado.
-  const { id: _id, principal, secretary, basicInfo: fullBasicInfo, address, additionalInfo: fullAdditionalInfo, ...rest } = values
+  const { id: _id, principal, secretary, basicInfo: fullBasicInfo, address, additionalInfo: fullAdditionalInfo, organization: fullOrganization, ...rest } = values
   // `logoArchivoId` es de lectura: lo llena el detalle para poder PINTAR el
   // escudo, pero no está declarado en la query y el validador de placeholders
   // recorre todo el body — si viaja, rechaza la petición entera. Quien escribe
@@ -51,6 +51,8 @@ function toRealBackendPayload(values: EstablishmentDetails) {
   // es el VARCHAR que ya cubre `licenseStatus`) ni está declarado en la
   // query — viaja igual si no se saca, y queda como leaf sin tipo.
   const { operatingLicense: _operatingLicense, population: _population, ...additionalInfo } = fullAdditionalInfo
+  // Comité de convivencia y profesor orientador los calcula el sistema: no están declarados en la query.
+  const { coexistenceCommittee: _comite, counselor: _orientador, ...organization } = fullOrganization ?? {}
 
   return {
     ...rest,
@@ -76,6 +78,8 @@ function toRealBackendPayload(values: EstablishmentDetails) {
       tuitionRange: additionalInfo.tuitionRange?.id ?? null,
       disabilityType: additionalInfo.disabilityType?.id ?? null,
     },
+    // Sin organización (p. ej. convertir una sede) no se manda: el backend lo toma como «no cambiar».
+    ...(fullOrganization ? { organization } : {}),
     principal: principal?.id ?? null,
     secretary: secretary?.id ?? null,
   }
