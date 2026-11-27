@@ -106,7 +106,8 @@ const texto = (id: keyof SolicitudCorreccion, title: string, completo?: (s: Soli
   meta: { label: title },
   header: ({ column }) => <DataTableColumnHeader column={column} title={title} />,
   cell: ({ row }) => {
-    const v = String(row.original[id])
+    // Valor actual vacío (p. ej. sin segundo nombre) llega null.
+    const v = row.original[id] == null || row.original[id] === "" ? "—" : String(row.original[id])
     return completo ? <span title={completo(row.original)}>{corto(v)}</span> : v
   },
   enableSorting: false,
@@ -117,15 +118,8 @@ function columnas(onAbrir: (s: SolicitudCorreccion, d: Dialogo) => void): Column
     texto("solicitante", "Solic.", (s) => s.solicitante),
     texto("estudiante", "Estud.", (s) => s.estudiante),
     { ...texto("dato", "Dato"), enableHiding: false },
-    {
-      id: "valores",
-      accessorFn: (s) => s.valorSolicitado,
-      meta: { label: "Actual → pedido" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Actual → pedido" />,
-      cell: ({ row }) => `${row.original.valorActual} → ${row.original.valorSolicitado}`,
-      enableHiding: false,
-      enableSorting: false,
-    },
+    { ...texto("valorActual", "Valor actual"), enableHiding: false },
+    { ...texto("valorSolicitado", "Valor solicitado"), enableHiding: false },
     {
       id: "fecha",
       accessorFn: (s) => s.fecha,
