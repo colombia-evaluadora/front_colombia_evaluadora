@@ -154,51 +154,50 @@ function Contenido() {
             ) : seleccion.isError ? (
               <p className="p-10 text-center text-red">{getErrorMessage(seleccion.error)}</p>
             ) : (
-              <div className="overflow-x-auto rounded-md border border-border">
-                <Table>
-                  <TableHeader>
+              // El borde y el radio los pone `Table`: otra caja alrededor dejaba doble línea.
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className={num} title={c.forma === "ORIGEN" ? "Orden de selección: fecha y hora de registro." : "Orden de selección: Continuidad primero y luego el desempate."}>
+                      Pos.
+                    </TableHead>
+                    <TableHead>Postulación</TableHead>
+                    <TableHead>Estudiante</TableHead>
+                    <TableHead>Establecimiento de origen</TableHead>
+                    <TableHead className={conSorteo ? num : undefined}>{conSorteo ? "Sorteo" : "Registro"}</TableHead>
+                    <TableHead>Estado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!s || s.opciones.length === 0 ? (
                     <TableRow>
-                      <TableHead className={num} title={c.forma === "ORIGEN" ? "Orden de selección: fecha y hora de registro." : "Orden de selección: Continuidad primero y luego el desempate."}>
-                        Pos.
-                      </TableHead>
-                      <TableHead>Postulación</TableHead>
-                      <TableHead>Estudiante</TableHead>
-                      <TableHead>Establecimiento de origen</TableHead>
-                      <TableHead className={conSorteo ? num : undefined}>{conSorteo ? "Sorteo" : "Registro"}</TableHead>
-                      <TableHead>Estado</TableHead>
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        {enSeleccion ? "No quedan postulaciones Inscrito en este cupo." : "No hay postulaciones en lista de espera en este cupo."}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {!s || s.opciones.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                          {enSeleccion ? "No quedan postulaciones Inscrito en este cupo." : "No hay postulaciones en lista de espera en este cupo."}
+                  ) : (
+                    s.opciones.map((o) => (
+                      <TableRow key={o.id}>
+                        <TableCell className={num}>{o.posicion}</TableCell>
+                        <TableCell className="tabular-nums">{o.postulacion}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            {o.estudiante}
+                            {o.continuidad ? <Marca label="Continuidad" color="secondary" /> : null}
+                          </span>
+                        </TableCell>
+                        <TableCell>{o.origen}</TableCell>
+                        <TableCell className={conSorteo ? num : "tabular-nums"}>
+                          {conSorteo ? o.sorteo : fechaHora(o.registro)}
+                        </TableCell>
+                        <TableCell>
+                          <Marca {...ESTADO_OPCION[o.estado]} />
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      s.opciones.map((o) => (
-                        <TableRow key={o.id}>
-                          <TableCell className={num}>{o.posicion}</TableCell>
-                          <TableCell className="tabular-nums">{o.postulacion}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex flex-wrap items-center gap-2">
-                              {o.estudiante}
-                              {o.continuidad ? <Marca label="Continuidad" color="secondary" /> : null}
-                            </span>
-                          </TableCell>
-                          <TableCell>{o.origen}</TableCell>
-                          <TableCell className={conSorteo ? num : "tabular-nums"}>
-                            {conSorteo ? o.sorteo : fechaHora(o.registro)}
-                          </TableCell>
-                          <TableCell>
-                            <Marca {...ESTADO_OPCION[o.estado]} />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             )}
           </div>
         )}

@@ -124,7 +124,7 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
           <ArrowRightIcon className="mt-9 size-4 text-muted-foreground" aria-hidden />
           <Field variant="outlined" data-invalid={intentado && !notaValida ? true : undefined}>
             <FieldLabel htmlFor="nota-corregida">
-              Nota corregida<span className="text-red"> *</span>
+              Nota corregida<span data-required-mark="">*</span>
             </FieldLabel>
             <Input
               id="nota-corregida"
@@ -144,7 +144,9 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
         </div>
 
         <Field variant="outlined" data-invalid={intentado && !motivoValido}>
-          <FieldLabel htmlFor="nota-motivo">Motivo*</FieldLabel>
+          <FieldLabel htmlFor="nota-motivo">
+            Motivo<span data-required-mark="">*</span>
+          </FieldLabel>
           <div className="relative">
             <Textarea
               id="nota-motivo"
@@ -174,7 +176,9 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
           {!soporte && (
             <FileUploadDropzone className={cn("flex-col gap-1 p-4 text-center", intentado && "border-red")}>
               <FileUploadOutlinedIcon aria-hidden className="size-5 text-muted-foreground" />
-              <p className="text-sm font-medium">Soporte *</p>
+              <p className="text-sm font-medium">
+                Soporte<span data-required-mark="">*</span>
+              </p>
               <p className="text-xs text-muted-foreground">1 archivo PDF, JPG o PNG · máx. {SOPORTE_MAX_MB} MB.</p>
             </FileUploadDropzone>
           )}
@@ -201,6 +205,7 @@ export function DialogCorregirNota({ matriculaId, nota, escala, contexto, marca,
         </div>
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

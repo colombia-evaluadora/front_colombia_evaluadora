@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { YES_NO_OPTIONS } from "@/features/coverage/matricula/api/ui-mappings"
+import { MarcaPendientes } from "@/components/marca-pendientes"
+import { Switch } from "@/components/ui/switch"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { CaretDownIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+import { CoincideTodoContext, normalizarBusqueda, Resaltado, useBusquedaDetalle } from "@/components/busqueda-detalle"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useTruncated } from "@/hooks/use-truncated"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
@@ -37,6 +39,58 @@ export const MatriculaSectionDisabledContext = createContext(false)
 export const OPEN_SECTION_EVENT = "matricula:abrir-seccion"
 
 /**
+ * Ver detalle (CLAUDE.md §13): cada sección se pinta como `FichaDatos` (etiqueta gris, valor blanco, dos pares
+ * por fila) en vez del formulario deshabilitado. Cada campo resuelve su propia etiqueta legible (catálogos,
+ * municipios, Sí/No), así el detalle no repite la lógica de los ~70 campos.
+ */
+export const MatriculaLecturaContext = createContext(false)
+
+/** Cuadrícula de la ficha: la misma de `FichaDatos`; el último par suelto ocupa la fila entera. */
+const FICHA_GRID_CLASS = cn(
+  "m-0 grid grid-cols-[8.5rem_1fr] gap-px overflow-hidden rounded-lg border border-border bg-border p-0 text-sm",
+  "sm:grid-cols-[12rem_1fr_12rem_1fr] sm:[&>dd:last-of-type:nth-of-type(odd)]:col-span-3",
+)
+
+/**
+ * Campo del formulario con buscador (Agregar/Editar largos, CLAUDE.md §13): mientras se busca, se oculta si ni la
+ * etiqueta ni el valor coinciden. Se oculta con `hidden`, sin desmontarlo, para no perder lo escrito ni la
+ * validación; los que coinciden llevan `data-par-ficha` para el contador y la sección.
+ */
+export function CampoBuscable({ label, valor, children }: { label: string; valor?: string; children: ReactNode }) {
+  const busqueda = useBusquedaDetalle()
+  const todo = useContext(CoincideTodoContext)
+  if (!normalizarBusqueda(busqueda)) return <>{children}</>
+  return todo || normalizarBusqueda(`${label} ${valor ?? ""}`).includes(normalizarBusqueda(busqueda)) ? (
+    <div data-par-ficha="" className="contents">
+      {children}
+    </div>
+  ) : (
+    <div hidden>{children}</div>
+  )
+}
+
+/** Un par de la ficha de detalle. Vacío se ve «—». Con búsqueda, se oculta si no coincide. */
+export function ParFicha({ label, valor }: { label: string; valor: ReactNode }) {
+  const busqueda = useBusquedaDetalle()
+  const q = normalizarBusqueda(busqueda)
+  const textoValor = typeof valor === "string" || typeof valor === "number" ? String(valor) : ""
+  const todo = useContext(CoincideTodoContext)
+  if (q && !todo && !normalizarBusqueda(`${label} ${textoValor}`).includes(q)) return null
+  return (
+    <>
+      <dt data-par-ficha="" className="flex items-center bg-table-screen-title px-4 py-2.5 text-muted-foreground">
+        <Resaltado texto={label} busqueda={busqueda} />
+      </dt>
+      <dd className="m-0 flex min-w-0 items-center bg-background px-4 py-2.5 [overflow-wrap:anywhere]">
+        {valor === "" || valor == null ? "—" : textoValor ? <Resaltado texto={textoValor} busqueda={busqueda} /> : valor}
+      </dd>
+    </>
+  )
+}
+
+const fechaLegible = (value: string) => (/^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10).split("-").reverse().join("/") : value)
+
+/**
  * Label flotante en UNA línea: los nombres largos ("Lugar expedición documento
  * acudiente (municipio)") se cortan con "…" en vez de partirse en dos líneas y
  * montarse sobre el campo de arriba. El * queda siempre visible al final y,
@@ -44,6 +98,7 @@ export const OPEN_SECTION_EVENT = "matricula:abrir-seccion"
  */
 function EtiquetaFlotante({ id, label, required }: { id: string; label: string; required?: boolean }) {
   const { ref, isTruncated } = useTruncated<HTMLSpanElement>()
+  const busqueda = useBusquedaDetalle()
   return (
     <Tooltip disabled={!isTruncated}>
       <TooltipTrigger
@@ -60,7 +115,7 @@ function EtiquetaFlotante({ id, label, required }: { id: string; label: string; 
         }
       >
         <span ref={ref} className="truncate">
-          {label}
+          <Resaltado texto={label} busqueda={busqueda} />
         </span>
         {required ? (
           <span data-required-mark="" className="shrink-0">
@@ -99,11 +154,15 @@ function useEnmascarado(id: string) {
 
 /** Campo de solo lectura con el valor parcialmente enmascarado (Guía UX §5). */
 function CampoEnmascarado({ id, label, value }: { id: string; label: string; value: string }) {
+  const lectura = useContext(MatriculaLecturaContext)
+  if (lectura) return <ParFicha label={label} valor={value ? enmascarar(value) : ""} />
   return (
-    <Field orientation="vertical" variant="outlined" className="w-full gap-2">
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} size="sm" value={value ? enmascarar(value) : ""} readOnly disabled />
-    </Field>
+    <CampoBuscable label={label}>
+      <Field orientation="vertical" variant="outlined" className="w-full gap-2">
+        <FieldLabel htmlFor={id}>{label}</FieldLabel>
+        <Input id={id} size="sm" value={value ? enmascarar(value) : ""} readOnly disabled />
+      </Field>
+    </CampoBuscable>
   )
 }
 
@@ -121,6 +180,12 @@ export function MatriculaFormSection({ title, columns = 3, children, aviso }: Se
   const pending = useContext(MatriculaPendingContext)
   const disabled = useContext(MatriculaSectionDisabledContext)
   const precarga = useContext(MatriculaPrecargaContext)
+  const lectura = useContext(MatriculaLecturaContext)
+  const busqueda = useBusquedaDetalle()
+  const buscando = normalizarBusqueda(busqueda) !== ""
+  // Si lo buscado está en el título («acudiente»), la sección se muestra entera, sin filtrar sus campos.
+  const tituloCoincide = buscando && normalizarBusqueda(title).includes(normalizarBusqueda(busqueda))
+  const [paresVisibles, setParesVisibles] = useState(1)
   const [open, setOpen] = useState(useContext(MatriculaSectionDefaultOpenContext))
   const [pendingCount, setPendingCount] = useState(0)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -131,6 +196,12 @@ export function MatriculaFormSection({ title, columns = 3, children, aviso }: Se
     if (!body) return
     setPendingCount(pending.filter((id) => body.querySelector(`#${CSS.escape(id)}`)).length)
   }, [pending, children])
+
+  // Con búsqueda: cuántos pares quedaron (si ninguno, la sección entera se oculta).
+  useLayoutEffect(() => {
+    if (!buscando) return
+    setParesVisibles(bodyRef.current?.querySelectorAll("[data-par-ficha]").length ?? 0)
+  }, [buscando, tituloCoincide, busqueda, children])
 
   useEffect(() => {
     const body = bodyRef.current
@@ -144,35 +215,45 @@ export function MatriculaFormSection({ title, columns = 3, children, aviso }: Se
   }, [])
 
   return (
-    <section className="overflow-hidden rounded-md border border-border bg-card [counter-increment:seccion]">
+    <section
+      // Sin coincidencias se saca del flujo pero sigue contando para la numeración (con hidden las demás se
+      // renumeraban: «3. Domicilio» pasaba a «1.»).
+      aria-hidden={buscando && paresVisibles === 0 ? true : undefined}
+      data-seccion-detalle=""
+      className={cn(
+        "overflow-hidden rounded-md border border-border bg-card [counter-increment:seccion]",
+        buscando && paresVisibles === 0 && "invisible absolute h-0 w-0 border-0",
+      )}
+    >
       <h2 className="m-0">
         <button
           type="button"
-          aria-expanded={open}
+          aria-expanded={open || buscando}
           aria-controls={bodyId}
           onClick={() => setOpen((current) => !current)}
           className="flex w-full items-center gap-3 bg-table-screen-title px-4 py-3 text-left text-sm font-medium text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
         >
           <CaretDownIcon
             aria-hidden
-            className={cn("size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", !open && "-rotate-90")}
+            className={cn("size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", !(open || buscando) && "-rotate-90")}
           />
-          <span className="before:content-[counter(seccion)_'._']">{title}</span>
+          <span className="before:content-[counter(seccion)_'._']">
+            <Resaltado texto={title} busqueda={busqueda} />
+          </span>
           {precarga ? (
             <Badge variant="soft" color="muted" className="rounded-full text-xs font-medium tracking-normal">
               {disabled ? "Precargado" : "Precargado · revisar"}
             </Badge>
           ) : null}
-          {pendingCount > 0 ? (
-            <Badge variant="outline" color="orange" className="rounded-full bg-orange-22 text-xs font-medium tracking-normal">
-              <span aria-hidden className="size-1.5 rounded-full bg-orange" />
-              {pendingCount === 1 ? "1 pendiente" : `${pendingCount} pendientes`}
-            </Badge>
-          ) : null}
+          <MarcaPendientes pendientes={pendingCount} />
         </button>
       </h2>
-      <div ref={bodyRef} id={bodyId} hidden={!open} className="border-t border-border px-4 py-4">
+      <div ref={bodyRef} id={bodyId} hidden={!(open || buscando)} className="border-t border-border px-4 py-4">
         {aviso ? <div className="mb-4 flex flex-col gap-3">{aviso}</div> : null}
+        <CoincideTodoContext value={tituloCoincide}>
+        {lectura ? (
+          <dl className={FICHA_GRID_CLASS}>{children}</dl>
+        ) : (
         <fieldset
           disabled={disabled}
           // Con menos campos que columnas, los que hay se reparten todo el ancho
@@ -185,6 +266,8 @@ export function MatriculaFormSection({ title, columns = 3, children, aviso }: Se
         >
           {children}
         </fieldset>
+        )}
+        </CoincideTodoContext>
       </div>
     </section>
   )
@@ -230,8 +313,11 @@ export function MatriculaTextField({
   description,
 }: TextFieldProps) {
   const oculto = useEnmascarado(id)
+  const lectura = useContext(MatriculaLecturaContext)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
+  if (lectura) return <ParFicha label={label} valor={masked ? enmascarar(value) : value} />
   return (
+    <CampoBuscable label={label} valor={masked ? "" : value}>
     <Field
       orientation="vertical"
       variant="outlined"
@@ -259,6 +345,7 @@ export function MatriculaTextField({
       />
       {description ? <FieldDescription>{description}</FieldDescription> : null}
     </Field>
+    </CampoBuscable>
   )
 }
 
@@ -273,36 +360,37 @@ interface YesNoFieldProps {
   disabled?: boolean
 }
 
-// Prototipo C.1.AGR: una pregunta de dos respuestas se contesta de un clic,
-// sin abrir una lista. El `id` va en el primer radio para que "Ver pendientes"
-// y el conteo por sección lo encuentren igual que a un input.
+// Prototipo C.1.AGR: una pregunta de dos respuestas se contesta de un clic con un interruptor (Sí/No),
+// en su recuadro con label flotante (`MarcoOpciones`, CLAUDE.md §13), como «¿Media técnica…?». Sin tocar
+// cuenta como No (así lo manda `toBoolSN`). El `id` va en el interruptor para que "Ver pendientes" y el
+// conteo por sección lo encuentren igual que a un input.
 export function MatriculaYesNoField({ id, label, value, onChange, required, invalid, disabled }: YesNoFieldProps) {
   const oculto = useEnmascarado(id)
+  const lectura = useContext(MatriculaLecturaContext)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
-  const labelId = `${id}-label`
+  if (lectura) return <ParFicha label={label} valor={value === "Sí" ? "Sí" : "No"} />
+  const marcoId = `${id}-marco`
+  const si = value === "Sí"
   return (
-    <div className="flex flex-col gap-2" data-invalid={invalid ? "true" : undefined}>
-      <span id={labelId} className={cn("text-sm font-medium", invalid && "text-red")}>
-        {label}
-        {required ? <span className="ml-0.5 text-red" aria-hidden>*</span> : null}
-      </span>
-      <RadioGroup
-        aria-labelledby={labelId}
-        aria-required={required}
-        aria-invalid={invalid}
-        value={value || null}
-        onValueChange={(next) => onChange(String(next))}
-        disabled={disabled}
-        className="flex flex-row items-center gap-6"
+    <CampoBuscable label={label} valor={si ? "Sí" : "No"}>
+    <MarcoOpciones id={marcoId} label={label} required={required} invalido={invalid}>
+      <label
+        htmlFor={id}
+        className="flex w-fit cursor-pointer items-center gap-2 text-sm has-disabled:cursor-not-allowed has-disabled:opacity-60"
       >
-        {YES_NO_OPTIONS.map((option, index) => (
-          <label key={option} className="flex cursor-pointer items-center gap-2 text-sm has-disabled:cursor-not-allowed has-disabled:opacity-60">
-            <RadioGroupItem id={index === 0 ? id : undefined} value={option} aria-invalid={invalid} />
-            {option}
-          </label>
-        ))}
-      </RadioGroup>
-    </div>
+        <Switch
+          round
+          id={id}
+          aria-labelledby={`${marcoId}-label`}
+          aria-invalid={invalid}
+          checked={si}
+          disabled={disabled}
+          onCheckedChange={(checked) => onChange(checked ? "Sí" : "No")}
+        />
+        {si ? "Sí" : "No"}
+      </label>
+    </MarcoOpciones>
+    </CampoBuscable>
   )
 }
 
@@ -336,8 +424,11 @@ export function MatriculaDateField({
   description,
 }: DateFieldProps) {
   const oculto = useEnmascarado(id)
+  const lectura = useContext(MatriculaLecturaContext)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value} />
+  if (lectura) return <ParFicha label={label} valor={fechaLegible(value)} />
   return (
+    <CampoBuscable label={label} valor={fechaLegible(value)}>
     <Field
       orientation="vertical"
       variant="outlined"
@@ -357,6 +448,7 @@ export function MatriculaDateField({
       />
       {description ? <FieldDescription>{description}</FieldDescription> : null}
     </Field>
+    </CampoBuscable>
   )
 }
 
@@ -392,7 +484,43 @@ export function MatriculaSelectField({
   disabledOptions,
 }: SelectFieldProps) {
   const oculto = useEnmascarado(id)
+  const lectura = useContext(MatriculaLecturaContext)
   if (oculto) return <CampoEnmascarado id={id} label={label} value={value ? labelFor(value) : ""} />
+  if (lectura) return <ParFicha label={label} valor={value ? labelFor(value) : ""} />
+  return (
+    <CampoBuscable label={label} valor={value ? labelFor(value) : ""}>
+      <SelectFieldInterno
+        id={id}
+        label={label}
+        value={value}
+        options={options}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        labelFor={labelFor}
+        invalid={invalid}
+        disabled={disabled}
+        description={description}
+        disabledOptions={disabledOptions}
+      />
+    </CampoBuscable>
+  )
+}
+
+function SelectFieldInterno({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+  required,
+  placeholder = "Seleccionar",
+  labelFor = (option) => option,
+  invalid,
+  disabled,
+  description,
+  disabledOptions,
+}: SelectFieldProps) {
   const items = Object.fromEntries([
     ["", placeholder],
     ...options.map((option) => [option, labelFor(option)]),

@@ -182,7 +182,7 @@ export function InicioPage() {
           {PREGUNTAS.map((p) => (
             <AccordionItem key={p.q} value={p.q}>
               <AccordionTrigger>{p.q}</AccordionTrigger>
-              <AccordionContent>{p.a}</AccordionContent>
+              <AccordionContent className="pt-3">{p.a}</AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>

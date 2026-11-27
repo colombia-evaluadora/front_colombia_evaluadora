@@ -1,6 +1,8 @@
 "use no memo"
 
 import { useState, type ReactNode } from "react"
+import { FichaDatos } from "@/components/ficha-datos"
+import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
@@ -9,21 +11,15 @@ import {
   TableScreenBody,
   TableScreenHeader,
   TableScreenToolbar,
+  TableScreenActions,
 } from "@/components/layout/table-screen"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { Pagination } from "@/components/pagination"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { DotsThreeVerticalIcon, EyeIcon, SpinnerIcon, UsersIcon, XIcon } from "@/components/ui/icons"
+import { EyeIcon, LockIcon, SpinnerIcon, UsersIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { Buscador } from "@/features/coverage/matricula-complementaria/components/buscador"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -106,7 +102,8 @@ const columns: ColumnDef<Continuidad>[] = [
   },
   {
     id: "actions",
-    size: 48,
+    // Hasta 2 íconos de 36 px (más el ⁞ si pasan de 6).
+    size: 2 * 36 + 16,
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <AccionesContinuidad fila={row.original} />,
     enableHiding: false,
@@ -120,24 +117,14 @@ function AccionesContinuidad({ fila }: { fila: Continuidad }) {
   const cerrar = (open: boolean) => !open && setAbierto(null)
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={`Acciones de ${fila.estudiante}`} />}
-        >
-          <DotsThreeVerticalIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-44">
-          <DropdownMenuItem onClick={() => setAbierto("detalle")}>
-            <EyeIcon /> Ver detalle
-          </DropdownMenuItem>
+      {/* Íconos con tooltip, «Ver detalle» primero; más de 6 van a «Más acciones» (CLAUDE.md §13). */}
+      <AccionesFila limite={6}>
+          <BotonAccion modo="icon" label="Ver detalle" Icon={EyeIcon} onClick={() => setAbierto("detalle")} />
           {/* Solo Pendiente de grupo; el back valida Guardar en la Sede y Jornada. */}
           {puedeEditar && fila.estado === "PENDIENTE_GRUPO" ? (
-            <DropdownMenuItem onClick={() => setAbierto("grupo")}>
-              <UsersIcon /> Asignar grupo
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Asignar grupo" Icon={UsersIcon} onClick={() => setAbierto("grupo")} />
           ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AccionesFila>
       {abierto === "detalle" ? <DialogDetalleContinuidad fila={fila} onOpenChange={cerrar} /> : null}
       {abierto === "grupo" ? <DialogAsignarGrupo fila={fila} onOpenChange={cerrar} /> : null}
     </>
@@ -146,9 +133,13 @@ function AccionesContinuidad({ fila }: { fila: Continuidad }) {
 
 function Lectura({ id, label, valor }: { id: string; label: string; valor: string }) {
   return (
+    // Solo lectura con candado (CLAUDE.md §13).
     <Field variant="outlined" className="gap-1.5">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} size="sm" value={valor} disabled readOnly />
+      <div className="relative">
+        <Input id={id} size="sm" value={valor} disabled readOnly className="pr-9" />
+        <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
     </Field>
   )
 }
@@ -158,7 +149,7 @@ const siguienteDe = (f: Continuidad) => `${f.gradoSiguiente} · ${f.especialidad
 function DialogDetalleContinuidad({ fila: f, onOpenChange }: { fila: Continuidad; onOpenChange: (o: boolean) => void }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             Continuidad — {f.estudiante}
@@ -166,13 +157,16 @@ function DialogDetalleContinuidad({ fila: f, onOpenChange }: { fila: Continuidad
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
-          <Lectura id="continuidad-origen" label="Establecimiento de origen" valor={f.origen} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Lectura id="continuidad-actual" label="Grado de este año" valor={`${f.gradoActual} · ${f.especialidad}`} />
-            <Lectura id="continuidad-siguiente" label="Grado siguiente" valor={siguienteDe(f)} />
-          </div>
-          {f.grupo ? <Lectura id="continuidad-grupo" label="Grupo" valor={f.grupo} /> : null}
-          {f.motivo ? <Lectura id="continuidad-motivo" label="Motivo" valor={MOTIVO_SIN_CONTINUIDAD[f.motivo]} /> : null}
+          {/* Ver detalle en la ficha de solo lectura (CLAUDE.md §13). */}
+          <FichaDatos
+            datos={[
+              { etiqueta: "Establecimiento de origen", valor: f.origen, ancho: true },
+              { etiqueta: "Grado de este año", valor: `${f.gradoActual} · ${f.especialidad}`, ancho: true },
+              { etiqueta: "Grado siguiente", valor: siguienteDe(f), ancho: true },
+              ...(f.grupo ? [{ etiqueta: "Grupo", valor: f.grupo, ancho: true }] : []),
+              ...(f.motivo ? [{ etiqueta: "Motivo", valor: MOTIVO_SIN_CONTINUIDAD[f.motivo], ancho: true }] : []),
+            ]}
+          />
           {f.estado === "PREVISTA" ? (
             <p className="text-sm text-muted-foreground">
               Su cupo del grado siguiente queda reservado hasta que el cierre confirme si continúa.
@@ -180,7 +174,8 @@ function DialogDetalleContinuidad({ fila: f, onOpenChange }: { fila: Continuidad
           ) : null}
         </div>
         <DialogFooter>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>
@@ -201,7 +196,7 @@ function DialogAsignarGrupo({ fila: f, onOpenChange }: { fila: Continuidad; onOp
 
   return (
     <Dialog open onOpenChange={(o) => !asignar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Asignar grupo — {f.estudiante}</DialogTitle>
         </DialogHeader>
@@ -221,20 +216,37 @@ function DialogAsignarGrupo({ fila: f, onOpenChange }: { fila: Continuidad; onOp
               : `Solo grupos que dictan ${f.especialidad} con cupo disponible.`
           }
           invalido={intentado && !grupo}
-          className="sm:max-w-xs"
         />
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
-          <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </Button>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          {/* Sin grupo elegido: Cerrar y Asignar deshabilitado; con grupo: Cancelar lo quita (CLAUDE.md §13). */}
+          {grupoId ? (
+            <Button
+              variant="outline"
+              color="neutral"
+              type="button"
+              size="sm"
+              disabled={asignar.isPending}
+              onClick={() => {
+                setGrupoId("")
+                setIntentado(false)
+              }}
+            >
+              <XIcon data-icon="inline-start" />
+              Cancelar
+            </Button>
+          ) : (
+            <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
+              <XIcon data-icon="inline-start" />
+              Cerrar
+            </Button>
+          )}
           <Button
             type="button"
             variant="fill"
             color="primary"
             size="sm"
-            disabled={asignar.isPending}
+            disabled={asignar.isPending || !grupoId}
             onClick={() => {
               setIntentado(true)
               if (!grupo) return
@@ -261,6 +273,7 @@ function DialogAsignarGrupo({ fila: f, onOpenChange }: { fila: Continuidad; onOp
 
 /** Pestaña Continuidad (Sección 2.16.2): los adscritos que pasan al grado siguiente. */
 export function ContinuidadTab({ encabezado }: { encabezado: ReactNode }) {
+  const accion: ReactNode = null
   const search = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -289,15 +302,6 @@ export function ContinuidadTab({ encabezado }: { encabezado: ReactNode }) {
   const setSearch = (patch: Partial<typeof search>) => navigate({ search: (prev) => ({ ...prev, ...patch, page: 0 }), replace: true })
 
   const anio = data?.rows[0]?.convocatoriaAnio
-  const chips = [
-    search.convocatoria != null && {
-      key: "convocatoria",
-      label: anio ? `Convocatoria ${anio}` : "Convocatoria",
-      clear: () => setSearch({ convocatoria: undefined }),
-    },
-    search.estado && { key: "estado", label: ESTADO_CONTINUIDAD[search.estado].label, clear: () => setSearch({ estado: undefined }) },
-    search.especialidad && { key: "especialidad", label: search.especialidad, clear: () => setSearch({ especialidad: undefined }) },
-  ].filter((c): c is { key: string; label: string; clear: () => Promise<void> } => Boolean(c))
 
   return (
     <TableScreen>
@@ -305,53 +309,40 @@ export function ContinuidadTab({ encabezado }: { encabezado: ReactNode }) {
         {encabezado}
         <TableScreenToolbar>
           <Buscador
+            // Se rearma cuando llega el año de la convocatoria: el texto muestra «convocatoria:(2027)», no el id.
+            key={anio ?? "sin-anio"}
             id="continuidad-buscar"
             placeholder="Buscar por nombre o documento"
             texto={search.q ?? ""}
-            onTexto={(q) => setSearch({ q: q || undefined })}
             filtros={[
+              {
+                key: "convocatoria",
+                label: "Convocatoria",
+                soloTexto: true,
+                items: [
+                  { value: "", label: "Todas" },
+                  ...(search.convocatoria != null ? [{ value: String(search.convocatoria), label: String(anio ?? search.convocatoria) }] : []),
+                ],
+                value: search.convocatoria != null ? String(search.convocatoria) : "",
+              },
               { key: "estado", label: "Estado", items: [{ value: "", label: "Todos" }, ...ESTADOS.map(([value, { label }]) => ({ value, label }))], value: search.estado ?? "" },
               { key: "especialidad", label: "Especialidad", items: [{ value: "", label: "Todas" }, ...ESPECIALIDADES.map((e) => ({ value: e, label: e }))], value: search.especialidad ?? "" },
             ]}
-            onAplicar={(v) => setSearch({ estado: (v.estado || undefined) as EstadoContinuidad | undefined, especialidad: v.especialidad || undefined })}
+            onBuscar={(v, q) =>
+              setSearch({
+                q: q || undefined,
+                convocatoria: v.convocatoria ? Number(v.convocatoria) : undefined,
+                estado: (v.estado || undefined) as EstadoContinuidad | undefined,
+                especialidad: v.especialidad || undefined,
+              })
+            }
             onLimpiar={() => setSearch({ convocatoria: undefined, estado: undefined, especialidad: undefined, q: undefined })}
           />
-          {chips.length ? (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              {chips.map((chip) => (
-                <Badge key={chip.key} variant="soft" color="info" className="text-xs font-medium tracking-normal">
-                  {chip.label}
-                  <button
-                    type="button"
-                    aria-label={`Quitar filtro ${chip.label}`}
-                    className="rounded-xs hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                    onClick={chip.clear}
-                  >
-                    <XIcon className="size-3.5" />
-                  </button>
-                </Badge>
-              ))}
-              <Button
-                type="button"
-                variant="link"
-                color="primary"
-                size="sm"
-                onClick={() => {
-                  setSearch({ convocatoria: undefined, estado: undefined, especialidad: undefined, q: undefined })
-                }}
-              >
-                Limpiar filtros
-              </Button>
-            </div>
-          ) : null}
+          {/* Crear va en la línea del buscador, a la derecha (CLAUDE.md §13), no en el título. */}
+          {accion ? <TableScreenActions>{accion}</TableScreenActions> : null}
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>
-        {data ? (
-          <p className="mb-3 text-sm font-medium tabular-nums">
-            {data.totalCount === 1 ? "1 estudiante" : `${data.totalCount} estudiantes`}
-          </p>
-        ) : null}
         <DataTable
           table={table}
           isPending={isPending}
@@ -359,7 +350,7 @@ export function ContinuidadTab({ encabezado }: { encabezado: ReactNode }) {
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
           emptyMessage={
-            chips.length || search.q
+            search.convocatoria != null || search.estado || search.especialidad || search.q
               ? "No hay estudiantes que coincidan con la búsqueda y los filtros."
               : "Aún no hay estudiantes que continúen. Aparecen aquí cuando una convocatoria tiene la continuidad automática activada."
           }

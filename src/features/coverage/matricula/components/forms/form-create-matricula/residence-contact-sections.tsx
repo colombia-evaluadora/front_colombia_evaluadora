@@ -1,12 +1,13 @@
 import { aTelefono } from "@/features/coverage/matricula/utils/matricula-formatos"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 import type { MatriculaContact, MatriculaResidence } from "@/features/coverage/matricula/api/types/matricula"
-import { useState } from "react"
+import { useContext, useState } from "react"
+import { normalizarBusqueda, useBusquedaDetalle } from "@/components/busqueda-detalle"
 import { geocodeCampusAddress } from "@/features/establishment/campuses/api/query/geocode"
 import { CampusLocationMap } from "@/features/establishment/campuses/components/map/campus-maps"
 import { formatLocation, parseLocation } from "@/features/establishment/campuses/lib/geo"
 import { anySettingVisible } from "./catalog-utils"
-import { type DepartmentOption, DeptMunicipioFields, MatriculaFormSection, MatriculaTextField } from "./fields"
+import { type DepartmentOption, DeptMunicipioFields, MatriculaFormSection, MatriculaTextField, MatriculaLecturaContext, ParFicha } from "./fields"
 
 interface ResidenceSectionProps {
   title: string
@@ -39,6 +40,8 @@ export function MatriculaResidenceSection({
   neighborhoodLabel,
   locationLabel,
 }: ResidenceSectionProps) {
+  const lectura = useContext(MatriculaLecturaContext)
+  const buscando = normalizarBusqueda(useBusquedaDetalle()) !== ""
   const addressId = `${idPrefix}-address`
   const departmentId = `${idPrefix}-department`
   const municipalityId = `${idPrefix}-municipality`
@@ -117,7 +120,12 @@ export function MatriculaResidenceSection({
         onChange={(location) => onChange({ ...value, ...location })}
         fieldSettings={fieldSettings}
       />
-      {locationLabel && (
+      {locationLabel && lectura ? (
+        // Detalle: la ubicación como un par más de la ficha, sin el mapa editable.
+        <ParFicha label={locationLabel} valor={value.location} />
+      ) : null}
+      {/* El mapa no se filtra: mientras se busca, se oculta. */}
+      {locationLabel && !lectura && !buscando && (
         <div className="flex flex-col gap-2 md:col-span-3">
           <span className="text-sm font-medium">{locationLabel}</span>
           <div className="max-w-xl">

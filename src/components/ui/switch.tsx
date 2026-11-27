@@ -5,11 +5,14 @@ import { cn } from "@/lib/utils"
 function Switch({
   className,
   size = "default",
-  round = false,
+  round = true,
   ...props
 }: SwitchPrimitive.Root.Props & {
   size?: "sm" | "default"
-  /** Pastilla con perilla circular, en lugar de la forma cuadrada del sistema. */
+  /**
+   * Pastilla con perilla circular: el diseño de todos los interruptores del proyecto (CLAUDE.md §13), por eso
+   * es el valor por defecto. `round={false}` da la forma cuadrada antigua; no se usa en vistas.
+   */
   round?: boolean
 }) {
   return (

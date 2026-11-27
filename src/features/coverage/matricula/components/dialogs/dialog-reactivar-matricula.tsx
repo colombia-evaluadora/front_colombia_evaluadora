@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { FichaDatos } from "@/components/ficha-datos"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -16,7 +17,7 @@ import {
   FileUploadItemPreview,
   FileUploadList,
 } from "@/components/ui/file-upload"
-import { ArrowCounterClockwiseIcon, FileUploadOutlinedIcon, ProhibitIcon, SpinnerIcon, WarningCircleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, CheckIcon, FileUploadOutlinedIcon, ProhibitIcon, SpinnerIcon, WarningCircleIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
@@ -124,18 +125,26 @@ export function DialogReactivarMatricula({ matricula, onOpenChange, onDone }: Pr
             <DialogDescription>{bloqueado}</DialogDescription>
           </DialogHeader>
           {siguiente ? (
-            <dl className="grid grid-cols-[auto_1fr] overflow-hidden rounded-md border border-border text-sm">
-              <dt className="bg-muted/40 px-4 py-2.5 text-muted-foreground">Matrícula en el período siguiente</dt>
-              <dd className="flex flex-col items-start gap-1 px-4 py-2.5">
-                {[siguiente.periodo, gradeLabel(siguiente.grado), siguiente.grupo].join(" · ")}
-                <Badge variant="soft" color="success" className="rounded-full text-xs font-medium tracking-normal">
-                  {siguiente.estado}
-                </Badge>
-              </dd>
-            </dl>
+            <FichaDatos
+              datos={[
+                {
+                  etiqueta: "Matrícula en el período siguiente",
+                  ancho: true,
+                  valor: (
+                    <span className="flex flex-wrap items-center gap-2">
+                      {[siguiente.periodo, gradeLabel(siguiente.grado), siguiente.grupo].join(" · ")}
+                      <Badge variant="soft" color="success" className="rounded-full text-xs font-medium tracking-normal">
+                        {siguiente.estado}
+                      </Badge>
+                    </span>
+                  ),
+                },
+              ]}
+            />
           ) : null}
           <DialogFooter>
             <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+              <CheckIcon data-icon="inline-start" />
               Entendido
             </Button>
           </DialogFooter>
@@ -273,6 +282,7 @@ export function DialogReactivarMatricula({ matricula, onOpenChange, onDone }: Pr
         )}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

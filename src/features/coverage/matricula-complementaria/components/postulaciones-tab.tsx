@@ -1,6 +1,8 @@
 "use no memo"
 
 import { useState, type ReactNode } from "react"
+import { DialogPostulacion } from "@/features/coverage/matricula-complementaria/components/dialog-postulacion"
+import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import { useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
@@ -10,26 +12,16 @@ import {
   TableScreenBody,
   TableScreenHeader,
   TableScreenToolbar,
+  TableScreenActions,
 } from "@/components/layout/table-screen"
 import { Pagination } from "@/components/pagination"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   ArrowsLeftRightIcon,
-  DotsThreeVerticalIcon,
   EyeIcon,
   
   PersonRemoveIcon,
   ProhibitIcon,
   PersonAddIcon,
-  XIcon,
 } from "@/components/ui/icons"
 import { Buscador } from "@/features/coverage/matricula-complementaria/components/buscador"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -109,7 +101,8 @@ const columns: ColumnDef<Postulacion>[] = [
   },
   {
     id: "actions",
-    size: 48,
+    // Hasta 7 íconos de 36 px (más el ⁞ si pasan de 6).
+    size: 7 * 36 + 16,
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <AccionesPostulacion postulacion={row.original} />,
     enableHiding: false,
@@ -117,7 +110,7 @@ const columns: ColumnDef<Postulacion>[] = [
   },
 ]
 
-type Dialogo = "matricula" | "liberar" | "cupo" | "anular" | null
+type Dialogo = "matricula" | "liberar" | "cupo" | "cupoAbierta" | "anular" | null
 
 function AccionesPostulacion({ postulacion: p }: { postulacion: Postulacion }) {
   const navigate = useNavigate()
@@ -127,60 +120,36 @@ function AccionesPostulacion({ postulacion: p }: { postulacion: Postulacion }) {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={`Acciones de la postulación ${p.numero}`} />
-          }
-        >
-          <DotsThreeVerticalIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-60">
-          <DropdownMenuItem onClick={() => navigate({ to: paths.app.coberturaPostulacionDetalle.getHref(p.id) })}>
-            <EyeIcon /> Ver detalle
-          </DropdownMenuItem>
+      {/* Íconos con tooltip, «Ver detalle» primero; más de 6 van a «Más acciones» (CLAUDE.md §13). */}
+      <AccionesFila limite={6}>
+          <BotonAccion modo="icon" label="Ver detalle" Icon={EyeIcon} onClick={() => navigate({ to: paths.app.coberturaPostulacionDetalle.getHref(p.id) })} />
+          {/* Cambiar cupo: con la forma Abierta, el modal de la postulación; por el origen, el suyo. */}
           {a.cambiarCupo ? (
-            <DropdownMenuItem
-              // Con la forma Abierta va a la página (como la postulación); por el origen, al modal.
-              onClick={() =>
-                p.forma === "ABIERTA"
-                  ? navigate({ to: paths.app.coberturaPostulacionCambiarCupo.getHref(p.id) })
-                  : setAbierto("cupo")
-              }
-            >
-              <ArrowsLeftRightIcon /> Cambiar cupo
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Cambiar cupo" Icon={ArrowsLeftRightIcon} onClick={() => setAbierto(p.forma === "ABIERTA" ? "cupoAbierta" : "cupo")} />
           ) : null}
           {a.agregarMatricula ? (
-            <DropdownMenuItem onClick={() => setAbierto("matricula")}>
-              <PersonAddIcon /> Agregar matrícula complementaria
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Agregar matrícula complementaria" Icon={PersonAddIcon} onClick={() => setAbierto("matricula")} />
           ) : null}
           {a.liberar ? (
-            <DropdownMenuItem onClick={() => setAbierto("liberar")}>
-              <PersonRemoveIcon /> Liberar cupo
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Liberar cupo" Icon={PersonRemoveIcon} onClick={() => setAbierto("liberar")} />
           ) : null}
           {a.anular ? (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setAbierto("anular")}>
-                <ProhibitIcon /> Anular postulación
-              </DropdownMenuItem>
+              <BotonAccion modo="icon" label="Anular postulación" Icon={ProhibitIcon} destructivo onClick={() => setAbierto("anular")} />
             </>
           ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AccionesFila>
       {abierto === "matricula" ? <DialogAgregarMatriculaAdscripcion postulacion={p} onOpenChange={cerrar} /> : null}
       {abierto === "liberar" ? <DialogLiberarCupo postulacion={p} onOpenChange={cerrar} /> : null}
       {abierto === "cupo" ? <DialogCambiarCupo postulacion={p} onOpenChange={cerrar} /> : null}
+      {abierto === "cupoAbierta" ? <DialogPostulacion postulacion={p} onOpenChange={cerrar} /> : null}
       {abierto === "anular" ? <DialogAnularPostulacion postulacion={p} onOpenChange={cerrar} /> : null}
     </>
   )
 }
 
 /** Pestaña Postulaciones (Sección 2.16.2): las del origen y las que recibe el establecimiento. */
-export function PostulacionesTab({ encabezado }: { encabezado: ReactNode }) {
+export function PostulacionesTab({ encabezado, accion }: { encabezado: ReactNode; accion?: ReactNode }) {
   const search = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -209,14 +178,6 @@ export function PostulacionesTab({ encabezado }: { encabezado: ReactNode }) {
     navigate({ search: (prev) => ({ ...prev, ...patch, page: 0 }), replace: true })
 
   const anio = data?.rows.find((r) => r.convocatoriaId === search.convocatoria)?.convocatoriaAnio
-  const chips = [
-    search.convocatoria != null && {
-      key: "convocatoria",
-      label: anio ? `Convocatoria ${anio}` : "Convocatoria",
-      clear: () => setSearch({ convocatoria: undefined }),
-    },
-    search.grado && { key: "grado", label: search.grado, clear: () => setSearch({ grado: undefined }) },
-  ].filter((c): c is { key: string; label: string; clear: () => Promise<void> } => Boolean(c))
 
   return (
     <TableScreen>
@@ -224,50 +185,35 @@ export function PostulacionesTab({ encabezado }: { encabezado: ReactNode }) {
         {encabezado}
         <TableScreenToolbar>
           <Buscador
+            // Se rearma cuando llega el año de la convocatoria: el texto muestra «convocatoria:(2027)», no el id.
+            key={anio ?? "sin-anio"}
             id="postulaciones-buscar"
             placeholder="Buscar por número de postulación, nombre o documento"
             texto={search.q ?? ""}
-            onTexto={(q) => setSearch({ q: q || undefined })}
-            filtros={[{ key: "grado", label: "Grado", items: [{ value: "", label: "Todos" }, ...GRADOS.map((g) => ({ value: g, label: g }))], value: search.grado ?? "" }]}
-            onAplicar={(v) => setSearch({ grado: v.grado || undefined })}
+            filtros={[
+              {
+                // Llega de «Ver postulaciones» de una convocatoria: solo se escribe en el buscador.
+                key: "convocatoria",
+                label: "Convocatoria",
+                soloTexto: true,
+                items: [
+                  { value: "", label: "Todas" },
+                  ...(search.convocatoria != null ? [{ value: String(search.convocatoria), label: String(anio ?? search.convocatoria) }] : []),
+                ],
+                value: search.convocatoria != null ? String(search.convocatoria) : "",
+              },
+              { key: "grado", label: "Grado", items: [{ value: "", label: "Todos" }, ...GRADOS.map((g) => ({ value: g, label: g }))], value: search.grado ?? "" },
+            ]}
+            onBuscar={(v, q) =>
+              setSearch({ q: q || undefined, grado: v.grado || undefined, convocatoria: v.convocatoria ? Number(v.convocatoria) : undefined })
+            }
             onLimpiar={() => setSearch({ convocatoria: undefined, grado: undefined, q: undefined })}
           />
-          {chips.length ? (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              {chips.map((chip) => (
-                <Badge key={chip.key} variant="soft" color="info" className="text-xs font-medium tracking-normal">
-                  {chip.label}
-                  <button
-                    type="button"
-                    aria-label={`Quitar filtro ${chip.label}`}
-                    className="rounded-xs hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                    onClick={chip.clear}
-                  >
-                    <XIcon className="size-3.5" />
-                  </button>
-                </Badge>
-              ))}
-              <Button
-                type="button"
-                variant="link"
-                color="primary"
-                size="sm"
-                onClick={() => {
-                  setSearch({ convocatoria: undefined, grado: undefined, q: undefined })
-                }}
-              >
-                Limpiar filtros
-              </Button>
-            </div>
-          ) : null}
+          {/* Crear va en la línea del buscador, a la derecha (CLAUDE.md §13), no en el título. */}
+          {accion ? <TableScreenActions>{accion}</TableScreenActions> : null}
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>
-        {data ? (
-          <p className="mb-3 text-sm font-medium tabular-nums">
-            {data.totalCount === 1 ? "1 postulación" : `${data.totalCount} postulaciones`}
-          </p>
-        ) : null}
         <DataTable
           table={table}
           isPending={isPending}
@@ -275,7 +221,7 @@ export function PostulacionesTab({ encabezado }: { encabezado: ReactNode }) {
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
           emptyMessage={
-            chips.length || search.q
+            search.convocatoria != null || search.grado || search.q
               ? "No hay postulaciones que coincidan con la búsqueda y los filtros."
               : "Aún no hay postulaciones. Use Nueva postulación para postular a un estudiante."
           }

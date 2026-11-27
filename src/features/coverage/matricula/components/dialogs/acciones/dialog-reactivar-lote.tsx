@@ -146,9 +146,8 @@ export function DialogReactivarLote({
             )}
           </FileUploadList>
         </FileUpload>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

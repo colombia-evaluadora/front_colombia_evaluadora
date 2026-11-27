@@ -1,5 +1,6 @@
 import { MatriculaSoportesSection } from "@/features/coverage/matricula/components/forms/form-create-matricula/soportes-section"
 import { useAsistenteMatricula } from "@/features/coverage/matricula/hooks/use-asistente-matricula"
+import { DetalleConBusqueda } from "@/components/busqueda-detalle"
 import { useMatriculaValidacionOpciones } from "@/features/coverage/matricula/hooks/use-matricula-validacion-opciones"
 import { useEffect, useMemo, useRef, useState } from "react"
 
@@ -9,12 +10,11 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import {
   TableScreen,
   TableScreenBody,
-  TableScreenFooter,
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { WarningIcon, CheckIcon, InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { CheckIcon, InfoIcon, PencilIcon, ShieldCheckIcon, SpinnerIcon, WarningIcon, XIcon } from "@/components/ui/icons"
 import { DialogRegistrarAutorizacion } from "@/features/coverage/matricula/components/dialogs/dialog-registrar-autorizacion"
 import { matriculaKeys } from "@/features/coverage/matricula/api/query-keys"
 import { useQueryClient } from "@tanstack/react-query"
@@ -64,8 +64,7 @@ import type {
   CreateMatriculaInput,
 } from "@/features/coverage/matricula/api/types/matricula"
 import {
-  getMatriculaFieldErrorMessage,
-  pickMatriculaErrorField,
+  getMatriculaPendingMessage,
   resolveMatriculaMunicipioDepartments,
   validateMatricula,
 } from "@/features/coverage/matricula/utils/matricula-form-defaults"
@@ -163,6 +162,8 @@ function MatriculaEditPageContent() {
   useAsistenteMatricula({ values, setValues, matriculaId, invalidFields: missingFields })
   // Valores tal como llegaron: base para detectar cambios de grado, sede, grupo y acudiente.
   const [inicial, setInicial] = useState<CreateMatriculaInput | null>(null)
+  // Cambios sin guardar: lo editado contra lo que se cargó (las asignaturas cuentan; los soportes se guardan solos).
+  const hayCambios = values != null && inicial != null && JSON.stringify(values) !== JSON.stringify(inicial)
   const initialGrade = inicial?.academic.grade || null
   const initialSede = inicial?.academic.campus || null
   // Por id: dos colegios pueden tener sedes con el mismo nombre.
@@ -312,7 +313,7 @@ function MatriculaEditPageContent() {
       return
     }
     if (!values) return
-    notify(getMatriculaFieldErrorMessage(pickMatriculaErrorField(missingFields, values), values), {
+    notify(getMatriculaPendingMessage(missingFields, values), {
       variant: "error",
       autoCloseMs: 0,
     })
@@ -601,20 +602,54 @@ function MatriculaEditPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          // Miga y «Acción — entidad» (CLAUDE.md §13): Matrícula › Editar — <estudiante>.
+          ruta="Matrícula"
           action={
-            <Button
-              render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => ({ ...prev, accion: undefined })} />}
-              variant="fill"
-              color="neutral"
-              size="sm"
-              nativeButton={false}
-            >
-              Cerrar
-            </Button>
+            // Guardar arriba junto a Cerrar, como Agregar estudiante; el primario al final (CLAUDE.md §13).
+            // Sin cambios: Cerrar y Guardar deshabilitado. Con cambios: Cancelar (vuelve a lo guardado) en lugar de Cerrar.
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {hayCambios ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                  disabled={saving}
+                  onClick={() => setValues(inicial)}
+                >
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </Button>
+              ) : (
+                <Button
+                  render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => ({ ...prev, accion: undefined })} />}
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                  nativeButton={false}
+                >
+                  <XIcon data-icon="inline-start" />
+                  Cerrar
+                </Button>
+              )}
+              {values ? (
+                <Button
+                  type="button"
+                  variant="fill"
+                  color="primary"
+                  size="sm"
+                  disabled={saving || !hayCambios}
+                  onClick={handleSave}
+                >
+                  {saving ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <CheckIcon data-icon="inline-start" />}
+                  Guardar
+                </Button>
+              ) : null}
+            </div>
           }
         >
           <span className="inline-flex flex-wrap items-center gap-2">
-            Editar matrícula
+            {data?.matricula ? `Editar — ${data.matricula.firstName} ${data.matricula.lastName}` : "Editar matrícula"}
             {restricciones?.tieneComplementaria ? <BadgeComplementaria /> : null}
             {restricciones?.tipo === "COMPLEMENTARIA" ? (
               <Badge variant="soft" color="secondary" className="rounded-full text-xs font-medium tracking-normal">
@@ -654,6 +689,10 @@ function MatriculaEditPageContent() {
         <>
           <TableScreenBody className="rounded-b-none border-b-0">
             <div id={EDIT_MATRICULA_FORM_ID} className="flex flex-col gap-6">
+              {/* Formulario largo: buscador de campos en la línea de las acciones (CLAUDE.md §13), como en Ver detalle. */}
+              <DetalleConBusqueda
+                etiqueta="Buscar un campo o valor"
+                acciones={
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {/* Regla 43: la identidad no se edita aquí; el back limita a Administrador y Gestor administrativo. */}
                 {puedeEditar && data.matricula.status === "Cursando" && !restricciones?.origenAdscripcion ? (
@@ -664,6 +703,8 @@ function MatriculaEditPageContent() {
                 ) : null}
                 <MatriculaToolbar matricula={data.matricula} showModificar={false} filesEditable />
               </div>
+                }
+              >
               {restricciones?.anulacionPendiente ? (
                 <div role="status" className="flex items-start gap-3 rounded-md border border-red-stroke bg-red-22 px-4 py-3 text-sm">
                   <WarningIcon className="size-5 shrink-0 text-red" aria-hidden />
@@ -695,6 +736,7 @@ function MatriculaEditPageContent() {
                     </p>
                   </div>
                   <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => setAutorizando(true)}>
+                    <ShieldCheckIcon data-icon="inline-start" />
                     Registrar autorización
                   </Button>
                   {autorizando ? (
@@ -749,6 +791,7 @@ function MatriculaEditPageContent() {
               <MatriculaSoportesSection
                 matriculaId={data.matricula.id}
                 editable={puedeEditar}
+                fieldSettings={fieldSettings}
                 porAdscripcion={restricciones?.tipo === "COMPLEMENTARIA" && Boolean(restricciones?.origenAdscripcion)}
               />
               <MatriculaAsignaturasSection
@@ -775,27 +818,10 @@ function MatriculaEditPageContent() {
                   }}
                 />
               ) : null}
+              </DetalleConBusqueda>
             </div>
           </TableScreenBody>
 
-          <TableScreenFooter>
-            <p className="text-sm text-muted-foreground">Completa la información antes de guardar.</p>
-            <Button
-              type="button"
-              variant="fill"
-              color="primary"
-              size="sm"
-              disabled={saving}
-              onClick={handleSave}
-            >
-              {saving ? (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              ) : (
-                <CheckIcon data-icon="inline-start" />
-              )}
-              Guardar
-            </Button>
-          </TableScreenFooter>
         </>
       )}
 

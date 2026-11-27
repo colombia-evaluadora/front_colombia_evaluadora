@@ -2,9 +2,12 @@ import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { FichaDatos } from "@/components/ficha-datos"
+import { ACTIONS_CELL_CLASS, actionsOverlayClass } from "@/components/table-row-actions"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import { EyeIcon, InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ArrowCounterClockwiseIcon, EyeIcon, GitMergeIcon, InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 import { useNotify } from "@/components/notice/notice-context"
@@ -65,6 +68,7 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
       <div className="flex flex-col items-center gap-3 p-10 text-sm text-red">
         {getErrorMessage(error)}
         <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
+          <ArrowCounterClockwiseIcon data-icon="inline-start" />
           Reintentar
         </Button>
       </div>
@@ -83,6 +87,7 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
       {puedeCorregir && (
         <OnlineOnlyAction>
           <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setHomologando(true)}>
+            <GitMergeIcon data-icon="inline-start" />
             Homologar desde snapshot
           </Button>
         </OnlineOnlyAction>
@@ -130,25 +135,21 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
       {dialogoHomologar}
       {data.map((snapshot) => (
         <section key={snapshot.id} aria-label={`Snapshot del ${formatFecha(snapshot.fecha)}`} className="flex flex-col gap-4">
-          <dl className="grid grid-cols-1 overflow-hidden rounded-md border border-border text-sm md:grid-cols-[auto_1fr_auto_1fr]">
-            {[
-              ["Snapshot", `${snapshot.motivo} · ${formatFecha(snapshot.fecha)}`],
-              [
-                "Grupo de origen",
-                `${snapshot.grupoOrigen} · ${snapshot.institucionOrigen} · ${snapshot.jornadaOrigen} · Resp. de enseñanza: ${snapshot.responsableEnsenanza}`,
-              ],
-              ["Grupo actual", snapshot.grupoActual],
-              ["Confirmado por", snapshot.confirmadoPor],
-              ["Fallas acumuladas", `${snapshot.fallas} · se suman a las del grupo actual`],
-            ].map(([label, value]) => (
-              <div key={label} className="contents">
-                <dt className="border-b border-border bg-muted/40 px-4 py-2.5 text-muted-foreground">{label}</dt>
-                <dd className="border-b border-border px-4 py-2.5">{value}</dd>
-              </div>
-            ))}
-          </dl>
+          {/* Datos del snapshot en la ficha de solo lectura (CLAUDE.md §13 «Ver detalle»). */}
+          <FichaDatos
+            datos={[
+              { etiqueta: "Snapshot", valor: `${snapshot.motivo} · ${formatFecha(snapshot.fecha)}` },
+              {
+                etiqueta: "Grupo de origen",
+                valor: `${snapshot.grupoOrigen} · ${snapshot.institucionOrigen} · ${snapshot.jornadaOrigen} · Resp. de enseñanza: ${snapshot.responsableEnsenanza}`,
+              },
+              { etiqueta: "Grupo actual", valor: snapshot.grupoActual },
+              { etiqueta: "Confirmado por", valor: snapshot.confirmadoPor },
+              { etiqueta: "Fallas acumuladas", valor: `${snapshot.fallas} · se suman a las del grupo actual` },
+            ]}
+          />
 
-          <Table className="min-w-[720px]">
+          <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Asignatura</TableHead>
@@ -171,7 +172,9 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
                   <TableHead className="text-center">Definitiva</TableHead>
                   <TableHead>Valoración</TableHead>
                   <TableHead>Marca</TableHead>
-                  <TableHead className="w-24">
+                  {/* Relleno: el ancho que sobra queda al final, no entre columnas (CLAUDE.md §13, tablas). */}
+                  <TableHead aria-hidden className="w-full p-0" />
+                  <TableHead className={cn(ACTIONS_CELL_CLASS, "p-0")}>
                     <span className="sr-only">Acciones</span>
                   </TableHead>
                 </TableRow>
@@ -181,7 +184,7 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
                   const pendiente = n.tipo === "PENDIENTE"
                   const etiqueta = `${n.asignatura} ${n.periodo}`
                   return (
-                    <TableRow key={n.id} className="group">
+                    <TableRow key={n.id} className="group/row">
                       <TableCell>{n.asignatura}</TableCell>
                       <TableCell>
                         {n.periodo}
@@ -212,9 +215,11 @@ export function TabNotasHomologadas({ matriculaId, contexto, estudiante, editabl
                           {marcaDe(n, snapshot)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-2">
+                      <TableCell aria-hidden className="p-0" />
+                      <TableCell className={cn(ACTIONS_CELL_CLASS, "p-0")}>
                         {!pendiente && (
-                          <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-aria-expanded:opacity-100">
+                          // Íconos al hover de la fila, con el hover azul claro de las tablas (table-row-actions).
+                          <div className={actionsOverlayClass(false, "background")}>
                             <Tooltip>
                               <TooltipTrigger
                                 render={

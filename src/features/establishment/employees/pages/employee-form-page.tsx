@@ -536,7 +536,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
               <AccordionTrigger className={accordionTriggerClassName}>Datos personales</AccordionTrigger>
               <AccordionContent>
                 {restringido ? <SinAutorizacionAviso className="mb-4" /> : null}
-                <div className="-mx-4 grid grid-cols-1 gap-4 border-t border-border bg-card px-4 py-4 md:grid-cols-[11rem_1fr]">
+                <div className="-mx-4 grid grid-cols-1 gap-4 bg-card px-4 py-4 md:grid-cols-[11rem_1fr]">
                   <div className="flex flex-col gap-1.5">
                     <span className="text-xs text-muted-foreground">Foto del usuario</span>
                     <ImageUploadField
@@ -693,7 +693,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
                 </AccordionTrigger>
                 <AccordionContent>
                   <FormDisabledProvider disabled={!complementaryEditable}>
-                    <div className="-mx-4 grid grid-cols-1 gap-x-4 gap-y-5 border-t border-border bg-card px-4 py-4 md:grid-cols-6">
+                    <div className="-mx-4 grid grid-cols-1 gap-x-4 gap-y-5 bg-card px-4 py-4 md:grid-cols-6">
                       <div className="md:col-span-2">
                         <form.AppField name="employeeClassId">
                           {(f) => <f.SelectField label="Clase de funcionario" options={catalogOptions(employeeClasses)} emptyValue={null} clearable />}
@@ -758,7 +758,7 @@ function FuncionarioForm({ mode, ficha, establishmentId, establishmentName, isOf
             <AccordionItem value="anexos" className={accordionItemClassName}>
               <AccordionTrigger className={accordionTriggerClassName}>Documentos anexos</AccordionTrigger>
               <AccordionContent>
-                <div className="-mx-4 border-t border-border bg-card px-4 py-4">
+                <div className="-mx-4 bg-card px-4 py-4">
                   <AnexosSection
                     establishmentName={establishmentName}
                     annexes={ficha?.annexes ?? []}

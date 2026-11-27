@@ -1,4 +1,13 @@
-import { useParams } from "@tanstack/react-router"
+import { useState } from "react"
+import { Link, useParams } from "@tanstack/react-router"
+
+import { BloqueBuscable, DetalleConBusqueda } from "@/components/busqueda-detalle"
+import { FichaDatos } from "@/components/ficha-datos"
+import { Button } from "@/components/ui/button"
+import { PencilIcon, XIcon } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { accionesDe, MENU_COMPLEMENTARIA } from "@/features/coverage/matricula-complementaria/components/convocatorias-tab"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,7 +23,7 @@ import {
   MODO_LABEL,
   fecha,
 } from "@/features/coverage/matricula-complementaria/api/ui-mappings"
-import { CampoLectura, Rejilla, Seccion, Secciones } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
+import { Seccion, Secciones } from "@/features/coverage/inscripcion-reservas/components/reserva-ui"
 
 const num = "text-center tabular-nums"
 
@@ -22,6 +31,10 @@ const num = "text-center tabular-nums"
 export function ConvocatoriaDetallePage() {
   const { convocatoriaId } = useParams({ strict: false }) as { convocatoriaId?: string }
   const { data: c, isPending, isError, error } = useConvocatoriaQuery(Number(convocatoriaId))
+  const { puedeEditar } = useMenuPermission(MENU_COMPLEMENTARIA)
+  // Secciones que abrió la persona; mientras busca, todas abiertas (las cerradas no muestran sus datos).
+  const [abiertas, setAbiertas] = useState(["datos", "fechas", "seleccion", "cupos"])
+  const [buscando, setBuscando] = useState(false)
 
   if (isPending) {
     return (
@@ -47,52 +60,97 @@ export function ConvocatoriaDetallePage() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle description={<Marca {...ESTADO_CONVOCATORIA[c.estado]} />}>
+        <TableScreenTitle
+          // Miga y Cerrar; las acciones del detalle (Modificar) van en la línea del buscador (CLAUDE.md §13).
+          ruta="Matrícula complementaria"
+          action={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                render={<Link to={paths.app.coberturaComplementaria.getHref()} />}
+                nativeButton={false}
+                variant="outline"
+                color="neutral"
+                size="sm"
+              >
+                <XIcon data-icon="inline-start" />
+                Cerrar
+              </Button>
+            </div>
+          }
+        >
           Convocatoria {c.anio} · {c.establecimiento}
+          {/* Estado junto al título, en su misma línea (hay espacio a la derecha). */}
+          <span className="ml-3 inline-flex align-middle text-sm font-normal"><Marca {...ESTADO_CONVOCATORIA[c.estado]} /></span>
         </TableScreenTitle>
       </TableScreenHeader>
 
       <TableScreenBody>
-        <Secciones abiertas={["datos", "fechas", "seleccion", "cupos"]}>
+        {/* Ver detalle largo: buscador y cada sección como ficha (CLAUDE.md §13). */}
+        <DetalleConBusqueda
+          onBuscandoChange={setBuscando}
+          // Modificar (secundario) en la línea del buscador, a la derecha, como Matrícula › Detalle.
+          acciones={
+            accionesDe(c).editar && puedeEditar ? (
+              <Button
+                render={<Link to={paths.app.coberturaConvocatoriaEditar.getHref(c.id)} />}
+                nativeButton={false}
+                variant="outline"
+                color="neutral"
+                size="sm"
+              >
+                <PencilIcon data-icon="inline-start" />
+                Modificar
+              </Button>
+            ) : undefined
+          }
+        >
+        <Secciones
+          abiertas={buscando ? ["datos", "fechas", "seleccion", "cupos"] : abiertas}
+          onAbiertasChange={(v) => !buscando && setAbiertas(v)}
+        >
+          <BloqueBuscable contar>
           <Seccion value="datos" titulo="Datos de la convocatoria">
-            <Rejilla>
-              <CampoLectura id="conv-establecimiento" label="Establecimiento que recibe" value={c.establecimiento} />
-              <CampoLectura id="conv-anio" label="Año" value={c.anio} />
-              <CampoLectura id="conv-estado" label="Estado" value={ESTADO_CONVOCATORIA[c.estado].label} />
-              <div className="md:col-span-3">
-                <CampoLectura
-                  id="conv-origenes"
-                  label="Establecimientos de origen"
-                  value={c.origenes.map((o) => o.nombre).join(", ")}
-                />
-              </div>
-            </Rejilla>
+            <FichaDatos
+              datos={[
+                { etiqueta: "Establecimiento que recibe", valor: c.establecimiento },
+                { etiqueta: "Año", valor: String(c.anio) },
+                { etiqueta: "Estado", valor: ESTADO_CONVOCATORIA[c.estado].label },
+                { etiqueta: "Establecimientos de origen", valor: c.origenes.map((o) => o.nombre).join(", "), ancho: true },
+              ]}
+            />
           </Seccion>
+          </BloqueBuscable>
+          <BloqueBuscable contar>
           <Seccion value="fechas" titulo="Fechas">
-            <Rejilla>
-              <CampoLectura id="conv-inicio" label="Fecha de inicio de postulación" value={fecha(c.inicioPostulacion)} />
-              <CampoLectura id="conv-cierre" label="Fecha de cierre de postulación" value={fecha(c.cierrePostulacion)} />
-              {c.publicacion ? (
-                <CampoLectura id="conv-publicacion" label="Publicación de resultados" value={fecha(c.publicacion)} />
-              ) : null}
-              <CampoLectura id="conv-limite" label="Fecha límite para matricular" value={fecha(c.limiteMatricula)} />
-            </Rejilla>
+            <FichaDatos
+              datos={[
+                { etiqueta: "Fecha de inicio de postulación", valor: fecha(c.inicioPostulacion) },
+                { etiqueta: "Fecha de cierre de postulación", valor: fecha(c.cierrePostulacion) },
+                ...(c.publicacion ? [{ etiqueta: "Publicación de resultados", valor: fecha(c.publicacion) }] : []),
+                { etiqueta: "Fecha límite para matricular", valor: fecha(c.limiteMatricula) },
+              ]}
+            />
           </Seccion>
+          </BloqueBuscable>
+          <BloqueBuscable contar>
           <Seccion value="seleccion" titulo="Postulación y selección">
-            <Rejilla>
-              <CampoLectura id="conv-forma" label="Forma de postulación" value={FORMA_LABEL[c.forma]} />
-              <CampoLectura id="conv-continuidad" label="Continuidad automática" value={c.continuidadAutomatica ? "Sí" : "No"} />
-              {abierta ? (
-                <>
-                  <CampoLectura id="conv-modo" label="Modo de selección" value={MODO_LABEL[c.modo]} />
-                  <CampoLectura id="conv-desempate" label="Desempate" value={DESEMPATE_LABEL[c.desempate]} />
-                </>
-              ) : (
-                <CampoLectura id="conv-espera" label="Lista de espera" value={c.listaEspera ? "Sí" : "No"} />
-              )}
-            </Rejilla>
+            <FichaDatos
+              datos={[
+                { etiqueta: "Forma de postulación", valor: FORMA_LABEL[c.forma] },
+                { etiqueta: "Continuidad automática", valor: c.continuidadAutomatica ? "Sí" : "No" },
+                ...(abierta
+                  ? [
+                      { etiqueta: "Modo de selección", valor: MODO_LABEL[c.modo] },
+                      { etiqueta: "Desempate", valor: DESEMPATE_LABEL[c.desempate] },
+                    ]
+                  : [{ etiqueta: "Lista de espera", valor: c.listaEspera ? "Sí" : "No" }]),
+              ]}
+            />
           </Seccion>
-          <Seccion value="cupos" titulo="Cupos por especialidad" tabla>
+          </BloqueBuscable>
+          {/* La tabla de cupos no se filtra: mientras se busca queda oculta. */}
+          {buscando ? null : (
+          <Seccion value="cupos" titulo="Cupos por especialidad">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -120,7 +178,9 @@ export function ConvocatoriaDetallePage() {
               </TableBody>
             </Table>
           </Seccion>
+          )}
         </Secciones>
+        </DetalleConBusqueda>
       </TableScreenBody>
     </TableScreen>
   )

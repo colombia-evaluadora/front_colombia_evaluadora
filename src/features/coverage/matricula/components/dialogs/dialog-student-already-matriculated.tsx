@@ -7,7 +7,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { FichaDatos } from "@/components/ficha-datos"
 import { Button } from "@/components/ui/button"
+import { CheckIcon } from "@/components/ui/icons"
 
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import type { Matricula } from "@/features/coverage/matricula/api/types/matricula"
@@ -41,18 +43,26 @@ export function StudentAlreadyMatriculatedDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 text-sm">
-          <dt className="text-muted-foreground">Matrícula existente</dt>
-          <dd className="flex flex-wrap items-center gap-2 font-medium">
-            {[matricula.institution, grado, periodo].filter(Boolean).join(" · ")}
-            <Badge variant="soft" color="info">
-              {matricula.status}
-            </Badge>
-          </dd>
-        </dl>
+        <FichaDatos
+          datos={[
+            {
+              etiqueta: "Matrícula existente",
+              ancho: true,
+              valor: (
+                <span className="flex flex-wrap items-center gap-2">
+                  {[matricula.institution, grado, periodo].filter(Boolean).join(" · ")}
+                  <Badge variant="soft" color="info">
+                    {matricula.status}
+                  </Badge>
+                </span>
+              ),
+            },
+          ]}
+        />
 
         <AlertDialogFooter>
           <Button type="button" variant="fill" color="primary" size="sm" onClick={onClose}>
+            <CheckIcon data-icon="inline-start" />
             Entendido
           </Button>
         </AlertDialogFooter>

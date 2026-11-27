@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CheckCircleIcon } from "@/components/ui/icons"
+import { CheckCircleIcon, CheckIcon } from "@/components/ui/icons"
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
 import type { GradeChangeGradesAction } from "@/features/coverage/matricula/components/dialogs/dialog-cambio-grado-matricula"
 import type { BulkMatriculaChangeStudentResult } from "@/features/coverage/matricula/api/types/matricula"
@@ -88,7 +88,10 @@ export function CambioMatriculaSummaryDialog(props: CambioMatriculaSummaryDialog
         )}
 
         <DialogFooter className="sm:justify-end">
-          <DialogClose render={<Button size="sm" type="button" color="primary" />}>Entendido</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" color="primary" />}>
+            <CheckIcon data-icon="inline-start" />
+            Entendido
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -101,28 +104,27 @@ function fromTo(from: string, to: string) {
 
 function ResumenMasivo({ summary }: { summary: CambioMatriculaSummary }) {
   return (
-    <div className="max-h-72 overflow-y-auto rounded-md border border-input">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>Estudiante</TableHead>
-            <TableHead>Sede</TableHead>
-            <TableHead>Grado</TableHead>
-            <TableHead>Grupo</TableHead>
+    // El borde y el radio los pone `Table`: otra caja alrededor dejaba doble línea.
+    <Table containerClassName="max-h-72">
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Estudiante</TableHead>
+          <TableHead>Sede</TableHead>
+          <TableHead>Grado</TableHead>
+          <TableHead>Grupo</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {summary.students.map((student) => (
+          <TableRow key={student.id}>
+            <TableCell className="font-medium text-foreground">{student.name}</TableCell>
+            <TableCell>{fromTo(student.fromCampus, student.toCampus)}</TableCell>
+            <TableCell>{fromTo(student.fromGrade, student.toGrade)}</TableCell>
+            <TableCell>{fromTo(student.fromGroup, student.toGroup)}</TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {summary.students.map((student) => (
-            <TableRow key={student.id}>
-              <TableCell className="font-medium text-foreground">{student.name}</TableCell>
-              <TableCell>{fromTo(student.fromCampus, student.toCampus)}</TableCell>
-              <TableCell>{fromTo(student.fromGrade, student.toGrade)}</TableCell>
-              <TableCell>{fromTo(student.fromGroup, student.toGroup)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   )
 }
 

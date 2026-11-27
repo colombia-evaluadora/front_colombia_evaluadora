@@ -4,25 +4,21 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { CheckIcon, DotsThreeVerticalIcon, EyeIcon, FileDownloadOutlinedIcon, PaperclipIcon, PlusIcon, SpinnerIcon, TrashIcon, UploadSimpleIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, EyeIcon, FileDownloadOutlinedIcon, FolderOpenIcon, LockIcon, PaperclipIcon, PlusIcon, SpinnerIcon, TrashIcon, UploadSimpleIcon, XIcon } from "@/components/ui/icons"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { useUser } from "@/lib/auth"
 import { Input } from "@/components/ui/input"
+import { FichaDatos } from "@/components/ficha-datos"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   formatearFecha,
@@ -44,6 +40,8 @@ import {
   type TipoSoporte,
 } from "@/features/coverage/matricula/api/soportes"
 import { MatriculaFormSection } from "./fields"
+import { ACTIONS_BUTTON_HOVER_CLASS } from "@/components/table-row-actions"
+import { isFieldRequired, type MatriculaFieldSettingsMap } from "@/features/coverage/matricula/utils/matricula-field-settings"
 
 type Aviso = { id: number; message: string } | null
 const OBS_MIN = 10
@@ -98,14 +96,66 @@ interface SoportesSectionProps {
   editable: boolean
   /** Complementaria por adscripción: suma los documentos requeridos del convenio. */
   porAdscripcion?: boolean
+  /** Configuración de campos del establecimiento: marca con * los soportes obligatorios. */
+  fieldSettings?: MatriculaFieldSettingsMap
 }
+
+/** Soporte → campo de la configuración (bloque «Archivo de soporte»); la hoja firmada no se configura. */
+const CAMPO_SOPORTE: Partial<Record<TipoSoporte, string>> = {
+  FOTO: "file-student-photo",
+  DOCUMENTO_IDENTIDAD: "file-student-id-document",
+  CERTIFICADO_ESTUDIOS: "file-previous-year-certificate",
+  CERTIFICADO_MEDICO: "file-medical-certificate",
+}
+const esObligatorio = (tipo: TipoSoporte, settings?: MatriculaFieldSettingsMap) =>
+  Boolean(settings && CAMPO_SOPORTE[tipo] && isFieldRequired(settings, CAMPO_SOPORTE[tipo]))
 
 /**
  * Bloque 14 (informe 2.14, Reglas 6, 23 y 73): una fila por soporte con su
  * revisión. Cada operación se guarda al momento, no con el botón Guardar de la
  * matrícula; la revisión nunca impide la matrícula.
  */
-export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion = false }: SoportesSectionProps) {
+const nombreFila = (fila: FilaSoporte) => (fila.sub ? `${fila.etiqueta}, ${fila.sub}` : fila.etiqueta)
+
+/** Acción de un soporte como ícono suelto con tooltip (CLAUDE.md §13: hasta 6 íconos, sin ⁞). */
+function AccionSoporte({
+  label,
+  tooltip,
+  disabled,
+  destructivo,
+  onClick,
+  children,
+}: {
+  label: string
+  tooltip: string
+  disabled?: boolean
+  destructivo?: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            color={destructivo ? "destructive" : "neutral"}
+            size="icon-sm"
+            aria-label={label}
+            disabled={disabled}
+            onClick={onClick}
+          />
+        }
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion = false, fieldSettings }: SoportesSectionProps) {
   const { notify } = useNotify()
   const soportesQuery = useSoportesQuery(matriculaId)
   const cargar = useCargarSoporte(matriculaId)
@@ -159,98 +209,93 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
         ) : soportesQuery.isError ? (
           <p className="py-6 text-center text-sm text-red">{getErrorMessage(soportesQuery.error)}</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Soporte</TableHead>
-                <TableHead>Archivo</TableHead>
-                <TableHead>Revisión</TableHead>
-                <TableHead>Revisado por y fecha</TableHead>
-                <TableHead className="w-12">
-                  <span className="sr-only">Acciones</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filas.map((fila) => {
-                const s = fila.soporte
-                const cargado = s?.archivoId != null
-                return (
-                  <TableRow key={fila.key}>
-                    <TableCell>
-                      <span className="block">{fila.etiqueta}</span>
-                      {fila.sub ? <span className="block text-xs text-muted-foreground">{fila.sub}</span> : null}
-                    </TableCell>
-                    <TableCell>
-                      {cargado ? (
-                        <span className="text-sm">
-                          {s.archivoNombre} · {formatearTamano(s.archivoTamano)}
+          // Lista como la referencia de diseño: nombre (con * si es obligatorio), debajo carpeta con el archivo o
+          // «Sin datos», separador y formatos admitidos; a la derecha el clip para adjuntar o las acciones.
+          <ul className="flex flex-col">
+            {filas.map((fila) => {
+              const s = fila.soporte
+              const cargado = s?.archivoId != null
+              const obligatorio = esObligatorio(fila.tipo, fieldSettings)
+              return (
+                <li key={fila.key} className="flex items-center gap-4 border-b border-border py-3 last:border-b-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {fila.etiqueta}
+                      {obligatorio ? <span data-required-mark="">*</span> : null}
+                      {fila.sub ? <span className="ml-2 text-xs font-normal text-muted-foreground">{fila.sub}</span> : null}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <FolderOpenIcon aria-hidden className="size-4 shrink-0" />
+                        <span className={cn("truncate", cargado && "text-foreground")}>
+                          {cargado ? `${s.archivoNombre} · ${formatearTamano(s.archivoTamano)}` : "Sin datos"}
                         </span>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          color="neutral"
-                          size="sm"
-                          disabled={!editable || cargar.isPending}
+                      </span>
+                      <span aria-hidden className="h-4 w-px bg-border" />
+                      <span>{fila.tipo === "FOTO" ? "JPG, PNG o SVG · máximo 2 MB" : "PDF, JPG o PNG · máximo 10 MB"}</span>
+                      {cargado ? (
+                        <>
+                          <span aria-hidden className="h-4 w-px bg-border" />
+                          <RevisionBadge revision={s.revision} />
+                          {s.revisadoPor ? <span>{`${s.revisadoPor} · ${formatearFecha(s.revisadoAt)}`}</span> : null}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  {/* Hasta 4 acciones: íconos sueltos con tooltip, no un menú ⁞ (CLAUDE.md §13). */}
+                  {/* Hover de botón ícono igual que en las tablas: azul claro, y rojo en Quitar (CLAUDE.md §13). */}
+                  <div className={cn("flex shrink-0 items-center gap-1", ACTIONS_BUTTON_HOVER_CLASS)}>
+                    {!cargado ? (
+                      editable ? (
+                        <AccionSoporte
+                          label={`Adjuntar archivo a ${nombreFila(fila)}`}
+                          tooltip="Adjuntar archivo"
+                          disabled={cargar.isPending}
                           onClick={() => elegirArchivo(fila.tipo, null)}
                         >
-                          <PaperclipIcon data-icon="inline-start" />
-                          Adjuntar archivo
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <RevisionBadge revision={s?.revision ?? "SIN_REVISAR"} />
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {s?.revisadoPor ? `${s.revisadoPor} · ${formatearFecha(s.revisadoAt)}` : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              color="neutral"
-                              size="icon-sm"
-                              aria-label={`Acciones de ${fila.sub ? `${fila.etiqueta}, ${fila.sub}` : fila.etiqueta}`}
-                            />
-                          }
-                        >
-                          <DotsThreeVerticalIcon />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-44">
-                          <DropdownMenuItem disabled={!cargado} onClick={() => setViendo(fila)}>
-                            <EyeIcon /> Ver archivo
-                          </DropdownMenuItem>
-                          {editable ? (
-                            <>
-                              <DropdownMenuItem disabled={!cargado} onClick={() => setReemplazando(fila)}>
-                                <UploadSimpleIcon /> Reemplazar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem disabled={!cargado} onClick={() => setRevisando(fila)}>
-                                <CheckIcon /> Revisar soporte
-                              </DropdownMenuItem>
-                              {fila.tipo === "OTRO" ? (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem variant="destructive" onClick={() => setQuitando(fila)}>
-                                    <TrashIcon /> Quitar
-                                  </DropdownMenuItem>
-                                </>
-                              ) : null}
-                            </>
-                          ) : null}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                          <PaperclipIcon />
+                        </AccionSoporte>
+                      ) : null
+                    ) : (
+                      <>
+                        <AccionSoporte label={`Ver archivo de ${nombreFila(fila)}`} tooltip="Ver archivo" onClick={() => setViendo(fila)}>
+                          <EyeIcon />
+                        </AccionSoporte>
+                        {editable ? (
+                          <>
+                            <AccionSoporte
+                              label={`Reemplazar ${nombreFila(fila)}`}
+                              tooltip="Reemplazar"
+                              onClick={() => setReemplazando(fila)}
+                            >
+                              <UploadSimpleIcon />
+                            </AccionSoporte>
+                            <AccionSoporte
+                              label={`Revisar soporte ${nombreFila(fila)}`}
+                              tooltip="Revisar soporte"
+                              onClick={() => setRevisando(fila)}
+                            >
+                              <CheckIcon />
+                            </AccionSoporte>
+                            {fila.tipo === "OTRO" ? (
+                              <AccionSoporte
+                                label={`Quitar ${nombreFila(fila)}`}
+                                tooltip="Quitar"
+                                destructivo
+                                onClick={() => setQuitando(fila)}
+                              >
+                                <TrashIcon />
+                              </AccionSoporte>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
         )}
         {editable ? (
           <div>
@@ -285,57 +330,46 @@ export function MatriculaSoportesSection({ matriculaId, editable, porAdscripcion
   )
 }
 
-function Ficha({ filas }: { filas: [string, ReactNode][] }) {
-  return (
-    <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
-      {filas.map(([t, v]) => (
-        <div key={t} className="contents">
-          <dt className="text-muted-foreground">{t}</dt>
-          <dd>{v}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
-/** Ver archivo (EDI.1h): vista previa y, al lado, la ficha con la revisión vigente. */
-/** Vista previa del soporte; la reusa la ficha de una reserva (Asignar grupo). */
+/** Ver archivo (EDI.1h): vista previa y, debajo, la ficha con la revisión vigente; la reusa la ficha de una reserva (Asignar grupo). */
 export function DialogVerSoporte({ fila, onClose }: { fila: FilaSoporte; onClose: () => void }) {
   const s = fila.soporte as Soporte
   const { data: url, isPending } = useArchivoViewUrl(s.archivoId)
   const esPdf = (s.archivoNombre ?? "").toLowerCase().endsWith(".pdf")
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{fila.sub ? `${fila.etiqueta} · ${fila.sub}` : fila.etiqueta}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 md:grid-cols-[1fr_18rem]">
-          <div className="flex min-h-96 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40">
-            {isPending || !url ? (
-              <SpinnerIcon className="animate-spin text-muted-foreground" aria-label="Cargando vista previa" />
-            ) : esPdf ? (
-              <iframe src={url} title={`Vista previa de ${s.archivoNombre}`} className="h-[32rem] w-full" />
-            ) : (
-              <img src={url} alt={`Vista previa de ${s.archivoNombre}`} className="max-h-[32rem] object-contain" />
-            )}
-          </div>
-          <Ficha
-            filas={[
-              ["Soporte", fila.etiqueta],
-              ["Archivo", `${s.archivoNombre} · ${formatearTamano(s.archivoTamano)}`],
-              ["Subido por", s.subidoPor ? `${s.subidoPor} · ${formatearFecha(s.subidoAt)}` : "—"],
-              ["Revisión", <RevisionBadge key="r" revision={s.revision} />],
-              ["Revisado por", s.revisadoPor ? `${s.revisadoPor} · ${formatearFecha(s.revisadoAt)}` : "—"],
-              ...(s.observacion ? ([["Observación", s.observacion]] as [string, ReactNode][]) : []),
-            ]}
-          />
+        <div className="flex min-h-80 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40">
+          {isPending || !url ? (
+            <SpinnerIcon className="animate-spin text-muted-foreground" aria-label="Cargando vista previa" />
+          ) : esPdf ? (
+            <iframe src={url} title={`Vista previa de ${s.archivoNombre}`} className="h-[28rem] w-full" />
+          ) : (
+            <img src={url} alt={`Vista previa de ${s.archivoNombre}`} className="max-h-[28rem] object-contain" />
+          )}
         </div>
+        {/* Datos del soporte en la ficha de solo lectura (§13 «Ver detalle»), bajo la vista previa. */}
+        <FichaDatos
+          datos={[
+            { etiqueta: "Soporte", valor: fila.etiqueta },
+            { etiqueta: "Archivo", valor: `${s.archivoNombre} · ${formatearTamano(s.archivoTamano)}` },
+            { etiqueta: "Subido por", valor: s.subidoPor ? `${s.subidoPor} · ${formatearFecha(s.subidoAt)}` : "—" },
+            { etiqueta: "Revisión", valor: <RevisionBadge revision={s.revision} /> },
+            { etiqueta: "Revisado por", valor: s.revisadoPor ? `${s.revisadoPor} · ${formatearFecha(s.revisadoAt)}` : "—" },
+            ...(s.observacion ? [{ etiqueta: "Observación", valor: s.observacion, ancho: true }] : []),
+          ]}
+        />
         <DialogFooter>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={onClose}>
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </Button>
           <Button
             type="button"
-            variant="outline"
-            color="neutral"
+            variant="fill"
+            color="primary"
             size="sm"
             disabled={!url}
             nativeButton={false}
@@ -343,9 +377,6 @@ export function DialogVerSoporte({ fila, onClose }: { fila: FilaSoporte; onClose
           >
             <FileDownloadOutlinedIcon data-icon="inline-start" />
             Descargar
-          </Button>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={onClose}>
-            Cerrar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -414,26 +445,33 @@ export function DialogRevisarSoporte({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !revisar.isPending && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Revisar soporte — {fila.etiqueta}</DialogTitle>
         </DialogHeader>
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
         <Field variant="outlined" className="gap-1.5">
           <FieldLabel htmlFor="revisar-soporte-archivo">Soporte</FieldLabel>
-          <Input
-            id="revisar-soporte-archivo"
-            variant="outlined"
-            readOnly
-            value={`${s.archivoNombre} · ${formatearTamano(s.archivoTamano)}`}
-          />
+          <div className="relative">
+            <Input
+              id="revisar-soporte-archivo"
+              variant="outlined"
+              readOnly
+              className="pr-9"
+              value={`${s.archivoNombre} · ${formatearTamano(s.archivoTamano)}`}
+            />
+            <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </Field>
-        <Field className="gap-1.5" data-invalid={(intento && resultado == null) || undefined}>
-          <FieldLabel>
-            Resultado<span data-required-mark="">*</span>
-          </FieldLabel>
+        <MarcoOpciones
+          id="revisar-soporte-resultado"
+          label="Resultado"
+          required
+          invalido={intento && resultado == null}
+          descripcion="Soportado con observaciones cuando los nombres, la fecha de nacimiento o el número no coinciden con la matrícula."
+        >
           <RadioGroup
-            className="grid gap-1.5"
+            aria-labelledby="revisar-soporte-resultado-label"
             value={resultado ?? ""}
             onValueChange={(v) => setResultado(v as Exclude<RevisionSoporte, "SIN_REVISAR">)}
           >
@@ -444,18 +482,19 @@ export function DialogRevisarSoporte({
               </label>
             ))}
           </RadioGroup>
-          <FieldDescription>
-            Soportado con observaciones cuando los nombres, la fecha de nacimiento o el número no coinciden con la matrícula.
-          </FieldDescription>
-        </Field>
+        </MarcoOpciones>
         <Field variant="outlined" className="gap-1.5">
           <FieldLabel htmlFor="revisar-soporte-revisado">Revisado por y fecha</FieldLabel>
-          <Input
-            id="revisar-soporte-revisado"
-            variant="outlined"
-            readOnly
-            value={`${usuario?.name ?? "—"} · ${formatearFecha(hoy)}`}
-          />
+          <div className="relative">
+            <Input
+              id="revisar-soporte-revisado"
+              variant="outlined"
+              readOnly
+              className="pr-9"
+              value={`${usuario?.name ?? "—"} · ${formatearFecha(hoy)}`}
+            />
+            <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </Field>
         <Field variant="outlined" className="gap-1.5" data-invalid={(intento && obsInvalida) || undefined}>
           <FieldLabel htmlFor="observacion-soporte">
@@ -477,8 +516,8 @@ export function DialogRevisarSoporte({
             De {OBS_MIN} a {OBS_MAX} caracteres.
           </FieldDescription>
         </Field>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" disabled={revisar.isPending} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -534,27 +573,28 @@ export function DialogReemplazarSoporte({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !cargar.isPending && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Reemplazar — {fila.etiqueta}</DialogTitle>
         </DialogHeader>
         <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
-        <Field className="gap-1.5" data-invalid={Boolean(errorArchivo) || undefined}>
-          <FieldLabel htmlFor="archivo-reemplazo">
-            Archivo nuevo<span data-required-mark="">*</span>
-          </FieldLabel>
+        {/* Marco con label flotante como los demás campos (el `Field` sin variante ponía el label en mayúsculas). */}
+        <MarcoOpciones
+          id="archivo-reemplazo-marco"
+          label="Archivo nuevo"
+          required
+          error={errorArchivo ?? undefined}
+          descripcion={fila.tipo === "FOTO" ? "JPG, PNG o SVG · máx. 2 MB." : "PDF, JPG o PNG · máx. 10 MB."}
+        >
           <input
             id="archivo-reemplazo"
             type="file"
+            aria-labelledby="archivo-reemplazo-marco-label"
             accept={acceptDe(fila.tipo)}
-            className="text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5"
+            className="text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1"
             onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
           />
-          <FieldDescription className={cn(errorArchivo && "text-red")}>
-            {errorArchivo ?? (fila.tipo === "FOTO" ? "JPG, PNG o SVG · máx. 2 MB." : "PDF, JPG o PNG · máx. 10 MB.")}
-          </FieldDescription>
-        </Field>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
+        </MarcoOpciones>
         {s.revision !== "SIN_REVISAR" ? (
           <p role="status" className="rounded-md border border-yellow-stroke bg-yellow-22 px-4 py-3 text-sm">
             Este soporte está {REVISION_SOPORTE[s.revision]}. Al reemplazar el archivo volverá a Sin revisar; la revisión
@@ -563,6 +603,7 @@ export function DialogReemplazarSoporte({
           </p>
         ) : null}
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" disabled={cargar.isPending} onClick={onClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -585,7 +626,7 @@ function DialogQuitarSoporte({ matriculaId, fila, onClose }: { matriculaId: stri
   const [aviso, setAviso] = useState<Aviso>(null)
   return (
     <Dialog open onOpenChange={(o) => !o && !quitar.isPending && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Quitar {s.archivoNombre}</DialogTitle>
         </DialogHeader>

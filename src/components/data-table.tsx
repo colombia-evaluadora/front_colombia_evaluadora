@@ -285,6 +285,13 @@ export function DataTable({
           "w-full",
           unaLinea && "[&_td]:whitespace-nowrap [&_td_*]:whitespace-nowrap",
           ajustarAlContenido && !unaLinea && "[&_td]:whitespace-normal",
+          // Si no cabe, también se parten los encabezados largos («Límite para matricular»), que si no fijaban
+          // el ancho y sacaban la tabla del borde. Si cabe, quedan en una línea como el resto.
+          ajustarAlContenido &&
+            !unaLinea &&
+            // Además el relleno se achica (botón de 12 a 4 px, celdas y encabezados de 16 a 12 px, todo parejo para
+            // seguir alineado): con el ícono de ordenar, ese relleno era lo que no dejaba caber la tabla.
+            "[&_th_button]:h-auto [&_th_button]:min-w-0 [&_th_button]:shrink [&_th_button]:py-1 [&_th_button]:text-left [&_th_button]:whitespace-normal [&_th_button]:-ml-1 [&_th_button]:px-1 [&_th_button]:pr-1! [&_th]:px-3 [&_td]:px-3",
         )}
         containerClassName={containerClassName}
       >

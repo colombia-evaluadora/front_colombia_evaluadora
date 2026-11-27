@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useState, type ReactNode } from "react"
+import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
@@ -9,21 +10,12 @@ import {
   TableScreenBody,
   TableScreenHeader,
   TableScreenToolbar,
+  TableScreenActions,
 } from "@/components/layout/table-screen"
 import { Pagination } from "@/components/pagination"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   ArrowCounterClockwiseIcon,
   CheckIcon,
-  DotsThreeVerticalIcon,
   EyeIcon,
   
   ProhibitIcon,
@@ -58,11 +50,13 @@ const columns: ColumnDef<Convenio>[] = [
     meta: { label: "Establecimiento" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Establecimiento" />,
     cell: ({ row }) => (
-      <div className="grid justify-items-start gap-1">
+      // El sentido del convenio como texto secundario (como el documento bajo el nombre del estudiante): puede
+      // partirse si falta ancho. La etiqueta, que no se parte, se montaba sobre «Año» o sacaba la tabla del borde.
+      <div className="flex flex-col whitespace-normal">
         <span className="font-medium">{row.original.contraparte}</span>
-        <Badge variant="soft" color="info" className="rounded-full text-xs font-medium tracking-normal">
+        <span className="text-xs text-muted-foreground">
           {row.original.soyReceptor ? "Envía a sus estudiantes" : "Recibe a mis estudiantes"}
-        </Badge>
+        </span>
       </div>
     ),
     enableHiding: false,
@@ -122,7 +116,8 @@ const columns: ColumnDef<Convenio>[] = [
   },
   {
     id: "actions",
-    size: 48,
+    // Hasta 5 íconos de 36 px (más el ⁞ si pasan de 6).
+    size: 5 * 36 + 16,
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <AccionesConvenio convenio={row.original} />,
     enableHiding: false,
@@ -139,41 +134,24 @@ function AccionesConvenio({ convenio: c }: { convenio: Convenio }) {
   const cerrar = (open: boolean) => !open && setAbierto(null)
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button type="button" variant="ghost" color="neutral" size="icon-sm" aria-label={`Acciones del convenio con ${c.contraparte}`} />}
-        >
-          <DotsThreeVerticalIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-48">
-          <DropdownMenuItem onClick={() => setAbierto("detalle")}>
-            <EyeIcon /> Ver detalle
-          </DropdownMenuItem>
+      {/* Íconos con tooltip, «Ver detalle» primero; más de 6 van a «Más acciones» (CLAUDE.md §13). */}
+      <AccionesFila limite={6}>
+          <BotonAccion modo="icon" label="Ver detalle" Icon={EyeIcon} onClick={() => setAbierto("detalle")} />
           {puedeEditar && a.responder ? (
             <>
-              <DropdownMenuItem onClick={() => setAbierto("aceptar")}>
-                <CheckIcon /> Aceptar
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={() => setAbierto("rechazar")}>
-                <XIcon /> Rechazar
-              </DropdownMenuItem>
+              <BotonAccion modo="icon" label="Aceptar" Icon={CheckIcon} onClick={() => setAbierto("aceptar")} />
+              <BotonAccion modo="icon" label="Rechazar" Icon={XIcon} onClick={() => setAbierto("rechazar")} />
             </>
           ) : null}
           {puedeEditar && a.renovar ? (
-            <DropdownMenuItem onClick={() => setAbierto("renovar")}>
-              <ArrowCounterClockwiseIcon /> Renovar convenio
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Renovar convenio" Icon={ArrowCounterClockwiseIcon} onClick={() => setAbierto("renovar")} />
           ) : null}
           {puedeEditar && a.finalizar ? (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setAbierto("finalizar")}>
-                <ProhibitIcon /> Finalizar
-              </DropdownMenuItem>
+              <BotonAccion modo="icon" label="Finalizar" Icon={ProhibitIcon} onClick={() => setAbierto("finalizar")} />
             </>
           ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AccionesFila>
       {abierto === "detalle" ? <DialogDetalleConvenio convenio={c} onOpenChange={cerrar} /> : null}
       {abierto === "aceptar" ? <DialogAceptarConvenio convenio={c} onOpenChange={cerrar} /> : null}
       {abierto === "rechazar" ? <DialogRechazarConvenio convenio={c} onOpenChange={cerrar} /> : null}
@@ -184,7 +162,7 @@ function AccionesConvenio({ convenio: c }: { convenio: Convenio }) {
 }
 
 /** Pestaña Convenios de adscripción (Sección 2.16.1): los que recibe y los que envía. */
-export function ConveniosTab({ encabezado }: { encabezado: ReactNode }) {
+export function ConveniosTab({ encabezado, accion }: { encabezado: ReactNode; accion?: ReactNode }) {
   const search = coberturaComplementariaRoute.useSearch()
   const navigate = coberturaComplementariaRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -214,37 +192,12 @@ export function ConveniosTab({ encabezado }: { encabezado: ReactNode }) {
             id="convenios-buscar"
             placeholder="Buscar por establecimiento"
             texto={search.q ?? ""}
-            onTexto={(q) => setSearch({ q: q || undefined })}
             filtros={[{ key: "anio", label: "Año", items: [{ value: "", label: "Todos" }, ...ANIOS.map((a) => ({ value: String(a), label: String(a) }))], value: search.anio ? String(search.anio) : "" }]}
-            onAplicar={(v) => setSearch({ anio: v.anio ? Number(v.anio) : undefined })}
+            onBuscar={(v, q) => setSearch({ q: q || undefined, anio: v.anio ? Number(v.anio) : undefined })}
             onLimpiar={() => setSearch({ anio: undefined, q: undefined })}
           />
-          {search.anio ? (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              <Badge variant="soft" color="info" className="text-xs font-medium tracking-normal">
-                {search.anio}
-                <button
-                  type="button"
-                  aria-label={`Quitar filtro ${search.anio}`}
-                  className="rounded-xs hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  onClick={() => setSearch({ anio: undefined })}
-                >
-                  <XIcon className="size-3.5" />
-                </button>
-              </Badge>
-              <Button
-                type="button"
-                variant="link"
-                color="primary"
-                size="sm"
-                onClick={() => {
-                  setSearch({ anio: undefined, q: undefined })
-                }}
-              >
-                Limpiar filtros
-              </Button>
-            </div>
-          ) : null}
+          {/* Crear va en la línea del buscador, a la derecha (CLAUDE.md §13), no en el título. */}
+          {accion ? <TableScreenActions>{accion}</TableScreenActions> : null}
         </TableScreenToolbar>
       </TableScreenHeader>
       <TableScreenBody>

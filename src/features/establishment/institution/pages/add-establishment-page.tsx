@@ -454,7 +454,7 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-establecimiento" className={accordionItemClassName}>
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <div className="-mx-4 border-t border-border px-4 pt-4">
+                <div className="-mx-4 px-4 pt-4">
                   <EstablishmentDetailsForm
                     value={formValues}
                     onChange={setFormValues}
@@ -477,7 +477,7 @@ export function AddEstablishmentPage() {
                 </span>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="-mx-4 border-t border-border px-4 pt-4">
+                <div className="-mx-4 px-4 pt-4">
                   {/* Quien no puede cambiar a los directivos los ve en tabla, como en el detalle. */}
                   {directivosEnTabla ? (
                     <div className="rounded-lg border border-border bg-card p-4">

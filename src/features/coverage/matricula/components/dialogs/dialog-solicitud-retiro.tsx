@@ -1,12 +1,13 @@
 import { useRef, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { FichaDatos } from "@/components/ficha-datos"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { PaperclipIcon, SpinnerIcon, UploadSimpleIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, EyeIcon, PaperclipIcon, PersonRemoveIcon, ProhibitIcon, SpinnerIcon, UploadSimpleIcon, XCircleIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -106,25 +107,15 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
             <p className="p-6 text-center text-sm text-red">{getErrorMessage(errorCarga)}</p>
           ) : (
             <>
-              <p className="text-sm">
-                {solicitud.establecimientoSolicitante} solicita el retiro de {nombre} ({matricula.group}). Evidencia:{" "}
-                <span className="inline-flex items-center gap-1 font-medium">
-                  <PaperclipIcon className="size-4 text-muted-foreground" aria-hidden />
-                  {solicitud.evidenciaNombre}
-                </span>
-              </p>
-              <table className="w-full overflow-hidden rounded-md border border-border text-sm">
-                <thead className="bg-muted/40 text-left text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-2 font-medium">Fecha de la solicitud</th>
-                    <th className="px-4 py-2 font-medium">Estado</th>
-                    <th className="px-4 py-2 font-medium">Vence</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-t border-border">
-                    <td className="px-4 py-2 tabular-nums">{formatFecha(solicitud.fecha)}</td>
-                    <td className="px-4 py-2">
+              {/* Datos de la solicitud en la ficha de solo lectura (CLAUDE.md §13 «Ver detalle»), no en una tabla de una fila. */}
+              <FichaDatos
+                datos={[
+                  { etiqueta: "Solicitado por", valor: solicitud.establecimientoSolicitante },
+                  { etiqueta: "Estudiante", valor: `${nombre} (${matricula.group})` },
+                  { etiqueta: "Fecha de la solicitud", valor: formatFecha(solicitud.fecha) },
+                  {
+                    etiqueta: "Estado",
+                    valor: (
                       <Badge
                         variant="soft"
                         color={solicitud.estado === "VENCIDA" ? "destructive" : "warning"}
@@ -132,15 +123,25 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
                       >
                         {ESTADO_SOLICITUD_LABEL[solicitud.estado]}
                       </Badge>
-                    </td>
-                    <td className="px-4 py-2 tabular-nums">{solicitud.vence ? formatFecha(solicitud.vence) : "—"}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="text-sm text-muted-foreground">
-                Lleva {solicitud.diasSinRespuesta} {solicitud.diasSinRespuesta === 1 ? "día" : "días"} sin respuesta del
-                establecimiento.
-              </p>
+                    ),
+                  },
+                  { etiqueta: "Vence", valor: solicitud.vence ? formatFecha(solicitud.vence) : "—" },
+                  {
+                    etiqueta: "Sin respuesta",
+                    valor: `${solicitud.diasSinRespuesta} ${solicitud.diasSinRespuesta === 1 ? "día" : "días"}`,
+                  },
+                  {
+                    etiqueta: "Evidencia",
+                    ancho: true,
+                    valor: (
+                      <span className="inline-flex items-center gap-1">
+                        <PaperclipIcon className="size-4 text-muted-foreground" aria-hidden />
+                        {solicitud.evidenciaNombre}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             </>
           )}
           <DialogFooter>
@@ -149,9 +150,11 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
               Cancelar
             </Button>
             <Button type="button" variant="outline" color="primary" size="sm" disabled={!solicitud} onClick={() => ir("objetar")}>
+              <XCircleIcon data-icon="inline-start" />
               Objetar
             </Button>
             <Button type="button" variant="fill" color="destructive" size="sm" disabled={!solicitud} onClick={() => ir("retirar")}>
+              <PersonRemoveIcon data-icon="inline-start" />
               Retirar
             </Button>
           </DialogFooter>
@@ -242,9 +245,8 @@ export function DialogResponderSolicitudRetiro({ matricula, onOpenChange, onDone
         </div>
 
         <Aviso tono="info" titulo="La solicitud pasará al Administrador territorial, que decidirá." />
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
-
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar
@@ -289,19 +291,27 @@ export function DialogAccionBloqueada({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent showCloseButton={false} className="sm:max-w-md">
+        {/* Aviso de bloqueo (§13): ícono rojo junto al título, nombres en negrita y «Entendido» como único primario;
+            «Ver solicitud» (SOL.4b) queda como acceso secundario. */}
         <DialogHeader>
-          <DialogTitle>{accion}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2.5">
+            <ProhibitIcon aria-hidden className="size-6 shrink-0 text-red" />
+            {accion}
+          </DialogTitle>
         </DialogHeader>
         <p className="text-sm">
-          La matrícula de {nombre} tiene un retiro solicitado por {matricula.retiroSolicitadoPor || "otro establecimiento"}.
-          Responda la solicitud (Retirar u Objetar) para continuar.
+          La matrícula de <strong className="font-semibold">{nombre}</strong> tiene un retiro solicitado por{" "}
+          <strong className="font-semibold">{matricula.retiroSolicitadoPor || "otro establecimiento"}</strong>. Responda la
+          solicitud (Retirar u Objetar) para continuar.
         </p>
         <DialogFooter>
-          <Button type="button" variant="outline" color="neutral" size="sm" onClick={onClose}>
-            Entendido
-          </Button>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => setVerSolicitud(true)}>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => setVerSolicitud(true)}>
+            <EyeIcon data-icon="inline-start" />
             Ver solicitud
+          </Button>
+          <Button type="button" variant="fill" color="primary" size="sm" onClick={onClose}>
+            <CheckIcon data-icon="inline-start" />
+            Entendido
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -380,11 +390,11 @@ export function DialogAnularMatricula({ matricula, onOpenChange, onDone }: Props
             >
               Dejarán de verse y no se podrán restaurar; quedan en la Bitácora con su copia completa.
             </Aviso>
-            <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
           </>
         )}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

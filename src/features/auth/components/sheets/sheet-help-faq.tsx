@@ -98,7 +98,7 @@ function HelpFaqSection({ title, faqs }: { title: string; faqs: HelpFaq[] }) {
                 <ItemDescription>{faq.description}</ItemDescription>
               </ItemContent>
             </AccordionTrigger>
-            <AccordionContent>{faq.body}</AccordionContent>
+            <AccordionContent className="pt-3">{faq.body}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>

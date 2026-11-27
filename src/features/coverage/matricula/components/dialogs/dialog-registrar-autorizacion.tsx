@@ -54,7 +54,7 @@ export function DialogRegistrarAutorizacion({
 
   return (
     <Dialog open onOpenChange={(o) => !registrar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Registrar autorización de datos — {nombreDe(matricula)}</DialogTitle>
         </DialogHeader>
@@ -91,9 +91,9 @@ export function DialogRegistrarAutorizacion({
           </label>
           <FieldDescription>Al autorizar, los datos dejan de verse enmascarados y se podrán modificar.</FieldDescription>
         </Field>
-        <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral"
             type="button"
             disabled={registrar.isPending}

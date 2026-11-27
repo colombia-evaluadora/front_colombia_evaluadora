@@ -78,7 +78,8 @@ export function SeccionPlegable({
       ) : (
         cabecera
       )}
-      <CollapsibleContent keepMounted className={cn(contentClassName, "data-[closed]:hidden")}>
+      {/* Desplegada, la cabecera lleva línea inferior (CLAUDE.md §13): la pone el borde superior del contenido. */}
+      <CollapsibleContent keepMounted className={cn("border-t border-border", contentClassName, "data-[closed]:hidden")}>
         {children}
       </CollapsibleContent>
     </Collapsible>

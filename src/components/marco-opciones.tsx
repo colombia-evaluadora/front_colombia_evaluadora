@@ -10,6 +10,8 @@ interface MarcoOpcionesProps {
   label?: ReactNode
   required?: boolean
   error?: string
+  /** Borde y label en rojo sin mensaje propio (el mensaje lo pone otro lugar, p. ej. «Ver pendientes»). */
+  invalido?: boolean
   /** Ayuda bajo el recuadro; el error la reemplaza. */
   descripcion?: ReactNode
   className?: string
@@ -29,6 +31,7 @@ export function MarcoOpciones({
   required,
   error,
   descripcion,
+  invalido,
   className,
   contentClassName,
   children,
@@ -41,12 +44,15 @@ export function MarcoOpciones({
       className={cn("gap-2", className)}
       role={label ? "group" : undefined}
       aria-labelledby={label ? labelId : undefined}
-      data-invalid={Boolean(error) || undefined}
+      data-invalid={Boolean(error) || invalido || undefined}
     >
       {label && (
         <FieldLabel id={labelId}>
-          {label}
-          {required && "*"}
+          {/* Texto y `*` en un solo hijo (el label flotante separa sus hijos) y el `*` en rojo (§13). */}
+          <span>
+            {label}
+            {required && <span data-required-mark="">*</span>}
+          </span>
         </FieldLabel>
       )}
       <div

@@ -30,8 +30,9 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
       {puedeEditar && showModificar && matricula.status === "Cursando" && (
         <Button
           render={<Link to={paths.app.coberturaMatriculaEditar.getHref(matricula.id)} search={(prev) => prev} />}
-          variant="fill"
-          color="primary"
+          // «Modificar» en modo ver siempre es secundario (CLAUDE.md §13): no hay acción principal hasta editar.
+          variant="outline"
+          color="neutral"
           size="sm"
           nativeButton={false}
         >
@@ -48,7 +49,8 @@ export function MatriculaToolbar({ matricula, showModificar = true, filesEditabl
       */}
       {puedeEditar ? <RetirarMatriculaDialog matricula={matricula} trigger="button" porInasistencia={abrirRetiro} /> : null}
       {puedeEditar ? <ReingresarMatriculaDialog matricula={matricula} trigger="button" /> : null}
-      <AccionesDocumentos matricula={matricula} modo="button" />
+      {/* Los cuatro documentos en un desplegable: así caben en la línea del buscador del detalle. */}
+      <AccionesDocumentos matricula={matricula} modo="menu" />
       <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable && puedeEditar} />
     </div>
   )

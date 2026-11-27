@@ -46,7 +46,7 @@ export function AvisoSolicitudesRetiro({ filtrando, onFiltrar }: Props) {
   return (
     <div
       role="status"
-      className="mx-(--screen-spacing) flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-yellow-stroke bg-yellow-22 px-4 py-2.5 text-sm"
+      className="mx-(--screen-spacing) mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-yellow-stroke bg-yellow-22 px-4 py-2.5 text-sm"
     >
       <WarningIcon className="size-5 shrink-0 text-yellow" aria-hidden />
       <p className="min-w-0 flex-1">{partes.join(" · ")}</p>

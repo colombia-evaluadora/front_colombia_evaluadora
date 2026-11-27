@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
+import { FichaDatos } from "@/components/ficha-datos"
 import { CharacterCounter } from "@/components/ui/character-counter"
 import {
   Dialog,
@@ -63,6 +64,7 @@ function Pie({
   icon,
   destructivo,
   disabled,
+  requeridos,
 }: {
   onCancel: () => void
   pending: boolean
@@ -71,9 +73,12 @@ function Pie({
   icon: ReactNode
   destructivo?: boolean
   disabled?: boolean
+  /** Nota «Los campos marcados con * son obligatorios» en la línea de los botones (§13). */
+  requeridos?: boolean
 }) {
   return (
     <DialogFooter>
+      {requeridos ? <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p> : null}
       <Button variant="outline" color="neutral" type="button" size="sm" onClick={onCancel}>
         <XIcon data-icon="inline-start" />
         Cancelar
@@ -97,12 +102,14 @@ function Lectura({ id, label, valor }: { id: string; label: string; valor: strin
   return (
     <Field variant="outlined" className="gap-1.5">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} size="sm" value={valor} disabled readOnly />
+      <div className="relative">
+        <Input id={id} size="sm" value={valor} disabled readOnly className="pr-9" />
+        <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
     </Field>
   )
 }
 
-const Requeridos = () => <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
 
 /* Anular postulación: sus opciones no matriculadas quedan Descartadas y liberan su cupo. */
 export function DialogAnularPostulacion({ postulacion: p, onOpenChange }: { postulacion: Postulacion; onOpenChange: (o: boolean) => void }) {
@@ -114,7 +121,7 @@ export function DialogAnularPostulacion({ postulacion: p, onOpenChange }: { post
   const [aviso, setAviso] = useState<Aviso>(null)
   return (
     <Dialog open onOpenChange={(o) => !anular.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <Titulo alerta>Anular postulación {p.numero}</Titulo>
           <DialogDescription>
@@ -133,8 +140,8 @@ export function DialogAnularPostulacion({ postulacion: p, onOpenChange }: { post
           invalido={intentado && !motivo}
           descripcion={intentado && !motivo ? "Elija el motivo de anulación." : undefined}
         />
-        <Requeridos />
         <Pie
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={anular.isPending}
           destructivo
@@ -168,7 +175,7 @@ export function DialogLiberarCupo({ postulacion: p, onOpenChange }: { postulacio
   const [aviso, setAviso] = useState<Aviso>(null)
   return (
     <Dialog open onOpenChange={(o) => !liberar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent showCloseButton={false} className="sm:max-w-lg">
         <DialogHeader>
           <Titulo alerta>Liberar cupo — {p.estudiante}</Titulo>
           <DialogDescription>
@@ -237,7 +244,7 @@ export function DialogCambiarCupo({ postulacion: p, onOpenChange }: { postulacio
 
   return (
     <Dialog open onOpenChange={(o) => !cambiar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <Titulo>Cambiar cupo — {p.estudiante}</Titulo>
         </DialogHeader>
@@ -283,8 +290,8 @@ export function DialogCambiarCupo({ postulacion: p, onOpenChange }: { postulacio
             />
           </div>
         )}
-        <Requeridos />
         <Pie
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={cambiar.isPending}
           label="Cambiar cupo"
@@ -333,7 +340,7 @@ export function DialogAgregarMatriculaAdscripcion({
 
   return (
     <Dialog open onOpenChange={(o) => !matricular.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Agregar matrícula complementaria — {p.estudiante}</DialogTitle>
         </DialogHeader>
@@ -346,22 +353,28 @@ export function DialogAgregarMatriculaAdscripcion({
           </Aviso>
         ) : (
           <>
-            <dl className="grid overflow-hidden rounded-md border border-border text-sm sm:grid-cols-[auto_1fr_auto_1fr] [&>:last-child]:border-b-0 sm:[&>:nth-last-child(-n+2)]:border-b-0">
-              <Dato termino="Opción seleccionada">Postulación {p.numero}</Dato>
-              <Dato termino="Matrícula principal">
-                <span className="inline-flex items-center gap-1.5">
-                  {p.principal}
-                  {/* Datos del estudiante protegidos y en solo lectura para quien recibe (Regla 8). */}
-                  <LockIcon className="size-3.5 text-muted-foreground" aria-label="Datos protegidos" />
-                </span>
-              </Dato>
-              <Dato termino="Establecimiento que recibe">{p.receptor}</Dato>
-              <Dato termino="Sede">{data.sede}</Dato>
-              <Dato termino="Período">{data.periodo}</Dato>
-              <Dato termino="Grado">{data.grado}</Dato>
-              <Dato termino="Especialidad">{data.especialidad}</Dato>
-              <Dato termino="Autorización de tratamiento de datos">{p.autorizacion ? "Sí" : "No"}</Dato>
-            </dl>
+            {/* Datos de solo lectura en la ficha (CLAUDE.md §13 «Ver detalle»). */}
+            <FichaDatos
+              datos={[
+                { etiqueta: "Opción seleccionada", valor: `Postulación ${p.numero}` },
+                {
+                  etiqueta: "Matrícula principal",
+                  valor: (
+                    <span className="inline-flex items-center gap-1.5">
+                      {p.principal}
+                      {/* Datos del estudiante protegidos y en solo lectura para quien recibe (Regla 8). */}
+                      <LockIcon className="size-3.5 text-muted-foreground" aria-label="Datos protegidos" />
+                    </span>
+                  ),
+                },
+                { etiqueta: "Establecimiento que recibe", valor: p.receptor },
+                { etiqueta: "Sede", valor: data.sede },
+                { etiqueta: "Período", valor: data.periodo },
+                { etiqueta: "Grado", valor: data.grado },
+                { etiqueta: "Especialidad", valor: data.especialidad },
+                { etiqueta: "Autorización de tratamiento de datos", valor: p.autorizacion ? "Sí" : "No" },
+              ]}
+            />
             <CampoSelect
               id="adscripcion-grupo"
               label="Grupo"
@@ -377,10 +390,10 @@ export function DialogAgregarMatriculaAdscripcion({
               Las asignaturas de la especialidad se gestionan después de guardar, en el bloque Asignaturas matriculadas. La opción
               pasa a Adscrito y la principal toma la especialidad {data.especialidad}.
             </Aviso>
-            <Requeridos />
           </>
         )}
         <Pie
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={matricular.isPending}
           label="Guardar"
@@ -403,15 +416,6 @@ export function DialogAgregarMatriculaAdscripcion({
         />
       </DialogContent>
     </Dialog>
-  )
-}
-
-function Dato({ termino, children }: { termino: string; children: ReactNode }) {
-  return (
-    <>
-      <dt className="border-b border-border px-4 py-3 text-muted-foreground sm:max-w-44">{termino}</dt>
-      <dd className="border-b border-border px-4 py-3 font-medium">{children}</dd>
-    </>
   )
 }
 
@@ -442,7 +446,7 @@ export function DialogCambiarEspecialidad({
 
   return (
     <Dialog open onOpenChange={(o) => !cambiar.isPending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <Titulo alerta>Cambiar de especialidad — {estudiante}</Titulo>
         </DialogHeader>
@@ -495,10 +499,10 @@ export function DialogCambiarEspecialidad({
                 {data.origen ? "Se avisa al acudiente, al estudiante y al origen." : "Se avisa al acudiente y al estudiante."}
               </Aviso>
             ) : null}
-            <Requeridos />
           </>
         )}
         <Pie
+          requeridos
           onCancel={() => onOpenChange(false)}
           pending={cambiar.isPending}
           label="Guardar"
@@ -538,22 +542,21 @@ export function DialogFichaEspecialidad({
 }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
+          <DialogDescription>Ficha de la especialidad</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 text-sm">
-          <section className="grid gap-1">
-            <h3 className="font-semibold">Descripción</h3>
-            <p>{ficha.descripcion}</p>
-          </section>
-          <section className="grid gap-1">
-            <h3 className="font-semibold">Actividades para conocerla</h3>
-            <p>{ficha.actividades}</p>
-          </section>
-        </div>
+        {/* Ver detalle en la ficha de solo lectura (CLAUDE.md §13); textos largos a todo el ancho. */}
+        <FichaDatos
+          datos={[
+            { etiqueta: "Descripción", valor: ficha.descripcion || "—", ancho: true },
+            { etiqueta: "Actividades para conocerla", valor: ficha.actividades || "—", ancho: true },
+          ]}
+        />
         <DialogFooter>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>
@@ -584,7 +587,7 @@ export function DialogCupoAgotado({
 }) {
   return (
     <Dialog open onOpenChange={(o) => !pending && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <Titulo alerta>El cupo se agotó.</Titulo>
         </DialogHeader>
@@ -599,6 +602,7 @@ export function DialogCupoAgotado({
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             No agregar
           </Button>
           <Button type="button" variant="fill" color="primary" size="sm" disabled={pending} onClick={onConfirm}>

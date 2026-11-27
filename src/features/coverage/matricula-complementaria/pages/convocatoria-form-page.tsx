@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { MarcaPendientes } from "@/components/marca-pendientes"
+import { MarcoOpciones } from "@/components/marco-opciones"
 
 import { DatePicker } from "@/components/date-picker"
 import {
@@ -12,10 +14,13 @@ import { NoticeBanner } from "@/components/notice/notice-banner"
 import { NoticeProvider, queueNotice } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { FloppyDiskIcon, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { ControlPointIcon, FloppyDiskIcon, LockIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ACTIONS_BUTTON_HOVER_CLASS } from "@/components/table-row-actions"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
@@ -181,6 +186,9 @@ function Formulario({
   const navigate = useNavigate()
   const guardar = useGuardarConvocatoria()
   const [v, setV] = useState<Valores>(() => iniciales(convocatoria))
+  // Se compara sin la clave interna de cada cupo (cupoVacio() genera una nueva en cada llamada; no es un dato).
+  const sinClaves = (x: Valores) => JSON.stringify({ ...x, cupos: x.cupos.map(({ key: _k, ...resto }) => resto) })
+  const hayCambios = sinClaves(v) !== sinClaves(iniciales(convocatoria))
   const [intentado, setIntentado] = useState(false)
   const [aviso, setAviso] = useState<{ id: number; message: string } | null>(null)
   const set = (patch: Partial<Valores>) => setV((prev) => ({ ...prev, ...patch }))
@@ -245,6 +253,16 @@ function Formulario({
         : topeLimite && v.limite > topeLimite
           ? `Hasta el ${fecha(topeLimite)}.`
           : "",
+  }
+  // Obligatorios vacíos por sección, para la marca «N pendientes» de cada acordeón (CLAUDE.md §13).
+  const pendientes = {
+    datos: v.origenes.length ? 0 : 1,
+    postulacion: [v.forma, v.modo, v.desempate].filter((x) => !x).length,
+    fechas: [v.inicio, v.cierre, conPublicacion ? v.publicacion : "x", v.limite].filter((x) => !x).length,
+    cupos: v.cupos.reduce(
+      (n, c) => n + [c.sedeId, c.periodoId, c.gradoId, c.especialidadId, c.cupo].filter((x) => !x).length,
+      0,
+    ),
   }
   const errorCupo = (c: CupoForm) => {
     const n = Number(c.cupo)
@@ -354,24 +372,33 @@ function Formulario({
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          description={<Marca {...ESTADO_CONVOCATORIA[estado]} />}
+          ruta="Matrícula complementaria"
           action={
+            // Sin cambios: Cerrar y Guardar deshabilitado; con cambios: Cancelar (vuelve a como se abrió) (CLAUDE.md §13).
             <div className="flex gap-2">
-              <Button
-                render={<Link to={paths.app.coberturaComplementaria.getHref()} />}
-                nativeButton={false}
-                variant="outline"
-                color="neutral"
-                size="sm"
-              >
-                Cancelar
-              </Button>
+              {hayCambios ? (
+                <Button type="button" variant="outline" color="neutral" size="sm" disabled={guardar.isPending} onClick={() => setV(iniciales(convocatoria))}>
+                  <XIcon data-icon="inline-start" />
+                  Cancelar
+                </Button>
+              ) : (
+                <Button
+                  render={<Link to={paths.app.coberturaComplementaria.getHref()} />}
+                  nativeButton={false}
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                >
+                  <XIcon data-icon="inline-start" />
+                  Cerrar
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="fill"
                 color="primary"
                 size="sm"
-                disabled={guardar.isPending}
+                disabled={guardar.isPending || !hayCambios}
                 onClick={enviar}
               >
                 {guardar.isPending ? (
@@ -385,6 +412,8 @@ function Formulario({
           }
         >
           {id == null ? `Nueva convocatoria ${anio}` : `Convocatoria ${anio}`}
+          {/* Estado junto al título, en su misma línea (hay espacio a la derecha). */}
+          <span className="ml-3 inline-flex align-middle text-sm font-normal"><Marca {...ESTADO_CONVOCATORIA[estado]} /></span>
         </TableScreenTitle>
       </TableScreenHeader>
 
@@ -392,21 +421,21 @@ function Formulario({
         <div className="grid gap-4">
           <NoticeBanner notice={aviso} onClose={() => setAviso(null)} variant="error" />
           <Secciones abiertas={["datos", "postulacion", "fechas", "cupos"]}>
-            <Seccion value="datos" titulo="Establecimientos">
+            <Seccion value="datos" titulo="1. Establecimientos" extra={<MarcaPendientes pendientes={pendientes.datos} />}>
               <div className="grid gap-x-4 gap-y-5 md:grid-cols-[1fr_0.5fr_2fr]">
                 <Field variant="outlined" className="gap-1.5">
                   <FieldLabel htmlFor="conv-establecimiento">Establecimiento que recibe</FieldLabel>
-                  <Input
-                    id="conv-establecimiento"
-                    size="sm"
-                    value={opciones.establecimiento}
-                    disabled
-                    readOnly
-                  />
+                  <div className="relative">
+                    <Input id="conv-establecimiento" size="sm" value={opciones.establecimiento} disabled readOnly className="pr-9" />
+                    <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </Field>
                 <Field variant="outlined" className="gap-1.5">
                   <FieldLabel htmlFor="conv-anio">Año</FieldLabel>
-                  <Input id="conv-anio" size="sm" value={String(anio)} disabled readOnly />
+                  <div className="relative">
+                    <Input id="conv-anio" size="sm" value={String(anio)} disabled readOnly className="pr-9" />
+                    <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </Field>
                 <Field
                   variant="outlined"
@@ -449,10 +478,21 @@ function Formulario({
               </div>
             </Seccion>
 
-            <Seccion value="postulacion" titulo="Postulación y selección">
-              <div className="grid gap-x-4 gap-y-6 md:grid-cols-4">
-                <div className="grid content-start gap-2 md:col-span-2">
-                  <Etiqueta requerido>Forma de postulación</Etiqueta>
+            <Seccion
+              value="postulacion"
+              titulo="2. Postulación y selección"
+              extra={<MarcaPendientes pendientes={pendientes.postulacion} />}
+            >
+              {/* Los cuatro del mismo ancho: en una línea cuando la sección mide 92rem o más (caben sin partir las
+                  opciones); si no, 2 por fila (también del mismo ancho); angosta: 1. */}
+              <div className="@container">
+              <div className="grid gap-x-4 gap-y-6 @2xl:grid-cols-2 @[92rem]:grid-cols-4 @[92rem]:[&_[role=radiogroup]]:flex-nowrap @[92rem]:[&_[role=radiogroup]]:whitespace-nowrap">
+                <MarcoOpciones
+                    id="conv-forma-de-postulacion"
+                    label="Forma de postulación"
+                    required
+                    descripcion={<>No se cambia desde la primera postulación.</>}
+                  >
                   <RadioGroup
                     className="flex flex-wrap gap-x-6 gap-y-2"
                     value={v.forma}
@@ -466,40 +506,41 @@ function Formulario({
                     <Opcion valor="ABIERTA">Abierta</Opcion>
                     <Opcion valor="ORIGEN">Por el establecimiento de origen</Opcion>
                   </RadioGroup>
-                  <Ayuda>No se cambia desde la primera postulación.</Ayuda>
-                </div>
-                <div className="grid content-start gap-2">
-                  <Etiqueta>Continuidad automática</Etiqueta>
+                </MarcoOpciones>
+                <MarcoOpciones
+                    id="conv-continuidad-automatica"
+                    label="Continuidad automática"
+                    descripcion={<>{periodosElegidos.length && !todosAnuales
+                      ? "La continuidad automática solo aplica a períodos de modalidad Anual."
+                      : "Solo con períodos de modalidad Anual."}</>}
+                  >
                   <Interruptor
                     checked={v.continuidad && todosAnuales}
                     disabled={!todosAnuales || cerro}
                     onChange={(continuidad) => set({ continuidad })}
                   />
-                  <Ayuda>
-                    {periodosElegidos.length && !todosAnuales
-                      ? "La continuidad automática solo aplica a períodos de modalidad Anual."
-                      : "Solo con períodos de modalidad Anual."}
-                  </Ayuda>
-                </div>
+                </MarcoOpciones>
                 {!abierta ? (
-                  <div className="grid content-start gap-2">
-                    <Etiqueta>Lista de espera</Etiqueta>
+                  <MarcoOpciones
+                      id="conv-lista-de-espera"
+                      label="Lista de espera"
+                      descripcion={<>Al agotarse el cupo, la postulación entra a la lista por orden de llegada.</>}
+                    >
                     <Interruptor
                       checked={v.listaEspera}
                       disabled={conPostulaciones}
                       onChange={(listaEspera) => set({ listaEspera })}
                     />
-                    <Ayuda>
-                      Al agotarse el cupo, la postulación entra a la lista por orden de llegada.
-                    </Ayuda>
-                  </div>
+                  </MarcoOpciones>
                 ) : null}
-              </div>
-
-              {abierta ? (
-                <div className="mt-6 grid gap-x-4 gap-y-6 border-t border-border pt-5 md:grid-cols-4">
-                  <div className="grid content-start gap-2 md:col-span-2">
-                    <Etiqueta requerido>Modo de selección</Etiqueta>
+                {abierta ? (
+                  <>
+                  <MarcoOpciones
+                      id="conv-modo-de-seleccion"
+                      label="Modo de selección"
+                      required
+                      descripcion={<>Automática: el sistema selecciona en la fecha de cierre.</>}
+                    >
                     <RadioGroup
                       className="flex flex-wrap gap-x-6 gap-y-2"
                       value={v.modo}
@@ -509,10 +550,13 @@ function Formulario({
                       <Opcion valor="MANUAL">Manual</Opcion>
                       <Opcion valor="AUTOMATICA">Automática</Opcion>
                     </RadioGroup>
-                    <Ayuda>Automática: el sistema selecciona en la fecha de cierre.</Ayuda>
-                  </div>
-                  <div className="grid content-start gap-2 md:col-span-2">
-                    <Etiqueta requerido>Desempate</Etiqueta>
+                  </MarcoOpciones>
+                  <MarcoOpciones
+                      id="conv-desempate"
+                      label="Desempate"
+                      required
+                      descripcion={<>Orden de inscripción es el orden de registro de la postulación.</>}
+                    >
                     <RadioGroup
                       className="flex flex-wrap gap-x-6 gap-y-2"
                       value={v.desempate}
@@ -522,13 +566,14 @@ function Formulario({
                       <Opcion valor="SORTEO">Sorteo</Opcion>
                       <Opcion valor="ORDEN">Orden de inscripción</Opcion>
                     </RadioGroup>
-                    <Ayuda>Orden de inscripción es el orden de registro de la postulación.</Ayuda>
-                  </div>
-                </div>
-              ) : null}
+                  </MarcoOpciones>
+                  </>
+                ) : null}
+              </div>
+              </div>
             </Seccion>
 
-            <Seccion value="fechas" titulo="Fechas">
+            <Seccion value="fechas" titulo="3. Fechas" extra={<MarcaPendientes pendientes={pendientes.fechas} />}>
               <div
                 className={cn(
                   "grid gap-x-4 gap-y-5",
@@ -567,7 +612,26 @@ function Formulario({
               </div>
             </Seccion>
 
-            <Seccion value="cupos" titulo="Cupos por especialidad">
+            <Seccion
+              value="cupos"
+              titulo="4. Cupos por especialidad"
+              extra={<MarcaPendientes pendientes={pendientes.cupos} />}
+              // Agregar: primario, en la cabecera del acordeón, a la derecha; el cupo nuevo sale de primero (CLAUDE.md §13).
+              accion={
+                <Button
+                  type="button"
+                  variant="fill"
+                  color="primary"
+                  size="sm"
+                  onClick={() => {
+                    set({ cupos: [cupoVacio(), ...v.cupos] })
+                  }}
+                >
+                  <ControlPointIcon data-icon="inline-start" />
+                  Agregar cupo
+                </Button>
+              }
+            >
               <div className="grid gap-3">
                 {v.cupos.map((c, i) => {
                   const sede = sedeDe(c)
@@ -584,106 +648,141 @@ function Formulario({
                   return (
                     <div
                       key={c.key}
-                      className="grid gap-2 rounded-lg border border-border bg-muted/40 p-3 [&_[data-slot=combobox-field-trigger]]:bg-background [&_input[data-slot=input]]:bg-background"
+                      // Fondo blanco: la etiqueta flotante corta el borde del campo sobre el mismo color.
+                      className="grid gap-2 rounded-lg border border-border bg-background p-3 pt-4"
                     >
-                      <div className="grid items-start gap-3 md:grid-cols-[1.2fr_1.5fr_1fr_1.2fr_0.6fr_0.5fr_auto]">
-                        <CampoCupo id={`cupo-${c.key}-sede`} label="Sede" requerido>
-                          <CampoSelect
-                            id={`cupo-${c.key}-sede`}
-                            value={c.sedeId}
-                            disabled={fijo}
-                            onChange={(sedeId) =>
-                              cambiarCupo(c.key, {
-                                sedeId,
-                                periodoId: "",
-                                gradoId: "",
-                                especialidadId: "",
-                              })
-                            }
-                            opciones={opciones.sedes.map((s) => ({
-                              value: String(s.id),
-                              label: s.nombre,
-                            }))}
-                            invalido={Boolean(err) && !c.sedeId}
-                          />
-                        </CampoCupo>
-                        <CampoCupo id={`cupo-${c.key}-periodo`} label="Período" requerido>
-                          <CampoSelect
-                            id={`cupo-${c.key}-periodo`}
-                            value={c.periodoId}
-                            disabled={!sede || fijo}
-                            onChange={(periodoId) =>
-                              cambiarCupo(c.key, { periodoId, gradoId: "", especialidadId: "" })
-                            }
-                            opciones={(sede?.periodos ?? []).map((p) => ({
-                              value: String(p.id),
-                              label: p.label,
-                            }))}
-                            invalido={Boolean(err) && !c.periodoId}
-                          />
-                        </CampoCupo>
-                        <CampoCupo id={`cupo-${c.key}-grado`} label="Grado" requerido>
-                          <CampoSelect
-                            id={`cupo-${c.key}-grado`}
-                            value={c.gradoId}
-                            disabled={!periodo || fijo}
-                            onChange={(gradoId) =>
-                              cambiarCupo(c.key, { gradoId, especialidadId: "" })
-                            }
-                            opciones={grados.map((g) => ({ value: String(g.id), label: g.nombre }))}
-                            invalido={Boolean(err) && !c.gradoId}
-                          />
-                        </CampoCupo>
-                        <CampoCupo id={`cupo-${c.key}-especialidad`} label="Especialidad" requerido>
-                          <CampoSelect
-                            id={`cupo-${c.key}-especialidad`}
-                            value={c.especialidadId}
-                            disabled={!grado || fijo}
-                            onChange={(especialidadId) => cambiarCupo(c.key, { especialidadId })}
-                            opciones={(grado?.especialidades ?? []).map((e) => ({
-                              value: String(e.id),
-                              label: e.nombre,
-                            }))}
-                            invalido={Boolean(err) && !c.especialidadId}
-                          />
-                        </CampoCupo>
-                        <CampoCupo id={`cupo-${c.key}-n`} label="Cupo" requerido>
+                      <div className="grid items-end gap-3 md:grid-cols-[1.2fr_1.5fr_1fr_1.2fr_0.6fr_0.5fr_auto]">
+                        <CampoSelect
+                          id={`cupo-${c.key}-sede`}
+                          label="Sede"
+                          required
+                          value={c.sedeId}
+                          disabled={fijo}
+                          onChange={(sedeId) =>
+                            cambiarCupo(c.key, {
+                              sedeId,
+                              periodoId: "",
+                              gradoId: "",
+                              especialidadId: "",
+                            })
+                          }
+                          opciones={opciones.sedes.map((s) => ({
+                            value: String(s.id),
+                            label: s.nombre,
+                          }))}
+                          invalido={Boolean(err) && !c.sedeId}
+                        />
+                        <CampoSelect
+                          id={`cupo-${c.key}-periodo`}
+                          label="Período"
+                          required
+                          value={c.periodoId}
+                          disabled={!sede || fijo}
+                          onChange={(periodoId) =>
+                            cambiarCupo(c.key, { periodoId, gradoId: "", especialidadId: "" })
+                          }
+                          opciones={(sede?.periodos ?? []).map((p) => ({
+                            value: String(p.id),
+                            label: p.label,
+                          }))}
+                          invalido={Boolean(err) && !c.periodoId}
+                        />
+                        <CampoSelect
+                          id={`cupo-${c.key}-grado`}
+                          label="Grado"
+                          required
+                          value={c.gradoId}
+                          disabled={!periodo || fijo}
+                          onChange={(gradoId) =>
+                            cambiarCupo(c.key, { gradoId, especialidadId: "" })
+                          }
+                          opciones={grados.map((g) => ({ value: String(g.id), label: g.nombre }))}
+                          invalido={Boolean(err) && !c.gradoId}
+                        />
+                        <CampoSelect
+                          id={`cupo-${c.key}-especialidad`}
+                          label="Especialidad"
+                          required
+                          value={c.especialidadId}
+                          disabled={!grado || fijo}
+                          onChange={(especialidadId) => cambiarCupo(c.key, { especialidadId })}
+                          opciones={(grado?.especialidades ?? []).map((e) => ({
+                            value: String(e.id),
+                            label: e.nombre,
+                          }))}
+                          invalido={Boolean(err) && !c.especialidadId}
+                        />
+                        <Field variant="outlined" className="min-w-0 gap-1.5" data-invalid={(Boolean(err) && c.especialidadId !== "") || undefined}>
+                          <FieldLabel htmlFor={`cupo-${c.key}-n`}>
+                            Cupo<span data-required-mark="">*</span>
+                          </FieldLabel>
                           <Input
                             id={`cupo-${c.key}-n`}
                             size="sm"
-                            variant="outlined"
                             inputMode="numeric"
                             className="tabular-nums"
                             value={c.cupo}
-                            aria-invalid={Boolean(err) && c.especialidadId !== ""}
                             onChange={(e) =>
                               cambiarCupo(c.key, { cupo: toDigitsOnly(e.target.value, 3) })
                             }
                           />
-                        </CampoCupo>
-                        <CampoCupo id={`cupo-${c.key}-sel`} label="Selecc.">
-                          <Input
-                            id={`cupo-${c.key}-sel`}
-                            size="sm"
-                            variant="outlined"
-                            className="tabular-nums"
-                            value={String(c.seleccionados)}
-                            disabled
-                            readOnly
+                        </Field>
+                        {/* Solo lectura con candado (CLAUDE.md §13). */}
+                        <Field variant="outlined" className="min-w-0 gap-1.5">
+                          <FieldLabel htmlFor={`cupo-${c.key}-sel`}>Selecc.</FieldLabel>
+                          <div className="relative">
+                            <Input
+                              id={`cupo-${c.key}-sel`}
+                              size="sm"
+                              className="pr-9 tabular-nums"
+                              value={String(c.seleccionados)}
+                              disabled
+                              readOnly
+                            />
+                            <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                          </div>
+                        </Field>
+                        {/* Eliminar con confirmación (ConfirmRemoveButton); un cupo sin ningún dato se quita directo. */}
+                        <div className={cn("flex", ACTIONS_BUTTON_HOVER_CLASS)}>
+                          {!c.sedeId && !c.periodoId && !c.gradoId && !c.especialidadId && !c.cupo ? (
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    color="destructive"
+                                    size="icon-sm"
+                                    aria-label={`Eliminar el cupo ${i + 1}`}
+                                    disabled={v.cupos.length === 1}
+                                    onClick={() => set({ cupos: v.cupos.filter((x) => x.key !== c.key) })}
+                                  />
+                                }
+                              >
+                                <TrashIcon />
+                              </TooltipTrigger>
+                              <TooltipContent>Eliminar</TooltipContent>
+                            </Tooltip>
+                          ) : (
+                          <ConfirmRemoveButton
+                            label={`Eliminar el cupo ${i + 1}`}
+                            title="Eliminar cupo"
+                            description={
+                              especialidad ? (
+                                <>
+                                  ¿Eliminar el cupo de <strong>{especialidad.nombre}</strong>
+                                  {grado ? <> en <strong>{grado.nombre}</strong></> : null}
+                                  {sede ? <> de <strong>{sede.nombre}</strong></> : null}? El cambio se aplica al guardar la convocatoria.
+                                </>
+                              ) : (
+                                "¿Eliminar este cupo sin completar?"
+                              )
+                            }
+                            disabled={fijo || v.cupos.length === 1}
+                            onConfirm={() => set({ cupos: v.cupos.filter((x) => x.key !== c.key) })}
                           />
-                        </CampoCupo>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          color="destructive"
-                          size="icon-sm"
-                          className="bg-background md:mt-6.5"
-                          aria-label={`Quitar el cupo ${i + 1}`}
-                          disabled={fijo || v.cupos.length === 1}
-                          onClick={() => set({ cupos: v.cupos.filter((x) => x.key !== c.key) })}
-                        >
-                          <TrashIcon />
-                        </Button>
+                          )}
+                        </div>
                       </div>
                       {err || especialidad ? (
                         <p className={cn("text-xs", err ? "text-red" : "text-muted-foreground")}>
@@ -711,18 +810,6 @@ function Formulario({
                       : "Tienen prioridad en la selección (marca Continuidad), pero el cupo no se reserva. Al abrirse la convocatoria se les avisa y 3 días antes del cierre se les recuerda postularse."}
                   </Aviso>
                 ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  color="neutral"
-                  size="sm"
-                  className="w-fit border-dashed"
-                  onClick={() => set({ cupos: [...v.cupos, cupoVacio()] })}
-                >
-                  <PlusIcon data-icon="inline-start" />
-                  Agregar cupo
-                </Button>
               </div>
             </Seccion>
           </Secciones>
@@ -736,18 +823,7 @@ function Formulario({
   )
 }
 
-function Etiqueta({ children, requerido }: { children: ReactNode; requerido?: boolean }) {
-  return (
-    <span className="text-sm font-medium">
-      {children}
-      {requerido ? <span className="text-red"> *</span> : null}
-    </span>
-  )
-}
 
-function Ayuda({ children }: { children: ReactNode }) {
-  return <span className="text-xs text-muted-foreground">{children}</span>
-}
 
 function Opcion({ valor, children }: { valor: string; children: ReactNode }) {
   return (
@@ -785,25 +861,3 @@ function Interruptor({
   )
 }
 
-/** Etiqueta fija sobre el campo, como en el prototipo de cupos (no flotante). */
-function CampoCupo({
-  id,
-  label,
-  requerido,
-  children,
-}: {
-  id: string
-  label: string
-  requerido?: boolean
-  children: ReactNode
-}) {
-  return (
-    <div className="grid min-w-0 gap-1.5">
-      <label htmlFor={id} className="text-sm text-foreground">
-        {requerido ? <span className="text-red">* </span> : null}
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}

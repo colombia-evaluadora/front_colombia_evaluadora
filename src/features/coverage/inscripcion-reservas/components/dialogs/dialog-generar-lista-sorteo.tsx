@@ -236,30 +236,29 @@ function DocumentoListaSorteo({ lista }: { lista: ListaSorteo }) {
           No hay opciones inscritas en este grado y jornada.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Posición</TableHead>
-                <TableHead>N.º de inscripción</TableHead>
-                <TableHead>Grupo de prioridad</TableHead>
-                <TableHead>N.º de sorteo</TableHead>
-                <TableHead>Estado de la opción</TableHead>
+        // El borde y el radio los pone `Table`: otra caja alrededor dejaba doble línea.
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Posición</TableHead>
+              <TableHead>N.º de inscripción</TableHead>
+              <TableHead>Grupo de prioridad</TableHead>
+              <TableHead>N.º de sorteo</TableHead>
+              <TableHead>Estado de la opción</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lista.rows.map((r) => (
+              <TableRow key={r.posicion}>
+                <TableCell>{r.posicion}</TableCell>
+                <TableCell>{r.numeroInscripcion}</TableCell>
+                <TableCell>{r.prioridad ?? "Sin prioridad"}</TableCell>
+                <TableCell>{r.numeroSorteo ?? "—"}</TableCell>
+                <TableCell>{ESTADO_OPCION_UI[r.estadoOpcion].label}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lista.rows.map((r) => (
-                <TableRow key={r.posicion}>
-                  <TableCell>{r.posicion}</TableCell>
-                  <TableCell>{r.numeroInscripcion}</TableCell>
-                  <TableCell>{r.prioridad ?? "Sin prioridad"}</TableCell>
-                  <TableCell>{r.numeroSorteo ?? "—"}</TableCell>
-                  <TableCell>{ESTADO_OPCION_UI[r.estadoOpcion].label}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <p className="text-xs text-muted-foreground">

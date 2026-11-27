@@ -1,6 +1,8 @@
+import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { format, parseISO } from "date-fns"
 import { FichaDatos, type DatoFicha } from "@/components/ficha-datos"
+import { BloqueBuscable, DetalleConBusqueda } from "@/components/busqueda-detalle"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import {
   TableScreen,
@@ -44,6 +46,9 @@ const accordionCardClassName = "py-5"
 export function EstablishmentDetailPage() {
   const { establishmentId } = establishmentDetailRoute.useParams()
   const id = Number(establishmentId)
+  // Acordeones del detalle: los que abrió la persona, y todos mientras escribe en el buscador.
+  const [abiertos, setAbiertos] = useState<string[]>(ACORDEONES)
+  const [buscando, setBuscando] = useState(false)
   const { puedeEditar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
   const { data, isPending, isError, error } = useEstablishmentQuery(id, !Number.isNaN(id))
 
@@ -66,8 +71,8 @@ export function EstablishmentDetailPage() {
       <TableScreenHeader>
         <TableScreenTitle
           action={
-            // Modo ver: sin acción principal (CLAUDE.md §13). Cerrar primero y Editar secundario, como
-            // «Modificar» en los Ver detalle.
+            // Modo ver: sin acción principal (CLAUDE.md §13). En el encabezado solo Cerrar; Modificar va en la
+            // línea del buscador.
             <div className="flex items-center gap-2">
               <Button
                 render={<Link to={paths.app.establishments.general.getHref()} search={(prev) => prev} />}
@@ -79,23 +84,6 @@ export function EstablishmentDetailPage() {
                 <XIcon data-icon="inline-start" />
                 Cerrar
               </Button>
-              {puedeEditar && establishment ? (
-                <Button
-                  render={
-                    <Link
-                      to={paths.app.establishments.edit.getHref(id)}
-                      search={(prev) => prev}
-                    />
-                  }
-                  nativeButton={false}
-                  variant="outline"
-                  color="neutral"
-                  size="sm"
-                >
-                  <PencilIcon data-icon="inline-start" />
-                  Editar
-                </Button>
-              ) : null}
             </div>
           }
         >
@@ -110,15 +98,37 @@ export function EstablishmentDetailPage() {
         ) : isError || !establishment ? (
           <ErrorNoticeBanner error={error ?? true} fallback="No se pudo cargar el establecimiento." />
         ) : (
+          // Ver detalle largo con buscador (CLAUDE.md §13); mientras se busca, los dos acordeones quedan abiertos.
+          <DetalleConBusqueda
+            onBuscandoChange={setBuscando}
+            // Modificar (secundario) en la línea del buscador, a la derecha, como Matrícula › Detalle.
+            acciones={
+              puedeEditar ? (
+                <Button
+                  render={<Link to={paths.app.establishments.edit.getHref(id)} search={(prev) => prev} />}
+                  nativeButton={false}
+                  variant="outline"
+                  color="neutral"
+                  size="sm"
+                >
+                  <PencilIcon data-icon="inline-start" />
+                  Modificar
+                </Button>
+              ) : undefined
+            }
+          >
           <Accordion
             multiple
-            defaultValue={["datos-establecimiento", "datos-rector-secretaria"]}
+            value={buscando ? ACORDEONES : abiertos}
+            onValueChange={(valor) => !buscando && setAbiertos(valor as string[])}
             className="space-y-3"
           >
+            <BloqueBuscable>
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
-              <AccordionContent>
+              <AccordionContent className="pt-4">
                 <div className="space-y-4">
+                  <BloqueBuscable>
                   <Card className={accordionCardClassName}>
                     <CardContent className="flex flex-col gap-6 md:flex-row">
                       <div className="shrink-0">
@@ -168,6 +178,8 @@ export function EstablishmentDetailPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  </BloqueBuscable>
+                  <BloqueBuscable>
                   <Card className={accordionCardClassName}>
                     <CardContent>
                       <DetailSection
@@ -192,10 +204,13 @@ export function EstablishmentDetailPage() {
                       />
                     </CardContent>
                   </Card>
+                  </BloqueBuscable>
                 </div>
               </AccordionContent>
             </AccordionItem>
+            </BloqueBuscable>
 
+            <BloqueBuscable>
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border">
               <AccordionTrigger className={accordionTriggerClassName}>
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -203,7 +218,7 @@ export function EstablishmentDetailPage() {
                   {puedeGestionarDirectivos === true ? null : <DirectivosSoloLecturaNota />}
                 </span>
               </AccordionTrigger>
-              <AccordionContent>
+              <AccordionContent className="pt-4">
                 <Card className={accordionCardClassName}>
                   <CardContent>
                     <DirectivosReadOnly principal={establishment.principal} secretary={establishment.secretary} />
@@ -211,7 +226,9 @@ export function EstablishmentDetailPage() {
                 </Card>
               </AccordionContent>
             </AccordionItem>
+            </BloqueBuscable>
           </Accordion>
+          </DetalleConBusqueda>
         )}
       </TableScreenBody>
     </TableScreen>
@@ -221,12 +238,18 @@ export function EstablishmentDetailPage() {
 /** Título y ficha de datos de los Ver detalle (`FichaDatos`, CLAUDE.md §13). */
 function DetailSection({ title, datos }: { title: string; datos: DatoFicha[] }) {
   return (
-    <section className="flex grow flex-col gap-3">
-      <h3 className="text-base font-semibold">{title}</h3>
-      <FichaDatos datos={datos} />
-    </section>
+    // Con el buscador, el bloque (título incluido) se oculta si ningún dato coincide.
+    <BloqueBuscable contar className="flex grow flex-col">
+      <section className="flex grow flex-col gap-3">
+        <h3 className="text-base font-semibold">{title}</h3>
+        <FichaDatos datos={datos} />
+      </section>
+    </BloqueBuscable>
   )
 }
+
+/** Acordeones del detalle: abiertos los dos al entrar, y forzados abiertos mientras se busca. */
+const ACORDEONES = ["datos-establecimiento", "datos-rector-secretaria"]
 
 /** Valor sin espacios sobrantes; vacío queda en "" y la ficha muestra «—». */
 function texto(value: string | null | undefined): string {

@@ -11,10 +11,9 @@ function toTextOrNull(value: string | undefined | null): string | null {
   return trimmed ? trimmed : null
 }
 
-function toBoolSN(value: string | undefined | null): "S" | "N" | null {
-  if (value === "Sí") return "S"
-  if (value === "No") return "N"
-  return null
+// Los Sí/No del alta se contestan con un interruptor: apagado (o sin tocar) es No.
+function toBoolSN(value: string | undefined | null): "S" | "N" {
+  return value === "Sí" ? "S" : "N"
 }
 
 export interface CreateMatriculaBodyContext {

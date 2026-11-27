@@ -5,7 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckIcon, InfoIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, InfoIcon, LockIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { Input } from "@/components/ui/input"
 import { NoticeBanner } from "@/components/notice/notice-banner"
 import { getErrorMessage } from "@/lib/api-client"
 import { toSelectItemsMap } from "@/lib/catalog-options"
@@ -86,15 +87,22 @@ export function DialogHomologarSnapshot({ matriculaId, snapshot, estudiante, onO
     )
   }
 
-  const fila = (origen: string, control: ReactNode) => (
-    <div key={origen} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div className="flex flex-col rounded-md bg-muted/50 px-3 py-1.5">
-        <span className="text-xs text-muted-foreground">Origen</span>
-        <span className="text-sm">{origen}</span>
+  // «Origen» es de solo lectura: el mismo campo con label flotante que «Destino», con candado (CLAUDE.md §13).
+  const fila = (origen: string, control: ReactNode) => {
+    const idOrigen = `homologar-origen-${origen.replace(/W+/g, "-")}`
+    return (
+      <div key={origen} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field variant="outlined">
+          <FieldLabel htmlFor={idOrigen}>Origen</FieldLabel>
+          <div className="relative">
+            <Input id={idOrigen} variant="outlined" readOnly disabled value={origen} className="pr-9" />
+            <LockIcon aria-hidden className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+        </Field>
+        {control}
       </div>
-      {control}
-    </div>
-  )
+    )
+  }
 
   const selectDestino = (
     label: string,
@@ -105,7 +113,7 @@ export function DialogHomologarSnapshot({ matriculaId, snapshot, estudiante, onO
   ) => (
     <Field variant="outlined" data-invalid={invalido || undefined}>
       <FieldLabel htmlFor={`homologar-destino-${label.replace(/W+/g, "-")}`}>
-        Destino<span className="text-red"> *</span>
+        Destino<span data-required-mark="">*</span>
       </FieldLabel>
       <Select items={toSelectItemsMap(items)} value={value} onValueChange={(v) => onChange((v as string) ?? null)}>
         <SelectTrigger id={`homologar-destino-${label.replace(/W+/g, "-")}`} variant="outlined" aria-label={label} aria-invalid={invalido} className="w-full">
@@ -201,6 +209,7 @@ export function DialogHomologarSnapshot({ matriculaId, snapshot, estudiante, onO
         )}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar

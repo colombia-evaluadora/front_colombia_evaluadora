@@ -1,5 +1,7 @@
 import { useEffect } from "react"
 import { Link } from "@tanstack/react-router"
+import { MatriculaLecturaContext } from "@/features/coverage/matricula/components/forms/form-create-matricula/fields"
+import { DetalleConBusqueda } from "@/components/busqueda-detalle"
 
 import {
   TableScreen,
@@ -12,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TabNotasHomologadas } from "@/features/coverage/matricula/components/notas-homologadas/tab-notas-homologadas"
 import type { MatriculaStatus } from "@/features/coverage/matricula/api/types/matricula"
 import { useMatriculaGradeLabel } from "@/features/coverage/matricula/hooks/use-matricula-grade-label"
-import { SpinnerIcon } from "@/components/ui/icons"
+import { SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
@@ -86,19 +88,22 @@ function MatriculaDetailPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
+          // Miga y «Cerrar» secundario, igual que Agregar y Editar matrícula (CLAUDE.md §13).
+          ruta="Matrícula"
           action={
             <Button
               render={<Link to={paths.app.coberturaMatricula.getHref()} search={(prev) => ({ ...prev, accion: undefined })} />}
-              variant="fill"
+              variant="outline"
               color="neutral"
               size="sm"
               nativeButton={false}
             >
+              <XIcon data-icon="inline-start" />
               Cerrar
             </Button>
           }
         >
-          Detalle de matrícula
+          {data?.matricula ? `Detalle — ${data.matricula.firstName} ${data.matricula.lastName}` : "Detalle de matrícula"}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
@@ -125,7 +130,11 @@ function MatriculaDetailPageContent() {
             </TabsList>
             <TabsContent value="datos" className="pt-4">
               <div className="flex flex-col gap-6">
-                <MatriculaToolbar matricula={data.matricula} abrirRetiro={accion === "retirar"} />
+                {/* Ver detalle largo: buscador y acciones en una línea; cada sección como ficha (CLAUDE.md §13). */}
+                <DetalleConBusqueda
+                  acciones={<MatriculaToolbar matricula={data.matricula} abrirRetiro={accion === "retirar"} />}
+                >
+                <MatriculaLecturaContext value>
                 <MatriculaFormBody
                   values={details}
                   onChange={() => {}}
@@ -137,6 +146,8 @@ function MatriculaDetailPageContent() {
                     Boolean(data.matricula.sinAutorizacion) || Boolean(data.details?.restricciones?.origenAdscripcion)
                   }
                 />
+                </MatriculaLecturaContext>
+                </DetalleConBusqueda>
               </div>
             </TabsContent>
             <TabsContent value="notas" className="pt-4">
@@ -171,3 +182,4 @@ function MatriculaDetailPageContent() {
     </TableScreen>
   )
 }
+

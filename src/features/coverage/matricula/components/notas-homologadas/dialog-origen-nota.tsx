@@ -1,7 +1,7 @@
 import { FichaDatos } from "@/components/ficha-datos"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { SpinnerIcon } from "@/components/ui/icons"
+import { SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useOrigenNotaQuery } from "@/features/coverage/matricula/api/query/use-notas-homologadas"
@@ -85,7 +85,8 @@ export function DialogOrigenNota({ matriculaId, nota, onOpenChange }: Props) {
         )}
 
         <DialogFooter>
-          <Button type="button" variant="fill" color="primary" size="sm" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" color="neutral" size="sm" onClick={() => onOpenChange(false)}>
+            <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>

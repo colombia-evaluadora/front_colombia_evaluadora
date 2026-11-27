@@ -1,6 +1,7 @@
 import { format, parseISO } from "date-fns"
 
 import { FichaDatos } from "@/components/ficha-datos"
+import { BloqueBuscable } from "@/components/busqueda-detalle"
 import { LockIcon } from "@/components/ui/icons"
 import { CATALOGS } from "@/lib/catalogs"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
@@ -49,11 +50,14 @@ function DirectivoTable({ title, person, emptyMessage }: { title: string; person
   ]
 
   return (
+    // Bloque del buscador del detalle: se oculta si ningún dato de esta persona coincide.
+    <BloqueBuscable contar>
     <section className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold">{title}</h3>
       {/* Misma ficha que el resto del detalle del establecimiento (`FichaDatos`, CLAUDE.md §13). */}
       <FichaDatos datos={pares.map(([etiqueta, valor]) => ({ etiqueta, valor: valor?.trim() ?? "" }))} />
     </section>
+    </BloqueBuscable>
   )
 }
 

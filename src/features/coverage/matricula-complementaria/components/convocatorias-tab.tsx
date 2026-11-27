@@ -1,23 +1,15 @@
 "use no memo"
 
 import { useState, type ReactNode } from "react"
+import { AccionesFila, BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 import { useNavigate } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable, DataTableColumnHeader, DataTableViewOptions } from "@/components/data-table"
-import { TableScreen, TableScreenBody, TableScreenHeader } from "@/components/layout/table-screen"
+import { TableScreen, TableScreenActions, TableScreenBody, TableScreenHeader, TableScreenToolbar } from "@/components/layout/table-screen"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   ClipboardTextIcon,
-  DotsThreeVerticalIcon,
   EyeIcon,
   ListChecksIcon,
   ListNumbersIcon,
@@ -28,10 +20,13 @@ import {
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getErrorMessage } from "@/lib/api-client"
+import { toPageCount } from "@/lib/pagination"
 import { paths } from "@/config/paths"
 
 import { useConvocatoriasQuery } from "@/features/coverage/matricula-complementaria/api/convocatorias"
-import type { Convocatoria } from "@/features/coverage/matricula-complementaria/api/types"
+import type { Convocatoria, EstadoConvocatoria, ModoSeleccion } from "@/features/coverage/matricula-complementaria/api/types"
+import { Buscador } from "@/features/coverage/matricula-complementaria/components/buscador"
+import { coberturaComplementariaRoute } from "@/router"
 import {
   ESTADO_CONVOCATORIA,
   Marca,
@@ -80,7 +75,8 @@ const columns: ColumnDef<Convocatoria>[] = [
     accessorFn: (r) => r.id,
     meta: { label: "Establecimientos de origen" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Establecimientos de origen" />,
-    cell: ({ row }) => row.original.origenes.map((o) => o.nombre).join(", "),
+    // Puede partirse: con varias instituciones de origen la tabla se salía por la derecha.
+    cell: ({ row }) => <span className="whitespace-normal">{row.original.origenes.map((o) => o.nombre).join(", ")}</span>,
     enableSorting: false,
   },
   {
@@ -115,7 +111,9 @@ const columns: ColumnDef<Convocatoria>[] = [
     meta: { label: "Modo" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Modo" />,
     // La forma por el origen no tiene modo de selección: selecciona el origen al postular.
-    cell: ({ row }) => (row.original.forma === "ORIGEN" ? "Por el origen" : MODO_LABEL[row.original.modo]),
+    cell: ({ row }) => (
+      <span className="whitespace-normal">{row.original.forma === "ORIGEN" ? "Por el origen" : MODO_LABEL[row.original.modo]}</span>
+    ),
     enableSorting: false,
   },
   {
@@ -140,7 +138,8 @@ const columns: ColumnDef<Convocatoria>[] = [
   },
   {
     id: "actions",
-    size: 48,
+    // Hasta 7 íconos de 36 px (más el ⁞ si pasan de 6).
+    size: 7 * 36 + 16,
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <AccionesConvocatoria convocatoria={row.original} />,
     enableHiding: false,
@@ -157,66 +156,33 @@ function AccionesConvocatoria({ convocatoria: c }: { convocatoria: Convocatoria 
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Acciones de la convocatoria ${c.anio}`}
-            />
-          }
-        >
-          <DotsThreeVerticalIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-52">
-          <DropdownMenuItem onClick={() => navigate({ to: paths.app.coberturaConvocatoriaDetalle.getHref(c.id) })}>
-            <EyeIcon /> Ver detalle
-          </DropdownMenuItem>
+      {/* Íconos con tooltip, «Ver detalle» primero; más de 6 van a «Más acciones» (CLAUDE.md §13). */}
+      <AccionesFila limite={6}>
+          <BotonAccion modo="icon" label="Ver detalle" Icon={EyeIcon} onClick={() => navigate({ to: paths.app.coberturaConvocatoriaDetalle.getHref(c.id) })} />
           {a.editar && puedeEditar ? (
-            <DropdownMenuItem onClick={() => navigate({ to: paths.app.coberturaConvocatoriaEditar.getHref(c.id) })}>
-              <PencilIcon /> Editar
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Editar" Icon={PencilIcon} onClick={() => navigate({ to: paths.app.coberturaConvocatoriaEditar.getHref(c.id) })} />
           ) : null}
-          <DropdownMenuItem
-            onClick={() =>
+          <BotonAccion modo="icon" label="Ver postulaciones" Icon={UsersIcon} onClick={() =>
               navigate({
                 to: paths.app.coberturaComplementaria.getHref(),
                 search: { tab: "postulaciones", convocatoria: c.id },
               })
-            }
-          >
-            <UsersIcon /> Ver postulaciones
-          </DropdownMenuItem>
+            } />
           {a.seleccionar && puedeEditar ? (
-            <DropdownMenuItem
-              onClick={() => navigate({ to: paths.app.coberturaConvocatoriaSeleccionar.getHref(c.id) })}
-            >
-              <ListChecksIcon /> Seleccionar
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Seleccionar" Icon={ListChecksIcon} onClick={() => navigate({ to: paths.app.coberturaConvocatoriaSeleccionar.getHref(c.id) })} />
           ) : null}
           {a.resultado && puedeEditar ? (
-            <DropdownMenuItem onClick={() => setAbierto("resultado")}>
-              <ClipboardTextIcon /> Ver resultado
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Ver resultado" Icon={ClipboardTextIcon} onClick={() => setAbierto("resultado")} />
           ) : null}
           {a.sorteo ? (
-            <DropdownMenuItem onClick={() => setAbierto("sorteo")}>
-              <ListNumbersIcon /> Generar lista del sorteo
-            </DropdownMenuItem>
+            <BotonAccion modo="icon" label="Generar lista del sorteo" Icon={ListNumbersIcon} onClick={() => setAbierto("sorteo")} />
           ) : null}
           {a.eliminar && puedeEliminar ? (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setAbierto("eliminar")}>
-                <TrashIcon /> Eliminar
-              </DropdownMenuItem>
+              <BotonAccion modo="icon" label="Eliminar" Icon={TrashIcon} destructivo onClick={() => setAbierto("eliminar")} />
             </>
           ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AccionesFila>
       {abierto === "resultado" ? <DialogResultadoSeleccion convocatoria={c} onOpenChange={cerrar} /> : null}
       {abierto === "sorteo" ? <DialogListaSorteo convocatoria={c} onOpenChange={cerrar} /> : null}
       {abierto === "eliminar" ? <DialogEliminarConvocatoria convocatoria={c} onOpenChange={cerrar} /> : null}
@@ -224,10 +190,45 @@ function AccionesConvocatoria({ convocatoria: c }: { convocatoria: Convocatoria 
   )
 }
 
+const ANIOS = [2028, 2027, 2026, 2025]
+
+const sinTildes = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+
+/** Filtro y paginación en el front (ver `filtrando`): texto contra el año y los establecimientos de origen. */
+function filtrar(
+  rows: Convocatoria[],
+  f: { q?: string; anio?: number; estadoConvocatoria?: EstadoConvocatoria; modoSeleccion?: ModoSeleccion },
+  pageIndex: number,
+  pageSize: number,
+) {
+  const texto = sinTildes(f.q?.trim() ?? "")
+  const filas = rows.filter(
+    (r) =>
+      (!f.anio || r.anio === f.anio) &&
+      (!f.estadoConvocatoria || r.estado === f.estadoConvocatoria) &&
+      (!f.modoSeleccion || r.modo === f.modoSeleccion) &&
+      (!texto || sinTildes([r.anio, r.establecimiento, ...r.origenes.map((o) => o.nombre)].join(" ")).includes(texto)),
+  )
+  return {
+    rows: filas.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize),
+    pageCount: toPageCount(filas.length, pageSize),
+    totalCount: filas.length,
+  }
+}
+
 /** Pestaña Convocatorias (Sección 2.16.2). */
-export function ConvocatoriasTab({ encabezado }: { encabezado: ReactNode }) {
+export function ConvocatoriasTab({ encabezado, accion }: { encabezado: ReactNode; accion?: ReactNode }) {
+  const search = coberturaComplementariaRoute.useSearch()
+  const navigate = coberturaComplementariaRoute.useNavigate()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
-  const { data, isPending, isError, error, refetch } = useConvocatoriasQuery({ pageIndex, pageSize, sorting })
+  // La consulta del back no filtra (hay una convocatoria por año, son pocas): con algún filtro se traen
+  // todas y se filtran y paginan aquí; sin filtros, la paginación sigue siendo la del back.
+  const filtrando = Boolean(search.q || search.anio || search.estadoConvocatoria || search.modoSeleccion)
+  const query = useConvocatoriasQuery(filtrando ? { pageIndex: 0, pageSize: 1000, sorting } : { pageIndex, pageSize, sorting })
+  const { isPending, isError, error, refetch } = query
+  const data = filtrando && query.data ? filtrar(query.data.rows, search, pageIndex, pageSize) : query.data
+  const setSearch = (patch: Partial<typeof search>) =>
+    navigate({ search: (prev) => ({ ...prev, ...patch, page: 0 }), replace: true })
   const { table } = useDataTable({
     columns,
     data: data?.rows ?? [],
@@ -244,7 +245,43 @@ export function ConvocatoriasTab({ encabezado }: { encabezado: ReactNode }) {
 
   return (
     <TableScreen>
-      <TableScreenHeader>{encabezado}</TableScreenHeader>
+      <TableScreenHeader>
+        {encabezado}
+        <TableScreenToolbar>
+          {/* Buscador con filtros escritos dentro (`estado:(En selección)`), como el Observador (CLAUDE.md §13). */}
+          <Buscador
+            id="convocatorias-buscar"
+            placeholder="Buscar por año o establecimiento de origen"
+            texto={search.q ?? ""}
+            filtros={[
+              { key: "anio", label: "Año", items: [{ value: "", label: "Todos" }, ...ANIOS.map((a) => ({ value: String(a), label: String(a) }))], value: search.anio ? String(search.anio) : "" },
+              {
+                key: "estado",
+                label: "Estado",
+                items: [{ value: "", label: "Todos" }, ...Object.entries(ESTADO_CONVOCATORIA).map(([value, { label }]) => ({ value, label }))],
+                value: search.estadoConvocatoria ?? "",
+              },
+              {
+                key: "modo",
+                label: "Modo",
+                items: [{ value: "", label: "Todos" }, ...Object.entries(MODO_LABEL).map(([value, label]) => ({ value, label }))],
+                value: search.modoSeleccion ?? "",
+              },
+            ]}
+            onBuscar={(v, q) =>
+              setSearch({
+                q: q || undefined,
+                anio: v.anio ? Number(v.anio) : undefined,
+                estadoConvocatoria: (v.estado || undefined) as EstadoConvocatoria | undefined,
+                modoSeleccion: (v.modo || undefined) as ModoSeleccion | undefined,
+              })
+            }
+            onLimpiar={() => setSearch({ q: undefined, anio: undefined, estadoConvocatoria: undefined, modoSeleccion: undefined })}
+          />
+          {/* Crear va en la línea del buscador, a la derecha (CLAUDE.md §13). */}
+          {accion ? <TableScreenActions>{accion}</TableScreenActions> : null}
+        </TableScreenToolbar>
+      </TableScreenHeader>
       <TableScreenBody>
         <DataTable
           table={table}
@@ -252,7 +289,11 @@ export function ConvocatoriasTab({ encabezado }: { encabezado: ReactNode }) {
           isError={isError}
           onRetry={refetch}
           errorMessage={error ? getErrorMessage(error) : undefined}
-          emptyMessage="Aún no hay convocatorias. Use Nueva convocatoria para abrir la del año."
+          emptyMessage={
+            filtrando
+              ? "Ninguna convocatoria coincide con la búsqueda."
+              : "Aún no hay convocatorias. Use Nueva convocatoria para abrir la del año."
+          }
         />
         {data ? (
           <Pagination

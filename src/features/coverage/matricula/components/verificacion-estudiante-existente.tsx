@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { IdentificationCardIcon, WarningIcon } from "@/components/ui/icons"
+import { ArrowsDownUpIcon, IdentificationCardIcon, WarningIcon } from "@/components/ui/icons"
 import type { EstudianteExistente } from "@/features/coverage/matricula/api/query/use-estudiante-existente"
 
 const fecha = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—")
@@ -60,6 +60,7 @@ export function AvisoGradoTraslado({
           {traslado.gradoNombre} y después se hace un cambio de grado.
         </p>
         <Button type="button" variant="outline" color="neutral" size="sm" className="w-fit" onClick={onUsarGradoTraslado}>
+          <ArrowsDownUpIcon data-icon="inline-start" />
           Cambiar el grado a {traslado.gradoNombre}
         </Button>
       </div>

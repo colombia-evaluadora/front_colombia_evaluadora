@@ -1,7 +1,7 @@
 import { useMatriculaPeriodosAbiertosQuery } from "@/features/coverage/matricula/api/query/use-matricula-periodos-abiertos"
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { catalogLabelFor, catalogOptions } from "./catalog-utils"
-import { useEffect, type ReactNode } from "react"
+import { useContext, useEffect, type ReactNode } from "react"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/matricula/api/query/use-matricula-dependent-catalogs-query"
@@ -15,8 +15,9 @@ import { MATRICULA_STATUSES } from "@/features/coverage/matricula/api/ui-mapping
 import type { MatriculaAcademicInfo, MatriculaCampusCatalog } from "@/features/coverage/matricula/api/types/matricula"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
+import { MarcoOpciones } from "@/components/marco-opciones"
 import { useFuncionariosQuery } from "@/features/establishment/employees/api/query/use-funcionarios"
-import { MatriculaDateField, MatriculaFormSection, MatriculaSelectField, MatriculaTextField } from "./fields"
+import { MatriculaDateField, MatriculaFormSection, MatriculaSelectField, MatriculaTextField, MatriculaLecturaContext, ParFicha, CampoBuscable } from "./fields"
 
 interface AcademicSectionProps {
   value: MatriculaAcademicInfo
@@ -49,6 +50,7 @@ export function MatriculaAcademicSection({
   gradoTraslado,
   aviso,
 }: AcademicSectionProps) {
+  const lectura = useContext(MatriculaLecturaContext)
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
   const { data: dependentCatalogs, isPeriodoError, periodoError } = useMatriculaDependentCatalogsQuery({
@@ -79,7 +81,7 @@ export function MatriculaAcademicSection({
   const jornadaId = value.shift ? jornadasActivas?.find((j) => j.nombre === value.shift)?.id : undefined
   const { data: periodoResuelto } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
   // Periodo (modalidad y ciclo): los Abiertos de la sede y jornada (Regla 54). Con uno solo queda elegido.
-  const { data: periodos = [] } = useMatriculaPeriodosAbiertosQuery(sedeId ?? null, jornadaId ?? null)
+  const { data: periodos = [] } = useMatriculaPeriodosAbiertosQuery(sedeId ?? null, jornadaId ?? null, value.periodoId || undefined)
   const periodoElegido = value.periodoId || (periodos.length === 1 && !periodos[0].vencido ? periodos[0].value : "")
   const periodoId = periodoElegido ? Number(periodoElegido) : periodoResuelto
   const etiquetaPeriodo = new Map(periodos.map((p) => [p.value, p.label]))
@@ -258,15 +260,17 @@ export function MatriculaAcademicSection({
         </label>
       ) : null}
       {/* Regla 41: con Sí, el bloque 15 deja marcar qué asignaturas se cursan afuera. */}
-      <div className="flex flex-col gap-2 md:col-span-3">
-        <span id="matricula-media-tecnica-label" className="text-sm font-medium">
-          ¿Media técnica en institución externa?
-        </span>
-        <label className="flex w-fit items-center gap-2 text-sm">
+      {/* Interruptor dentro de su recuadro con label flotante (`MarcoOpciones`, CLAUDE.md §13). */}
+      {lectura ? (
+        <ParFicha label="¿Media técnica en institución externa?" valor={value.mediaTecnicaExterna ? "Sí" : "No"} />
+      ) : (
+      <CampoBuscable label="¿Media técnica en institución externa?" valor={value.mediaTecnicaExterna ? "Sí" : "No"}>
+      <MarcoOpciones id="matricula-media-tecnica-marco" label="¿Media técnica en institución externa?" className="md:col-span-1">
+        <label htmlFor="matricula-media-tecnica" className="flex w-fit cursor-pointer items-center gap-2 text-sm">
           <Switch
             round
             id="matricula-media-tecnica"
-            aria-labelledby="matricula-media-tecnica-label"
+            aria-labelledby="matricula-media-tecnica-marco-label"
             checked={Boolean(value.mediaTecnicaExterna)}
             onCheckedChange={(checked) =>
               onChange({
@@ -278,7 +282,9 @@ export function MatriculaAcademicSection({
           />
           {value.mediaTecnicaExterna ? "Sí" : "No"}
         </label>
-      </div>
+      </MarcoOpciones>
+      </CampoBuscable>
+      )}
       {value.mediaTecnicaExterna ? (
         <MatriculaTextField
           id="matricula-institucion-externa"

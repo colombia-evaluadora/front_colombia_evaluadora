@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { FichaDatos } from "@/components/ficha-datos"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FloppyDiskIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { NoticeBanner } from "@/components/notice/notice-banner"
@@ -33,6 +34,8 @@ export function DialogAgregarComplementaria({
   const [periodoId, setPeriodoId] = useState("")
   const [grupoId, setGrupoId] = useState("")
   const [intentado, setIntentado] = useState(false)
+  // Lo que eligió la persona (la sede que viene sola por defecto no cuenta).
+  const hayCambios = Boolean(sedeId || periodoId || grupoId)
   const [error, setError] = useState<{ id: number; message: string } | null>(null)
 
   const sedes = previa.data?.sedes ?? []
@@ -60,7 +63,7 @@ export function DialogAgregarComplementaria({
 
   return (
     <Dialog open onOpenChange={(o) => !agregar.isPending && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent showCloseButton={false} className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Agregar matrícula complementaria — {nombreDe(matricula)}</DialogTitle>
         </DialogHeader>
@@ -77,18 +80,29 @@ export function DialogAgregarComplementaria({
           </Aviso>
         ) : (
           <>
-            <dl className="grid overflow-hidden rounded-md border border-border text-sm sm:grid-cols-[auto_1fr_auto_1fr] [&>:last-child]:border-b-0 sm:[&>:nth-last-child(-n+4)]:border-b-0">
-              <Dato termino="Matrícula principal">
-                {[matricula.campus, matricula.shift, grado, matricula.group].filter(Boolean).join(" · ")}
-              </Dato>
-              <Dato termino="Establecimiento que recibe">{previa.data.establecimiento}</Dato>
-              <Dato termino="Grado">{grado}</Dato>
-              <Dato termino="Especialidad">
-                {previa.data.especialidad} <span className="text-muted-foreground">(de la matrícula principal)</span>
-              </Dato>
-            </dl>
+            {/* Datos de solo lectura en la ficha (CLAUDE.md §13 «Ver detalle»). */}
+            <FichaDatos
+              datos={[
+                {
+                  etiqueta: "Matrícula principal",
+                  valor: [matricula.campus, matricula.shift, grado, matricula.group].filter(Boolean).join(" · "),
+                },
+                { etiqueta: "Establecimiento que recibe", valor: previa.data.establecimiento },
+                { etiqueta: "Grado", valor: grado },
+                {
+                  etiqueta: "Especialidad",
+                  valor: (
+                    <span>
+                      {previa.data.especialidad} <span className="text-muted-foreground">(de la matrícula principal)</span>
+                    </span>
+                  ),
+                },
+              ]}
+            />
 
-            <div className="grid gap-4 sm:grid-cols-[1fr_1.4fr_1.4fr]">
+            {/* Sede a todo el ancho; Período y Grupo debajo, en dos columnas (la etiqueta del período cabe en una línea). */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
               <CampoSelect
                 id="complementaria-sede"
                 label="Sede"
@@ -102,6 +116,7 @@ export function DialogAgregarComplementaria({
                 opciones={sedes.map((s) => ({ value: String(s.id), label: s.nombre }))}
                 invalido={intentado && !sede}
               />
+              </div>
               <CampoSelect
                 id="complementaria-periodo"
                 label="Período (jornada, modalidad y ciclo)"
@@ -140,21 +155,22 @@ export function DialogAgregarComplementaria({
               Las asignaturas de la especialidad se gestionan después de guardar; en el boletín de la principal se titulan
               «Áreas de la matrícula complementaria».
             </Aviso>
-            <p className="text-xs text-muted-foreground">Los campos marcados con * son obligatorios</p>
           </>
         )}
 
         <DialogFooter>
+          <p className="text-xs text-muted-foreground sm:mr-auto">Los campos marcados con * son obligatorios</p>
+          {/* Sin elegir nada: «Cerrar» y Guardar deshabilitado; al elegir, «Cancelar» (CLAUDE.md §13). */}
           <Button variant="outline" color="neutral" type="button" size="sm" onClick={() => onOpenChange(false)}>
             <XIcon data-icon="inline-start" />
-            Cancelar
+            {hayCambios ? "Cancelar" : "Cerrar"}
           </Button>
           <Button
             type="button"
             variant="fill"
             color="primary"
             size="sm"
-            disabled={agregar.isPending || !previa.data}
+            disabled={agregar.isPending || !previa.data || !hayCambios}
             onClick={guardar}
           >
             {agregar.isPending ? (
@@ -170,11 +186,3 @@ export function DialogAgregarComplementaria({
   )
 }
 
-function Dato({ termino, children }: { termino: string; children: ReactNode }) {
-  return (
-    <>
-      <dt className="border-b border-border px-4 py-3 text-muted-foreground sm:max-w-40">{termino}</dt>
-      <dd className="border-b border-border px-4 py-3 font-medium">{children}</dd>
-    </>
-  )
-}
