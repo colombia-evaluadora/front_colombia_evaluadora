@@ -24,6 +24,7 @@ import {
 import { TIPOS_RECONOCIMIENTO_MOCK } from "@/mocks/db/reconocimientos"
 import { LISTAS_VALOR_COMUNICADO } from "@/mocks/db/comunicaciones-listas-valor"
 import { LISTAS_JERARQUICAS } from "@/mocks/db/catalogs/listas-jerarquicas"
+import { TEMAS_ORIENTACION_MOCK } from "@/mocks/db/temas-orientacion"
 
 interface SelectCategoryRow {
   pk_lista_valor: number
@@ -38,6 +39,7 @@ const deMock = (lista: CatalogoMock[]): SelectCategoryRow[] =>
   lista.map((c) => ({ pk_lista_valor: c.pk, nombre: c.nombre, valor: c.valor, accion: null }))
 
 const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
+  TEMA_ORIENTACION_TERRITORIAL: () => deMock(TEMAS_ORIENTACION_MOCK),
   ...Object.fromEntries(Object.entries(LISTAS_JERARQUICAS).map(([k, filas]) => [k, () => filas])),
   ...Object.fromEntries(Object.entries(LISTAS_VALOR_COMUNICADO).map(([k, filas]) => [k, () => filas])),
   METODOLOGIA: () => METODOLOGIAS.map((m) => ({ ...m, valor: m.nombre, accion: null })),

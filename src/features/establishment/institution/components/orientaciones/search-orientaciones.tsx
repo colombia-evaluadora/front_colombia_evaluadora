@@ -18,10 +18,8 @@ import {
   type EstadoOrientacionRecibida,
   type OrientacionesFiltersFormInput,
 } from "@/features/establishment/institution/api/schema"
-import {
-  ESTADO_ORIENTACION_UI,
-  TEMAS_ORIENTACION_RECIBIDA,
-} from "@/features/establishment/institution/utils/orientaciones"
+import { useTemasOrientacionQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
+import { ESTADO_ORIENTACION_UI } from "@/features/establishment/institution/utils/orientaciones"
 
 const SEARCH_INPUT_ID = "orientaciones-recibidas-search"
 
@@ -29,7 +27,6 @@ const ESTADO_OPTIONS = ESTADOS_ORIENTACION.map((value) => ({
   value,
   label: ESTADO_ORIENTACION_UI[value].label,
 }))
-const TEMA_OPTIONS = TEMAS_ORIENTACION_RECIBIDA.map((tema) => ({ value: tema, label: tema }))
 
 interface SearchOrientacionesProps {
   filters: OrientacionesFiltersFormInput
@@ -48,6 +45,9 @@ export function SearchOrientaciones({
   const [open, setOpen] = useState(false)
   const [draftEstado, setDraftEstado] = useState<string>(filters.estados[0] ?? "")
   const [draftTema, setDraftTema] = useState(filters.temas[0] ?? "")
+  // Temas de la Lista de Valores: el filtro viaja con el pk; el input muestra el nombre (`tema:(Extraedad)`).
+  const { data: temas = [] } = useTemasOrientacionQuery()
+  const temaOptions = temas.map((t) => ({ value: String(t.value), label: t.label }))
 
   // `estado:(Enviada) tema:(Extraedad) texto`, como el resto de los listados.
   const syntax: QuerySyntax<OrientacionesFiltersFormInput> = {
@@ -55,7 +55,7 @@ export function SearchOrientaciones({
     freeText: { key: "texto", field: "search" },
     terms: [
       optionsTerm("estado", "estados", ESTADO_OPTIONS),
-      optionsTerm("tema", "temas", TEMA_OPTIONS),
+      optionsTerm("tema", "temas", temaOptions),
     ],
   }
 
@@ -86,7 +86,7 @@ export function SearchOrientaciones({
   }
 
   const estadoItems = [{ value: "", label: "Todos" }, ...ESTADO_OPTIONS]
-  const temaItems = [{ value: "", label: "Todos" }, ...TEMA_OPTIONS]
+  const temaItems = [{ value: "", label: "Todos" }, ...temaOptions]
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">

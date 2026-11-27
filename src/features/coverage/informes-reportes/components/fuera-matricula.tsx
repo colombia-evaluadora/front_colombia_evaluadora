@@ -27,7 +27,11 @@ import { coberturaInformesReportesRoute } from "@/router"
 import { ComboOpciones } from "@/features/gestion-estudiantil/commons/components/combo-opciones"
 import { camelizar } from "@/features/coverage/matricula-complementaria/api/convocatorias"
 import { useOrientar } from "@/features/coverage/inscripcion-reservas/api/mutations/territorial"
-import { TEMAS_ORIENTACION, useContextoTerritorialQuery } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
+import {
+  temaPorValor,
+  useContextoTerritorialQuery,
+  useTemasOrientacionQuery,
+} from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import { informesKeys } from "@/features/coverage/informes-reportes/api/informes"
 import { filtrosFuera, SITUACIONES_FUERA, type FueraMatricula } from "@/features/coverage/informes-reportes/api/fuera-matricula"
 
@@ -306,18 +310,21 @@ function DialogDetalle({ f, onClose }: { f: FueraMatricula; onClose: () => void 
 function DialogOrientar({ f, onClose }: { f: FueraMatricula; onClose: () => void }) {
   const { notify } = useNotify()
   const orientar = useOrientar()
-  const [tema, setTema] = useState("Permanencia")
+  const { data: temas = [] } = useTemasOrientacionQuery()
+  // Permanencia preseleccionado (de la Lista de Valores) hasta que la persona elija otro.
+  const [temaElegido, setTemaElegido] = useState(0)
+  const temaId = temaElegido || temaPorValor(temas, "PERMANENCIA")
   const [texto, setTexto] = useState(
     `Seguimiento de un estudiante ${f.situaciones.map((x) => etiqueta(x.situacion).toLowerCase()).join(" y ")} del grado ${f.grado ?? ""}: por favor contacte a la familia y registre la gestión de permanencia.`,
   )
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
-  const valido = texto.trim().length > 0 && texto.length <= 1000
+  const valido = temaId > 0 && texto.trim().length > 0 && texto.length <= 1000
 
   function enviar() {
     if (!f.establecimientoId) return
     setErrorEnvio(null)
     orientar.mutate(
-      { establecimientoId: f.establecimientoId, motivo: null, tema, orientacion: texto.trim() },
+      { establecimientoId: f.establecimientoId, motivo: null, temaId, orientacion: texto.trim() },
       {
         onSuccess: () => {
           notify("Orientación enviada al establecimiento.", { variant: "success" })
@@ -343,9 +350,9 @@ function DialogOrientar({ f, onClose }: { f: FueraMatricula; onClose: () => void
             label="Tema"
             required
             todos={false}
-            value={tema}
-            options={TEMAS_ORIENTACION.map((t) => ({ value: t, label: t }))}
-            onChange={setTema}
+            value={temaId ? String(temaId) : ""}
+            options={temas.map((t) => ({ value: String(t.value), label: t.label }))}
+            onChange={(v) => setTemaElegido(Number(v) || 0)}
           />
           <Field variant="outlined" className="gap-1.5">
             <FieldLabel htmlFor="fue-orientacion">

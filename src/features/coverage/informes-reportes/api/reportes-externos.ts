@@ -19,8 +19,11 @@ const externosKeys = {
   generados: (body: unknown) => [...informesKeys.all, "reportes-externos", "generados", body] as const,
 }
 
-/** Roles que generan (Regla 70); el gate del SSO decide igual. Los demás consultan y descargan. */
-const GENERAN = ["CEVAL-RECTOR", "CEVAL-AUXILIAR_ADMINISTRATIVO"]
+/**
+ * Roles que generan (Regla 70): Administrador y Gestor administrativo del establecimiento; el gate del SSO
+ * decide igual. Los demás consultan y descargan.
+ */
+const GENERAN = ["CEVAL-RECTOR", "CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO"]
 
 export function usePuedeGenerarExterno() {
   const user = useAuth().user

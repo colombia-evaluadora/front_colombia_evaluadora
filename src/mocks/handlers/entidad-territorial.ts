@@ -1,5 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
+import { TEMAS_ORIENTACION_MOCK } from "@/mocks/db/temas-orientacion"
+
 import type {
   CalendarioCobertura,
   ContextoTerritorial,
@@ -1042,14 +1044,15 @@ export const entidadTerritorialHandlers = [
       contexto.establecimientos.find((x) => x.id === id)?.nombre ??
       seguimientoDb.find((x) => x.establecimientoId === id)?.establecimiento
     if (!ee) return error(400, "Elija un establecimiento de su alcance.")
-    if (!b.TEMA) return error(400, "El tema es obligatorio.")
+    const tema = TEMAS_ORIENTACION_MOCK.find((t) => t.pk === Number(b.FK_TLV_TEMA))
+    if (!tema) return error(400, "El tema es obligatorio.")
     if (texto.length < 10 || texto.length > 1000)
       return error(400, "La orientación debe tener entre 10 y 1000 caracteres.")
     const nueva: Orientacion = {
       id: Math.max(0, ...orientacionesDb.map((o) => o.id)) + 1,
       establecimientoId: id,
       establecimiento: ee,
-      tema: String(b.TEMA),
+      tema: tema.nombre,
       orientacion: texto,
       estado: "ENVIADA",
       fechaEnvio: new Date().toISOString().slice(0, 10),

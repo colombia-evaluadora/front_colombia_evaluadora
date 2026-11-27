@@ -23,14 +23,14 @@ describe("listas de valor del comunicado", () => {
 
   it("solo el administrador del establecimiento y el gestor administrativo eligen Aspirantes", () => {
     expect(puedeElegirAspirantes(["CEVAL-RECTOR"])).toBe(true)
-    expect(puedeElegirAspirantes(["CEVAL-AUXILIAR_ADMINISTRATIVO"])).toBe(true)
+    expect(puedeElegirAspirantes(["CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO"])).toBe(true)
     expect(puedeElegirAspirantes(["CEVAL-COORDINADOR"])).toBe(false)
     expect(puedeElegirAspirantes(undefined)).toBe(false)
   })
 
   it("el gestor administrativo sin un rol mayor solo publica a aspirantes", () => {
-    expect(soloPublicaAspirantes(["CEVAL-AUXILIAR_ADMINISTRATIVO"])).toBe(true)
-    expect(soloPublicaAspirantes(["CEVAL-AUXILIAR_ADMINISTRATIVO", "CEVAL-RECTOR"])).toBe(false)
+    expect(soloPublicaAspirantes(["CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO"])).toBe(true)
+    expect(soloPublicaAspirantes(["CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO", "CEVAL-RECTOR"])).toBe(false)
     expect(soloPublicaAspirantes(["CEVAL-RECTOR"])).toBe(false)
     expect(soloPublicaAspirantes(undefined)).toBe(false)
   })

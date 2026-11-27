@@ -7,6 +7,9 @@ export interface OrientacionRecibida {
   establecimiento: string
   /** `yyyy-MM-dd`. */
   fechaEnvio: string
+  /** `pk_lista_valor` de TEMA_ORIENTACION_TERRITORIAL. */
+  temaId: number
+  /** Nombre vigente del tema en la Lista de Valores. */
   tema: string
   orientacion: string
   /** Rol territorial de quien la envió: «Supervisor territorial» o «Administrador territorial». */
@@ -44,7 +47,8 @@ export interface OrientacionesRecibidasParams {
   establecimientoId?: number
   search?: string
   estado?: EstadoOrientacionRecibida
-  tema?: string
+  /** `pk_lista_valor` del tema. */
+  temaId?: number
   sortBy?: string
   sortDesc?: boolean
   pageIndex: number

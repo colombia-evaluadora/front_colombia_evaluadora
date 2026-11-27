@@ -1,5 +1,3 @@
-import { TEMAS_ORIENTACION } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
-
 import type { EstadoOrientacionRecibida } from "@/features/establishment/institution/api/schema"
 import type { OrientacionRecibida } from "@/features/establishment/institution/api/types/orientacion"
 
@@ -10,12 +8,6 @@ export const ESTADO_ORIENTACION_UI: Record<
   ENVIADA: { label: "Enviada", color: "info" },
   ATENDIDA: { label: "Atendida", color: "success" },
 }
-
-/**
- * Temas de la orientación: por ahora la misma lista fija del formulario territorial (Cobertura 3.10).
- * Pasa a Lista de Valores en la siguiente iteración.
- */
-export const TEMAS_ORIENTACION_RECIBIDA: readonly string[] = TEMAS_ORIENTACION
 
 /** Mismo límite que valida el backend (sso `fn_orientacion_validar_respuesta`). */
 export const RESPUESTA_MIN = 10

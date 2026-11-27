@@ -207,7 +207,7 @@ describe("mock de Entidad territorial", () => {
       evalCol.postRow(`${TERRITORIAL_BASE}/orientaciones`, {
         FK_ESTABLECIMIENTO: 5,
         MOTIVO: "FALTA_CONTINUIDAD",
-        TEMA: "Cobertura",
+        FK_TLV_TEMA: 9101,
         ORIENTACION: o,
       })
     expect(status(await enviar("corta").catch((e) => e))).toBe(400)

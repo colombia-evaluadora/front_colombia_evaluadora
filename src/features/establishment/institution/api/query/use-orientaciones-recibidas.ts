@@ -30,7 +30,7 @@ async function fetchOrientacionesRecibidas(
         FK_ESTABLECIMIENTO: params.establecimientoId ?? null,
         SEARCH: params.search || null,
         ESTADO: params.estado ?? null,
-        TEMA: params.tema || null,
+        FK_TLV_TEMA: params.temaId ?? null,
       },
       SORTING: { ID: params.sortBy ?? null, DESC: params.sortDesc ?? false },
       PAGEINDEX: params.pageIndex,

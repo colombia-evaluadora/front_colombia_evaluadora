@@ -61,7 +61,7 @@ export function OrientacionesTab({ encabezado, acceso }: OrientacionesTabProps) 
       establecimientoId,
       search: filters.search || undefined,
       estado: filters.estados[0],
-      tema: filters.temas[0],
+      temaId: filters.temas[0] ? Number(filters.temas[0]) : undefined,
       sortBy: sorting[0]?.id,
       sortDesc: sorting[0]?.desc,
       pageIndex,

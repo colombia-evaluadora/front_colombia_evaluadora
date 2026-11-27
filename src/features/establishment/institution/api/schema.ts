@@ -59,7 +59,7 @@ export const establishmentsSearchSchema = z.object({
   /** Orientaciones: filtro Estado (uno). */
   oEstados: z.array(z.enum(ESTADOS_ORIENTACION)).optional().catch(undefined),
 
-  /** Orientaciones: filtro Tema (uno). */
+  /** Orientaciones: filtro Tema (uno), el `pk_lista_valor` de TEMA_ORIENTACION_TERRITORIAL. */
   oTemas: z.array(z.string()).optional().catch(undefined),
 
   /** Orientaciones: establecimiento elegido por el Superadministrador. */
