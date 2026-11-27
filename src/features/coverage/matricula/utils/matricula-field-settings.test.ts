@@ -25,10 +25,8 @@ describe("applyGradeFieldRules", () => {
     expect(isFieldVisible(applyGradeFieldRules(oculto, "11"), EMAIL)).toBe(true)
   })
 
-  it("en bachillerato conserva el 'requerido' de la configuración", () => {
-    const requerido: MatriculaFieldSettingsMap = { [EMAIL]: { requerido: true, visible: false } }
-    expect(isFieldRequired(applyGradeFieldRules(requerido, "8"), EMAIL)).toBe(true)
-    expect(isFieldRequired(applyGradeFieldRules(oculto, "8"), EMAIL)).toBe(false)
+  it("en bachillerato el correo es obligatorio aunque la configuración no lo pida", () => {
+    expect(isFieldRequired(applyGradeFieldRules(oculto, "8"), EMAIL)).toBe(true)
   })
 
   it("en preescolar y primaria oculta el correo y deja de exigirlo", () => {

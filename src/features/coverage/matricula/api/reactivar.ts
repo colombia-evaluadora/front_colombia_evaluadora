@@ -80,12 +80,23 @@ export interface ReactivarInput {
   decision: DecisionRegistros | null
 }
 
-async function reactivarMatricula(input: ReactivarInput) {
-  await postMultipart(
+/** Busca `complementaria_sin_cupo` en la respuesta (jsonb del núcleo, envuelto o no en `rows`). */
+function complementariaSinCupo(res: unknown): string | null {
+  if (res == null || typeof res !== "object") return null
+  if (Array.isArray(res)) return res.map(complementariaSinCupo).find(Boolean) ?? null
+  const obj = res as Record<string, unknown>
+  if (typeof obj.complementaria_sin_cupo === "string") return obj.complementaria_sin_cupo
+  return Object.values(obj).map(complementariaSinCupo).find(Boolean) ?? null
+}
+
+/** Devuelve el grupo de la complementaria que no volvió por falta de cupo (Sección 4.4). */
+async function reactivarMatricula(input: ReactivarInput): Promise<{ complementariaSinCupo: string | null }> {
+  const res = await postMultipart<unknown>(
     `/eval-col/cobertura-academica/matricula/${input.matriculaId}/reactivar`,
     { MOTIVO: input.motivo.trim(), REGISTROS_NUEVA: input.decision },
     { SOPORTE: input.soporte },
   )
+  return { complementariaSinCupo: complementariaSinCupo(res) }
 }
 
 export function useReactivarMatricula() {

@@ -29,6 +29,7 @@ import {
 import { BotonAccion } from "@/features/coverage/matricula/components/dialogs/acciones/boton-accion"
 
 const OBSERVACION_MAX = 500
+const OBSERVACION_MIN = 10
 const agrupar = (ps: PreviaReingreso[]) => {
   const m = new Map<string, PreviaReingreso[]>()
   for (const p of ps) m.set(p.grupoActual, [...(m.get(p.grupoActual) ?? []), p])
@@ -68,7 +69,9 @@ export function DialogReingresar({
   // Si reingresa la principal, la complementaria no se reactiva: solo se avisa.
   const esComplementaria = (id: string) => matriculaDe.get(id)?.tipo === "COMPLEMENTARIA"
   const bloqueadas = (previas ?? []).filter((p) => p.complementariaSinCupo && esComplementaria(p.matriculaId))
-  const sinComplementaria = (previas ?? []).filter((p) => p.complementariaSinCupo && !esComplementaria(p.matriculaId))
+  const sinComplementaria = (previas ?? []).filter(
+    (p) => (p.complementariaSinCupo || p.complementariaConvenioFinalizado) && !esComplementaria(p.matriculaId),
+  )
   const aplicables = uno ? (previas ?? []).filter((p) => !bloqueadas.includes(p)) : (previas ?? [])
   const sinCupo = uno ? aplicables.filter((p) => p.sinCupo) : []
   // Lote: solo con el período Abierto y sin pasarse de los cupos de cada grupo.
@@ -111,9 +114,11 @@ export function DialogReingresar({
     )
   }
 
+  const observacionValida = !observacion.trim() || observacion.trim().length >= OBSERVACION_MIN
+
   function confirmar() {
     setIntentado(true)
-    if (!fechaValida || faltanGrupos.length || aplicables.length === 0 || loteBloqueado) return
+    if (!fechaValida || !observacionValida || faltanGrupos.length || aplicables.length === 0 || loteBloqueado) return
     reingresar.mutate(
       {
         fecha,
@@ -224,9 +229,13 @@ export function DialogReingresar({
             {sinComplementaria.length || (!uno && bloqueadas.length) ? (
               <Aviso tono="advertencia" titulo="La matrícula complementaria no reingresa">
                 {[...sinComplementaria, ...(uno ? [] : bloqueadas)]
-                  .map((p) => `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaSinCupo})`)
+                  .map((p) =>
+                    p.complementariaConvenioFinalizado
+                      ? `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaConvenioFinalizado}: convenio finalizado)`
+                      : `${nombreDe(matriculaDe.get(p.matriculaId) as Matricula)} (${p.complementariaSinCupo}: sin cupo)`,
+                  )
                   .join(", ")}
-                : sin cupo o con el convenio finalizado. La matrícula principal sí reingresa.
+                . La matrícula principal sí reingresa; la situación de la jornada complementaria se resuelve aparte.
               </Aviso>
             ) : null}
 
@@ -241,7 +250,7 @@ export function DialogReingresar({
             ) : null}
 
 
-            <Field variant="outlined" className="gap-1.5">
+            <Field variant="outlined" className="gap-1.5" data-invalid={(intentado && !observacionValida) || undefined}>
               <FieldLabel htmlFor="reingreso-observacion">Observación</FieldLabel>
               <div className="relative">
                 <Textarea
@@ -255,6 +264,9 @@ export function DialogReingresar({
                 />
                 <CharacterCounter value={observacion} max={OBSERVACION_MAX} className="absolute top-3 right-3" />
               </div>
+              <FieldDescription className={cn(intentado && !observacionValida && "text-red")}>
+                Opcional; de {OBSERVACION_MIN} a {OBSERVACION_MAX} caracteres.
+              </FieldDescription>
             </Field>
 
             {!uno ? (

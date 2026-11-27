@@ -126,7 +126,7 @@ export function DialogCambiarGrado({
 
   const uno = matriculas.length === 1
   const motivoValido = motivo.trim().length >= MOTIVO_MIN && motivo.trim().length <= MOTIVO_MAX
-  const actaRequerida = !correccion
+  const actaRequerida = promocion
   const gradoNombre = grado ? gradeLabel(Number(grado)) : ""
   const pideRegistros = correccion && Boolean(previa?.registros)
   // C.1.CAM.6: la complementaria se retira si el grado destino no tiene su especialidad en jornada contraria.

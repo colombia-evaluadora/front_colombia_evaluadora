@@ -65,20 +65,27 @@ const STUDENT_EMAIL_ID = "student-contact-email"
  * preescolar/primaria no se usa (se crea un usuario administrado, sin
  * cuenta). Ocultarlo por configuración dejaba a bachillerato sin poder
  * matricular a un estudiante nuevo; mostrarlo en primaria pedía un dato
- * que nadie usa. Sin grado elegido manda la configuración.
+ * que nadie usa. Desde 6° es obligatorio (Sección 2.4). Sin grado elegido manda la configuración.
  */
 export function applyGradeFieldRules(
   settings: MatriculaFieldSettingsMap | undefined,
   grade: string | undefined,
 ): MatriculaFieldSettingsMap | undefined {
   if (!grade || Number.isNaN(Number(grade))) return settings
-  const configurado = settings?.[STUDENT_EMAIL_ID]
   return {
     ...settings,
     [STUDENT_EMAIL_ID]: isPreescolarPrimariaGrado(grade)
       ? { requerido: false, visible: false }
-      : { requerido: configurado?.requerido ?? false, visible: true },
+      : { requerido: true, visible: true },
+    // B7: la institución bienestar de origen solo aplica a Preescolar y Primero.
+    ...(esPreescolarOPrimero(grade) ? {} : { [WELFARE_INSTITUTION_ID]: { requerido: false, visible: false } }),
   }
+}
+
+const WELFARE_INSTITUTION_ID = "welfare-institution"
+
+function esPreescolarOPrimero(grade: string): boolean {
+  return isPreescolarPrimariaGrado(grade) && Number(grade) <= 1
 }
 
 /** Sin config cargada (o campo sin entrada, ej. archivos de soporte) el

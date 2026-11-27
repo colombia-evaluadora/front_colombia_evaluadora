@@ -18,6 +18,8 @@ export interface CorregirIdentidadEstudianteInput {
   documentMunicipalityId: string
   genderId: string
   ethnicityId: string
+  /** pk_lista_valor de MOTIVO_CORRECCION_IDENTIDAD (sso V167.3). */
+  reasonId: string
   reason: string
   support: File
 }
@@ -40,6 +42,7 @@ export async function corregirIdentidadEstudiante(input: CorregirIdentidadEstudi
       MUNICIPIO_DOCUMENTO: toIdOrNull(input.documentMunicipalityId),
       GENERO: toIdOrNull(input.genderId),
       RESGUARDO: toIdOrNull(input.ethnicityId),
+      MOTIVO_CORRECCION: toIdOrNull(input.reasonId),
       MOTIVO: input.reason.trim(),
     },
     { SOPORTE: input.support },

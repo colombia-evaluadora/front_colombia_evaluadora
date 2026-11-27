@@ -67,7 +67,10 @@ export function DialogReactivarLote({
       {
         onSuccess: (resultados) => {
           const { variant, texto } = mensajeLote(resultados, (n) => `${plural(n, "matrícula volvió", "matrículas volvieron")} a Cursando.`)
-          notify(texto, { variant })
+          // Sección 4.4: el back nombra en la fila la complementaria que no volvió por cupo.
+          const sinCupo = resultados.filter((r) => r.ok && /complementaria/i.test(r.mensaje)).length
+          const aviso = sinCupo ? ` ${plural(sinCupo, "complementaria no volvió", "complementarias no volvieron")} por falta de cupo.` : ""
+          notify(texto + aviso, { variant: sinCupo && variant === "success" ? "warning" : variant })
           onDone?.()
           onOpenChange(false)
         },

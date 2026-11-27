@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -27,6 +28,7 @@ import { toDigitsOnly, toLettersOnly } from "@/lib/text-input"
 
 import { useMatriculaCatalogQuery } from "@/features/coverage/matricula/api/query/use-matricula-catalog-select"
 import { useEtniasQuery } from "@/features/establishment/institution/api/query/use-etnias"
+import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { useCorregirIdentidadEstudiante } from "@/features/coverage/matricula/api/mutations/corregir-identidad-estudiante"
 import type { MatriculaStudentInfo } from "@/features/coverage/matricula/api/types/matricula"
 import type { DepartmentOption } from "@/features/coverage/matricula/components/forms/form-create-matricula"
@@ -99,6 +101,7 @@ interface Props {
 export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matriculaId, student, departments, onCorrected }: Props) {
   const anterior = fromStudent(student)
   const [nuevo, setNuevo] = useState<Identidad>(anterior)
+  const [motivoId, setMotivoId] = useState("")
   const [motivo, setMotivo] = useState("")
   const [soporte, setSoporte] = useState<File | null>(null)
   const [intentado, setIntentado] = useState(false)
@@ -108,6 +111,12 @@ export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matricul
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
   const { data: genero } = useMatriculaCatalogQuery("genero")
   const { data: etnias } = useEtniasQuery()
+  const { data: motivosRows } = useQuery({
+    queryKey: ["select", "MOTIVO_CORRECCION_IDENTIDAD"],
+    queryFn: () => fetchSelectCategory("MOTIVO_CORRECCION_IDENTIDAD"),
+    staleTime: Infinity,
+  })
+  const motivos = (motivosRows ?? []).map((m) => ({ value: String(m.pk_lista_valor), label: m.nombre }))
 
   const tipos = (tipoDocumento ?? []).map((t) => ({ value: String(t.id), label: t.nombre }))
   const generos = (genero ?? []).map((g) => ({ value: String(g.id), label: g.nombre }))
@@ -149,7 +158,7 @@ export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matricul
       setError({ id: Date.now(), message: "No hay cambios en los datos de identidad." })
       return
     }
-    if (hayErrores || !motivoValido || !soporte) return
+    if (hayErrores || !motivoId || !motivoValido || !soporte) return
     corregir.mutate(
       {
         matriculaId,
@@ -164,6 +173,7 @@ export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matricul
         documentMunicipalityId: nuevo.documentMunicipality,
         genderId: nuevo.gender,
         ethnicityId: nuevo.ethnicity,
+        reasonId: motivoId,
         reason: motivo,
         support: soporte,
       },
@@ -286,8 +296,26 @@ export function DialogCorregirIdentidadEstudiante({ open, onOpenChange, matricul
           </table>
         </div>
 
+        <Field variant="outlined" data-invalid={intentado && !motivoId}>
+          <FieldLabel htmlFor="correccion-motivo-lista">
+            Motivo<span data-required-mark="">*</span>
+          </FieldLabel>
+          <Select items={toSelectItemsMap(motivos)} value={motivoId || null} onValueChange={(v) => setMotivoId((v as string) ?? "")}>
+            <SelectTrigger id="correccion-motivo-lista" variant="outlined" className="w-full" aria-invalid={intentado && !motivoId}>
+              <SelectValue placeholder="Seleccionar" />
+            </SelectTrigger>
+            <SelectContent>
+              {motivos.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
         <Field variant="outlined" data-invalid={intentado && !motivoValido}>
-          <FieldLabel htmlFor="correccion-motivo">Motivo*</FieldLabel>
+          <FieldLabel htmlFor="correccion-motivo">Descripción*</FieldLabel>
           <div className="relative">
             <Textarea
               id="correccion-motivo"

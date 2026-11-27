@@ -174,7 +174,7 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
     title: "Información de contacto de acudiente",
     fields: [
       { id: "guardian-contact-phone", label: "Teléfono de acudiente" },
-      { id: "guardian-contact-email", label: "Email acudiente" },
+      { id: "guardian-contact-email", label: "Email acudiente", locked: true },
     ],
   },
   {

@@ -7,9 +7,12 @@ import { OnlineOnlyAction } from "@/components/offline/online-only-action"
 
 import { MatriculaDataTable } from "@/features/coverage/matricula/components/table/table-matricula"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
+import { useMatriculaCapacidades } from "@/features/coverage/matricula/api/query/use-matricula-capacidades"
 
 export function MatriculaPage() {
   const { puedeCrear, puedeEditar } = useMenuPermission("MATRICULA")
+  // El alta es de quien opera la matrícula: el super-admin y los territoriales solo ven (V186).
+  const { operar } = useMatriculaCapacidades()
 
   return (
     <MatriculaDataTable
@@ -38,7 +41,7 @@ export function MatriculaPage() {
         ) : null
       }
       action={
-        puedeCrear ? (
+        puedeCrear && operar ? (
           <OnlineOnlyAction>
           <Button
             render={<Link to={paths.app.coberturaMatriculaAgregar.getHref()} />}

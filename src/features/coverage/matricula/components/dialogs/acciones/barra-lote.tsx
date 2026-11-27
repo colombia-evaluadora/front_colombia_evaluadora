@@ -59,6 +59,7 @@ interface Definicion {
 const ACCIONES: Definicion[] = [
   {
     accion: "retirar",
+    capacidad: "operar",
     label: () => "Retirar",
     Icon: PersonRemoveIcon,
     editar: true,
@@ -71,6 +72,7 @@ const ACCIONES: Definicion[] = [
   },
   {
     accion: "reingresar",
+    capacidad: "operar",
     label: () => "Reingresar",
     Icon: PersonAddIcon,
     editar: true,
@@ -93,6 +95,7 @@ const ACCIONES: Definicion[] = [
   },
   {
     accion: "cambiar-grupo",
+    capacidad: "operar",
     label: () => "Cambiar de grupo",
     Icon: ArrowsLeftRightIcon,
     editar: true,
@@ -118,12 +121,16 @@ const ACCIONES: Definicion[] = [
   },
   {
     accion: "constancias",
+    // Numeran y reemplazan: quien opera la matrícula (V281), no el super-admin ni los territoriales.
+    capacidad: "operar",
     label: (n) => (n === 1 ? "Generar constancia de estudio" : "Generar constancias de estudio"),
     Icon: FilePdfIcon,
     bloqueo: (sel) => (sel.every(cursando) ? null : "La constancia de estudio solo se genera para matrículas Cursando."),
   },
   {
     accion: "carnes",
+    // Numeran y reemplazan: quien opera la matrícula (V281), no el super-admin ni los territoriales.
+    capacidad: "operar",
     label: (n) => (n === 1 ? "Generar carné" : "Generar carnés"),
     Icon: IdentificationCardIcon,
     bloqueo: (sel) => (sel.every(cursando) ? null : "El carné estudiantil solo se genera para matrículas Cursando."),

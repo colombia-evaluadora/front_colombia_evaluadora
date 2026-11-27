@@ -102,6 +102,8 @@ interface RawMatriculaCore {
   fk_tlv_condicion_migratoria?: number | null
   fk_tlv_apoyo_academico?: number | null
   fk_tlv_trastorno?: number | null
+  ips?: string | null
+  fk_tlv_tipo_sangre?: number | null
   fk_tlv_srpa?: number | null
   fecha_inicio_medida?: string | null
   fecha_fin_medida?: string | null
@@ -273,6 +275,8 @@ export function toMatriculaDetailResult(ficha: RawMatriculaDetail, gradoValor: n
       socioeconomicStratum: toIdString(est.fk_tlv_estrato),
       sisben: toIdString(est.fk_tlv_sisben),
       eps: socio.seguridad_social_eps ?? "",
+      ips: m.ips ?? "",
+      tipoSangre: toIdString(m.fk_tlv_tipo_sangre),
       ars: socio.seguridad_social_ars ?? "",
       specialConditions: toIdString(est.fk_tdiscapacidad),
       talent: toIdString(est.fk_tlv_talento),
