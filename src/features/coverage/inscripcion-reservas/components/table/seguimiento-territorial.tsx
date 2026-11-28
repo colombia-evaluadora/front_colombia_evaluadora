@@ -48,9 +48,11 @@ import { coberturaInscritosRoute } from "@/router"
 
 import { useOrientar } from "@/features/coverage/inscripcion-reservas/api/mutations/territorial"
 import {
-  TEMAS_ORIENTACION,
+  temaPorValor,
   useSeguimientoDetalleQuery,
   useSeguimientoQuery,
+  useTemasOrientacionQuery,
+  type TemaOrientacion,
 } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import type {
   MotivoOrientacion,
@@ -476,7 +478,7 @@ function textoSugerido(motivo: MotivoOrientacion, s: SeguimientoEstablecimiento 
 const FORM_ORIENTAR = "orientar-form"
 const orientarSchema = z.object({
   establecimientoId: z.number().int().positive("El establecimiento es obligatorio."),
-  tema: z.string().min(1, "El tema es obligatorio."),
+  temaId: z.number().int().positive("El tema es obligatorio."),
   orientacion: z
     .string()
     .trim()
@@ -493,7 +495,9 @@ export function OrientarVista({
   establecimientoId: number
 }) {
   const { data, isPending } = useSeguimientoQuery()
-  if (isPending) {
+  // El tema Cobertura sale de la Lista de Valores: el formulario lee sus valores iniciales una vez.
+  const temas = useTemasOrientacionQuery()
+  if (isPending || temas.isPending) {
     return (
       <TableScreen>
         <TableScreenBody>
@@ -508,6 +512,7 @@ export function OrientarVista({
       motivo={motivo}
       establecimientoId={establecimientoId}
       lista={data ?? []}
+      temas={temas.data ?? []}
     />
   )
 }
@@ -516,10 +521,12 @@ function OrientarForm({
   motivo,
   establecimientoId,
   lista,
+  temas,
 }: {
   motivo: MotivoOrientacion
   establecimientoId: number
   lista: SeguimientoEstablecimiento[]
+  temas: TemaOrientacion[]
 }) {
   const router = useRouter()
   const volver = () => router.history.back()
@@ -528,7 +535,7 @@ function OrientarForm({
     defaultValues: {
       establecimientoId,
       // Las dos orientaciones de Seguimiento van con el tema Cobertura (3.10).
-      tema: "Cobertura",
+      temaId: temaPorValor(temas, "COBERTURA"),
       orientacion: textoSugerido(
         motivo,
         lista.find((s) => s.establecimientoId === establecimientoId),
@@ -609,12 +616,13 @@ function OrientarForm({
                   />
                 )}
               </form.AppField>
-              <form.AppField name="tema">
+              <form.AppField name="temaId">
                 {(f) => (
                   <f.SelectField
                     label="Tema"
                     required
-                    options={TEMAS_ORIENTACION.map((t) => ({ value: t, label: t }))}
+                    emptyValue={0}
+                    options={temas.map((t) => ({ value: t.value, label: t.label }))}
                   />
                 )}
               </form.AppField>

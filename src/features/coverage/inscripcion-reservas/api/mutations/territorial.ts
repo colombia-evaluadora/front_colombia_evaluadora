@@ -110,7 +110,7 @@ export function useOrientar() {
             : o.motivo === "continuidad"
               ? "FALTA_CONTINUIDAD"
               : "TRASLADOS_PENDIENTES",
-        TEMA: o.tema,
+        FK_TLV_TEMA: o.temaId,
         ORIENTACION: o.orientacion,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: territorialKeys.all }),

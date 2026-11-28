@@ -18,8 +18,11 @@ export const LISTA_FORMA_PUBLICACION = "FORMA_PUBLICACION"
 /** Población que solo eligen el Administrador del establecimiento y el Gestor administrativo, con Acudientes. */
 export const ASPIRANTES = "ASPIRANTES"
 
+/** Rol del SSO del Gestor administrativo del establecimiento (RolEmision en comms-service). */
+const GESTOR_ADMINISTRATIVO = "CEVAL-JEFE_SISTEMA_ESTABLECIMIENTO"
+
 /** Roles del SSO que pueden elegir Aspirantes (Administrador del establecimiento, Gestor administrativo). */
-const ROLES_ASPIRANTES = ["CEVAL-RECTOR", "CEVAL-AUXILIAR_ADMINISTRATIVO"]
+const ROLES_ASPIRANTES = ["CEVAL-RECTOR", GESTOR_ADMINISTRATIVO]
 
 export const puedeElegirAspirantes = (roles: string[] | undefined) =>
   (roles ?? []).some((r) => ROLES_ASPIRANTES.includes(r))
@@ -35,7 +38,7 @@ const ROLES_EMISION_MAYORES = ["CEVAL-SUPER_ADMINISTRADOR", "CEVAL-RECTOR", "CEV
  * Aspirantes; Matriculados, Estudiantes y Funcionarios quedan deshabilitados. comms-service lo exige igual.
  */
 export const soloPublicaAspirantes = (roles: string[] | undefined) =>
-  (roles ?? []).includes("CEVAL-AUXILIAR_ADMINISTRATIVO") &&
+  (roles ?? []).includes(GESTOR_ADMINISTRATIVO) &&
   !(roles ?? []).some((r) => ROLES_EMISION_MAYORES.includes(r))
 
 export interface OpcionLista {

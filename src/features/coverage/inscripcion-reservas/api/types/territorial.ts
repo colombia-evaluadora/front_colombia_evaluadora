@@ -155,7 +155,8 @@ export interface OrientarInput {
   establecimientoId: number
   /** Null = Nueva orientación (sin alerta de Seguimiento). */
   motivo: MotivoOrientacion | null
-  tema: string
+  /** `pk_lista_valor` de TEMA_ORIENTACION_TERRITORIAL. */
+  temaId: number
   orientacion: string
 }
 

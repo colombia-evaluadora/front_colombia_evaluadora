@@ -22,9 +22,9 @@ import { coberturaInscritosRoute } from "@/router"
 import { MatriculaSelectField } from "@/features/coverage/matricula/components/forms/form-create-matricula"
 import { useOrientar } from "@/features/coverage/inscripcion-reservas/api/mutations/territorial"
 import {
-  TEMAS_ORIENTACION,
   useContextoTerritorialQuery,
   useOrientacionesQuery,
+  useTemasOrientacionQuery,
 } from "@/features/coverage/inscripcion-reservas/api/query/use-territorial-query"
 import type {
   EstadoOrientacion,
@@ -238,7 +238,7 @@ function OrientacionesLista({ ver }: { ver: (id: number) => void }) {
 
 const nuevaSchema = z.object({
   establecimientoId: z.number().int().positive("El establecimiento es obligatorio."),
-  tema: z.string().min(1, "El tema es obligatorio."),
+  temaId: z.number().int().positive("El tema es obligatorio."),
   orientacion: z
     .string()
     .trim()
@@ -250,9 +250,10 @@ const nuevaSchema = z.object({
 function NuevaOrientacion({ onCerrar }: { onCerrar: () => void }) {
   const { data: contexto } = useContextoTerritorialQuery()
   const orientar = useOrientar()
+  const { data: temas = [] } = useTemasOrientacionQuery()
   const establecimientos = contexto?.establecimientos ?? []
   const form = useAppForm({
-    defaultValues: { establecimientoId: 0, tema: "", orientacion: "" },
+    defaultValues: { establecimientoId: 0, temaId: 0, orientacion: "" },
     validators: { onSubmit: nuevaSchema },
     onSubmit: ({ value }) =>
       orientar.mutateAsync(
@@ -288,12 +289,13 @@ function NuevaOrientacion({ onCerrar }: { onCerrar: () => void }) {
             />
           )}
         </form.AppField>
-        <form.AppField name="tema">
+        <form.AppField name="temaId">
           {(f) => (
             <f.SelectField
               label="Tema"
               required
-              options={TEMAS_ORIENTACION.map((t) => ({ value: t, label: t }))}
+              emptyValue={0}
+              options={temas.map((t) => ({ value: t.value, label: t.label }))}
             />
           )}
         </form.AppField>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { isNotFoundError } from "@/lib/api-client"
 import { evalCol } from "@/lib/eval-col-client"
 
+import { selectCategoryQueryOptions } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import { datos } from "@/features/coverage/inscripcion-reservas/api/query/use-inscripciones-query"
 import type {
   CalendarioCobertura,
@@ -42,16 +43,35 @@ export const territorialKeys = {
   solicitudesRetiro: [...all, "solicitudes-retiro"] as const,
 }
 
-/** Temas de una orientación (3.10). */
-export const TEMAS_ORIENTACION = [
-  "Cobertura",
-  "Extraedad",
-  "Permanencia",
-  "Traslados",
-  "Matrícula",
-  "Calendario",
-  "Otro",
-]
+/**
+ * Lista de Valores del tema de una orientación (3.10; sso V430). La administra Configuración › Lista de
+ * valores; la orientación guarda el `pk_lista_valor` (FK_TLV_TEMA).
+ */
+export const LISTA_TEMAS_ORIENTACION = "TEMA_ORIENTACION_TERRITORIAL"
+
+export interface TemaOrientacion {
+  /** `pk_lista_valor`: lo que viaja como FK_TLV_TEMA. */
+  value: number
+  label: string
+  /** Código estable del valor (COBERTURA, PERMANENCIA…): el sistema preselecciona por él. */
+  valor: string
+}
+
+/** Temas habilitados, en el orden de la lista. */
+export function useTemasOrientacionQuery() {
+  return useQuery({
+    ...selectCategoryQueryOptions(LISTA_TEMAS_ORIENTACION),
+    select: (rows): TemaOrientacion[] => rows.map((r) => ({ value: r.pk_lista_valor, label: r.nombre, valor: r.valor })),
+  })
+}
+
+/**
+ * Tema que preselecciona el sistema por su código: Cobertura en Seguimiento y Redistribución, Permanencia en
+ * Fuera de matrícula (sso los siembra ES_SISTEMA: se renombran, no se inactivan). 0 si la lista no lo trae.
+ */
+export function temaPorValor(temas: TemaOrientacion[] | undefined, valor: "COBERTURA" | "PERMANENCIA") {
+  return temas?.find((t) => t.valor === valor)?.value ?? 0
+}
 
 export async function fetchContextoTerritorial() {
   try {

@@ -12,7 +12,6 @@ import {
   TableScreenActions,
   TableScreenBody,
   TableScreenHeader,
-  TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 
@@ -39,12 +38,13 @@ import { useMenuPermission } from "@/features/navigation/api/use-menu-permission
 import { usePuedeGestionarEstablecimientosQuery } from "@/features/establishment/institution/api/query/use-puede-gestionar-establecimientos"
 
 interface EstablishmentsDataTableProps {
-  title: ReactNode
+  /** Título y pestañas de la vista (Establecimientos, Orientaciones…): los pone la página. */
+  encabezado: ReactNode
   // Acción principal, en la barra de herramientas.
   action?: ReactNode
 }
 
-export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTableProps) {
+export function EstablishmentsDataTable({ encabezado, action }: EstablishmentsDataTableProps) {
   const { notify } = useNotify()
   const { puedeEliminar } = useMenuPermission("ESTABLECIMIENTO", { onlineOnlyWrites: true })
   // Dar de baja un EE es del Superadministrador o del nivel territorial (V574).
@@ -113,7 +113,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>{title}</TableScreenTitle>
+        {encabezado}
         <TableScreenToolbar>
           <SearchEstablishments
             filters={filters}
